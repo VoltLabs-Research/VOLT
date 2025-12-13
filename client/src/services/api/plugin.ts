@@ -1,7 +1,7 @@
 import api from '@/api';
 import type { IWorkflow, PluginStatus } from '@/types/plugin';
 
-export interface IPluginRecord{
+export interface IPluginRecord {
     _id: string;
     slug: string;
     workflow: IWorkflow;
@@ -12,19 +12,19 @@ export interface IPluginRecord{
     updatedAt: string;
 };
 
-export interface GetPluginsResponse{
+export interface GetPluginsResponse {
     status: string;
     data: IPluginRecord[];
     page?: { current: number; total: number };
     results?: { skipped: number; total: number; paginated: number };
 };
 
-export interface GetPluginResponse{
+export interface GetPluginResponse {
     status: string;
     data: IPluginRecord;
 };
 
-export interface ValidateWorkflowResponse{
+export interface ValidateWorkflowResponse {
     status: string;
     data: {
         valid: boolean;
@@ -32,7 +32,7 @@ export interface ValidateWorkflowResponse{
     }
 };
 
-export interface ExecutePluginResponse{
+export interface ExecutePluginResponse {
     status: string;
     data: {
         analysisId: string
@@ -50,6 +50,36 @@ const pluginApi = {
         search?: string
     }): Promise<GetPluginResponse> => {
         const response = await api.get<GetPluginResponse>('/plugins', { params });
+        return response.data;
+    },
+
+    /**
+     * Get available arguments for a plugin
+     */
+    getAvailableArguments: async (pluginSlug: string): Promise<any> => {
+        const response = await api.get<any>(`/plugins/${pluginSlug}/arguments`);
+        return response.data.data;
+    },
+
+    /**
+     * Get plugin file data (MessagePack)
+     */
+    getFile: async (trajectoryId: string, analysisId: string, exposureId: string, timestep: number, filename: string): Promise<ArrayBuffer> => {
+        const response = await api.get(
+            `/plugins/file/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/${filename}`,
+            { responseType: 'arraybuffer' }
+        );
+        return response.data;
+    },
+
+    /**
+     * Get exposure data (MessagePack)
+     */
+    getExposureData: async (pluginId: string, trajectoryId: string, analysisId: string, exposureId: string, timestep: number): Promise<ArrayBuffer> => {
+        const response = await api.get(
+            `/plugins/${pluginId}/trajectory/${trajectoryId}/analysis/${analysisId}/exposure/${exposureId}/timestep/${timestep}/file.msgpack`,
+            { responseType: 'arraybuffer' }
+        );
         return response.data;
     },
 
@@ -122,7 +152,7 @@ const pluginApi = {
             { config, timestep });
         return response.data.data.analysisId;
     },
-    
+
     /**
      * Save or update a workflow
      */
@@ -130,7 +160,7 @@ const pluginApi = {
         workflow: IWorkflow,
         existingId?: string
     ): Promise<IPluginRecord> => {
-        if(existingId){
+        if (existingId) {
             return pluginApi.updatePlugin(existingId, { workflow });
         }
         return pluginApi.createPlugin({ workflow });
@@ -146,14 +176,14 @@ const pluginApi = {
     ): Promise<{ objectPath: string; fileName: string; size: number }> => {
         const formData = new FormData();
         formData.append('binary', file);
-        
+
         const response = await api.post<{
             status: string;
             data: { objectPath: string; fileName: string; size: number };
         }>(`/plugins/${pluginId}/binary`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             onUploadProgress: (progressEvent) => {
-                if(onProgress && progressEvent.total){
+                if (onProgress && progressEvent.total) {
                     onProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
                 }
             }
@@ -175,6 +205,55 @@ const pluginApi = {
     getNodeSchemas: async (): Promise<Record<string, any>> => {
         const response = await api.get<{ status: string; data: Record<string, any> }>('/plugins/schemas');
         return response.data.data;
+    },
+
+    /**
+     * Get plugin listing data
+     */
+    getListing: async (
+        pluginId: string,
+        listingKey: string,
+        trajectoryId: string,
+        params?: { page?: number; limit?: number }
+    ): Promise<any> => {
+        const response = await api.get<{ status: string; data: any }>(
+            `/plugins/listing/${pluginId}/${listingKey}/${trajectoryId}`,
+            { params }
+        );
+        return response.data.data;
+    },
+
+    /**
+     * Get per-frame listing data
+     */
+    getPerFrameListing: async (
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string,
+        timestep: string | number,
+        params?: { page?: number; limit?: number }
+    ): Promise<any> => {
+        const response = await api.get<{ status: string; data: any }>(
+            `/plugins/per-frame-listing/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`,
+            { params }
+        );
+        return response.data.data;
+    },
+
+    /**
+     * Execute a modifier on a trajectory
+     */
+    executeModifier: async (
+        pluginId: string,
+        modifierId: string,
+        trajectoryId: string,
+        payload: { config: Record<string, any>; timestep?: number }
+    ): Promise<string> => {
+        const response = await api.post<{ status: string; data: { analysisId: string } }>(
+            `/plugins/${pluginId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
+            payload
+        );
+        return response.data.data.analysisId;
     }
 };
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { api } from '@/api';
+import analysisConfigApi from '@/services/api/analysis-config';
 
 type ConfigItem = {
   _id: string;
@@ -25,24 +25,23 @@ export const useTeamAnalysisConfigs = (teamId?: string, opts?: { limit?: number 
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if(!teamId){ setItems([]); setError(null); setLoading(false); return; }
+    if (!teamId) { setItems([]); setError(null); setLoading(false); return; }
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     setLoading(true);
     setError(null);
     (async () => {
-      try{
-        const res = await api.get<{ status: string; data: ResponseShape }>(`/analysis-config/team/${teamId}`,
-          { params: { page: 1, limit }, signal: controller.signal });
-        if(controller.signal.aborted) return;
-        setItems(res.data?.data?.configs ?? []);
-      }catch(err: any){
-        if(controller.signal.aborted){ setLoading(false); return; }
+      try {
+        const res = await analysisConfigApi.getByTeamId(teamId, { page: 1, limit });
+        if (controller.signal.aborted) return;
+        setItems((res?.configs ?? []) as ConfigItem[]);
+      } catch (err: any) {
+        if (controller.signal.aborted) { setLoading(false); return; }
         const message = err?.response?.data?.message || err?.message || 'Failed to load analysis configs';
         setError(message);
-      }finally{
-        if(!controller.signal.aborted) setLoading(false);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
       }
     })();
     return () => controller.abort();

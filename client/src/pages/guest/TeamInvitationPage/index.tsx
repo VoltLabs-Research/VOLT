@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { IoCheckmarkCircle, IoCloseCircle } from 'react-icons/io5';
 import { Skeleton } from '@mui/material';
-import { api } from '@/api';
+import teamApi from '@/services/api/team';
 import type { TeamInvitation } from '@/types/team-invitation';
 import './TeamInvitationPage.css';
 
@@ -57,8 +57,8 @@ const TeamInvitationPage: React.FC = () => {
     useEffect(() => {
         const fetchInvitation = async () => {
             try {
-                const response = await api.get(`/team-invitations/details/${token}`);
-                setInvitation(response.data.data.invitation);
+                const details = await teamApi.invitations.getDetails(token!);
+                setInvitation(details as unknown as TeamInvitation);
             } catch (err: any) {
                 setError(err?.message || 'An error occurred');
             } finally {
@@ -76,7 +76,7 @@ const TeamInvitationPage: React.FC = () => {
 
         setActionLoading(true);
         try {
-            await api.post(`/team-invitations/accept/${token}`);
+            await teamApi.invitations.accept(token);
 
             setError(null);
             // Redirect to dashboard after success
@@ -95,7 +95,7 @@ const TeamInvitationPage: React.FC = () => {
 
         setActionLoading(true);
         try {
-            await api.post(`/team-invitations/reject/${token}`);
+            await teamApi.invitations.reject(token);
 
             setError(null);
             // Redirect to dashboard after success

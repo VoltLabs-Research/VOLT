@@ -21,7 +21,7 @@
  */
 
 import { create } from 'zustand';
-import { api } from '@/api';
+import sshApi from '@/services/api/ssh';
 
 export interface SSHConnection {
     _id: string;
@@ -69,8 +69,8 @@ const useSSHConnections = create<SSHConnectionState>((set, get) => ({
     async fetchConnections() {
         set({ loading: true, error: null });
         try {
-            const res = await api.get<{ status: 'success', data: { connections: SSHConnection[] } }>('/ssh-connections');
-            set({ connections: res.data.data.connections, loading: false });
+            const connections = await sshApi.connections.getAll();
+            set({ connections, loading: false });
         } catch (e: any) {
             const errorMessage = e?.response?.data?.data?.error || e?.message || 'Error fetching SSH connections';
             set({ loading: false, error: errorMessage });
@@ -80,8 +80,7 @@ const useSSHConnections = create<SSHConnectionState>((set, get) => ({
     async createConnection(data: CreateSSHConnectionData) {
         set({ loading: true, error: null });
         try {
-            const res = await api.post<{ status: 'success', data: { connection: SSHConnection } }>('/ssh-connections', data);
-            const newConnection = res.data.data.connection;
+            const newConnection = await sshApi.connections.create(data);
             set((state) => ({
                 connections: [...state.connections, newConnection],
                 loading: false
@@ -97,8 +96,8 @@ const useSSHConnections = create<SSHConnectionState>((set, get) => ({
     async updateConnection(id: string, data: UpdateSSHConnectionData) {
         set({ loading: true, error: null });
         try {
-            const res = await api.patch<{ status: 'success', data: { connection: SSHConnection } }>(`/ssh-connections/${id}`, data);
-            const updatedConnection = res.data.data.connection;
+            const res = await sshApi.connections.update?.(id, data) as any;
+            const updatedConnection = res;
             set((state) => ({
                 connections: state.connections.map(conn =>
                     conn._id === id ? updatedConnection : conn
@@ -116,7 +115,7 @@ const useSSHConnections = create<SSHConnectionState>((set, get) => ({
     async deleteConnection(id: string) {
         set({ loading: true, error: null });
         try {
-            await api.delete(`/ssh-connections/${id}`);
+            await sshApi.connections.delete(id);
             set((state) => ({
                 connections: state.connections.filter(conn => conn._id !== id),
                 loading: false
@@ -130,8 +129,7 @@ const useSSHConnections = create<SSHConnectionState>((set, get) => ({
 
     async testConnection(id: string) {
         try {
-            const res = await api.post<{ status: 'success', data: { valid: boolean; error?: string } }>(`/ssh-connections/${id}/test`);
-            return res.data.data;
+            return await sshApi.connections.test(id);
         } catch (e: any) {
             const errorMessage = e?.response?.data?.data?.error || e?.message || 'Error testing SSH connection';
             return { valid: false, error: errorMessage };

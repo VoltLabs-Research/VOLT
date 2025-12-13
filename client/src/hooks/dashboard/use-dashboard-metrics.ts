@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api } from '@/api';
-import type { ApiResponse } from '@/types/api';
+import trajectoryApi from '@/services/api/trajectory';
 
 export type MetricKey = 'trajectories' | 'analysis' | string;
 
@@ -76,11 +75,8 @@ const fetchOnce = (teamId?: string) => {
     const key = keyOf(teamId);
     if (inFlight.has(key)) return inFlight.get(key)!;
 
-    const p = api
-        .get<ApiResponse<TrajectoryMetrics>>('/trajectories/metrics', {
-            params: teamId ? { teamId } : undefined
-        })
-        .then((res) => res.data.data)
+    const p = trajectoryApi.getMetrics(teamId)
+        .then((data) => data as TrajectoryMetrics)
         .finally(() => inFlight.delete(key));
 
     inFlight.set(key, p);

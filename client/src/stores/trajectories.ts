@@ -21,15 +21,14 @@
  */
 
 import { create } from 'zustand';
-import { api } from '@/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import { extractErrorMessage } from '@/utilities/error-extractor';
 import type { Trajectory } from '@/types/models';
-import type { ApiResponse } from '@/types/api';
 import type { TrajectoryState, TrajectoryStore } from '@/types/stores/trajectories';
 import PreviewCacheService from '@/services/preview-cache-service';
 import { clearTrajectoryPreviewCache } from '@/hooks/trajectory/use-trajectory-preview';
 import Logger from '@/services/logger';
+import trajectoryApi from '@/services/api/trajectory';
 
 const initialState: TrajectoryState = {
     trajectories: [],
@@ -52,7 +51,6 @@ const initialState: TrajectoryState = {
     analysisCache: {},
     differencesCache: {},
     atomsCache: {},
-    // Raster-related state (kept minimal here; raster logic lives in raster store)
     rasterData: {},
     rasterObjectUrlCache: {} as any,
     rasterCache: {} as any,
@@ -60,26 +58,25 @@ const initialState: TrajectoryState = {
 };
 
 export function dataURLToBlob(dataURL: string): Blob {
-  // data:[<mediatype>][;base64],<data>
-  const [header, data] = dataURL.split(',');
-  const isBase64 = /;base64/i.test(header);
-  const mimeMatch = header.match(/data:([^;]+)/i);
-  const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+    const [header, data] = dataURL.split(',');
+    const isBase64 = /;base64/i.test(header);
+    const mimeMatch = header.match(/data:([^;]+)/i);
+    const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
 
-  if (isBase64) {
-    const byteString = atob(data);
-    const len = byteString.length;
-    const u8 = new Uint8Array(len);
-    for (let i = 0; i < len; i++) u8[i] = byteString.charCodeAt(i);
-    return new Blob([u8], { type: mime });
-  } else {
-    return new Blob([decodeURIComponent(data)], { type: mime });
-  }
+    if (isBase64) {
+        const byteString = atob(data);
+        const len = byteString.length;
+        const u8 = new Uint8Array(len);
+        for (let i = 0; i < len; i++) u8[i] = byteString.charCodeAt(i);
+        return new Blob([u8], { type: mime });
+    } else {
+        return new Blob([decodeURIComponent(data)], { type: mime });
+    }
 }
 
 export function dataURLToObjectURL(dataURL: string): string {
-  const blob = dataURLToBlob(dataURL);
-  return URL.createObjectURL(blob);
+    const blob = dataURLToBlob(dataURL);
+    return URL.createObjectURL(blob);
 }
 
 const previewCache = new PreviewCacheService();
@@ -114,22 +111,19 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
 
     return {
         ...initialState,
-        
+
         getTrajectories: (teamId?: string, opts?: { force?: boolean }) => {
             const key = keyForTeam(teamId);
             const force = !!opts?.force;
             const cached = get().cache[key];
-            if(cached && !force){
+            if (cached && !force) {
                 set({ trajectories: cached, isLoading: false, error: null });
                 return Promise.resolve();
             }
 
-            const url = teamId ? `/trajectories?teamId=${teamId}&populate=analysis,createdBy` : '/trajectories?populate=analysis,createdBy';
-            
-            return asyncAction(() => api.get<ApiResponse<Trajectory[]>>(url), {
+            return asyncAction(() => trajectoryApi.getAll({ teamId, populate: 'analysis,createdBy' }), {
                 loadingKey: 'isLoadingTrajectories',
-                onSuccess: (res) => {
-                    const list = res.data.data;
+                onSuccess: (list) => {
                     const nextCache = { ...get().cache, [key]: list };
                     return {
                         trajectories: list,
@@ -153,11 +147,12 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 set({ structureAnalysis: cached, isLoading: false, error: null });
                 return Promise.resolve();
             }
-            const url = `/structure-analysis/team/${teamId}`;
-            return asyncAction(() => api.get<ApiResponse<any>>(url), {
+            return asyncAction(async () => {
+                const structureAnalysisApi = await import('@/services/structure-analysis');
+                return structureAnalysisApi.getStructureAnalysisByTeam(teamId);
+            }, {
                 loadingKey: 'isLoading',
-                onSuccess: (res) => {
-                    const data = res.data.data;
+                onSuccess: (data) => {
                     const next = { ...get().analysisCache, [teamId]: data };
                     return {
                         structureAnalysis: data,
@@ -172,10 +167,10 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         },
 
         getTrajectoryById: (id: string) =>
-            asyncAction(() => api.get<ApiResponse<Trajectory>>(`/trajectories/${id}?populate=team,analysis`), {
+            asyncAction(() => trajectoryApi.getOne(id, 'team,analysis'), {
                 loadingKey: 'isLoading',
-                onSuccess: (res) => ({
-                    trajectory: res.data.data,
+                onSuccess: (trajectory) => ({
+                    trajectory,
                     error: null
                 }),
                 onError: (error) => {
@@ -190,13 +185,12 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const currentFileCount = get().uploadingFileCount;
             set({ uploadingFileCount: currentFileCount + 1, error: null });
             try {
-                const response = await api.post<ApiResponse<Trajectory>>('/trajectories', formData);
-                const newTrajectory = response.data.data;
+                const newTrajectory = await trajectoryApi.create(formData);
                 const key = keyForTeam(teamId);
                 const currentList = get().cache[key] || get().trajectories;
                 const updated = [newTrajectory, ...currentList];
                 const updatedCache = { ...get().cache, [key]: updated };
-                
+
                 set({
                     trajectories: updated,
                     cache: updatedCache,
@@ -221,7 +215,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             };
             set(updateTrajectoryInList(id, data));
             try {
-                await api.patch<ApiResponse<Trajectory>>(`/trajectories/${id}`, data);
+                await trajectoryApi.update(id, data);
                 const nextCache: Record<string, Trajectory[]> = {};
                 Object.entries(get().cache).forEach(([k, arr]) => {
                     nextCache[k] = arr.map(t => t._id === id ? { ...t, ...data } as Trajectory : t);
@@ -248,7 +242,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const updated = currentList.filter(t => t._id !== id);
             set({ cache: { ...get().cache, [key]: updated } });
             try {
-                await api.delete(`/trajectories/${id}`);
+                await trajectoryApi.delete(id);
             } catch (error: any) {
                 set(originalState);
                 set({ error: extractErrorMessage(error, 'Failed to delete trajectory') });
@@ -279,44 +273,31 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             await Promise.allSettled(deletePromises);
         },
 
-        async getRasterizedFrames(_id: string, _query?: any){
+        async getRasterizedFrames(_id: string, _query?: any) {
             return null; // Not implemented here
         },
 
         // Fetch atoms positions for a given trajectory/timestep with simple cache.
-        async getFrameAtoms(trajectoryId, timestep, opts){
+        async getFrameAtoms(trajectoryId, timestep, opts) {
             const force = !!opts?.force;
             const page = opts?.page ?? 1;
             const pageSize = opts?.pageSize ?? 100000;
             const cacheKey = `${trajectoryId}:${timestep}:${page}:${pageSize}`;
             const cached = get().atomsCache?.[cacheKey];
-            if(cached && !force){
+            if (cached && !force) {
                 return cached;
             }
 
-            try{
-                const res = await api.get(`/trajectories/${trajectoryId}/atoms/${timestep}`, {
-                    responseType: 'json',
-                    params: { page, pageSize }
-                });
-                const data = res.data?.data || res.data; // controller might send { data } or raw
-                if(!data || !Array.isArray(data.positions)){
+            try {
+                const payload = await trajectoryApi.getAtoms(trajectoryId, timestep, { page, pageSize });
+                if (!payload) {
                     return null;
                 }
-                const payload = {
-                    timestep: Number(data.timestep ?? timestep),
-                    natoms: typeof data.natoms === 'number' ? data.natoms : undefined,
-                    total: typeof data.total === 'number' ? data.total : undefined,
-                    page: typeof data.page === 'number' ? data.page : page,
-                    pageSize: typeof data.pageSize === 'number' ? data.pageSize : pageSize,
-                    positions: data.positions as number[][],
-                    types: Array.isArray(data.types) ? data.types as number[] : undefined
-                };
                 set((state) => ({
                     atomsCache: { ...(state.atomsCache || {}), [cacheKey]: payload }
                 }));
                 return payload;
-            }catch(e: any){
+            } catch (e: any) {
                 const errorMessage = extractErrorMessage(e, 'Error loading frame atoms');
                 console.error('Failed to load frame atoms:', errorMessage);
                 return null;
@@ -333,16 +314,16 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             }
 
             return asyncAction(
-                () => api.get<ApiResponse<any>>(`/trajectories/metrics/${id}`),
+                () => trajectoryApi.getMetrics(id),
                 {
-                loadingKey: 'isMetricsLoading',
-                onSuccess: (res) => ({
-                    trajectoryMetrics: res.data.data,
-                    error: null
-                }),
-                onError: (error) => ({
-                    error: extractErrorMessage(error, 'Failed to load trajectory metrics')
-                })
+                    loadingKey: 'isMetricsLoading',
+                    onSuccess: (trajectoryMetrics) => ({
+                        trajectoryMetrics,
+                        error: null
+                    }),
+                    onError: (error) => ({
+                        error: extractErrorMessage(error, 'Failed to load trajectory metrics')
+                    })
                 }
             );
         },

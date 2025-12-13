@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing'
 import useTeamStore from '@/stores/team/team'
-import { api } from '@/api'
+import analysisConfigApi from '@/services/api/analysis-config'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
 import useDashboardSearchStore from '@/stores/ui/dashboard-search'
 
@@ -17,35 +17,32 @@ const AnalysisConfigsListing = () => {
   const searchQuery = useDashboardSearchStore((s) => s.query);
 
   useEffect(() => {
-    if(!team?._id) return
+    if (!team?._id) return
     const controller = new AbortController()
     setIsLoading(true)
-    ;(async () => {
-      try{
-        const res = await api.get<{ status: string; data: { configs: any[]; total: number; page: number; limit: number } }>(
-          `/analysis-config/team/${team._id}`,
-          { params: { page: 1, limit, q: searchQuery }, signal: controller.signal }
-        )
-        setData(res.data?.data?.configs ?? [])
-        setTotal(res.data?.data?.total ?? 0)
-        setPage(1)
-      }catch(e){/* noop */}
-      finally{ setIsLoading(false) }
-    })()
+      ; (async () => {
+        try {
+          const res = await analysisConfigApi.getByTeamId(team._id, { page: 1, limit, q: searchQuery }) as any;
+          setData(res?.configs ?? [])
+          setTotal(res?.total ?? 0)
+          setPage(1)
+        } catch (e) {/* noop */ }
+        finally { setIsLoading(false) }
+      })()
     return () => controller.abort()
   }, [team?._id, limit, searchQuery])
 
   const handleMenuAction = useCallback(async (action: string, item: any) => {
-    switch(action){
+    switch (action) {
       case 'view':
         break
       case 'delete':
         // Confirm, then optimistic delete with rollback
-        if(!window.confirm('Delete this analysis config? This cannot be undone.')) return
+        if (!window.confirm('Delete this analysis config? This cannot be undone.')) return
         setData((prev) => prev.filter((x) => x._id !== item._id))
-        try{
-          await api.delete(`/analysis-config/${item._id}`)
-        }catch(e){
+        try {
+          await analysisConfigApi.delete(item._id)
+        } catch (e) {
           setData((prev) => {
             const exists = prev.find((x) => x._id === item._id)
             return exists ? prev : [item, ...prev]
@@ -120,21 +117,18 @@ const AnalysisConfigsListing = () => {
       hasMore={data.length < total}
       isFetchingMore={isLoading && data.length > 0}
       onLoadMore={useCallback(async () => {
-        if(!team?._id) return
-        if(data.length >= total) return
+        if (!team?._id) return
+        if (data.length >= total) return
         const next = page + 1
         setIsLoading(true)
-        try{
-          const res = await api.get<{ status: string; data: { configs: any[]; total: number; page: number; limit: number } }>(
-            `/analysis-config/team/${team._id}`,
-            { params: { page: next, limit, q: searchQuery } }
-          )
-          const nextRows = res.data?.data?.configs ?? []
+        try {
+          const res = await analysisConfigApi.getByTeamId(team._id, { page: next, limit, q: searchQuery }) as any;
+          const nextRows = res?.configs ?? []
           setData((prev) => [...prev, ...nextRows])
-          setTotal(res.data?.data?.total ?? total)
+          setTotal(res?.total ?? total)
           setPage(next)
-        }catch(_e){/* noop */}
-        finally{ setIsLoading(false) }
+        } catch (_e) {/* noop */ }
+        finally { setIsLoading(false) }
       }, [team?._id, data.length, total, page, limit, searchQuery])}
     />
   )

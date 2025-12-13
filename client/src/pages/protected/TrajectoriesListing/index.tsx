@@ -5,7 +5,7 @@ import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@
 import useTrajectoryStore from '@/stores/trajectories'
 import useTeamStore from '@/stores/team/team'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
-import { api } from '@/api'
+import trajectoryApi from '@/services/api/trajectory'
 import useDashboardSearchStore from '@/stores/ui/dashboard-search'
 
 const TrajectoriesListing = () => {
@@ -24,23 +24,22 @@ const TrajectoriesListing = () => {
     useEffect(() => {
         if (!team?._id) return;
         // Keep store fetch for cache/other UI only when not searching
-        if(!searchQuery.trim()){
+        if (!searchQuery.trim()) {
             getTrajectories(team._id);
         }
         let canceled = false;
         (async () => {
-            try{
-                const res = await api.get(`/trajectories`, {
-                    params: { teamId: team._id, page: 1, limit, sort: '-createdAt', populate: 'analysis,createdBy', q: searchQuery }
+            try {
+                const res = await trajectoryApi.getAllPaginated({
+                    teamId: team._id, page: 1, limit, sort: '-createdAt', populate: 'analysis,createdBy', q: searchQuery
                 });
-                if(canceled) return;
-                const payload: any = res.data;
-                const rows = payload?.data || payload?.data?.data || [];
-                const totalResults = payload?.results?.total ?? rows.length;
+                if (canceled) return;
+                const rows = res?.data || [];
+                const totalResults = res?.total ?? rows.length;
                 setData(rows);
                 setTotal(totalResults);
                 setPage(1);
-            }catch(_e){ /* noop */ }
+            } catch (_e) { /* noop */ }
         })();
         return () => { canceled = true; };
     }, [team?._id, limit, searchQuery])
@@ -129,19 +128,18 @@ const TrajectoriesListing = () => {
             hasMore={data.length < total}
             isFetchingMore={isLoading && data.length > 0}
             onLoadMore={useCallback(async () => {
-                if(!team?._id) return;
-                if(data.length >= total) return;
+                if (!team?._id) return;
+                if (data.length >= total) return;
                 const next = page + 1;
-                try{
-                    const res = await api.get(`/trajectories`, {
-                        params: { teamId: team._id, page: next, limit, sort: '-createdAt', populate: 'analysis,createdBy', q: searchQuery }
+                try {
+                    const res = await trajectoryApi.getAllPaginated({
+                        teamId: team._id, page: next, limit, sort: '-createdAt', populate: 'analysis,createdBy', q: searchQuery
                     });
-                    const payload: any = res.data;
-                    const rows = payload?.data || payload?.data?.data || [];
+                    const rows = res?.data || [];
                     setData((prev) => [...prev, ...rows]);
-                    setTotal(payload?.results?.total ?? total);
+                    setTotal(res?.total ?? total);
                     setPage(next);
-                }catch(_e){ /* noop */ }
+                } catch (_e) { /* noop */ }
             }, [team?._id, data.length, total, page, limit, searchQuery])}
         />
     )

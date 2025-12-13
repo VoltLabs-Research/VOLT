@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IoFolder, IoDocument, IoArrowBack } from 'react-icons/io5';
-import { api } from '@/api';
 import useToast from '@/hooks/ui/use-toast';
+import containerApi from '@/services/api/container';
 import './ContainerFileExplorer.css';
 
 interface FileItem {
@@ -31,8 +31,8 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
     const fetchFiles = async (path: string) => {
         setLoading(true);
         try {
-            const res = await api.get(`/containers/${containerId}/files?path=${path}`);
-            setFiles(res.data.data.files);
+            const data = await containerApi.fileExplorer.list(containerId, path);
+            setFiles(data.files);
         } catch (error) {
             showError('Failed to fetch files');
         } finally {
@@ -57,8 +57,8 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         const filePath = currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`;
         setLoading(true);
         try {
-            const res = await api.get(`/containers/${containerId}/read?path=${filePath}`);
-            setFileContent(res.data.data.content);
+            const data = await containerApi.fileExplorer.read(containerId, filePath);
+            setFileContent(data.content);
             setViewingFile(fileName);
         } catch (error) {
             showError('Failed to read file');

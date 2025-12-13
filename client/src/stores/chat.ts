@@ -23,7 +23,7 @@
 import { create } from 'zustand';
 import type { Chat, Message, TypingUser } from '@/types/chat';
 import type { User } from '@/types/models';
-import { chatApi } from '@/services/chat-api';
+import { chatApi } from '@/services/api/chat';
 import useAuthStore from '@/stores/authentication';
 import { socketService } from '@/services/socketio';
 

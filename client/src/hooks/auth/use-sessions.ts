@@ -21,7 +21,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { api } from '@/api';
+import sessionApi from '@/services/api/session';
 
 export interface Session {
     _id: string;
@@ -50,8 +50,8 @@ export const useSessions = () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await api.get('/sessions');
-            setSessions(response.data.data);
+            const data = await sessionApi.getAll();
+            setSessions(data);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to fetch sessions');
         } finally {
@@ -61,7 +61,7 @@ export const useSessions = () => {
 
     const revokeSession = async (sessionId: string) => {
         try {
-            await api.delete(`/sessions/${sessionId}`);
+            await sessionApi.delete(sessionId);
             setSessions(prev => prev.filter(session => session._id !== sessionId));
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to revoke session');
@@ -70,8 +70,7 @@ export const useSessions = () => {
 
     const revokeAllOtherSessions = async () => {
         try {
-            await api.delete('/sessions/all/others');
-            // Keep only the current session (assuming it's the first one)
+            await sessionApi.deleteOthers();
             setSessions(prev => prev.slice(0, 1));
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to revoke other sessions');

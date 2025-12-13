@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IoClose, IoAdd, IoTrash } from 'react-icons/io5';
-import { api } from '@/api';
+import containerApi from '@/services/api/container';
 import useToast from '@/hooks/ui/use-toast';
 import './EditContainerModal.css';
 
@@ -50,7 +50,12 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
         e.preventDefault();
         setLoading(true);
         try {
-            await api.patch(`/containers/${container._id}`, { env, ports, memory, cpus });
+            await containerApi.update(container._id, {
+                environment: Object.fromEntries(env.filter(e => e.key).map(e => [e.key, e.value])),
+                ports: Object.fromEntries(ports.map(p => [p.private.toString(), p.public])),
+                memory,
+                cpus
+            });
             showSuccess('Container updated successfully');
             onSuccess();
             onClose();

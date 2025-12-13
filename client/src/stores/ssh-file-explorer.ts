@@ -21,7 +21,7 @@
  */
 
 import { create } from 'zustand';
-import { api } from '@/api';
+import sshApi from '@/services/api/ssh';
 
 type EntryType = 'file' | 'dir';
 
@@ -94,10 +94,8 @@ const useSSHFileExplorer = create<SSHFileExplorerState>((set, get) => ({
     historyIndex: -1,
 
     async _fetchFileList(connectionId: string, path: string) {
-        const res = await api.get<{ status: 'success', data: SSHFileListResponse }>('/ssh-file-explorer/list', {
-            params: { connectionId, path }
-        });
-        return res.data.data;
+        const data = await sshApi.fileExplorer.list({ connectionId, path });
+        return { cwd: data.currentPath, entries: data.files.map(f => ({ type: f.type === 'directory' ? 'dir' : 'file', name: f.name, relPath: f.path, size: f.size })) };
     },
 
     setConnection(connectionId: string) {
@@ -193,14 +191,12 @@ const useSSHFileExplorer = create<SSHFileExplorerState>((set, get) => ({
 
         set({ importing: true, error: null });
         try {
-            const res = await api.post('/ssh-file-explorer/import', {
+            const data = await sshApi.fileExplorer.import({
                 connectionId,
-                remotePath: selected,
-                teamId,
-                name
+                remotePath: selected
             });
             set({ importing: false });
-            return res.data.data;
+            return data;
         } catch (e: any) {
             const errorMessage = e?.response?.data?.data?.error || e?.message || 'Error importing trajectory';
             set({ importing: false, error: errorMessage });

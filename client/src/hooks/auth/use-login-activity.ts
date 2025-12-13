@@ -21,7 +21,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { api } from '@/api';
+import sessionApi from '@/services/api/session';
 
 export interface LoginActivity {
     _id: string;
@@ -49,9 +49,8 @@ export const useLoginActivity = (limit?: number) => {
         try {
             setLoading(true);
             setError(null);
-            const params = limit ? `?limit=${limit}` : '';
-            const response = await api.get(`/sessions/activity${params}`);
-            setActivities(response.data.data);
+            const data = await sessionApi.getLoginActivity(limit ? { limit } : undefined);
+            setActivities(data as unknown as LoginActivity[]);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to fetch login activity');
         } finally {

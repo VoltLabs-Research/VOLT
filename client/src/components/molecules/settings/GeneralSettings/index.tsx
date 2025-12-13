@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import FormInput from '@/components/atoms/form/FormInput';
 import RecentActivity from '@/components/molecules/auth/RecentActivity';
 import { TbCheck, TbTrash, TbX, TbActivity, TbCamera } from 'react-icons/tb';
-import { api } from '@/api';
+import authApi from '@/services/api/auth';
 import Section from '@/components/atoms/settings/Section';
 import SectionHeader from '@/components/atoms/settings/SectionHeader';
 import StatusBadge from '@/components/atoms/common/StatusBadge';
@@ -74,11 +74,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
 
         try {
             setIsUploadingAvatar(true);
-            await api.patch('/auth/me', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            });
+            await authApi.updateMe(formData); // Refactored to use authApi.updateMe
             // Refresh page to show new avatar (or update context if available)
             window.location.reload();
         } catch (error) {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TbUser, TbShield, TbCreditCard, TbFileText, TbActivity, TbLock, TbKey, TbX, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbTrash, TbPlus, TbWebhook, TbCheck } from 'react-icons/tb';
 import FormInput from '@/components/atoms/form/FormInput';
 import useAuthStore from '@/stores/authentication';
-import { api } from '@/api';
+import authApi from '@/services/api/auth';
 import LoginActivityModal from '@/components/molecules/auth/LoginActivityModal';
 import ApiTokenModal from '@/components/molecules/api-token/ApiTokenModal';
 import ApiTokenList from '@/components/molecules/api-token/ApiTokenList';
@@ -22,26 +22,26 @@ import type { Webhook, CreateWebhookData, UpdateWebhookData } from '@/types/mode
 import './AccountSettings.css';
 
 const AccountSettings: React.FC = () => {
-    const { 
-        user, 
-        passwordInfo, 
-        isChangingPassword, 
+    const {
+        user,
+        passwordInfo,
+        isChangingPassword,
         isLoadingPasswordInfo,
-        changePassword, 
-        getPasswordInfo 
+        changePassword,
+        getPasswordInfo
     } = useAuthStore();
-    const { 
-        tokens, 
-        loading: tokensLoading, 
+    const {
+        tokens,
+        loading: tokensLoading,
         error: tokensError,
         createToken,
         updateToken,
         deleteToken,
         regenerateToken
     } = useApiTokens();
-    const { 
-        webhooks, 
-        loading: webhooksLoading, 
+    const {
+        webhooks,
+        loading: webhooksLoading,
         error: webhooksError,
         createWebhook,
         updateWebhook,
@@ -103,20 +103,16 @@ const AccountSettings: React.FC = () => {
         try {
             setIsUpdating(true);
             setUpdateError(null);
-            
-            const response = await api.patch('/auth/me', {
-                [field]: value
-            });
-            
+
+            await authApi.updateMe({ [field]: value } as any);
+
             // Update local state with server response
-            if (response.data?.data) {
-                setUserData(prev => ({ ...prev, [field]: value }));
-                console.log(`Successfully updated ${field} on server:`, value);
-            }
+            setUserData(prev => ({ ...prev, [field]: value }));
+            console.log(`Successfully updated ${field} on server:`, value);
         } catch (error: any) {
             console.error('Error updating user data:', error);
             setUpdateError(`Failed to update ${field}. Please try again.`);
-            
+
             // Revert local state on error
             if (user) {
                 setUserData({
@@ -134,12 +130,12 @@ const AccountSettings: React.FC = () => {
     const handleUserDataChange = (field: string, value: string) => {
         setUserData(prev => ({ ...prev, [field]: value }));
         setUpdateError(null);
-        
+
         // Debounce the server update
         const timeoutId = setTimeout(() => {
             updateUserOnServer(field, value);
         }, 1000);
-        
+
         // Clear previous timeout
         return () => clearTimeout(timeoutId);
     };
@@ -365,7 +361,7 @@ const AccountSettings: React.FC = () => {
                                 <h3 className='section-title'>Theme & Appearance</h3>
                                 <p className='section-description'>Customize your interface appearance and preferences</p>
                             </div>
-                            
+
                             <div className='theme-options'>
                                 <div className='theme-option'>
                                     <div className='theme-preview dark'>
@@ -377,7 +373,7 @@ const AccountSettings: React.FC = () => {
                                         <p>{currentTheme === 'dark' ? 'Currently active' : 'Switch to dark theme'}</p>
                                     </div>
                                     <div className='theme-actions'>
-                                        <button 
+                                        <button
                                             className='action-button'
                                             onClick={() => handleThemeToggle('dark')}
                                         >
@@ -385,7 +381,7 @@ const AccountSettings: React.FC = () => {
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <div className='theme-option'>
                                     <div className='theme-preview light'>
                                         <div className='preview-header'></div>
@@ -396,7 +392,7 @@ const AccountSettings: React.FC = () => {
                                         <p>Switch to light theme</p>
                                     </div>
                                     <div className='theme-actions'>
-                                        <button 
+                                        <button
                                             className='action-button'
                                             onClick={() => handleThemeToggle('light')}
                                         >
@@ -416,7 +412,7 @@ const AccountSettings: React.FC = () => {
                                 <h3 className='section-title'>Notification Preferences</h3>
                                 <p className='section-description'>Manage how and when you receive notifications</p>
                             </div>
-                            
+
                             <div className='notification-settings'>
                                 <div className='notification-item'>
                                     <div className='notification-header'>
@@ -433,7 +429,7 @@ const AccountSettings: React.FC = () => {
                                         </span>
                                     </div>
                                 </div>
-                                
+
                                 <div className='notification-item'>
                                     <div className='notification-header'>
                                         <TbActivity size={24} />
@@ -449,7 +445,7 @@ const AccountSettings: React.FC = () => {
                                         </span>
                                     </div>
                                 </div>
-                                
+
                                 <div className='notification-item'>
                                     <div className='notification-header'>
                                         <TbBell size={24} />
@@ -486,7 +482,7 @@ const AccountSettings: React.FC = () => {
                                 <h3 className='section-title'>Data & Privacy</h3>
                                 <p className='section-description'>Manage your data and privacy settings</p>
                             </div>
-                            
+
                             <div className='data-options'>
                                 <div className='data-item'>
                                     <div className='data-header'>
@@ -503,7 +499,7 @@ const AccountSettings: React.FC = () => {
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <div className='data-item'>
                                     <div className='data-header'>
                                         <TbX size={24} />
@@ -531,7 +527,7 @@ const AccountSettings: React.FC = () => {
                                 <h3 className='section-title'>Advanced Settings</h3>
                                 <p className='section-description'>Developer and advanced configuration options</p>
                             </div>
-                            
+
                             <div className='advanced-settings'>
                                 <div className='advanced-item'>
                                     <div className='advanced-header'>
@@ -548,7 +544,7 @@ const AccountSettings: React.FC = () => {
                                         </span>
                                     </div>
                                 </div>
-                                
+
                                 <div className='advanced-item'>
                                     <div className='advanced-header'>
                                         <TbActivity size={24} />
@@ -576,7 +572,7 @@ const AccountSettings: React.FC = () => {
                                 <h3 className='section-title'>Third-party Integrations</h3>
                                 <p className='section-description'>Connect your account with external services and platforms</p>
                             </div>
-                            
+
                             <div className='integrations-grid'>
                                 <div className='integration-item'>
                                     <div className='integration-header'>
@@ -594,7 +590,7 @@ const AccountSettings: React.FC = () => {
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <div className='integration-item'>
                                     <div className='integration-header'>
                                         <div className='integration-icon'>
@@ -611,7 +607,7 @@ const AccountSettings: React.FC = () => {
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <div className='integration-item'>
                                     <div className='integration-header'>
                                         <div className='integration-icon'>
@@ -628,7 +624,7 @@ const AccountSettings: React.FC = () => {
                                         </button>
                                     </div>
                                 </div>
-                                
+
                                 <div className='integration-item'>
                                     <div className='integration-header'>
                                         <div className='integration-icon'>
@@ -646,7 +642,7 @@ const AccountSettings: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className='integration-help'>
                                 <h4>Need help with integrations?</h4>
                                 <p>Check our documentation or contact support for assistance with setting up third-party connections.</p>
@@ -668,7 +664,7 @@ const AccountSettings: React.FC = () => {
                                 <h3 className='section-title'>Billing & Payment</h3>
                                 <p className='section-description'>Manage your billing details and payment methods</p>
                             </div>
-                            
+
                             <div className='coming-soon-minimal'>
                                 <TbCreditCard size={48} />
                                 <p>Coming soon...</p>
@@ -684,7 +680,7 @@ const AccountSettings: React.FC = () => {
                                 <h3 className='section-title'>Invoices & Receipts</h3>
                                 <p className='section-description'>View and download your billing documents</p>
                             </div>
-                            
+
                             <div className='coming-soon-minimal'>
                                 <TbFileText size={48} />
                                 <p>Coming soon...</p>
@@ -700,7 +696,7 @@ const AccountSettings: React.FC = () => {
                                 <h3 className='section-title'>Privacy & Data</h3>
                                 <p className='section-description'>Control your privacy settings and data preferences</p>
                             </div>
-                            
+
                             <div className='privacy-settings'>
                                 <div className='privacy-item'>
                                     <div className='privacy-header'>
@@ -717,7 +713,7 @@ const AccountSettings: React.FC = () => {
                                         </span>
                                     </div>
                                 </div>
-                                
+
                                 <div className='privacy-item'>
                                     <div className='privacy-header'>
                                         <TbActivity size={24} />
@@ -747,7 +743,7 @@ const AccountSettings: React.FC = () => {
                                     <p className='section-description'>Manage your API tokens for programmatic access</p>
                                 </div>
                                 <div className='section-header-actions'>
-                                    <button 
+                                    <button
                                         className='action-button primary'
                                         onClick={handleCreateToken}
                                     >
@@ -756,13 +752,13 @@ const AccountSettings: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             {tokensError && (
                                 <div className='error-message'>
                                     {tokensError}
                                 </div>
                             )}
-                            
+
                             <ApiTokenList
                                 tokens={tokens}
                                 loading={tokensLoading}
@@ -783,7 +779,7 @@ const AccountSettings: React.FC = () => {
                                     <p className='section-description'>Configure webhooks to receive real-time notifications</p>
                                 </div>
                                 <div className='section-header-actions'>
-                                    <button 
+                                    <button
                                         className='action-button primary'
                                         onClick={handleCreateWebhook}
                                     >
@@ -792,13 +788,13 @@ const AccountSettings: React.FC = () => {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             {webhooksError && (
                                 <div className='error-message'>
                                     {webhooksError}
                                 </div>
                             )}
-                            
+
                             <WebhookList
                                 webhooks={webhooks}
                                 loading={webhooksLoading}
@@ -844,12 +840,12 @@ const AccountSettings: React.FC = () => {
                     </main>
                 </div>
             </div>
-            
-            <LoginActivityModal 
+
+            <LoginActivityModal
                 isOpen={showLoginActivityModal}
                 onClose={() => setShowLoginActivityModal(false)}
             />
-            
+
             <ApiTokenModal
                 isOpen={showApiTokenModal}
                 onClose={() => setShowApiTokenModal(false)}
@@ -857,7 +853,7 @@ const AccountSettings: React.FC = () => {
                 token={selectedToken}
                 mode={apiTokenModalMode}
             />
-            
+
             <WebhookModal
                 isOpen={showWebhookModal}
                 onClose={() => setShowWebhookModal(false)}

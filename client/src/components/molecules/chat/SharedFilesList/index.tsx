@@ -3,7 +3,7 @@ import { IoImageOutline, IoDocumentOutline, IoDownloadOutline } from 'react-icon
 import type { Message } from '@/types/chat';
 import { formatSize } from '@/utilities/scene-utils';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
-import { chatApi } from '@/services/chat-api';
+import { chatApi } from '@/services/api/chat';
 
 type SharedFilesListProps = {
     messages: Message[];

@@ -5,7 +5,7 @@ import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Button from '@/components/atoms/common/Button';
 import usePluginStore from '@/stores/plugins/plugin';
 import useTrajectoryStore from '@/stores/trajectories';
-import { api } from '@/api';
+import pluginApi from '@/services/api/plugin';
 import './ModifierConfiguration.css';
 
 interface ModifierConfigurationProps {
@@ -137,11 +137,13 @@ const ModifierConfiguration = ({
         setIsLoading(true);
         onAnalysisStart?.();
         try {
-            const response = await api.post(
-                `/plugins/${modifierId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
+            const response = await pluginApi.executeModifier(
+                modifierId,
+                modifierId,
+                trajectoryId,
                 { config, timestep: currentTimestep }
             );
-            const analysisId = response.data?.data?.analysisId;
+            const analysisId = (response as any)?.analysisId;
             onAnalysisSuccess?.(analysisId);
         } catch (error) {
             console.error('Analysis failed:', error);
@@ -162,11 +164,13 @@ const ModifierConfiguration = ({
                 setIsLoading(true);
                 onAnalysisStart?.();
                 try {
-                    const response = await api.post(
-                        `/plugins/${modifierId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
+                    const response = await pluginApi.executeModifier(
+                        modifierId,
+                        modifierId,
+                        trajectoryId,
                         { config: configRef.current, timestep: currentTimestep }
                     );
-                    const analysisId = response.data?.data?.analysisId;
+                    const analysisId = (response as any)?.analysisId;
                     onAnalysisSuccess?.(analysisId);
                 } catch (error) {
                     console.error('Analysis failed:', error);

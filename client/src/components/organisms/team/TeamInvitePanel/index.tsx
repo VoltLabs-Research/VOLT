@@ -12,7 +12,7 @@ import { Skeleton } from '@mui/material';
 import usePositioning from '@/hooks/ui/positioning/use-positioning';
 import useToast from '@/hooks/ui/use-toast';
 import Select from '@/components/atoms/form/Select';
-import { api } from '@/api';
+import teamApi from '@/services/api/team';
 import './TeamInvitePanel.css';
 
 interface TeamMember {
@@ -60,11 +60,10 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
             setLoadingMembers(true);
             try {
-                const response = await api.get(`/teams/${teamId}/members`);
-                const membersData = response.data.data.members;
+                const membersData = await teamApi.members.getAll(teamId);
 
                 // Map members to the expected format
-                const formattedMembers: TeamMember[] = membersData?.map((member: any) => ({
+                const formattedMembers: TeamMember[] = (membersData as any[])?.map((member: any) => ({
                     email: member.email || member._id,
                     name: member.username || member.email,
                     role: 'Can edit',
@@ -141,10 +140,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         setLoading(true);
         setButtonState('loading');
         try {
-            await api.post(`/team-invitations/${teamId}/invite`, {
-                email: email.trim(),
-                role: 'Can view'
-            });
+            await teamApi.invitations.send(teamId, email.trim(), 'Can view' as any);
 
             setMembers([...members, { email: email.trim(), role: 'Can view' }]);
             setEmail('');
@@ -167,9 +163,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
     const handleRemoveMember = async (emailToRemove: string) => {
         try {
-            await api.post(`/teams/${teamId}/members/remove`, {
-                email: emailToRemove
-            });
+            await teamApi.members.remove(teamId, { email: emailToRemove });
 
             setMembers(members.filter(m => m.email !== emailToRemove));
             showSuccess(`Member ${emailToRemove} removed successfully`);

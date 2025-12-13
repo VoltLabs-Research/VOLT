@@ -6,7 +6,7 @@ import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Button from '@/components/atoms/common/Button';
 import FormField from '@/components/molecules/form/FormField';
 import './ColorCoding.css';
-import api from '@/api';
+import rasterApi from '@/services/api/raster';
 import { useState, useEffect } from 'react';
 import useModelStore from '@/stores/editor/model';
 
@@ -36,8 +36,8 @@ const ColorCoding = () => {
     });
 
     const applyColorCoding = async () => {
-        await api.post(`/color-coding/${trajectory?._id}/${analysisConfig?._id}?timestep=${currentTimestep}`, {
-            property, startValue, endValue, gradient, exposureId
+        await rasterApi.colorCoding.apply(trajectory!._id, analysisConfig!._id, currentTimestep!, {
+            property, startValue, endValue, gradient, exposureId: exposureId || undefined
         });
         setActiveScene({
             analysisId: analysisConfig?._id,
@@ -52,11 +52,11 @@ const ColorCoding = () => {
 
     const propertyOptions = [
         ...properties.base.map((prop) => ({ value: prop, title: prop, exposureId: null })),
-        ...Object.entries(properties.modifiers).flatMap(([expId, props]) => 
+        ...Object.entries(properties.modifiers).flatMap(([expId, props]) =>
             props.map((prop) => ({ value: prop, title: prop, exposureId: expId }))
         )
     ];
-    
+
     const handlePropertyChange = (value: string) => {
         setProperty(value);
         const selectedOption = propertyOptions.find((opt) => opt.value === value);
@@ -64,43 +64,41 @@ const ColorCoding = () => {
     };
 
     const fetchStats = async () => {
-        if(!property || !trajectory?._id || !analysisConfig?._id) return;
-        
+        if (!property || !trajectory?._id || !analysisConfig?._id) return;
+
         const selectedOption = propertyOptions.find(opt => opt.value === property);
         const type = selectedOption?.exposureId ? 'modifier' : 'base';
 
-        try{
-            const res = await api.get(`/color-coding/stats/${trajectory._id}/${analysisConfig._id}`, {
-                params: {
-                    timestep: currentTimestep,
-                    property,
-                    type,
-                    exposureId: selectedOption?.exposureId
-                }
+        try {
+            const stats = await rasterApi.colorCoding.getStats(trajectory._id, analysisConfig._id, {
+                timestep: currentTimestep,
+                property,
+                type,
+                exposureId: selectedOption?.exposureId
             });
-            const { min, max } = res.data.data;
-            
-            if(symmetricRange){
+            const { min, max } = stats;
+
+            if (symmetricRange) {
                 const limit = Math.max(Math.abs(min), Math.abs(max));
                 setStartValue(-limit);
                 setEndValue(limit);
-            }else{
+            } else {
                 setStartValue(min);
                 setEndValue(max);
             }
-        }catch(e){
+        } catch (e) {
             console.error(e);
         }
     };
 
     useEffect(() => {
-        if(automaticRange){
+        if (automaticRange) {
             fetchStats();
         }
     }, [automaticRange, currentTimestep, property, exposureId, symmetricRange]);
 
     useEffect(() => {
-        if(symmetricRange && !automaticRange){
+        if (symmetricRange && !automaticRange) {
             const limit = Math.max(Math.abs(startValue), Math.abs(endValue));
             setStartValue(-limit);
             setEndValue(limit);

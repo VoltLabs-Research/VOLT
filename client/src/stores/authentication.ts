@@ -22,12 +22,11 @@
 
 import { create } from 'zustand';
 import { TokenStorage } from '@/utilities/storage';
-import { api } from '@/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import { clearErrorHistory } from '@/api/error-notification';
-import type { ApiResponse, AuthResponsePayload } from '@/types/api';
 import type { User } from '@/types/models';
 import type { AuthState, AuthStore } from '@/types/stores/authentication';
+import authApi from '@/services/api/auth';
 
 const initialState: AuthState = {
     user: null,
@@ -41,8 +40,8 @@ const initialState: AuthState = {
 const useAuthStore = create<AuthStore>()((set, get) => {
     const asyncAction = createAsyncAction(set, get);
 
-    const handleAuthSuccess = (res: { data: ApiResponse<AuthResponsePayload> }) => {
-        const { token, user } = res.data.data;
+    const handleAuthSuccess = (authData: { user: User; token: string }) => {
+        const { token, user } = authData;
         TokenStorage.setToken(token);
 
         return { user };
@@ -51,78 +50,60 @@ const useAuthStore = create<AuthStore>()((set, get) => {
     return {
         ...initialState,
 
-        initializeAuth(){
-            // Verificar primero si hay un token
+        initializeAuth() {
             const token = TokenStorage.getToken();
             if (!token) {
                 return Promise.resolve({ user: null });
             }
-            
-            const req = api.get<ApiResponse<User>>('/auth/me');
 
-            return asyncAction(() => req, {
+            return asyncAction(() => authApi.getMe(), {
                 loadingKey: 'isLoading',
-                onSuccess: (res) => ({ user: res.data.data }),
+                onSuccess: (user) => ({ user }),
                 onError: () => {
-                    // Si hay error, limpiar el token
                     TokenStorage.removeToken();
                     return { user: null };
                 }
             });
         },
 
-        signIn(credentials){
-            const req = api.post<ApiResponse<AuthResponsePayload>>('/auth/sign-in', credentials);
-
-            return asyncAction(() => req, {
+        signIn(credentials) {
+            return asyncAction(() => authApi.signIn(credentials), {
                 loadingKey: 'isLoading',
                 onSuccess: handleAuthSuccess,
             });
         },
 
-        signUp(details){
-            const req = api.post<ApiResponse<AuthResponsePayload>>('/auth/sign-up', details);
-
-            return asyncAction(() => req, {
+        signUp(details) {
+            return asyncAction(() => authApi.signUp(details), {
                 loadingKey: 'isLoading',
                 onSuccess: handleAuthSuccess,
             });
         },
 
-        signOut(){
+        signOut() {
             TokenStorage.removeToken();
             clearErrorHistory(); // Clear error history when user signs out
             set({ user: null, error: null });
-            
+
             // Reload page to reset all stores and redirect to sign-in
             window.location.href = '/auth/sign-in';
         },
 
-        clearError(){
+        clearError() {
             set({ error: null });
         },
 
         async changePassword(passwordData: { currentPassword: string; newPassword: string; confirmPassword: string }) {
-            const req = api.put('/password/change', passwordData);
-            
-            return asyncAction(() => req, {
+            return asyncAction(() => authApi.password.change({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword }), {
                 loadingKey: 'isChangingPassword',
-                onSuccess: () => {
-                    // Password changed successfully, no need to update user state
-                    return {};
-                }
+                onSuccess: () => ({})
             });
         },
 
         async getPasswordInfo() {
-            const req = api.get('/password/info');
-            
-            return asyncAction(() => req, {
+            return asyncAction(() => authApi.password.getInfo(), {
                 loadingKey: 'isLoadingPasswordInfo',
-                onSuccess: (res) => {
-                    // Return password info without updating user state
-                    return { passwordInfo: res.data.data };
-                }
+                onSuccess: (passwordInfo) => ({ passwordInfo })
             });
         }
     };

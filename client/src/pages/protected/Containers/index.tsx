@@ -2,13 +2,13 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, Square, Terminal, Box, Plus } from 'lucide-react';
 import { RiDeleteBin6Line, RiEyeLine, RiTerminalLine } from 'react-icons/ri';
-import { api } from '@/api';
 import useToast from '@/hooks/ui/use-toast';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
 import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
 import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
+import containerApi from '@/services/api/container';
 import './Containers.css';
 
 interface Container {
@@ -35,10 +35,8 @@ const Containers: React.FC = () => {
 
     const fetchContainers = useCallback(async () => {
         try {
-            const response = await api.get('/containers', {
-                params: { q: searchQuery }
-            });
-            setContainers(response.data.data.containers);
+            const containers = await containerApi.getAll({ q: searchQuery });
+            setContainers(containers);
         } catch (error) {
             console.error('Failed to fetch containers:', error);
         } finally {
@@ -54,7 +52,7 @@ const Containers: React.FC = () => {
 
     const handleControl = async (container: Container, action: 'start' | 'stop') => {
         try {
-            await api.post(`/containers/${container._id}/control`, { action });
+            await containerApi.control(container._id, action);
             showSuccess(`Container ${action}ed successfully`);
             fetchContainers();
         } catch (error: any) {
@@ -67,7 +65,7 @@ const Containers: React.FC = () => {
             return;
         }
         try {
-            await api.delete(`/containers/${container._id}`);
+            await containerApi.delete(container._id);
             showSuccess('Container deleted successfully');
             fetchContainers();
         } catch (error: any) {
@@ -196,8 +194,8 @@ const Containers: React.FC = () => {
     return (
         <DashboardContainer pageName='Containers' className='containers-page-wrapper'>
             <div className='containers-listing-header'>
-                <button 
-                    className='new-container-btn' 
+                <button
+                    className='new-container-btn'
                     onClick={() => navigate('/dashboard/containers/new')}
                 >
                     <Plus size={18} />

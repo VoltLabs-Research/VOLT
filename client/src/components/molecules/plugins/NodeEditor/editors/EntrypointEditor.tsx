@@ -4,7 +4,7 @@ import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
 import { useNodeData } from '@/hooks/plugins/use-node-data';
 import type { IEntrypointData } from '@/types/plugin';
-import pluginApi from '@/services/plugin-api';
+import pluginApi from '@/services/api/plugin';
 import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
 import './EntrypointEditor.css';

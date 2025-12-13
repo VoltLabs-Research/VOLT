@@ -5,7 +5,7 @@
 
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import type { RenderableExposure } from '@/stores/plugins';
-import { api } from '@/api';
+import pluginApi from '@/services/api/plugin';
 
 // Component registry - maps component names to lazy-loaded components
 const RASTER_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
@@ -53,14 +53,13 @@ const RasterResultsRenderer: React.FC<RasterResultsRendererProps> = ({
             setError(null);
 
             try {
-                // Build API endpoint
-                const endpoint = `/plugins/${exposure.pluginId}/trajectory/${trajectoryId}/analysis/${analysisId}/exposure/${exposure.exposureId}/timestep/${timestep}/file.msgpack`;
-                console.log('ENDPOINT:', endpoint, '===================================00')
-                const response = await api.get(endpoint, {
-                    responseType: 'arraybuffer'
-                });
-
-                console.log('Res:', response);
+                const response = await pluginApi.getExposureData(
+                    exposure.pluginId,
+                    trajectoryId,
+                    analysisId,
+                    exposure.exposureId,
+                    timestep
+                );
 
                 // Decode MessagePack data
                 const { decode } = await import('@msgpack/msgpack');

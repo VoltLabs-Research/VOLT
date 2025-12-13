@@ -4,7 +4,7 @@ import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 import { NodeType, type IWorkflow } from '@/types/plugin';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import { createNode } from '@/utilities/plugins/node-factory';
-import pluginApi, { type IPluginRecord } from '@/services/plugin-api';
+import pluginApi, { type IPluginRecord } from '@/services/api/plugin';
 
 type ValidationResult = {
     valid: boolean;

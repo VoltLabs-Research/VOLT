@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { IoClose, IoAdd, IoTrash } from 'react-icons/io5';
-import { api } from '@/api';
+import teamApi from '@/services/api/team';
+import containerApi from '@/services/api/container';
 import useToast from '@/hooks/ui/use-toast';
 import './CreateContainerModal.css';
 
@@ -30,9 +31,8 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
 
     React.useEffect(() => {
         if (isOpen) {
-            api.get('/teams').then(res => {
-                const teamsList = res.data.data || [];
-                setTeams(teamsList);
+            teamApi.getAll().then(teamsList => {
+                setTeams(teamsList as { _id: string; name: string }[]);
                 if (teamsList.length > 0) {
                     setTeamId(teamsList[0]._id);
                 }
@@ -73,12 +73,12 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
         setLoading(true);
 
         try {
-            await api.post('/containers', {
+            await containerApi.create({
                 name,
                 image,
-                teamId,
-                env: envVars.filter(e => e.key && e.value),
-                ports: ports
+                team: teamId,
+                environment: Object.fromEntries(envVars.filter(e => e.key && e.value).map(e => [e.key, e.value])),
+                ports: Object.fromEntries(ports.map(p => [p.private.toString(), p.public]))
             });
 
             showSuccess('Container created successfully');

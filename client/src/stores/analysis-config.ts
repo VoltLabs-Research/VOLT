@@ -23,8 +23,7 @@
 import { create } from 'zustand';
 import type { Analysis } from '@/types/models';
 import type { AnalysisConfigStore } from '@/types/stores/analysis-config';
-import type { ApiResponse } from '@/types/api';
-import { api } from '@/api';
+import analysisConfigApi from '@/services/api/analysis-config';
 import { createAsyncAction } from '@/utilities/asyncAction';
 
 const initialState = {
@@ -46,8 +45,8 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
   return {
     ...initialState,
 
-    async getDislocationsByAnalysisId(analysisId: string){
-      const req = api.get<ApiResponse<any>>(`/analysis-config/${analysisId}/dislocations`);
+    async getDislocationsByAnalysisId(analysisId: string) {
+      const req = analysisConfigApi.getDislocations(analysisId);
       set((state) => ({
         dislocationsLoadingById: {
           ...state.dislocationsLoadingById,
@@ -56,14 +55,14 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
       }));
 
       return asyncAction(() => req, {
-        loadingKey: 'dislocationsLoading', 
+        loadingKey: 'dislocationsLoading',
         onSuccess: (res: any, state) => {
           const current = state.analysisDislocationsById || {};
           const currentLoading = state.dislocationsLoadingById || {};
           return {
             analysisDislocationsById: {
               ...current,
-              [analysisId]: res.data?.data ?? []
+              [analysisId]: res ?? []
             },
             dislocationsLoadingById: {
               ...currentLoading,
@@ -88,17 +87,17 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
       });
     },
 
-    updateAnalysisConfig(config?: Analysis | null){
+    updateAnalysisConfig(config?: Analysis | null) {
       set({
         analysisConfig: config ?? null
       });
     },
 
-    resetAnalysisConfig(){
+    resetAnalysisConfig() {
       set({ analysisConfig: null });
     },
 
-    setIsLoading(loading: boolean){
+    setIsLoading(loading: boolean) {
       set({ isLoading: loading });
     },
   }

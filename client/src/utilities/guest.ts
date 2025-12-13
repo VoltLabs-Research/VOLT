@@ -1,5 +1,5 @@
 import { v4 } from 'uuid';
-import { api } from '@/api';
+import authApi from '@/services/api/auth';
 
 // TODO: CHECK FOR DUPLICATED CODE
 export type GuestUser = {
@@ -45,8 +45,8 @@ export const getOrCreateGuestUser = async (): Promise<GuestUser> => {
         };
     }
 
-    const response = await api.get(`/auth/guest-identity?seed=${uid}`);
-    const { firstName } = response.data.data;
+    const user = await authApi.getGuestIdentity(uid);
+    const firstName = (user as any).firstName || 'Guest';
 
     // Cache the name
     localStorage.setItem(`${GUEST_KEY}_name`, firstName);

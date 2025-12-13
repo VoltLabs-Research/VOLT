@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { IoImageOutline, IoDocumentOutline, IoDownloadOutline } from 'react-icons/io5';
 import type { Message } from '@/types/chat';
 import { formatSize } from '@/utilities/scene-utils';
-import { chatApi } from '@/services/chat-api';
+import { chatApi } from '@/services/api/chat';
 
 type FileMessageProps = {
     msg: Message,

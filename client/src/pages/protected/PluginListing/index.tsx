@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
-import { api } from '@/api';
+import pluginApi from '@/services/api/plugin';
+import analysisConfigApi from '@/services/api/analysis-config';
 import type { ApiResponse } from '@/types/api';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import { Skeleton } from '@mui/material';
@@ -149,11 +150,12 @@ const PluginListing = () => {
         }
 
         try {
-            const res = await api.get<ApiResponse<ListingResponse>>(
-                `/plugins/listing/${pluginId}/${listingKey}/${trajectoryId}`,
-                { params: { page: nextPage, limit: pageSize } }
-            );
-            const payload = res.data.data;
+            const payload = await pluginApi.getListing(
+                pluginId,
+                listingKey,
+                trajectoryId,
+                { page: nextPage, limit: pageSize }
+            ) as ListingResponse;
             const listingMeta = { ...payload.meta, pluginId: payload.meta?.pluginId };
             setMeta(listingMeta ?? null);
 
@@ -203,7 +205,7 @@ const PluginListing = () => {
             setRows((prev) => prev.filter((row) => row?.analysis?._id !== analysisId));
 
             try {
-                await api.delete(`/analysis-config/${analysisId}`);
+                await analysisConfigApi.delete(analysisId);
             } catch (e) {
                 console.error('Failed to delete analysis:', e);
                 fetchPage(1);

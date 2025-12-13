@@ -21,38 +21,14 @@
  */
 
 import { useState, useEffect } from 'react';
-import { api } from '@/api';
+import apiTrackerApi, { type ApiTrackerStats, type ApiTrackerRequest } from '@/services/api/api-tracker';
 
-export interface ApiTrackerRequest {
-    _id: string;
-    method: string;
-    url: string;
-    userAgent?: string;
-    ip: string;
-    statusCode: number;
-    responseTime: number;
-    createdAt: string;
-}
+export type { ApiTrackerRequest };
 
 export interface ApiTrackerResponse {
     status: 'success' | 'error';
     results: number;
-    data: {
-        requests: ApiTrackerRequest[];
-        summary: {
-            totalRequests: number;
-            averageResponseTime: number;
-            uniqueIPsCount: number;
-        };
-        statusCodeStats: Array<{
-            _id: number;
-            count: number;
-        }>;
-        methodStats: Array<{
-            _id: string;
-            count: number;
-        }>;
-    };
+    data: ApiTrackerStats;
 }
 
 export interface UseApiTrackerOptions {
@@ -73,18 +49,19 @@ export const useApiTracker = (options: UseApiTrackerOptions = {}) => {
             setLoading(true);
             setError(null);
 
-            const params = new URLSearchParams();
-            
-            if (options.limit) params.append('limit', options.limit.toString());
-            if (options.page) params.append('page', options.page.toString());
-            if (options.sort) params.append('sort', options.sort);
-            if (options.method) params.append('method', options.method);
-            if (options.statusCode) params.append('statusCode', options.statusCode.toString());
+            const stats = await apiTrackerApi.getMyStats({
+                limit: options.limit,
+                page: options.page,
+                sort: options.sort,
+                method: options.method,
+                statusCode: options.statusCode
+            });
 
-            const url = `/api-tracker/my-stats?${params.toString()}`;
-            
-            const response = await api.get<ApiTrackerResponse>(url);
-            setData(response.data);
+            setData({
+                status: 'success',
+                results: stats.requests?.length ?? 0,
+                data: stats
+            });
         } catch (err: any) {
             console.error('❌ API tracker error:', err);
             console.error('❌ Error response:', err.response?.data);
@@ -107,3 +84,4 @@ export const useApiTracker = (options: UseApiTrackerOptions = {}) => {
 };
 
 export default useApiTracker;
+

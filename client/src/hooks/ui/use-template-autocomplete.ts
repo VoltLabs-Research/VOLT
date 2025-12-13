@@ -1,7 +1,7 @@
 import { useMemo, useEffect, useState } from 'react';
 import { getAllAutocompletePaths, type NodeOutputSchema, type NodeSchema } from '@/utilities/plugins/node-schemas';
 import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
-import pluginApi from '@/services/plugin-api';
+import pluginApi from '@/services/api/plugin';
 
 export interface AutocompleteSuggestion extends NodeSchema{
     display: string;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import api from '@/api';
+import rasterApi from '@/services/api/raster';
 
-interface UseFramePropertiesProps{
+interface UseFramePropertiesProps {
     analysisId?: string;
     frame?: number;
     trajectoryId?: string;
@@ -13,16 +13,16 @@ const useFrameProperties = ({ analysisId, frame, trajectoryId }: UseFramePropert
 
     const getProps = async () => {
         setIsLoading(true);
-        try{
-            const res = await api.get(`/color-coding/properties/${trajectoryId}/${analysisId}?timestep=${frame}`);
-            setProperties(res.data.data);
-        }finally{
+        try {
+            const data = await rasterApi.colorCoding.getProperties(trajectoryId!, analysisId!, frame!);
+            setProperties(data);
+        } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        if(!analysisId || !frame || !trajectoryId) return;
+        if (!analysisId || !frame || !trajectoryId) return;
         getProps();
     }, [analysisId, frame, trajectoryId]);
 

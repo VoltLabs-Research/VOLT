@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api } from '@/api';
+import apiTokenApi from '@/services/api/api-token';
 
 export interface ApiToken {
     _id: string;
@@ -47,8 +47,8 @@ export const useApiTokens = () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await api.get('/api-tokens');
-            setTokens(response.data.data);
+            const data = await apiTokenApi.getAll?.() as any || [];
+            setTokens(data);
         } catch (err: any) {
             console.error('Failed to fetch API tokens');
             setError(err.response?.data?.message || 'Failed to fetch API tokens');
@@ -59,8 +59,8 @@ export const useApiTokens = () => {
 
     const fetchStats = async () => {
         try {
-            const response = await api.get('/api-tokens/stats');
-            setStats(response.data.data);
+            const data = await apiTokenApi.getStats?.() as any || null;
+            setStats(data);
         } catch (err: any) {
             console.error('Failed to fetch API token stats:', err);
         }
@@ -68,10 +68,10 @@ export const useApiTokens = () => {
 
     const createToken = async (tokenData: CreateTokenData): Promise<ApiToken> => {
         try {
-            const response = await api.post('/api-tokens', tokenData);
+            const result = await apiTokenApi.create({ name: tokenData.name });
             await fetchTokens();
             await fetchStats();
-            return response.data.data;
+            return result as ApiToken;
         } catch (err: any) {
             console.error('Failed to create API token');
             const errorMessage = err.response?.data?.message || 'Failed to create API token';
@@ -82,10 +82,10 @@ export const useApiTokens = () => {
 
     const updateToken = async (id: string, tokenData: UpdateTokenData): Promise<ApiToken> => {
         try {
-            const response = await api.patch(`/api-tokens/${id}`, tokenData);
+            const result = await apiTokenApi.update?.(id, tokenData) as any;
             await fetchTokens();
             await fetchStats();
-            return response.data.data;
+            return result;
         } catch (err: any) {
             console.error('Failed to update API token');
             const errorMessage = err.response?.data?.message || 'Failed to update API token';
@@ -96,7 +96,7 @@ export const useApiTokens = () => {
 
     const deleteToken = async (id: string): Promise<void> => {
         try {
-            await api.delete(`/api-tokens/${id}`);
+            await apiTokenApi.delete(id);
             await fetchTokens();
             await fetchStats();
         } catch (err: any) {
@@ -109,10 +109,10 @@ export const useApiTokens = () => {
 
     const regenerateToken = async (id: string): Promise<ApiToken> => {
         try {
-            const response = await api.post(`/api-tokens/${id}/regenerate`);
+            const result = await apiTokenApi.regenerate(id);
             await fetchTokens();
             await fetchStats();
-            return response.data.data;
+            return result as ApiToken;
         } catch (err: any) {
             console.error('Failed to regenerate API token');
             const errorMessage = err.response?.data?.message || 'Failed to regenerate API token';

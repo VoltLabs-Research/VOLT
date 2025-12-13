@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import pluginApi, { type IPluginRecord } from '@/services/plugin-api';
+import pluginApi, { type IPluginRecord } from '@/services/api/plugin';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import { NodeType, PluginStatus } from '@/types/plugin';
 

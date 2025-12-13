@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import api from "@/api";
+import authApi from "@/services/api/auth";
 import useAuthStore from "@/stores/authentication";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import FormInput from "@/components/atoms/form/FormInput";
@@ -149,8 +149,8 @@ export default function AuthPage() {
       if (step === "email") {
         if (!validate({ email }, ['email'])) return;
 
-        const { data } = await api.post('/auth/check-email', { email });
-        if (data.data.exists) {
+        const result = await authApi.checkEmail(email);
+        if (result.exists) {
           setStep("password");
         } else {
           setStep("register");

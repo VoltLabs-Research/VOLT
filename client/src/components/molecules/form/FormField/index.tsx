@@ -6,7 +6,7 @@ import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import { getAvailableExpressions, type NodeOutputSchema } from '@/utilities/plugins/expression-utils';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import { NodeType } from '@/types/plugin';
-import pluginApi from '@/services/plugin-api';
+import pluginApi from '@/services/api/plugin';
 import './FormField.css';
 
 interface FormFieldProps {

@@ -11,10 +11,10 @@ import {
     Area,
     AreaChart
 } from 'recharts';
-import { api } from '@/api';
 import { decode } from '@msgpack/msgpack';
 import Loader from '@/components/atoms/common/Loader';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
+import pluginApi from '@/services/api/plugin';
 
 interface ChartViewerProps {
     trajectoryId: string;
@@ -52,9 +52,14 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
             setLoading(true);
             setError(null);
             try {
-                const url = `/plugins/file/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/${filename}`;
-                const response = await api.get(url, { responseType: 'arraybuffer' });
-                const decoded = decode(new Uint8Array(response.data));
+                const response = await pluginApi.getFile(
+                    trajectoryId,
+                    analysisId,
+                    exposureId,
+                    timestep,
+                    filename
+                );
+                const decoded = decode(new Uint8Array(response));
                 if (mounted) {
                     setData(decoded);
                 }

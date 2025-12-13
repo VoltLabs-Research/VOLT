@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEditLine, RiAddLine } from 'react-icons/ri';
 import { TbRocket } from 'react-icons/tb';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
-import pluginApi, { type IPluginRecord } from '@/services/plugin-api';
+import pluginApi, { type IPluginRecord } from '@/services/api/plugin';
 import { PluginStatus } from '@/types/plugin';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';

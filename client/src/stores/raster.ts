@@ -21,10 +21,9 @@
  */
 
 import { create } from 'zustand';
-import { api } from '@/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
-import type { ApiResponse } from '@/types/api';
 import type { PreloadTask, RasterStore, RasterState } from '@/types/stores/raster';
+import rasterApi from '@/services/api/raster';
 
 const initialState: RasterState = {
     trajectory: null,
@@ -47,11 +46,9 @@ const useRasterStore = create<RasterStore>((set, get) => {
         ...initialState,
 
         rasterize(id: string) {
-            const req = api.post<ApiResponse<any>>(`/raster/${id}/glb/`);
-
-            return asyncAction(() => req, {
+            return asyncAction(() => rasterApi.generateGLB(id), {
                 loadingKey: 'isAnalysisLoading',
-                onSuccess: (res) => ({ analyses: res.data.data.analyses })
+                onSuccess: (analyses) => ({ analyses })
             });
         },
 
@@ -59,8 +56,7 @@ const useRasterStore = create<RasterStore>((set, get) => {
             set({ isLoading: true, error: null });
 
             try {
-                const res = await api.get(`/raster/${id}/metadata`);
-                const { analyses, trajectory } = res.data.data;
+                const { analyses, trajectory } = await rasterApi.getMetadata(id);
 
                 console.log(analyses);
                 // Store complete analysis objects, not just partial data
@@ -125,10 +121,9 @@ const useRasterStore = create<RasterStore>((set, get) => {
             }));
 
             try {
-                // Handle virtual preview analysis
                 const actualAnalysisId = analysisId === '__preview__' ? analysisId : analysisId;
-                const res = await api.get(`/raster/${trajectoryId}/frame-data/${timestep}/${actualAnalysisId}/${model}`);
-                const imageData = res.data?.data?.data;
+                const frameData = await rasterApi.getFrameData(trajectoryId, timestep, actualAnalysisId, model);
+                const imageData = frameData?.data;
 
                 set((state) => {
                     const loadingFrames = new Set(state.loadingFrames);

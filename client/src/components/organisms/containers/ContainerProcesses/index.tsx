@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '@/api';
+import containerApi from '@/services/api/container';
 import { RefreshCw, Activity } from 'lucide-react';
 import './ContainerProcesses.css';
 
@@ -16,14 +16,11 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
         setLoading(true);
         setError(null);
         try {
-            const res = await api.get(`/containers/${containerId}/top`);
-            // Docker top returns { Titles: string[], Processes: string[][] }
-            // Titles will be: ["PID", "COMMAND", "COMMAND", "NLWP", "USER", "RSS", "%CPU"]
-            // Note: "comm" and "args" might both be labeled "COMMAND" or similar depending on ps version,
-            // but the order is fixed by our backend call: pid, comm, args, nlwp, user, rss, pcpu
-            const data = res.data.data.processes;
+            const data = await containerApi.getProcesses(containerId) as any;
+            // containerApi.getProcesses returns the processes object directly
+            // with { Titles: string[], Processes: string[][] }
 
-            const mapped = data.Processes.map((p: string[]) => {
+            const mapped = (data?.Processes || []).map((p: string[]) => {
                 // p indices correspond to: 0:PID, 1:COMM, 2:ARGS, 3:NLWP, 4:USER, 5:RSS, 6:PCPU
                 return {
                     PID: p[0],

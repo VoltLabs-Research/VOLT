@@ -17,12 +17,14 @@ import {
     AlertCircle,
     X
 } from 'lucide-react';
-import { api } from '@/api';
 import useToast from '@/hooks/ui/use-toast';
 import Slider from '@/components/atoms/form/Slider';
 import Input from '@/components/atoms/form/Input';
 import Button from '@/components/atoms/common/Button';
 import Select from '@/components/atoms/form/Select';
+import systemApi from '@/services/api/system';
+import teamApi from '@/services/api/team';
+import containerApi from '@/services/api/container';
 import './CreateContainer.css';
 
 interface Template {
@@ -120,17 +122,16 @@ const CreateContainer: React.FC = () => {
     useEffect(() => {
         const fetchSystemStats = async () => {
             try {
-                const res = await api.get('/system/stats');
-                setSystemStats(res.data.data.stats);
+                const stats = await systemApi.getStats();
+                setSystemStats(stats);
             } catch (error) {
                 console.error('Failed to fetch system stats:', error);
             }
         };
-        
+
         const fetchTeams = async () => {
             try {
-                const res = await api.get('/teams');
-                const teamsList = res.data.data || [];
+                const teamsList = await teamApi.getAll();
                 setTeams(teamsList);
                 if (teamsList.length > 0) {
                     setSelectedTeamId(teamsList[0]._id);
@@ -139,7 +140,7 @@ const CreateContainer: React.FC = () => {
                 console.error('Failed to fetch teams:', error);
             }
         };
-        
+
         fetchSystemStats();
         fetchTeams();
     }, []);
@@ -206,7 +207,7 @@ const CreateContainer: React.FC = () => {
                 env: config.env.filter(e => e.key && e.value)
             };
 
-            await api.post('/containers', payload);
+            await containerApi.create(payload);
             showSuccess('Container created successfully');
             navigate('/dashboard/containers');
         } catch (error: any) {
@@ -330,251 +331,251 @@ const CreateContainer: React.FC = () => {
                                     </div>
                                 ))}
                                 <div
-                                className={`template-card custom ${!selectedTemplate && customImage ? 'selected' : ''}`}
-                                onClick={handleCustomImageClick}
+                                    className={`template-card custom ${!selectedTemplate && customImage ? 'selected' : ''}`}
+                                    onClick={handleCustomImageClick}
                                 >
-                                <div className="template-icon">
-                                    <Server size={32} color="#666" />
-                                </div>
-                                <div className="template-info">
-                                    <h3>Custom Image</h3>
-                                    <p>Pull any image from Docker Hub.</p>
-                                </div>
-                                {!selectedTemplate && customImage && (
-                                    <div className="selected-check">
-                                        <Check size={16} />
+                                    <div className="template-icon">
+                                        <Server size={32} color="#666" />
                                     </div>
-                                )}
+                                    <div className="template-info">
+                                        <h3>Custom Image</h3>
+                                        <p>Pull any image from Docker Hub.</p>
+                                    </div>
+                                    {!selectedTemplate && customImage && (
+                                        <div className="selected-check">
+                                            <Check size={16} />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
 
                         </div>
                     )}
 
-                {step === 2 && (
-                    <div className="fade-in">
-                        <h2 className="step-title">Configure Container</h2>
-                        <div className="config-form">
-                            <div className="form-group">
-                                <label>Container Name</label>
-                                <Input
-                                    type="text"
-                                    placeholder="my-container-app"
-                                    value={config.name}
-                                    onChange={(val) => setConfig(prev => ({ ...prev, name: val as string }))}
-                                    className="full-width-input"
-                                />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Team</label>
-                                <Select
-                                    options={teams.map(team => ({
-                                        value: team._id,
-                                        title: team.name
-                                    }))}
-                                    value={selectedTeamId}
-                                    onChange={(val) => setSelectedTeamId(val)}
-                                    placeholder="Select a team"
-                                    className="full-width-input"
-                                />
-                            </div>
-
-                            <div className="resources-section">
-                                <h3>Resources</h3>
-                                <div className="resource-slider-wrapper">
-                                    <div className="slider-header">
-                                        <label><Cpu size={16} /> CPU Cores</label>
-                                        <span className="value-badge">{config.cpus} vCPU</span>
-                                    </div>
-                                    <Slider
-                                        min={0.5}
-                                        max={maxCpus}
-                                        step={0.5}
-                                        value={config.cpus}
-                                        onChange={(val) => setConfig(prev => ({ ...prev, cpus: val }))}
+                    {step === 2 && (
+                        <div className="fade-in">
+                            <h2 className="step-title">Configure Container</h2>
+                            <div className="config-form">
+                                <div className="form-group">
+                                    <label>Container Name</label>
+                                    <Input
+                                        type="text"
+                                        placeholder="my-container-app"
+                                        value={config.name}
+                                        onChange={(val) => setConfig(prev => ({ ...prev, name: val as string }))}
+                                        className="full-width-input"
                                     />
-                                    <div className="slider-limits">
-                                        <span>0.5 vCPU</span>
-                                        <span>{maxCpus} vCPU (Max)</span>
-                                    </div>
                                 </div>
 
-                                <div className="resource-slider-wrapper">
-                                    <div className="slider-header">
-                                        <label><HardDrive size={16} /> Memory</label>
-                                        <span className="value-badge">{config.memory} MB</span>
-                                    </div>
-                                    <Slider
-                                        min={128}
-                                        max={maxMemory}
-                                        step={128}
-                                        value={config.memory}
-                                        onChange={(val) => setConfig(prev => ({ ...prev, memory: val }))}
+                                <div className="form-group">
+                                    <label>Team</label>
+                                    <Select
+                                        options={teams.map(team => ({
+                                            value: team._id,
+                                            title: team.name
+                                        }))}
+                                        value={selectedTeamId}
+                                        onChange={(val) => setSelectedTeamId(val)}
+                                        placeholder="Select a team"
+                                        className="full-width-input"
                                     />
-                                    <div className="slider-limits">
-                                        <span>128 MB</span>
-                                        <span>{maxMemory} MB (Max)</span>
+                                </div>
+
+                                <div className="resources-section">
+                                    <h3>Resources</h3>
+                                    <div className="resource-slider-wrapper">
+                                        <div className="slider-header">
+                                            <label><Cpu size={16} /> CPU Cores</label>
+                                            <span className="value-badge">{config.cpus} vCPU</span>
+                                        </div>
+                                        <Slider
+                                            min={0.5}
+                                            max={maxCpus}
+                                            step={0.5}
+                                            value={config.cpus}
+                                            onChange={(val) => setConfig(prev => ({ ...prev, cpus: val }))}
+                                        />
+                                        <div className="slider-limits">
+                                            <span>0.5 vCPU</span>
+                                            <span>{maxCpus} vCPU (Max)</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="resource-slider-wrapper">
+                                        <div className="slider-header">
+                                            <label><HardDrive size={16} /> Memory</label>
+                                            <span className="value-badge">{config.memory} MB</span>
+                                        </div>
+                                        <Slider
+                                            min={128}
+                                            max={maxMemory}
+                                            step={128}
+                                            value={config.memory}
+                                            onChange={(val) => setConfig(prev => ({ ...prev, memory: val }))}
+                                        />
+                                        <div className="slider-limits">
+                                            <span>128 MB</span>
+                                            <span>{maxMemory} MB (Max)</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="advanced-config">
-                                <div className="config-group">
-                                    <div className="group-header">
-                                        <h3>Port Mapping</h3>
-                                        <button onClick={addPort} className="add-btn"><Plus size={14} /> Add Port</button>
-                                    </div>
-                                    {config.ports.map((port, i) => (
-                                        <div key={i} className="port-row">
-                                            <div className="input-wrapper">
-                                                <label>Private</label>
-                                                <Input
-                                                    type="number"
-                                                    value={port.private}
-                                                    onChange={(val) => updatePort(i, 'private', val as string)}
-                                                    className="port-input"
-                                                />
+                                <div className="advanced-config">
+                                    <div className="config-group">
+                                        <div className="group-header">
+                                            <h3>Port Mapping</h3>
+                                            <button onClick={addPort} className="add-btn"><Plus size={14} /> Add Port</button>
+                                        </div>
+                                        {config.ports.map((port, i) => (
+                                            <div key={i} className="port-row">
+                                                <div className="input-wrapper">
+                                                    <label>Private</label>
+                                                    <Input
+                                                        type="number"
+                                                        value={port.private}
+                                                        onChange={(val) => updatePort(i, 'private', val as string)}
+                                                        className="port-input"
+                                                    />
+                                                </div>
+                                                <div className="input-wrapper">
+                                                    <label>Public</label>
+                                                    <Input
+                                                        type="number"
+                                                        placeholder="Auto"
+                                                        value={port.public || ''}
+                                                        onChange={(val) => updatePort(i, 'public', val as string)}
+                                                        className="port-input"
+                                                    />
+                                                </div>
+                                                <button onClick={() => removePort(i)} className="remove-btn">
+                                                    <Trash2 size={16} />
+                                                </button>
                                             </div>
-                                            <div className="input-wrapper">
-                                                <label>Public</label>
-                                                <Input
-                                                    type="number"
-                                                    placeholder="Auto"
-                                                    value={port.public || ''}
-                                                    onChange={(val) => updatePort(i, 'public', val as string)}
-                                                    className="port-input"
-                                                />
+                                        ))}
+                                        {config.ports.length === 0 && (
+                                            <div className="empty-state-small">
+                                                <AlertCircle size={16} />
+                                                <span>No ports exposed. Add a port to access your container.</span>
                                             </div>
-                                            <button onClick={() => removePort(i)} className="remove-btn">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    {config.ports.length === 0 && (
-                                        <div className="empty-state-small">
-                                            <AlertCircle size={16} />
-                                            <span>No ports exposed. Add a port to access your container.</span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="config-group">
-                                    <div className="group-header">
-                                        <h3>Environment Variables</h3>
-                                        <button onClick={addEnv} className="add-btn"><Plus size={14} /> Add Variable</button>
+                                        )}
                                     </div>
-                                    {config.env.map((env, i) => (
-                                        <div key={i} className="env-row">
-                                            <Input
-                                                type="text"
-                                                placeholder="KEY"
-                                                value={env.key}
-                                                onChange={(val) => updateEnv(i, 'key', val as string)}
-                                                className="env-input"
-                                            />
-                                            <Input
-                                                type="text"
-                                                placeholder="VALUE"
-                                                value={env.value}
-                                                onChange={(val) => updateEnv(i, 'value', val as string)}
-                                                className="env-input"
-                                            />
-                                            <button onClick={() => removeEnv(i)} className="remove-btn">
-                                                <Trash2 size={16} />
-                                            </button>
+
+                                    <div className="config-group">
+                                        <div className="group-header">
+                                            <h3>Environment Variables</h3>
+                                            <button onClick={addEnv} className="add-btn"><Plus size={14} /> Add Variable</button>
                                         </div>
-                                    ))}
-                                    {config.env.length === 0 && (
-                                        <div className="empty-state-small">
-                                            <AlertCircle size={16} />
-                                            <span>No environment variables configured.</span>
-                                        </div>
-                                    )}
+                                        {config.env.map((env, i) => (
+                                            <div key={i} className="env-row">
+                                                <Input
+                                                    type="text"
+                                                    placeholder="KEY"
+                                                    value={env.key}
+                                                    onChange={(val) => updateEnv(i, 'key', val as string)}
+                                                    className="env-input"
+                                                />
+                                                <Input
+                                                    type="text"
+                                                    placeholder="VALUE"
+                                                    value={env.value}
+                                                    onChange={(val) => updateEnv(i, 'value', val as string)}
+                                                    className="env-input"
+                                                />
+                                                <button onClick={() => removeEnv(i)} className="remove-btn">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {config.env.length === 0 && (
+                                            <div className="empty-state-small">
+                                                <AlertCircle size={16} />
+                                                <span>No environment variables configured.</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+                            <div className="step-actions">
+                                <Button onClick={() => setStep(1)} className="secondary-btn">Back</Button>
+                                <Button onClick={() => setStep(3)} className="primary-btn">Next: Review</Button>
+                            </div>
                         </div>
-                        <div className="step-actions">
-                            <Button onClick={() => setStep(1)} className="secondary-btn">Back</Button>
-                            <Button onClick={() => setStep(3)} className="primary-btn">Next: Review</Button>
-                        </div>
-                    </div>
-                )}
+                    )}
 
-                {step === 3 && (
-                    <div className="fade-in review-step">
-                        <h2 className="step-title">Review & Deploy</h2>
-                        <div className="review-card">
-                            <div className="review-item">
-                                <span className="label">Name</span>
-                                <span className="value">{config.name}</span>
+                    {step === 3 && (
+                        <div className="fade-in review-step">
+                            <h2 className="step-title">Review & Deploy</h2>
+                            <div className="review-card">
+                                <div className="review-item">
+                                    <span className="label">Name</span>
+                                    <span className="value">{config.name}</span>
+                                </div>
+                                <div className="review-item">
+                                    <span className="label">Team</span>
+                                    <span className="value">{teams.find(t => t._id === selectedTeamId)?.name || 'None'}</span>
+                                </div>
+                                <div className="review-item">
+                                    <span className="label">Image</span>
+                                    <span className="value monospace">{selectedTemplate ? TEMPLATES.find(t => t.id === selectedTemplate)?.image : customImage}</span>
+                                </div>
+                                <div className="review-item">
+                                    <span className="label">CPU</span>
+                                    <span className="value">{config.cpus} vCPU</span>
+                                </div>
+                                <div className="review-item">
+                                    <span className="label">Memory</span>
+                                    <span className="value">{config.memory} MB</span>
+                                </div>
+                                <div className="review-item">
+                                    <span className="label">Ports</span>
+                                    <span className="value">{config.ports.length > 0 ? config.ports.map(p => `${p.private}:${p.public || 'Auto'}`).join(', ') : 'None'}</span>
+                                </div>
                             </div>
-                            <div className="review-item">
-                                <span className="label">Team</span>
-                                <span className="value">{teams.find(t => t._id === selectedTeamId)?.name || 'None'}</span>
-                            </div>
-                            <div className="review-item">
-                                <span className="label">Image</span>
-                                <span className="value monospace">{selectedTemplate ? TEMPLATES.find(t => t.id === selectedTemplate)?.image : customImage}</span>
-                            </div>
-                            <div className="review-item">
-                                <span className="label">CPU</span>
-                                <span className="value">{config.cpus} vCPU</span>
-                            </div>
-                            <div className="review-item">
-                                <span className="label">Memory</span>
-                                <span className="value">{config.memory} MB</span>
-                            </div>
-                            <div className="review-item">
-                                <span className="label">Ports</span>
-                                <span className="value">{config.ports.length > 0 ? config.ports.map(p => `${p.private}:${p.public || 'Auto'}`).join(', ') : 'None'}</span>
+                            <div className="step-actions">
+                                <Button onClick={() => setStep(2)} className="secondary-btn">Back</Button>
+                                <Button
+                                    onClick={handleCreate}
+                                    isLoading={loading}
+                                    className="primary-btn deploy-btn"
+                                >
+                                    {!loading && <Box size={18} style={{ marginRight: '8px' }} />}
+                                    {!loading && "Deploy Container"}
+                                </Button>
                             </div>
                         </div>
-                        <div className="step-actions">
-                            <Button onClick={() => setStep(2)} className="secondary-btn">Back</Button>
-                            <Button
-                                onClick={handleCreate}
-                                isLoading={loading}
-                                className="primary-btn deploy-btn"
-                            >
-                                {!loading && <Box size={18} style={{ marginRight: '8px' }} />}
-                                {!loading && "Deploy Container"}
-                            </Button>
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
-
-            {
-        showCustomImageModal && (
-            <div className="modal-overlay">
-                <div className="modal-content custom-image-modal">
-                    <div className="modal-header">
-                        <h2>Custom Docker Image</h2>
-                        <button onClick={() => setShowCustomImageModal(false)} className="close-btn">
-                            <X size={24} />
-                        </button>
-                    </div>
-                    <div className="modal-body">
-                        <p>Enter the name of the Docker image you want to pull from Docker Hub.</p>
-                        <Input
-                            type="text"
-                            placeholder="e.g., nginx:latest, mysql:8.0"
-                            value={tempCustomImage}
-                            onChange={(val) => setTempCustomImage(val as string)}
-                            className="full-width-input"
-                            autoFocus
-                        />
-                    </div>
-                    <div className="modal-actions">
-                        <Button onClick={() => setShowCustomImageModal(false)} className="secondary-btn">Cancel</Button>
-                        <Button onClick={confirmCustomImage} className="primary-btn">Confirm</Button>
-                    </div>
+                    )}
                 </div>
             </div>
-        )
-    }
+
+            {
+                showCustomImageModal && (
+                    <div className="modal-overlay">
+                        <div className="modal-content custom-image-modal">
+                            <div className="modal-header">
+                                <h2>Custom Docker Image</h2>
+                                <button onClick={() => setShowCustomImageModal(false)} className="close-btn">
+                                    <X size={24} />
+                                </button>
+                            </div>
+                            <div className="modal-body">
+                                <p>Enter the name of the Docker image you want to pull from Docker Hub.</p>
+                                <Input
+                                    type="text"
+                                    placeholder="e.g., nginx:latest, mysql:8.0"
+                                    value={tempCustomImage}
+                                    onChange={(val) => setTempCustomImage(val as string)}
+                                    className="full-width-input"
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="modal-actions">
+                                <Button onClick={() => setShowCustomImageModal(false)} className="secondary-btn">Cancel</Button>
+                                <Button onClick={confirmCustomImage} className="primary-btn">Confirm</Button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
         </div >
     );
 };

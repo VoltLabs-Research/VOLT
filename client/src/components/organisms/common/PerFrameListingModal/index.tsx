@@ -3,7 +3,7 @@ import DocumentListingTable from '@/components/molecules/common/DocumentListingT
 import type { ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import Draggable from '@/components/atoms/common/Draggable';
-import { api } from '@/api';
+import pluginApi from '@/services/api/plugin';
 import './PerFrameListingModal.css';
 
 export type PerFrameListingModalProps = {
@@ -51,8 +51,13 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
 
             const url = `/plugins/per-frame-listing/${trajectoryId}/${analysisId}/${exposureId}/${rawTimestep}`;
 
-            const res = await api.get(url, { params: { page: pageNum, limit: 50_000 } });
-            const data = res.data.data;
+            const data = await pluginApi.getPerFrameListing(
+                trajectoryId,
+                analysisId,
+                exposureId,
+                rawTimestep,
+                { page: pageNum, limit: 50_000 }
+            ) as any;
 
             setRows(prev => pageNum === 1 ? data.rows : [...prev, ...data.rows]);
             setHasMore(data.hasMore);

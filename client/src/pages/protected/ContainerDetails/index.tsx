@@ -27,12 +27,12 @@ import {
     Tooltip,
     ResponsiveContainer
 } from 'recharts';
-import { api } from '@/api';
 import useToast from '@/hooks/ui/use-toast';
 import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
 import ContainerFileExplorer from '@/components/organisms/containers/ContainerFileExplorer';
 import ContainerProcesses from '@/components/organisms/containers/ContainerProcesses';
 import EditContainerModal from '@/components/organisms/containers/EditContainerModal';
+import containerApi from '@/services/api/container';
 import './ContainerDetails.css';
 
 const ContainerDetails: React.FC = () => {
@@ -60,8 +60,8 @@ const ContainerDetails: React.FC = () => {
 
     const fetchContainer = async () => {
         try {
-            const res = await api.get('/containers');
-            const found = res.data.data.containers.find((c: any) => c._id === id);
+            const containers = await containerApi.getAll();
+            const found = containers.find((c: any) => c._id === id);
             if (found) {
                 setContainer(found);
             } else {
@@ -78,10 +78,8 @@ const ContainerDetails: React.FC = () => {
 
     const fetchStats = async (containerId: string) => {
         try {
-            const res = await api.get(`/containers/${containerId}/stats`);
-            const newStats = res.data.data.stats;
+            const newStats = await containerApi.getStats(containerId);
 
-            // Calculate CPU %
             let cpuPercent = 0;
             const cpuDelta = newStats.cpu_stats.cpu_usage.total_usage - newStats.precpu_stats.cpu_usage.total_usage;
             const systemDelta = newStats.cpu_stats.system_cpu_usage - newStats.precpu_stats.system_cpu_usage;
@@ -91,7 +89,6 @@ const ContainerDetails: React.FC = () => {
                 cpuPercent = (cpuDelta / systemDelta) * onlineCpus * 100;
             }
 
-            // Calculate Memory MB
             const memoryUsage = newStats.memory_stats.usage / 1024 / 1024;
 
             setStatsHistory(prev => {
@@ -100,7 +97,7 @@ const ContainerDetails: React.FC = () => {
                     cpu: isNaN(cpuPercent) ? 0 : cpuPercent,
                     memory: memoryUsage
                 }];
-                return updated.slice(-30); // Keep last 30 points
+                return updated.slice(-30);
             });
 
         } catch (error) {
@@ -117,16 +114,16 @@ const ContainerDetails: React.FC = () => {
                     setActionLoading(false);
                     return;
                 }
-                await api.delete(`/containers/${container._id}`);
+                await containerApi.delete(container._id);
                 showSuccess('Container deleted');
                 navigate('/dashboard/containers');
                 return;
             }
 
             if (action === 'restart') {
-                await api.post(`/containers/${container._id}/restart`);
+                await containerApi.restart(container._id);
             } else {
-                await api.post(`/containers/${container._id}/control`, { action });
+                await containerApi.control(container._id, action);
             }
 
             showSuccess(`Container ${action}ed successfully`);

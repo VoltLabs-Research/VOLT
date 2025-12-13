@@ -1,9 +1,8 @@
 import { create } from 'zustand';
-import { api } from '@/api';
 import { createAsyncAction } from '@/utilities/asyncAction';
 import type { Team } from '@/types/models';
-import type { ApiResponse } from '@/types/api';
 import type { TeamState, TeamStore, UpdateTeamData } from '@/types/stores/team/team';
+import teamApi from '@/services/api/team';
 
 const initialState: TeamState = {
     teams: [],
@@ -18,14 +17,12 @@ const useTeamStore = create<TeamStore>((set, get) => {
     return {
         ...initialState,
 
-        getUserTeams: () => asyncAction(() => api.get<ApiResponse<Team[]>>('/teams'),
+        getUserTeams: () => asyncAction(() => teamApi.getAll(),
             {
                 loadingKey: 'isLoading',
-                onSuccess: (res) => {
-                    const teams = res.data.data;
+                onSuccess: (teams) => {
                     const currentSelected = get().selectedTeam;
 
-                    // Try to load from localStorage first
                     const storedTeamId = typeof window !== 'undefined' ? localStorage.getItem('selectedTeamId') : null;
                     let selectedTeam = null;
 
@@ -36,7 +33,6 @@ const useTeamStore = create<TeamStore>((set, get) => {
                         }
                     }
 
-                    // Fallback to current selection or first team
                     if (!selectedTeam) {
                         selectedTeam = currentSelected && teams.find((t) => t._id === currentSelected._id)
                             ? teams.find((t) => t._id === currentSelected._id)!
@@ -51,7 +47,6 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 },
                 onError: (error) => {
                     const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to load teams';
-                    // Enhance context
                     if (error?.context) {
                         error.context.operation = 'getUserTeams';
                     }
@@ -64,30 +59,27 @@ const useTeamStore = create<TeamStore>((set, get) => {
 
         setSelectedTeam: (teamId: string) => {
             const team = get().teams.find((t) => t._id === teamId);
-            if(team){
+            if (team) {
                 set({ selectedTeam: team });
-                // Save to localStorage
                 if (typeof window !== 'undefined') {
                     localStorage.setItem('selectedTeamId', teamId);
                 }
             }
         },
 
-        createTeam: (data) => asyncAction(() => api.post<ApiResponse<Team>>('/teams', data),
+        createTeam: (data) => asyncAction(() => teamApi.create(data),
             {
                 loadingKey: 'isLoading',
-                onSuccess: (res) => {
-                    const newTeam = res.data.data;
+                onSuccess: (newTeam) => {
                     const currentTeams = get().teams;
                     return {
-                       teams: [newTeam, ...currentTeams],
+                        teams: [newTeam, ...currentTeams],
                         selectedTeam: newTeam,
                         error: null,
                     };
                 },
                 onError: (error) => {
                     const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to create team';
-                    // Enhance context
                     if (error?.context) {
                         error.context.operation = 'createTeam';
                     }
@@ -101,11 +93,10 @@ const useTeamStore = create<TeamStore>((set, get) => {
             return newTeam;
         }),
 
-        updateTeam: (teamId: string, data: UpdateTeamData) => asyncAction(() => api.patch<ApiResponse<Team>>(`/teams/${teamId}`, data),
+        updateTeam: (teamId: string, data: UpdateTeamData) => asyncAction(() => teamApi.update(teamId, data),
             {
                 loadingKey: 'isLoading',
-                onSuccess: (res) => {
-                    const updatedTeam = res.data.data;
+                onSuccess: (updatedTeam) => {
                     const currentTeams = get().teams;
                     const currentSelected = get().selectedTeam;
                     const teams = currentTeams.map((team) => team._id === teamId ? updatedTeam : team);
@@ -114,7 +105,6 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 },
                 onError: (error) => {
                     const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to update team';
-                    // Enhance context
                     if (error?.context) {
                         error.context.teamId = teamId;
                         error.context.operation = 'updateTeam';
@@ -126,7 +116,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
             }
         ),
 
-        deleteTeam: (teamId: string) => asyncAction(() => api.delete(`/teams/${teamId}`),
+        deleteTeam: (teamId: string) => asyncAction(() => teamApi.delete(teamId),
             {
                 loadingKey: 'isLoading',
                 onSuccess: () => {
@@ -134,15 +124,14 @@ const useTeamStore = create<TeamStore>((set, get) => {
                     const currentSelected = get().selectedTeam;
 
                     const teams = currentTeams.filter((team) => team._id !== teamId);
-                    const selectedTeam = currentSelected?._id === teamId 
+                    const selectedTeam = currentSelected?._id === teamId
                         ? teams[0] || null
                         : currentSelected;
-                    
+
                     return { teams, selectedTeam, error: null };
                 },
                 onError: (error) => {
                     const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to delete team';
-                    // Enhance context
                     if (error?.context) {
                         error.context.teamId = teamId;
                         error.context.operation = 'deleteTeam';
@@ -151,9 +140,9 @@ const useTeamStore = create<TeamStore>((set, get) => {
                         error: errorMessage
                     };
                 }
-                }),
+            }),
 
-        leaveTeam: (teamId: string) => asyncAction(() => api.post(`/teams/${teamId}/leave`),
+        leaveTeam: (teamId: string) => asyncAction(() => teamApi.leave(teamId),
             {
                 loadingKey: 'isLoading',
                 onSuccess: () => {
@@ -161,15 +150,14 @@ const useTeamStore = create<TeamStore>((set, get) => {
                     const currentSelected = get().selectedTeam;
 
                     const teams = currentTeams.filter((team) => team._id !== teamId);
-                    const selectedTeam = currentSelected?._id === teamId 
+                    const selectedTeam = currentSelected?._id === teamId
                         ? teams[0] || null
                         : currentSelected;
-                    
+
                     return { teams, selectedTeam, error: null };
                 },
                 onError: (error) => {
                     const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to leave team';
-                    // Enhance context
                     if (error?.context) {
                         error.context.teamId = teamId;
                         error.context.operation = 'leaveTeam';
@@ -178,7 +166,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
                         error: errorMessage
                     };
                 }
-                }),
+            }),
 
         clearError: () => set({ error: null }),
 
