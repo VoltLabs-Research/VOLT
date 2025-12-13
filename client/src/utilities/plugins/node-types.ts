@@ -1,6 +1,6 @@
 import { NodeType, ArgumentType, ModifierContext, Exporter, ExportType } from '@/types/plugin';
 
-export interface NodeTypeConfig{
+export interface NodeTypeConfig {
     type: NodeType;
     label: string;
     icon: string;
@@ -148,13 +148,13 @@ export const ARGUMENT_TYPE_OPTIONS = [{
 
 export const EXPORTER_OPTIONS = [{
     value: Exporter.ATOMISTIC,
-    label: 'Atomistic Expoter'
+    label: 'Atomistic Exporter'
 }, {
-    label: Exporter.MESH,
-    value: 'Mesh Exporter'
+    value: Exporter.MESH,
+    label: 'Mesh Exporter'
 }, {
-    label: Exporter.DISLOCATION,
-    value: 'Dislocation Exporter'
+    value: Exporter.DISLOCATION,
+    label: 'Dislocation Exporter'
 }];
 
 export const EXPORT_TYPE_OPTIONS = [{
