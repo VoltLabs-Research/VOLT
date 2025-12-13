@@ -84,13 +84,16 @@ export default class AtomisticExporter{
         'FCC': [102, 255, 102],
         'HCP': [255, 102, 102],
         'BCC': [102, 102, 255],
+        'ICO': [255, 165, 0],
         'SC': [160, 20, 254],
         'CUBIC_DIAMOND': [19, 160, 254],
         'CUBIC_DIAMOND_FIRST_NEIGH': [0, 254, 245],
         'CUBIC_DIAMOND_SECOND_NEIGH': [126, 254, 181],
+        'HEX_DIAMOND': [254, 137, 0],
         'HEX_DIAMOND_FIRST_NEIGH': [254, 220, 0],
         'HEX_DIAMOND_SECOND_NEIGH': [204, 229, 81],
-        'HEX_DIAMOND': [254, 137, 0],
+        'GRAPHENE': [50, 205, 50],
+        'UNKNOWN': [128, 128, 128],
         'OTHER': [242, 242, 242]
     };
 
@@ -114,7 +117,7 @@ export default class AtomisticExporter{
         positions: Float32Array,
         types?: Uint16Array,
         colors?: Float32Array
-    ){
+    ) {
         const n = order.length;
         const pos2 = new Float32Array(n * 3);
 
@@ -493,7 +496,7 @@ export default class AtomisticExporter{
         let maxZ = Number.NEGATIVE_INFINITY;
 
         let cursor = 0;
-        for(const [typeName, atoms] of Object.entries(atomsByType)){
+        for(const [typeName, atoms] of Object.entries(atomsByType)) {
             const key = typeName.toUpperCase().replace(/ /g, '_');
             const rgbInts = this.STRUCTURE_COLORS[key] || this.STRUCTURE_COLORS['OTHER'];
             const rgb = [rgbInts[0] / 255, rgbInts[1] / 255, rgbInts[2] / 255];
@@ -579,7 +582,7 @@ export default class AtomisticExporter{
         opts: CompressionOptions = {}
     ): Promise<void>{
         const buffer = await this.exportAtomsTypeToGLBBuffer(atomsByType, opts);
-        await storage.put(minioObjectName, SYS_BUCKETS.MODELS, buffer, {
+        await storage.put(SYS_BUCKETS.MODELS, minioObjectName, buffer, {
             'Content-Type': 'model/gltf-binary'
         });
     }

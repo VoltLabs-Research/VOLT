@@ -9,7 +9,7 @@ import DislocationExporter from '@/utilities/export/dislocations';
 import MeshExporter from '@/utilities/export/mesh';
 import logger from '@/logger';
 
-class ExportHandler implements NodeHandler{
+class ExportHandler implements NodeHandler {
     readonly type = NodeType.EXPORT;
 
     readonly outputSchema: NodeOutputSchema = {
@@ -35,7 +35,6 @@ class ExportHandler implements NodeHandler{
 
         const exposureResults = exposureOutput.results as any[];
         const exportResults: any[] = [];
-        const exporter = this.getExporter(config.exporter as Exporter);
 
         for(const item of exposureResults){
             if(item.error || !item.data){
@@ -50,7 +49,12 @@ class ExportHandler implements NodeHandler{
             const objectName = `trajectory-${context.trajectoryId}/analysis-${context.analysisId}/glb/${item.frame ?? item.index}/${slugify(exposureNode.id)}.${config.type}`;
 
             try{
-                await exporter.toGLBMinIO(item.data, objectName, config.options || {});
+                await this.exportItem(
+                    config.exporter as Exporter,
+                    item.data,
+                    objectName,
+                    config.options || {}
+                );
                 exportResults.push({
                     index: item.index,
                     success: true,
@@ -69,6 +73,52 @@ class ExportHandler implements NodeHandler{
         }
 
         return { results: exportResults };
+    }
+
+    private async exportItem(
+        exporterType: Exporter,
+        data: any,
+        objectName: string,
+        options: Record<string, any>
+    ): Promise<void>{
+        // For AtomisticExporter, check if data is already grouped by structure type
+        if(exporterType === Exporter.ATOMISTIC){
+            const exporter = new AtomisticExporter();
+
+            // If data has 'keys' array, it's the keyed schema format with atoms grouped by type
+            if(data.keys && Array.isArray(data.keys)) {
+                // Extract the grouped atoms(exclude 'keys' from the data)
+                const groupedAtoms: Record<string, any[]> = {};
+                for(const key of data.keys){
+                    if(data[key] && Array.isArray(data[key])) {
+                        groupedAtoms[key] = data[key];
+                    }
+                }
+                await exporter.exportAtomsTypeToGLBMinIO(groupedAtoms, objectName, options);
+                return;
+            }
+
+            // If data is a string(file path), use original method
+            if(typeof data === 'string'){
+                await exporter.toGLBMinIO(data, objectName, options);
+                return;
+            }
+
+            // If data is already an object with structure keys(legacy format)
+            const structureKeys = Object.keys(data).filter(k =>
+                Array.isArray(data[k]) && data[k].length > 0 && data[k][0]?.pos
+            );
+            if(structureKeys.length > 0){
+                await exporter.exportAtomsTypeToGLBMinIO(data, objectName, options);
+                return;
+            }
+
+            throw new Error('AtomisticExporter: unsupported data format');
+        }
+
+        // For other exporters, use standard method
+        const exporter = this.getExporter(exporterType);
+        await exporter.toGLBMinIO(data, objectName, options);
     }
 
     private getExporter(exporterType: Exporter): any{

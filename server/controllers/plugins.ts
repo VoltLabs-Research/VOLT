@@ -69,9 +69,12 @@ export default class PluginsController extends BaseController<IPlugin> {
     }
 
     protected async onBeforeUpdate(data: Partial<IPlugin>) {
+        console.log(data);
         // Revalidate workflow on update
         if(data.workflow){
+            logger.info(`[PluginsController] onBeforeUpdate: Received ${data.workflow.nodes?.length} nodes, ${data.workflow.edges?.length} edges`);
             const { valid, errors } = workflowValidator.validateStructure(data.workflow);
+            logger.info(`[PluginsController] onBeforeUpdate: Validation result - valid: ${valid}, errors: ${JSON.stringify(errors)}`);
             data.validated = valid;
             data.validationErrors = errors;
         }

@@ -143,9 +143,13 @@ export default abstract class BaseController<T extends Document> {
             ? filterObject(req.body, ...this.allowedFields)
             : req.body;
 
+        console.log('[BaseController updateOne] allowedFields:', this.allowedFields);
+        console.log('[BaseController updateOne] req.body keys:', Object.keys(req.body || {}));
+        console.log('[BaseController updateOne] filtered data keys:', Object.keys(data || {}));
+
         data = await this.onBeforeUpdate(data, req, docToUpdate);
         const updatedDoc = await this.model.findOneAndUpdate(
-         { _id: docToUpdate._id },
+            { _id: docToUpdate._id },
             data,
             { new: true, runValidators: true });
 

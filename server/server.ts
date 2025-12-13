@@ -65,7 +65,6 @@ const shutodwn = async() => {
 };
 
 server.listen(SERVER_PORT as number, SERVER_HOST, async() => {
-    // Initialize Redis BEFORE the Socket Gateway and wait for it to be ready
     await initializeRedis();
     await initializeMinio();
     await mongoConnector();

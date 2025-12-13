@@ -48,7 +48,7 @@ export const slugify = (value: string) => value
     .replace(/^-+/, '')
     .replace(/-+$/, '');
 
-export const createTempDir = async(prefix: string = 'opendxa-'): Promise<string> =>{
+export const createTempDir = async(prefix: string = 'opendxa-'): Promise<string> => {
     const tempDir = await mkdtemp(join(tmpdir(), prefix));
     return tempDir;
 };
@@ -62,7 +62,7 @@ export const createTempDir = async(prefix: string = 'opendxa-'): Promise<string>
  * @returns A wrapped Express RequestHandler that catches async errors
 */
 export const catchAsync = <T extends AsyncRequestHandler>(asyncFn: T): RequestHandler => {
-    return(req: Request, res: Response, next: NextFunction): void =>{
+    return (req: Request, res: Response, next: NextFunction): void => {
         // Execute the async function and catch any rejected promises
         Promise.resolve(asyncFn(req, res, next)).catch(next);
     };
@@ -95,15 +95,16 @@ export const filterObject = <T extends object>(
     const filteredObject: Partial<T> = {};
 
     // Iterate through object properties
-    for(const [key, value] of Object.entries(obj)){
+    for(const [key, value] of Object.entries(obj)) {
         // Check f field is allowed and protect against prototype pollution
-        if(allowedFieldsSet.has(key) && Object.hasOwnProperty.call(obj, key)){
+        if(allowedFieldsSet.has(key) && Object.hasOwnProperty.call(obj, key)) {
             // Skip potentially dangerous properties
-            if(isDangerousProperty(key)){
+            if(isDangerousProperty(key)) {
                 continue;
             }
 
-            // Type assertion is safe here as we're copying from the original object(filteredObject as any)[key] = value;
+            // Type assertion is safe here as we're copying from the original object
+            (filteredObject as any)[key] = value;
         }
     }
 
@@ -145,7 +146,7 @@ export const checkIfSlugOrId = (identifier: unknown): FilterQuery<any> => {
         throw new Error('Identifier cannot be empty or only whitespace');
     }
     // Check if it's a valid MongoDB ObjectId
-    if(isValidObjectId(trimmedIdentifier)){
+    if(isValidObjectId(trimmedIdentifier)) {
         try{
             return { _id: new Types.ObjectId(trimmedIdentifier) }
         }catch(error){
@@ -154,7 +155,7 @@ export const checkIfSlugOrId = (identifier: unknown): FilterQuery<any> => {
     }
 
     // Check if it's a valid slug
-    if(isValidSlug(trimmedIdentifier)){
+    if(isValidSlug(trimmedIdentifier)) {
         return { slug: trimmedIdentifier };
     }
 
@@ -177,7 +178,7 @@ const isValidObjectId = (str: string): boolean => {
  * @returns True if valid slug, false otherwise
 */
 const isValidSlug = (str: string): boolean => {
-    return(
+    return (
         str.length > 0 &&
         str.length <= MAX_SLUG_LENGTH &&
         SLUG_REGEX.test(str) &&

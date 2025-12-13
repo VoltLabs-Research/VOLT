@@ -39,7 +39,7 @@ const getErrorMessage = (err: unknown, fallback: string) => {
     return anyErr?.response?.data?.message || anyErr?.message || fallback;
 };
 
-export interface PluginBuilderState{
+export interface PluginBuilderState {
     // Graph
     nodes: Node<PluginNodeData>[];
     edges: Edge[];
@@ -102,7 +102,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
     loadError: null,
     validationResult: null,
 
-    setNodes(nodesOrUpdater: NodesUpdater){
+    setNodes(nodesOrUpdater: NodesUpdater) {
         if(typeof nodesOrUpdater === 'function'){
             set((state) => ({ nodes: nodesOrUpdater(state.nodes) }));
             return;
@@ -111,7 +111,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         set({ nodes: nodesOrUpdater });
     },
 
-    setEdges(edgesOrUpdater: EdgesUpdater){
+    setEdges(edgesOrUpdater: EdgesUpdater) {
         if(typeof edgesOrUpdater === 'function'){
             set((state) => ({ edges: edgesOrUpdater(state.edges) }));
             return;
@@ -120,15 +120,15 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         set({ edges: edgesOrUpdater });
     },
 
-    onNodesChange(changes: NodeChange[]){
+    onNodesChange(changes: NodeChange[]) {
         set((state) => ({ nodes: applyNodeChanges(changes, state.nodes) }));
     },
 
-    onEdgesChange(changes: EdgeChange[]){
+    onEdgesChange(changes: EdgeChange[]) {
         set((state) => ({ edges: applyEdgeChanges(changes, state.edges) }));
     },
 
-    validateConnection(connection: Connection){
+    validateConnection(connection: Connection) {
         const { nodes, edges } = get();
         const { source, target } = connection;
         if((!source || !target) || (source === target)) return false;
@@ -163,7 +163,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         return true;
     },
 
-    onConnect(connection: Connection){
+    onConnect(connection: Connection) {
         const { validateConnection } = get();
         if(!validateConnection(connection)) return;
         const edge: Edge = {
@@ -177,37 +177,37 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         set((state) => ({ edges: addEdge(edge, state.edges) }));
     },
 
-    onNodeClick(event: unknown, node: Node<PluginNodeData>){
+    onNodeClick(event: unknown, node: Node<PluginNodeData>) {
         set({ selectedNode: node });
     },
 
-    onPaneClick(){
+    onPaneClick() {
         set({ selectedNode: null });
     },
 
-    selectNode(node){
+    selectNode(node) {
         set({ selectedNode: node });
     },
 
-    addNode(type: NodeType, position: XYPosition){
+    addNode(type: NodeType, position: XYPosition) {
         const newNode = createNode(type, position);
         set((state) => ({ nodes: [...state.nodes, newNode] }));
     },
 
-    updateNodeData(nodeId: string, data: Partial<PluginNodeData>){
+    updateNodeData(nodeId: string, data: Partial<PluginNodeData>) {
         set((state) => {
             const nodes = state.nodes.map((node) =>
                 node.id === nodeId ? { ...node, data: { ...(node.data ?? {}), ...data } } : node);
 
             const selectedNode =
                 state.selectedNode?.id === nodeId
-                ? { ...state.selectedNode, data: { ...(state.selectedNode.data ?? {}), ...data } }
-                : state.selectedNode;
+                    ? { ...state.selectedNode, data: { ...(state.selectedNode.data ?? {}), ...data } }
+                    : state.selectedNode;
             return { nodes, selectedNode };
         });
     },
 
-    deleteNode(nodeId: string){
+    deleteNode(nodeId: string) {
         set((state) => ({
             nodes: state.nodes.filter((n) => n.id !== nodeId),
             edges: state.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
@@ -215,11 +215,11 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         }));
     },
 
-    deleteEdge(edgeId: string){
+    deleteEdge(edgeId: string) {
         set((state) => ({ edges: state.edges.filter((edge: Edge) => edge.id !== edgeId) }));
     },
 
-    getWorkflow(){
+    getWorkflow() {
         const { nodes, edges } = get();
 
         return {
@@ -252,7 +252,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         };
     },
 
-    loadWorkflow(workflow: IWorkflow){
+    loadWorkflow(workflow: IWorkflow) {
         set({
             nodes: workflow.nodes.map((node) => ({
                 id: node.id,
@@ -277,7 +277,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         });
     },
 
-      clearWorkflow(){
+    clearWorkflow() {
         set({
             nodes: [],
             edges: [],
@@ -292,11 +292,11 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         });
     },
 
-    setCurrentPlugin(plugin){
+    setCurrentPlugin(plugin) {
         set({ currentPlugin: plugin });
     },
 
-    async saveWorkflow(){
+    async saveWorkflow() {
         const { getWorkflow, currentPlugin } = get();
         set({ isSaving: true, saveError: null });
 
@@ -316,7 +316,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         }
     },
 
-    async loadPluginById(idOrSlug: string){
+    async loadPluginById(idOrSlug: string) {
         set({ isLoading: true, loadError: null });
 
         try{
@@ -355,7 +355,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         }
     },
 
-    async publishPlugin(){
+    async publishPlugin() {
         const { currentPlugin, validateCurrentWorkflow } = get();
         if(!currentPlugin?._id){
             set({ saveError: 'Plugin must be saved before publishing' });

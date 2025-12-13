@@ -24,11 +24,11 @@ import { parentPort } from 'node:worker_threads';
 import { Analysis, Plugin } from '@/models';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import PluginWorkflowEngine from '@/services/plugin-workflow-engine';
-import '@/services/nodes/handlers';  // Import to register all node handlers
 import mongoConnector from '@/utilities/mongo/mongo-connector';
 import path from 'node:path';
 import logger from '@/logger';
 import '@config/env';
+import '@/services/nodes/handlers';
 
 const processJob = async(job: AnalysisJob): Promise<void> =>{
     if(!job){

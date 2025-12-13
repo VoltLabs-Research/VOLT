@@ -25,7 +25,7 @@ const ExposureEditor: React.FC<ExposureEditorProps> = ({ node }) => {
         updateField('perAtomProperties', props);
     }, [updateField]);
 
-    return(
+    return (
         <CollapsibleSection title='Results Exposure' defaultExpanded>
             <FormField
                 label='Exposure Name'
@@ -36,6 +36,14 @@ const ExposureEditor: React.FC<ExposureEditorProps> = ({ node }) => {
                 inputProps={{ placeholder: 'analysis_results' }}
                 expressionEnabled
                 expressionNodeId={nodeId}
+            />
+            <FormField
+                label='Icon'
+                fieldKey='icon'
+                fieldType='input'
+                fieldValue={exposure.icon || ''}
+                onFieldChange={updateField}
+                inputProps={{ placeholder: 'FiActivity' }}
             />
             <FormField
                 label='Results File Suffix'

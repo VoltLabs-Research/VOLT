@@ -88,6 +88,7 @@ export interface IEntrypointData {
 
 export interface IExposureData {
     name: string;
+    icon?: string;
     results: string;
     iterable?: string;
     perAtomProperties?: string[];

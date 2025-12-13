@@ -9,7 +9,7 @@ const ModifierNode = memo((props: NodeProps) => {
     const modifier = data.modifier || {};
 
     return(
-        <BaseNode {...props} nodeType={NodeType.MODIFIER}>
+        <BaseNode {...props} nodeType={NodeType.MODIFIER} nodeTitle={modifier.name}>
             <NodeField label='Name' value={modifier.name} />
             <NodeField label='Version' value={modifier.version} />
             <NodeField label='Author' value={modifier.author} />

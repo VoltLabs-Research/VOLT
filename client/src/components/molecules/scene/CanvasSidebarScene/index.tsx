@@ -100,7 +100,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
 
     const pluginOptions = pluginExposures.map((exposure) => ({
         Icon: () => <DynamicIcon iconName={exposure.icon!} />,
-        title: exposure.displayName || exposure.exposureId,
+        title: exposure.name || exposure.exposureId,
         sceneType: {
             sceneType: exposure.exposureId,
             source: 'plugin',

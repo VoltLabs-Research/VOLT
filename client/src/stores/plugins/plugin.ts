@@ -3,42 +3,44 @@ import pluginApi, { type IPluginRecord } from '@/services/api/plugin';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import { NodeType, PluginStatus } from '@/types/plugin';
 
-interface IModifierData{
+interface IModifierData {
     name?: string;
     icon?: string;
     description?: string;
     version?: string;
 };
 
-interface IExposureData{
+interface IExposureData {
     name?: string;
+    icon?: string;
     results?: string;
 };
 
-interface IVisualizersData{
+interface IVisualizersData {
     canvas?: boolean;
     raster?: boolean;
 };
 
-interface IExportData{
+interface IExportData {
     exporter?: string;
     type?: string;
     options?: Record<string, any>;
 };
 
-export interface RenderableExposure{
+export interface RenderableExposure {
     pluginId: string;
     pluginSlug: string;
     analysisId: string;
     exposureId: string;
     name: string;
+    icon?: string;
     results: string;
     canvas: boolean;
     raster: boolean;
     export?: IExportData;
 };
 
-export interface ResolvedModifier{
+export interface ResolvedModifier {
     pluginId: string;
     pluginSlug: string;
     name: string;
@@ -47,7 +49,7 @@ export interface ResolvedModifier{
     version?: string;
 };
 
-export interface PluginArgument{
+export interface PluginArgument {
     argument: string;
     type: 'select' | 'number' | 'boolean' | 'string' | 'frame';
     label: string;
@@ -71,7 +73,7 @@ type WorkflowIndex = {
     nodesByType: Map<NodeType, string[]>;
 };
 
-export interface PluginState{
+export interface PluginState {
     plugins: IPluginRecord[];
     pluginsBySlug: Record<string, IPluginRecord>;
     loading: boolean;
@@ -165,11 +167,11 @@ const usePluginStore = create<PluginState>((set, get) => ({
     loading: false,
     error: null,
 
-    async fetchPlugins(opts){
+    async fetchPlugins(opts) {
         const force = Boolean(opts?.force);
         const now = Date.now();
 
-        if(!force && now - lastFetchAt < PLUGINS_TTL_MS && get().plugins.length > 0){
+        if(!force && now - lastFetchAt < PLUGINS_TTL_MS && get().plugins.length > 0) {
             return;
         }
 
@@ -198,7 +200,7 @@ const usePluginStore = create<PluginState>((set, get) => ({
         return inFlightFetch;
     },
 
-    getModifiers(){
+    getModifiers() {
         const { plugins } = get();
         const key = getPluginsKeyForModifiers(plugins);
         if(key === lastModifiersKey && lastModifiers.length > 0) return lastModifiers;
@@ -208,7 +210,7 @@ const usePluginStore = create<PluginState>((set, get) => ({
             const idx = getIndexForPlugin(plugin);
             const modifierIds = idx.nodesByType.get(NodeType.MODIFIER) ?? [];
             const modifierNode = modifierIds.length ? idx.nodeById.get(modifierIds[0]) : undefined;
-            const modifierData = (modifierNode?.data?.modifier ||{}) as IModifierData;
+            const modifierData = (modifierNode?.data?.modifier || {}) as IModifierData;
 
             return {
                 pluginId: plugin._id,
@@ -240,7 +242,7 @@ const usePluginStore = create<PluginState>((set, get) => ({
         trajectoryId: string,
         analysisId?: string,
         context: 'canvas' | 'raster' = 'canvas'
-    ){
+    ) {
         const { analysisConfig } = useAnalysisConfigStore.getState();
         const activeAnalysisId = analysisId ?? analysisConfig?._id;
         if(!activeAnalysisId || !analysisConfig) return [];
@@ -286,7 +288,7 @@ const usePluginStore = create<PluginState>((set, get) => ({
                     for(const target of schemaTargets){
                         const targetNode = idx.nodeById.get(target);
                         if(!targetNode) continue;
-                        if(targetNode === NodeType.VISUALIZERS){
+                        if(targetNode.type === NodeType.VISUALIZERS){
                             // TODO: duplicated code
                             const viz = (targetNode.data?.visualizers || {}) as IVisualizersData;
                             if(viz.canvas) hasCanvas = true;
@@ -310,6 +312,7 @@ const usePluginStore = create<PluginState>((set, get) => ({
                     analysisId: activeAnalysisId,
                     exposureId,
                     name: exposureData.name || exposureId,
+                    icon: exposureData.icon,
                     results: exposureData.results || '',
                     canvas: hasCanvas,
                     raster: hasRaster,
