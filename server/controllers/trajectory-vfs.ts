@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import TrajectoryVFS from '@/services/trajectory-vfs';

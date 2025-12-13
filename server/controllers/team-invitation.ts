@@ -28,40 +28,22 @@ import { ErrorCodes } from '@/constants/error-codes';
 import { publishNotificationCreated } from '@/events/notification-events';
 
 export default class TeamInvitationController {
+    /**
+     * Send a team invitation.
+     */
     public sendTeamInvitation = catchAsync(async (req: Request, res: Response) => {
-        const { teamId } = req.params;
         const { email, role } = req.body;
-        const userId = req.user?._id;
-
-        if (!teamId) {
-            throw new RuntimeError(ErrorCodes.TEAM_ID_REQUIRED, 400);
-        }
-
-        if (!email || !role) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_EMAIL_ROLE_REQUIRED, 400);
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.toLowerCase())) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_INVALID_EMAIL, 400);
-        }
-
-        const team = await Team.findById(teamId);
-        if (!team) {
-            throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
-        }
-
-        if (team.owner.toString() !== userId?.toString()) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_OWNER_ONLY, 403);
-        }
+        const userId = (req as any).user?._id;
+        const team = res.locals.team;
 
         const user = await User.findOne({ email: email.toLowerCase() });
+
         if (user && team.members.includes(user._id)) {
             throw new RuntimeError(ErrorCodes.TEAM_INVITATION_USER_ALREADY_MEMBER, 400);
         }
 
         const existingInvitation = await TeamInvitation.findOne({
-            team: teamId,
+            team: team._id,
             email: email.toLowerCase(),
             status: 'pending'
         });
@@ -74,7 +56,7 @@ export default class TeamInvitationController {
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
         const invitation = await TeamInvitation.create({
-            team: teamId,
+            team: team._id,
             invitedBy: userId,
             invitedUser: user?._id,
             email: email.toLowerCase(),
@@ -101,8 +83,11 @@ export default class TeamInvitationController {
         });
     });
 
+    /**
+     * Get pending invitations for current user.
+     */
     public getPendingInvitations = catchAsync(async (req: Request, res: Response) => {
-        const userId = req.user?._id;
+        const userId = (req as any).user?._id;
 
         const invitations = await TeamInvitation.find({
             invitedUser: userId,
@@ -118,30 +103,12 @@ export default class TeamInvitationController {
         });
     });
 
+    /**
+     * Accept a team invitation.
+     */
     public acceptTeamInvitation = catchAsync(async (req: Request, res: Response) => {
-        const { token } = req.params;
-        const userId = req.user?._id;
-
-        if (!token) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_TOKEN_REQUIRED, 400);
-        }
-
-        const invitation = await TeamInvitation.findOne({ token });
-        if (!invitation) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 404);
-        }
-
-        if (invitation.status !== 'pending') {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED, 400);
-        }
-
-        if (new Date() > invitation.expiresAt) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_EXPIRED, 400);
-        }
-
-        if (invitation.invitedUser?.toString() !== userId?.toString()) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_UNAUTHORIZED, 403);
-        }
+        const userId = (req as any).user?._id;
+        const invitation = res.locals.invitation;
 
         const team = await Team.findByIdAndUpdate(
             invitation.team,
@@ -165,7 +132,7 @@ export default class TeamInvitationController {
         await Notification.create({
             recipient: team.owner,
             title: 'Team Invitation Accepted',
-            content: `${req.user?.email} has accepted the invitation to join ${team.name}`,
+            content: `${(req as any).user?.email} has accepted the invitation to join ${team.name}`,
             link: `/dashboard?team=${team._id}`
         });
 
@@ -176,26 +143,11 @@ export default class TeamInvitationController {
         });
     });
 
+    /**
+     * Reject a team invitation.
+     */
     public rejectTeamInvitation = catchAsync(async (req: Request, res: Response) => {
-        const { token } = req.params;
-        const userId = req.user?._id;
-
-        if (!token) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_TOKEN_REQUIRED, 400);
-        }
-
-        const invitation = await TeamInvitation.findOne({ token });
-        if (!invitation) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 404);
-        }
-
-        if (invitation.status !== 'pending') {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED, 400);
-        }
-
-        if (invitation.invitedUser?.toString() !== userId?.toString()) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_UNAUTHORIZED, 403);
-        }
+        const invitation = res.locals.invitation;
 
         invitation.status = 'rejected';
         await invitation.save();
@@ -206,27 +158,11 @@ export default class TeamInvitationController {
         });
     });
 
+    /**
+     * Get invitation details (public route for email links).
+     */
     public getInvitationDetails = catchAsync(async (req: Request, res: Response) => {
-        const { token } = req.params;
-
-        if (!token) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_TOKEN_REQUIRED, 400);
-        }
-
-        const invitation = await TeamInvitation.findOne({ token })
-            .populate('invitedBy', 'email');
-
-        if (!invitation) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 404);
-        }
-
-        if (invitation.status !== 'pending') {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED, 400);
-        }
-
-        if (new Date() > invitation.expiresAt) {
-            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_EXPIRED, 400);
-        }
+        const invitation = res.locals.invitation;
 
         const team = await Team.findById(invitation.team)
             .select('name description members')
@@ -236,8 +172,11 @@ export default class TeamInvitationController {
             throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
         }
 
+        const invitedBy = await User.findById(invitation.invitedBy).select('email').lean();
+
         const invitationData = {
             ...invitation.toObject(),
+            invitedBy,
             team: {
                 _id: team._id,
                 name: team.name,

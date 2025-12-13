@@ -23,27 +23,40 @@
 import { Router } from 'express';
 import TeamInvitationController from '@controllers/team-invitation';
 import * as authMiddleware from '@middlewares/authentication';
+import * as invitationMiddleware from '@middlewares/team-invitation';
 
 const router = Router();
 const controller = new TeamInvitationController();
 
-// Public route - Get invitation details (for unauthenticated users viewing email link)
-router.get('/details/:token', controller.getInvitationDetails);
+router.get(
+    '/details/:token',
+    invitationMiddleware.loadInvitationByToken,
+    controller.getInvitationDetails
+);
 
-// Protected routes (require authentication)
 router.use(authMiddleware.protect);
 
-// Specific routes BEFORE generic routes to prevent path conflicts
-// Get pending invitations for current user
 router.get('/pending', controller.getPendingInvitations);
 
-// Accept invitation
-router.post('/accept/:token', controller.acceptTeamInvitation);
+router.post(
+    '/accept/:token',
+    invitationMiddleware.loadInvitationByToken,
+    invitationMiddleware.verifyInvitationRecipient,
+    controller.acceptTeamInvitation
+);
 
-// Reject invitation
-router.post('/reject/:token', controller.rejectTeamInvitation);
+router.post(
+    '/reject/:token',
+    invitationMiddleware.loadInvitationByToken,
+    invitationMiddleware.verifyInvitationRecipient,
+    controller.rejectTeamInvitation
+);
 
-// Generic route - Send invitation
-router.post('/:teamId/invite', controller.sendTeamInvitation);
+router.post(
+    '/:teamId/invite',
+    invitationMiddleware.verifyTeamOwnership,
+    invitationMiddleware.validateInvitationBody,
+    controller.sendTeamInvitation
+);
 
 export default router;
