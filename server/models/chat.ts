@@ -34,7 +34,7 @@ const ChatSchema: Schema<IChat> = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: [true ValidationCodes.CHAT_TEAM_REQUIRED],
+        required: [true, ValidationCodes.CHAT_TEAM_REQUIRED],
         cascade: 'delete'
     },
     lastMessage: {
