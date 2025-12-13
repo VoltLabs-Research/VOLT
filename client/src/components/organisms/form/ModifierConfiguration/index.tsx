@@ -3,7 +3,7 @@ import { IoIosArrowDown } from 'react-icons/io';
 import FormField from '@/components/molecules/form/FormField';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Button from '@/components/atoms/common/Button';
-import usePluginStore from '@/stores/plugins';
+import usePluginStore from '@/stores/plugins/plugin';
 import useTrajectoryStore from '@/stores/trajectories';
 import { api } from '@/api';
 import './ModifierConfiguration.css';
@@ -38,59 +38,59 @@ const ModifierConfiguration = ({
     const hasAutoStarted = useRef(false);
     const [hasInitializedPreset, setHasInitializedPreset] = useState(false);
     const configRef = useRef<Record<string, any>>({});
-    const getAvailableArguments = usePluginStore((state) => state.getAvailableArguments);
-    const manifests = usePluginStore((state) => state.manifests);
+    const getAvailableArguments = usePluginStore((state) => state.getPluginArguments);
+    const plugins = usePluginStore((state) => state.plugins);
 
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const fetchTrajectory = useTrajectoryStore((state) => state.getTrajectoryById);
 
     useEffect(() => {
-        if (trajectoryId && (!trajectory || trajectory._id !== trajectoryId)) {
+        if(trajectoryId && (!trajectory || trajectory._id !== trajectoryId)){
             fetchTrajectory(trajectoryId);
         }
     }, [trajectoryId, trajectory, fetchTrajectory]);
 
-    // Mantener configRef sincronizado con config
     useEffect(() => {
         configRef.current = config;
     }, [config]);
 
     const availableArguments = useMemo(() => {
-        return getAvailableArguments(pluginId, modifierId);
-    }, [pluginId, modifierId, getAvailableArguments]);
+        return getAvailableArguments(pluginId);
+    }, [pluginId, getAvailableArguments]);
 
     const modifierInfo = useMemo(() => {
-        const manifest = manifests[pluginId];
-        if (!manifest) return null;
-        const modifier = manifest.modifiers?.[modifierId];
-        if (!modifier) return null;
-        const exposure = modifier.exposure[modifierId];
+        const plugin = plugins.find((plugin) => plugin.slug === pluginId);
+        if(!plugin) return null;
+
+        const modifierNode = plugin.workflow.nodes.find((node: any) => node.type === 'modifier');
+        const modifierData = modifierNode?.data?.modifier || {};
+
         return {
-            displayName: exposure?.displayName || modifierId,
-            icon: exposure?.icon,
-            preset: modifier.preset || {}
+            displayName: modifierData.name || pluginId,
+            icon: modifierData.icon
         };
-    }, [manifests, pluginId, modifierId]);
+    }, [plugins, pluginId]);
 
     const configFields = useMemo(() => {
-        return Object.entries(availableArguments).map(([key, argDef]) => {
+        return availableArguments.map((argDef: any) => {
+            const key = argDef.argument;
             const field: any = {
                 key,
                 label: argDef.label || key,
                 fieldKey: key
             };
-            switch (argDef.type) {
+
+            switch(argDef.type){
                 case 'select':
                     field.type = 'select';
-                    field.options = Object.entries(argDef.values).map(([value, title]) => ({
-                        value,
-                        title
-                    })),
-                        field.selectProps = { renderInPortal: true };
+                    field.options = (argDef.options || []).map((opt: any) => ({
+                        value: opt.key,
+                        title: opt.label
+                    }));
+                    field.selectProps = { renderInPortal: true };
                     break;
 
-                case 'trajectory-frame':
-                    field.type = 'select';
+                case 'frame':
                     field.options = (trajectory?.frames || []).map((frame: any, index: number) => ({
                         value: String(frame.timestep),
                         title: `Frame ${index + 1} (Time ${frame.timestep})`
@@ -100,7 +100,7 @@ const ModifierConfiguration = ({
                     }
                     field.selectProps = { renderInPortal: true };
                     break;
-
+                
                 case 'number':
                     field.type = 'number';
                     field.inputProps = {
@@ -120,47 +120,14 @@ const ModifierConfiguration = ({
                     field.inputProps = { type: 'text' };
             }
 
-            if (argDef.default !== undefined && config[key] === undefined) {
-                setConfig((prev) => ({ ...prev, [key]: argDef.default }));
+            const defaultValue = argDef.default ?? argDef.value;
+            if(defaultValue !== undefined && config[key] === undefined){
+                setConfig((prev) => ({ ...prev, [key]: defaultValue }));
             }
 
-            field.visibleWhen = argDef.visibleWhen;
             return field;
         });
     }, [availableArguments, config, trajectory]);
-
-    const visibleFields = useMemo(() => {
-        return configFields.filter((field) => {
-            if (!field.visibleWhen) return true;
-            return Object.entries(field.visibleWhen).every(([key, expectedValue]) => {
-                // Si la clave es "modifier", comparar contra el modifierId actual
-                if (key === 'modifier') {
-                    // Si expectedValue es un array, verificar si modifierId está incluido
-                    if (Array.isArray(expectedValue)) {
-                        return expectedValue.includes(modifierId);
-                    }
-                    return modifierId === expectedValue;
-                }
-                // De lo contrario, comparar contra los valores de config
-                // También soportar arrays para otras propiedades
-                if (Array.isArray(expectedValue)) {
-                    return expectedValue.includes(config[key]);
-                }
-                return config[key] === expectedValue;
-            });
-        });
-    }, [configFields, config, modifierId]);
-
-    // Inicializar config con presets al montar (solo una vez)
-    useEffect(() => {
-        if (!hasInitializedPreset && modifierInfo?.preset) {
-            const preset = modifierInfo.preset;
-            if (Object.keys(preset).length > 0) {
-                setConfig((prev) => ({ ...preset, ...prev }));
-            }
-            setHasInitializedPreset(true);
-        }
-    }, [modifierInfo, hasInitializedPreset]);
 
     const handleFieldChange = (key: string, value: any) => {
         setConfig((prev) => ({ ...prev, [key]: value }));
@@ -169,81 +136,49 @@ const ModifierConfiguration = ({
     const startAnalysis = useCallback(async () => {
         setIsLoading(true);
         onAnalysisStart?.();
-        try {
-            // Construir config final aplicando el orden de prioridad:
-            // 1. Preset del modifier (valores base fijos del modifier)
-            // 2. Config del usuario (sobrescribe todo lo que el usuario pueda ver/cambiar)
-            const preset = modifierInfo?.preset || {};
-            const finalConfig = {
-                ...preset,  // Valores fijos del preset
-                ...config   // Valores configurados por el usuario
-            };
-
+        try{
             const response = await api.post(
                 `/plugins/${pluginId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
-                {
-                    config: finalConfig,
-                    timestep: currentTimestep
-                }
+                { config, timestep: currentTimestep }
             );
             const analysisId = response.data?.data?.analysisId;
             onAnalysisSuccess?.(analysisId);
-        } catch (error) {
+        }catch(error){
             console.error('Analysis failed:', error);
             onAnalysisError?.(error);
-        } finally {
+        }finally{
             setIsLoading(false);
         }
     }, [pluginId, modifierId, trajectoryId, config, modifierInfo, onAnalysisStart, onAnalysisSuccess, onAnalysisError, currentTimestep]);
 
     const displayTitle = title || modifierInfo?.displayName || 'Analysis Configuration';
 
-    // Auto-ejecutar el análisis si no hay campos visibles y no se ha ejecutado aún
+    // if config.length === 0 then handle auto start
     useEffect(() => {
-        // Solo ejecutar si:
-        // 1. No se ha ejecutado aún
-        // 2. No está cargando
-        // 3. No hay campos visibles
-        // 4. Hay un trajectoryId
-        // 5. El preset ya se inicializó O no hay preset
-        const hasPreset = modifierInfo?.preset && Object.keys(modifierInfo.preset).length > 0;
-        const presetReady = !hasPreset || hasInitializedPreset;
-
-        if (!hasAutoStarted.current && !isLoading && visibleFields.length === 0 && trajectoryId && presetReady) {
+        if(!hasAutoStarted.current && !isLoading && config.length === 0 && trajectoryId){
             hasAutoStarted.current = true;
-
+            // TODO: another function for this
             (async () => {
                 setIsLoading(true);
                 onAnalysisStart?.();
-                try {
-                    const preset = modifierInfo?.preset || {};
-                    // Usar configRef.current para obtener el valor más reciente del config
-                    const finalConfig = {
-                        ...preset,
-                        ...configRef.current
-                    };
-
+                try{
                     const response = await api.post(
                         `/plugins/${pluginId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
-                        {
-                            config: finalConfig,
-                            timestep: currentTimestep
-                        }
+                        { config: configRef.current, timestep: currentTimestep }
                     );
                     const analysisId = response.data?.data?.analysisId;
                     onAnalysisSuccess?.(analysisId);
-                } catch (error) {
+                }catch(error){
                     console.error('Analysis failed:', error);
-                    onAnalysisError?.(error);
-                } finally {
+                    onAnalysisError?.(error);      
+                }finally{
                     setIsLoading(false);
                 }
             })();
         }
-    }, [visibleFields.length, isLoading, trajectoryId, modifierInfo, pluginId, modifierId, onAnalysisStart, onAnalysisSuccess, onAnalysisError]);
+    }, [configFields.length, isLoading, trajectoryId, modifierInfo, pluginId, modifierId, onAnalysisStart, onAnalysisSuccess, onAnalysisError]);
 
-    // Si no hay parámetros configurables y ya se ejecutó, no renderizar nada
-    if (visibleFields.length === 0 && hasAutoStarted.current) {
+    if(configFields.length === 0 && hasAutoStarted.current){
         return null;
     }
 

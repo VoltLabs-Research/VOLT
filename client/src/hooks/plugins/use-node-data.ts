@@ -20,12 +20,19 @@ export function useNodeData<T extends Record<string, any>>(
     updateData: (updates: Partial<T>) => void;
     setData: (newData: T) => void;
     nodeId: string;
-} {
+}{
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
-    
+    const storeNodes = usePluginBuilderStore((state) => state.nodes);
+    const storeNode = useMemo(() =>
+        storeNodes.find(n => n.id === node.id),
+        [storeNodes, node.id]
+    );
+
     const data = useMemo(() => {
-        return ((node.data as Record<string, any>)?.[dataKey] || defaultValue) as T;
-    }, [node.data, dataKey, defaultValue]);
+        const nodeData = storeNode?.data || node.data;
+        return ((nodeData as Record<string, any>)?.[dataKey] || defaultValue) as T;
+    }, [storeNode?.data, node.data, dataKey, defaultValue]);
+
 
     const updateField = useCallback((key: string, value: any) => {
         updateNodeData(node.id, {

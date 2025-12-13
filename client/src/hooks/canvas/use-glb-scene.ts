@@ -38,7 +38,7 @@ import InteractionController from '@/utilities/glb/scene/interaction-controllers
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 import useTrajectoryStore from '@/stores/trajectories';
 import usePlaybackStore from '@/stores/editor/playback';
-import usePluginStore from '@/stores/plugins';
+import usePluginStore from '@/stores/plugins/plugin';
 
 export default function useGlbScene(params: UseGlbSceneParams) {
     const { scene, camera, gl, invalidate } = useThree();
@@ -50,7 +50,7 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     const activeScene = useModelStore((state) => state.activeScene);
     const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const manifests = usePluginStore((state) => state.manifests);
+    const plugins = usePluginStore((state) => state.plugins);
 
     const stateRef = useRef<ExtendedSceneState>({
         model: null,
@@ -178,25 +178,27 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             const timestep = currentTimestep;
             if (!trajectory?._id || timestep === undefined) return null;
 
-            // Check if this exposure is a chart (not a GLB)
-            for (const manifest of Object.values(manifests)) {
-                const modifiers = manifest.modifiers ?? {};
-                for (const modifier of Object.values(modifiers)) {
-                    const exposure = modifier.exposure?.[exposureId];
-                    if (exposure && exposure.export?.type === 'line-chart') {
-                        // This is a chart exposure, not a GLB
-                        return null;
-                    }
+            // Check if this exposure is a chart using workflow nodes
+            for (const plugin of plugins) {
+                const exportNode = plugin.workflow.nodes.find((n: any) =>
+                    n.type === 'export' &&
+                    plugin.workflow.edges.some((e: any) =>
+                        e.target === n.id &&
+                        plugin.workflow.edges.some((e2: any) => e2.source === exposureId && e2.target === e.source)
+                    )
+                );
+                if ((exportNode?.data?.export?.type as string) === 'line-chart') {
+                    return null;
                 }
             }
 
             return `/plugins/glb/${trajectory._id}/${analysisId}/${exposureId}/${timestep}`;
         }
 
-        if(activeScene.source === 'color-coding'){
+        if (activeScene.source === 'color-coding') {
             const { property, startValue, endValue, gradient, analysisId, exposureId } = activeScene;
-            let url = `/color-coding/${trajectory._id}/${analysisId}/?property=${property}&startValue=${startValue}&endValue=${endValue}&gradient=${gradient}&timestep=${currentTimestep}`;
-            if(exposureId) url += `&exposureId=${exposureId}`;
+            let url = `/color-coding/${trajectory?._id}/${analysisId}/?property=${property}&startValue=${startValue}&endValue=${endValue}&gradient=${gradient}&timestep=${currentTimestep}`;
+            if (exposureId) url += `&exposureId=${exposureId}`;
             return url;
         }
 
@@ -205,7 +207,7 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             return activeModel.glbs[activeScene.sceneType];
         }
         return null
-    }, [activeModel, activeScene, currentTimestep, trajectory, manifests]);
+    }, [activeModel, activeScene, currentTimestep, trajectory, plugins]);
 
     const updateScene = useCallback(() => {
         const targetUrl = getTargetUrl();

@@ -55,7 +55,7 @@ const VirtualizedRow = (props: any) => {
                         <span className='document-listing-cell-value'>
                             {col.render
                                 ? col.render(item[col.key], item)
-                                : String(item[col.key] ?? '—')}
+                                : String(item[col.key] ?? '-')}
                         </span>
                     </div>
                 ))}
@@ -202,7 +202,7 @@ const DocumentListingTable = ({
                                             <span className='document-listing-cell-value'>
                                                 {col.render
                                                     ? col.render(item[col.key], item)
-                                                    : String(item[col.key] ?? '—')}
+                                                    : String(item[col.key] ?? '-')}
                                             </span>
                                         </div>
                                     ))}

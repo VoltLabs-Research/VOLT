@@ -26,6 +26,7 @@ import Dashboard from '@/pages/protected/Dashboard';
 import HeadlessRasterizerView from '@/pages/protected/HeadlessRasterizerView';
 import Messages from '@/pages/protected/Messages';
 import PluginListing from '@/pages/protected/PluginListing';
+import PluginsListing from '@/pages/protected/PluginsListing';
 import AnalysisConfigsListing from '@/pages/protected/AnalysisConfigsListing';
 import TrajectoriesListing from '@/pages/protected/TrajectoriesListing';
 import AccountSettings from '@/pages/protected/AccountSettings';
@@ -95,12 +96,17 @@ export const routesConfig: RouteGroup = {
             requiresLayout: true,
         },
         {
-            path: '/dashboard/plugin/builder',
+            path: '/dashboard/plugins/list',
+            component: PluginsListing,
+            requiresLayout: true,
+        },
+        {
+            path: '/dashboard/plugins/builder',
             component: PluginBuilder,
             requiresLayout: false
         },
         {
-            path: '/dashboard/trajectory/:trajectoryId/plugin/:pluginId/listing/:listingKey',
+            path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginSlug/listing/:listingSlug',
             component: PluginListing,
             requiresLayout: true,
         },

@@ -239,14 +239,14 @@ void BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
     }
 }
 
-// Starts at the point where two partial paths of the mesh have collided—two paths that lead to 
-// the same atom—and joins them together to form a true “Burgers loop.” To do this, it follows 
+// Starts at the point where two partial paths of the mesh have collided-two paths that lead to 
+// the same atom-and joins them together to form a true “Burgers loop.” To do this, it follows 
 // each of those two paths back until they meet, connects their edges in the correct order, and 
 // closes the loop. It then verifies that the sum of all the physical and crystallographic displacements 
 // along that circuit equals zero (that is, that it truly closes without producing jumps), and also checks 
 // that it doesn’t overlap with other existing loops or cross periodic boundaries incorrectly. If it 
-// passes all these tests, it converts the loop into a new dislocation segment—a small dotted line 
-// that is then refined and extended—and if not, it undoes the layout and discards that circuit. 
+// passes all these tests, it converts the loop into a new dislocation segment-a small dotted line 
+// that is then refined and extended-and if not, it undoes the layout and discards that circuit. 
 // This accurately captures every real Burgers loop in the crystal and prepares it for dislocation analysis.
 bool BurgersLoopBuilder::createBurgersCircuit(InterfaceMesh::Edge* edge, int maxBurgersCircuitSize){
 	//assert(edge->circuit == nullptr);

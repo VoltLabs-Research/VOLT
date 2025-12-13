@@ -1,36 +1,13 @@
-/**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '@/api';
 import type { ApiResponse } from '@/types/api';
-import usePluginStore from '@/stores/plugins';
 
 export type MetricKey = 'trajectories' | 'analysis' | string;
 
-export interface MetricsMetaEntry{
+export interface MetricsMetaEntry {
     displayName?: string;
     listingUrl?: string;
-};
+}
 
 export interface TrajectoryMetrics {
     totals: Record<string, number>;
@@ -40,11 +17,11 @@ export interface TrajectoryMetrics {
         [series: string]: number[] | string[];
     };
     meta?: Record<string, MetricsMetaEntry>;
-};
+}
 
 export type CacheEntry = {
-    data: TrajectoryMetrics,
-    fetchedAt: number
+    data: TrajectoryMetrics;
+    fetchedAt: number;
 };
 
 const cache = new Map<string, CacheEntry>();
@@ -55,22 +32,19 @@ const keyOf = (teamId?: string) => teamId || 'all';
 
 const abbreviate = (n: number) => {
     const abs = Math.abs(n);
-    if(abs >= 1e9) return `${(n / 1e9).toFixed(n % 1e9 ? 1 : 0)}b`;
-    if(abs >= 1e6) return `${(n / 1e6).toFixed(n % 1e6 ? 1 : 0)}m`;
-    if(abs >= 1e3) return `${(n / 1e3).toFixed(n % 1e3 ? 1 : 0)}k`;
+    if (abs >= 1e9) return `${(n / 1e9).toFixed(n % 1e9 ? 1 : 0)}b`;
+    if (abs >= 1e6) return `${(n / 1e6).toFixed(n % 1e6 ? 1 : 0)}m`;
+    if (abs >= 1e3) return `${(n / 1e3).toFixed(n % 1e3 ? 1 : 0)}k`;
     return `${n}`;
 };
 
 const withPaddingDomain = (values: number[]) => {
     const min = Math.min(...values);
     const max = Math.max(...values);
-    if(!isFinite(min) || !isFinite(max)) return { min: 0, max: 1 };
-    if(min === max){
+    if (!isFinite(min) || !isFinite(max)) return { min: 0, max: 1 };
+    if (min === max) {
         const pad = max === 0 ? 1 : Math.abs(max) * 0.1;
-        return {
-            min: Math.min(0, max - pad), 
-            max: max + pad 
-        };
+        return { min: Math.min(0, max - pad), max: max + pad };
     }
     const span = max - min;
     const pad = Math.max(1e-6, span * 0.1);
@@ -83,12 +57,12 @@ const padSeries = (baseLabels: string[], series: number[], desired = 12) => {
     const iso = (d: Date) => d.toISOString().slice(0, 10);
 
     const map = new Map<string, number>();
-    for(let i = 0; i < baseLabels.length; i++){
+    for (let i = 0; i < baseLabels.length; i++) {
         map.set(baseLabels[i], Number(series[i]) || 0);
     }
 
     const labels: string[] = [];
-    for(let i = desired - 1; i >= 0; i--){
+    for (let i = desired - 1; i >= 0; i--) {
         const d = new Date(end);
         d.setUTCDate(d.getUTCDate() - i * 7);
         d.setUTCHours(0, 0, 0, 0);
@@ -100,14 +74,14 @@ const padSeries = (baseLabels: string[], series: number[], desired = 12) => {
 
 const fetchOnce = (teamId?: string) => {
     const key = keyOf(teamId);
-    if(inFlight.has(key)) return inFlight.get(key)!;
+    if (inFlight.has(key)) return inFlight.get(key)!;
 
     const p = api
         .get<ApiResponse<TrajectoryMetrics>>('/trajectories/metrics', {
             params: teamId ? { teamId } : undefined
         })
         .then((res) => res.data.data)
-        .finally(() => { inFlight.delete(key); });
+        .finally(() => inFlight.delete(key));
 
     inFlight.set(key, p);
     return p;
@@ -143,8 +117,8 @@ const buildCard = (
 
 const useDashboardMetrics = (
     teamId?: string,
-    trajectoryId?: string,
-    opts?: { ttlMs?: number, force?: boolean }
+    _trajectoryId?: string,
+    opts?: { ttlMs?: number; force?: boolean }
 ) => {
     const key = keyOf(teamId);
     const ttlMs = opts?.ttlMs ?? 5 * 60 * 1000;
@@ -153,48 +127,38 @@ const useDashboardMetrics = (
     const [error, setError] = useState<string | null>(null);
 
     const abortRef = useRef<AbortController | null>(null);
-    const { manifests, fetchManifests } = usePluginStore();
-
-    useEffect(() => {
-        if(Object.keys(manifests).length === 0){
-            fetchManifests();
-        }
-    }, [manifests, fetchManifests]);
 
     const fetchData = async () => {
-        try{
+        try {
             const payload = await fetchOnce(teamId);
-            if(abortRef.current?.signal.aborted) return;
+            if (abortRef.current?.signal.aborted) return;
 
             cache.set(key, { data: payload, fetchedAt: Date.now() });
             setData(payload);
             setError(null);
-        }catch(err: any){
+        } catch (err: any) {
             const isCanceled =
-                    abortRef.current?.signal.aborted ||
-                    err?.code === 'ERR_CANCELED' ||
-                    err?.name === 'CanceledError' ||
-                    String(err?.message || '').toLowerCase() === 'canceled';  
-            
-            if(isCanceled){
+                abortRef.current?.signal.aborted ||
+                err?.code === 'ERR_CANCELED' ||
+                err?.name === 'CanceledError' ||
+                String(err?.message || '').toLowerCase() === 'canceled';
+
+            if (isCanceled) {
                 setLoading(false);
                 return;
             }
 
-            const message =
-                    err?.response?.data?.message ||
-                    err?.message ||
-                    'Failed to load metrics';
+            const message = err?.response?.data?.message || err?.message || 'Failed to load metrics';
             setError(message);
-        }finally{
-            if(!abortRef.current?.signal.aborted){
+        } finally {
+            if (!abortRef.current?.signal.aborted) {
                 setLoading(false);
             }
         }
     };
 
     useEffect(() => {
-        if(!teamId){
+        if (!teamId) {
             setLoading(true);
             setData(null);
             setError(null);
@@ -205,7 +169,7 @@ const useDashboardMetrics = (
         const expired = hit ? Date.now() - hit.fetchedAt > ttlMs : true;
         const shouldFetch = opts?.force || expired;
 
-        if(!shouldFetch && hit){
+        if (!shouldFetch && hit) {
             setData(hit.data);
             setLoading(false);
             setError(null);
@@ -226,61 +190,31 @@ const useDashboardMetrics = (
     }, [key, teamId, ttlMs, opts?.force]);
 
     const cards = useMemo(() => {
-        if(!data) return [];
+        if (!data) return [];
         const baseLabels = data.weekly.labels || [];
 
+        // Static cards for trajectories and analyses
         const staticCards = [
             buildCard(data, 'trajectories', baseLabels, 'Trajectories', '/dashboard/trajectories/list'),
             buildCard(data, 'analysis', baseLabels, 'Analyses', '/dashboard/analysis-configs/list')
         ];
 
-        const dynamicKeys = Object.keys(data.totals).filter((key) => !['trajectories', 'analysis'].includes(key));
-        const dynamicCards = dynamicKeys.map((key) => buildCard(data, key, baseLabels, key));
+        // Dynamic cards from backend metrics (plugins are now included in backend response)
+        const dynamicKeys = Object.keys(data.totals).filter((k) => !['trajectories', 'analysis'].includes(k));
+        const dynamicCards = dynamicKeys.map((k) => buildCard(data, k, baseLabels, k));
 
+        // Combine and sort by count descending
         let allCards = [...staticCards, ...dynamicCards];
-
-        // Sort by rawCount descending to get top 3
         allCards.sort((a, b) => b.rawCount - a.rawCount);
 
         // Take top 3
         allCards = allCards.slice(0, 3);
 
-        console.log('x')
-        // If we have less than 3 cards, try to fill with available plugins
-        if(allCards.length < 3 && Object.keys(manifests).length > 0){
-            for(const [pluginId, manifest] of Object.entries(manifests)){
-                if(allCards.length >= 3) break;
-                if(!manifest.listing) continue;
-
-                // Listings with aggregators.count === true
-                const listings = Object.values(manifest.listing).filter((listing) => {
-                    return listing.aggregators?.count === true;
-                });
-
-                if(listings.length === 0) continue;
-
-                // Use arbitrarily the first listing
-                const fallbackCard = {
-                    key: `plugin-${pluginId}` as MetricKey,
-                    name: listings[0].aggregators.displayName,
-                    count: '0',
-                    listingUrl: undefined,
-                    rawCount: 0,
-                    lastMonthStatus: 0,
-                    series: Array(12).fill(0),
-                    labels: baseLabels,
-                    yDomain: { min: 0, max: 1 }
-                };
-
-                allCards.push(fallbackCard);
-            }
-        }
-        
-        // Sort by rawCount ascending so the one with max count is last
+        // Sort by rawCount ascending so max count is last (for UI display purposes)
         allCards.sort((a, b) => a.rawCount - b.rawCount);
 
         return allCards;
-    }, [data, manifests, trajectoryId]);
+    }, [data]);
 
     return { loading, error, data, cards };
 };

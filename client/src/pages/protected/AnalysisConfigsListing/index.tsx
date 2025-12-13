@@ -66,35 +66,35 @@ const AnalysisConfigsListing = () => {
       title: 'Trajectory',
       sortable: true,
       key: 'trajectory.name',
-      render: (_value, row) => row?.trajectory?.name ?? '—',
+      render: (_value, row) => row?.trajectory?.name ?? '-',
       skeleton: { variant: 'text', width: 140 }
     },
     {
       title: 'Plugin',
       sortable: true,
       key: 'plugin',
-      render: (value) => (value ? String(value) : '—'),
+      render: (value) => (value ? String(value) : '-'),
       skeleton: { variant: 'text', width: 110 }
     },
     {
       title: 'Modifier',
       sortable: true,
       key: 'modifier',
-      render: (value) => (value ? String(value) : '—'),
+      render: (value) => (value ? String(value) : '-'),
       skeleton: { variant: 'text', width: 130 }
     },
     {
       title: 'Total Frames',
       sortable: true,
       key: 'totalFrames',
-      render: (value) => (typeof value === 'number' ? value.toLocaleString() : '—'),
+      render: (value) => (typeof value === 'number' ? value.toLocaleString() : '-'),
       skeleton: { variant: 'text', width: 90 }
     },
     {
       title: 'Completed Frames',
       sortable: true,
       key: 'completedFrames',
-      render: (value) => (typeof value === 'number' ? value.toLocaleString() : '—'),
+      render: (value) => (typeof value === 'number' ? value.toLocaleString() : '-'),
       skeleton: { variant: 'text', width: 110 }
     },
     {

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Background, ReactFlow, type ReactFlowInstance } from '@xyflow/react';
 import { useShallow } from 'zustand/react/shallow';
 import { nodeTypes } from '@/components/molecules/plugins/nodes';
@@ -10,7 +10,7 @@ import Sidebar from '@/components/organisms/common/Sidebar';
 import PaletteItem from '@/components/atoms/plugins/PaletetteItem';
 import NodeEditor from '@/components/molecules/plugins/NodeEditor';
 import EditableTag from '@/components/atoms/common/EditableTag';
-import { TbArrowLeft } from 'react-icons/tb';
+import { TbArrowLeft, TbDeviceFloppy, TbCheck, TbAlertCircle } from 'react-icons/tb';
 import './PluginBuilder.css';
 import '@xyflow/react/dist/style.css';
 
@@ -34,9 +34,10 @@ const PluginBuilder = () => {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [activeTab, setActiveTab] = useState('Palette');
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
     // Suscripciones optimizadas con useShallow para el canvas
-    const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onNodeClick, onPaneClick, addNode, validateConnection } = 
+    const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onNodeClick, onPaneClick, addNode, validateConnection, saveWorkflow, isSaving, saveError, currentPlugin } =
         usePluginBuilderStore(
             useShallow((state) => ({
                 nodes: state.nodes,
@@ -47,9 +48,39 @@ const PluginBuilder = () => {
                 onNodeClick: state.onNodeClick,
                 onPaneClick: state.onPaneClick,
                 addNode: state.addNode,
-                validateConnection: state.validateConnection
+                validateConnection: state.validateConnection,
+                saveWorkflow: state.saveWorkflow,
+                isSaving: state.isSaving,
+                saveError: state.saveError,
+                currentPlugin: state.currentPlugin
             }))
         );
+
+    // Handle save workflow
+    const handleSave = useCallback(async () => {
+        if (isSaving) return;
+        setSaveStatus('saving');
+        const result = await saveWorkflow();
+        if (result) {
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        } else {
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+        }
+    }, [saveWorkflow, isSaving]);
+
+    // Keyboard shortcuts (Ctrl+S to save)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                handleSave();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [handleSave]);
 
     // Suscripción separada para el sidebar
     const selectedNode = usePluginBuilderStore((state) => state.selectedNode);
@@ -68,13 +99,11 @@ const PluginBuilder = () => {
 
     const handlePluginNameChange = useCallback((newName: string) => {
         if (modifierNode) {
-            // Update existing Modifier node
             const currentData = modifierNode.data as { modifier?: Record<string, any> } | undefined;
             updateNodeData(modifierNode.id, {
                 modifier: { ...currentData?.modifier, name: newName }
             });
         }
-        // If no Modifier node exists, the name will be applied when one is created
     }, [modifierNode, updateNodeData]);
 
     const onDragOver = useCallback((event: React.DragEvent) => {
@@ -85,7 +114,7 @@ const PluginBuilder = () => {
     const onDrop = useCallback((event: React.DragEvent) => {
         event.preventDefault();
         const type = event.dataTransfer.getData('application/reactflow') as NodeType;
-        if(!type || !reactFlowInstance || !reactFlowWrapper.current) return;
+        if (!type || !reactFlowInstance || !reactFlowWrapper.current) return;
         const bounds = reactFlowWrapper.current.getBoundingClientRect();
         const position = reactFlowInstance.screenToFlowPosition({
             x: event.clientX - bounds.left,
@@ -125,9 +154,9 @@ const PluginBuilder = () => {
 
     return (
         <div className='plugin-builder-container'>
-            <Sidebar 
-                tags={SIDEBAR_TAGS} 
-                activeTag={activeTab} 
+            <Sidebar
+                tags={SIDEBAR_TAGS}
+                activeTag={activeTab}
                 className='primary-surface'
                 overrideContent={selectedNode ? <NodeEditor node={selectedNode} /> : null}
             >
@@ -149,7 +178,7 @@ const PluginBuilder = () => {
                         />
                     )}
                 </Sidebar.Header>
-                
+
                 <Sidebar.Bottom>
                     <div className='editor-sidebar-user-avatar-wrapper'>
                         <SidebarUserAvatar

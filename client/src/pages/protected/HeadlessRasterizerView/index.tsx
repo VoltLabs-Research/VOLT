@@ -27,8 +27,8 @@ import useRasterStore from '@/stores/raster';
 import useTrajectoryStore from '@/stores/trajectories';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import { useStructureAnalysisStore } from '@/stores/structure-analysis';
-import usePluginStore from '@/stores/plugins';
-import type { RenderableExposure } from '@/stores/plugins';
+import usePluginStore from '@/stores/plugins/plugin';
+import type { RenderableExposure } from '@/stores/plugins/plugin';
 import useAuthStore from '@/stores/authentication';
 import useRasterFrame from '@/hooks/raster/use-raster-frame';
 import type { AnalysisSelectProps, MetricEntry, ModelRailProps, PlaybackControlsProps, RasterTool, Scene } from '@/types/raster';
@@ -69,7 +69,7 @@ const HeadlessRasterizerView: React.FC = () => {
     const { getMetrics, trajectoryMetrics, isMetricsLoading } = useTrajectoryStore();
     const { getDislocationsByAnalysisId, analysisDislocationsById, updateAnalysisConfig } = useAnalysisConfigStore();
     const { fetchStructureAnalysesByConfig } = useStructureAnalysisStore();
-    const { getRenderableExposures, fetchManifests } = usePluginStore();
+    const { getRenderableExposures, fetchPlugins } = usePluginStore();
     const user = useAuthStore((state) => state.user);
     const connectedUsers = useRasterConnectedUsers(trajectoryId);
 
@@ -109,19 +109,13 @@ const HeadlessRasterizerView: React.FC = () => {
     const initializedRef = useRef(false);
     const preloadKeyRef = useRef<string | null>(null);
 
-    // Asegurar que los plugins estén cargados al entrar a la página
+    // Ensure plugins are loaded on mount
     useEffect(() => {
-        const { manifests, loading } = usePluginStore.getState();
-        const hasManifests = Object.keys(manifests).length > 0;
-
-        // Si no hay manifests cargados y no está cargando, forzar la carga
-        if (!hasManifests && !loading) {
-            console.log('[HeadlessRasterizer] Plugins not loaded, fetching manifests...');
-            fetchManifests();
-        } else if (hasManifests) {
-            console.log('[HeadlessRasterizer] Plugins already loaded:', Object.keys(manifests));
+        const { plugins, loading } = usePluginStore.getState();
+        if (plugins.length === 0 && !loading) {
+            fetchPlugins();
         }
-    }, [fetchManifests]);
+    }, [fetchPlugins]);
 
     useEffect(() => {
         if (!trajectoryId) return;
@@ -134,7 +128,6 @@ const HeadlessRasterizerView: React.FC = () => {
     }, [trajectoryId, getRasterFrames, getMetrics]);
 
     // Update available exposures when analysis changes
-    // CRITICAL: Must update analysisConfig BEFORE calling getRenderableExposures
     useEffect(() => {
         const updateExposures = async () => {
             if (!trajectoryId || !leftAnalysis || !analysesNames.length) {
@@ -143,35 +136,27 @@ const HeadlessRasterizerView: React.FC = () => {
                 return;
             }
 
-            // STEP 1: Find and update analysisConfig FIRST
             const selectedAnalysisObj = analysesNames.find((a: any) => a._id === leftAnalysis);
             if (!selectedAnalysisObj) {
-                console.warn('[HeadlessRasterizer] Analysis not found in analysesNames:', leftAnalysis);
                 updateAnalysisConfig(null);
                 setAvailableExposures([]);
                 return;
             }
 
-            console.log('[HeadlessRasterizer] Updating analysisConfig for:', leftAnalysis, selectedAnalysisObj);
             updateAnalysisConfig(selectedAnalysisObj as any);
-
-            // STEP 2: Wait a tick to ensure analysisConfig is propagated
             await new Promise(resolve => setTimeout(resolve, 0));
 
-            // STEP 3: Ensure manifests are loaded
-            const { manifests } = usePluginStore.getState();
-            if (Object.keys(manifests).length === 0) {
-                console.log('[HeadlessRasterizer] Waiting for manifests before fetching exposures...');
-                await fetchManifests();
+            // Ensure plugins are loaded
+            const { plugins } = usePluginStore.getState();
+            if (plugins.length === 0) {
+                await fetchPlugins();
             }
 
-            // STEP 4: Now get exposures (analysisConfig is already set)
             const exposures = await getRenderableExposures(trajectoryId, leftAnalysis, 'raster');
-            console.log('[HeadlessRasterizer] Got exposures:', exposures);
             setAvailableExposures(exposures);
         };
         updateExposures();
-    }, [trajectoryId, leftAnalysis, analysesNames, getRenderableExposures, fetchManifests, updateAnalysisConfig]);
+    }, [trajectoryId, leftAnalysis, analysesNames, getRenderableExposures, fetchPlugins, updateAnalysisConfig]);
 
     const framesFor = (analysisId: string | null) => {
         if (!analysisId || !analyses?.[analysisId]?.frames) return [];

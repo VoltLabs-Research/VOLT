@@ -8,14 +8,14 @@ import './Sidebar.css';
 
 const MOBILE_BREAKPOINT = 768;
 
-export interface SidebarTag{
+export interface SidebarTag {
     id: string;
     name: string;
     Component: React.ComponentType<any>;
     props?: () => Record<string, unknown>;
 }
 
-export interface SidebarProps{
+export interface SidebarProps {
     activeTag: string;
     tags: SidebarTag[];
     className?: string;
@@ -31,7 +31,7 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
     const bottom = React.Children.toArray(children).find((child) => child.type === SidebarBottom);
 
     useEffect(() => {
-        if(window.innerWidth <= MOBILE_BREAKPOINT){
+        if (window.innerWidth <= MOBILE_BREAKPOINT) {
             setCollapsed(true);
         }
     }, []);
@@ -76,7 +76,7 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
 
                             {active && (
                                 <active.Component {...active.props} />
-                            )}  
+                            )}
                         </>
                     )}
                 </div>

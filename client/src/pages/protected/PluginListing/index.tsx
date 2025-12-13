@@ -5,7 +5,7 @@ import { api } from '@/api';
 import type { ApiResponse } from '@/types/api';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import { Skeleton } from '@mui/material';
-import usePluginStore from '@/stores/plugins';
+import usePluginStore from '@/stores/plugins/plugin';
 import { RiDeleteBin6Line, RiListSettingsLine } from 'react-icons/ri';
 import PerFrameListingModal from '@/components/organisms/common/PerFrameListingModal';
 
@@ -30,40 +30,44 @@ type ListingResponse = {
 };
 
 const getValueByPath = (obj: any, path: string) => {
-    if (!obj || !path) return undefined;
-    if (path.indexOf('.') === -1) {
+    if(!obj || !path) return undefined;
+    if(path.indexOf('.') === -1){
         return obj?.[path];
     }
-    return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj);
+    
+    return path
+        .split('.')
+        .reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj);
 };
 
 const formatCellValue = (value: any, path: string): string => {
-    if (value === null || value === undefined) {
-        return '—';
+    if(value === null || value === undefined){
+        return '-';
     }
 
-    if (typeof value === 'number') {
-        return Number.isInteger(value) ? value.toLocaleString() : Number(value).toFixed(4).replace(/\.?0+$/, '');
+    if(typeof value === 'number'){
+        return Number.isInteger(value)
+            ? value.toLocaleString()
+            : Number(value).toFixed(4).replace(/\.?0+$/, '');
     }
 
-    if (typeof value === 'string') {
-        if (path.toLowerCase().includes('createdat') || path.toLowerCase().endsWith('date')) {
+    if(typeof value === 'string'){
+        if(path.toLowerCase().includes('createdat') || path.toLowerCase().endsWith('date')){
             return formatTimeAgo(value);
         }
         return value;
     }
 
-    if (Array.isArray(value)) {
+    if(Array.isArray(value)){
         return value.map((v) => formatCellValue(v, path)).join(', ');
     }
 
-    if (typeof value === 'object') {
-        if ('name' in value && typeof value.name === 'string') {
+    if(typeof value === 'object'){
+        if('name' in value && typeof value.name === 'string'){
             return String(value.name);
         }
         return JSON.stringify(value);
     }
-
     return String(value);
 };
 
@@ -74,25 +78,27 @@ const normalizeRows = (rows: any[], columns: ColumnDef[]) => {
             const resolved = getValueByPath(row, path);
             enriched[path] = formatCellValue(resolved, path);
         });
-        if (!enriched._id) {
+
+        if(!enriched._id){
             enriched._id = row.timestep ?? row._objectKey ?? `row-${Math.random().toString(36).slice(2)}`;
         }
         return enriched;
     });
 };
 
+// TODO: FIX MANIFEST USAGE
 const buildColumns = (columnDefs: ColumnDef[], pluginId?: string, manifests?: any): ColumnConfig[] => {
     return columnDefs.map(({ path, label }) => {
         let isSelectField = false;
-        if (path.startsWith('analysis.config.') && pluginId && manifests?.[pluginId]) {
+        if(path.startsWith('analysis.config.') && pluginId && manifest?.[pluginId]){
             const argName = path.replace('analysis.config.', '');
             const manifest = manifests[pluginId];
-            const argument = manifest?.entrypoint?.arguments?.[argName];
-            if (argument?.type === 'select') {
+            const argument = manifest?.entrypoint?.argument?.[argName];
+            if(argument?.type === 'select'){
                 isSelectField = true;
             }
         }
-
+       
         return {
             key: path,
             title: label,
@@ -107,7 +113,7 @@ const buildColumns = (columnDefs: ColumnDef[], pluginId?: string, manifests?: an
             skeleton: isSelectField
                 ? { variant: 'rounded', width: 90, height: 24 }
                 : { variant: 'text', width: 120 }
-        };
+        }; 
     });
 };
 
@@ -128,7 +134,6 @@ const PluginListing = () => {
 
     const manifests = usePluginStore((s) => s.manifests);
     const fetchManifests = usePluginStore((s) => s.fetchManifests);
-
     const fetchPage = useCallback(async (nextPage: number) => {
         if (!pluginId || !listingKey || !trajectoryId) {
             setError('Invalid listing parameters.');

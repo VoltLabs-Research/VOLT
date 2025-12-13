@@ -1,0 +1,77 @@
+.plugin-name-link {
+    color: var(--color-primary, #3b82f6);
+    cursor: pointer;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.plugin-name-link:hover {
+    color: var(--color-primary-hover, #2563eb);
+    text-decoration: underline;
+}
+
+.plugin-slug {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.85em;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--color-text-secondary, #94a3b8);
+}
+
+.validation-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.validation-badge.validated {
+    background: rgba(34, 197, 94, 0.15);
+    color: #22c55e;
+}
+
+.validation-badge.not-validated {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.exposure-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.plugins-listing-create-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--color-primary, #3b82f6);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.plugins-listing-create-btn:hover {
+    background: var(--color-primary-hover, #2563eb);
+    transform: translateY(-1px);
+}
+
+.plugins-listing-create-btn:active {
+    transform: translateY(0);
+}

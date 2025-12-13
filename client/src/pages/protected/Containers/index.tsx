@@ -170,7 +170,7 @@ const Containers: React.FC = () => {
             title: 'Ports',
             key: 'ports',
             render: (value) => {
-                if (!value || value.length === 0) return <span className='text-muted'>—</span>;
+                if (!value || value.length === 0) return <span className='text-muted'>-</span>;
                 const port = value[0];
                 return (
                     <span className='container-port-text'>
