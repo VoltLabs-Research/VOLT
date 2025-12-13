@@ -1,8 +1,9 @@
 import { randomBytes } from 'crypto';
 import { Request, Response, NextFunction } from 'express';
+import Webhook from '@/models/webhook';
 import { catchAsync } from '@/utilities/runtime/runtime';
-import { Webhook } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 
 export default class WebhooksController {
     public getMyWebhooks = catchAsync(async (req: Request, res: Response): Promise<void> => {
@@ -32,11 +33,11 @@ export default class WebhooksController {
         ];
 
         if (!events || !Array.isArray(events) || events.length === 0) {
-            return next(new RuntimeError('Webhook::Events::AtLeastOneRequired', 400));
+            return next(new RuntimeError(ErrorCodes.WEBHOOK_EVENTS_AT_LEAST_ONE_REQUIRED, 400));
         }
 
         if (!events.every((event: string) => validEvents.includes(event))) {
-            return next(new RuntimeError('Webhook::Event::Invalid', 400));
+            return next(new RuntimeError(ErrorCodes.WEBHOOK_EVENT_INVALID, 400));
         }
 
         const secret = randomBytes(32).toString('hex');
@@ -62,7 +63,7 @@ export default class WebhooksController {
         const webhook = await Webhook.findOne({ _id: id, createdBy: user.id });
 
         if (!webhook) {
-            return next(new RuntimeError('Webhook not found', 404));
+            return next(new RuntimeError(ErrorCodes.WEBHOOK_NOT_FOUND, 404));
         }
 
         res.status(200).json({
@@ -79,7 +80,7 @@ export default class WebhooksController {
         const webhook = await Webhook.findOne({ _id: id, createdBy: user.id });
 
         if (!webhook) {
-            return next(new RuntimeError('Webhook not found', 404));
+            return next(new RuntimeError(ErrorCodes.WEBHOOK_NOT_FOUND, 404));
         }
 
         if (name !== undefined) webhook.name = name;
@@ -96,7 +97,7 @@ export default class WebhooksController {
             ];
 
             if (!events.every((event: string) => validEvents.includes(event))) {
-                return next(new RuntimeError('Invalid event type', 400));
+                return next(new RuntimeError(ErrorCodes.WEBHOOK_INVALID_EVENT_TYPE, 400));
             }
 
             webhook.events = events;
@@ -118,7 +119,7 @@ export default class WebhooksController {
         const webhook = await Webhook.findOne({ _id: id, createdBy: user.id });
 
         if (!webhook) {
-            return next(new RuntimeError('Webhook not found', 404));
+            return next(new RuntimeError(ErrorCodes.WEBHOOK_NOT_FOUND, 404));
         }
 
         await Webhook.findByIdAndDelete(id);
@@ -136,7 +137,7 @@ export default class WebhooksController {
         const webhook = await Webhook.findOne({ _id: id, createdBy: user.id });
 
         if (!webhook) {
-            return next(new RuntimeError('Webhook not found', 404));
+            return next(new RuntimeError(ErrorCodes.WEBHOOK_NOT_FOUND, 404));
         }
 
         const testPayload = {

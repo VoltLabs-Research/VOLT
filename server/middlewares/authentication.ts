@@ -21,9 +21,10 @@
  */
 
 import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { User, Session } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { ErrorCodes } from '@/constants/error-codes';
 import logger from '@/logger';
 
 /**
@@ -41,12 +42,12 @@ export const getUserByToken = async (token: string, next: NextFunction): Promise
     // Retrieve the user from the database
     const freshUser = await User.findById(decodedToken.id).select('-devices -__v');
     if (!freshUser) {
-        next(new RuntimeError('Authentication::User::NotFound', 401));
+        next(new RuntimeError(ErrorCodes.AUTHENTICATION_USER_NOT_FOUND, 401));
         return;
     }
     // Check if the user's password has changed since the token was issued
     if (await freshUser.isPasswordChangedAfterJWFWasIssued(decodedToken.iat)) {
-        next(new RuntimeError('Authentication::PasswordChanged', 401));
+        next(new RuntimeError(ErrorCodes.AUTHENTICATION_PASSWORD_CHANGED, 401));
         return;
     }
     return freshUser;
@@ -65,13 +66,13 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
     } else {
-        return next(new RuntimeError('Authentication::Required', 401));
+        return next(new RuntimeError(ErrorCodes.AUTHENTICATION_REQUIRED, 401));
     }
 
     // Check if session is active
     const session = await Session.findOne({ token, isActive: true });
     if (!session) {
-        return next(new RuntimeError('Authentication::Session::Invalid', 401));
+        return next(new RuntimeError(ErrorCodes.AUTHENTICATION_SESSION_INVALID, 401));
     }
 
     const freshUser = await getUserByToken(token, next);
@@ -116,7 +117,7 @@ export const restrictTo = (...roles: string[]): RequestHandler => {
     return (req: Request, res: Response, next: NextFunction) => {
         // Check if the user role matches any allowed roles
         if (!roles.includes((req as any).user.role)) {
-            return next(new RuntimeError('Authentication::Unauthorized', 403));
+            return next(new RuntimeError(ErrorCodes.AUTHENTICATION_UNAUTHORIZED, 403));
         }
         next();
     };

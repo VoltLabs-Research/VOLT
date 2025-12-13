@@ -15,16 +15,18 @@
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * LIABILITY, WHETHER IN AN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
 
-import { Request, Response } from 'express';
-import { Chat, Message, Team } from '@/models/index';
-import RuntimeError from '@/utilities/runtime/runtime-error';
+import { Request, Response, NextFunction } from 'express';
+import { Chat, Message, Team, User } from '@/models/index';
 import { catchAsync } from '@/utilities/runtime/runtime';
-import { uploadSingleFile, getFileUrl } from '@/middlewares/file-upload';
+import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
+import mongoose from 'mongoose';
+import { uploadSingleFile, getFileUrl, uploadToMinIO } from '@/middlewares/file-upload';
 
 export default class ChatController {
     public getChats = catchAsync(async (req: Request, res: Response) => {
@@ -181,7 +183,7 @@ export default class ChatController {
         }).populate('owner members', 'firstName lastName email');
 
         if (!team) {
-            throw new RuntimeError('Team::NotFound', 404);
+            throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
         }
 
         const allMembers = [
@@ -203,7 +205,6 @@ export default class ChatController {
             }
 
             try {
-                const { uploadToMinIO } = await import('@/middlewares/file-upload');
                 const filename = await uploadToMinIO(req.file.buffer, req.file.originalname, req.file.mimetype);
                 const fileUrl = getFileUrl(filename);
 

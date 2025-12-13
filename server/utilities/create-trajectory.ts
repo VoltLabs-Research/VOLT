@@ -1,5 +1,6 @@
 import DumpStorage from '@/services/dump-storage';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 import { Types } from 'mongoose';
 import { v4 } from 'uuid';
 import TrajectoryParserFactory from '@/parsers/factory';
@@ -27,31 +28,31 @@ const createTrajectory = async (files: any[], teamId: string, userId: string, tr
     const workingDir = path.join(tempBaseDir, trajectoryIdStr);
 
     await fs.mkdir(workingDir, { recursive: true });
-    
+
     // Process files. Validate -> Upload to MinIO -> Prepare Job Data.
     const filePromises = files.map(async (file: any, i: number) => {
         let tempPath = file.path;
-        
+
         // Handle Buffer vs Path (Multer vs SSH).
         // If we only have a buffer, write to disk briefly to let the parser read it.
-        if(!tempPath && file.buffer){
+        if (!tempPath && file.buffer) {
             tempPath = path.join(workingDir, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
             await fs.writeFile(tempPath, file.buffer);
         }
 
         // Parse and validate using the centralized factory
         let frameInfo;
-        try{
+        try {
             const parsed = await TrajectoryParserFactory.parse(tempPath);
             frameInfo = parsed.metadata;
-        }catch(err){
-            if(!file.path) await fs.rm(tempPath).catch(() => {});
+        } catch (err) {
+            if (!file.path) await fs.rm(tempPath).catch(() => { });
             return null;
         }
 
         // Prepare data for MinIO. We need the buffer to upload to Object Storage.
         let buffer = file.buffer;
-        if(!buffer){
+        if (!buffer) {
             // If it came from a file path (e.g. multipart), read it into buffer now
             buffer = await fs.readFile(tempPath);
         }
@@ -60,7 +61,7 @@ const createTrajectory = async (files: any[], teamId: string, userId: string, tr
         await DumpStorage.saveDump(trajectoryIdStr, frameInfo.timestep, buffer);
 
         // Cleanup local temp.
-        if(!file.path) await fs.rm(tempPath).catch(() => {});
+        if (!file.path) await fs.rm(tempPath).catch(() => { });
 
         return {
             frameInfo,
@@ -74,8 +75,8 @@ const createTrajectory = async (files: any[], teamId: string, userId: string, tr
     const results = await Promise.all(filePromises);
     const validFiles = (results.filter(Boolean) as any[]);
 
-    if(validFiles.length === 0){
-        throw new RuntimeError('NoValidFilesForTrajectoryCreation', 400);
+    if (validFiles.length === 0) {
+        throw new RuntimeError(ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES, 400);
     }
 
     const totalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
@@ -100,7 +101,7 @@ const createTrajectory = async (files: any[], teamId: string, userId: string, tr
     const jobs: any[] = [];
     const sessionId = v4();
 
-    for(let i = 0; i < validFiles.length; i += chunkSize){
+    for (let i = 0; i < validFiles.length; i += chunkSize) {
         const chunk = validFiles.slice(i, i + chunkSize);
         jobs.push({
             jobId: v4(),
@@ -109,7 +110,7 @@ const createTrajectory = async (files: any[], teamId: string, userId: string, tr
             totalChunks: Math.ceil(validFiles.length / chunkSize),
             files: chunk.map(({ frameInfo, srcPath }) => ({
                 frameInfo,
-                frameFilePath: srcPath 
+                frameFilePath: srcPath
             })),
             teamId,
             name: 'Upload Trajectory',
@@ -120,7 +121,7 @@ const createTrajectory = async (files: any[], teamId: string, userId: string, tr
     }
 
     await queue.addJobs(jobs);
-    await fs.rm(workingDir, { recursive: true, force: true }).catch(() => {});
+    await fs.rm(workingDir, { recursive: true, force: true }).catch(() => { });
 
     return newTrajectory;
 };

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { isValidObjectId } from 'mongoose';
 import BaseController from '@/controllers/base-controller';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 import DumpStorage from '@/services/dump-storage';
 import TrajectoryVFS from '@/services/trajectory-vfs';
 import TrajectoryParserFactory from '@/parsers/factory';
@@ -14,8 +15,8 @@ import { Trajectory, Team } from '@/models';
 import { SYS_BUCKETS } from '@/config/minio';
 import { getTimestepPreview, sendImage } from '@/utilities/export/raster';
 
-export default class TrajectoryController extends BaseController<any>{
-    constructor(){
+export default class TrajectoryController extends BaseController<any> {
+    constructor() {
         super(Trajectory, {
             resourceName: 'Trajectory',
             fields: ['name', 'preview', 'isPublic', 'createdBy'],
@@ -30,20 +31,20 @@ export default class TrajectoryController extends BaseController<any>{
     /**
      * Users can only see trajectories in teams they belong to.
      */
-    protected async getFilter(req: Request): Promise<any>{
+    protected async getFilter(req: Request): Promise<any> {
         const userId = (req as any).user.id;
         const { teamId } = req.query;
-        
+
         let teamQuery: any = { members: userId };
-        if(teamId && typeof teamId === 'string'){
-            if(!isValidObjectId(teamId)) throw new RuntimeError('InvalidTeamDocumentId', 400);
+        if (teamId && typeof teamId === 'string') {
+            if (!isValidObjectId(teamId)) throw new RuntimeError(ErrorCodes.VALIDATION_INVALID_TEAM_ID, 400);
             teamQuery._id = teamId;
         }
 
         const userTeams = await Team.find(teamQuery).select('_id');
 
         // If filtering by specific team ID and user isn't in it, return impossible query
-        if(teamId && userTeams.length === 0) return { _id: { $in: [] } };
+        if (teamId && userTeams.length === 0) return { _id: { $in: [] } };
 
         const teamIds = userTeams.map((team) => team._id);
         return { team: { $in: teamIds } };
@@ -52,15 +53,15 @@ export default class TrajectoryController extends BaseController<any>{
     /**
      * Cleanup resources (Dump, Temp Files) before deleting the DB record
      */
-    protected async onBeforeDelete(doc: any, req: Request): Promise<void>{
+    protected async onBeforeDelete(doc: any, req: Request): Promise<void> {
         const trajectoryId = doc._id.toString();
         await DumpStorage.deleteDumps(trajectoryId);
     }
 
     public getTeamMetrics = catchAsync(async (req: Request, res: Response) => {
         const { teamId } = req.query;
-        if(!teamId || typeof teamId !== 'string'){
-            throw new RuntimeError('MissingTeamIdParameter', 400);
+        if (!teamId || typeof teamId !== 'string') {
+            throw new RuntimeError(ErrorCodes.TRAJECTORY_TEAM_ID_REQUIRED, 400);
         }
         const metrics = await getMetricsByTeamId(teamId);
         res.status(200).json({ status: 'success', data: metrics });
@@ -70,12 +71,12 @@ export default class TrajectoryController extends BaseController<any>{
         const trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
         const vfs = new TrajectoryVFS(trajectoryId);
-        
+
         const rootEntries = await vfs.list(`trajectory-${trajectoryId}`);
         const vfsTotalSize = rootEntries.reduce((acc, entry) => acc + (entry.size || 0), 0);
 
         let pluginsSize = 0;
-        for await(const key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, `plugins/trajectory-${trajectoryId}/`)){
+        for await (const key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, `plugins/trajectory-${trajectoryId}/`)) {
             const stat = await storage.getStat(SYS_BUCKETS.PLUGINS, key);
             pluginsSize += stat.size;
         }
@@ -104,9 +105,9 @@ export default class TrajectoryController extends BaseController<any>{
         const startIndex = (page - 1) * pageSize;
         const endIndex = startIndex + pageSize;
         const trajectoryId = (res as any).locals.trajectory._id.toString();
-        
+
         const dumpPath = await DumpStorage.getDump(trajectoryId, timestep);
-        if(!dumpPath) throw new RuntimeError('FileNotFound', 404);
+        if (!dumpPath) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath);
         const total = parsed.metadata.natoms;
@@ -114,15 +115,15 @@ export default class TrajectoryController extends BaseController<any>{
 
         const positionsPage: number[][] = [];
         const typesPage: number[] = [];
-        
-        for(let i = startIndex; i < limit; i++){
+
+        for (let i = startIndex; i < limit; i++) {
             const base = i * 3;
             positionsPage.push([
-                parsed.positions[base], 
-                parsed.positions[base + 1], 
+                parsed.positions[base],
+                parsed.positions[base + 1],
                 parsed.positions[base + 2]]
             );
-            if(parsed.types) typesPage.push(parsed.types[i]);
+            if (parsed.types) typesPage.push(parsed.types[i]);
         }
 
         res.status(200).json({
@@ -143,12 +144,12 @@ export default class TrajectoryController extends BaseController<any>{
         const vfs = new TrajectoryVFS(trajectoryId);
 
         let virtualPath = '';
-        if(analysisId === 'default' || !type){
+        if (analysisId === 'default' || !type) {
             virtualPath = `trajectory-${trajectoryId}/previews/timestep-${timestep}.glb`;
-        }else{
+        } else {
             const glbFiles = await vfs.list(`trajectory-${trajectoryId}/analysis-${analysisId}/glb`);
             const match = glbFiles.find(f => f.name.includes(type) && f.name.includes(timestep));
-            if(!match) throw new RuntimeError('FileNotFound', 404);
+            if (!match) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
             virtualPath = match.relPath;
         }
 
@@ -156,7 +157,7 @@ export default class TrajectoryController extends BaseController<any>{
         res.setHeader('Content-Type', 'model/gltf-binary');
         res.setHeader('Content-Length', size);
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-        if(analysisId === 'default') res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        if (analysisId === 'default') res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         stream.pipe(res);
     });
 
@@ -168,14 +169,14 @@ export default class TrajectoryController extends BaseController<any>{
 
         const entries = await vfs.list(`trajectory-${trajectoryId}/analysis-${analysisId}/glb`);
         const frameFilter = req.query.frame ? String(req.query.frame) : null;
-        
+
         const filesToZip = entries.filter((entry) => {
-            if(entry.type !== 'file') return false;
-            if(frameFilter && !entry.name.includes(frameFilter)) return false;
+            if (entry.type !== 'file') return false;
+            if (frameFilter && !entry.name.includes(frameFilter)) return false;
             return true;
         });
 
-        if(!filesToZip.length) throw new RuntimeError('FilesNotFound', 404);
+        if (!filesToZip.length) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILES_NOT_FOUND, 404);
 
         const filename = String(trajectory.name || trajectoryId).replace(/[^a-z0-9_\-]+/gi, '_');
         res.setHeader('Content-Type', 'application/zip');
@@ -184,12 +185,12 @@ export default class TrajectoryController extends BaseController<any>{
         const archive = archiver('zip', { zlib: { level: 0 } });
 
         archive.on('error', () => {
-            if(!res.headersSent) res.status(500).end();
+            if (!res.headersSent) res.status(500).end();
         });
 
         archive.pipe(res);
 
-        for(const file of filesToZip){
+        for (const file of filesToZip) {
             const { stream } = await vfs.getReadStream(file.relPath);
             archive.append(stream, { name: `glb/${file.name}` });
         }

@@ -23,6 +23,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { ApiToken } from '@/models/index';
+import { ErrorCodes } from '@/constants/error-codes';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import crypto from 'crypto';
 
@@ -55,7 +56,7 @@ export default class ApiTokenController {
         const { name, description, permissions, expiresAt } = req.body;
 
         if (permissions && !permissions.every((p: string) => this.validPermissions.includes(p))) {
-            return next(new RuntimeError('ApiToken::InvalidPermissions', 400));
+            return next(new RuntimeError(ErrorCodes.API_TOKEN_INVALID_PERMISSIONS, 400));
         }
 
         const tokenValue = `opendxa_${crypto.randomBytes(32).toString('hex')}`;
@@ -95,7 +96,7 @@ export default class ApiTokenController {
         if (description !== undefined) token.description = description;
         if (permissions !== undefined) {
             if (!permissions.every((p: string) => this.validPermissions.includes(p))) {
-                return next(new RuntimeError('ApiToken::InvalidPermissions', 400));
+                return next(new RuntimeError(ErrorCodes.API_TOKEN_INVALID_PERMISSIONS, 400));
             }
             token.permissions = permissions;
         }
@@ -132,14 +133,14 @@ export default class ApiTokenController {
     public validateApiToken = catchAsync(async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         const authHeader = req.headers.authorization;
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return next(new RuntimeError('ApiToken::Required', 401));
+            return next(new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401));
         }
 
         const token = authHeader.substring(7);
         const apiToken = await ApiToken.findByToken(token);
-        if (!apiToken) return next(new RuntimeError('ApiToken::Invalid', 401));
-        if (!apiToken.isActive) return next(new RuntimeError('ApiToken::Inactive', 401));
-        if (apiToken.isExpired()) return next(new RuntimeError('ApiToken::Expired', 401));
+        if (!apiToken) return next(new RuntimeError(ErrorCodes.API_TOKEN_INVALID, 401));
+        if (!apiToken.isActive) return next(new RuntimeError(ErrorCodes.API_TOKEN_INACTIVE, 401));
+        if (apiToken.isExpired()) return next(new RuntimeError(ErrorCodes.API_TOKEN_EXPIRED, 401));
 
         await apiToken.updateLastUsed();
         (req as any).apiToken = apiToken;
@@ -150,9 +151,9 @@ export default class ApiTokenController {
     public checkApiTokenPermission = (requiredPermission: string) => {
         return (req: Request, res: Response, next: NextFunction) => {
             const apiToken = (req as any).apiToken;
-            if (!apiToken) return next(new RuntimeError('ApiToken::Required', 401));
+            if (!apiToken) return next(new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401));
             if (!apiToken.hasPermission(requiredPermission)) {
-                return next(new RuntimeError('ApiToken::InsufficientPermissions', 403));
+                return next(new RuntimeError(ErrorCodes.API_TOKEN_INSUFFICIENT_PERMISSIONS, 403));
             }
             next();
         };

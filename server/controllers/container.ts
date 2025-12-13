@@ -1,9 +1,10 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { Socket } from 'socket.io';
 import { Container, Team } from '@/models/index';
 import { dockerService } from '@/services/docker';
 import { terminalManager } from '@/services/terminal';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
 
 export default class ContainerController {
@@ -98,7 +99,7 @@ export default class ContainerController {
         } else if (action === 'stop') {
             await dockerService.stopContainer(container.containerId);
         } else {
-            return next(new RuntimeError('Container::InvalidAction', 400));
+            return next(new RuntimeError(ErrorCodes.CONTAINER_INVALID_ACTION, 400));
         }
 
         const info = await dockerService.inspectContainer(container.containerId);
@@ -170,8 +171,8 @@ export default class ContainerController {
 
     public readContainerFile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { path } = req.query;
-        if (!path || typeof path !== 'string') return next(new RuntimeError('Container::File::PathRequired', 400));
-        
+        if (!path || typeof path !== 'string') return next(new RuntimeError(ErrorCodes.CONTAINER_FILE_PATH_REQUIRED, 400));
+
         const container = res.locals.container;
         const content = await dockerService.execCommand(container.containerId, ['cat', path]);
         res.status(200).json({ status: 'success', data: { content } });

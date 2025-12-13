@@ -7,7 +7,7 @@ import AtomisticExporter from '@/utilities/export/atoms';
 import { getModifierAnalysis, getModifierPerAtomProps, getPropertyByAtoms } from '@/utilities/plugins';
 import { SYS_BUCKETS } from '@/config/minio';
 import { catchAsync } from '@/utilities/runtime/runtime';
-import { readLargeFile } from '@/utilities/fs';
+import { ErrorCodes } from '@/constants/error-codes';
 
 export default class ColorCodingController{
     public getProperties = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -15,12 +15,12 @@ export default class ColorCodingController{
         const { timestep } = req.query;
 
         if(!timestep || !analysisId){
-            return next(new RuntimeError('ColorCoding::MissingParams', 400));
+            return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
         }
 
         const dumpPath = await DumpStorage.getDump(trajectoryId, String(timestep));
         if(!dumpPath){
-            return next(new RuntimeError('ColorCoding::DumpNotFound', 404));
+            return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));
         }
 
         const parser = new LammpsDumpParser();
@@ -43,7 +43,7 @@ export default class ColorCodingController{
         const { timestep, property, type, exposureId } = req.query;
 
         if(!timestep || !property || !type){
-            return next(new RuntimeError('ColorCoding::MissingParams', 400));
+            return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
         }
 
         let min = Infinity, max = -Infinity;
@@ -67,7 +67,7 @@ export default class ColorCodingController{
         }else{
             const dumpPath = await DumpStorage.getDump(trajectoryId, String(timestep));
             if(!dumpPath){
-                return next(new RuntimeError('ColorCoding::DumpNotFound', 404));
+                return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));
             }
             const parser = new LammpsDumpParser();
             const stats = await parser.getStatsForProperty(dumpPath, propName);
@@ -86,7 +86,7 @@ export default class ColorCodingController{
         const { timestep } = req.query;
         const { property, exposureId, startValue, endValue, gradient } = req.body;
         if(!timestep || !property || startValue === undefined || endValue === undefined || !gradient){
-            return next(new RuntimeError('ColorCoding::MissingParams', 400));
+            return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
         }
 
         const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${startValue}-${endValue}/${gradient}.glb`;
@@ -98,7 +98,7 @@ export default class ColorCodingController{
         // otherwise, it is not found, so generate
         const dumpPath = await DumpStorage.getDump(trajectoryId, String(timestep));
         if(!dumpPath){
-            return next(new RuntimeError('ColorCoding::DumpNotFound', 404));
+            return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));
         }
 
         const exporter = new AtomisticExporter();
@@ -130,7 +130,7 @@ export default class ColorCodingController{
         const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${startValue}-${endValue}/${gradient}.glb`;
         console.log(objectName);
         if(!await storage.exists(SYS_BUCKETS.MODELS, objectName)){
-            return next(new RuntimeError('ColorCoding::NotFound', 404));
+            return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));
         }
 
         const stream = await storage.getStream(SYS_BUCKETS.MODELS, objectName);

@@ -25,6 +25,7 @@ import mongoose from 'mongoose';
 import { Chat, User, Team } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { catchAsync } from '@/utilities/runtime/runtime';
+import { ErrorCodes } from '@/constants/error-codes';
 
 export default class GroupChatController {
     public createGroupChat = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -60,7 +61,7 @@ export default class GroupChatController {
             ]
         });
 
-        if (!team) throw new RuntimeError('Team::NotFound', 404);
+        if (!team) throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
 
         const participants = await User.find({
             _id: { $in: participantIds },
@@ -71,7 +72,7 @@ export default class GroupChatController {
         });
 
         if (participants.length !== participantIds.length) {
-            throw new RuntimeError('Chat::Participants::NotInTeam', 400);
+            throw new RuntimeError(ErrorCodes.CHAT_PARTICIPANTS_NOT_IN_TEAM, 400);
         }
 
         const groupChat = await Chat.create({
@@ -105,10 +106,10 @@ export default class GroupChatController {
             isActive: true
         });
 
-        if (!chat) throw new RuntimeError('Chat::NotFound', 404);
+        if (!chat) throw new RuntimeError(ErrorCodes.CHAT_NOT_FOUND, 404);
 
         const team = await Team.findById(chat.team);
-        if (!team) throw new RuntimeError('Team::NotFound', 404);
+        if (!team) throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
 
         const users = await User.find({
             _id: { $in: userIds },
@@ -119,7 +120,7 @@ export default class GroupChatController {
         });
 
         if (users.length !== userIds.length) {
-            throw new RuntimeError('Chat::Users::NotInTeam', 400);
+            throw new RuntimeError(ErrorCodes.CHAT_USERS_NOT_IN_TEAM, 400);
         }
 
         const newParticipants = [...new Set([...chat.participants.map(p => p.toString()), ...userIds])];
@@ -146,10 +147,10 @@ export default class GroupChatController {
             isActive: true
         });
 
-        if (!chat) throw new RuntimeError('Chat::NotFound', 404);
+        if (!chat) throw new RuntimeError(ErrorCodes.CHAT_NOT_FOUND, 404);
 
         const updatedParticipants = chat.participants.filter(p => !userIds.includes(p.toString()));
-        if (updatedParticipants.length < 2) throw new RuntimeError('Chat::Group::MinParticipants', 400);
+        if (updatedParticipants.length < 2) throw new RuntimeError(ErrorCodes.CHAT_GROUP_MIN_PARTICIPANTS, 400);
 
         const updatedAdmins = chat.admins.filter(a => !userIds.includes(a.toString()));
         await Chat.findByIdAndUpdate(chatId, { participants: updatedParticipants, admins: updatedAdmins });
@@ -175,7 +176,7 @@ export default class GroupChatController {
             isActive: true
         });
 
-        if (!chat) throw new RuntimeError('Chat::NotFound', 404);
+        if (!chat) throw new RuntimeError(ErrorCodes.CHAT_NOT_FOUND, 404);
 
         const updateData: any = {};
         if (groupName !== undefined) updateData.groupName = groupName;
@@ -204,12 +205,12 @@ export default class GroupChatController {
             isActive: true
         });
 
-        if (!chat) throw new RuntimeError('Chat::NotFound', 404);
+        if (!chat) throw new RuntimeError(ErrorCodes.CHAT_NOT_FOUND, 404);
 
         const validUsers = userIds.filter((id: string) => chat.participants.some(p => p.toString() === id));
 
         if (validUsers.length !== userIds.length) {
-            throw new RuntimeError('Chat::Users::NotParticipants', 400);
+            throw new RuntimeError(ErrorCodes.CHAT_USERS_NOT_PARTICIPANTS, 400);
         }
 
         let updatedAdmins;
@@ -217,9 +218,9 @@ export default class GroupChatController {
             updatedAdmins = [...new Set([...chat.admins.map(a => a.toString()), ...validUsers])];
         } else if (action === 'remove') {
             updatedAdmins = chat.admins.filter(a => !validUsers.includes(a.toString()));
-            if (updatedAdmins.length === 0) throw new RuntimeError('Chat::Group::MinAdmins', 400);
+            if (updatedAdmins.length === 0) throw new RuntimeError(ErrorCodes.CHAT_GROUP_MIN_ADMINS, 400);
         } else {
-            throw new RuntimeError('Chat::InvalidAction', 400);
+            throw new RuntimeError(ErrorCodes.CHAT_INVALID_ACTION, 400);
         }
 
         await Chat.findByIdAndUpdate(chatId, { admins: updatedAdmins });
@@ -244,7 +245,7 @@ export default class GroupChatController {
             isActive: true
         });
 
-        if (!chat) throw new RuntimeError('Chat::NotFound', 404);
+        if (!chat) throw new RuntimeError(ErrorCodes.CHAT_NOT_FOUND, 404);
 
         const updatedParticipants = chat.participants.filter(p => p.toString() !== user._id.toString());
         const updatedAdmins = chat.admins.filter(a => a.toString() !== user._id.toString());

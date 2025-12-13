@@ -15,14 +15,16 @@
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * LIABILITY, WHETHER IN AN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { Container, Team } from '@/models/index';
+import Container from '@/models/container';
+import { Team } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 
 /**
  * Middleware to load container and verify user access
@@ -34,26 +36,26 @@ export const loadAndVerifyContainerAccess = async (req: Request, res: Response, 
 
     try {
         const container = await Container.findById(id);
-        
+
         if (!container) {
-            return next(new RuntimeError('Container::NotFound', 404));
+            return next(new RuntimeError(ErrorCodes.CONTAINER_NOT_FOUND, 404));
         }
 
         // Check access: either through team membership or direct ownership
         if (container.team) {
             const team = await Team.findOne({ _id: container.team, members: userId });
             if (!team) {
-                return next(new RuntimeError('Container::AccessDenied', 403));
+                return next(new RuntimeError(ErrorCodes.CONTAINER_ACCESS_DENIED, 403));
             }
             res.locals.team = team;
         } else if (container.createdBy.toString() !== userId.toString()) {
-            return next(new RuntimeError('Container::AccessDenied', 403));
+            return next(new RuntimeError(ErrorCodes.CONTAINER_ACCESS_DENIED, 403));
         }
 
         res.locals.container = container;
         next();
     } catch (err: any) {
-        return next(new RuntimeError('Container::LoadError', 500));
+        return next(new RuntimeError(ErrorCodes.CONTAINER_LOAD_ERROR, 500));
     }
 };
 
@@ -65,20 +67,20 @@ export const verifyTeamForContainerCreation = async (req: Request, res: Response
     const userId = (req as any).user._id;
 
     if (!teamId) {
-        return next(new RuntimeError('Container::TeamIdRequired', 400));
+        return next(new RuntimeError(ErrorCodes.CONTAINER_TEAM_ID_REQUIRED, 400));
     }
 
     try {
         const team = await Team.findOne({ _id: teamId, members: userId });
-        
+
         if (!team) {
-            return next(new RuntimeError('Container::Team::AccessDenied', 403));
+            return next(new RuntimeError(ErrorCodes.CONTAINER_TEAM_ACCESS_DENIED, 403));
         }
 
         res.locals.team = team;
         next();
     } catch (err: any) {
-        return next(new RuntimeError('Container::Team::LoadError', 500));
+        return next(new RuntimeError(ErrorCodes.CONTAINER_TEAM_LOAD_ERROR, 500));
     }
 };
 
@@ -89,7 +91,7 @@ export const validateContainerAction = (req: Request, res: Response, next: NextF
     const { action } = req.body;
 
     if (!action || !['start', 'stop'].includes(action)) {
-        return next(new RuntimeError('Container::InvalidAction', 400));
+        return next(new RuntimeError(ErrorCodes.CONTAINER_INVALID_ACTION, 400));
     }
 
     next();

@@ -23,6 +23,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { User } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
 
 export default class PasswordController {
@@ -32,28 +33,28 @@ export default class PasswordController {
             const { currentPassword, newPassword, confirmPassword } = req.body;
 
             if (!currentPassword || !newPassword || !confirmPassword) {
-                return next(new RuntimeError('Password::Validation::MissingFields', 400));
+                return next(new RuntimeError(ErrorCodes.PASSWORD_VALIDATION_MISSING_FIELDS, 400));
             }
 
             if (newPassword !== confirmPassword) {
-                return next(new RuntimeError('Password::Validation::PasswordsDoNotMatch', 400));
+                return next(new RuntimeError(ErrorCodes.PASSWORD_VALIDATION_MISMATCH, 400));
             }
 
             if (newPassword.length < 8) {
-                return next(new RuntimeError('Password::Validation::PasswordTooShort', 400));
+                return next(new RuntimeError(ErrorCodes.PASSWORD_VALIDATION_TOO_SHORT, 400));
             }
 
             const user = await User.findById(userId).select('+password');
             if (!user) {
-                return next(new RuntimeError('Password::User::NotFound', 404));
+                return next(new RuntimeError(ErrorCodes.PASSWORD_USER_NOT_FOUND, 404));
             }
 
             if (!(await user.isCorrectPassword(currentPassword, user.password))) {
-                return next(new RuntimeError('Password::CurrentPassword::Incorrect', 400));
+                return next(new RuntimeError(ErrorCodes.PASSWORD_CURRENT_INCORRECT, 400));
             }
 
             if (await user.isCorrectPassword(newPassword, user.password)) {
-                return next(new RuntimeError('Password::NewPassword::SameAsCurrent', 400));
+                return next(new RuntimeError(ErrorCodes.PASSWORD_SAME_AS_CURRENT, 400));
             }
 
             user.password = newPassword;
@@ -61,7 +62,7 @@ export default class PasswordController {
 
             res.status(200).json({ status: 'success', message: 'Password changed successfully' });
         } catch (error) {
-            next(new RuntimeError('Password::ChangePassword::Failed', 500));
+            next(new RuntimeError(ErrorCodes.PASSWORD_CHANGE_FAILED, 500));
         }
     });
 
@@ -70,7 +71,7 @@ export default class PasswordController {
             const userId = (req as any).user._id;
             const user = await User.findById(userId).select('passwordChangedAt');
             if (!user) {
-                return next(new RuntimeError('Password::User::NotFound', 404));
+                return next(new RuntimeError(ErrorCodes.PASSWORD_USER_NOT_FOUND, 404));
             }
 
             res.status(200).json({
@@ -81,7 +82,7 @@ export default class PasswordController {
                 }
             });
         } catch (error) {
-            next(new RuntimeError('Password::GetInfo::Failed', 500));
+            next(new RuntimeError(ErrorCodes.PASSWORD_GET_INFO_FAILED, 500));
         }
     });
 }

@@ -23,6 +23,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Session } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
 
 export default class SessionController {
@@ -44,7 +45,7 @@ export default class SessionController {
                 data: sessions
             });
         } catch (error) {
-            next(new RuntimeError('Session::GetSessions::Failed', 500));
+            next(new RuntimeError(ErrorCodes.SESSION_GET_SESSIONS_FAILED, 500));
         }
     });
 
@@ -66,7 +67,7 @@ export default class SessionController {
                 data: activities
             });
         } catch (error) {
-            next(new RuntimeError('Session::GetLoginActivity::Failed', 500));
+            next(new RuntimeError(ErrorCodes.SESSION_GET_LOGIN_ACTIVITY_FAILED, 500));
         }
     });
 
@@ -85,7 +86,7 @@ export default class SessionController {
             );
 
             if (!session) {
-                return next(new RuntimeError('Session::NotFound', 404));
+                return next(new RuntimeError(ErrorCodes.SESSION_NOT_FOUND, 404));
             }
 
             res.status(200).json({
@@ -93,7 +94,7 @@ export default class SessionController {
                 data: session
             });
         } catch (error) {
-            next(new RuntimeError('Session::RevokeSession::Failed', 500));
+            next(new RuntimeError(ErrorCodes.SESSION_REVOKE_FAILED, 500));
         }
     });
 
@@ -119,7 +120,7 @@ export default class SessionController {
                 message: 'All other sessions have been revoked'
             });
         } catch (error) {
-            next(new RuntimeError('Session::RevokeAllOtherSessions::Failed', 500));
+            next(new RuntimeError(ErrorCodes.SESSION_REVOKE_ALL_FAILED, 500));
         }
     });
 }

@@ -23,6 +23,7 @@
 import { Request, Response, NextFunction } from 'express';
 import ApiToken from '@/models/api-token';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 import crypto from 'crypto';
 import logger from '@/logger';
 
@@ -33,35 +34,35 @@ import logger from '@/logger';
 export const validateApiToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const authHeader = req.headers.authorization;
-        
+
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            throw new RuntimeError('API token required', 401);
+            throw new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401);
         }
-        
+
         const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-        
+
         // Find token by hash
         const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-        const apiToken = await ApiToken.findOne({ 
-            tokenHash, 
-            isActive: true 
+        const apiToken = await ApiToken.findOne({
+            tokenHash,
+            isActive: true
         }).select('+tokenHash');
-        
+
         if (!apiToken) {
-            throw new RuntimeError('Invalid API token', 401);
+            throw new RuntimeError(ErrorCodes.API_TOKEN_INVALID, 401);
         }
-        
+
         if (apiToken.isExpired()) {
-            throw new RuntimeError('API token has expired', 401);
+            throw new RuntimeError(ErrorCodes.API_TOKEN_EXPIRED, 401);
         }
-        
+
         // Update last used timestamp
         await apiToken.updateLastUsed();
-        
+
         // Add token info to request
         (req as any).apiToken = apiToken;
         (req as any).user = { id: apiToken.createdBy };
-        
+
         next();
     } catch (error) {
         next(error);
@@ -74,15 +75,15 @@ export const validateApiToken = async (req: Request, res: Response, next: NextFu
 export const requireApiTokenPermission = (requiredPermission: string) => {
     return (req: Request, res: Response, next: NextFunction): void => {
         const apiToken = (req as any).apiToken;
-        
+
         if (!apiToken) {
-            return next(new RuntimeError('API token required', 401));
+            return next(new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401));
         }
-        
+
         if (!apiToken.hasPermission(requiredPermission)) {
-            return next(new RuntimeError('Insufficient permissions', 403));
+            return next(new RuntimeError(ErrorCodes.API_TOKEN_INSUFFICIENT_PERMISSIONS, 403));
         }
-        
+
         next();
     };
 };
@@ -93,19 +94,19 @@ export const requireApiTokenPermission = (requiredPermission: string) => {
 export const requireAnyApiTokenPermission = (permissions: string[]) => {
     return (req: Request, res: Response, next: NextFunction): void => {
         const apiToken = (req as any).apiToken;
-        
+
         if (!apiToken) {
-            return next(new RuntimeError('API token required', 401));
+            return next(new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401));
         }
-        
-        const hasPermission = permissions.some(permission => 
+
+        const hasPermission = permissions.some(permission =>
             apiToken.hasPermission(permission)
         );
-        
+
         if (!hasPermission) {
-            return next(new RuntimeError('Insufficient permissions', 403));
+            return next(new RuntimeError(ErrorCodes.API_TOKEN_INSUFFICIENT_PERMISSIONS, 403));
         }
-        
+
         next();
     };
 };
@@ -116,19 +117,19 @@ export const requireAnyApiTokenPermission = (permissions: string[]) => {
 export const requireAllApiTokenPermissions = (permissions: string[]) => {
     return (req: Request, res: Response, next: NextFunction): void => {
         const apiToken = (req as any).apiToken;
-        
+
         if (!apiToken) {
-            return next(new RuntimeError('API token required', 401));
+            return next(new RuntimeError(ErrorCodes.API_TOKEN_REQUIRED, 401));
         }
-        
-        const hasAllPermissions = permissions.every(permission => 
+
+        const hasAllPermissions = permissions.every(permission =>
             apiToken.hasPermission(permission)
         );
-        
+
         if (!hasAllPermissions) {
-            return next(new RuntimeError('Insufficient permissions', 403));
+            return next(new RuntimeError(ErrorCodes.API_TOKEN_INSUFFICIENT_PERMISSIONS, 403));
         }
-        
+
         next();
     };
 };
@@ -138,11 +139,11 @@ export const requireAllApiTokenPermissions = (permissions: string[]) => {
  */
 export const logApiTokenUsage = (req: Request, res: Response, next: NextFunction): void => {
     const apiToken = (req as any).apiToken;
-    
+
     if (apiToken) {
         logger.info(`API Token ${apiToken.name} used for ${req.method} ${req.path}`);
     }
-    
+
     next();
 };
 
@@ -157,13 +158,13 @@ export const loadAndVerifyApiTokenOwnership = async (req: Request, res: Response
         const token = await ApiToken.findOne({ _id: id, createdBy: userId });
 
         if (!token) {
-            return next(new RuntimeError('ApiToken::NotFound', 404));
+            return next(new RuntimeError(ErrorCodes.API_TOKEN_NOT_FOUND, 404));
         }
 
         res.locals.apiToken = token;
         next();
     } catch (err: any) {
-        return next(new RuntimeError('ApiToken::LoadError', 500));
+        return next(new RuntimeError(ErrorCodes.API_TOKEN_LOAD_ERROR, 500));
     }
 };
 
@@ -175,7 +176,7 @@ export const validateApiTokenPermissionsInBody = (validPermissions: string[]) =>
         const { permissions } = req.body;
 
         if (permissions && !permissions.every((p: string) => validPermissions.includes(p))) {
-            return next(new RuntimeError('ApiToken::InvalidPermissions', 400));
+            return next(new RuntimeError(ErrorCodes.API_TOKEN_INVALID_PERMISSIONS, 400));
         }
 
         next();

@@ -24,6 +24,7 @@ import { Request, Response } from 'express';
 import SSHConnection from '@/models/ssh-connection';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import SSHService from '@/services/ssh';
+import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import logger from '@/logger';
 
@@ -45,7 +46,7 @@ export default class SSHConnectionsController {
             });
         } catch (err: any) {
             logger.error(`Failed to fetch SSH connections: ${err.message}`);
-            throw new RuntimeError('SSHConnection::FetchError', 500);
+            throw new RuntimeError(ErrorCodes.SSH_CONNECTION_FETCH_ERROR, 500);
         }
     });
 
@@ -76,10 +77,10 @@ export default class SSHConnectionsController {
             });
         } catch (err: any) {
             if (err.message === 'SSHConnection::Name::Duplicate') {
-                throw new RuntimeError('SSHConnection::Name::Duplicate', 400);
+                throw new RuntimeError(ErrorCodes.SSH_CONNECTION_NAME_DUPLICATE, 400);
             }
             logger.error(`Failed to create SSH connection: ${err.message}`);
-            throw new RuntimeError('SSHConnection::CreateError', 500);
+            throw new RuntimeError(ErrorCodes.SSH_CONNECTION_CREATE_ERROR, 500);
         }
     });
 
@@ -110,7 +111,7 @@ export default class SSHConnectionsController {
                 throw err;
             }
             logger.error(`Failed to update SSH connection: ${err.message}`);
-            throw new RuntimeError('SSHConnection::UpdateError', 500);
+            throw new RuntimeError(ErrorCodes.SSH_CONNECTION_UPDATE_ERROR, 500);
         }
     });
 
@@ -128,7 +129,7 @@ export default class SSHConnectionsController {
                 throw err;
             }
             logger.error(`Failed to delete SSH connection: ${err.message}`);
-            throw new RuntimeError('SSHConnection::DeleteError', 500);
+            throw new RuntimeError(ErrorCodes.SSH_CONNECTION_DELETE_ERROR, 500);
         }
     });
 

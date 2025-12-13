@@ -2,11 +2,12 @@ import { Request, Response } from 'express';
 import { Analysis, Team, Trajectory } from '@/models';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 import BaseController from '@/controllers/base-controller';
 import logger from '@/logger';
 
-export default class AnalysisConfigController extends BaseController<any>{
-    constructor(){
+export default class AnalysisConfigController extends BaseController<any> {
+    constructor() {
         super(Analysis, {
             resourceName: 'AnalysisConfig',
             fields: []
@@ -19,7 +20,7 @@ export default class AnalysisConfigController extends BaseController<any>{
         const { page = '1', limit = '20', q = '' } = req.query as Record<string, string>;
 
         const team = await Team.findOne({ _id: teamId, members: userId }).select('_id');
-        if(!team) throw new RuntimeError('Forbidden', 403);
+        if (!team) throw new RuntimeError(ErrorCodes.TEAM_ACCESS_DENIED, 403);
 
         const trajectories = await Trajectory.find({ team: teamId }).select('_id name').lean();
         const trajectoryIds = trajectories.map((t: any) => t._id);
@@ -29,19 +30,19 @@ export default class AnalysisConfigController extends BaseController<any>{
         const skip = (pageNum - 1) * limitNum;
 
         const query = typeof q === 'string' ? q.trim() : '';
-        const regex = query ? 
-            { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } 
+        const regex = query ?
+            { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' }
             : null;
 
-        const pipeline: any[] = [{ 
-            $match: { trajectory: { $in: trajectoryIds } } 
+        const pipeline: any[] = [{
+            $match: { trajectory: { $in: trajectoryIds } }
         }];
 
-        if(regex){
+        if (regex) {
             pipeline.push({
-                $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' } 
+                $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' }
             }, {
-                $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } } 
+                $addFields: { trajectoryDoc: { $arrayElemAt: ['$trajectoryDoc', 0] } }
             }, {
                 $match: {
                     $or: [
@@ -81,15 +82,15 @@ export default class AnalysisConfigController extends BaseController<any>{
             if (regex) {
                 const countPipeline = [...pipeline.slice(0, 4), { $count: 'total' }];
                 const [rows, countRows] = await Promise.all([
-                Analysis.aggregate(pipeline),
-                Analysis.aggregate(countPipeline)
+                    Analysis.aggregate(pipeline),
+                    Analysis.aggregate(countPipeline)
                 ]);
                 configs = rows;
                 total = countRows[0]?.total || 0;
             } else {
                 const [rows, count] = await Promise.all([
-                Analysis.aggregate(pipeline),
-                Analysis.countDocuments({ trajectory: { $in: trajectoryIds } })
+                    Analysis.aggregate(pipeline),
+                    Analysis.countDocuments({ trajectory: { $in: trajectoryIds } })
                 ]);
                 configs = rows;
                 total = count;
@@ -101,7 +102,7 @@ export default class AnalysisConfigController extends BaseController<any>{
             });
         } catch (err: any) {
             logger.error(`listAnalysisConfigsByTeam error: ${err}`);
-            throw new RuntimeError('Internal Server Error', 500);
+            throw new RuntimeError(ErrorCodes.ANALYSIS_EXECUTION_FAILED, 500);
         }
     })
 };

@@ -27,6 +27,7 @@ import storage from '@/services/storage';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { SYS_BUCKETS } from '@/config/minio';
 import { getMinIOObjectName } from '@/middlewares/file-upload';
+import { ErrorCodes } from '@/constants/error-codes';
 import logger from '@/logger';
 
 export default class FilePreviewController {
@@ -34,9 +35,9 @@ export default class FilePreviewController {
         const { chatId, messageId } = req.params;
 
         const message = await Message.findOne({ _id: messageId, chat: chatId });
-        if (!message) throw new RuntimeError('Message::NotFound', 404);
+        if (!message) throw new RuntimeError(ErrorCodes.MESSAGE_NOT_FOUND, 404);
         if (message.messageType !== 'file' || !message.metadata?.filePath) {
-            throw new RuntimeError('File::NotFound', 404);
+            throw new RuntimeError(ErrorCodes.FILE_NOT_FOUND, 404);
         }
 
         try {
@@ -57,7 +58,7 @@ export default class FilePreviewController {
             });
         } catch (error) {
             logger.error(`Error reading file from MinIO: ${error}`);
-            throw new RuntimeError('File::ReadError', 500);
+            throw new RuntimeError(ErrorCodes.FILE_READ_ERROR, 500);
         }
     });
 }

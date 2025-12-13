@@ -483,7 +483,7 @@ export default class PluginsController extends BaseController<IPlugin> {
         if (!plugin) throw new RuntimeError('Plugin::NotLoaded', 500);
 
         if (!req.file) {
-            throw new RuntimeError('NoBinaryFileProvided', 400);
+            throw new RuntimeError('Plugin::Binary::Required', 400);
         }
 
         const file = req.file;
@@ -516,10 +516,10 @@ export default class PluginsController extends BaseController<IPlugin> {
         const { objectPath } = req.body;
 
         if (!plugin) throw new RuntimeError('Plugin::NotLoaded', 500);
-        if (!objectPath) throw new RuntimeError('MissingObjectPath', 400);
+        if (!objectPath) throw new RuntimeError('Plugin::Binary::PathRequired', 400);
 
         if (!objectPath.startsWith(`plugin-binaries/${plugin._id}/`)) {
-            throw new RuntimeError('InvalidObjectPath', 403);
+            throw new RuntimeError('Plugin::Binary::InvalidPath', 403);
         }
 
         await storage.delete(SYS_BUCKETS.PLUGINS, objectPath);

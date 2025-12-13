@@ -22,6 +22,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Analysis, Team, Trajectory } from '@/models/index';
+import { ErrorCodes } from '@/constants/error-codes';
 
 // TODO:
 export const checkTeamMembershipForAnalysisTrajectory = async (
@@ -35,14 +36,14 @@ export const checkTeamMembershipForAnalysisTrajectory = async (
     if(!analysisConfig){
         return res.status(404).json({
             status: 'error',
-            data: { error: 'Analysis config not found' }
+            data: { error: ErrorCodes.ANALYSIS_NOT_FOUND }
         });
     }
 
     // If the trajectory is public, allow access without auth/membership
     const trajectory = await Trajectory.findById(analysisConfig.trajectory).select('team isPublic');
     if(!trajectory){
-        return res.status(404).json({ status: 'error', data: { error: 'Trajectory not found' } });
+        return res.status(404).json({ status: 'error', data: { error: ErrorCodes.TRAJECTORY_FILE_NOT_FOUND } });
     }
 
     if((trajectory as any).isPublic){

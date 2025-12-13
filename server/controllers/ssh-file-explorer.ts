@@ -34,6 +34,7 @@ import { createRedisClient } from '@/config/redis';
 import createTrajectory from '@/utilities/create-trajectory';
 import logger from '@/logger';
 import path from 'path';
+import { ErrorCodes } from '@/constants/error-codes';
 
 export default class SSHFileExplorerController {
     public listSSHFiles = catchAsync(async (req: Request, res: Response) => {
@@ -62,7 +63,7 @@ export default class SSHFileExplorerController {
                 throw err;
             }
             logger.error(`Failed to list SSH files: ${err.message}`);
-            throw new RuntimeError('SSH::ListFiles::Error', 500);
+            throw new RuntimeError(ErrorCodes.SSH_LIST_FILES_ERROR, 500);
         }
     });
 
@@ -114,7 +115,7 @@ export default class SSHFileExplorerController {
             const fileStats = await SSHService.getFileStats(connection, remotePath);
 
             if (!fileStats) {
-                throw new RuntimeError('SSH::Path::NotFound', 404);
+                throw new RuntimeError(ErrorCodes.SSH_PATH_NOT_FOUND, 404);
             }
 
             let localFiles: string[] = [];
@@ -147,7 +148,7 @@ export default class SSHFileExplorerController {
 
             if (localFiles.length === 0) {
                 await rm(localFolder, { recursive: true, force: true });
-                throw new RuntimeError('SSH::Import::NoFiles', 400);
+                throw new RuntimeError(ErrorCodes.SSH_IMPORT_NO_FILES, 400);
             }
 
             publishProgress('running', 85, 'Processing files...');
@@ -184,7 +185,7 @@ export default class SSHFileExplorerController {
                 throw err;
             }
             logger.error(`Failed to import trajectory from SSH: ${err.message}`);
-            throw new RuntimeError('SSH::Import::Error', 500);
+            throw new RuntimeError(ErrorCodes.SSH_IMPORT_ERROR, 500);
         } finally {
             publisher.quit();
         }

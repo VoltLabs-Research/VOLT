@@ -20,9 +20,10 @@
  * SOFTWARE.
  */
 
-import { Request, Response } from 'express';
-import TrajectoryVFS from '@/services/trajectory-vfs';
+import { Request, Response, NextFunction } from 'express';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
+import TrajectoryVFS from '@/services/trajectory-vfs';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { Trajectory, User } from '@/models';
 
@@ -41,7 +42,7 @@ export default class TrajectoryVfsController {
     public listTrajectoryFs = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         if (!user) {
-            throw new RuntimeError('Unauthorized', 401);
+            throw new RuntimeError(ErrorCodes.AUTH_UNAUTHORIZED, 401);
         }
 
         const userId = user._id || user.id;
@@ -67,14 +68,14 @@ export default class TrajectoryVfsController {
             if (err instanceof RuntimeError) {
                 throw err;
             }
-            throw new RuntimeError('FileSystemError', 500);
+            throw new RuntimeError(ErrorCodes.TRAJECTORY_VFS_FILE_SYSTEM_ERROR, 500);
         }
     });
 
     public downloadTrajectoryFs = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         if (!user) {
-            throw new RuntimeError('Unauthorized', 401);
+            throw new RuntimeError(ErrorCodes.AUTH_UNAUTHORIZED, 401);
         }
 
         const userId = user._id || user.id;
@@ -94,14 +95,14 @@ export default class TrajectoryVfsController {
             if (err instanceof RuntimeError) {
                 throw err;
             }
-            throw new RuntimeError('DownloadError', 500);
+            throw new RuntimeError(ErrorCodes.TRAJECTORY_VFS_DOWNLOAD_ERROR, 500);
         }
     });
 
     public listUserTrajectories = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         if (!user) {
-            throw new RuntimeError('Unauthorized', 401);
+            throw new RuntimeError(ErrorCodes.AUTH_UNAUTHORIZED, 401);
         }
 
         const userId = user._id || user.id;
@@ -148,7 +149,7 @@ export default class TrajectoryVfsController {
             if (err instanceof RuntimeError) {
                 throw err;
             }
-            throw new RuntimeError('FetchTrajectoriesError', 500);
+            throw new RuntimeError(ErrorCodes.TRAJECTORY_VFS_FETCH_ERROR, 500);
         }
     });
 }

@@ -4,12 +4,13 @@ import BaseController from '@/controllers/base-controller';
 import { User, Session } from '@/models';
 import { IUser } from '@/types/models/user';
 import { catchAsync } from '@/utilities/runtime/runtime';
+import { ErrorCodes } from '@/constants/error-codes';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { AvatarService } from '@/services/avatar';
 import { generateRandomName } from '@/utilities/runtime/name-generator';
 
-export default class AuthController extends BaseController<IUser>{
-    constructor(){
+export default class AuthController extends BaseController<IUser> {
+    constructor() {
         super(User, {
             resourceName: 'User',
             fields: ['firstName', 'lastName', 'email', 'avatar']
@@ -19,28 +20,28 @@ export default class AuthController extends BaseController<IUser>{
     /**
      * Handle file uploads for avatar
      */
-    protected async onBeforeUpdate(data: Partial<IUser>, req: Request): Promise<Partial<IUser>>{
-        if(req.file){
-            try{
+    protected async onBeforeUpdate(data: Partial<IUser>, req: Request): Promise<Partial<IUser>> {
+        if (req.file) {
+            try {
                 const avatarUrl = await AvatarService.uploadCustomAvatar(
                     (req as any).user._id.toString(),
                     req.file.buffer);
                 data.avatar = avatarUrl;
-            }catch(error){
-                throw new RuntimeError('Authentication::Update::AvatarUploadFailed', 500);
+            } catch (error) {
+                throw new RuntimeError(ErrorCodes.AUTHENTICATION_UPDATE_AVATAR_FAILED, 500);
             }
         }
         return data;
     }
 
-    private signToken(id: string): string{
+    private signToken(id: string): string {
         const secret: Secret = process.env.SECRET_KEY as Secret;
         const raw = process.env.JWT_EXPIRATION_DAYS;
         const expiresIn = raw && /^\d+$/.test(raw) ? Number(raw) : (raw || '7d');
         return jwt.sign({ id }, secret, { expiresIn: expiresIn as any });
     }
 
-    private async createAndSendToken(res: Response, statusCode: number, user: IUser, req: Request){
+    private async createAndSendToken(res: Response, statusCode: number, user: IUser, req: Request) {
         const token = this.signToken(String(user._id));
         const userAgent = req.get('User-Agent') || 'Unknown';
         const ip = req.ip || req.socket.remoteAddress || 'Unknown';
@@ -74,10 +75,10 @@ export default class AuthController extends BaseController<IUser>{
 
     public signIn = catchAsync(async (req: Request, res: Response) => {
         const { email, password } = req.body;
-        if(!email || !password) throw new RuntimeError('Auth::Credentials::Missing', 400);
+        if (!email || !password) throw new RuntimeError(ErrorCodes.AUTH_CREDENTIALS_MISSING, 400);
 
         const user = await User.findOne({ email }).select('+password');
-        if(!user || !(await user.isCorrectPassword(password, user.password!))){
+        if (!user || !(await user.isCorrectPassword(password, user.password!))) {
             await Session.create({
                 user: user?._id || null,
                 token: null,
@@ -89,7 +90,7 @@ export default class AuthController extends BaseController<IUser>{
                 success: false,
                 failureReason: !user ? 'User not found' : 'Invalid password'
             });
-            throw new RuntimeError('Auth::Credentials::Invalid', 401);
+            throw new RuntimeError(ErrorCodes.AUTH_CREDENTIALS_INVALID, 401);
         }
 
         await this.createAndSendToken(res, 200, user, req);
@@ -125,8 +126,8 @@ export default class AuthController extends BaseController<IUser>{
 
     public getGuestIdentity = catchAsync(async (req: Request, res: Response) => {
         const { seed } = req.query;
-        if(!seed || typeof seed !== 'string') throw new RuntimeError('Authentication::Guest::SeedRequired', 400);
-        
+        if (!seed || typeof seed !== 'string') throw new RuntimeError(ErrorCodes.AUTHENTICATION_GUEST_SEED_REQUIRED, 400);
+
         const { firstName, lastName } = generateRandomName(seed);
 
         res.status(200).json({
@@ -138,12 +139,12 @@ export default class AuthController extends BaseController<IUser>{
     public updatePassword = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user as IUser;
         const userWithPwd = await User.findById(user.id).select('+password');
-        if(!userWithPwd) throw new RuntimeError('UserNotFound', 404);
+        if (!userWithPwd) throw new RuntimeError(ErrorCodes.USER_NOT_FOUND, 404);
 
-        if(!(await userWithPwd.isCorrectPassword(req.body.passwordCurrent, userWithPwd.password!))) {
-            throw new RuntimeError('Authentication::Update::PasswordCurrentIncorrect', 400);
+        if (!(await userWithPwd.isCorrectPassword(req.body.passwordCurrent, userWithPwd.password!))) {
+            throw new RuntimeError(ErrorCodes.AUTHENTICATION_UPDATE_PASSWORD_INCORRECT, 400);
         }
-        
+
         userWithPwd.password = req.body.password;
         await userWithPwd.save();
         await this.createAndSendToken(res, 200, userWithPwd, req);

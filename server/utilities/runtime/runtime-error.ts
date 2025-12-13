@@ -20,12 +20,14 @@
  * SOFTWARE.
  */
 
+import { ErrorCode } from '@/constants/error-codes';
+
 class RuntimeError extends Error {
     statusCode: number;
-    code: string;
+    code: ErrorCode;
 
-    constructor(message: string, statusCode: number, code: string = 'Internal::Error') {
-        super(message);
+    constructor(code: ErrorCode, statusCode: number) {
+        super(code);
         this.statusCode = statusCode;
         this.code = code;
         Error.captureStackTrace(this, this.constructor);

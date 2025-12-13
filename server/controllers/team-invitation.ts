@@ -23,7 +23,8 @@
 import { Request, Response } from 'express';
 import { TeamInvitation, User, Team, Notification } from '@/models/index';
 import { catchAsync } from '@/utilities/runtime/runtime';
-import createHttpError from 'http-errors';
+import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 import { publishNotificationCreated } from '@/events/notification-events';
 
 export default class TeamInvitationController {
@@ -33,30 +34,30 @@ export default class TeamInvitationController {
         const userId = req.user?._id;
 
         if (!teamId) {
-            throw createHttpError(400, 'Team ID is required');
+            throw new RuntimeError(ErrorCodes.TEAM_ID_REQUIRED, 400);
         }
 
         if (!email || !role) {
-            throw createHttpError(400, 'Email and role are required');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_EMAIL_ROLE_REQUIRED, 400);
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email.toLowerCase())) {
-            throw createHttpError(400, 'Invalid email format');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_INVALID_EMAIL, 400);
         }
 
         const team = await Team.findById(teamId);
         if (!team) {
-            throw createHttpError(404, 'Team not found');
+            throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
         }
 
         if (team.owner.toString() !== userId?.toString()) {
-            throw createHttpError(403, 'Only team owner can invite members');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_OWNER_ONLY, 403);
         }
 
         const user = await User.findOne({ email: email.toLowerCase() });
         if (user && team.members.includes(user._id)) {
-            throw createHttpError(400, 'User is already a member of this team');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_USER_ALREADY_MEMBER, 400);
         }
 
         const existingInvitation = await TeamInvitation.findOne({
@@ -66,7 +67,7 @@ export default class TeamInvitationController {
         });
 
         if (existingInvitation) {
-            throw createHttpError(400, 'An invitation has already been sent to this email');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_ALREADY_SENT, 400);
         }
 
         const token = (await import('crypto')).randomBytes(32).toString('hex');
@@ -122,24 +123,24 @@ export default class TeamInvitationController {
         const userId = req.user?._id;
 
         if (!token) {
-            throw createHttpError(400, 'Invitation token is required');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_TOKEN_REQUIRED, 400);
         }
 
         const invitation = await TeamInvitation.findOne({ token });
         if (!invitation) {
-            throw createHttpError(404, 'Invitation not found');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 404);
         }
 
         if (invitation.status !== 'pending') {
-            throw createHttpError(400, `Invitation has already been ${invitation.status}`);
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED, 400);
         }
 
         if (new Date() > invitation.expiresAt) {
-            throw createHttpError(400, 'Invitation has expired');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_EXPIRED, 400);
         }
 
         if (invitation.invitedUser?.toString() !== userId?.toString()) {
-            throw createHttpError(403, 'You are not authorized to accept this invitation');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_UNAUTHORIZED, 403);
         }
 
         const team = await Team.findByIdAndUpdate(
@@ -149,7 +150,7 @@ export default class TeamInvitationController {
         );
 
         if (!team) {
-            throw createHttpError(404, 'Team not found');
+            throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
         }
 
         await User.findByIdAndUpdate(
@@ -180,20 +181,20 @@ export default class TeamInvitationController {
         const userId = req.user?._id;
 
         if (!token) {
-            throw createHttpError(400, 'Invitation token is required');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_TOKEN_REQUIRED, 400);
         }
 
         const invitation = await TeamInvitation.findOne({ token });
         if (!invitation) {
-            throw createHttpError(404, 'Invitation not found');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 404);
         }
 
         if (invitation.status !== 'pending') {
-            throw createHttpError(400, `Invitation has already been ${invitation.status}`);
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED, 400);
         }
 
         if (invitation.invitedUser?.toString() !== userId?.toString()) {
-            throw createHttpError(403, 'You are not authorized to reject this invitation');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_UNAUTHORIZED, 403);
         }
 
         invitation.status = 'rejected';
@@ -209,22 +210,22 @@ export default class TeamInvitationController {
         const { token } = req.params;
 
         if (!token) {
-            throw createHttpError(400, 'Invitation token is required');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_TOKEN_REQUIRED, 400);
         }
 
         const invitation = await TeamInvitation.findOne({ token })
             .populate('invitedBy', 'email');
 
         if (!invitation) {
-            throw createHttpError(404, 'Invitation not found');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 404);
         }
 
         if (invitation.status !== 'pending') {
-            throw createHttpError(400, `Invitation has already been ${invitation.status}`);
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_ALREADY_PROCESSED, 400);
         }
 
         if (new Date() > invitation.expiresAt) {
-            throw createHttpError(400, 'Invitation has expired');
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_EXPIRED, 400);
         }
 
         const team = await Team.findById(invitation.team)
@@ -232,7 +233,7 @@ export default class TeamInvitationController {
             .lean();
 
         if (!team) {
-            throw createHttpError(404, 'Team not found');
+            throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
         }
 
         const invitationData = {

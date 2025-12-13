@@ -1,3 +1,4 @@
+import { ErrorCodes } from '@/constants/error-codes';
 import { Team, Chat, Message } from '@/models';
 import { NextFunction, Request, Response } from 'express';
 
@@ -15,7 +16,10 @@ export const verifyTeamAccess = async (req: Request, res: Response, next: NextFu
         });
 
         if(!team){
-            return res.status(404).json({ status: 'error', message: 'Team::NotFound' });
+            return res.status(404).json({
+                status: 'error',
+                message: ErrorCodes.TEAM_NOT_FOUND
+            });
         }
 
         (req as any).team = team;
@@ -43,7 +47,10 @@ export const verifyChatAccess = async (req: Request, res: Response, next: NextFu
         });
 
         if(!chat){
-            return res.status(404).json({ status: 'error', message: 'Chat::NotFound' });
+            return res.status(404).json({
+                status: 'error',
+                message: ErrorCodes.CHAT_NOT_FOUND
+            });
         }
 
         (req as any).chat = chat;
@@ -63,7 +70,10 @@ export const verifyParticipantInTeam = async (req: Request, res: Response, next:
         });
 
         if(!exists){
-            return res.status(403).json({ status: 'error', message: 'Participant::NotFound' });
+            return res.status(403).json({ 
+                status: 'error',
+                message: ErrorCodes.CHAT_PARTICIPANTS_NOT_IN_TEAM
+            });
         }
         
         next();
@@ -78,7 +88,10 @@ export const loadMessage = async (req: Request, res: Response, next: NextFunctio
         const message = await Message.findOne({ _id: messageId, chat: chatId });
 
         if(!message){
-            return res.status(404).json({ status: 'error', message: 'Message::NotFound' });
+            return res.status(404).json({
+                status: 'error', 
+                message: ErrorCodes.MESSAGE_NOT_FOUND
+            });
         }
         
         (req as any).message = message;
@@ -95,7 +108,7 @@ export const requireMessageOwner = (req: Request, res: Response, next: NextFunct
     if(message.sender.toString() !== user._id.toString()){
         return res.status(403).json({
             status: 'error', 
-            message: 'Message::Forbidden' 
+            message: ErrorCodes.MESSAGE_FORBIDDEN
         });
     }
 

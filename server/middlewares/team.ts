@@ -23,6 +23,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Team } from '@models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 
 export const checkTeamMembership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const teamId = req.params.id;
@@ -30,8 +31,8 @@ export const checkTeamMembership = async (req: Request, res: Response, next: Nex
 
     const team = await Team.findOne({ _id: teamId, members: userId });
 
-    if(!team){
-        return next(new RuntimeError('Team::Membership::Forbidden', 403));
+    if (!team) {
+        return next(new RuntimeError(ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN, 403));
     }
 
     res.locals.team = team;
@@ -42,13 +43,13 @@ export const checkTeamMembership = async (req: Request, res: Response, next: Nex
 export const checkTeamOwnership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const teamId = req.params.id;
     const userId = (req as any).user._id;
-    
+
     const team = await Team.findOne({ _id: teamId, owner: userId });
 
-    if(!team){
-        return next(new RuntimeError('Team::Ownership::Forbidden', 403));
+    if (!team) {
+        return next(new RuntimeError(ErrorCodes.TEAM_OWNERSHIP_FORBIDDEN, 403));
     }
-    
+
     res.locals.team = team;
 
     next();

@@ -24,6 +24,7 @@ import { Request, Response, NextFunction } from 'express';
 import { isValidObjectId } from 'mongoose';
 import { Team } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 
 /**
  * Middleware to validate MongoDB ObjectId from route params
@@ -32,9 +33,9 @@ import RuntimeError from '@/utilities/runtime/runtime-error';
 export const validateObjectId = (paramName: string = 'id') => {
     return (req: Request, res: Response, next: NextFunction) => {
         const id = req.params[paramName];
-        
+
         if (!id || !isValidObjectId(id)) {
-            return next(new RuntimeError('InvalidObjectId', 400));
+            return next(new RuntimeError(ErrorCodes.VALIDATION_INVALID_OBJECT_ID, 400));
         }
 
         next();
@@ -49,28 +50,28 @@ export const verifyTeamMembershipByTeamId = async (req: Request, res: Response, 
     const userId = (req as any).user?._id || (req as any).user?.id;
 
     if (!userId) {
-        return next(new RuntimeError('Unauthorized', 401));
+        return next(new RuntimeError(ErrorCodes.AUTH_UNAUTHORIZED, 401));
     }
 
     if (!teamId) {
-        return next(new RuntimeError('TeamIdRequired', 400));
+        return next(new RuntimeError(ErrorCodes.TEAM_ID_REQUIRED, 400));
     }
 
     if (!isValidObjectId(teamId)) {
-        return next(new RuntimeError('InvalidTeamDocumentId', 400));
+        return next(new RuntimeError(ErrorCodes.VALIDATION_INVALID_TEAM_ID, 400));
     }
 
     try {
         const team = await Team.findOne({ _id: teamId, members: userId });
-        
+
         if (!team) {
-            return next(new RuntimeError('Team::AccessDenied', 403));
+            return next(new RuntimeError(ErrorCodes.TEAM_ACCESS_DENIED, 403));
         }
 
         res.locals.team = team;
         next();
     } catch (err: any) {
-        return next(new RuntimeError('Team::LoadError', 500));
+        return next(new RuntimeError(ErrorCodes.TEAM_LOAD_ERROR, 500));
     }
 };
 
@@ -84,7 +85,7 @@ export const validateRequiredFields = (fields: string[]) => {
 
         if (missingFields.length > 0) {
             return next(new RuntimeError(
-                `MissingRequiredFields: ${missingFields.join(', ')}`,
+                ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS,
                 400
             ));
         }
@@ -101,7 +102,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     const user = (req as any).user;
 
     if (!user) {
-        return next(new RuntimeError('Unauthorized', 401));
+        return next(new RuntimeError(ErrorCodes.AUTH_UNAUTHORIZED, 401));
     }
 
     next();
@@ -128,14 +129,14 @@ export const loadAndVerifyOwnership = (
             const resource = await Model.findOne({ _id: id, [ownerField]: userId });
 
             if (!resource) {
-                return next(new RuntimeError(`${resourceName}::NotFound`, 404));
+                return next(new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404));
             }
 
             const fieldName = localField || resourceName.toLowerCase();
             res.locals[fieldName] = resource;
             next();
         } catch (err: any) {
-            return next(new RuntimeError(`${resourceName}::LoadError`, 500));
+            return next(new RuntimeError(ErrorCodes.RESOURCE_LOAD_ERROR, 500));
         }
     };
 };

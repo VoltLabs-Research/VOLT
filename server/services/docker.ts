@@ -1,16 +1,17 @@
 import Docker, { Container, ContainerCreateOptions, ContainerInspectInfo, ContainerStats } from 'dockerode';
 import RuntimeError from '@/utilities/runtime/runtime-error';
+import { ErrorCodes } from '@/constants/error-codes';
 import logger from '@/logger';
 
 // Security limit for executive exits (before OOM Crash) - 10 MB
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
 
-class DockerService{
+class DockerService {
     private readonly docker: Docker;
     // Mutex to prevent simultaneous downloads of the same image (thundering herd)
     private pullLocks: Map<string, Promise<void>> = new Map();
 
-    constructor(){
+    constructor() {
         // TODO: should socketPath be a env variable?
         this.docker = new Docker({
             socketPath: '/var/run/docker.sock',
@@ -18,129 +19,129 @@ class DockerService{
         });
     }
 
-    async createContainer(config: ContainerCreateOptions): Promise<Container>{
-        if(!config.Image){
-            throw new RuntimeError('Docker::Create::MissingImage', 400);
+    async createContainer(config: ContainerCreateOptions): Promise<Container> {
+        if (!config.Image) {
+            throw new RuntimeError(ErrorCodes.DOCKER_CREATE_MISSING_IMAGE, 400);
         }
 
-        try{
+        try {
             await this.ensureImage(config.Image);
             return await this.docker.createContainer(config);
-        }catch(error: any){
-            throw new RuntimeError(`Docker::Create::${error.message}`, 500);
+        } catch (error: any) {
+            throw new RuntimeError(ErrorCodes.DOCKER_CREATE_ERROR, 500);
         }
     }
 
-    private async pullImage(imageName: string): Promise<void>{
-        try{
+    private async pullImage(imageName: string): Promise<void> {
+        try {
             const image = this.docker.getImage(imageName);
             await image.inspect();
-        }catch(error: any){
+        } catch (error: any) {
             // Only if it does not exist (404), do we proceed to download
-            if(error.statusCode === 404){
+            if (error.statusCode === 404) {
                 logger.info(`Pulling image ${imageName}...`);
                 await this.pullImageStream(imageName);
-            }else{
+            } else {
                 throw error;
             }
-        }finally{
+        } finally {
             // Always release the lock, even if the download fails.
             this.pullLocks.delete(imageName);
         }
     }
 
-    private async pullImageStream(imageName: string): Promise<void>{
+    private async pullImageStream(imageName: string): Promise<void> {
         return new Promise((resolve, reject) => {
             this.docker.pull(imageName, (err: any, stream: any) => {
-                if(err) return reject(err);
+                if (err) return reject(err);
                 this.docker.modem.followProgress(stream, (err, output) => {
-                    if(err) return reject(err);
+                    if (err) return reject(err);
                     resolve();
                 });
             });
         });
     }
 
-    async stopContainer(containerId: string): Promise<void>{
-        try{
+    async stopContainer(containerId: string): Promise<void> {
+        try {
             const container = this.docker.getContainer(containerId);
             await container.stop();
-        }catch(error: any){
-            if(error.statusCode !== 304 && error.statusCode !== 404){
-                throw new RuntimeError(`Docker::Stop::${error.message}`, 500);
+        } catch (error: any) {
+            if (error.statusCode !== 304 && error.statusCode !== 404) {
+                throw new RuntimeError(ErrorCodes.DOCKER_STOP_ERROR, 500);
             }
         }
     }
 
-    async removeContainer(containerId: string): Promise<void>{
-        try{
+    async removeContainer(containerId: string): Promise<void> {
+        try {
             const container = this.docker.getContainer(containerId);
             // v: true removes associated anonymous volumes (Disk Garbage Collection)
             await container.remove({ force: true, v: true });
-        }catch(error: any){
-            if(error.statusCode !== 404){
-                throw new RuntimeError(`Docker::Remove::${error.message}`, 500);
+        } catch (error: any) {
+            if (error.statusCode !== 404) {
+                throw new RuntimeError(ErrorCodes.DOCKER_REMOVE_ERROR, 500);
             }
         }
     }
 
-    async ensureImage(imageName: string): Promise<void>{
+    async ensureImage(imageName: string): Promise<void> {
         // Check if operation is already in progress
-        if(this.pullLocks.has(imageName)){
+        if (this.pullLocks.has(imageName)) {
             return this.pullLocks.get(imageName);
         }
-        
+
         // Start new operation and lock
         const pullTask = this.pullImage(imageName);
         this.pullLocks.set(imageName, pullTask);
         return pullTask;
     }
 
-    async startContainer(containerId: string): Promise<void>{
-        try{
+    async startContainer(containerId: string): Promise<void> {
+        try {
             const container = this.docker.getContainer(containerId);
             await container.start();
-        }catch(error: any){
+        } catch (error: any) {
             // 304 = Already Started (HTTP 304 Not Modified)
-            if(error.statusCode !== 304){
-                throw new RuntimeError(`Docker::Start::${error.message}`, 500);
+            if (error.statusCode !== 304) {
+                throw new RuntimeError(ErrorCodes.DOCKER_START_ERROR, 500);
             }
         }
     }
 
-    async getContainerStats(containerId: string): Promise<ContainerStats>{
-        try{
+    async getContainerStats(containerId: string): Promise<ContainerStats> {
+        try {
             const container = this.docker.getContainer(containerId);
             return await container.stats({ stream: false });
-        }catch(error: any){
-            throw new RuntimeError(`Docker::Stats::${error.message}`, 500);
+        } catch (error: any) {
+            throw new RuntimeError(ErrorCodes.DOCKER_STATS_ERROR, 500);
         }
     }
 
-    async inspectContainer(containerId: string): Promise<ContainerInspectInfo>{
-        try{
+    async inspectContainer(containerId: string): Promise<ContainerInspectInfo> {
+        try {
             const container = this.docker.getContainer(containerId);
             return await container.inspect();
-        }catch(error: any){
-            throw new RuntimeError(`Docker::Inspect::${error.message}`, 500);
+        } catch (error: any) {
+            throw new RuntimeError(ErrorCodes.DOCKER_INSPECT_ERROR, 500);
         }
     }
 
-    public getContainer(containerId: string): Container{
+    public getContainer(containerId: string): Container {
         return this.docker.getContainer(containerId);
     }
 
-    async getContainerProcesses(containerId: string): Promise<any>{
-        try{
+    async getContainerProcesses(containerId: string): Promise<any> {
+        try {
             const container = this.docker.getContainer(containerId);
             return await container.top({ ps_args: '-o pid,comm,args,nlwp,user,rss,pcpu' });
-        }catch(error: any){
-            throw new RuntimeError(`Docker::Top::${error.message}`, 500);
+        } catch (error: any) {
+            throw new RuntimeError(ErrorCodes.DOCKER_TOP_ERROR, 500);
         }
     }
 
-    async execCommand(containerId: string, command: string[]): Promise<string>{
-        try{
+    async execCommand(containerId: string, command: string[]): Promise<string> {
+        try {
             const container = this.docker.getContainer(containerId);
             const exec = await container.exec({
                 Cmd: command,
@@ -156,32 +157,32 @@ class DockerService{
                 let truncated = false;
 
                 const safeWrite = (chunk: Buffer) => {
-                    if(truncated) return;
+                    if (truncated) return;
 
                     const newSize = totalBytes + chunk.length;
-                    if(newSize > MAX_EXEC_BUFFER_SIZE){
+                    if (newSize > MAX_EXEC_BUFFER_SIZE) {
                         output += chunk.slice(0, MAX_EXEC_BUFFER_SIZE - totalBytes).toString('utf8');
                         output += '\n... [TRUNCATED] ...';
                         truncated = true;
                         // TODO: Should the connection be cut off if the limit is exceeded?
                         // stream.destroy()
-                    }else{
+                    } else {
                         output += chunk.toString('utf8');
                     }
                     totalBytes = newSize;
                 };
 
 
-                this.docker.modem.demuxStream(stream, 
+                this.docker.modem.demuxStream(stream,
                     { write: safeWrite },
                     { write: safeWrite }
                 );
 
                 stream.on('end', () => resolve(output));
-                stream.on('error', (err) => reject(new RuntimeError(`Stream::${err.message}`, 500)));
+                stream.on('error', (err) => reject(new RuntimeError(ErrorCodes.DOCKER_STREAM_ERROR, 500)));
             });
-        }catch(error: any){
-            throw new RuntimeError(`Docker::Exec::${error.message}`, 500);
+        } catch (error: any) {
+            throw new RuntimeError(ErrorCodes.DOCKER_EXEC_ERROR, 500);
         }
     }
 };
