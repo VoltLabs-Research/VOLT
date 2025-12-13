@@ -32,39 +32,50 @@ uniform float shininess;
 uniform float rimFactor;
 uniform float rimPower;
 
+/**
+ * Fragment shader for rendering cicular point sprites with a "fake sphere" normal
+ * reconstructed from `gl_PointCoord`. Applies a stylized Phong-like lighting model
+ * (ambient + diffuse + reduced specular) plus subtle rim lighting.
+*/
 void main(){
     #include <clipping_planes_fragment>
 
+    // Recenter point coordinates so (0, 0) is sprite center.
     vec2 coord = gl_PointCoord - vec2(0.5);
     
+    // Keep only fragments inside a radius-0.5 circle (circular sprite).
     if(length(coord) > 0.5) discard;
     
+    // Reconstruct Z on a hemisphere of radius 0.5 to fake a spherical surface
     float z = sqrt(0.25 - dot(coord, coord));
     
+    // Pseudo-normal in sprite-local space
     vec3 fakeNormal = normalize(vec3(coord.x, coord.y, z));
+    
+    // View direction in world space.
     vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+
+    // Fixed directional light
     vec3 lightDir = normalize(vec3(1.0, 1.0, 1.0));
     
-    // Iluminación difusa más sutil
     float diffuse = max(0.0, dot(fakeNormal, lightDir));
     
-    // Aumentar el factor ambiental para colores más sólidos
+    // Ambient and diffuse are color-tinted by vColor
     vec3 ambientColor = vColor * ambientFactor;
     vec3 diffuseColor = vColor * diffuse * diffuseFactor;
     
-    // Reducir drásticamente la especularidad
+    // Specular (Blinn-Phong).
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(fakeNormal, halfwayDir), 0.0), shininess);
-    vec3 specularColor = vec3(0.8) * spec * specularFactor; // Reducido de vec3(1.0) a vec3(0.8)
+    vec3 specularColor = vec3(0.8) * spec * specularFactor;
     
-    // Reducir el rim lighting
+    // Rim lighting.
     float rimDot = 1.0 - max(dot(viewDir, fakeNormal), 0.0);
     float rim = pow(rimDot, rimPower);
-    vec3 rimColor = vec3(0.5) * rim * rimFactor; // Reducido de vec3(1.0) a vec3(0.5)
+    vec3 rimColor = vec3(0.5) * rim * rimFactor; 
     
-    // Combinar colores con mayor peso en el color base
+    // Final mix emphasizes the base color by down-weighting specular and rim.
     vec3 finalColor = ambientColor + diffuseColor + specularColor * 0.3 + rimColor * 0.2;
     
-    // Eliminar la corrección gamma para colores más saturados
     gl_FragColor = vec4(finalColor, 1.0);
 }

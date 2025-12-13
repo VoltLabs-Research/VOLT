@@ -26,14 +26,24 @@ uniform float pointScale;
 varying vec3 vColor;
 varying vec3 vWorldPosition;
 
+/**
+ * @summary
+ * Vertex shader for point sprite rendering with per-vertex color passthrough 
+ * and perspective-scaled point size.
+*/
 void main(){
+    // Pass per-vertex color to fragment shader.
     vColor = color; 
 
+    // Compute world-space position for lighting calculations.
     vec4 worldPosition = modelMatrix * vec4(position, 1.0);
     vWorldPosition = worldPosition.xyz;
 
+    // Transform into view space and then clip space.
     vec4 mvPosition = viewMatrix * worldPosition;
     gl_Position = projectionMatrix * mvPosition;
+
+    // Perspective scaling. Points shrink with distance (-mvPosition.z).
     gl_PointSize = pointScale * (300.0 / -mvPosition.z);
 
     #include <clipping_planes_vertex>
