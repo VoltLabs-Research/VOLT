@@ -20,139 +20,99 @@
  * SOFTWARE.
  */
 
-import { Trajectory } from '@models/index';
+import { Plugin, Trajectory } from '@models/index';
 import Analysis from '@/models/analysis';
 import MongoListingCountAggregator from '@/services/metrics/mongo-listing-count-aggregator';
-import ManifestService from '@/services/plugins/manifest-service';
+import { IWorkflowNode, NodeType } from '@/types/models/modifier';
+
+type Pointer = {
+    trajectoryId: string;
+    analysisId: string;
+    createdAt?: string;
+};
 
 export const getMetricsByTeamId = async (teamId: string) => {
-    const trajectories = await Trajectory.find({ team: teamId }).select('_id').lean();
-    if (!trajectories.length) {
+    const trajectoryDocs = await Trajectory.find({ team: teamId }).select('_id').lean();
+    if(!trajectoryDocs.length){
         return { totals: {}, lastMonth: {}, weekly: { labels: [] } };
     }
 
-    const trajectoryIds = trajectories.map((traj) => traj._id.toString());
-    const aggregators: Array<{ agg: MongoListingCountAggregator; key: string }> = [
-        {
-            agg: new MongoListingCountAggregator(
-                { kind: 'model', model: Trajectory, buildQuery: () => ({ team: teamId }) },
-                { metricKey: 'trajectories' }
-            ),
-            key: 'trajectories'
-        },
-        {
-            agg: new MongoListingCountAggregator(
-                { kind: 'model', model: Analysis, buildQuery: () => ({ trajectory: { $in: trajectoryIds } }) },
-                { metricKey: 'analysis' }
-            ),
-            key: 'analysis'
-        }
-    ];
+    const trajectoryObjectIds = trajectoryDocs.map((traj) => traj._id);
+    const trajectoryIdStr = new Map(trajectoryDocs.map((traj) => [String(traj._id), String(traj._id)]));
 
-    const analyses = await Analysis.find({ trajectory: { $in: trajectoryIds } })
-        .select('_id plugin modifier trajectory')
+    const aggregators: Array<{ agg: MongoListingCountAggregator; key: string }> = [{
+        agg: new MongoListingCountAggregator(
+            { kind: 'model', model: Trajectory, buildQuery: () => ({ team: teamId }) },
+            { metricKey: 'trajectories' }
+        ),
+        key: 'trajectories'
+    }, {
+        agg: new MongoListingCountAggregator(
+            { kind: 'model', model: Analysis, buildQuery: () => ({ trajectory: { $in: trajectoryObjectIds } }) },
+            { metricKey: 'analysis' }
+        ),
+        key: 'analysis'
+    }];
+
+    const analyses = await Analysis.find({ trajectory: { $in: trajectoryObjectIds } })
+        .select('_id plugin modifier trajectory createdAt')
         .lean();
+    
+    const pointersByPlugin = new Map<string, Pointer[]>();
+    for(const analysis of analyses){
+        if(!analysis.plugin || !analysis.trajectory) continue;
+        const pluginSlug = String(analysis.plugin);
+        const trajectoryId = String(analysis.trajectory);
+        const analysisId = String(analysis._id);
+        if(!trajectoryId || !analysisId) continue;
 
-    const pluginsByModifier = new Map<string, Set<string>>();
-    const pluginPointers = new Map<string, Map<string, { trajectoryId: string; analysisId: string }>>();
-    const pluginModifierAnalyses = new Map<string, Map<string, Array<{ trajectoryId: string; analysisId: string; createdAt?: string }>>>();
-
-    for (const analysis of analyses) {
-        if (!analysis.plugin || !analysis.modifier) continue;
-        const pluginKey = String(analysis.plugin);
-        const modifierKey = String(analysis.modifier);
-        const trajectoryKey = (analysis.trajectory as any)?.toString?.() ?? String(analysis.trajectory ?? '');
-        const analysisKey = analysis._id?.toString?.() ?? '';
-        if (!trajectoryKey || !analysisKey) continue;
-
-        if (!pluginsByModifier.has(pluginKey)) {
-            pluginsByModifier.set(pluginKey, new Set());
+        const arr = pointersByPlugin.get(pluginSlug);
+        const createdAt = analysis.createdAt ? new Date(analysis.createdAt as any).toISOString() : undefined;
+        if(arr){
+            arr.push({ trajectoryId, analysisId, createdAt });
+        }else{
+            pointersByPlugin.set(pluginSlug, [{ trajectoryId, analysisId, createdAt }]);
         }
-        pluginsByModifier.get(pluginKey)!.add(modifierKey);
-
-        const pointerMap = pluginPointers.get(pluginKey) ?? new Map<string, { trajectoryId: string; analysisId: string }>();
-        if (!pointerMap.has(modifierKey)) {
-            pointerMap.set(modifierKey, { trajectoryId: trajectoryKey, analysisId: analysisKey });
-        }
-        pluginPointers.set(pluginKey, pointerMap);
-
-        const analysisMap =
-            pluginModifierAnalyses.get(pluginKey) ??
-            new Map<string, Array<{ trajectoryId: string; analysisId: string; createdAt?: string }>>();
-        const arr = analysisMap.get(modifierKey) ?? [];
-        arr.push({
-            trajectoryId: trajectoryKey,
-            analysisId: analysisKey,
-            createdAt: analysis.createdAt ? new Date(analysis.createdAt).toISOString() : undefined
-        });
-        analysisMap.set(modifierKey, arr);
-        pluginModifierAnalyses.set(pluginKey, analysisMap);
     }
 
-    for (const [pluginId, modifiers] of pluginsByModifier.entries()) {
-        const manifest = await new ManifestService(pluginId).get();
-        const listingEntries = manifest.listing ?? {};
-        const listingKeys = Object.keys(listingEntries).filter((key) => {
-            const entry = listingEntries[key];
-            if (!entry?.aggregators?.count) return false;
+    const pluginSlugs = [...pointersByPlugin.keys()];
+    if(!pluginSlugs.length){
+        return MongoListingCountAggregator.merge(aggregators);
+    }
 
-            if (entry.modifiers && Array.isArray(entry.modifiers)) {
-                return entry.modifiers.some((modId: string) => modifiers.has(modId));
-            }
+    const plugins = await Plugin.find({ slug: { $in: pluginSlugs } }).lean();
+    const pluginBySlug = new Map(plugins.map((plugin) => [String(plugin.slug), plugin]));
 
-            const modifierId = key.split('_')[0];
-            return modifiers.has(modifierId);
-        });
+    for(const slug of pluginSlugs){
+        const plugin = pluginBySlug.get(slug);
+        if(!plugin) continue;
 
-        for (const listingKey of listingKeys) {
-            const entry = listingEntries[listingKey];
+        const analysisPointers = pointersByPlugin.get(slug) ?? [];
+        if(!analysisPointers.length) continue;
 
-            // Determine which modifiers contribute to this listing
-            let relevantModifiers: string[] = [];
-            if (entry.modifiers && Array.isArray(entry.modifiers)) {
-                relevantModifiers = entry.modifiers;
-            } else {
-                relevantModifiers = [listingKey.split('_')[0]];
-            }
+        const exposureNodes = plugin.workflow?.nodes?.filter((node: IWorkflowNode) => node.type === NodeType.EXPOSURE) ?? [];
+        if(!exposureNodes.length) continue;
 
-            // Collect all analysis pointers for these modifiers
-            const analysisPointers: Array<{ trajectoryId: string; analysisId: string; createdAt?: string }> = [];
-            let firstPointer: { trajectoryId: string; analysisId: string } | undefined;
-
-            for (const modId of relevantModifiers) {
-                const pointers = pluginModifierAnalyses.get(pluginId)?.get(modId);
-                if (pointers) {
-                    analysisPointers.push(...pointers);
-                    if (!firstPointer && pointers.length > 0) {
-                        firstPointer = { trajectoryId: pointers[0].trajectoryId, analysisId: pointers[0].analysisId };
-                    }
-                }
-            }
-
-            const listingUrl = firstPointer
-                ? `/dashboard/trajectory/${firstPointer.trajectoryId}/plugin/${pluginId}/listing/${listingKey}`
+        const first = analysisPointers[0];
+        for(const exposureNode of exposureNodes){
+            const listingKey = exposureNode.id;
+            const displayName = exposureNode.data?.exposure?.name || exposureNode.id;
+            const listingUrl = first
+                ? `/dashboard/trajectory/${first.trajectoryId}/plugin/${slug}/listing/${listingKey}`
                 : undefined;
-
-            if (!analysisPointers.length) {
-                continue;
-            }
-
             aggregators.push({
-                agg: new MongoListingCountAggregator(
-                    {
-                        kind: 'listing',
-                        listingKey,
-                        pluginId,
-                        displayName: entry?.aggregators?.displayName ?? listingKey,
-                        listingUrl,
-                        analysisPointers
-                    },
-                    { metricKey: listingKey }
-                ),
+                agg: new MongoListingCountAggregator({
+                    kind: 'listing',
+                    listingKey,
+                    pluginId: slug,
+                    displayName,
+                    listingUrl,
+                    analysisPointers 
+                }, { metricKey: listingKey }),
                 key: listingKey
             });
         }
     }
-
+    
     return MongoListingCountAggregator.merge(aggregators);
 };

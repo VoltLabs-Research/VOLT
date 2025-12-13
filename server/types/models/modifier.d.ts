@@ -1,11 +1,52 @@
-import { PluginStatus } from '@/models/plugin';
+import { Model, Document } from 'mongoose';
 
-export interface IArgumentOption{
+// Enums duplicated to avoid circular dependency
+export enum NodeType {
+    MODIFIER = 'modifier',
+    ARGUMENTS = 'arguments',
+    CONTEXT = 'context',
+    FOREACH = 'forEach',
+    ENTRYPOINT = 'entrypoint',
+    EXPOSURE = 'exposure',
+    SCHEMA = 'schema',
+    VISUALIZERS = 'visualizers',
+    EXPORT = 'export'
+};
+
+export enum ArgumentType {
+    SELECT = 'select',
+    NUMBER = 'number',
+    FRAME = 'frame',
+    BOOLEAN = 'boolean',
+    STRING = 'string'
+};
+
+export enum ModifierContext {
+    TRAJECTORY_DUMPS = 'trajectory_dumps'
+};
+
+export enum Exporter {
+    ATOMISTIC = 'AtomisticExporter',
+    MESH = 'MeshExporter',
+    DISLOCATION = 'DislocationExporter'
+};
+
+export enum ExportType {
+    GLB = 'glb'
+};
+
+export enum PluginStatus {
+    DRAFT = 'draft',
+    PUBLISHED = 'published',
+    DISABLED = 'disabled'
+};
+
+export interface IArgumentOption {
     key: string;
     label: string;
 };
 
-export interface IArgumentDefinition{
+export interface IArgumentDefinition {
     argument: string;
     type: ArgumentType;
     label: string;
@@ -17,7 +58,7 @@ export interface IArgumentDefinition{
     step?: number;
 };
 
-export interface IModifierData{
+export interface IModifierData {
     name: string;
     icon?: string;
     author?: string;
@@ -27,47 +68,51 @@ export interface IModifierData{
     description?: string;
 };
 
-export interface IArgumentsData{
+export interface IArgumentsData {
     arguments: IArgumentDefinition[];
 };
 
-export interface IContextData{
+export interface IContextData {
     source: ModifierContext;
 };
 
-export interface IForEachData{
+export interface IForEachData {
     iterableSource: string;
 };
 
-export interface IEntrypointData{
+export interface IEntrypointData {
     binary: string;
+    binaryObjectPath?: string;
+    binaryFileName?: string;
+    binaryHash?: string;
     arguments: string;
     timeout?: number;
 };
 
-export interface IExposureData{
+export interface IExposureData {
     name: string;
     results: string;
     iterable?: string;
+    perAtomProperties?: string[];
 };
 
-export interface ISchemaData{
+export interface ISchemaData {
     definition: Record<string, any>;
 };
 
-export interface IVisualizersData{
+export interface IVisualizersData {
     canvas?: boolean;
     raster?: boolean;
     listing?: Record<string, string>;
 };
 
-export interface IExportData{
+export interface IExportData {
     exporter: Exporter,
     type: ExportType;
     options?: Record<string, any>;
 };
 
-export interface INodeData{
+export interface INodeData {
     modifier?: IModifierData;
     arguments?: IArgumentsData;
     context?: IContextData;
@@ -79,9 +124,8 @@ export interface INodeData{
     export?: IExportData;
 };
 
-export interface IWorkflowNode{
+export interface IWorkflowNode {
     id: string;
-    name: string;
     type: NodeType;
     position: {
         x: number;
@@ -90,7 +134,7 @@ export interface IWorkflowNode{
     data: INodeData;
 };
 
-export interface IWorkflowEdge{
+export interface IWorkflowEdge {
     id: string;
     source: string;
     sourceHandle?: string;
@@ -98,7 +142,7 @@ export interface IWorkflowEdge{
     targetHandle?: string;
 };
 
-export interface IWorkflow{
+export interface IWorkflow {
     nodes: IWorkflowNode[];
     edges: IWorkflowEdge[];
     viewport?: {
@@ -108,15 +152,16 @@ export interface IWorkflow{
     };
 };
 
-export interface IPluginModel extends Model<IPlugin>{
+export interface IPluginModel extends Model<IPlugin> {
+    findBySlug(slug: string): Promise<IPlugin | null>;
     getNodeById(workflow: IWorkflow, nodeId: string): IWorkflowNode | undefined;
     getNodeByName(workflow: IWorkflow, name: string): IWorkflowNode | undefined;
     getChildNodes(workflow: IWorkflow, nodeId: string): IWorkflowNode[];
-    getParentNodes(workflow:  IWorkflow, nodeId: string): IWorkflowNode[];
-    getNodesByType(workflow: IWorkflow, type:  NodeType): IWorkflowNode[];
+    getParentNodes(workflow: IWorkflow, nodeId: string): IWorkflowNode[];
+    getNodesByType(workflow: IWorkflow, type: NodeType): IWorkflowNode[];
 };
 
-export interface IPlugin extends Document{
+export interface IPlugin extends Document {
     slug: string;
     workflow: IWorkflow;
     status: PluginStatus;
@@ -128,5 +173,5 @@ export interface IPlugin extends Document{
     modifier: IModifierData | null;
     name: string;
     version: string;
-    exposures: Array<{ nodeId: string; nodeName: string } & IExposureData>;
+    exposures: Array<{ nodeId: string } & IExposureData>;
 };

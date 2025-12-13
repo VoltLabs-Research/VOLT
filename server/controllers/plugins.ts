@@ -339,9 +339,9 @@ export default class PluginsController extends BaseController<IPlugin>{
             });
         }
 
-        const analysisMap = new Map(analyses.map((a: IAnalysis) => [a._id.toString(), { ...a, trajectory }]));
+        const analysisMap = new Map(analyses.map((a: any) => [a._id.toString(), { ...a, trajectory }]));
 
-        const timestepPromises = analyses.map(async (analysis: IAnalysis) => {
+        const timestepPromises = analyses.map(async (analysis: any) => {
             const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysis._id}/`;
             const seen = new Set<number>();
             for await(const key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, prefix)){
