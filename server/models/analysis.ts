@@ -45,11 +45,6 @@ const AnalysisSchema: Schema<IAnalysis> = new Schema({
         required: true,
         lowercase: true
     },
-    modifier: {
-        type: String,
-        required: true,
-        lowercase: true
-    },
     config: {
         type: Schema.Types.Mixed,
         required: true

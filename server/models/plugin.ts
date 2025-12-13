@@ -275,8 +275,7 @@ const PluginSchema = new Schema({
         required: true,
         unique: true,
         lowercase: true,
-        trim: true,
-        index: true
+        trim: true
     },
     workflow: {
         type: WorkflowSchema,

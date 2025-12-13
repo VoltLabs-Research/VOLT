@@ -26,7 +26,7 @@ import usePerformanceSettingsStore from '@/stores/editor/perfomance-settings';
 import useCameraSettings from '@/stores/editor/camera-config';
 import { useRendererSettings } from '@/stores/editor/renderer-settings';
 import useOrbitControlsSettings from '@/stores/editor/orbit-controls';
-import usePluginStore from '@/stores/plugins';
+import usePluginStore from '@/stores/plugins/plugin';
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
 import './Scene3D.css';
 
@@ -85,7 +85,6 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 
 	const activeScene = useModelStore((s) => s.activeScene);
 	const activeModel = useModelStore((s) => s.activeModel);
-	const manifests = usePluginStore((s) => s.manifests);
 
 	const toggleCanvasGrid = useEditorUIStore((s) => s.toggleCanvasGrid);
 	const toggleEditorWidgets = useEditorUIStore((s) => s.toggleEditorWidgets);
@@ -177,12 +176,12 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 			if (!orbitControlsRef.current) return;
 			const controls = orbitControlsRef.current;
 			const camera = controls.object as THREE.PerspectiveCamera;
-			
+
 			// Initialize the reference distance on first call
 			if (!initialDistanceRef.current) {
 				initialDistanceRef.current = camera.position.distanceTo(controls.target);
 			}
-			
+
 			// Calculate target distance based on zoom percentage
 			// 100% = initial distance
 			// 50% = 2x farther away
@@ -190,43 +189,43 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 			const targetDistance = initialDistanceRef.current * (100 / zoomPercent);
 			const currentPosition = camera.position.clone();
 			const direction = currentPosition.clone().sub(controls.target).normalize();
-			
+
 			// Calculate new camera position
 			const newPosition = controls.target.clone().addScaledVector(direction, targetDistance);
-			
+
 			// Apply distance constraints from OrbitControls
 			const clampedDistance = Math.max(
 				controls.minDistance,
 				Math.min(controls.maxDistance, targetDistance)
 			);
 			const clampedPosition = controls.target.clone().addScaledVector(direction, clampedDistance);
-			
+
 			// Set camera position directly
 			camera.position.copy(clampedPosition);
-			
+
 			controls.update();
 		},
 		getCurrentZoom: () => {
 			if (!orbitControlsRef.current) return 100;
 			const controls = orbitControlsRef.current;
 			const camera = controls.object as THREE.PerspectiveCamera;
-			
+
 			// Initialize reference distance on first call if not already done
 			if (!initialDistanceRef.current) {
 				initialDistanceRef.current = camera.position.distanceTo(controls.target);
 			}
-			
+
 			// Calculate current distance
 			const currentDistance = camera.position.distanceTo(controls.target);
-			
+
 			// Calculate zoom percentage relative to initial distance
 			// From: targetDistance = initialDistance * (100 / zoomPercent)
 			// Solve for zoomPercent: zoomPercent = initialDistance * 100 / currentDistance
 			const zoomPercent = (initialDistanceRef.current * 100) / currentDistance;
-			
+
 			// Round to nearest preset or to nearest 5%
 			const roundedZoom = Math.round(zoomPercent / 5) * 5;
-			
+
 			return Math.max(10, Math.min(1000, roundedZoom)); // Clamp between 10% and 1000%
 		}
 	}), [tools]);
@@ -251,7 +250,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 			initialDistanceRef.current = camera.position.distanceTo(controls.target);
 			return true;
 		};
-		
+
 		// Try to initialize immediately
 		if (!initializeZoom()) {
 			// If not ready, retry on next frame
@@ -261,41 +260,14 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	}, []);
 
 	/**
-	 * Determina el tipo de escena basándose en el exporter usado,
-	 * no en el nombre de la escena.
-	 * - MeshExporter -> Defect Scene (defect_mesh, interface_mesh)
-	 * - AtomisticExporter/DislocationExporter -> Trajectory Scene (trajectory, atoms_colored_by_type, dislocations)
+	 * Determina el tipo de escena basándose en el nombre de la escena.
+	 * TODO: Re-implement using plugin workflow data when available
 	 */
 	const { isDefectScene, isTrajectoryScene } = useMemo(() => {
-		// Para escenas de plugin, usar el exporter
-		if (activeScene.source === 'plugin') {
-			const { exposureId } = activeScene;
-			
-			// Buscar el manifest del plugin para obtener el exporter
-			for (const manifest of Object.values(manifests)) {
-				const modifiers = manifest.modifiers ?? {};
-				for (const modifier of Object.values(modifiers)) {
-					const exposure = modifier.exposure?.[exposureId];
-					if (exposure?.export) {
-						const exporterName = exposure.export.name;
-						
-						// MeshExporter -> Defect Scene
-						if (exporterName === 'MeshExporter') {
-							return { isDefectScene: true, isTrajectoryScene: false };
-						}
-						
-						// AtomisticExporter o DislocationExporter -> Trajectory Scene
-						if (exporterName === 'AtomisticExporter' || exporterName === 'DislocationExporter') {
-							return { isDefectScene: false, isTrajectoryScene: true };
-						}
-					}
-				}
-			}
-		}
-
-		// Fallback: no aplica ninguno
-		return { isDefectScene: false, isTrajectoryScene: false };
-	}, [activeScene, manifests]);
+		// Default to trajectory scene for now
+		// TODO: Implement proper scene type detection using plugin workflow data
+		return { isDefectScene: false, isTrajectoryScene: true };
+	}, [activeScene]);
 
 	const canvasStyle = useMemo(() => ({
 		width: '100%',
@@ -359,7 +331,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 				dpr={dpr}
 				frameloop="always"
 				performance={perf}
-				onCreated={() => {}}
+				onCreated={() => { }}
 			>
 				<DynamicRenderer />
 				<CameraRig orbitRef={orbitControlsRef} />
@@ -379,7 +351,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 
 				<DynamicBackground />
 				<DynamicEffects />
-				<DynamicLights />		
+				<DynamicLights />
 				<DynamicEnvironment />
 
 				{isDefectScene && <DefectLighting />}

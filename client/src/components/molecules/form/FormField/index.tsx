@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import Input from '@/components/atoms/form/Input';
 import Select, { type SelectOption } from '@/components/atoms/form/Select';
 import LiquidToggle from '@/components/atoms/form/LiquidToggle';
-import usePluginBuilderStore from '@/stores/plugin-builder';
+import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import { getAvailableExpressions, type NodeOutputSchema } from '@/utilities/plugins/expression-utils';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import { NodeType } from '@/types/plugin';

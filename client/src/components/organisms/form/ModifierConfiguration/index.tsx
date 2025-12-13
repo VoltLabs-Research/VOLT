@@ -45,7 +45,7 @@ const ModifierConfiguration = ({
     const fetchTrajectory = useTrajectoryStore((state) => state.getTrajectoryById);
 
     useEffect(() => {
-        if(trajectoryId && (!trajectory || trajectory._id !== trajectoryId)){
+        if (trajectoryId && (!trajectory || trajectory._id !== trajectoryId)) {
             fetchTrajectory(trajectoryId);
         }
     }, [trajectoryId, trajectory, fetchTrajectory]);
@@ -55,21 +55,21 @@ const ModifierConfiguration = ({
     }, [config]);
 
     const availableArguments = useMemo(() => {
-        return getAvailableArguments(pluginId);
-    }, [pluginId, getAvailableArguments]);
+        return getAvailableArguments(modifierId);  // Use modifierId (slug) instead of pluginId (_id)
+    }, [modifierId, getAvailableArguments]);
 
     const modifierInfo = useMemo(() => {
-        const plugin = plugins.find((plugin) => plugin.slug === pluginId);
-        if(!plugin) return null;
+        const plugin = plugins.find((plugin) => plugin.slug === modifierId);  // Use modifierId (slug) 
+        if (!plugin) return null;
 
         const modifierNode = plugin.workflow.nodes.find((node: any) => node.type === 'modifier');
         const modifierData = modifierNode?.data?.modifier || {};
 
         return {
-            displayName: modifierData.name || pluginId,
+            displayName: modifierData.name || modifierId,
             icon: modifierData.icon
         };
-    }, [plugins, pluginId]);
+    }, [plugins, modifierId]);
 
     const configFields = useMemo(() => {
         return availableArguments.map((argDef: any) => {
@@ -80,7 +80,7 @@ const ModifierConfiguration = ({
                 fieldKey: key
             };
 
-            switch(argDef.type){
+            switch (argDef.type) {
                 case 'select':
                     field.type = 'select';
                     field.options = (argDef.options || []).map((opt: any) => ({
@@ -100,7 +100,7 @@ const ModifierConfiguration = ({
                     }
                     field.selectProps = { renderInPortal: true };
                     break;
-                
+
                 case 'number':
                     field.type = 'number';
                     field.inputProps = {
@@ -121,7 +121,7 @@ const ModifierConfiguration = ({
             }
 
             const defaultValue = argDef.default ?? argDef.value;
-            if(defaultValue !== undefined && config[key] === undefined){
+            if (defaultValue !== undefined && config[key] === undefined) {
                 setConfig((prev) => ({ ...prev, [key]: defaultValue }));
             }
 
@@ -136,49 +136,49 @@ const ModifierConfiguration = ({
     const startAnalysis = useCallback(async () => {
         setIsLoading(true);
         onAnalysisStart?.();
-        try{
+        try {
             const response = await api.post(
-                `/plugins/${pluginId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
+                `/plugins/${modifierId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
                 { config, timestep: currentTimestep }
             );
             const analysisId = response.data?.data?.analysisId;
             onAnalysisSuccess?.(analysisId);
-        }catch(error){
+        } catch (error) {
             console.error('Analysis failed:', error);
             onAnalysisError?.(error);
-        }finally{
+        } finally {
             setIsLoading(false);
         }
-    }, [pluginId, modifierId, trajectoryId, config, modifierInfo, onAnalysisStart, onAnalysisSuccess, onAnalysisError, currentTimestep]);
+    }, [modifierId, trajectoryId, config, modifierInfo, onAnalysisStart, onAnalysisSuccess, onAnalysisError, currentTimestep]);
 
     const displayTitle = title || modifierInfo?.displayName || 'Analysis Configuration';
 
     // if config.length === 0 then handle auto start
     useEffect(() => {
-        if(!hasAutoStarted.current && !isLoading && config.length === 0 && trajectoryId){
+        if (!hasAutoStarted.current && !isLoading && config.length === 0 && trajectoryId) {
             hasAutoStarted.current = true;
             // TODO: another function for this
             (async () => {
                 setIsLoading(true);
                 onAnalysisStart?.();
-                try{
+                try {
                     const response = await api.post(
-                        `/plugins/${pluginId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
+                        `/plugins/${modifierId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
                         { config: configRef.current, timestep: currentTimestep }
                     );
                     const analysisId = response.data?.data?.analysisId;
                     onAnalysisSuccess?.(analysisId);
-                }catch(error){
+                } catch (error) {
                     console.error('Analysis failed:', error);
-                    onAnalysisError?.(error);      
-                }finally{
+                    onAnalysisError?.(error);
+                } finally {
                     setIsLoading(false);
                 }
             })();
         }
-    }, [configFields.length, isLoading, trajectoryId, modifierInfo, pluginId, modifierId, onAnalysisStart, onAnalysisSuccess, onAnalysisError]);
+    }, [configFields.length, isLoading, trajectoryId, modifierInfo, modifierId, onAnalysisStart, onAnalysisSuccess, onAnalysisError]);
 
-    if(configFields.length === 0 && hasAutoStarted.current){
+    if (configFields.length === 0 && hasAutoStarted.current) {
         return null;
     }
 
@@ -190,12 +190,12 @@ const ModifierConfiguration = ({
             </div>
 
             <div className='modifier-configuration-body-container'>
-                {visibleFields.length === 0 ? (
+                {configFields.length === 0 ? (
                     <p className='modifier-configuration-no-fields'>
                         This modifier has no configurable parameters.
                     </p>
                 ) : (
-                    visibleFields.map((field) => (
+                    configFields.map((field) => (
                         <FormField
                             key={field.key}
                             label={field.label}

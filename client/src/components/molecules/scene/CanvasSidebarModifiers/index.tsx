@@ -9,7 +9,7 @@ import useLogger from '@/hooks/core/use-logger';
 import useAnalysisConfigStore from '@/stores/analysis-config';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import useEditorUIStore, { type ActiveModifier } from '@/stores/ui/editor';
-import usePluginStore from '@/stores/plugins';
+import usePluginStore from '@/stores/plugins/plugin';
 import './CanvasSidebarModifiers.css';
 
 const CanvasSidebarModifiers = () => {
@@ -17,7 +17,6 @@ const CanvasSidebarModifiers = () => {
     const activeModifiers = useEditorUIStore((state) => state.activeModifiers);
     const toggleModifier = useEditorUIStore((state) => state.toggleModifier);
     const modifiers = usePluginStore((state) => state.getModifiers());
-    const fetchManifests = usePluginStore((state) => state.fetchManifests);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const setShowRenderConfig = useEditorUIStore((state) => state.setShowRenderConfig);
     const idRateSeries = useTrajectoryStore((state) => state.idRateSeries);
@@ -28,11 +27,7 @@ const CanvasSidebarModifiers = () => {
     const prevActiveRef = useRef<ActiveModifier[]>(activeModifiers);
 
     useEffect(() => {
-        fetchManifests();
-    }, []);
-
-    useEffect(() => {
-        if(!trajectory?._id){
+        if (!trajectory?._id) {
             prevActiveRef.current = activeModifiers;
             return;
         }
@@ -41,12 +36,12 @@ const CanvasSidebarModifiers = () => {
         const current = activeModifiers.map(m => m.key);
         const justActivated = current.filter((key) => !prev.includes(key));
 
-        for(const modifierKey of justActivated){
+        for (const modifierKey of justActivated) {
             logger.log('Modifier activated:', modifierKey);
-            
-            if(modifierKey === 'raster'){
+
+            if (modifierKey === 'raster') {
                 navigate('/raster/' + trajectory._id);
-            } else if(modifierKey === 'render-settings'){
+            } else if (modifierKey === 'render-settings') {
                 setShowRenderConfig(true);
             }
         }
@@ -56,11 +51,11 @@ const CanvasSidebarModifiers = () => {
 
     const allModifiers = useMemo(() => ([
         ...modifiers.map((mod) => ({
-            title: mod.exposure.displayName,
-            modifierId: mod.modifierId,
-            Icon: () => <DynamicIcon iconName={mod.exposure.icon ?? ''} />,
+            title: mod.name,
+            modifierId: mod.pluginSlug,
+            Icon: mod.icon ? () => <DynamicIcon iconName={mod.icon ?? ''} /> : PiEngine,
             pluginId: mod.pluginId,
-            pluginModifierId: mod.modifierId,
+            pluginModifierId: mod.pluginSlug,
             isPlugin: true
         })),
         {
@@ -79,15 +74,11 @@ const CanvasSidebarModifiers = () => {
             title: 'Raster Frames',
             modifierId: 'raster',
             isPlugin: false
-        }, /*{
-            Icon: GrFormViewHide,
-            title: 'Dislocations Render Options',
-            modifierId: 'render-options'
-        }*/
+        }
     ]), [modifiers, idRateSeries?.length]);
 
     const handleToggle = (option: any) => {
-        if(option.isPlugin){
+        if (option.isPlugin) {
             toggleModifier(option.modifierId, option.pluginId, option.pluginModifierId);
         } else {
             toggleModifier(option.modifierId);

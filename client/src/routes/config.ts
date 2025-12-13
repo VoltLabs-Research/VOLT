@@ -26,7 +26,7 @@ import Dashboard from '@/pages/protected/Dashboard';
 import HeadlessRasterizerView from '@/pages/protected/HeadlessRasterizerView';
 import Messages from '@/pages/protected/Messages';
 import PluginListing from '@/pages/protected/PluginListing';
-import PluginsListing from '@/pages/protected/PluginsListing';
+import Plugins from '@/pages/protected/Plugins';
 import AnalysisConfigsListing from '@/pages/protected/AnalysisConfigsListing';
 import TrajectoriesListing from '@/pages/protected/TrajectoriesListing';
 import AccountSettings from '@/pages/protected/AccountSettings';
@@ -97,7 +97,7 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/plugins/list',
-            component: PluginsListing,
+            component: Plugins,
             requiresLayout: true,
         },
         {

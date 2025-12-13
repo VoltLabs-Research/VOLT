@@ -120,7 +120,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         set({ edges: edgesOrUpdater });
     },
 
-    onNodesChange: (changes: NodeChange[]){
+    onNodesChange(changes: NodeChange[]){
         set((state) => ({ nodes: applyNodeChanges(changes, state.nodes) }));
     },
 

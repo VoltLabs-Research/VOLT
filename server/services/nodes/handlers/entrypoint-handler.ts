@@ -2,7 +2,7 @@ import { NodeType } from '@/types/models/plugin';
 import { IWorkflowNode } from '@/types/models/modifier';
 import { NodeHandler, ExecutionContext, resolveTemplate } from '@/services/nodes/node-registry';
 import { T, NodeOutputSchema } from '@/services/nodes/schema-types';
-import { findChildByType, parseArgumentString } from '@/utilities/plugins/workflow-utils';
+import { findParentByType, parseArgumentString } from '@/utilities/plugins/workflow-utils';
 import { SYS_BUCKETS } from '@/config/minio';
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
@@ -14,7 +14,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
-class EntrypointHandler implements NodeHandler{
+class EntrypointHandler implements NodeHandler {
     readonly type = NodeType.ENTRYPOINT;
     private cli = new CLIExec();
 
@@ -32,30 +32,30 @@ class EntrypointHandler implements NodeHandler{
         }
     };
 
-    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
+    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>> {
         const config = node.data.entrypoint!;
-        if(!config.binaryObjectPath) throw new Error('Entrypoint::Binary::NotUploaded');
+        if (!config.binaryObjectPath) throw new Error('Entrypoint::Binary::NotUploaded');
 
         const binaryPath = await this.getBinaryPath(config, context);
-        const forEachNode = findChildByType(node.id, context.workflow, NodeType.FOREACH);
-        if(!forEachNode) throw new Error('Entrypoint must be connected to ForEach');
+        const forEachNode = findParentByType(node.id, context.workflow, NodeType.FOREACH);
+        if (!forEachNode) throw new Error('Entrypoint must be connected to ForEach');
 
         const forEachOutput = context.outputs.get(forEachNode.id)!;
-        const items = forEachNode.items as any[];
+        const items = (forEachOutput.items || []) as any[];
         const results: any[] = [];
 
-        for(let i = 0; i < items.length; i++){
+        for (let i = 0; i < items.length; i++) {
             const item = items[i];
             forEachOutput.currentValue = item;
             forEachOutput.currentIndex = i;
             forEachOutput.outputPath = path.join(os.tmpdir(), `${context.pluginSlug}-${context.analysisId}-${i}-${Date.now()}`);
-            
+
             const resolvedArgs = resolveTemplate(config.arguments, context);
             const argsArray = parseArgumentString(resolvedArgs);
 
             logger.info(`[EntrypointHandler] Running: ${config.binary} [${i + 1}/${items.length}]`);
 
-            try{
+            try {
                 await this.cli.run(binaryPath, argsArray);
                 results.push({
                     index: i,
@@ -63,7 +63,7 @@ class EntrypointHandler implements NodeHandler{
                     success: true,
                     outputPath: forEachOutput.outputPath
                 });
-            }catch(error: any){
+            } catch (error: any) {
                 logger.error(`[EntrypointHandler] Failed for item ${i}: ${error.message}`);
                 results.push({
                     index: i,
@@ -82,11 +82,11 @@ class EntrypointHandler implements NodeHandler{
         }
     }
 
-    private async getBinaryPath(config: any, context: ExecutionContext): Promise<string>{
+    private async getBinaryPath(config: any, context: ExecutionContext): Promise<string> {
         const hash = config.binaryHash;
-        if(hash){
+        if (hash) {
             const cachedPath = await binaryCache.get(hash);
-            if(cachedPath) return cachedPath;
+            if (cachedPath) return cachedPath;
         }
 
         logger.info(`[EntrypointHandler] Downloading binary: ${config.binaryObjectPath}`);
@@ -97,7 +97,7 @@ class EntrypointHandler implements NodeHandler{
         const writeStream = createWriteStream(binaryPath);
         await pipeline(stream, writeStream);
 
-        if(hash){
+        if (hash) {
             const buffer = await fs.readFile(binaryPath);
             await binaryCache.putBuffer(hash, buffer);
         }

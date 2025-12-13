@@ -3,7 +3,7 @@ import { TbObjectScan } from 'react-icons/tb';
 import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
 import useModelStore from '@/stores/editor/model';
 import type { Trajectory } from '@/types/models';
-import usePluginStore, { type RenderableExposure } from '@/stores/plugins';
+import usePluginStore, { type RenderableExposure } from '@/stores/plugins/plugin';
 import './CanvasSidebarScene.css';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import useAnalysisConfigStore from '@/stores/analysis-config';

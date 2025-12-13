@@ -40,20 +40,6 @@ const getValueByPath = (obj: any, path: string) => {
     return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj);
 };
 
-const resolveValueByPath = (
-    payload: any,
-    path: string,
-    reserved: Record<string, any>
-) => {
-    if(!path) return undefined;
-    const [root, ...rest] = path.split('.');
-    if(reserved[root]){
-        const subPath = rest.join('.');
-        return subPath ? getValueByPath(reserved[root], subPath) : reserved[root];
-    }
-    return getValueByPath(payload, path);
-};
-
 export default class PluginsController extends BaseController<IPlugin>{
     constructor(){
         super(Plugin, {

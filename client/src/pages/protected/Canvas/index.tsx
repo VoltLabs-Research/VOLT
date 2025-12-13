@@ -11,7 +11,7 @@ import PreloadingOverlay from '@/components/atoms/common/PreloadingOverlay';
 import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
 import usePlaybackStore from '@/stores/editor/playback';
-import usePluginStore from '@/stores/plugins';
+import usePluginStore from '@/stores/plugins/plugin';
 import Loader from '@/components/atoms/common/Loader';
 import './Canvas.css';
 

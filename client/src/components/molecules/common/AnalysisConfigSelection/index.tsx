@@ -1,7 +1,7 @@
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
 import useAnalysisConfigStore from '@/stores/analysis-config';
-import usePluginStore from '@/stores/plugins/plugin ';
+import usePluginStore from '@/stores/plugins/plugin';
 import Select from '@/components/atoms/form/Select';
 import './AnalysisConfigSelection.css';
 import { useCallback, useEffect, useMemo } from 'react';

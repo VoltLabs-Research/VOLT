@@ -4,7 +4,7 @@ import { NodeHandler, ExecutionContext, resolveReference } from '@services/nodes
 import { T, NodeOutputSchema } from '@services/nodes/schema-types';
 import logger from '@/logger';
 
-class ForEachHandler implements NodeHandler{
+class ForEachHandler implements NodeHandler {
     readonly type = NodeType.FOREACH;
 
     readonly outputSchema: NodeOutputSchema = {
@@ -17,18 +17,18 @@ class ForEachHandler implements NodeHandler{
         }
     };
 
-    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
+    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>> {
         let ref = node.data.forEach?.iterableSource;
-        if(!ref) throw new Error('ForEach::IterableSource::Required');
+        if (!ref) throw new Error('ForEach::IterableSource::Required');
 
         ref = ref.replace(/^\{\{\s*/, '').replace(/\s*\}\}$/, '');
         const items = resolveReference(ref, context);
 
-        if(Array.isArray(items)){
+        if (!Array.isArray(items)) {
             logger.error(`[ForEachHandler] Source '${ref}' resolved to non-array: ${typeof items}`);
             throw new Error('ForEach::IterableSource::NotAnArray');
         }
-        
+
         return {
             items,
             count: items.length,

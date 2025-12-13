@@ -7,7 +7,8 @@ export enum NodeType {
     EXPOSURE = 'exposure',
     SCHEMA = 'schema',
     VISUALIZERS = 'visualizers',
-    EXPORT = 'export'
+    EXPORT = 'export',
+    DIRECTORY = 'directory'
 };
 
 export enum ArgumentType {

@@ -43,7 +43,7 @@ const PluginsListing = () => {
     const handleMenuAction = useCallback(async (action: string, item: IPluginRecord) => {
         switch (action) {
             case 'edit':
-                navigate(`/dashboard/plugin/builder?id=${item._id}`);
+                navigate(`/dashboard/plugins/builder?id=${item._id}`);
                 break;
             case 'publish':
                 try {
@@ -87,11 +87,11 @@ const PluginsListing = () => {
     }, [handleMenuAction]);
 
     const handleRowClick = useCallback((item: IPluginRecord) => {
-        navigate(`/dashboard/plugin/builder?id=${item._id}`);
+        navigate(`/dashboard/plugins/builder?id=${item._id}`);
     }, [navigate]);
 
     const handleCreateNew = useCallback(() => {
-        navigate('/dashboard/plugin/builder');
+        navigate('/dashboard/plugins/builder');
     }, [navigate]);
 
     const columns: ColumnConfig[] = useMemo(() => [
