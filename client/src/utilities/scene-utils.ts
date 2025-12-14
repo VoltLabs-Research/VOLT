@@ -1,13 +1,13 @@
 export const deepMerge = <T extends object>(base: T, patch: Partial<T>): T => {
     const out: any = Array.isArray(base) ? [...base] : { ...base };
-    for(const key in patch){
+    for (const key in patch) {
         const value: any = patch[key];
-        if(value === undefined) continue;
-        if(Array.isArray(value)){
+        if (value === undefined) continue;
+        if (Array.isArray(value)) {
             out[key] = [...value];
-        }else if(value && typeof value === 'object' && !Array.isArray(value)){
+        } else if (value && typeof value === 'object' && !Array.isArray(value)) {
             out[key] = deepMerge((out[key] ?? {}) as any, value);
-        }else{
+        } else {
             out[key] = value;
         }
     }
@@ -16,7 +16,7 @@ export const deepMerge = <T extends object>(base: T, patch: Partial<T>): T => {
 };
 
 export const formatSize = (bytes: number): string => {
-    if(!bytes || bytes <= 0) return '0 B'
+    if (!bytes || bytes <= 0) return '0 B'
     const units = ['B', 'KB', 'MB', 'GB', 'TB']
     const i = Math.floor(Math.log(bytes) / Math.log(1024))
     const value = bytes / Math.pow(1024, i)
@@ -24,7 +24,7 @@ export const formatSize = (bytes: number): string => {
 }
 
 export const formatNumber = (n?: number) => {
-    if(Number.isFinite(n)){
+    if (Number.isFinite(n)) {
         return new Intl.NumberFormat().format(n as number);
     }
 

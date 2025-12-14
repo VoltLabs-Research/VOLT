@@ -1,37 +1,72 @@
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { RxDotsHorizontal } from 'react-icons/rx'
 import { RiListUnordered } from 'react-icons/ri'
 import DocumentListingTable from '@/components/molecules/common/DocumentListingTable'
 import { Skeleton } from '@mui/material'
+import useWorker from '@/hooks/core/use-worker'
+import { WorkerStatus } from '@/utilities/worker-utils'
 import './DocumentListing.css'
 
-// Helpers to support deep key access and robust search/sort across nested values
-const getValueByPath = (obj: any, path: string) => {
-    if(!obj || !path) return undefined
-    if(path.indexOf('.') === -1) return obj?.[path]
-    return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj)
-}
-
-const toSearchString = (val: any): string => {
-    if(val == null) return ''
-    const t = typeof val
-    if(t === 'string' || t === 'number' || t === 'boolean') return String(val)
-    if(Array.isArray(val)) return val.map((v) => toSearchString(v)).join(' ')
-    if(t === 'object'){
-        // Prefer well-known display fields first, then fallback to shallow values
-        const preferredKeys = ['name', 'title', 'identificationMode', 'crystalStructure', 'method', '_id', 'id']
-        const parts: string[] = []
-        try{
-            for(const k of preferredKeys){
-                if(k in val && val[k] != null) parts.push(String(val[k]))
-            }
-            if(parts.length) return parts.join(' ')
-            return Object.values(val).map((v) => toSearchString(v)).join(' ')
-        }catch(_e){
-            return ''
-        }
+const sortDataWorker = (
+    data: any[],
+    sortConfig: { key: string; direction: 'asc' | 'desc' } | null
+): any[] => {
+    // Helper functions inlined for worker context
+    const getValueByPath = (obj: any, path: string) => {
+        if (!obj || !path) return undefined
+        if (path.indexOf('.') === -1) return obj?.[path]
+        return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj)
     }
-    return ''
+
+    const toSearchString = (val: any): string => {
+        if (val == null) return ''
+        const t = typeof val
+        if (t === 'string' || t === 'number' || t === 'boolean') return String(val)
+        if (Array.isArray(val)) return val.map((v) => toSearchString(v)).join(' ')
+        if (t === 'object') {
+            const preferredKeys = ['name', 'title', 'identificationMode', 'crystalStructure', 'method', '_id', 'id']
+            const parts: string[] = []
+            try {
+                for (const k of preferredKeys) {
+                    if (k in val && val[k] != null) parts.push(String(val[k]))
+                }
+                if (parts.length) return parts.join(' ')
+                return Object.values(val).map((v) => toSearchString(v)).join(' ')
+            } catch (_e) {
+                return ''
+            }
+        }
+        return ''
+    }
+
+    if (!sortConfig) return data
+
+    const workingData = [...data]
+    workingData.sort((a, b) => {
+        const aVal = getValueByPath(a, sortConfig.key)
+        const bVal = getValueByPath(b, sortConfig.key)
+
+        if (aVal == null && bVal == null) return 0
+        if (aVal == null) return sortConfig.direction === 'asc' ? -1 : 1
+        if (bVal == null) return sortConfig.direction === 'asc' ? 1 : -1
+
+        const aStr = toSearchString(aVal)
+        const bStr = toSearchString(bVal)
+
+        const aNum = Number(aStr)
+        const bNum = Number(bStr)
+        const bothNumeric = !Number.isNaN(aNum) && !Number.isNaN(bNum)
+
+        if (bothNumeric) {
+            return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum
+        }
+
+        return sortConfig.direction === 'asc'
+            ? aStr.localeCompare(bStr)
+            : bStr.localeCompare(aStr)
+    })
+
+    return workingData
 }
 
 export type ColumnConfig = {
@@ -43,16 +78,16 @@ export type ColumnConfig = {
 }
 
 export const formatNumber = (num: number) => {
-    if(num === 0) return '0'
+    if (num === 0) return '0'
     const absNum = Math.abs(num)
     const sign = num < 0 ? '-' : ''
-    if(absNum >= 1000000000){
+    if (absNum >= 1000000000) {
         return sign + (absNum / 1000000000).toFixed(2).replace(/\.?0+$/, '') + 'B'
     }
-    if(absNum >= 1000000){
+    if (absNum >= 1000000) {
         return sign + (absNum / 1000000).toFixed(2).replace(/\.?0+$/, '') + 'M'
     }
-    if(absNum >= 1000){
+    if (absNum >= 1000) {
         return sign + (absNum / 1000).toFixed(2).replace(/\.?0+$/, '') + 'K'
     }
     return sign + absNum.toString()
@@ -72,11 +107,11 @@ export const MethodBadge = ({ method }: { method: string }) => {
 
 export const RateBadge = ({ rate }: { rate: number }) => {
     let className = 'rate-badge rate-badge-gray'
-    if(rate >= 90) className = 'rate-badge rate-badge-green'
-    else if(rate >= 75) className = 'rate-badge rate-badge-blue'
-    else if(rate >= 60) className = 'rate-badge rate-badge-yellow'
-    else if(rate >= 40) className = 'rate-badge rate-badge-orange'
-    else if(rate >= 20) className = 'rate-badge rate-badge-red'
+    if (rate >= 90) className = 'rate-badge rate-badge-green'
+    else if (rate >= 75) className = 'rate-badge rate-badge-blue'
+    else if (rate >= 60) className = 'rate-badge rate-badge-yellow'
+    else if (rate >= 40) className = 'rate-badge rate-badge-orange'
+    else if (rate >= 20) className = 'rate-badge rate-badge-red'
 
     return <span className={className}>{rate.toFixed(2)}%</span>
 }
@@ -105,7 +140,6 @@ type DocumentListingProps = {
     getMenuOptions?: (item: any) => any[]
     emptyMessage?: string
     keyExtractor?: (item: any, index: number) => string | number
-    // Infinite scroll(optional)
     enableInfinite?: boolean
     hasMore?: boolean
     isFetchingMore?: boolean
@@ -120,7 +154,6 @@ const DocumentListing = ({
     isLoading = false,
     onMenuAction: _onMenuAction,
     getMenuOptions,
-    // search is now global via header input
     emptyMessage = 'No data available',
     keyExtractor: _keyExtractor = (item, index) => item?._id ?? item?.id ?? index,
     enableInfinite,
@@ -129,61 +162,52 @@ const DocumentListing = ({
     onLoadMore
 }: DocumentListingProps) => {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+    const [sortedData, setSortedData] = useState<any[]>(data)
 
-    const sortedData = useMemo(() => {
-        const workingData = [...data]
-        if(sortConfig){
-            workingData.sort((a, b) => {
-                const aVal = getValueByPath(a, sortConfig.key)
-                const bVal = getValueByPath(b, sortConfig.key)
+    // useWorker for sorting in background thread
+    const [sortWorker, { status: sortStatus }] = useWorker(sortDataWorker)
 
-                if(aVal == null && bVal == null) return 0
-                if(aVal == null) return sortConfig.direction === 'asc' ? -1 : 1
-                if(bVal == null) return sortConfig.direction === 'asc' ? 1 : -1
-
-                const aStr = toSearchString(aVal)
-                const bStr = toSearchString(bVal)
-
-                const aNum = Number(aStr)
-                const bNum = Number(bStr)
-                const bothNumeric = !Number.isNaN(aNum) && !Number.isNaN(bNum)
-
-                if(bothNumeric){
-                    return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum
-                }
-
-                return sortConfig.direction === 'asc'
-                    ? aStr.localeCompare(bStr)
-                    : bStr.localeCompare(aStr)
-            })
+    // Sort data using worker when data or sortConfig changes
+    useEffect(() => {
+        if (!sortConfig) {
+            setSortedData(data)
+            return
         }
-        return workingData
-    }, [data, sortConfig])
 
-    const handleSort = (col: ColumnConfig) =>{
-        if(!col.sortable) return
+        sortWorker(data, sortConfig)
+            .then(result => {
+                setSortedData(result)
+            })
+            .catch(() => {
+                // Fallback to unsorted if worker fails
+                setSortedData(data)
+            })
+    }, [data, sortConfig, sortWorker])
+
+    const handleSort = useCallback((col: ColumnConfig) => {
+        if (!col.sortable) return
         setSortConfig((prev) => {
-            if(prev && prev.key === col.key){
+            if (prev && prev.key === col.key) {
                 return { key: col.key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
             }
             return { key: col.key, direction: 'asc' }
         })
-    }
+    }, [])
 
-    const getSortIndicator = (col: ColumnConfig) => {
-        if(!col.sortable) return null
-        if(!sortConfig || sortConfig.key !== col.key) return <span className='sort-indicator'>⇅</span>
+    const getSortIndicator = useCallback((col: ColumnConfig) => {
+        if (!col.sortable) return null
+        if (!sortConfig || sortConfig.key !== col.key) return <span className='sort-indicator'>⇅</span>
         return sortConfig.direction === 'asc' ? (
             <span className='sort-indicator'>↑</span>
         ) : (
             <span className='sort-indicator'>↓</span>
         )
-    }
+    }, [sortConfig])
 
-    // Provide a ref to the scrollable body for infinite scroll consumers
-    const bodyRef = useRef<HTMLDivElement | null>(null);
+    const bodyRef = useRef<HTMLDivElement | null>(null)
+    const isSorting = sortStatus === WorkerStatus.RUNNING
 
-    return(
+    return (
         <div className='document-listing-container'>
             <div className='document-listing-header-container'>
                 <div className='document-listing-header-top-container'>
@@ -227,10 +251,9 @@ const DocumentListing = ({
                     data={sortedData}
                     onCellClick={handleSort}
                     getCellTitle={(col: any) => <>{col.title} {getSortIndicator(col)}</>}
-                    isLoading={isLoading}
+                    isLoading={isLoading || isSorting}
                     getMenuOptions={getMenuOptions}
                     emptyMessage={emptyMessage}
-                    // Infinite scroll passthrough props(optional by caller)
                     enableInfinite={enableInfinite}
                     hasMore={hasMore}
                     isFetchingMore={isFetchingMore}

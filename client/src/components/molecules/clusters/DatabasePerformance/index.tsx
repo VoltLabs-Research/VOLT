@@ -15,8 +15,8 @@ interface DataPoint {
 const MAX_POINTS = 60;
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if(active && payload && payload.length >= 3){
-    return(
+  if (active && payload && payload.length >= 3) {
+    return (
       <div className="db-tooltip">
         <p className="db-tooltip-label">{payload[0].payload.time}</p>
         <p className="db-tooltip-item" style={{ color: '#3b82f6' }}>
@@ -34,28 +34,37 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null
 }
 
-export function DatabasePerformance(){
+export function DatabasePerformance() {
   const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics();
   const [history, setHistory] = useState<DataPoint[]>([]);
 
   // Preload with historical data
   useEffect(() => {
-    if(isHistoryLoaded && metricsHistory.length > 0 && history.length === 0){
-      console.log('[DatabasePerformance] Preloading with', metricsHistory.length, 'historical points')
-      const historicalData = metricsHistory
-          .filter(m => m.mongodb)
-          .slice(-MAX_POINTS)
-          .map(m => ({
-          queries: m.mongodb!.queries,
-          connections: m.mongodb!.connections,
-          latency: m.mongodb!.latency
-        }))
-      setHistory(historicalData)
-    }
-  }, [isHistoryLoaded, metricsHistory])
+    if (isHistoryLoaded && metricsHistory.length > 0 && history.length === 0) {
+      const filtered = metricsHistory
+        .filter((m: any) => m.mongodb)
+        .slice(-MAX_POINTS)
+        .map((m: any) => ({
+          queries: m.mongodb.queries,
+          connections: m.mongodb.connections,
+          latency: m.mongodb.latency
+        }));
 
+      // Calculate queriesPerSecond for each point
+      const withQps = filtered.map((point, index) => {
+        if (index === 0) return point;
+        const lastPoint = filtered[index - 1];
+        const queriesDelta = Math.max(0, point.queries - lastPoint.queries);
+        return { ...point, queriesPerSecond: queriesDelta };
+      });
+
+      setHistory(withQps);
+    }
+  }, [isHistoryLoaded, metricsHistory]);
+
+  // Update with realtime metrics
   useEffect(() => {
-    if(!metrics?.mongodb) return;
+    if (!metrics?.mongodb) return;
 
     setHistory(prev => {
       const newDataPoint: DataPoint = {
@@ -64,38 +73,39 @@ export function DatabasePerformance(){
         latency: metrics.mongodb!.latency
       };
 
-      // Calculate queries per second(delta from previous point)
-      if(prev.length > 0){
+      if (prev.length > 0) {
         const lastPoint = prev[prev.length - 1];
         const queriesDelta = Math.max(0, newDataPoint.queries - lastPoint.queries);
         newDataPoint.queriesPerSecond = queriesDelta;
       }
 
       const newHistory = [...prev, newDataPoint];
-
-      if(newHistory.length > MAX_POINTS){
-        newHistory.shift();
-      }
-
+      if (newHistory.length > MAX_POINTS) newHistory.shift();
       return newHistory;
     });
   }, [metrics]);
 
+  // Calculate stats synchronously
+  const stats = (() => {
+    if (history.length === 0) return { avgQueries: 0, avgLatency: 0 };
+    const withQps = history.filter(d => d.queriesPerSecond !== undefined);
+    const avgQueries = Math.round(
+      withQps.reduce((sum, d) => sum + (d.queriesPerSecond || 0), 0) / Math.max(1, withQps.length)
+    );
+    const avgLatency = Math.round(history.reduce((sum, d) => sum + d.latency, 0) / history.length);
+    return { avgQueries, avgLatency };
+  })();
+
   const isLoading = !isHistoryLoaded || !metrics?.mongodb || history.length === 0
 
-  const avgQueries = Math.round(history
-      .filter(d => d.queriesPerSecond !== undefined)
-      .reduce((sum, d) => sum + (d.queriesPerSecond || 0), 0) / Math.max(1, history.filter(d => d.queriesPerSecond !== undefined).length));
-  const avgLatency = Math.round(history.reduce((sum, d) => sum + d.latency, 0) / history.length);
-
-  return(
+  return (
     <ChartContainer
       icon={Database}
       title="MongoDB Performance"
       isLoading={isLoading}
       stats={[
-        { label: 'Avg Queries', value: `${avgQueries}/s` },
-        { label: 'Avg Latency', value: `${avgLatency}ms` }
+        { label: 'Avg Queries', value: `${stats.avgQueries}/s` },
+        { label: 'Avg Latency', value: `${stats.avgLatency}ms` }
       ]}
       statsLoading={isLoading}
     >

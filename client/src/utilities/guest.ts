@@ -1,7 +1,6 @@
 import { v4 } from 'uuid';
 import authApi from '@/services/api/auth';
 
-// TODO: CHECK FOR DUPLICATED CODE
 export type GuestUser = {
     id: string;
     firstName: string;
@@ -10,9 +9,10 @@ export type GuestUser = {
 
 const GUEST_KEY = 'guest_uid_v1';
 
-const hash = (str: string): number => {
+// Pure hash function - can be used in worker
+export const hash = (str: string): number => {
     let h = 2166136261 >>> 0;
-    for(let i = 0; i < str.length; i++){
+    for (let i = 0; i < str.length; i++) {
         h ^= str.charCodeAt(i);
         // FNV-1a
         h = Math.imul(h, 16777619) >>> 0;
@@ -20,16 +20,36 @@ const hash = (str: string): number => {
     return h >>> 0;
 };
 
-const hslFromUid = (uid: string) => {
+// Pure HSL color generation - can be used in worker
+export const hslFromUid = (uid: string): string => {
     const h = hash(uid) % 360;
     const s = 62;
     const l = 58;
     return `hsl(${h} ${s}% ${l}%)`;
 };
 
-export const getOrCreateGuestUser = async(): Promise<GuestUser> =>{
+// Worker function for batch color generation
+export const generateColorsWorker = (uids: string[]): Record<string, string> => {
+    const hashFn = (str: string): number => {
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < str.length; i++) {
+            h ^= str.charCodeAt(i);
+            h = Math.imul(h, 16777619) >>> 0;
+        }
+        return h >>> 0;
+    };
+
+    const result: Record<string, string> = {};
+    for (const uid of uids) {
+        const h = hashFn(uid) % 360;
+        result[uid] = `hsl(${h} 62% 58%)`;
+    }
+    return result;
+};
+
+export const getOrCreateGuestUser = async (): Promise<GuestUser> => {
     let uid = localStorage.getItem(GUEST_KEY);
-    if(!uid){
+    if (!uid) {
         uid = v4().slice(0, 12);
         localStorage.setItem(GUEST_KEY, uid);
     }
@@ -37,7 +57,7 @@ export const getOrCreateGuestUser = async(): Promise<GuestUser> =>{
     // Try to get cached name first
     const cachedName = localStorage.getItem(`${GUEST_KEY}_name`);
 
-    if(cachedName){
+    if (cachedName) {
         return {
             id: 'guest:' + uid,
             firstName: cachedName,

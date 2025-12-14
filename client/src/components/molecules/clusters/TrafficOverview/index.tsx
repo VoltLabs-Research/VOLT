@@ -5,10 +5,10 @@ import { useState, useEffect } from 'react'
 import { ChartContainer } from '@/components/atoms/common/ChartContainer'
 import './TrafficOverview.css'
 
-function formatNetworkSpeed(kbs: number): string{
-  if(kbs < 1) return `${(kbs * 1024).toFixed(0)} B/s`;
-  if(kbs < 1024) return `${kbs.toFixed(1)} KB/s`;
-  if(kbs < 1024 * 1024) return `${(kbs / 1024).toFixed(2)} MB/s`;
+function formatNetworkSpeed(kbs: number): string {
+  if (kbs < 1) return `${(kbs * 1024).toFixed(0)} B/s`;
+  if (kbs < 1024) return `${kbs.toFixed(1)} KB/s`;
+  if (kbs < 1024 * 1024) return `${(kbs / 1024).toFixed(2)} MB/s`;
   return `${(kbs / (1024 * 1024)).toFixed(2)} GB/s`;
 }
 
@@ -22,8 +22,8 @@ interface DataPoint {
 }
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if(active && payload && payload.length){
-    return(
+  if (active && payload && payload.length) {
+    return (
       <div className="traffic-tooltip">
         <p className="traffic-tooltip-label">{payload[0].payload.time}</p>
         {payload.map((entry: any, index: number) => (
@@ -37,24 +37,24 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null
 }
 
-export function TrafficOverview(){
+export function TrafficOverview() {
   const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics()
   const [data, setData] = useState<DataPoint[]>([])
 
   // Preload with historical data
   useEffect(() => {
-    if(isHistoryLoaded && metricsHistory.length > 0 && data.length === 0){
+    if (isHistoryLoaded && metricsHistory.length > 0 && data.length === 0) {
       console.log('[TrafficOverview] Preloading with', metricsHistory.length, 'historical points')
       const historicalData = metricsHistory
-          .slice(-MAX_POINTS)
-          .map(m => {
+        .slice(-MAX_POINTS)
+        .map((m: any) => {
           const timestamp = new Date(m.timestamp)
           const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')}`
           return {
             time: timeStr,
-            incoming: m.network.incoming,
-            outgoing: m.network.outgoing,
-            total: m.network.incoming + m.network.outgoing
+            incoming: m.network?.incoming ?? 0,
+            outgoing: m.network?.outgoing ?? 0,
+            total: (m.network?.incoming ?? 0) + (m.network?.outgoing ?? 0)
           }
         })
       setData(historicalData)
@@ -63,7 +63,7 @@ export function TrafficOverview(){
 
   // Update with real-time metrics
   useEffect(() => {
-    if(metrics && data.length > 0){
+    if (metrics?.network && data.length > 0) {
       const timestamp = new Date()
       const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')}`
 
@@ -74,8 +74,6 @@ export function TrafficOverview(){
           outgoing: metrics.network.outgoing,
           total: metrics.network.incoming + metrics.network.outgoing
         }]
-
-        // Keep only the last MAX_POINTS
         return newData.slice(-MAX_POINTS)
       })
     }
@@ -83,17 +81,25 @@ export function TrafficOverview(){
 
   const isLoading = !isHistoryLoaded || data.length === 0
 
+  // Calculate stats
+  const stats = data.length > 0
+    ? {
+      peak: Math.max(...data.map(d => d.total)),
+      avg: data.reduce((sum, d) => sum + d.total, 0) / data.length
+    }
+    : { peak: 0, avg: 0 }
+
   const chartContent = (
     <ResponsiveContainer width="100%" height={300}>
       <AreaChart data={data.length > 0 ? data : [{ time: '', incoming: 0, outgoing: 0, total: 0 }]} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="colorIncoming" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#0A84FF" stopOpacity={0.3}/>
-            <stop offset="95%" stopColor="#0A84FF" stopOpacity={0}/>
+            <stop offset="5%" stopColor="#0A84FF" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#0A84FF" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="colorOutgoing" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#30D158" stopOpacity={0.3}/>
-            <stop offset="95%" stopColor="#30D158" stopOpacity={0}/>
+            <stop offset="5%" stopColor="#30D158" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#30D158" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -131,10 +137,10 @@ export function TrafficOverview(){
     </ResponsiveContainer>
   )
 
-  const peakTraffic = data.length > 0 ? formatNetworkSpeed(Math.max(...data.map(d => d.total))) : '0 B/s'
-  const avgTraffic = data.length > 0 ? formatNetworkSpeed(data.reduce((sum, d) => sum + d.total, 0) / data.length) : '0 B/s'
+  const peakTraffic = formatNetworkSpeed(stats.peak)
+  const avgTraffic = formatNetworkSpeed(stats.avg)
 
-  return(
+  return (
     <ChartContainer
       icon={Activity}
       title="Network Traffic"

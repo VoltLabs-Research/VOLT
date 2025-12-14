@@ -4,6 +4,7 @@ import useAnalysisConfigStore from '@/stores/analysis-config';
 import useModelStore from '@/stores/editor/model';
 import useTrajectoryStore from '@/stores/trajectories';
 import { createTrajectoryGLBs, fetchModels, type TimelineGLBMap } from '@/utilities/glb/modelUtils';
+import { runInWorkerWithFallback } from '@/utilities/worker-utils';
 import type { TimestepData, TimestepState, TimestepStore } from '@/types/stores/editor/timesteps';
 
 const initialTimestepData: TimestepData = {
@@ -18,11 +19,10 @@ const initialState: TimestepState = {
     isRenderOptionsLoading: false
 };
 
-const extractTimesteps = (trajectory: Trajectory | null): number[] => {
-    if(!trajectory?.frames || trajectory.frames.length === 0){
-        return [];
-    }
-    return trajectory.frames
+// Pure function for worker - extracts and sorts timesteps
+const extractTimestepsWorker = (frames: any[]): number[] => {
+    if (!frames || frames.length === 0) return [];
+    return frames
         .map((frame: any) => frame.timestep)
         .sort((a: number, b: number) => a - b);
 };
@@ -42,15 +42,14 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
         onProgress?: (p: number, m?: { bps: number }) => void,
         maxFramesToPreload?: number,
         currentFrameIndex?: number
-    ): Promise<TimelineGLBMap>{
+    ): Promise<TimelineGLBMap> {
         const trajectory = useTrajectoryStore.getState().trajectory;
         const analysis = useAnalysisConfigStore.getState().analysisConfig;
         const { timesteps } = get().timestepData;
 
-        if(!trajectory?._id) throw new Error('No trajectory loaded');
-        if(timesteps.length === 0) throw new Error('No timesteps available in trajectory');
+        if (!trajectory?._id) throw new Error('No trajectory loaded');
+        if (timesteps.length === 0) throw new Error('No timesteps available in trajectory');
 
-        // Use analysis ID if available, otherwise use 'default' to allow preloading without explicit analysis
         const analysisId = analysis?._id || 'default';
 
         const map = await fetchModels({
@@ -67,23 +66,20 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
         return map;
     },
 
-    computeTimestepData(trajectory: Trajectory | null, currentTimestep?: number, cacheBuster?: number){
-        if(!trajectory?.frames || trajectory.frames.length === 0){
+    async computeTimestepData(trajectory: Trajectory | null, currentTimestep?: number, cacheBuster?: number) {
+        if (!trajectory?.frames || trajectory.frames.length === 0) {
             set({ timestepData: initialTimestepData });
             return;
         }
 
-        const timesteps = extractTimesteps(trajectory);
+        // Extract timesteps in worker for large trajectories
+        const timesteps = await runInWorkerWithFallback(extractTimestepsWorker, trajectory.frames);
         const timestepData = createTimestepData(timesteps);
 
         // Only load GLB if trajectory processing is completed
-        // This prevents 404 errors when trying to load GLB files that don't exist yet during processing
-        if(trajectory._id && currentTimestep !== undefined && timesteps.length > 0 && trajectory.status === 'completed'){
-            // Obtener el ID del análisis actual del store, no del trajectory
+        if (trajectory._id && currentTimestep !== undefined && timesteps.length > 0 && trajectory.status === 'completed') {
             const currentAnalysis = useAnalysisConfigStore.getState().analysisConfig;
             const analysisId = currentAnalysis?._id || '';
-
-            // Si no hay análisis, usar un ID por defecto para permitir la carga del GLB
             const finalAnalysisId = analysisId || 'default';
 
             const glbs = createTrajectoryGLBs(
@@ -93,7 +89,6 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
                 cacheBuster
             );
 
-            // Only update model and load GLB when trajectory is completed
             useModelStore.getState().selectModel(glbs);
         }
 

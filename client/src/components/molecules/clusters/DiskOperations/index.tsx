@@ -10,30 +10,31 @@ interface DataPoint {
   speed: number;
 }
 
-const MAX_POINTS = 60; // 60 seconds
+const MAX_POINTS = 60;
 
-export function DiskOperations(){
+export function DiskOperations() {
   const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics();
   const [history, setHistory] = useState<DataPoint[]>([]);
 
   // Preload with historical data
   useEffect(() => {
-    if(isHistoryLoaded && metricsHistory.length > 0 && history.length === 0){
+    if (isHistoryLoaded && metricsHistory.length > 0 && history.length === 0) {
       console.log('[DiskOperations] Preloading with', metricsHistory.length, 'historical points')
       const historicalData = metricsHistory
-          .filter(m => m.diskOperations)
-          .slice(-MAX_POINTS)
-          .map(m => ({
-          read: m.diskOperations!.read,
-          write: m.diskOperations!.write,
-          speed: m.diskOperations!.speed
-        }))
-      setHistory(historicalData)
+        .filter((m: any) => m.diskOperations)
+        .slice(-MAX_POINTS)
+        .map((m: any) => ({
+          read: m.diskOperations.read,
+          write: m.diskOperations.write,
+          speed: m.diskOperations.speed
+        }));
+      setHistory(historicalData);
     }
-  }, [isHistoryLoaded, metricsHistory])
+  }, [isHistoryLoaded, metricsHistory]);
 
+  // Update with realtime metrics
   useEffect(() => {
-    if(!metrics?.diskOperations) return;
+    if (!metrics?.diskOperations) return;
 
     setHistory(prev => {
       const newHistory = [...prev, {
@@ -41,42 +42,47 @@ export function DiskOperations(){
         write: metrics.diskOperations!.write,
         speed: metrics.diskOperations!.speed
       }];
-
-      if(newHistory.length > MAX_POINTS){
-        newHistory.shift();
-      }
-
+      if (newHistory.length > MAX_POINTS) newHistory.shift();
       return newHistory;
     });
   }, [metrics]);
 
-  const isLoading = !isHistoryLoaded || !metrics?.diskOperations || history.length === 0
+  const isLoading = !isHistoryLoaded || !metrics?.diskOperations || history.length === 0;
 
-  const maxRead = Math.max(...history.map(d => d.read), 1);
-  const maxWrite = Math.max(...history.map(d => d.write), 1);
-  const maxSpeed = Math.max(...history.map(d => d.speed), 1);
-  const maxValue = Math.max(maxRead, maxWrite, Math.ceil(maxSpeed / 10));
+  // Calculate paths synchronously (60 items is fast)
+  const paths = (() => {
+    if (history.length === 0) return { readPath: '', writePath: '', speedPath: '', maxValue: 1 };
 
+    const maxRead = Math.max(...history.map(d => d.read), 1);
+    const maxWrite = Math.max(...history.map(d => d.write), 1);
+    const maxSpeed = Math.max(...history.map(d => d.speed), 1);
+    const maxValue = Math.max(maxRead, maxWrite, Math.ceil(maxSpeed / 10));
+
+    const padding = 5;
+    const getX = (index: number) => (index / (MAX_POINTS - 1)) * 100;
+    const getY = (value: number) => 100 - ((value / maxValue) * (100 - padding * 2) + padding);
+
+    const createPath = (values: number[]) => {
+      if (values.length === 0) return '';
+      let path = `M ${getX(0)} ${getY(values[0])}`;
+      for (let i = 1; i < values.length; i++) {
+        path += ` L ${getX(i)} ${getY(values[i])}`;
+      }
+      return path;
+    };
+
+    return {
+      readPath: createPath(history.map(d => d.read)),
+      writePath: createPath(history.map(d => d.write)),
+      speedPath: createPath(history.map(d => d.speed / 10)),
+      maxValue
+    };
+  })();
+
+  const { readPath, writePath, speedPath } = paths;
   const width = 100;
   const height = 80;
-  const padding = 5;
-
   const getX = (index: number) => (index / (MAX_POINTS - 1)) * 100;
-  const getY = (value: number) => 100 - ((value / maxValue) * (100 - padding * 2) + padding);
-
-  const createPath = (values: number[]) => {
-    if(values.length === 0) return '';
-
-    let path = `M ${getX(0)} ${getY(values[0])}`;
-    for(let i = 1; i < values.length; i++){
-      path += ` L ${getX(i)} ${getY(values[i])}`;
-    }
-    return path;
-  };
-
-  const readPath = createPath(history.map(d => d.read));
-  const writePath = createPath(history.map(d => d.write));
-  const speedPath = createPath(history.map(d => d.speed / 10));
 
   const currentRead = metrics?.diskOperations?.read || 0;
   const currentWrite = metrics?.diskOperations?.write || 0;
@@ -102,42 +108,20 @@ export function DiskOperations(){
 
         {readPath && (
           <>
-            <path
-              d={`${readPath} L ${getX(history.length - 1)} 100 L 0 100 Z`}
-              fill="url(#diskReadGradient)"
-            />
-            <path
-              d={readPath}
-              fill="none"
-              stroke="#0A84FF"
-              strokeWidth="0.5"
-            />
+            <path d={`${readPath} L ${getX(history.length - 1)} 100 L 0 100 Z`} fill="url(#diskReadGradient)" />
+            <path d={readPath} fill="none" stroke="#0A84FF" strokeWidth="0.5" />
           </>
         )}
 
         {writePath && (
           <>
-            <path
-              d={`${writePath} L ${getX(history.length - 1)} 100 L 0 100 Z`}
-              fill="url(#diskWriteGradient)"
-            />
-            <path
-              d={writePath}
-              fill="none"
-              stroke="#30D158"
-              strokeWidth="0.5"
-            />
+            <path d={`${writePath} L ${getX(history.length - 1)} 100 L 0 100 Z`} fill="url(#diskWriteGradient)" />
+            <path d={writePath} fill="none" stroke="#30D158" strokeWidth="0.5" />
           </>
         )}
 
         {speedPath && (
-          <path
-            d={speedPath}
-            fill="none"
-            stroke="#FF9F0A"
-            strokeWidth="0.5"
-            strokeDasharray="2,2"
-          />
+          <path d={speedPath} fill="none" stroke="#FF9F0A" strokeWidth="0.5" strokeDasharray="2,2" />
         )}
       </svg>
 
@@ -158,7 +142,7 @@ export function DiskOperations(){
     </div>
   );
 
-  return(
+  return (
     <ChartContainer
       icon={HardDrive}
       title="Disk Operations"
