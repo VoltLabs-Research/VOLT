@@ -6,7 +6,7 @@ export interface Toast {
   id: string;
   type: ToastType;
   message: string;
-  duration?: number; // in ms, 0 = persistent
+  duration?: number;
   createdAt: number;
 }
 

@@ -6,17 +6,17 @@ import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import './BaseNode.css';
 
 interface BaseNodeProps extends NodeProps{
-    children: ReactNode;
     nodeType: NodeType;
-    nodeTitle: undefined;
+    nodeTitle?: undefined;
+    description?: string;
 };
 
 const BaseNode: React.FC<BaseNodeProps> = memo(({
     data,
     selected,
-    children,
     nodeType,
     nodeTitle,
+    description,
 }) => {
     const config = NODE_CONFIGS[nodeType];
 
@@ -36,17 +36,14 @@ const BaseNode: React.FC<BaseNodeProps> = memo(({
                 </span>
                 <div className='workflow-node-header-content'>
                     <h3 className='workflow-node-header-title'>
-                        {nodeTitle ? nodeTitle : data.name as string || config.label}
+                        {nodeTitle ? nodeTitle : config.label}
                     </h3>
-                    <p className='workflow-node-header-type'>{config.label}</p>
+
+                    {description && (
+                        <p className='workflow-node-description'>{description}</p>
+                    )}
                 </div>
             </div>
-
-            {/*
-            <div className='workflow-node-body-container'>
-                {children}
-            </div>
-            */}
 
             {config.outputs !== 0 && (
                 <Handle

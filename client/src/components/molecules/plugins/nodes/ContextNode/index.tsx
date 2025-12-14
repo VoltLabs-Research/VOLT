@@ -2,7 +2,6 @@ import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
 import BaseNode from '@/components/atoms/plugins/BaseNode';
-import NodeField from '@/components/atoms/plugins/NodeField';
 import { CONTEXT_OPTIONS } from '@/utilities/plugins/node-types';
 
 const ContextNode = memo((props: NodeProps) => {
@@ -11,9 +10,11 @@ const ContextNode = memo((props: NodeProps) => {
     const sourceLabel = CONTEXT_OPTIONS.find((option) => option.value === source)?.label || source;
 
     return(
-        <BaseNode {...props} nodeType={NodeType.CONTEXT}>
-            <NodeField label='Source' value={sourceLabel} />
-        </BaseNode>
+        <BaseNode 
+            {...props} 
+            nodeType={NodeType.CONTEXT}
+            description={`Using ${sourceLabel}`}
+        />
     )
 });
 
