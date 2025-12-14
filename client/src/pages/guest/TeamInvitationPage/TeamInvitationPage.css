@@ -1,415 +1,68 @@
-/**
-* Copyright (C) Rodolfo Herrera Hernandez. All rights reserved.
-*/
-
-/* Theme Variables */
-:root, .theme-dark {
-    --invite-page-bg: #0a0a0a;
-    --invite-text-primary: rgba(255, 255, 255, 0.95);
-    --invite-text-secondary: rgba(255, 255, 255, 0.65);
-    --invite-text-tertiary: rgba(255, 255, 255, 0.45);
-    --invite-text-muted: rgba(255, 255, 255, 0.35);
-    --invite-accent: #3b82f6;
-    --invite-accent-hover: #2563eb;
-    --invite-success: #10b981;
-    --invite-error: #ef4444;
-    --invite-badge-bg: rgba(59, 130, 246, 0.1);
-    --invite-badge-border: rgba(59, 130, 246, 0.2);
-    --invite-btn-secondary-bg: rgba(255, 255, 255, 0.08);
-    --invite-btn-secondary-hover: rgba(255, 255, 255, 0.12);
-    --invite-btn-secondary-border: rgba(255, 255, 255, 0.12);
+.invitation-badge {
+    gap: 0.5rem;
 }
 
-:root[data-theme='light'],
-.light {
-    --invite-page-bg: #ffffff;
-    --invite-text-primary: rgba(0, 0, 0, 0.9);
-    --invite-text-secondary: rgba(0, 0, 0, 0.65);
-    --invite-text-tertiary: rgba(0, 0, 0, 0.5);
-    --invite-text-muted: rgba(0, 0, 0, 0.35);
-    --invite-accent: #0070f3;
-    --invite-accent-hover: #0761d1;
-    --invite-success: #059669;
-    --invite-error: #dc2626;
-    --invite-badge-bg: rgba(0, 112, 243, 0.08);
-    --invite-badge-border: rgba(0, 112, 243, 0.15);
-    --invite-btn-secondary-bg: rgba(0, 0, 0, 0.04);
-    --invite-btn-secondary-hover: rgba(0, 0, 0, 0.08);
-    --invite-btn-secondary-border: rgba(0, 0, 0, 0.1);
+.invitation-badge-text {
+    font-size: 0.9rem;
+    color: var(--color-zinc-400);
 }
 
-.team-invitation-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 80px 48px;
-    background: var(--invite-page-bg);
-    position: relative;
+.invited-by {
+    font-size: 0.9rem;
+    color: var(--color-zinc-500);
+    margin-top: 0.5rem;
 }
 
-.team-invitation-container {
-    position: relative;
-    width: 100%;
-    max-width: 640px;
-    text-align: center;
-    animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-
-    &.error {
-        text-align: center;
-        max-width: 520px;
-    }
+.invited-by strong {
+    color: var(--color-zinc-400);
 }
 
-@keyframes slideUpFade {
-    from {
-        opacity: 0;
-        transform: translateY(24px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.team-invitation-header {
-    margin-bottom: 48px;
-
-    .welcome-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 6px 14px;
-        margin-bottom: 20px;
-        background: var(--invite-badge-bg);
-        border: 1px solid var(--invite-badge-border);
-        border-radius: 100px;
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--invite-accent);
-        letter-spacing: -0.01em;
-        font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
-    }
-
-    h1 {
-        margin: 0 0 16px 0;
-        font-size: 48px;
-        font-weight: 700;
-        color: var(--invite-text-primary);
-        letter-spacing: -0.04em;
-        font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-        line-height: 1.1;
-        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s backwards;
-    }
-
-    .subtitle {
-        margin: 0 0 8px 0;
-        font-size: 18px;
-        color: var(--invite-text-secondary);
-        font-weight: 400;
-        letter-spacing: -0.01em;
-        font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-        line-height: 1.6;
-        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s backwards;
-    }
-
-    .invited-by {
-        font-size: 15px;
-        color: var(--invite-text-tertiary);
-        font-weight: 400;
-        letter-spacing: -0.01em;
-        font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-        animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.5s backwards;
-    }
-
-    .invited-by strong {
-        color: var(--invite-text-secondary);
-        font-weight: 500;
-    }
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(12px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.team-invitation-content {
-    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.6s backwards;
-}
-
-.team-details {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
-    margin-bottom: 48px;
-    justify-content: center;
+.invitation-details {
+    margin: 2rem 0;
 }
 
 .detail-item {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    text-align: center;
+}
 
-    .label {
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--invite-text-muted);
-        font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-    }
+.detail-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-zinc-600);
+}
 
-    .value {
-        font-size: 15px;
-        color: var(--invite-text-tertiary);
-        font-weight: 500;
-        letter-spacing: -0.01em;
-        font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-    }
+.detail-value {
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    color: var(--color-zinc-400);
+}
 
-    .role-badge {
-        display: inline-flex;
-        align-items: center;
-        width: fit-content;
-        padding: 4px 12px;
-        background: var(--invite-badge-bg);
-        color: var(--invite-accent);
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        border: 1px solid var(--invite-badge-border);
-        letter-spacing: -0.01em;
-        font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-    }
+.role-badge {
+    margin-top: 0.5rem;
+    padding: 0.5rem 1rem;
 }
 
 .invitation-actions {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-    justify-content: center;
+    max-width: 400px;
+    margin: 0 auto;
 }
 
-.action-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 14px 28px;
-    border: none;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    outline: none;
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-    letter-spacing: -0.01em;
-    white-space: nowrap;
-
-    &:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    &:hover:not(:disabled) {
-        transform: translateY(-1px);
-    }
-
-    &:active:not(:disabled) {
-        transform: translateY(0);
-    }
+.btn-icon {
+    margin-right: 0.5rem;
 }
 
-.accept-btn {
-    background: var(--invite-accent);
-    color: white;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
-
-    &:hover:not(:disabled) {
-        background: var(--invite-accent-hover);
-        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
-    }
+.error-badge {
+    margin-top: 1.5rem;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
 }
 
-.reject-btn {
-    background: var(--invite-btn-secondary-bg);
-    color: var(--invite-text-secondary);
-    border: 1px solid var(--invite-btn-secondary-border);
-
-    &:hover:not(:disabled) {
-        background: var(--invite-btn-secondary-hover);
-        color: var(--invite-text-primary);
-    }
+.skeleton-details {
+    gap: 1.5rem;
 }
 
-.error-message {
-    margin-top: 24px;
-    padding: 14px 18px;
-    background: rgba(239, 68, 68, 0.08);
-    color: var(--invite-error);
-    border-radius: 10px;
-    border: 1px solid rgba(239, 68, 68, 0.15);
-    font-size: 14px;
-    font-weight: 500;
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-    letter-spacing: -0.01em;
-    animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes slideDown {
-    from {
-        opacity: 0;
-        transform: translateY(-8px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.error-icon {
-    color: var(--invite-error);
-    margin-bottom: 20px;
-    opacity: 0.85;
-}
-
-.team-invitation-container.error h1 {
-    font-size: 32px;
-    margin: 12px 0 16px;
-}
-
-.team-invitation-container.error p {
-    font-size: 16px;
-    color: var(--invite-text-secondary);
-    line-height: 1.6;
-}
-
-.back-btn {
-    margin-top: 28px;
-    padding: 14px 28px;
-    background: var(--invite-accent);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    outline: none;
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-    letter-spacing: -0.01em;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
-
-    &:hover {
-        transform: translateY(-1px);
-        background: var(--invite-accent-hover);
-        box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
-    }
-
-    &:active {
-        transform: translateY(0);
-    }
-}
-
-/* Loading skeleton customization */
-.team-invitation-page .MuiSkeleton-root {
-    background: var(--invite-btn-secondary-bg);
-    border-radius: 12px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .team-invitation-page {
-        padding: 60px 32px;
-        justify-content: center;
-    }
-
-    .team-invitation-header h1 {
-        font-size: 40px;
-    }
-
-    .team-invitation-header .subtitle {
-        font-size: 16px;
-    }
-
-    .team-details {
-        gap: 20px;
-    }
-}
-
-@media (max-width: 640px) {
-    .team-invitation-page {
-        padding: 48px 24px;
-    }
-
-    .team-invitation-header {
-        margin-bottom: 40px;
-    }
-
-    .team-invitation-header h1 {
-        font-size: 36px;
-    }
-
-    .team-invitation-header .subtitle {
-        font-size: 16px;
-    }
-
-    .team-details {
-        margin-bottom: 40px;
-    }
-
-    .invitation-actions {
-        gap: 12px;
-    }
-
-    .action-btn {
-        padding: 12px 24px;
-        font-size: 14px;
-    }
-}
-
-@media (max-width: 480px) {
-    .team-invitation-page {
-        padding: 40px 20px;
-    }
-
-    .team-invitation-header h1 {
-        font-size: 32px;
-    }
-
-    .team-invitation-header .subtitle {
-        font-size: 15px;
-    }
-
-    .team-details {
-        gap: 16px;
-    }
-
-    .invitation-actions {
-        flex-direction: column;
-        width: 100%;
-    }
-
-    .action-btn {
-        width: 100%;
-    }
-}
-
-/* Print styles */
-@media print {
-    .team-invitation-page {
-        background: white;
-    }
-
-    .invitation-actions {
-        display: none;
-    }
+.skeleton-actions {
+    gap: 1rem;
 }
