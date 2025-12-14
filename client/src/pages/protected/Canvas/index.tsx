@@ -11,8 +11,8 @@ import PreloadingOverlay from '@/components/atoms/common/PreloadingOverlay';
 import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
 import usePlaybackStore from '@/stores/editor/playback';
-import usePluginStore from '@/stores/plugins/plugin';
 import Loader from '@/components/atoms/common/Loader';
+import Container from '@/components/primitives/Container';
 import './Canvas.css';
 
 const CANVAS_CONFIG = {
@@ -45,14 +45,14 @@ const EditorPage: React.FC = () => {
     }, [reset]);
 
     return(
-        <div className="editor-container">
+        <Container className='w-max vh-max p-relative u-select-none editor-container'>
             <AnimatePresence>
-                <PreloadingOverlay key="preloading-overlay" />
+                <PreloadingOverlay />
 
                 {((isModelLoading && !(didPreload && isPlaying)) || (!trajectory || currentTimestep === undefined)) && (
-                    <div key="model-loader" className='model-loading-container'>
+                    <Container className='d-flex flex-center w-max h-max p-absolute model-loading-container'>
                         <Loader scale={0.7} />
-                    </div>
+                    </Container>
                 )}
             </AnimatePresence>
 
@@ -66,7 +66,7 @@ const EditorPage: React.FC = () => {
                     position={CANVAS_CONFIG.timestepViewerDefaults.position}
                 />
             </Scene3D>
-        </div>
+        </Container>
     );
 };
 

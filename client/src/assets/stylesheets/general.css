@@ -76,3 +76,7 @@ input:-webkit-autofill:hover{
     backdrop-filter: blur(18px) saturate(160%);
     box-shadow: var(--shadow-glass);
 }
+
+.u-select-none{
+    user-select: none;
+}

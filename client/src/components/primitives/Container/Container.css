@@ -1,0 +1,45 @@
+/** Position **/
+.volt-container.p-relative{
+    position: relative;
+}
+
+.volt-container.p-absolute{
+    position: absolute;
+}
+
+/** Container **/
+.volt-container.w-max{
+    width: 100%;
+}
+
+.volt-container.h-max{
+    height: 100%;
+}
+
+.volt-container.vh-max{
+    height: 100vh;
+}
+
+/** Flexbox **/
+.volt-container.d-flex{
+    display: flex;
+}
+
+.volt-container.items-center,
+.volt-container.flex-center{
+    align-items: center;
+}
+
+.volt-container.content-center,
+.volt-container.flex-center{
+    justify-content: center;
+}
+
+.volt-container.d-flex.column{
+    flex-direction: column;
+}
+
+/** Text **/
+.volt-container.text-center{
+    text-align: center;
+}

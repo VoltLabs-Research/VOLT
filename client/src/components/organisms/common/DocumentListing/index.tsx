@@ -6,12 +6,13 @@ import { Skeleton } from '@mui/material'
 import useWorker from '@/hooks/core/use-worker'
 import { WorkerStatus } from '@/utilities/worker-utils'
 import './DocumentListing.css'
+import Container from '@/components/primitives/Container'
+import DynamicIcon from '@/components/atoms/common/DynamicIcon'
 
 const sortDataWorker = (
     data: any[],
     sortConfig: { key: string; direction: 'asc' | 'desc' } | null
 ): any[] => {
-    // Helper functions inlined for worker context
     const getValueByPath = (obj: any, path: string) => {
         if (!obj || !path) return undefined
         if (path.indexOf('.') === -1) return obj?.[path]
@@ -208,10 +209,10 @@ const DocumentListing = ({
     const isSorting = sortStatus === WorkerStatus.RUNNING
 
     return (
-        <div className='document-listing-container'>
-            <div className='document-listing-header-container'>
-                <div className='document-listing-header-top-container'>
-                    <div className='breadcrumbs-container'>
+        <Container className='d-flex column h-max document-listing-container'>
+            <Container className='d-flex column document-listing-header-container'>
+                <Container className='d-flex column document-listing-header-top-container'>
+                    <Container className='d-flex breadcrumbs-container'>
                         {breadcrumbs.map((name, index) => (
                             <div className='breadcrumb-item-container' key={index}>
                                 {typeof name === 'string' ? (
@@ -221,8 +222,8 @@ const DocumentListing = ({
                                 )}
                             </div>
                         ))}
-                    </div>
-                    <div className='document-listing-header-title-container'>
+                    </Container>
+                    <Container className='d-flex document-listing-header-title-container'>
                         {isLoading && !data.length ? (
                             <Skeleton variant='text' width={220} height={32} />
                         ) : (
@@ -231,20 +232,22 @@ const DocumentListing = ({
                         <i className='document-listing-header-icon-container'>
                             <RxDotsHorizontal />
                         </i>
-                    </div>
-                </div>
-                <div className='document-listing-header-bottom-container'>
-                    <div className='document-listing-header-tabs-container'>
-                        <div className='document-listing-header-tab-container'>
-                            <i className='document-listing-header-tab-icon-container'>
-                                <RiListUnordered />
-                            </i>
+                    </Container>
+                </Container>
+
+                <Container>
+                    <Container className='d-flex w-max document-listing-header-tabs-container'>
+                        <Container className='d-flex items-center document-listing-header-tab-container'>
+                            <Container className='d-flex flex-center document-listing-header-tab-icon-container'>
+                                <DynamicIcon iconName='RiListUnordered' />
+                            </Container>
                             <p className='document-listing-header-tab-name'>List</p>
-                        </div>
-                    </div>
-                    <div className='document-listing-header-filters-container' />
-                </div>
-            </div>
+                        </Container>
+                    </Container>
+                    <Container className='document-listing-header-filters-container' />
+                </Container>
+            </Container>
+
             <div className='document-listing-body-container' ref={bodyRef}>
                 <DocumentListingTable
                     columns={columns}
@@ -262,7 +265,7 @@ const DocumentListing = ({
                     scrollContainerRef={bodyRef}
                 />
             </div>
-        </div>
+        </Container>
     )
 }
 

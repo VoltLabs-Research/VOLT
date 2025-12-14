@@ -171,7 +171,6 @@ export default function AuthPage(){
     const value = e.target.value;
     setter(value);
 
-    // For passwordConfirm, we need the current password value
     const formData = field === 'passwordConfirm' ? { password } : undefined;
     checkField(field, value, formData);
   };
@@ -179,7 +178,6 @@ export default function AuthPage(){
   return(
     <div className="auth-page-wrapper">
       <div className="auth-layout">
-        {/* Lado Izquierdo - ANIMACIÓN CANVAS + TEXTO MINIMALISTA */}
         <div className="hero-section">
           <div className="hero-background">
             <WireframeBackground />
@@ -205,7 +203,6 @@ export default function AuthPage(){
           </div>
         </div>
 
-        {/* Lado Derecho - Formulario */}
         <div className="form-section">
           <div className="form-bg-glow" />
 

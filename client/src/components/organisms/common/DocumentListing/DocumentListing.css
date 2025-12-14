@@ -1,7 +1,4 @@
 .document-listing-container{
-    display: flex;
-    flex-direction: column;
-    height: 100%;
     border-top: unset;
     color: var(--color-text-primary);
     border-bottom: unset;
@@ -14,7 +11,6 @@
 }
 
 .breadcrumbs-container{
-    display: flex;
     gap: .5rem;
 }
 
@@ -44,21 +40,16 @@
 }
 
 .document-listing-header-title-container{
-    display: flex;
     gap: 1.5rem;
     font-size: 1.2rem;
 }
 
 .document-listing-header-tabs-container{
-    width: 100%;
     padding: 0 2rem;
-    display: flex;
     gap: 1rem;
 }
 
 .document-listing-header-tab-container{
-    display: flex;
-    align-items: center;
     gap: 1rem;
     color: var(--color-text-secondary);
     padding-bottom: 1rem;
@@ -69,7 +60,7 @@
     border-top: 1px solid var(--color-border);
     padding: 0 2rem 0;
     flex: 1;
-        overflow: auto;
+    overflow: auto;
 }
 
 @media screen and (max-width: 768px){
@@ -79,8 +70,6 @@
 }
 
 .document-listing-header-top-container{
-    display: flex;
-    flex-direction: column;
     padding: 2rem 2rem 0;
     gap: 1.5rem;
 }

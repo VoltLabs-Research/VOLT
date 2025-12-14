@@ -18,16 +18,12 @@
 
 .dashboard-body-left-container{
     height: 100%;
-    display: flex;
     width: 600px;
-    flex-direction: column;
     gap: 2rem;
 }
 
 .dashboard-body-right-container{
-    display: flex;
     width: calc(100% - 600px - 3rem);
-    flex-direction: column;
     gap: 2rem;
 }
 
@@ -423,20 +419,13 @@
     border-radius: 5rem;
 }
 
-.dashboard-canvas-overlay {
+.dashboard-canvas-overlay{
     position: absolute;
     inset: 0;
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.4) 100%);
     backdrop-filter: blur(6px);
     border-radius: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: 100;
-}
-
-.dashboard-overlay-content {
-    text-align: center;
 }
 
 .dashboard-overlay-title {

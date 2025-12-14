@@ -11,6 +11,7 @@ import { formatNumber } from '@/components/organisms/common/DocumentListing';
 import { GoArrowRight } from 'react-icons/go';
 import SimulationGrid from '@/components/molecules/trajectory/SimulationGrid';
 import useTeamStore from '@/stores/team/team';
+import Container from '@/components/primitives/Container';
 import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
 import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';
 import useAuthStore from '@/stores/authentication';
@@ -87,38 +88,38 @@ const DashboardPage: React.FC = memo(() => {
     return(
         <FileUpload>
             <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
-                <div className='dashboard-body-left-container'>
-                    <div className='dashboard-body-left-header-container'>
+                <Container className='d-flex column dashboard-body-left-container'>
+                    <Container>
                         <h3 className='dashboard-body-left-header-title'>
                             {getGreeting()}, {capitalize(user?.firstName)}
                         </h3>
-                    </div>
+                    </Container>
 
-                    <div className='scene-preview-container'>
+                    <Container className='scene-preview-container'>
                         {isProcessing ? (
-                            <div style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 20, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Container style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 20, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <ProcessingLoader
                                     className='scene-preview-processing'
                                     message="Your trajectory is being processed"
                                     completionRate={0}
                                     isVisible={true}
                                 />
-                            </div>
+                            </Container>
                         ) : (trajectory?._id && currentTimestep !== undefined) && (
                             <>
-                                <div className='badge-container scene-preview-name-badge primary-surface'>
+                                <Container className='badge-container scene-preview-name-badge primary-surface'>
                                     <p className='badge-text'>{trajectory.name}</p>
-                                </div>
+                                </Container>
 
-                                <div className='badge-container scene-preview-natoms-badge primary-surface'>
+                                <Container className='badge-container scene-preview-natoms-badge primary-surface'>
                                     <p className='badge-text'>
                                         {formatNumber((trajectory.frames || []).find((f: any) => f.timestep === currentTimestep)?.natoms ?? 0)} atoms
                                     </p>
-                                </div>
+                                </Container>
 
-                                <div className='badge-container scene-preview-navigate-icon primary-surface'>
+                                <Container className='badge-container scene-preview-navigate-icon primary-surface'>
                                     <GoArrowRight />
-                                </div>
+                                </Container>
                             </>
                         )}
 
@@ -134,7 +135,6 @@ const DashboardPage: React.FC = memo(() => {
                             <TimestepViewer />
                         </Scene3D>
 
-                        {/* Blur overlay when processing */}
                         {isProcessing && (
                             <div
                                 style={{
@@ -152,31 +152,30 @@ const DashboardPage: React.FC = memo(() => {
                             />
                         )}
 
-                        {/* JobsHistory pinned inside the 3D scene - above overlay */}
-                        <div style={{ position: 'relative', zIndex: isProcessing ? 20 : 10 }}>
+                        <Container style={{ position: 'relative', zIndex: isProcessing ? 20 : 10 }}>
                             <JobsHistoryViewer />
-                        </div>
+                        </Container>
 
                         {hasNoTrajectories && (
-                            <div className='dashboard-canvas-overlay' aria-label="Canvas preview disabled">
-                                <div className='dashboard-overlay-content'>
+                            <Container className='d-flex flex-center dashboard-canvas-overlay' aria-label="Canvas preview disabled">
+                                <Container className='text-center'>
                                     <h3 className='dashboard-overlay-title'>Preview</h3>
                                     <p className='dashboard-overlay-description'>
                                         Real-time visualization of atomic structures from your trajectory data will appear here once loaded
                                     </p>
-                                </div>
-                            </div>
+                                </Container>
+                            </Container>
                         )}
-                    </div>
-                </div>
+                    </Container>
+                </Container>
 
-                <div className='dashboard-body-right-container'>
-                    <div className='dashboard-stats-wrapper'>
+                <Container className='d-flex column dashboard-body-right-container'>
+                    <Container className='dashboard-stats-wrapper'>
                         <DashboardStats teamId={selectedTeam?._id} trajectoryId={displayTrajectory?._id} />
-                    </div>
+                    </Container>
 
                     <SimulationGrid />
-                </div>
+                </Container>
 
             </DashboardContainer>
         </FileUpload>
