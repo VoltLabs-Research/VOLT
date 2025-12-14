@@ -1,82 +1,119 @@
-*{
-    margin: 0;
-    padding: 0;
-    outline: none;
-    border: none;
-    box-sizing: border-box;
+/** Margin **/
+.mt-1{
+    margin-top: 1rem;
 }
 
-html, body{
+/** Position **/
+.p-relative{
+    position: relative;
+}
+
+.p-sticky{
+    position: sticky;
+}
+
+.p-absolute{
+    position: absolute;
+}
+
+/** Gap **/
+.gap-025{
+    gap: 0.25rem;
+}
+
+.gap-1{
+    gap: 1rem;
+}
+
+.gap-05{
+    gap: 0.5rem;
+}
+
+.gap-1-5{
+    gap: 1.5rem;
+}
+
+.gap-2{
+    gap: 2rem;
+}
+
+/** Container **/
+.w-max{
+    width: 100%;
+}
+
+.h-max{
     height: 100%;
-    width: 100%;
-    background-color: var(--color-bg);
 }
 
-#root{
-    width: 100%;
+.vh-max{
     height: 100vh;
-    background-color: transparent; 
 }
 
-body{
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    color: var(--color-text-primary);
-}
-
-::-webkit-scrollbar-track {
-    background-color: transparent;
-}
-
-::-webkit-scrollbar {
-    width: 2px;
-    height: 2px;
-    background-color: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-    border-radius: 0.5rem;
-    background-color: var(--color-scrollbar);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: var(--color-scrollbar);
-}
-
-i{
+/** Flexbox **/
+.d-flex{
     display: flex;
-    justify-content: center;
+}
+
+.flex-1{
+    flex: 1;
+}
+
+.items-center,
+.flex-center{
     align-items: center;
 }
 
-input[type=number]::-webkit-outer-spin-button,
-input[type=number]::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+.content-center,
+.flex-center{
+    justify-content: center;
 }
 
-input[type=number] {
-    appearance: textfield;
-    -moz-appearance: textfield;
+.content-between{
+    justify-content: space-between;
 }
 
-input:-webkit-autofill,
-input:-webkit-autofill:focus,
-input:-webkit-autofill:hover{
-    -webkit-box-shadow: 0 0 0 1000px var(--color-autofill-bg) inset !important;
-    box-shadow: 0 0 0 1000px var(--color-autofill-bg) inset !important;
-    -webkit-text-fill-color: var(--color-autofill-text) !important;
+.flex-wrap{
+    flex-wrap: wrap;
 }
 
-.MuiSkeleton-root{
-    background-color: color-mix(in srgb, var(--color-text-muted) 11%, transparent) !important;
+.a-self-end{
+    align-self: flex-end;
 }
 
-.primary-surface{
-    background: var(--glass-bg);
-    backdrop-filter: blur(18px) saturate(160%);
-    box-shadow: var(--shadow-glass);
+.f-shrink-0{
+    flex-shrink: 0;
 }
 
-.u-select-none{
-    user-select: none;
+.d-flex.column{
+    flex-direction: column;
+}
+
+/** Text **/
+.text-center{
+    text-align: center;
+}
+
+/** Mobile **/
+@media (max-width: 768px){
+    /** Flexbox **/
+    .sm\:column{
+        flex-direction: column;
+    }
+
+    .sm\:text-center{
+        text-align: center;
+    }
+
+    .sm\:item-start{
+        align-items: flex-start;
+    }
+
+    .sm\:gap-1{
+        gap: 1rem;
+    }
+
+    .sm\:a-self-end{
+        align-self: flex-end;
+    }
 }

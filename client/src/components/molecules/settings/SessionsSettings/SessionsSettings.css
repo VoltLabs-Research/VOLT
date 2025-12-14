@@ -1,0 +1,90 @@
+.session-item {
+    padding: 1rem;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.8rem;
+    transition: all 0.2s ease;
+}
+
+.session-item.current {
+    border-color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.session-item:hover {
+    border-color: var(--color-border);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.session-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--color-surface-2);
+    border-radius: 0.8rem;
+    color: var(--accent-blue);
+}
+
+.session-device {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.session-location {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.session-skeleton {
+    padding: 1rem;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.75rem;
+}
+
+.session-skeleton-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--color-surface-2);
+    border-radius: 0.5rem;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.session-skeleton-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.session-skeleton-line {
+    height: 1rem;
+    background: var(--color-surface-2);
+    border-radius: 0.25rem;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.session-skeleton-line.short {
+    width: 60%;
+}
+
+.session-actions-bulk {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.session-actions-bulk .action-button {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--accent-red);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+}
+
+.session-actions-bulk .action-button:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.3);
+    transform: translateY(-1px);
+}

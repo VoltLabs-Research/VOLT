@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import FormInput from '@/components/atoms/form/FormInput';
-import RecentActivity from '@/components/molecules/auth/RecentActivity';
-import { TbCheck, TbTrash, TbX, TbActivity, TbCamera } from 'react-icons/tb';
-import authApi from '@/services/api/auth';
-import Section from '@/components/atoms/settings/Section';
-import SectionHeader from '@/components/atoms/settings/SectionHeader';
-import StatusBadge from '@/components/atoms/common/StatusBadge';
-import { useFormValidation } from '@/hooks/useFormValidation';
-import './GeneralSettings.css';
+import React, { useState, useEffect } from "react";
+import FormInput from "@/components/atoms/form/FormInput";
+import RecentActivity from "@/components/molecules/auth/RecentActivity";
+import { TbCheck, TbTrash, TbX, TbActivity, TbCamera } from "react-icons/tb";
+import authApi from "@/services/api/auth";
+import Section from "@/components/atoms/settings/Section";
+import SectionHeader from "@/components/atoms/settings/SectionHeader";
+import StatusBadge from "@/components/atoms/common/StatusBadge";
+import { useFormValidation } from "@/hooks/useFormValidation";
+import Container from "@/components/primitives/Container";
+import "./GeneralSettings.css";
 
 interface GeneralSettingsProps {
     user: { firstName?: string; lastName?: string; email?: string; avatar?: string } | null;
@@ -18,94 +19,113 @@ interface GeneralSettingsProps {
     onDeleteAccount: () => void;
 }
 
-const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpdating, updateError, onFieldChange, onDeleteAccount }) => {
+const GeneralSettings: React.FC<GeneralSettingsProps> = ({ 
+    user, 
+    userData, 
+    isUpdating, 
+    updateError, 
+    onFieldChange, 
+    onDeleteAccount 
+}) => {
     const [formData, setFormData] = useState({
         firstName: userData.firstName,
         lastName: userData.lastName,
         email: userData.email
     });
+
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-    const { errors, validate, checkField } = useFormValidation({
-        firstName: { required: true, minLength: 4, maxLength: 16, message: 'First name must be between 4 and 16 characters' },
-        lastName: { required: true, minLength: 4, maxLength: 16, message: 'Last name must be between 4 and 16 characters' },
-        email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email address' }
+    const { errors, checkField } = useFormValidation({
+        firstName: { required: true, minLength: 4, maxLength: 16, message: "First name must be between 4 and 16 characters" },
+        lastName: { required: true, minLength: 4, maxLength: 16, message: "Last name must be between 4 and 16 characters" },
+        email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email address" }
     });
 
     useEffect(() => {
-        if(user){
+        if (user) {
             setFormData({
-                firstName: user.firstName || '',
-                lastName: user.lastName || '',
-                email: user.email || ''
+                firstName: user.firstName || "",
+                lastName: user.lastName || "",
+                email: user.email || ""
             });
         }
     }, [user]);
 
     const handleInputChange = (field: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData((prev) => ({ ...prev, [field]: value }));
 
-        // Validate the field
         const errorMessage = checkField(field, value);
-
-        // Only propagate to parent(and trigger server update) if there's no validation error
-        if(!errorMessage){
+        if (!errorMessage) {
             onFieldChange(field, value);
         }
     };
 
-    const handleAvatarUpload = async(e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if(!file) return;
+        if (!file) return;
 
-        // Validate file type and size
-        if(!file.type.startsWith('image/')) {
-            alert('Please upload an image file');
-            return;
-        }
-        if(file.size > 5 * 1024 * 1024){
-            alert('File size must be less than 5MB');
+        if (!file.type.startsWith("image/")) {
+            alert("Please upload an image file");
             return;
         }
 
-        const formData = new FormData();
-        formData.append('avatar', file);
+        if (file.size > 5 * 1024 * 1024) {
+            alert("File size must be less than 5MB");
+            return;
+        }
 
-        try{
+        const fd = new FormData();
+        fd.append("avatar", file);
+
+        try {
             setIsUploadingAvatar(true);
-            await authApi.updateMe(formData); // Refactored to use authApi.updateMe
-            // Refresh page to show new avatar(or update context if available)
+            await authApi.updateMe(fd);
             window.location.reload();
-        }catch(error){
-            console.error('Failed to upload avatar:', error);
-            alert('Failed to upload avatar. Please try again.');
-        }finally{
+        } catch (error) {
+            alert("Failed to upload avatar. Please try again.");
+        } finally {
             setIsUploadingAvatar(false);
         }
     };
 
-    return(
-        <div className='settings-content'>
-            <Section className='profile-section'>
-                <div className='profile-header'>
-                    <div className='profile-avatar'>
-                        <div className='profile-avatar-container' onClick={() => document.getElementById('avatar-upload')?.click()}>
+    const fields = [{
+        key: "firstName",
+        label: "First name",
+        value: userData.firstName
+    }, {
+        key: "lastName",
+        label: "Last name",
+        value: userData.lastName
+    }];
+
+    return (
+        <Container className="d-flex gap-2 column">
+            <Section className="profile-section">
+                <Container className="d-flex items-center gap-1-5 sm:column sm:text-center">
+                    <Container className="f-shrink-0">
+                        <Container
+                            className="profile-avatar-container p-relative"
+                            onClick={() => document.getElementById("avatar-upload")?.click()}
+                        >
                             {user?.avatar ? (
                                 <img src={user.avatar} alt="Profile" className="profile-avatar-img" />
                             ) : (
-                                <div className='avatar-circle'>
-                                    {user?.firstName?.[0]}{user?.lastName?.[0]}
-                                </div>
+                                <Container className="d-flex flex-center avatar-circle">
+                                    {user?.firstName?.[0]}
+                                    {user?.lastName?.[0]}
+                                </Container>
                             )}
-                            <div className='profile-avatar-overlay'>
+
+                            <Container className="p-absolute flex-center d-flex profile-avatar-overlay">
                                 {isUploadingAvatar ? (
                                     <TbActivity className="animate-spin" size={24} />
                                 ) : (
                                     <TbCamera size={24} />
                                 )}
-                            </div>
-                        </div>
+                            </Container>
+                        </Container>
+
                         <input
                             type="file"
                             id="avatar-upload"
@@ -114,73 +134,64 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
                             onChange={handleAvatarUpload}
                             disabled={isUploadingAvatar}
                         />
-                    </div>
-                    <div className='profile-info'>
-                        <h2 className='profile-name'>{user?.firstName} {user?.lastName}</h2>
-                        <p className='profile-email'>{user?.email}</p>
-                        <div className='profile-status'>
-                            <StatusBadge variant='active'>
+                    </Container>
+
+                    <Container className="flex-1">
+                        <h2 className="profile-name">
+                            {user?.firstName} {user?.lastName}
+                        </h2>
+                        <p className="profile-email">{user?.email}</p>
+                        <Container className="d-flex items-center gap-05">
+                            <StatusBadge variant="active">
                                 <TbCheck size={14} />
                                 Active Account
                             </StatusBadge>
-                        </div>
-                    </div>
-                </div>
+                        </Container>
+                    </Container>
+                </Container>
             </Section>
 
             <Section>
-                <SectionHeader title='Personal Information' description='Update your personal details and contact information' />
+                <SectionHeader title="Personal Information" description="Update your personal details and contact information" />
 
-                <div className='settings-form'>
+                <div className="settings-form">
                     {updateError && (
-                        <div className='update-error'>
+                        <div className="update-error">
                             <TbX size={16} />
                             {updateError}
                         </div>
                     )}
 
-                    <div className='form-row'>
-                        <div className='form-field-container'>
-                            <FormInput
-                                value={userData.firstName}
-                                label='First name'
-                                onChange={handleInputChange('firstName')}
-                                disabled={isUpdating}
-                                error={errors.firstName}
-                            />
-                            {isUpdating && (
-                                <div className='update-indicator'>
-                                    <TbActivity size={16} />
-                                    Updating...
-                                </div>
-                            )}
-                        </div>
-                        <div className='form-field-container'>
-                            <FormInput
-                                value={userData.lastName}
-                                label='Last name'
-                                onChange={handleInputChange('lastName')}
-                                disabled={isUpdating}
-                                error={errors.lastName}
-                            />
-                            {isUpdating && (
-                                <div className='update-indicator'>
-                                    <TbActivity size={16} />
-                                    Updating...
-                                </div>
-                            )}
-                        </div>
+                    <div className="form-row">
+                        {fields.map((f) => (
+                            <div key={f.key} className="form-field-container">
+                                <FormInput
+                                    value={f.value}
+                                    label={f.label}
+                                    onChange={handleInputChange(f.key as keyof typeof formData)}
+                                    disabled={isUpdating}
+                                    error={(errors as any)[f.key]}
+                                />
+                                {isUpdating && (
+                                    <div className="update-indicator">
+                                        <TbActivity size={16} />
+                                        Updating...
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
-                    <div className='form-field-container'>
+
+                    <div className="form-field-container">
                         <FormInput
                             value={userData.email}
-                            label='Email address'
-                            onChange={handleInputChange('email')}
+                            label="Email address"
+                            onChange={handleInputChange("email")}
                             disabled={isUpdating}
                             error={errors.email}
                         />
                         {isUpdating && (
-                            <div className='update-indicator'>
+                            <div className="update-indicator">
                                 <TbActivity size={16} />
                                 Updating...
                             </div>
@@ -190,26 +201,28 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({ user, userData, isUpd
             </Section>
 
             <Section>
-                <SectionHeader title='Account Activity' description='Recent activity and account statistics' />
+                <SectionHeader title="Account Activity" description="Recent activity and account statistics" />
+
                 <RecentActivity limit={15} showStats={true} className="account-activity-section" />
             </Section>
 
-            <Section className='danger-section'>
-                <SectionHeader title='Danger Zone' description='Irreversible and destructive actions' />
-                <div className='danger-actions'>
-                    <div className='danger-item'>
-                        <div className='danger-info'>
+            <Section className="danger-section">
+                <SectionHeader title="Danger Zone" description="Irreversible and destructive actions" />
+
+                <Container className="d-flex column gap-1">
+                    <Container className="danger-item d-flex items-center content-between">
+                        <Container className="danger-info">
                             <h4>Delete Account</h4>
                             <p>Permanently delete your account and all associated data. This action cannot be undone.</p>
-                        </div>
-                        <button className='action-button danger' onClick={onDeleteAccount}>
+                        </Container>
+                        <button className="action-button danger" onClick={onDeleteAccount}>
                             <TbTrash size={16} />
                             Delete Account
                         </button>
-                    </div>
-                </div>
+                    </Container>
+                </Container>
             </Section>
-        </div>
+        </Container>
     );
 };
 

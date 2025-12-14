@@ -1,24 +1,26 @@
 import React from 'react';
+import Container from '@/components/primitives/Container';
+import './SectionHeader.css';
 
 interface SectionHeaderProps {
     title: string;
     description?: string;
-    children?: React.ReactNode; // actions
+    children?: React.ReactNode; 
 }
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({ title, description, children }) => {
     return(
-        <div className='section-header'>
-            <div className='section-header-content'>
+        <Container className='d-flex content-between'>
+            <Container className='d-flex column gap-05'>
                 <h3 className='section-title'>{title}</h3>
                 {description && <p className='section-description'>{description}</p>}
-            </div>
+            </Container>
             {children && (
-                <div className='section-header-actions'>
+                <Container className='d-flex items-center gap-1 mt-1'>
                     {children}
-                </div>
+                </Container>
             )}
-        </div>
+        </Container>
     );
 };
 

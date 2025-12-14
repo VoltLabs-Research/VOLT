@@ -1,25 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { TbUser, TbShield, TbCreditCard, TbFileText, TbActivity, TbLock, TbKey, TbX, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbTrash, TbPlus, TbWebhook, TbCheck } from 'react-icons/tb';
-import FormInput from '@/components/atoms/form/FormInput';
+import { TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbWebhook } from 'react-icons/tb';
 import useAuthStore from '@/stores/authentication';
 import authApi from '@/services/api/auth';
 import LoginActivityModal from '@/components/molecules/auth/LoginActivityModal';
 import ApiTokenModal from '@/components/molecules/api-token/ApiTokenModal';
-import ApiTokenList from '@/components/molecules/api-token/ApiTokenList';
 import WebhookModal from '@/components/molecules/webhooks/WebhookModal';
-import WebhookList from '@/components/molecules/webhooks/WebhookList';
 import SettingsSidebar from '@/components/molecules/settings/SettingsSidebar';
 import GeneralSettings from '@/components/molecules/settings/GeneralSettings';
 import AuthenticationSettings from '@/components/molecules/settings/AuthenticationSettings';
 import SessionsSettings from '@/components/molecules/settings/SessionsSettings';
+import ThemeSettings from '@/components/molecules/settings/ThemeSettings';
+import NotificationsSettings from '@/components/molecules/settings/NotificationsSettings';
+import DataExportSettings from '@/components/molecules/settings/DataExportSettings';
+import AdvancedSettings from '@/components/molecules/settings/AdvancedSettings';
+import IntegrationsSettings from '@/components/molecules/settings/IntegrationsSettings';
+import TokensSettings from '@/components/molecules/settings/TokensSettings';
+import WebhooksSettings from '@/components/molecules/settings/WebhooksSettings';
 import useSessions from '@/hooks/auth/use-sessions';
 import useLoginActivity from '@/hooks/auth/use-login-activity';
 import useApiTokens from '@/hooks/api/use-api-tokens';
 import useWebhooks from '@/hooks/api/use-webhooks';
-import { formatDistanceToNow, isValid } from 'date-fns';
 import type { ApiToken, CreateTokenData, UpdateTokenData } from '@/types/models/api-token';
 import type { Webhook, CreateWebhookData, UpdateWebhookData } from '@/types/models/webhook';
 import './AccountSettings.css';
+import Container from '@/components/primitives/Container';
 
 const AccountSettings: React.FC = () => {
     const {
@@ -75,7 +79,7 @@ const AccountSettings: React.FC = () => {
 
     // Initialize user data when user changes
     useEffect(() => {
-        if(user){
+        if (user) {
             setUserData({
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
@@ -99,8 +103,8 @@ const AccountSettings: React.FC = () => {
     }, []);
 
     // Update user data on server
-    const updateUserOnServer = async(field: string, value: string) => {
-        try{
+    const updateUserOnServer = async (field: string, value: string) => {
+        try {
             setIsUpdating(true);
             setUpdateError(null);
 
@@ -109,19 +113,19 @@ const AccountSettings: React.FC = () => {
             // Update local state with server response
             setUserData(prev => ({ ...prev, [field]: value }));
             console.log(`Successfully updated ${field} on server:`, value);
-        }catch(error: any){
+        } catch (error: any) {
             console.error('Error updating user data:', error);
             setUpdateError(`Failed to update ${field}. Please try again.`);
 
             // Revert local state on error
-            if(user){
+            if (user) {
                 setUserData({
                     firstName: user.firstName || '',
                     lastName: user.lastName || '',
                     email: user.email || ''
                 });
             }
-        }finally{
+        } finally {
             setIsUpdating(false);
         }
     };
@@ -137,7 +141,7 @@ const AccountSettings: React.FC = () => {
         }, 1000);
 
         // Clear previous timeout
-        return() => clearTimeout(timeoutId);
+        return () => clearTimeout(timeoutId);
     };
 
     // Handle theme toggle
@@ -147,9 +151,9 @@ const AccountSettings: React.FC = () => {
         localStorage.setItem('theme', theme);
     };
 
-    const handlePasswordChange = async(e: React.FormEvent) => {
+    const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
-        try{
+        try {
             await changePassword(passwordForm);
             setShowPasswordForm(false);
             setPasswordForm({
@@ -159,7 +163,7 @@ const AccountSettings: React.FC = () => {
             });
             // Refresh password info after successful change
             await getPasswordInfo();
-        }catch(error: any){
+        } catch (error: any) {
             const errorContext = {
                 endpoint: '/auth/change-password',
                 method: 'POST',
@@ -184,11 +188,11 @@ const AccountSettings: React.FC = () => {
         setShowApiTokenModal(true);
     };
 
-    const handleDeleteToken = async(token: ApiToken) => {
-        if(window.confirm(`Are you sure you want to delete the token "${token.name}"? This action cannot be undone.`)) {
-            try{
+    const handleDeleteToken = async (token: ApiToken) => {
+        if (window.confirm(`Are you sure you want to delete the token "${token.name}"? This action cannot be undone.`)) {
+            try {
                 await deleteToken(token._id);
-            }catch(error: any){
+            } catch (error: any) {
                 const errorContext = {
                     endpoint: `/api-tokens/${token._id}`,
                     method: 'DELETE',
@@ -203,11 +207,11 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    const handleRegenerateToken = async(token: ApiToken) => {
-        if(window.confirm(`Are you sure you want to regenerate the token "${token.name}"? The old token will be invalidated.`)) {
-            try{
+    const handleRegenerateToken = async (token: ApiToken) => {
+        if (window.confirm(`Are you sure you want to regenerate the token "${token.name}"? The old token will be invalidated.`)) {
+            try {
                 await regenerateToken(token._id);
-            }catch(error: any){
+            } catch (error: any) {
                 const errorContext = {
                     endpoint: `/api-tokens/${token._id}/regenerate`,
                     method: 'POST',
@@ -222,15 +226,15 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    const handleApiTokenSave = async(data: CreateTokenData | UpdateTokenData) => {
-        try{
-            if(apiTokenModalMode === 'create'){
+    const handleApiTokenSave = async (data: CreateTokenData | UpdateTokenData) => {
+        try {
+            if (apiTokenModalMode === 'create') {
                 await createToken(data as CreateTokenData);
-            }else{
+            } else {
                 await updateToken(selectedToken!._id, data as UpdateTokenData);
             }
             setShowApiTokenModal(false);
-        }catch(error: any){
+        } catch (error: any) {
             throw error;
         }
     };
@@ -247,11 +251,11 @@ const AccountSettings: React.FC = () => {
         setShowWebhookModal(true);
     };
 
-    const handleDeleteWebhook = async(webhook: Webhook) => {
-        if(window.confirm(`Are you sure you want to delete the webhook "${webhook.name}"? This action cannot be undone.`)) {
-            try{
+    const handleDeleteWebhook = async (webhook: Webhook) => {
+        if (window.confirm(`Are you sure you want to delete the webhook "${webhook.name}"? This action cannot be undone.`)) {
+            try {
                 await deleteWebhook(webhook._id);
-            }catch(error: any){
+            } catch (error: any) {
                 const errorContext = {
                     endpoint: `/webhooks/${webhook._id}`,
                     method: 'DELETE',
@@ -266,11 +270,11 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    const handleTestWebhook = async(webhook: Webhook) => {
-        try{
+    const handleTestWebhook = async (webhook: Webhook) => {
+        try {
             await testWebhook(webhook._id);
             alert('Webhook test sent successfully!');
-        }catch(error: any){
+        } catch (error: any) {
             const errorContext = {
                 endpoint: `/webhooks/${webhook._id}/test`,
                 method: 'POST',
@@ -285,22 +289,22 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    const handleWebhookSave = async(data: CreateWebhookData | UpdateWebhookData) => {
-        try{
-            if(webhookModalMode === 'create'){
+    const handleWebhookSave = async (data: CreateWebhookData | UpdateWebhookData) => {
+        try {
+            if (webhookModalMode === 'create') {
                 await createWebhook(data as CreateWebhookData);
-            }else{
+            } else {
                 await updateWebhook(selectedWebhook!._id, data as UpdateWebhookData);
             }
             setShowWebhookModal(false);
-        }catch(error: any){
+        } catch (error: any) {
             throw error;
         }
     };
 
     // Handle account deletion
     const handleDeleteAccount = () => {
-        if(window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+        if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
             // Here you would typically call an API to delete the account
             console.log('Account deletion requested');
             // For now, just show an alert
@@ -315,9 +319,6 @@ const AccountSettings: React.FC = () => {
         { title: 'Notifications', icon: TbBell },
         { title: 'Sessions', icon: TbDeviceDesktop },
         { title: 'Integrations', icon: TbPlug },
-        { title: 'Billing Information', icon: TbCreditCard },
-        { title: 'Invoices', icon: TbFileText },
-        { title: 'Privacy', icon: TbLock },
         { title: 'Data & Export', icon: TbDownload },
         { title: 'Tokens', icon: TbKey },
         { title: 'Webhooks', icon: TbWebhook },
@@ -325,9 +326,9 @@ const AccountSettings: React.FC = () => {
     ];
 
     const renderContent = () => {
-        switch(activeSection){
+        switch (activeSection) {
             case 'General':
-                return(
+                return (
                     <GeneralSettings
                         user={user}
                         userData={userData}
@@ -338,7 +339,7 @@ const AccountSettings: React.FC = () => {
                     />
                 );
             case 'Authentication':
-                return(
+                return (
                     <AuthenticationSettings
                         isLoadingPasswordInfo={isLoadingPasswordInfo}
                         passwordInfo={passwordInfo}
@@ -354,119 +355,16 @@ const AccountSettings: React.FC = () => {
                     />
                 );
             case 'Theme':
-                return(
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Theme & Appearance</h3>
-                                <p className='section-description'>Customize your interface appearance and preferences</p>
-                            </div>
-
-                            <div className='theme-options'>
-                                <div className='theme-option'>
-                                    <div className='theme-preview dark'>
-                                        <div className='preview-header'></div>
-                                        <div className='preview-content'></div>
-                                    </div>
-                                    <div className='theme-info'>
-                                        <h4>Dark Mode</h4>
-                                        <p>{currentTheme === 'dark' ? 'Currently active' : 'Switch to dark theme'}</p>
-                                    </div>
-                                    <div className='theme-actions'>
-                                        <button
-                                            className='action-button'
-                                            onClick={() => handleThemeToggle('dark')}
-                                        >
-                                            {currentTheme === 'dark' ? 'Active' : 'Switch'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className='theme-option'>
-                                    <div className='theme-preview light'>
-                                        <div className='preview-header'></div>
-                                        <div className='preview-content'></div>
-                                    </div>
-                                    <div className='theme-info'>
-                                        <h4>Light Mode</h4>
-                                        <p>Switch to light theme</p>
-                                    </div>
-                                    <div className='theme-actions'>
-                                        <button
-                                            className='action-button'
-                                            onClick={() => handleThemeToggle('light')}
-                                        >
-                                            {currentTheme === 'light' ? 'Active' : 'Switch'}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                return (
+                    <ThemeSettings
+                        currentTheme={currentTheme}
+                        onThemeChange={handleThemeToggle}
+                    />
                 );
             case 'Notifications':
-                return(
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Notification Preferences</h3>
-                                <p className='section-description'>Manage how and when you receive notifications</p>
-                            </div>
-
-                            <div className='notification-settings'>
-                                <div className='notification-item'>
-                                    <div className='notification-header'>
-                                        <TbBell size={24} />
-                                        <div className='notification-info'>
-                                            <h4>Email Notifications</h4>
-                                            <p>Receive updates via email</p>
-                                        </div>
-                                    </div>
-                                    <div className='notification-toggle'>
-                                        <span className='status-badge active'>
-                                            <TbCheck size={14} />
-                                            Enabled
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className='notification-item'>
-                                    <div className='notification-header'>
-                                        <TbActivity size={24} />
-                                        <div className='notification-info'>
-                                            <h4>Security Alerts</h4>
-                                            <p>Get notified about security events</p>
-                                        </div>
-                                    </div>
-                                    <div className='notification-toggle'>
-                                        <span className='status-badge active'>
-                                            <TbCheck size={14} />
-                                            Enabled
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className='notification-item'>
-                                    <div className='notification-header'>
-                                        <TbBell size={24} />
-                                        <div className='notification-info'>
-                                            <h4>Team Updates</h4>
-                                            <p>Notifications about team activities</p>
-                                        </div>
-                                    </div>
-                                    <div className='notification-toggle'>
-                                        <span className='status-badge inactive'>
-                                            <TbX size={14} />
-                                            Disabled
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
+                return <NotificationsSettings />;
             case 'Sessions':
-                return(
+                return (
                     <SessionsSettings
                         sessions={sessions}
                         loading={sessionsLoading}
@@ -475,338 +373,37 @@ const AccountSettings: React.FC = () => {
                     />
                 );
             case 'Data & Export':
-                return(
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Data & Privacy</h3>
-                                <p className='section-description'>Manage your data and privacy settings</p>
-                            </div>
-
-                            <div className='data-options'>
-                                <div className='data-item'>
-                                    <div className='data-header'>
-                                        <TbDownload size={24} />
-                                        <div className='data-info'>
-                                            <h4>Export Data</h4>
-                                            <p>Download all your data in JSON format</p>
-                                        </div>
-                                    </div>
-                                    <div className='data-actions'>
-                                        <button className='action-button'>
-                                            <TbDownload size={16} />
-                                            Export
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className='data-item'>
-                                    <div className='data-header'>
-                                        <TbX size={24} />
-                                        <div className='data-info'>
-                                            <h4>Delete Account</h4>
-                                            <p>Permanently delete your account and all data</p>
-                                        </div>
-                                    </div>
-                                    <div className='data-actions'>
-                                        <button className='action-button danger'>
-                                            <TbX size={16} />
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
+                return <DataExportSettings />;
             case 'Advanced':
-                return(
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Advanced Settings</h3>
-                                <p className='section-description'>Developer and advanced configuration options</p>
-                            </div>
-
-                            <div className='advanced-settings'>
-                                <div className='advanced-item'>
-                                    <div className='advanced-header'>
-                                        <TbSettings size={24} />
-                                        <div className='advanced-info'>
-                                            <h4>Debug Mode</h4>
-                                            <p>Enable detailed logging and debugging information</p>
-                                        </div>
-                                    </div>
-                                    <div className='advanced-toggle'>
-                                        <span className='status-badge inactive'>
-                                            <TbX size={14} />
-                                            Disabled
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className='advanced-item'>
-                                    <div className='advanced-header'>
-                                        <TbActivity size={24} />
-                                        <div className='advanced-info'>
-                                            <h4>Analytics</h4>
-                                            <p>Share usage data to improve the service</p>
-                                        </div>
-                                    </div>
-                                    <div className='advanced-toggle'>
-                                        <span className='status-badge active'>
-                                            <TbCheck size={14} />
-                                            Enabled
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
+                return <AdvancedSettings />;
             case 'Integrations':
-                return(
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Third-party Integrations</h3>
-                                <p className='section-description'>Connect your account with external services and platforms</p>
-                            </div>
-
-                            <div className='integrations-grid'>
-                                <div className='integration-item'>
-                                    <div className='integration-header'>
-                                        <div className='integration-icon'>
-                                            <TbBrandGithub size={24} />
-                                        </div>
-                                        <div className='integration-info'>
-                                            <h4>GitHub</h4>
-                                            <p>Sync repositories and manage code</p>
-                                        </div>
-                                    </div>
-                                    <div className='integration-actions'>
-                                        <button className='action-button'>
-                                            Connect
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className='integration-item'>
-                                    <div className='integration-header'>
-                                        <div className='integration-icon'>
-                                            <TbBrandGoogle size={24} />
-                                        </div>
-                                        <div className='integration-info'>
-                                            <h4>Google Drive</h4>
-                                            <p>Access and sync your files</p>
-                                        </div>
-                                    </div>
-                                    <div className='integration-actions'>
-                                        <button className='action-button'>
-                                            Connect
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className='integration-item'>
-                                    <div className='integration-header'>
-                                        <div className='integration-icon'>
-                                            <TbBrain size={24} />
-                                        </div>
-                                        <div className='integration-info'>
-                                            <h4>Gemini</h4>
-                                            <p>AI-powered assistance and analysis</p>
-                                        </div>
-                                    </div>
-                                    <div className='integration-actions'>
-                                        <button className='action-button'>
-                                            Connect
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className='integration-item'>
-                                    <div className='integration-header'>
-                                        <div className='integration-icon'>
-                                            <TbBrandOpenai size={24} />
-                                        </div>
-                                        <div className='integration-info'>
-                                            <h4>OpenAI</h4>
-                                            <p>Advanced AI models and capabilities</p>
-                                        </div>
-                                    </div>
-                                    <div className='integration-actions'>
-                                        <button className='action-button'>
-                                            Connect
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className='integration-help'>
-                                <h4>Need help with integrations?</h4>
-                                <p>Check our documentation or contact support for assistance with setting up third-party connections.</p>
-                                <div className='help-actions'>
-                                    <button className='action-button'>
-                                        <TbFileText size={16} />
-                                        Documentation
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 'Billing Information':
-                return(
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Billing & Payment</h3>
-                                <p className='section-description'>Manage your billing details and payment methods</p>
-                            </div>
-
-                            <div className='coming-soon-minimal'>
-                                <TbCreditCard size={48} />
-                                <p>Coming soon...</p>
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 'Invoices':
-                return(
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Invoices & Receipts</h3>
-                                <p className='section-description'>View and download your billing documents</p>
-                            </div>
-
-                            <div className='coming-soon-minimal'>
-                                <TbFileText size={48} />
-                                <p>Coming soon...</p>
-                            </div>
-                        </div>
-                    </div>
-                );
-            case 'Privacy':
-                return(
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <h3 className='section-title'>Privacy & Data</h3>
-                                <p className='section-description'>Control your privacy settings and data preferences</p>
-                            </div>
-
-                            <div className='privacy-settings'>
-                                <div className='privacy-item'>
-                                    <div className='privacy-header'>
-                                        <TbLock size={24} />
-                                        <div className='privacy-info'>
-                                            <h4>Data Collection</h4>
-                                            <p>Allow collection of usage data to improve the service</p>
-                                        </div>
-                                    </div>
-                                    <div className='privacy-toggle'>
-                                        <span className='status-badge active'>
-                                            <TbCheck size={14} />
-                                            Enabled
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div className='privacy-item'>
-                                    <div className='privacy-header'>
-                                        <TbActivity size={24} />
-                                        <div className='privacy-info'>
-                                            <h4>Analytics</h4>
-                                            <p>Share anonymous usage statistics</p>
-                                        </div>
-                                    </div>
-                                    <div className='privacy-toggle'>
-                                        <span className='status-badge active'>
-                                            <TbCheck size={14} />
-                                            Enabled
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
+                return <IntegrationsSettings />;
             case 'Tokens':
-                return(
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <div className='section-header-content'>
-                                    <h3 className='section-title'>API Tokens</h3>
-                                    <p className='section-description'>Manage your API tokens for programmatic access</p>
-                                </div>
-                                <div className='section-header-actions'>
-                                    <button
-                                        className='action-button primary'
-                                        onClick={handleCreateToken}
-                                    >
-                                        <TbPlus size={16} />
-                                        Create Token
-                                    </button>
-                                </div>
-                            </div>
-
-                            {tokensError && (
-                                <div className='error-message'>
-                                    {tokensError}
-                                </div>
-                            )}
-
-                            <ApiTokenList
-                                tokens={tokens}
-                                loading={tokensLoading}
-                                onEdit={handleEditToken}
-                                onDelete={handleDeleteToken}
-                                onRegenerate={handleRegenerateToken}
-                            />
-                        </div>
-                    </div>
+                return (
+                    <TokensSettings
+                        tokens={tokens}
+                        loading={tokensLoading}
+                        error={tokensError}
+                        onCreateToken={handleCreateToken}
+                        onEditToken={handleEditToken}
+                        onDeleteToken={handleDeleteToken}
+                        onRegenerateToken={handleRegenerateToken}
+                    />
                 );
             case 'Webhooks':
-                return(
-                    <div className='settings-content'>
-                        <div className='settings-section'>
-                            <div className='section-header'>
-                                <div className='section-header-content'>
-                                    <h3 className='section-title'>Webhooks</h3>
-                                    <p className='section-description'>Configure webhooks to receive real-time notifications</p>
-                                </div>
-                                <div className='section-header-actions'>
-                                    <button
-                                        className='action-button primary'
-                                        onClick={handleCreateWebhook}
-                                    >
-                                        <TbPlus size={16} />
-                                        Create Webhook
-                                    </button>
-                                </div>
-                            </div>
-
-                            {webhooksError && (
-                                <div className='error-message'>
-                                    {webhooksError}
-                                </div>
-                            )}
-
-                            <WebhookList
-                                webhooks={webhooks}
-                                loading={webhooksLoading}
-                                onEdit={handleEditWebhook}
-                                onDelete={handleDeleteWebhook}
-                                onTest={handleTestWebhook}
-                            />
-                        </div>
-                    </div>
+                return (
+                    <WebhooksSettings
+                        webhooks={webhooks}
+                        loading={webhooksLoading}
+                        error={webhooksError}
+                        onCreateWebhook={handleCreateWebhook}
+                        onEditWebhook={handleEditWebhook}
+                        onDeleteWebhook={handleDeleteWebhook}
+                        onTestWebhook={handleTestWebhook}
+                    />
                 );
             default:
-                return(
+                return (
                     <div className='settings-content'>
                         <div className='settings-section'>
                             <h2 className='settings-section-title'>{activeSection}</h2>
@@ -822,9 +419,9 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    return(
+    return (
         <>
-            <div className='account-settings-container'>
+            <Container className='d-flex column account-settings-container'>
                 <div className='account-settings-layout'>
                     <SettingsSidebar
                         activeSection={activeSection}
@@ -839,7 +436,7 @@ const AccountSettings: React.FC = () => {
                         </div>
                     </main>
                 </div>
-            </div>
+            </Container>
 
             <LoginActivityModal
                 isOpen={showLoginActivityModal}

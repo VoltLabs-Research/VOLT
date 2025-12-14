@@ -9,14 +9,10 @@ import {
     Terminal,
     Folder,
     Settings,
-    Copy,
     ExternalLink,
     Box,
-    Clock,
-    Hash,
     Layers,
-    Activity,
-    Globe
+    Activity
 } from 'lucide-react';
 import {
     AreaChart,

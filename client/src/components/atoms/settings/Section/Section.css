@@ -1,0 +1,9 @@
+.settings-section {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1rem;
+    padding: 2rem;
+    position: relative;
+    isolation: isolate;
+}
