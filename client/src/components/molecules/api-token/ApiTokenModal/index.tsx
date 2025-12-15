@@ -115,10 +115,10 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="api-token-modal-overlay">
+        <div className="d-flex flex-center api-token-modal-overlay">
             <div className="api-token-modal">
-                <div className="api-token-modal-header">
-                    <div className="api-token-modal-title">
+                <div className="d-flex items-center content-between api-token-modal-header">
+                    <div className="d-flex items-center gap-075 api-token-modal-title">
                         <TbKey size={24} />
                         <Title className='font-size-3'>{mode === 'create' ? 'Create API Token' : 'Edit API Token'}</Title>
                     </div>
@@ -127,7 +127,7 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="api-token-modal-form">
+                <form onSubmit={handleSubmit} className="d-flex column api-token-modal-form">
                     <div className="api-token-modal-body">
                         {error && (
                             <div className="api-token-modal-error">
@@ -162,7 +162,7 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
                         <div className="api-token-form-group">
                             <label>Permissions</label>
                             <div className="api-token-permissions">
-                                <div className="api-token-permission-actions">
+                                <div className="d-flex gap-05 api-token-permission-actions">
                                     <button type="button" onClick={handleSelectAll} className="permission-action-btn">
                                         Select All
                                     </button>
@@ -172,7 +172,7 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
                                 </div>
                                 <div className="api-token-permission-list">
                                     {API_TOKEN_PERMISSIONS.map(permission => (
-                                        <label key={permission} className="api-token-permission-item">
+                                        <label key={permission} className="d-flex items-center gap-075 api-token-permission-item">
                                             <input
                                                 type="checkbox"
                                                 checked={formData.permissions.includes(permission)}
@@ -197,7 +197,7 @@ const ApiTokenModal: React.FC<ApiTokenModalProps> = ({
                         </div>
                     </div>
 
-                    <div className="api-token-modal-footer">
+                    <div className="d-flex gap-075 api-token-modal-footer">
                         <button type="button" onClick={onClose} className="api-token-modal-cancel">
                             Cancel
                         </button>

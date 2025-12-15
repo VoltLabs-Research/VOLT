@@ -173,15 +173,15 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
     return (
         <>
             <CollapsibleSection title='Schema Definition' defaultExpanded>
-                <div className="schema-editor">
+                <div className="d-flex column gap-075 schema-editor">
                     <Paragraph className="schema-editor-description">
                         Define the JSON structure of your output data. This schema describes the shape of results
                         from your analysis and enables downstream nodes to reference specific fields.
                     </Paragraph>
 
-                    <div className="schema-editor-toolbar">
+                    <div className="d-flex gap-05 schema-editor-toolbar">
                         <button
-                            className="schema-editor-btn"
+                            className="d-flex items-center gap-05 schema-editor-btn"
                             onClick={() => setShowTemplates(!showTemplates)}
                             title="Use template"
                         >
@@ -189,7 +189,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
                             Templates
                         </button>
                         <button
-                            className="schema-editor-btn"
+                            className="d-flex items-center gap-05 schema-editor-btn"
                             onClick={formatJson}
                             disabled={!isValidJson}
                             title="Format JSON"
@@ -198,7 +198,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
                             Format
                         </button>
                         <button
-                            className="schema-editor-btn"
+                            className="d-flex items-center gap-05 schema-editor-btn"
                             onClick={copyToClipboard}
                             title="Copy to clipboard"
                         >
@@ -208,7 +208,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
                     </div>
 
                     {showTemplates && (
-                        <div className="schema-templates">
+                        <div className="d-flex flex-wrap gap-05 schema-templates">
                             {SCHEMA_TEMPLATES.map((template, idx) => (
                                 <button
                                     key={idx}
@@ -230,7 +230,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
                     />
 
                     {isValidJson && !error && (
-                        <div className="schema-editor-status">
+                        <div className="d-flex items-center gap-05 schema-editor-status">
                             <TbCheck size={14} />
                             <span>Valid JSON Schema</span>
                         </div>

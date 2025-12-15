@@ -42,29 +42,29 @@ const SharedFilesList = ({ messages, currentChatId }: SharedFilesListProps) => {
         );
 
     return (
-        <div className='chat-shared-files'>
+        <div className='d-flex column gap-075 chat-shared-files'>
             {fileMessages.map((m) => {
                 const isImg = m.metadata?.fileType?.startsWith('image/');
                 return (
-                    <div key={m._id} className='chat-shared-file-item'>
+                    <div key={m._id} className='d-flex items-center gap-075 chat-shared-file-item'>
                         {isImg ? (
                             <div className='chat-shared-file-preview'>
                                 {previews[m._id] ? (
                                     <img src={previews[m._id]} alt={m.metadata?.fileName} className='chat-shared-file-image' />
                                 ) : (
-                                    <div className='chat-shared-file-loading'>
+                                    <div className='d-flex flex-center chat-shared-file-loading'>
                                         <IoImageOutline />
                                     </div>
                                 )}
                             </div>
                         ) : (
-                            <div className='chat-shared-file-icon'>
+                            <div className='d-flex flex-center chat-shared-file-icon'>
                                 <IoDocumentOutline />
                             </div>
                         )}
                         <div className='chat-shared-file-info'>
                             <div className='chat-shared-file-name'>{m.metadata?.fileName || m.content}</div>
-                            <div className='chat-shared-file-meta'>
+                            <div className='d-flex items-center gap-05 chat-shared-file-meta'>
                                 <span className='chat-shared-file-size'>{formatSize(m.metadata?.fileSize ?? 0)}</span>
                                 <span className='chat-shared-file-date'>{formatTimeAgo(m.createdAt)}</span>
                             </div>
@@ -72,7 +72,7 @@ const SharedFilesList = ({ messages, currentChatId }: SharedFilesListProps) => {
                         <a
                             href={m.metadata?.fileUrl}
                             download={m.metadata?.fileName}
-                            className='chat-shared-file-download'
+                            className='d-flex flex-center chat-shared-file-download'
                             title='Download file'
                         >
                             <IoDownloadOutline />

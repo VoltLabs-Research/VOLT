@@ -66,25 +66,25 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
 
     if (loading) {
         return (
-            <div className="api-token-list-loading">
-                <div className="api-token-skeleton">
+            <div className="d-flex column gap-1 api-token-list-loading">
+                <div className="d-flex items-center gap-1 api-token-skeleton">
                     <div className="skeleton-icon"></div>
-                    <div className="skeleton-content">
+                    <div className="d-flex column gap-05 flex-1 skeleton-content">
                         <div className="skeleton-line"></div>
                         <div className="skeleton-line short"></div>
                     </div>
-                    <div className="skeleton-actions">
+                    <div className="d-flex gap-05 skeleton-actions">
                         <div className="skeleton-button"></div>
                         <div className="skeleton-button"></div>
                     </div>
                 </div>
-                <div className="api-token-skeleton">
+                <div className="d-flex items-center gap-1 api-token-skeleton">
                     <div className="skeleton-icon"></div>
-                    <div className="skeleton-content">
+                    <div className="d-flex column gap-05 flex-1 skeleton-content">
                         <div className="skeleton-line"></div>
                         <div className="skeleton-line short"></div>
                     </div>
-                    <div className="skeleton-actions">
+                    <div className="d-flex gap-05 skeleton-actions">
                         <div className="skeleton-button"></div>
                         <div className="skeleton-button"></div>
                     </div>
@@ -106,15 +106,15 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
     }
 
     return (
-        <div className="api-token-list">
+        <div className="d-flex column gap-1 api-token-list">
             {tokens.map((token) => (
-                <div key={token._id} className="api-token-item">
-                    <div className="api-token-info">
-                        <div className="api-token-icon">
+                <div key={token._id} className="d-flex items-center content-between api-token-item">
+                    <div className="d-flex items-center gap-1 flex-1 api-token-info">
+                        <div className="d-flex flex-center api-token-icon">
                             <TbKey size={20} />
                         </div>
-                        <div className="api-token-details">
-                            <div className="api-token-header">
+                        <div className="flex-1 api-token-details">
+                            <div className="d-flex items-center gap-075 api-token-header">
                                 <span className="api-token-name">{token.name}</span>
                                 <span
                                     className="api-token-status"
@@ -134,15 +134,15 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
                                     <span className="api-token-description">{token.description}</span>
                                 )}
                             </div>
-                            <div className="api-token-stats">
+                            <div className="d-flex flex-wrap gap-1 api-token-stats">
                                 {token.lastUsedAt && (
-                                    <span className="api-token-stat">
+                                    <span className="d-flex items-center gap-025 api-token-stat">
                                         <TbActivity size={14} />
                                         Last used {formatDate(token.lastUsedAt)}
                                     </span>
                                 )}
                                 {token.expiresAt && (
-                                    <span className="api-token-stat">
+                                    <span className="d-flex items-center gap-025 api-token-stat">
                                         <TbCalendar size={14} />
                                         Expires {formatDate(token.expiresAt)}
                                     </span>
@@ -153,10 +153,10 @@ const ApiTokenList: React.FC<ApiTokenListProps> = ({
                             </div>
                         </div>
                     </div>
-                    <div className="api-token-actions">
+                    <div className="d-flex items-center gap-05 api-token-actions">
                         {token.token && visibleTokens.has(token._id) && (
                             <button
-                                className="api-token-action-btn copy"
+                                className="d-flex items-center gap-05 api-token-action-btn copy"
                                 onClick={() => copyToClipboard(token.token!, token._id)}
                                 title="Copy token"
                             >

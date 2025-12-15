@@ -10,7 +10,7 @@ import * as SiIcons from 'react-icons/si';
 
 // Helper to resolve icon string to component
 const resolveIcon = (iconName?: string) => {
-    if(!iconName) return undefined;
+    if (!iconName) return undefined;
     // @ts-ignore
     return Icons[iconName] || HiIcons[iconName] || RiIcons[iconName] || SiIcons[iconName];
 };
@@ -24,23 +24,23 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
     tools,
     onToggleTool
 }) => {
-    if(isLoading) return <MetricsBarSkeleton count={4} />;
+    if (isLoading) return <MetricsBarSkeleton count={4} />;
 
-    return(
-        <div className='raster-metrics-bar'>
-            <div className='raster-metrics-list'>
+    return (
+        <div className='d-flex items-center gap-075 raster-metrics-bar'>
+            <div className='d-flex flex-wrap items-center h-100 ml-025 raster-metrics-list'>
                 {items.map((item) => (
-                    <MetricItem key={item.key} {...item} />
+                    <MetricItem key={item.key} label={item.label} value={item.value} icon={item.icon} />
                 ))}
 
                 {availableExposures.map((exposure) => {
                     const Icon = resolveIcon(exposure.icon);
 
-                    return(
+                    return (
                         <ToggleOption
                             key={exposure.exposureId}
                             isVisible={!!activeExposures[exposure.exposureId]}
-                            className={`raster-metric-item modifier-result ${activeExposures[exposure.exposureId] ? "active" : ""}`}
+                            className={`d-flex items-center gap-05 raster-metric-item modifier-result ${activeExposures[exposure.exposureId] ? "active" : ""}`}
                             onToggle={() => onToggleExposure(exposure.exposureId)}
                             label={exposure.displayName}
                             // @ts-ignore
@@ -52,11 +52,11 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                 {tools.map((tool) => {
                     const Icon = resolveIcon(tool.icon);
 
-                    return(
+                    return (
                         <ToggleOption
                             key={tool.id}
                             isVisible={tool.isActive}
-                            className={`raster-metric-item modifier-result ${tool.isActive ? "active" : ""}`}
+                            className={`d-flex items-center gap-05 raster-metric-item modifier-result ${tool.isActive ? "active" : ""}`}
                             onToggle={() => onToggleTool(tool.id)}
                             label={tool.label}
                             // @ts-ignore

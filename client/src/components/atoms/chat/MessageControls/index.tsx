@@ -2,7 +2,8 @@ import {
     IoHappyOutline,
     IoEllipsisVerticalOutline,
     IoCreateOutline,
-    IoTrashOutline } from 'react-icons/io5';
+    IoTrashOutline
+} from 'react-icons/io5';
 import './MessageControls.css';
 import Container from '@/components/primitives/Container';
 
@@ -23,37 +24,37 @@ const MessageControls = ({
     onEdit,
     onDelete
 }: MessageControlsProps) => {
-    return(
+    return (
         <Container className='d-flex gap-025 p-absolute chat-message-controls'>
             <button
-                className='chat-message-reaction-btn'
+                className='d-flex flex-center chat-message-reaction-btn'
                 onClick={onOpenReactions}
             >
-                <IoHappyOutline/>
+                <IoHappyOutline />
             </button>
 
             {isOwn && (
                 <Container className='p-relative'>
                     <button
-                        className='chat-message-options'
+                        className='d-flex flex-center chat-message-options'
                         onClick={onOpenOptions}
                     >
-                        <IoEllipsisVerticalOutline/>
+                        <IoEllipsisVerticalOutline />
                     </button>
 
                     {isOptionsOpen && (
                         <Container className='chat-message-options-menu'>
                             <button
-                                className='chat-message-option'
+                                className='d-flex items-center gap-05 w-max chat-message-option'
                                 onClick={onEdit}
                             >
-                                <IoCreateOutline/> Edit
+                                <IoCreateOutline /> Edit
                             </button>
                             <button
-                                className='chat-message-option danger'
+                                className='d-flex items-center gap-05 w-max chat-message-option danger'
                                 onClick={onDelete}
                             >
-                                <IoTrashOutline/> Delete
+                                <IoTrashOutline /> Delete
                             </button>
                         </Container>
                     )}

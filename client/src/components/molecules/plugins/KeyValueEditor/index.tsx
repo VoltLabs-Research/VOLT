@@ -82,7 +82,7 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
                 </Container>
             ))}
 
-            <button onClick={onAdd} className="kv-editor-add">
+            <button onClick={onAdd} className="d-flex flex-center gap-025 kv-editor-add">
                 <TbPlus size={12} />
                 {addButtonText}
             </button>

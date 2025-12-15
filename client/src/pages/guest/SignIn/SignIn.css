@@ -45,7 +45,6 @@
     display: none;
     background: var(--hero-base-gradient);
     padding: 4rem;
-    /* Más padding para aire */
     position: relative;
     overflow: hidden;
     color: var(--color-white);
@@ -80,15 +79,9 @@
     position: relative;
     z-index: 10;
     height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
 }
 
 .hero-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
     font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: -0.02em;
@@ -99,27 +92,19 @@
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    display: flex;
 }
 
 .hero-text-container {
     max-width: 36rem;
-    /* Un poco más ancho para el título grande */
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
     margin-bottom: 3rem;
-    /* Más margen abajo */
 }
 
 .hero-headline {
     font-size: 4rem;
-    /* Texto aún más grande e impactante */
     font-weight: 700;
     line-height: 1.1;
     letter-spacing: -0.04em;
     color: var(--color-white);
-    /* Gradiente más suave y elegante */
     background: linear-gradient(to bottom right, #ffffff 40%, #a1a1aa 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -135,8 +120,6 @@
 
 /* --- FORM SECTION --- */
 .form-section {
-    display: flex;
-    flex-direction: column;
     background-color: var(--color-black);
     color: var(--color-white);
     padding: 1.5rem;
@@ -162,14 +145,9 @@
 }
 
 .form-container {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
     max-width: 26rem;
     margin: 0 auto;
     width: 100%;
-    gap: 2.5rem;
     position: relative;
     z-index: 10;
 }
@@ -229,9 +207,6 @@
 }
 
 .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     border-radius: var(--radius-md);
     font-size: 0.95rem;
     font-weight: 600;
@@ -280,8 +255,6 @@
 }
 
 .divider {
-    display: flex;
-    align-items: center;
     color: var(--color-zinc-600);
     font-size: 0.75rem;
     text-transform: uppercase;
@@ -306,9 +279,6 @@
     border-radius: var(--radius-md);
     background: var(--color-zinc-900);
     border: 1px solid var(--color-zinc-800);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }
 
 @keyframes spin {

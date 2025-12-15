@@ -12,13 +12,13 @@ import Paragraph from '@/components/primitives/Paragraph';
 
 const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView3D, onSignIn, connectedUsers }) => {
     return (
-        <div className='raster-scene-header-container'>
-            <div className='raster-scene-header-left-container'>
-                <i className='raster-scene-header-go-back-icon-container' onClick={onGoBack}>
+        <div className='d-flex content-between items-center raster-scene-header-container'>
+            <div className='d-flex items-center gap-2 raster-scene-header-left-container'>
+                <i className='d-flex flex-center raster-scene-header-go-back-icon-container' onClick={onGoBack}>
                     <BsArrowLeft />
                 </i>
 
-                <div className='raster-scene-header-team-container'>
+                <div className='d-flex column gap-05 raster-scene-header-team-container'>
                     {isLoading ? (
                         <RasterTrajectoryDetailsSkeleton />
                     ) : (
@@ -33,8 +33,8 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                 </div>
             </div>
 
-            <div className='raster-scene-header-search-container'>
-                <div className="raster-scene-header-users-container">
+            <div className='d-flex flex-center items-center gap-1-5 raster-scene-header-search-container'>
+                <div className="d-flex items-center gap-05 raster-scene-header-users-container">
                     {(() => {
                         const users = connectedUsers ?? [];
                         const shown = users.slice(0, 2);
@@ -55,7 +55,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                                     <div
                                         key={(u as any).id ?? u._id}
                                         title={[u.firstName, u.lastName].filter(Boolean).join(' ') || (u as any).name || u.email}
-                                        className="connected-user-container"
+                                        className="d-flex flex-center connected-user-container"
                                         aria-label={`Usuario conectado: ${u.firstName ?? ''} ${u.lastName ?? ''}`.trim()}
                                     >
                                         {u.avatar ? (
@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
 
                                 {extra > 0 && (
                                     <div
-                                        className="connected-user-container connected-user-extra"
+                                        className="d-flex flex-center connected-user-container connected-user-extra"
                                         title={`${extra} más`}
                                         aria-label={`${extra} usuarios más`}
                                     >
@@ -95,7 +95,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                 {isLoading ? (
                     <RasterSceneViewsSkeleton />
                 ) : (
-                    <div className='raster-scene-header-views-container'>
+                    <div className='d-flex items-center gap-1 raster-scene-header-views-container'>
                         <i className='raster-scene-header-views-icon-container'>
                             <RxEyeOpen />
                         </i>
@@ -105,9 +105,9 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                 )}
             </div>
 
-            <div className='raster-scene-header-nav-container'>
+            <div className='d-flex content-end items-center gap-075 raster-scene-header-nav-container'>
                 <motion.button
-                    className='btn-3d'
+                    className='d-flex items-center gap-05 btn-3d'
                     aria-label='View in 3D'
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
@@ -121,7 +121,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                 {/* Mostrar botón de inicio de sesión solo si no hay usuario autenticado */}
                 {onSignIn && (
                     <motion.button
-                        className='btn-signin'
+                        className='d-flex items-center gap-05 btn-signin'
                         aria-label='Sign in'
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}

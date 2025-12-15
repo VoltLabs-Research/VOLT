@@ -5,23 +5,15 @@
   border-radius: 20px;
   padding: 1.5rem;
   max-height: 400px;
-  display: flex;
-  flex-direction: column;
+
 }
 
 .storage-usage-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+
   margin-bottom: 1.5rem;
   flex-shrink: 0;
 }
 
-.storage-usage-title-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
 
 .storage-usage-icon {
   width: 20px;
@@ -34,13 +26,6 @@
   font-weight: 600;
   color: rgba(255, 255, 255, 0.95);
   margin: 0;
-}
-
-.storage-total-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.125rem;
 }
 
 .storage-total-value {

@@ -30,12 +30,12 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
 
     useEffect(() => {
         const id = container._id;
-        if(!connectionState[id]){
+        if (!connectionState[id]) {
             connectionState[id] = { count: 0, isAttached: false, detachTimer: null };
         }
         const state = connectionState[id];
 
-        if(state.detachTimer){
+        if (state.detachTimer) {
             clearTimeout(state.detachTimer);
             state.detachTimer = null;
         }
@@ -44,7 +44,7 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
 
         socketService.connect();
 
-        if(terminalRef.current && !xtermRef.current){
+        if (terminalRef.current && !xtermRef.current) {
             const term = new Terminal({
                 cursorBlink: true,
                 fontSize: 14,
@@ -79,7 +79,7 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
 
             setTimeout(() => fitAddon.fit(), 100);
 
-            return() => {
+            return () => {
                 window.removeEventListener('resize', handleResize);
                 term.dispose();
                 xtermRef.current = null;
@@ -91,10 +91,21 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
         const id = container._id;
         const state = connectionState[id];
 
-        if(!state.isAttached){
-            socketService.emit('container:terminal:attach', { containerId: id });
-            state.isAttached = true;
-        }
+        const attach = () => {
+            if (socketService.isConnected()) {
+                socketService.emit('container:terminal:attach', { containerId: id });
+                state.isAttached = true;
+            }
+        };
+
+        const unsubscribe = socketService.onConnectionChange((connected) => {
+            if (connected) {
+                attach();
+            }
+        });
+
+        // Try initial attach
+        attach();
 
         const handleData = (data: string) => {
             xtermRef.current?.write(data);
@@ -107,15 +118,16 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
         socketService.on('container:terminal:data', handleData);
         socketService.on('container:error', handleError);
 
-        return() => {
+        return () => {
+            unsubscribe();
             socketService.off('container:terminal:data', handleData);
             socketService.off('container:error', handleError);
 
             state.count--;
 
-            if(state.count === 0){
+            if (state.count === 0) {
                 state.detachTimer = setTimeout(() => {
-                    if(state.count === 0){
+                    if (state.count === 0) {
                         socketService.emit('container:terminal:detach');
                         state.isAttached = false;
                         delete connectionState[id];
@@ -141,9 +153,9 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
         </Container>
     );
 
-    if(embedded) return content;
+    if (embedded) return content;
 
-    return(
+    return (
         <Container className='p-fixed inset-0 d-flex items-center content-center terminal-overlay'>
             {content}
         </Container>

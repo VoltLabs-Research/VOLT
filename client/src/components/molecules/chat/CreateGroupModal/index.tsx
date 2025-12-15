@@ -100,9 +100,9 @@ const CreateGroupModal = () => {
                 </div>
             </div>
 
-            <div className='create-group-members-section'>
+            <div className='d-flex column gap-1 create-group-members-section'>
                 <Title className='font-size-2-5'>Select Members</Title>
-                <div className='create-group-members-list'>
+                <div className='d-flex column gap-05 create-group-members-list'>
                     {teamMembers
                         .filter((member, index, self) =>
                             member._id !== user?._id &&
@@ -111,10 +111,10 @@ const CreateGroupModal = () => {
                         .map((member) => (
                             <div
                                 key={member._id}
-                                className={`create-group-member ${selectedMembers.includes(member._id) ? 'selected' : ''}`}
+                                className={`d-flex items-center gap-075 create-group-member ${selectedMembers.includes(member._id) ? 'selected' : ''}`}
                                 onClick={() => toggleMemberSelection(member._id)}
                             >
-                                <div className='create-group-member-avatar'>
+                                <div className='d-flex flex-center create-group-member-avatar'>
                                     {getInitials(member.firstName, member.lastName)}
                                 </div>
                                 <div className='create-group-member-info'>
@@ -123,7 +123,7 @@ const CreateGroupModal = () => {
                                     </span>
                                 </div>
                                 {selectedMembers.includes(member._id) && (
-                                    <IoCheckmarkOutline className='create-group-member-check' />
+                                    <IoCheckmarkOutline className='d-flex flex-center create-group-member-check' />
                                 )}
                             </div>
                         ))}

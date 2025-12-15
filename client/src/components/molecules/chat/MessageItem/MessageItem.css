@@ -1,6 +1,5 @@
 /* MessageItem Component Styles */
 .chat-message {
-    display: flex;
     margin-bottom: 1rem;
     animation: messageSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
@@ -56,9 +55,6 @@
     border-radius: 50%;
     margin: 0 0.75rem;
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .chat-avatar-img {
@@ -73,17 +69,12 @@
     height: 100%;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: white;
     font-weight: 600;
     font-size: 0.9rem;
 }
 
 .chat-message-wrapper {
-    display: flex;
-    flex-direction: column;
     max-width: 100%;
 }
 
@@ -145,9 +136,6 @@
     font-size: 0.75rem;
     color: var(--color-text-muted);
     margin-top: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
 }
 
 /* Reactions Menu */
@@ -161,8 +149,6 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     padding: 0.5rem;
-    display: flex;
-    gap: 0.25rem;
     animation: reactionsSlideIn 0.2s ease;
 }
 
@@ -179,9 +165,6 @@
 }
 
 .chat-reaction-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     width: 32px;
     height: 32px;
     border: none;

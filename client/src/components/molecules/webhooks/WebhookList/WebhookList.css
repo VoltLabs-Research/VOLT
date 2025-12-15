@@ -1,13 +1,5 @@
-.webhook-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
 .webhook-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+
     padding: 20px;
     background: var(--color-background);
     border: 1px solid var(--color-border);
@@ -21,16 +13,12 @@
 }
 
 .webhook-info {
-    display: flex;
-    align-items: center;
-    gap: 16px;
+
     flex: 1;
 }
 
 .webhook-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
     width: 40px;
     height: 40px;
     background: var(--color-primary-alpha);
@@ -44,9 +32,7 @@
 }
 
 .webhook-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+
     margin-bottom: 8px;
 }
 
@@ -57,9 +43,7 @@
 }
 
 .webhook-status {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+
     font-size: 12px;
     font-weight: 500;
     text-transform: uppercase;
@@ -71,9 +55,7 @@
 }
 
 .webhook-url {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+
     font-size: 14px;
     color: var(--color-text-secondary);
     background: var(--color-background-secondary);
@@ -92,16 +74,8 @@
     display: inline-block;
 }
 
-.webhook-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-}
-
 .webhook-stat {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+
     font-size: 12px;
     color: var(--color-text-secondary);
 }
@@ -110,16 +84,8 @@
     color: var(--color-error);
 }
 
-.webhook-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
 .webhook-action-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+
     padding: 8px 12px;
     border: 1px solid var(--color-border);
     background: var(--color-background);
@@ -158,16 +124,8 @@
     color: white;
 }
 
-.webhook-list-loading {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
 .webhook-skeleton {
-    display: flex;
-    align-items: center;
-    gap: 16px;
+
     padding: 20px;
     background: var(--color-background);
     border: 1px solid var(--color-border);
@@ -184,9 +142,6 @@
 
 .skeleton-content {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
 }
 
 .skeleton-line {
@@ -200,10 +155,7 @@
     width: 60%;
 }
 
-.skeleton-actions {
-    display: flex;
-    gap: 8px;
-}
+
 
 .skeleton-button {
     width: 40px;
@@ -214,8 +166,15 @@
 }
 
 @keyframes skeleton-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
 }
 
 .webhook-list-empty {
@@ -248,12 +207,12 @@
         align-items: stretch;
         gap: 16px;
     }
-    
+
     .webhook-actions {
         justify-content: center;
         flex-wrap: wrap;
     }
-    
+
     .webhook-stats {
         flex-direction: column;
         gap: 8px;

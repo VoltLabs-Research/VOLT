@@ -1,91 +1,82 @@
-.editor-sidebar-header-team-name{ 
-    color: #dadada; 
+.editor-sidebar-header-team-name {
+    color: #dadada;
 }
 
-.editor-sidebar-trajectory-drop-icon-container{
-    font-size: 1.4rem; 
+.editor-sidebar-trajectory-drop-icon-container {
+    font-size: 1.4rem;
     margin-top: 5px;
 }
 
-.editor-sidebar-scene-container{ 
-    padding: 1.5rem; 
-    height: 64vh; 
+.editor-sidebar-scene-container {
+    padding: 1.5rem;
+    height: 64vh;
     overflow: scroll;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
 }
 
-.editor-sidebar-scene-options-container{
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-}
-
-.editor-render-options-container{
+.editor-render-options-container {
     height: 79vh;
     padding: 1.5rem;
     overflow-y: auto;
 }
 
-.editor-sidebar-user-avatar-wrapper{
+.editor-sidebar-user-avatar-wrapper {
     padding: 1.5rem;
 }
 
-.editor-sidebar-user-avatar-wrapper .sidebar-user-fullname{
+.editor-sidebar-user-avatar-wrapper .sidebar-user-fullname {
     color: #dadada;
 }
 
-.editor-sidebar-bottom-container > div{
-    border-top: 1px solid #212121; 
+.editor-sidebar-bottom-container>div {
+    border-top: 1px solid #212121;
 }
 
-.editor-sidebar-trajectory-name{
+.editor-sidebar-trajectory-name {
     font-size: 1.3rem;
 }
 
-@media screen and (max-width: 768px){
-    .editor-sidebar-header-team-name{
+@media screen and (max-width: 768px) {
+    .editor-sidebar-header-team-name {
         font-size: .85rem;
     }
 
-    .editor-sidebar-option-title{
+    .editor-sidebar-option-title {
         font-size: .8rem;
     }
 
-    .editor-sidebar-option-container{
+    .editor-sidebar-option-container {
         height: 35px;
     }
 
-    .editor-sidebar-trajectory-name{
+    .editor-sidebar-trajectory-name {
         font-size: 1rem;
     }
 
-    .editor-sidebar-user-avatar-wrapper .sidebar-user-avatar-container{
+    .editor-sidebar-user-avatar-wrapper .sidebar-user-avatar-container {
         height: 30px;
         width: 30px;
         font-size: .9rem;
     }
 
-    .editor-sidebar-user-avatar-wrapper .sidebar-user-fullname{
+    .editor-sidebar-user-avatar-wrapper .sidebar-user-fullname {
         font-size: .85rem;
     }
 
-    .editor-sidebar-scene-container{
+    .editor-sidebar-scene-container {
         padding: .5rem;
     }
 
     .editor-sidebar-options-wrapper-container,
-    .editor-sidebar-user-avatar-wrapper{
+    .editor-sidebar-user-avatar-wrapper {
         padding: 1rem;
     }
 
-    .editor-sidebar-scene-option-icon-container{
+    .editor-sidebar-scene-option-icon-container {
         padding: .5rem;
         font-size: 1rem;
     }
 
-    .editor-sidebar-scene-option-title{
+    .editor-sidebar-scene-option-title {
         font-size: .9rem;
     }
 }

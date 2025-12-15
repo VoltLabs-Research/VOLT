@@ -1,16 +1,10 @@
-.editor-timesteps-controls-slider {
-    display: flex;
-    align-items: center;
-    color: #dadada;
-    gap: 8px;
-}
 
 @media screen and (max-width: 768px) {
     .editor-timesteps-controls-slider {
         min-width: 120px;
     }
 
-    .editor-timestep-controls input[type='range']{
+    .editor-timestep-controls input[type='range'] {
         width: 2rem;
     }
 

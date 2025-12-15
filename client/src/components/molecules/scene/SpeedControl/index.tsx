@@ -35,8 +35,8 @@ const SpeedControl: React.FC<SpeedControlProps> = ({
     onSpeedChange,
     disabled = false
 }) => {
-    return(
-        <div className='editor-timesteps-controls-speed'>
+    return (
+        <div className='d-flex items-center gap-05 editor-timesteps-controls-speed'>
             Speed:
             <Slider
                 min={0.1}

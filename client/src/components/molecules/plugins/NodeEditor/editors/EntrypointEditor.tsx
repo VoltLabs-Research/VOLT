@@ -86,7 +86,7 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
     return (
         <>
             <CollapsibleSection title='Binary' defaultExpanded>
-                <div className='binary-upload-container'>
+                <div className='d-flex column gap-05 binary-upload-container'>
                     <input
                         ref={fileInputRef}
                         type='file'
@@ -95,14 +95,14 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
                     />
 
                     {entrypoint.binaryObjectPath ? (
-                        <div className='binary-uploaded'>
-                            <div className='binary-file-info'>
+                        <div className='d-flex items-center content-between binary-uploaded'>
+                            <div className='d-flex items-center gap-05 binary-file-info'>
                                 <TbFile size={20} />
                                 <span className='binary-filename'>{entrypoint.binaryFileName || entrypoint.binary}</span>
                                 <TbCheck size={16} className='binary-check-icon' />
                             </div>
                             <button
-                                className='binary-remove-btn'
+                                className='d-flex flex-center binary-remove-btn'
                                 onClick={handleRemoveBinary}
                                 title='Remove binary'
                             >
@@ -111,7 +111,7 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
                         </div>
                     ) : (
                         <button
-                            className='binary-upload-btn'
+                            className='d-flex flex-center gap-05 binary-upload-btn'
                             onClick={triggerFileSelect}
                             disabled={isUploading || !currentPlugin?._id}
                         >

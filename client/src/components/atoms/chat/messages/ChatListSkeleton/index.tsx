@@ -2,7 +2,7 @@ import { Skeleton } from '@mui/material';
 import './ChatListSkeleton.css';
 
 const ChatListSkeleton = () => (
-    <div className='chat-skeleton-list-item'>
+    <div className='d-flex items-center gap-075 chat-skeleton-list-item'>
         <Skeleton
             variant="circular"
             width={40}
@@ -14,7 +14,7 @@ const ChatListSkeleton = () => (
                 }
             }}
         />
-        <div className='chat-skeleton-list-info'>
+        <div className='d-flex column gap-025 chat-skeleton-list-info'>
             <Skeleton
                 variant="text"
                 width={120}

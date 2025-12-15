@@ -77,7 +77,7 @@ const TeamInvitationPage: React.FC = () => {
         return (
             <Container className='auth-page-wrapper'>
                 <Container className='form-section'>
-                    <Container className='form-container d-flex column skeleton-details'>
+                    <Container className='form-container d-flex column gap-1-5 skeleton-details'>
                         <Skeleton variant='rectangular' width={150} height={30} sx={{ borderRadius: '100px', mx: 'auto' }} />
                         <Skeleton variant='rectangular' width='80%' height={56} sx={{ borderRadius: '12px', mx: 'auto' }} />
                         <Skeleton variant='text' width='70%' height={28} sx={{ borderRadius: '8px', mx: 'auto' }} />
@@ -137,7 +137,7 @@ const TeamInvitationPage: React.FC = () => {
             <Container className='form-section'>
                 <Container className='form-container text-center'>
                     <Container className='form-header'>
-                        <Container className='user-badge d-flex flex-center invitation-badge'>
+                        <Container className='user-badge d-flex flex-center gap-05 invitation-badge'>
                             <CheckCircle size={20} color='var(--color-zinc-400)' />
                             <span className='invitation-badge-text'>You've been invited!</span>
                         </Container>
@@ -183,20 +183,20 @@ const TeamInvitationPage: React.FC = () => {
 
                     <Container className='space-y-4 invitation-actions'>
                         <Button
-                            className='btn btn-primary'
+                            className='d-flex items-center flex-center gap-05 btn btn-primary'
                             onClick={handleAccept}
                             disabled={actionLoading}
                             isLoading={actionLoading}
                         >
-                            <IoCheckmarkCircle size={20} className='btn-icon' />
+                            <CheckCircle size={20} />
                             Accept Invitation
                         </Button>
                         <Button
-                            className='btn btn-outline'
+                            className='d-flex items-center flex-center gap-05 btn btn-outline'
                             onClick={handleReject}
                             disabled={actionLoading}
                         >
-                            <IoCloseCircle size={20} className='btn-icon' />
+                            <XCircle size={20} />
                             Reject Invitation
                         </Button>
                     </Container>

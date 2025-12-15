@@ -5,9 +5,7 @@
     right: 0;
     bottom: 0;
     background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
     z-index: 2147483647;
     animation: fadeIn 0.2s ease;
 }
@@ -31,8 +29,7 @@
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     animation: slideUp 0.3s ease;
-    display: flex;
-    flex-direction: column;
+
 }
 
 @keyframes slideUp {
@@ -50,15 +47,11 @@
 .ssh-connection-modal-header {
     padding: 1.5rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+
 }
 
 .ssh-connection-modal-title {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+
     font-size: 1.25rem;
     font-weight: 600;
 }
@@ -70,9 +63,7 @@
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
     transition: background-color 0.2s;
 }
 
@@ -81,16 +72,13 @@
 }
 
 .ssh-connection-modal-form {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
     overflow: hidden;
 }
 
 .ssh-connection-modal-body {
     padding: 1.5rem;
     overflow-y: auto;
-    flex: 1;
+
 }
 
 .ssh-connection-form-group {
@@ -139,12 +127,6 @@
     margin-bottom: 1rem;
 }
 
-.ssh-connection-test-container {
-    display: flex;
-    gap: 0.75rem;
-    align-items: center;
-}
-
 .ssh-connection-test-btn {
     padding: 0.625rem 1rem;
     background-color: rgba(255, 255, 255, 0.1);
@@ -154,9 +136,7 @@
     font-size: 0.875rem;
     cursor: pointer;
     transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+
 }
 
 .ssh-connection-test-btn:hover:not(:disabled) {
@@ -170,9 +150,7 @@
 
 .ssh-connection-test-result {
     font-size: 0.875rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+
 }
 
 .ssh-connection-test-result.success {
@@ -186,9 +164,7 @@
 .ssh-connection-modal-footer {
     padding: 1.5rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    gap: 0.75rem;
-    justify-content: flex-end;
+
 }
 
 .ssh-connection-modal-cancel,

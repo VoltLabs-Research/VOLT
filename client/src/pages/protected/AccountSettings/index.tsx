@@ -424,7 +424,7 @@ const AccountSettings: React.FC = () => {
     return (
         <>
             <Container className='d-flex column account-settings-container'>
-                <div className='account-settings-layout'>
+                <div className='d-flex gap-2 account-settings-layout'>
                     <SettingsSidebar
                         activeSection={activeSection}
                         navOptions={navOptions}

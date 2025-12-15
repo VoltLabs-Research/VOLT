@@ -5,9 +5,7 @@
 
 .icon-select-trigger {
     width: 100%;
-    display: flex;
-    align-items: center;
-    gap: .5rem;
+    padding: .6rem .75rem;
     padding: .6rem .75rem;
     border-radius: .6rem;
     background: color-mix(in oklab, var(--color-text-primary) 6%, transparent);
@@ -28,9 +26,7 @@
 }
 
 .icon-select-trigger-preview {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
     width: 20px;
     height: 20px;
     flex-shrink: 0;
@@ -38,7 +34,7 @@
 }
 
 .icon-select-trigger-value {
-    flex: 1;
+
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -72,8 +68,7 @@
     border: 1px solid var(--color-border);
     border-radius: .6rem;
     box-shadow: var(--shadow-elevated);
-    display: flex;
-    flex-direction: column;
+
     overflow: hidden;
 }
 
@@ -103,15 +98,13 @@
 }
 
 .icon-select-list {
-    flex: 1;
+
     overflow-y: auto;
     padding: .35rem;
 }
 
 .icon-select-option {
-    display: flex;
-    align-items: center;
-    gap: .6rem;
+    padding: .5rem .6rem;
     padding: .5rem .6rem;
     border-radius: .5rem;
     cursor: pointer;
@@ -131,9 +124,7 @@
 }
 
 .icon-select-option-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
     width: 24px;
     height: 24px;
     flex-shrink: 0;
@@ -141,7 +132,7 @@
 }
 
 .icon-select-option-name {
-    flex: 1;
+
     font-size: .85rem;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -149,19 +140,14 @@
 }
 
 .icon-select-empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 1.5rem;
     padding: 1.5rem;
     color: var(--color-text-muted);
     font-size: .85rem;
 }
 
 .icon-select-loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: .5rem;
+    padding: 1rem;
     padding: 1rem;
     color: var(--color-text-muted);
     font-size: .85rem;

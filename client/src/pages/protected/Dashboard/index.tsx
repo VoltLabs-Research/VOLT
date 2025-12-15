@@ -24,21 +24,21 @@ import Paragraph from '@/components/primitives/Paragraph';
 const getGreeting = (): string => {
     const hour = new Date().getHours();
 
-    if(hour >= 5 && hour < 12){
+    if (hour >= 5 && hour < 12) {
         return 'Good Morning';
-    }else if(hour >= 12 && hour < 17){
+    } else if (hour >= 12 && hour < 17) {
         return 'Good Afternoon';
-    }else if(hour >= 17 && hour < 21){
+    } else if (hour >= 17 && hour < 21) {
         return 'Good Evening';
-    }else{
+    } else {
         return 'Good Night';
     }
 };
 
 const capitalize = (name?: string) => {
-    if(!name) return '';
+    if (!name) return '';
     const trimmed = String(name).trim();
-    if(!trimmed) return '';
+    if (!trimmed) return '';
     return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 };
 
@@ -74,7 +74,7 @@ const DashboardPage: React.FC = memo(() => {
 
     // Update background color in environment config when theme changes
     useEffect(() => {
-        if(typeof document === 'undefined') return;
+        if (typeof document === 'undefined') return;
         const root = document.documentElement;
         const update = () => {
             const isLightTheme = root.getAttribute('data-theme') === 'light';
@@ -84,12 +84,12 @@ const DashboardPage: React.FC = memo(() => {
         update();
         const observer = new MutationObserver(update);
         observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-        return() => observer.disconnect();
+        return () => observer.disconnect();
     }, [setBackgroundColor]);
 
-    return(
+    return (
         <FileUpload>
-            <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
+            <DashboardContainer pageName='Dashboard' className='d-flex h-max sm:column w-max gap-2'>
                 <Container className='d-flex column dashboard-body-left-container'>
                     <Container>
                         <Title className='font-size-6 color-primary font-weight-5-5'>{getGreeting()}, {capitalize(user?.firstName)}</Title>

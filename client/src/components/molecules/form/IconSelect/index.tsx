@@ -65,14 +65,14 @@ const VirtualizedRow = (props: any) => {
     return (
         <div
             style={style}
-            className={`icon-select-option ${isActive ? 'is-active' : ''} ${isSelected ? 'is-selected' : ''}`}
+            className={`d-flex items-center gap-05 icon-select-option ${isActive ? 'is-active' : ''} ${isSelected ? 'is-selected' : ''}`}
             onClick={() => onSelect(iconName)}
             onMouseEnter={() => onHighlight(index)}
         >
-            <div className="icon-select-option-icon">
+            <div className="d-flex flex-center icon-select-option-icon">
                 <DynamicIcon iconName={iconName} size={18} />
             </div>
-            <span className="icon-select-option-name">{iconName}</span>
+            <span className="flex-1 icon-select-option-name">{iconName}</span>
         </div>
     );
 };
@@ -226,7 +226,7 @@ const IconSelect: React.FC<IconSelectProps> = ({
     const dropdownContent = (
         <div
             ref={dropdownRef}
-            className="icon-select-dropdown"
+            className="d-flex column icon-select-dropdown"
             style={renderInPortal && portalStyle ? portalStyle : undefined}
         >
             <div className="icon-select-search">
@@ -241,13 +241,13 @@ const IconSelect: React.FC<IconSelectProps> = ({
                 />
             </div>
 
-            <div className="icon-select-list" ref={listContainerRef}>
+            <div className="flex-1 icon-select-list" ref={listContainerRef}>
                 {loading ? (
-                    <div className="icon-select-loading">Loading all icons...</div>
+                    <div className="d-flex flex-center gap-05 icon-select-loading">Loading all icons...</div>
                 ) : isFiltering ? (
-                    <div className="icon-select-loading">Filtering...</div>
+                    <div className="d-flex flex-center gap-05 icon-select-loading">Filtering...</div>
                 ) : filteredIcons.length === 0 ? (
-                    <div className="icon-select-empty">No icons found</div>
+                    <div className="d-flex flex-center icon-select-empty">No icons found</div>
                 ) : (
                     <div style={{ height: LIST_HEIGHT, overflow: 'auto' }}>
                         <List
@@ -282,15 +282,15 @@ const IconSelect: React.FC<IconSelectProps> = ({
             <button
                 ref={triggerRef}
                 type="button"
-                className="icon-select-trigger"
+                className="d-flex items-center gap-05 icon-select-trigger"
                 onClick={() => setOpen(!open)}
             >
                 {value && (
-                    <div className="icon-select-trigger-preview">
+                    <div className="d-flex flex-center icon-select-trigger-preview">
                         <DynamicIcon iconName={value} size={18} />
                     </div>
                 )}
-                <span className={`icon-select-trigger-value ${!value ? 'is-placeholder' : ''}`}>
+                <span className={`flex-1 icon-select-trigger-value ${!value ? 'is-placeholder' : ''}`}>
                     {value || placeholder}
                 </span>
                 <svg

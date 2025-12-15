@@ -4,7 +4,7 @@
     z-index: 1000;
 }
 
-.chart-viewer-container{
+.chart-viewer-container {
     width: 500px;
     height: 500px;
     position: absolute;
@@ -89,9 +89,6 @@
     width: 100%;
     height: 100%;
     z-index: 999999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     backdrop-filter: blur(1px);
     color: #dadada;
 }
@@ -111,76 +108,9 @@
     display: none
 }
 
-.editor-container canvas{
+.editor-container canvas {
     height: 100%;
     width: 100%;
-}
-
-.dislocation-result-item-title {
-    font-size: .96rem;
-}
-
-.dislocation-results-header-title {
-    color: var(--color-text-primary);
-}
-
-.dislocation-results-container {
-    top: 7rem;
-    left: 2rem;
-    width: 400px;
-    height: 550px;
-    overflow: hidden;
-}
-
-.dislocation-results-summary-container {
-    position: absolute;
-    bottom: 0;
-    display: flex;
-    backdrop-filter: blur(5px);
-    background-color: rgb(30 30 30 / 91%);
-    left: 0;
-    bottom: -11px;
-    border-radius: 2rem;
-    padding: .5rem 1rem;
-    margin: 0 auto;
-    width: 97%;
-    justify-content: space-between;
-    position: absolute;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.dislocation-result-data-container {
-    display: flex;
-    flex-direction: column;
-    gap: .2rem;
-}
-
-.dislocation-result-data {
-    display: flex;
-    width: 100%;
-    gap: .5rem;
-    align-items: center;
-}
-
-.dislocation-result-item {
-    display: flex;
-    flex-direction: column;
-    gap: .2rem;
-}
-
-.dislocation-result-data .data-value {
-    color: var(--color-text-secondary);
-}
-
-.dislocation-summary-value {
-    font-size: .8rem;
-    color: var(--color-text-secondary);
-}
-
-.dislocation-summary-label {
-    font-size: .8rem;
-    color: var(--color-text-secondary);
 }
 
 .file-upload-loader-container p {
@@ -194,7 +124,7 @@
 }
 
 @media screen and (max-width: 768px) {
-    
+
 
     .editor-scene-zoom {
         font-size: .6rem;

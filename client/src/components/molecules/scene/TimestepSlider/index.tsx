@@ -47,7 +47,7 @@ const TimestepSlider: React.FC<TimestepSliderProps> = ({
 
     const handleSliderChange = (index: number) => {
         const roundedIndex = Math.round(index);
-        if(roundedIndex >= 0 && roundedIndex < availableTimesteps.length){
+        if (roundedIndex >= 0 && roundedIndex < availableTimesteps.length) {
             const selectedTimestep = availableTimesteps[roundedIndex];
             onTimestepChange(selectedTimestep);
         }
@@ -55,8 +55,8 @@ const TimestepSlider: React.FC<TimestepSliderProps> = ({
 
     const progress = maxIndex > 0 ? (safeCurrentIndex / maxIndex) * 100 : 0;
 
-    return(
-        <div className='editor-timesteps-controls-slider'>
+    return (
+        <div className='d-flex items-center gap-05 editor-timesteps-controls-slider'>
             <Slider
                 min={minIndex}
                 max={maxIndex}

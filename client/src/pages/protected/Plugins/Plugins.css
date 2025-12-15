@@ -20,8 +20,6 @@
 }
 
 .validation-badge {
-    display: inline-flex;
-    align-items: center;
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 0.75rem;
@@ -39,9 +37,6 @@
 }
 
 .exposure-count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
     min-width: 24px;
     height: 24px;
     padding: 0 6px;
@@ -53,9 +48,6 @@
 }
 
 .plugins-listing-create-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
     padding: 6px 12px;
     background: var(--color-primary, #3b82f6);
     color: white;

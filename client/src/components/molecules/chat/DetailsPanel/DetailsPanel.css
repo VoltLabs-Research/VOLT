@@ -4,8 +4,6 @@
     background: var(--glass-bg);
     backdrop-filter: blur(25px) saturate(180%);
     border-left: 1px solid var(--color-border-soft);
-    display: flex;
-    flex-direction: column;
     position: relative;
     z-index: 1;
     box-shadow:
@@ -47,9 +45,6 @@
 
 /* User Info */
 .chat-details-user-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     text-align: center;
     padding: 1.5rem;
 }
@@ -59,9 +54,6 @@
     height: 80px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: white;
     font-weight: 600;
     font-size: 2rem;
@@ -79,10 +71,6 @@
     font-size: 0.9rem;
     color: var(--accent-green);
     font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    justify-content: center;
 }
 
 .chat-details-status::before {
@@ -94,16 +82,7 @@
 }
 
 /* Actions */
-.chat-details-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
 .chat-details-action {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
     padding: 0.75rem 1rem;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
@@ -122,9 +101,6 @@
     height: 36px;
     border-radius: 50%;
     background: var(--color-surface-3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: var(--color-text-secondary);
     font-size: 1rem;
 }
@@ -137,10 +113,6 @@
 
 /* No Selection State */
 .chat-no-selection {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     padding: 3rem 2rem;
     text-align: center;
     height: 100%;
@@ -148,9 +120,6 @@
 }
 
 .chat-no-selection-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     width: 4rem;
     height: 4rem;
     background: var(--color-surface-2);
@@ -176,9 +145,6 @@
 
 /* Group Info */
 .chat-group-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     text-align: center;
     padding: 1.5rem;
 }
@@ -188,9 +154,6 @@
     height: 80px;
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea, #764ba2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: white;
     font-size: 2rem;
     margin-bottom: 1rem;

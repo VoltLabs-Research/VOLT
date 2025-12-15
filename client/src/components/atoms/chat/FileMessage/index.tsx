@@ -50,16 +50,16 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
 
     if (isImage) {
         return (
-            <div className='chat-image-message'>
+            <div className='d-flex column gap-05'>
                 {preview ? (
                     <img src={preview} alt={meta.fileName} className='chat-image-preview' />
                 ) : (
-                    <div className='chat-image-loading'>
+                    <div className='d-flex flex-center chat-image-loading'>
                         <IoImageOutline />
                     </div>
                 )}
-                <div className='chat-file-info'>
-                    <div className='chat-file-icon'>
+                <div className='d-flex items-center gap-075 chat-file-info'>
+                    <div className='d-flex flex-center chat-file-icon'>
                         <IoImageOutline />
                     </div>
                     <div className='chat-file-details'>
@@ -73,8 +73,8 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
     }
 
     return (
-        <div className='chat-file-info'>
-            <div className='chat-file-icon'><IoDocumentOutline /></div>
+        <div className='d-flex items-center gap-075 chat-file-info'>
+            <div className='d-flex flex-center chat-file-icon'><IoDocumentOutline /></div>
             <div className='chat-file-details'>
                 <Paragraph className='chat-file-name'>{meta.fileName}</Paragraph>
                 <Paragraph className='chat-file-size'>{formatSize(meta.fileSize ?? 0)}</Paragraph>

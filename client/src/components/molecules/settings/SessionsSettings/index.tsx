@@ -6,9 +6,9 @@ import StatusBadge from '@/components/atoms/common/StatusBadge';
 import Container from '@/components/primitives/Container';
 
 interface Session {
-    _id: string; 
-    userAgent: string; 
-    ip: string; 
+    _id: string;
+    userAgent: string;
+    ip: string;
     lastActivity: string;
 };
 
@@ -22,7 +22,7 @@ interface SessionsSettingsProps {
 const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, revokeSession, revokeAllOtherSessions }) => {
     return (
         <Section>
-            <SectionHeader 
+            <SectionHeader
                 title='Active Sessions'
                 description='Manage your active login sessions across devices' />
 
@@ -30,7 +30,7 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
                 <Container className='d-flex column gap-1'>
                     <Container className='session-skeleton d-flex items-center gap-1'>
                         <Container className='session-skeleton-icon'></Container>
-                        <Container className='session-skeleton-content'>
+                        <Container className='flex-1 d-flex column gap-05 session-skeleton-content'>
                             <Container className='session-skeleton-line'></Container>
                             <Container className='session-skeleton-line short'></Container>
                         </Container>
@@ -39,8 +39,8 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
             ) : (
                 <Container className='d-flex column gap-1'>
                     {sessions.map((session, index) => (
-                        <Container 
-                            key={session._id} 
+                        <Container
+                            key={session._id}
                             className={`d-flex items-center content-between session-item sm:column sm:items-start sm:gap-1 ${index === 0 ? 'current' : ''}`}
                         >
                             <Container className='d-flex items-center gap-1'>

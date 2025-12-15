@@ -39,12 +39,12 @@ const formatValue = (value: any, format?: string, decimals: number = 2): string 
 
 const BoxResults = ({ data, config, onItemSelect }: BoxResultsProps) => {
     return (
-        <EditorWidget draggable={false} className='box-results-container'>
-            <div className='box-results-header-container'>
+        <EditorWidget draggable={false} className='d-flex column gap-1 box-results-container'>
+            <div className='d-flex column gap-075 box-results-header-container'>
                 <Title className='font-size-3 box-results-header-title'>{config.title}</Title>
             </div>
 
-            <div className='box-results-body-container'>
+            <div className='d-flex column gap-075 box-results-body-container'>
                 {data.map((item: any, index: number) => (
                     <div
                         key={index}
@@ -56,8 +56,8 @@ const BoxResults = ({ data, config, onItemSelect }: BoxResultsProps) => {
                                 const value = getValueByPath(item, metric.key);
                                 const formattedValue = formatValue(value, metric.format, metric.decimals);
                                 return (
-                                    <div key={metric.key} className={`box-result-data ${metric.as_record_title ? 'as-record-title' : ''}`}>
-                                        <div className='box-result-data-content'>
+                                    <div key={metric.key} className={`box-result-data ${metric.as_record_title ? 'as-record-title d-flex items-center gap-1' : ''}`}>
+                                        <div className='d-flex content-between items-center box-result-data-content'>
                                             <span className='data-label'>{metric.label}</span>
                                             <span className='data-value'>
                                                 {formattedValue}

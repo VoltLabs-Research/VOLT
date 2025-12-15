@@ -14,9 +14,6 @@
 }
 
 .recent-activity-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--color-border-soft);
@@ -27,9 +24,7 @@
     font-weight: 600;
     color: var(--color-text-primary);
     margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    margin: 0;
 }
 
 .recent-activity-icon {
@@ -38,18 +33,6 @@
     color: var(--accent-blue);
 }
 
-.recent-activity-stats {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-}
-
-.recent-activity-stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-}
 
 .recent-activity-stat-value {
     font-size: 1.125rem;
@@ -65,17 +48,11 @@
 }
 
 .recent-activity-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
     max-height: 400px;
     overflow-y: auto;
 }
 
 .recent-activity-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
     padding: 1rem;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
@@ -92,15 +69,7 @@
 
 .recent-activity-item-content {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
 
-.recent-activity-item-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
 }
 
 .recent-activity-method-badge {
@@ -148,17 +117,11 @@
 }
 
 .recent-activity-item-meta {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
     font-size: 0.75rem;
     color: var(--color-text-secondary);
 }
 
 .recent-activity-status-code {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
     padding: 0.25rem 0.5rem;
     border-radius: 0.375rem;
     font-weight: 600;
@@ -179,22 +142,12 @@
     color: var(--accent-red);
 }
 
-.recent-activity-response-time {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
 
 .recent-activity-time {
-    display: flex;
-    align-items: center;
     gap: 0.25rem;
 }
 
 .recent-activity-item-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
     opacity: 0;
     transition: opacity 0.2s ease;
 }
@@ -212,9 +165,8 @@
     color: var(--color-text-secondary);
     cursor: pointer;
     transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .recent-activity-action-button:hover {
@@ -224,10 +176,6 @@
 }
 
 .recent-activity-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     padding: 3rem 1rem;
     text-align: center;
     color: var(--color-text-muted);
@@ -252,16 +200,9 @@
     line-height: 1.5;
 }
 
-.recent-activity-loading {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
 
 .recent-activity-skeleton {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+
     padding: 1rem;
     background: var(--color-surface-2);
     border-radius: 0.75rem;
@@ -277,9 +218,7 @@
 
 .recent-activity-skeleton-content {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+
 }
 
 .recent-activity-skeleton-line {
@@ -297,9 +236,12 @@
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.5;
     }
@@ -310,29 +252,29 @@
     .recent-activity-container {
         padding: 1rem;
     }
-    
+
     .recent-activity-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
     }
-    
+
     .recent-activity-stats {
         width: 100%;
         justify-content: space-between;
     }
-    
+
     .recent-activity-item {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.75rem;
     }
-    
+
     .recent-activity-item-meta {
         width: 100%;
         justify-content: space-between;
     }
-    
+
     .recent-activity-item-actions {
         opacity: 1;
         width: 100%;

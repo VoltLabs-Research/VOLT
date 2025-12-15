@@ -65,20 +65,14 @@
     letter-spacing: 0.5px;
 }
 
-.chat-edit-group-preview-content {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
+
 
 .chat-edit-group-preview-avatar {
     width: 3rem;
     height: 3rem;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
-    display: flex;
-    align-items: center;
-    justify-content: center;
+
     color: white;
     font-size: 1.5rem;
 }

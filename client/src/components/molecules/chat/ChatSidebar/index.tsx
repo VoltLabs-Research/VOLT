@@ -28,30 +28,30 @@ const ChatSidebar: React.FC = () => {
     });
 
     return (
-        <div className='chat-sidebar-container'>
-            <div className='chat-sidebar-header-container'>
+        <div className='d-flex column chat-sidebar-container'>
+            <div className='d-flex column gap-075 chat-sidebar-header-container'>
                 <Title className='chat-sidebar-header-title'>Messages</Title>
-                <div className='chat-sidebar-actions-row'>
-                    <div className='chat-sidebar-search-container'>
-                        <i className='chat-sidebar-search-icon-container'>
+                <div className='d-flex items-center gap-075 chat-sidebar-actions-row'>
+                    <div className='d-flex items-center flex-1 chat-sidebar-search-container'>
+                        <i className='d-flex flex-center chat-sidebar-search-icon-container'>
                             <IoSearchOutline />
                         </i>
                         <input
                             placeholder='Search people or messages...'
-                            className='chat-sidebar-search-input'
+                            className='flex-1 chat-sidebar-search-input'
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     <button
-                        className='chat-new-chat-button'
+                        className='d-flex flex-center chat-new-chat-button'
                         onClick={() => setShowTeamMembers(!showTeamMembers)}
                         title='Start new chat'
                     >
                         <IoPersonAddOutline />
                     </button>
                     <button
-                        className='chat-new-group-button'
+                        className='d-flex flex-center chat-new-group-button'
                         onClick={() => setShowCreateGroup(true)}
                         title='Create group'
                     >
@@ -69,18 +69,16 @@ const ChatSidebar: React.FC = () => {
                             self.findIndex(m => m._id === member._id) === index
                         )
                         .map((member) => (
-                            <div
-                                key={member._id}
-                                className='chat-team-member-item'
+                            <div className='d-flex items-center chat-team-member-item'
                                 onClick={() => {
                                     startChatWithMember(member);
                                     setShowTeamMembers(false);
                                 }}
                             >
-                                <div className='chat-team-member-avatar'>
+                                <div className='d-flex flex-center chat-team-member-avatar'>
                                     {getInitials(member.firstName, member.lastName)}
                                 </div>
-                                <div className='chat-team-member-info'>
+                                <div className='flex-1 chat-team-member-info'>
                                     <Title className='font-size-2-5 chat-team-member-name'>
                                         {member.firstName} {member.lastName}
                                     </Title>
@@ -91,14 +89,14 @@ const ChatSidebar: React.FC = () => {
                 </div>
             )}
 
-            <div className='chat-conversations-container'>
+            <div className='flex-1 chat-conversations-container'>
                 {isLoadingChats ? (
                     // Show skeleton while loading chats
                     Array.from({ length: 3 }).map((_, index) => (
                         <ChatListSkeleton key={`chat-skeleton-${index}`} />
                     ))
                 ) : filteredChats.length === 0 ? (
-                    <div className='chat-empty-state'>
+                    <div className='d-flex column flex-center chat-empty-state'>
                         <Paragraph>No conversations yet</Paragraph>
                         <Paragraph>Start a chat with a team member!</Paragraph>
                     </div>
@@ -112,12 +110,10 @@ const ChatSidebar: React.FC = () => {
                         if (!displayName) return null;
 
                         return (
-                            <div
-                                key={chat._id}
-                                className={`chat-conversation-item ${currentChat?._id === chat._id ? 'active' : ''}`}
+                            <div className={`d-flex items-center chat-conversation-item ${currentChat?._id === chat._id ? 'active' : ''}`}
                                 onClick={() => selectChat(chat)}
                             >
-                                <div className={`chat-conversation-avatar ${isGroup ? 'group-avatar' : ''}`}>
+                                <div className={`d-flex flex-center chat-conversation-avatar ${isGroup ? 'group-avatar' : ''}`}>
                                     {isGroup ? (
                                         <IoPeopleOutline />
                                     ) : (
@@ -127,8 +123,8 @@ const ChatSidebar: React.FC = () => {
                                         )
                                     )}
                                 </div>
-                                <div className='chat-conversation-content'>
-                                    <div className='chat-conversation-header'>
+                                <div className='flex-1 chat-conversation-content'>
+                                    <div className='d-flex items-center content-between chat-conversation-header'>
                                         <Title className='font-size-3 chat-conversation-name'>
                                             {displayName}
                                         </Title>

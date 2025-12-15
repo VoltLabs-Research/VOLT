@@ -110,10 +110,10 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="webhook-modal-overlay">
+        <div className="d-flex flex-center webhook-modal-overlay">
             <div className="webhook-modal">
-                <div className="webhook-modal-header">
-                    <div className="webhook-modal-title">
+                <div className="d-flex items-center content-between webhook-modal-header">
+                    <div className="d-flex items-center gap-075 webhook-modal-title">
                         <TbWebhook size={24} />
                         <Title className='font-size-3'>{mode === 'create' ? 'Create Webhook' : 'Edit Webhook'}</Title>
                     </div>
@@ -122,7 +122,7 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="webhook-modal-form">
+                <form onSubmit={handleSubmit} className="d-flex column webhook-modal-form">
                     <div className="webhook-modal-body">
                         {error && (
                             <div className="webhook-modal-error">
@@ -159,7 +159,7 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
                         <div className="webhook-form-group">
                             <label>Events</label>
                             <div className="webhook-events">
-                                <div className="webhook-event-actions">
+                                <div className="d-flex gap-05 webhook-event-actions">
                                     <button type="button" onClick={handleSelectAll} className="event-action-btn">
                                         Select All
                                     </button>
@@ -169,7 +169,7 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
                                 </div>
                                 <div className="webhook-event-list">
                                     {WEBHOOK_EVENTS.map(event => (
-                                        <label key={event} className="webhook-event-item">
+                                        <label key={event} className="d-flex items-center gap-075 webhook-event-item">
                                             <input
                                                 type="checkbox"
                                                 checked={formData.events.includes(event)}
@@ -183,7 +183,7 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
                         </div>
                     </div>
 
-                    <div className="webhook-modal-footer">
+                    <div className="d-flex gap-075 webhook-modal-footer">
                         <button type="button" onClick={onClose} className="webhook-modal-cancel">
                             Cancel
                         </button>

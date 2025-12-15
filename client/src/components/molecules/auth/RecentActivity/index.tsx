@@ -90,11 +90,11 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                         Recent Activity
                     </Title>
                 </div>
-                <div className="recent-activity-loading">
+                <div className="d-flex column gap-075 recent-activity-loading">
                     {Array.from({ length: 3 }).map((_, index) => (
-                        <div key={index} className="recent-activity-skeleton">
+                        <div key={index} className="d-flex items-center gap-1 recent-activity-skeleton">
                             <div className="recent-activity-skeleton-method" />
-                            <div className="recent-activity-skeleton-content">
+                            <div className="d-flex column gap-05 flex-1 recent-activity-skeleton-content">
                                 <div className="recent-activity-skeleton-line short" />
                                 <div className="recent-activity-skeleton-line medium" />
                             </div>
@@ -114,7 +114,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                         Recent Activity
                     </Title>
                 </div>
-                <div className="recent-activity-empty">
+                <div className="d-flex column flex-center recent-activity-empty">
                     <HiGlobeAlt className="recent-activity-empty-icon" />
                     <Title className="font-size-2-5 recent-activity-empty-title">Unable to load activity</Title>
                     <Paragraph className="recent-activity-empty-description">
@@ -138,7 +138,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                         Recent Activity
                     </Title>
                 </div>
-                <div className="recent-activity-empty">
+                <div className="d-flex column flex-center recent-activity-empty">
                     <HiChartBar className="recent-activity-empty-icon" />
                     <Title className="font-size-2-5 recent-activity-empty-title">No activity yet</Title>
                     <Paragraph className="recent-activity-empty-description">
@@ -151,27 +151,27 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
 
     return (
         <div className={`recent-activity-container ${className}`}>
-            <div className="recent-activity-header">
-                <Title className="font-size-3 recent-activity-title">
+            <div className="d-flex items-center content-between recent-activity-header">
+                <Title className="d-flex items-center gap-05 font-size-3 recent-activity-title">
                     <HiChartBar className="recent-activity-icon" />
                     Recent Activity
                 </Title>
 
                 {showStats && summary && (
-                    <div className="recent-activity-stats">
-                        <div className="recent-activity-stat">
+                    <div className="d-flex items-center gap-1 recent-activity-stats">
+                        <div className="d-flex column items-center gap-025 recent-activity-stat">
                             <span className="recent-activity-stat-value">
                                 {summary.totalRequests}
                             </span>
                             <span className="recent-activity-stat-label">Requests</span>
                         </div>
-                        <div className="recent-activity-stat">
+                        <div className="d-flex column items-center gap-025 recent-activity-stat">
                             <span className="recent-activity-stat-value">
                                 {formatResponseTime(summary.averageResponseTime)}
                             </span>
                             <span className="recent-activity-stat-label">Avg Time</span>
                         </div>
-                        <div className="recent-activity-stat">
+                        <div className="d-flex column items-center gap-025 recent-activity-stat">
                             <span className="recent-activity-stat-value">
                                 {summary.uniqueIPsCount}
                             </span>
@@ -181,11 +181,11 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                 )}
             </div>
 
-            <div className="recent-activity-list">
+            <div className="d-flex column gap-075 recent-activity-list">
                 {requests.map((request) => (
-                    <div key={request._id} className="recent-activity-item">
-                        <div className="recent-activity-item-content">
-                            <div className="recent-activity-item-header">
+                    <div key={request._id} className="d-flex items-center gap-1 recent-activity-item">
+                        <div className="flex-1 d-flex column gap-05 recent-activity-item-content">
+                            <div className="d-flex items-center gap-075 recent-activity-item-header">
                                 <span
                                     className="recent-activity-method-badge"
                                     style={{
@@ -200,33 +200,33 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                                 </span>
                             </div>
 
-                            <div className="recent-activity-item-meta">
-                                <div className={`recent-activity-status-code ${getStatusCodeClass(request.statusCode)}`}>
+                            <div className="d-flex items-center gap-1 recent-activity-item-meta">
+                                <div className={`d-flex items-center gap-025 recent-activity-status-code ${getStatusCodeClass(request.statusCode)}`}>
                                     <HiLightningBolt />
                                     {request.statusCode}
                                 </div>
 
-                                <div className="recent-activity-response-time">
+                                <div className="d-flex items-center gap-025 recent-activity-response-time">
                                     <HiClock />
                                     {formatResponseTime(request.responseTime)}
                                 </div>
 
-                                <div className="recent-activity-time">
+                                <div className="d-flex items-center gap-025 recent-activity-time">
                                     <HiGlobeAlt />
                                     {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
                                 </div>
                             </div>
                         </div>
 
-                        <div className="recent-activity-item-actions">
+                        <div className="d-flex items-center gap-05 recent-activity-item-actions">
                             <button
-                                className="recent-activity-action-button"
+                                className="d-flex flex-center recent-activity-action-button"
                                 title="View details"
                             >
                                 <HiEye />
                             </button>
                             <button
-                                className="recent-activity-action-button"
+                                className="d-flex flex-center recent-activity-action-button"
                                 title="Refresh"
                                 onClick={handleRefresh}
                                 disabled={refreshing}

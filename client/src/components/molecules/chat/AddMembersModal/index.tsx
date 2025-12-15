@@ -83,7 +83,7 @@ const AddMembersModal = () => {
                 <div className='chat-group-management-body'>
                     {/* Search */}
                     <div className='chat-add-members-search'>
-                        <div className='chat-add-members-search-container'>
+                        <div className='d-flex items-center chat-add-members-search-container'>
                             <IoSearchOutline className='chat-add-members-search-icon' />
                             <input
                                 type='text'
@@ -103,17 +103,17 @@ const AddMembersModal = () => {
                                 <Paragraph>No available members to add</Paragraph>
                             </div>
                         ) : (
-                            <div className='chat-add-members-members'>
+                            <div className='d-flex column gap-05 chat-add-members-members'>
                                 {filteredMembers.map((member) => {
                                     const isSelected = selectedMembers.includes(member._id);
 
                                     return (
                                         <div
                                             key={member._id}
-                                            className={`chat-add-members-member ${isSelected ? 'selected' : ''}`}
+                                            className={`d-flex items-center gap-075 chat-add-members-member ${isSelected ? 'selected' : ''}`}
                                             onClick={() => toggleMemberSelection(member._id)}
                                         >
-                                            <div className='chat-add-members-member-avatar'>
+                                            <div className='d-flex flex-center chat-add-members-member-avatar'>
                                                 {getInitials(member.firstName, member.lastName)}
                                             </div>
                                             <div className='chat-add-members-member-info'>
@@ -125,7 +125,7 @@ const AddMembersModal = () => {
                                                 </span>
                                             </div>
                                             {isSelected && (
-                                                <div className='chat-add-members-member-check'>
+                                                <div className='d-flex flex-center chat-add-members-member-check'>
                                                     <IoCheckmarkOutline />
                                                 </div>
                                             )}

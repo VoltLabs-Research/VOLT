@@ -25,14 +25,14 @@ const DetailsPanel = ({
     currentParticipant
 }: DetailsPanelProps) => {
     return (
-        <div className='chat-details-container'>
+        <div className='d-flex column chat-details-container'>
             <div className='chat-details-header'>
                 <Title className='chat-details-title'>{chat?.isGroup ? 'Group Info' : 'Contact Info'}</Title>
             </div>
             <div className='chat-details-content'>
                 {!chat ? (
-                    <div className='chat-no-selection'>
-                        <div className='chat-no-selection-icon'>
+                    <div className='d-flex column flex-center chat-no-selection'>
+                        <div className='d-flex flex-center chat-no-selection-icon'>
                             <IoChatbubblesOutline />
                         </div>
                         <Title className='font-size-3 chat-no-selection-title'>No chat selected</Title>
@@ -42,8 +42,8 @@ const DetailsPanel = ({
                     <MessageSkeleton variant='contact' />
                 ) : chat.isGroup ? (
                     <div className='chat-details-section'>
-                        <div className='chat-group-info'>
-                            <div className='chat-group-avatar'>
+                        <div className='d-flex column items-center chat-group-info'>
+                            <div className='d-flex flex-center chat-group-avatar'>
                                 <IoPeopleOutline />
                             </div>
                             <Title className='font-size-3 chat-group-name'>{chat.groupName}</Title>
@@ -53,14 +53,14 @@ const DetailsPanel = ({
                     </div>
                 ) : (
                     <div className='chat-details-section'>
-                        <div className='chat-details-user-info'>
-                            <div className='chat-details-avatar'>
+                        <div className='d-flex column items-center chat-details-user-info'>
+                            <div className='d-flex flex-center chat-details-avatar'>
                                 {currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
                             </div>
                             <Title className='font-size-2-5 chat-details-name'>
                                 {currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
                             </Title>
-                            <div className='chat-details-status'>
+                            <div className='d-flex items-center gap-05 content-center chat-details-status'>
                                 {presence === 'online' ? 'Online' : presence === 'offline' ? 'Offline' : 'Connecting...'}
                             </div>
                         </div>
@@ -70,29 +70,29 @@ const DetailsPanel = ({
                 {chat && !isLoading && (
                     <div className='chat-details-section'>
                         <Title className='font-size-2-5 chat-details-section-title'>Actions</Title>
-                        <div className='chat-details-actions'>
-                            <button className='chat-details-action'>
-                                <i className='chat-details-action-icon'>
+                        <div className='d-flex column gap-075 chat-details-actions'>
+                            <button className='d-flex items-center gap-075 chat-details-action'>
+                                <i className='d-flex flex-center chat-details-action-icon'>
                                     <IoCallOutline />
                                 </i>
                                 <span className='chat-details-action-text'>Voice Call</span>
                             </button>
-                            <button className='chat-details-action'>
-                                <i className='chat-details-action-icon'>
+                            <button className='d-flex items-center gap-075 chat-details-action'>
+                                <i className='d-flex flex-center chat-details-action-icon'>
                                     <IoVideocamOutline />
                                 </i>
                                 <span className='chat-details-action-text'>Video Call</span>
                             </button>
                             {chat.isGroup ? (
-                                <button className='chat-details-action' onClick={onOpenGroupManagement}>
-                                    <i className='chat-details-action-icon'>
+                                <button className='d-flex items-center gap-075 chat-details-action' onClick={onOpenGroupManagement}>
+                                    <i className='d-flex flex-center chat-details-action-icon'>
                                         <IoPeopleOutline />
                                     </i>
                                     <span className='chat-details-action-text'>Manage Group</span>
                                 </button>
                             ) : (
-                                <button className='chat-details-action'>
-                                    <i className='chat-details-action-icon'>
+                                <button className='d-flex items-center gap-075 chat-details-action'>
+                                    <i className='d-flex flex-center chat-details-action-icon'>
                                         <IoInformationCircleOutline />
                                     </i>
                                     <span className='chat-details-action-text'>View Profile</span>

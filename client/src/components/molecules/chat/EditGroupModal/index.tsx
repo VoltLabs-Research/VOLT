@@ -137,8 +137,8 @@ const EditGroupModal = () => {
                     {/* Group Info Preview */}
                     <div className='chat-edit-group-preview'>
                         <Title className='font-size-2-5'>Preview</Title>
-                        <div className='chat-edit-group-preview-content'>
-                            <div className='chat-edit-group-preview-avatar'>
+                        <div className='d-flex items-center gap-1 chat-edit-group-preview-content'>
+                            <div className='d-flex flex-center chat-edit-group-preview-avatar'>
                                 <IoCreateOutline />
                             </div>
                             <div className='chat-edit-group-preview-details'>

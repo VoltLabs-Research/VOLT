@@ -1,9 +1,4 @@
 /* Containers Page Wrapper */
-.containers-page-wrapper {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
 
 .containers-listing-header {
     position: absolute;
@@ -13,9 +8,6 @@
 }
 
 .new-container-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
     padding: 0.625rem 1.125rem;
     background: var(--color-text-primary);
     color: var(--color-bg);
@@ -38,29 +30,17 @@
 }
 
 /* Container Cell Styles */
-.container-name-cell {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
 .container-icon-small {
     width: 36px;
     height: 36px;
     border-radius: 8px;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: var(--color-text-primary);
     flex-shrink: 0;
 }
 
 .container-name-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
     overflow: hidden;
 }
 
@@ -99,8 +79,6 @@
     .containers-listing-header {
         position: static;
         padding: 1rem;
-        display: flex;
-        justify-content: flex-end;
         background: var(--color-bg);
         border-bottom: 1px solid var(--color-border);
     }

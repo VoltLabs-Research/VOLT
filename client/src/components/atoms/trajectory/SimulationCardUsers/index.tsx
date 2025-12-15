@@ -31,13 +31,13 @@ interface SimulationCardUsersProps {
 }
 
 const getInitialsFromUser = (user: CardPresenceUser): string => {
-    if(user.firstName && user.lastName){
-        return(user.firstName[0] + user.lastName[0]).toUpperCase();
+    if (user.firstName && user.lastName) {
+        return (user.firstName[0] + user.lastName[0]).toUpperCase();
     }
-    if(user.email){
+    if (user.email) {
         const parts = user.email.split('@')[0].split('.');
-        if(parts.length >= 2){
-            return(parts[0][0] + parts[1][0]).toUpperCase();
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
         }
         return user.email[0].toUpperCase();
     }
@@ -49,11 +49,11 @@ const SimulationCardUsers: React.FC<SimulationCardUsersProps> = memo(({ trajecto
     const displayUsers = users.slice(0, 3);
     const extraCount = Math.max(0, users.length - 3);
 
-    if(users.length === 0){
+    if (users.length === 0) {
         return null;
     }
 
-    return(
+    return (
         <Container className="simulation-card-users">
             <Container className="d-flex items-center row-reverse">
                 <AnimatePresence mode="popLayout">

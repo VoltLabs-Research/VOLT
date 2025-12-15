@@ -39,35 +39,35 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose
     if (!isOpen) return null;
 
     return (
-        <div className="login-activity-modal-overlay" onClick={onClose}>
-            <div className="login-activity-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="login-activity-modal-header">
-                    <div className="login-activity-modal-title">
+        <div className="d-flex flex-center login-activity-modal-overlay" onClick={onClose}>
+            <div className="d-flex column login-activity-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="d-flex items-center content-between login-activity-modal-header">
+                    <div className="d-flex items-center gap-075 login-activity-modal-title">
                         <TbActivity size={24} />
                         <Title className='font-size-2 login-activity-modal-title'>Login Activity</Title>
                     </div>
-                    <div className="login-activity-modal-actions">
+                    <div className="d-flex items-center gap-075 login-activity-modal-actions">
                         <button
-                            className="action-button refresh"
+                            className="d-flex items-center gap-05 action-button refresh"
                             onClick={refetch}
                             disabled={loading}
                         >
                             <TbRefresh size={16} className={loading ? 'animate-spin' : ''} />
                             Refresh
                         </button>
-                        <button className="action-button close" onClick={onClose}>
+                        <button className="d-flex items-center gap-05 action-button close" onClick={onClose}>
                             <TbX size={20} />
                         </button>
                     </div>
                 </div>
 
-                <div className="login-activity-modal-content">
+                <div className="flex-1 login-activity-modal-content">
                     {loading ? (
-                        <div className="activity-loading">
+                        <div className="d-flex column gap-1 activity-loading">
                             {Array.from({ length: 5 }).map((_, index) => (
-                                <div key={index} className="activity-skeleton">
+                                <div key={index} className="d-flex items-center gap-1 activity-skeleton">
                                     <div className="activity-skeleton-icon"></div>
-                                    <div className="activity-skeleton-content">
+                                    <div className="d-flex column gap-05 flex-1 activity-skeleton-content">
                                         <div className="activity-skeleton-line"></div>
                                         <div className="activity-skeleton-line short"></div>
                                     </div>
@@ -75,7 +75,7 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose
                             ))}
                         </div>
                     ) : error ? (
-                        <div className="activity-error">
+                        <div className="d-flex column flex-center activity-error">
                             <TbActivity size={48} />
                             <Title className='font-size-2-5'>Unable to load activity</Title>
                             <Paragraph>{error}</Paragraph>
@@ -84,20 +84,20 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose
                             </button>
                         </div>
                     ) : activities.length === 0 ? (
-                        <div className="activity-empty">
+                        <div className="d-flex column flex-center activity-empty">
                             <TbActivity size={48} />
                             <Title className='font-size-2-5'>No login activity</Title>
                             <Paragraph>Your login attempts will appear here</Paragraph>
                         </div>
                     ) : (
-                        <div className="activity-list">
+                        <div className="d-flex column gap-1 activity-list">
                             {activities.map((activity) => (
-                                <div key={activity._id} className={`activity-item ${activity.success ? 'success' : 'failed'}`}>
-                                    <div className="activity-icon">
+                                <div key={activity._id} className={`d-flex items-start gap-1 activity-item ${activity.success ? 'success' : 'failed'}`}>
+                                    <div className="d-flex flex-center activity-icon">
                                         {activity.success ? <TbCheck size={20} /> : <TbX size={20} />}
                                     </div>
-                                    <div className="activity-content">
-                                        <div className="activity-header">
+                                    <div className="d-flex column gap-075 flex-1 activity-content">
+                                        <div className="d-flex items-center content-between gap-1 activity-header">
                                             <span className="activity-title">
                                                 {activity.action === 'login' ? 'Successful Login' :
                                                     activity.action === 'failed_login' ? 'Failed Login Attempt' :
@@ -116,7 +116,7 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose
                                                 })()}
                                             </span>
                                         </div>
-                                        <div className="activity-details">
+                                        <div className="d-flex column gap-05 activity-details">
                                             <Paragraph className="activity-description">
                                                 <strong>Device:</strong> {activity.userAgent}
                                             </Paragraph>

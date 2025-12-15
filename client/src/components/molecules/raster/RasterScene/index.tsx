@@ -30,9 +30,9 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   }, [scene?.frame, scene?.model, scene?.analysisId]);
 
   React.useEffect(() => {
-    if(scene?.isUnavailable){
+    if (scene?.isUnavailable) {
       const t = setTimeout(() => setShowUnavailable(true), 800);
-      return() => clearTimeout(t);
+      return () => clearTimeout(t);
     }
     setShowUnavailable(false);
   }, [scene?.isUnavailable]);
@@ -40,10 +40,10 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   const handleDoubleClick = () => { };
 
   const canDownload = !!trajectoryId;
-  const handleDownloadDislocations = async() => {
-    if(!scene?.analysisId) return;
+  const handleDownloadDislocations = async () => {
+    if (!scene?.analysisId) return;
     setDownloadProgress(0);
-    try{
+    try {
       const data = await analysisConfigApi.getDislocations(scene.analysisId);
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
@@ -52,57 +52,57 @@ const RasterScene: React.FC<RasterSceneProps> = ({
       a.download = `dislocations_${scene.analysisId}.json`;
       a.click();
       window.URL.revokeObjectURL(url);
-    }catch(error){
+    } catch (error) {
       console.error('Download failed:', error);
-    }finally{
+    } finally {
       setDownloadProgress(null);
       setIsMenuOpen(false);
     }
   };
-  const handleDownloadGLBZip = async() => {
-    if(!trajectoryId) return;
+  const handleDownloadGLBZip = async () => {
+    if (!trajectoryId) return;
     setDownloadProgress(0);
-    try{
+    try {
       // Note: downloadBlob functionality would need to be added to trajectory-api
       // For now, using inline implementation
       console.warn('GLB download needs trajectory-api.downloadGLBArchive()');
-    }catch(error){
+    } catch (error) {
       console.error('Download failed:', error);
-    }finally{
+    } finally {
       setDownloadProgress(null);
       setIsMenuOpen(false);
     }
   };
-  const handleDownloadRasterImagesZip = async() => {
-    if(!trajectoryId) return;
+  const handleDownloadRasterImagesZip = async () => {
+    if (!trajectoryId) return;
     const q: string[] = [];
-    if(scene?.analysisId) q.push(`analysisId=${encodeURIComponent(scene.analysisId)}`);
-    if(scene?.model) q.push(`model=${encodeURIComponent(scene.model)}`);
+    if (scene?.analysisId) q.push(`analysisId=${encodeURIComponent(scene.analysisId)}`);
+    if (scene?.model) q.push(`model=${encodeURIComponent(scene.model)}`);
     q.push('includePreview=0');
     const qs = q.length ? `?${q.join('&')}` : '';
     setDownloadProgress(0);
-    try{
+    try {
       // Note: downloadBlob functionality would need to be added to raster-api
       console.warn('Raster images download needs raster-api.downloadImagesArchive()');
-    }catch(error){
+    } catch (error) {
       console.error('Download failed:', error);
-    }finally{
+    } finally {
       setDownloadProgress(null);
       setIsMenuOpen(false);
     }
   };
 
-  if(isLoading && !scene?.data) return <RasterSceneSkeleton />;
+  if (isLoading && !scene?.data) return <RasterSceneSkeleton />;
 
-  if(!scene?.data){
-    return(
-      <figure className="raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
+  if (!scene?.data) {
+    return (
+      <figure className="d-flex column raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
         <div className="raster-scene-topbar">
           <div className="raster-scene-topbar-center">
             <AnalysisSelect {...analysisSelect} />
           </div>
         </div>
-        <div className="raster-scene-main">
+        <div className="d-flex flex-center items-center raster-scene-main">
           <Skeleton
             variant="rectangular"
             animation="wave"
@@ -122,13 +122,13 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   const frameNumber = scene.frame ?? 'unknown';
   const modelName = scene.model ? scene.model[0].toUpperCase() + scene.model.slice(1) : 'Unknown';
 
-  return(
-    <figure className="raster-scene-container" style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+  return (
+    <figure className="d-flex column raster-scene-container" style={{ flex: 1, minWidth: 0, position: 'relative' }}>
       <div className="raster-scene-topbar">
         <div className="raster-scene-topbar-center">
           <AnalysisSelect {...analysisSelect} />
         </div>
-        <div className="raster-scene-topbar-right" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="d-flex items-center gap-05 raster-scene-topbar-right">
           <button
             aria-label="Download"
             title="Download"
@@ -159,14 +159,14 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             )}
           </button>
           {isMenuOpen && (
-            <div className="raster-scene-download-menu">
-              <button onClick={handleDownloadDislocations} disabled={!scene?.analysisId}>
+            <div className="d-flex column raster-scene-download-menu">
+              <button className="d-flex items-center gap-05" onClick={handleDownloadDislocations} disabled={!scene?.analysisId}>
                 <span>Dislocations data(JSON)</span>
               </button>
-              <button onClick={handleDownloadGLBZip} disabled={!canDownload}>
+              <button className="d-flex items-center gap-05" onClick={handleDownloadGLBZip} disabled={!canDownload}>
                 <span>Frames GLBs(zip)</span>
               </button>
-              <button onClick={handleDownloadRasterImagesZip} disabled={!canDownload}>
+              <button className="d-flex items-center gap-05" onClick={handleDownloadRasterImagesZip} disabled={!canDownload}>
                 <span>Raster images(zip)</span>
               </button>
             </div>
@@ -174,7 +174,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
         </div>
       </div>
 
-      <div className="raster-scene-main">
+      <div className="d-flex flex-center items-center raster-scene-main">
         {/*scene.data && !showModel3D && (
           <div
             style={{
@@ -204,16 +204,12 @@ const RasterScene: React.FC<RasterSceneProps> = ({
               style={{
                 width: '100%',
                 height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
                 fontSize: '1rem',
                 color: 'rgba(255, 255, 255, 0.5)',
                 textAlign: 'center',
                 borderRadius: '0.75rem',
-                flexDirection: 'column',
-                gap: '0.5rem',
               }}
+              className='d-flex column gap-05 flex-center'
             >
               <div>Model not found</div>
               <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>{modelName} - Frame {frameNumber}</div>

@@ -186,15 +186,15 @@ export default function AuthPage() {
             <div className="hero-overlay" />
           </div>
 
-          <div className="hero-content-wrapper">
-            <div className="hero-brand">
+          <div className="d-flex column content-between h-100 hero-content-wrapper">
+            <div className="d-flex items-center gap-075 hero-brand">
               <div className="brand-icon">
                 <LayoutGrid size={24} color="white" />
               </div>
               <span>Volterra</span>
             </div>
 
-            <div className="hero-text-container">
+            <div className="d-flex column gap-1-5 hero-text-container">
               <Title className="hero-headline">
                 Connect with<br />your VoltID
               </Title>
@@ -205,10 +205,10 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <div className="form-section">
+        <div className="d-flex column form-section">
           <div className="form-bg-glow" />
 
-          <div className="form-container">
+          <div className="d-flex column content-center gap-2-5 flex-1 form-container">
             <div className="form-header">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -239,14 +239,14 @@ export default function AuthPage() {
                 >
                   <div className="space-y-4">
                     <Button
-                      className="btn btn-outline"
+                      className="d-flex items-center flex-center btn btn-outline"
                       onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/github`}
                     >
                       <Github size={20} style={{ marginRight: "0.75rem" }} />
                       Continue with GitHub
                     </Button>
                     <Button
-                      className="btn btn-outline"
+                      className="d-flex items-center flex-center btn btn-outline"
                       onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`}
                     >
                       <svg viewBox="0 0 24 24" width="20" height="20" style={{ marginRight: "0.75rem" }}>
@@ -258,7 +258,7 @@ export default function AuthPage() {
                       Continue with Google
                     </Button>
                     <Button
-                      className="btn btn-outline"
+                      className="d-flex items-center flex-center btn btn-outline"
                       onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/microsoft`}
                     >
                       <svg viewBox="0 0 23 23" width="20" height="20" style={{ marginRight: "0.75rem" }}>
@@ -271,7 +271,7 @@ export default function AuthPage() {
                     </Button>
                   </div>
 
-                  <div className="divider">
+                  <div className="d-flex items-center divider">
                     <span>Or continue with email</span>
                   </div>
 
@@ -292,7 +292,7 @@ export default function AuthPage() {
                         />
                       </div>
                     </div>
-                    <Button type="submit" isLoading={isLoading} className="btn btn-primary">
+                    <Button type="submit" isLoading={isLoading} className="d-flex items-center flex-center btn btn-primary">
                       Continue
                     </Button>
                   </form>
@@ -308,7 +308,7 @@ export default function AuthPage() {
                   <div className="user-badge">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <CheckCircle2 size={20} color="#22c55e" />
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div className="d-flex column">
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-zinc-500)' }}>Signing up as</span>
                         <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{email}</span>
                       </div>
@@ -347,10 +347,10 @@ export default function AuthPage() {
                       type="password"
                       error={errors.passwordConfirm}
                     />
-                    <Button type="submit" isLoading={isLoading} className="btn btn-primary">
+                    <Button type="submit" isLoading={isLoading} className="d-flex items-center flex-center btn btn-primary">
                       Create Account
                     </Button>
-                    <Button className="btn btn-ghost" onClick={() => setStep("email")} type="button">
+                    <Button className="d-flex items-center flex-center btn btn-ghost" onClick={() => setStep("email")} type="button">
                       <ArrowLeft size={16} style={{ marginRight: "0.5rem" }} /> Back
                     </Button>
                   </form>
@@ -363,12 +363,12 @@ export default function AuthPage() {
                   exit={{ opacity: 0, x: 20 }}
                   className="space-y-4"
                 >
-                  <div className="user-badge">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div className="d-flex content-between items-center user-badge">
+                    <div className="d-flex items-center gap-075">
                       <div style={{ background: 'var(--color-zinc-800)', borderRadius: '50%', padding: '4px' }}>
                         <CheckCircle2 size={16} color="#22c55e" />
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div className="d-flex column">
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-zinc-500)' }}>Logging in as</span>
                         <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{email}</span>
                       </div>
@@ -391,10 +391,10 @@ export default function AuthPage() {
                         />
                       </div>
                     </div>
-                    <Button type="submit" isLoading={isLoading} className="btn btn-primary">
+                    <Button type="submit" isLoading={isLoading} className="d-flex items-center flex-center btn btn-primary">
                       Sign In
                     </Button>
-                    <Button className="btn btn-ghost" onClick={() => setStep("email")} type="button">
+                    <Button className="d-flex items-center flex-center btn btn-ghost" onClick={() => setStep("email")} type="button">
                       <ArrowLeft size={16} style={{ marginRight: "0.5rem" }} /> Back
                     </Button>
                   </form>

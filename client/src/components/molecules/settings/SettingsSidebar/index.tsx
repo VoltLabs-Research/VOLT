@@ -19,7 +19,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection, navOpt
 	return (
 		<Container className='d-flex column p-sticky settings-sidebar'>
 			<Container className='d-flex items-center gap-1 sidebar-header'>
-				<button className='back-button'>
+				<button className='d-flex flex-center back-button'>
 					<TbArrowLeft size={20} />
 				</button>
 				<Title className='font-size-1 sidebar-title'>Settings</Title>
@@ -32,7 +32,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection, navOpt
 					return (
 						<button
 							key={option.title}
-							className={`nav-item ${isActive ? 'active' : ''}`}
+							className={`d-flex items-center gap-1 nav-item ${isActive ? 'active' : ''}`}
 							onClick={() => onChange(option.title)}
 						>
 							<Icon size={20} />

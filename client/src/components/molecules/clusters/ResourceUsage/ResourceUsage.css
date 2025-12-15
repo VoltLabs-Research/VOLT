@@ -6,14 +6,9 @@
   border-radius: 20px;
   padding: 1.5rem;
   height: 100%;
-  display: flex;
-  flex-direction: column;
 }
 
 .resource-usage-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
   margin-bottom: 1.5rem;
   flex-shrink: 0;
 }
@@ -44,22 +39,11 @@
 }
 
 .resource-usage-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
   flex: 1;
   justify-content: space-around;
 }
 
-.resource-usage-item {
-  display: flex;
-  flex-direction: column;
-}
-
 .resource-usage-item-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-bottom: 0.5rem;
 }
 
@@ -79,8 +63,6 @@
   background-color: var(--muted);
   border-radius: 9999px;
   overflow: visible;
-  display: flex;
-  gap: 0.125rem;
   padding: 0.125rem;
 }
 
@@ -93,11 +75,13 @@
 }
 
 @keyframes segmentPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scaleY(1);
   }
+
   50% {
     transform: scaleY(0.95);
   }
 }
-

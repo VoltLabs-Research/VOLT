@@ -105,8 +105,8 @@ const ManageAdminsModal = () => {
                     {/* Owner Info */}
                     <div className='chat-manage-admins-owner'>
                         <Title className='font-size-2-5'>Group Owner</Title>
-                        <div className='chat-manage-admins-owner-member'>
-                            <div className='chat-manage-admins-owner-avatar'>
+                        <div className='d-flex items-center gap-075 chat-manage-admins-owner-member'>
+                            <div className='d-flex flex-center chat-manage-admins-owner-avatar'>
                                 {getInitials(
                                     currentChat.createdBy?.firstName || '',
                                     currentChat.createdBy?.lastName || ''
@@ -118,7 +118,7 @@ const ManageAdminsModal = () => {
                                 </span>
                                 <span className='chat-manage-admins-owner-role'>Owner</span>
                             </div>
-                            <div className='chat-manage-admins-owner-badge'>
+                            <div className='d-flex flex-center chat-manage-admins-owner-badge'>
                                 <IoShieldCheckmarkOutline />
                             </div>
                         </div>
@@ -132,7 +132,7 @@ const ManageAdminsModal = () => {
                                 <Paragraph>No members available to make admins</Paragraph>
                             </div>
                         ) : (
-                            <div className='chat-manage-admins-members'>
+                            <div className='d-flex column gap-05 chat-manage-admins-members'>
                                 {availableMembers.map((member) => {
                                     const isSelected = selectedAdmins.includes(member._id);
                                     const isCurrentAdmin = currentAdmins.some(admin => admin._id === member._id);
@@ -140,10 +140,10 @@ const ManageAdminsModal = () => {
                                     return (
                                         <div
                                             key={member._id}
-                                            className={`chat-manage-admins-member ${isSelected ? 'selected' : ''} ${isCurrentAdmin ? 'current-admin' : ''}`}
+                                            className={`d-flex items-center gap-075 chat-manage-admins-member ${isSelected ? 'selected' : ''} ${isCurrentAdmin ? 'current-admin' : ''}`}
                                             onClick={() => toggleAdminSelection(member._id)}
                                         >
-                                            <div className='chat-manage-admins-member-avatar'>
+                                            <div className='d-flex flex-center chat-manage-admins-member-avatar'>
                                                 {getInitials(member.firstName, member.lastName)}
                                             </div>
                                             <div className='chat-manage-admins-member-info'>
@@ -155,7 +155,7 @@ const ManageAdminsModal = () => {
                                                 </span>
                                             </div>
                                             {isSelected && (
-                                                <div className='chat-manage-admins-member-check'>
+                                                <div className='d-flex flex-center chat-manage-admins-member-check'>
                                                     <IoCheckmarkOutline />
                                                 </div>
                                             )}

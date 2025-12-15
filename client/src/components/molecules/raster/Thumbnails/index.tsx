@@ -24,14 +24,14 @@ const Thumbnails: React.FC<ThumbnailsProps> = ({
     const step = (t: number) => {
       const p = Math.min((t - startTime) / 800, 1);
       container.scrollLeft = start + dist * ease(p);
-      if(p < 1) requestAnimationFrame(step);
+      if (p < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   };
 
   // Pre-tickle current frame so it loads ASAP
   useEffect(() => {
-    if(selectedFrameIndex >= 0 && selectedFrameIndex < timeline.length){
+    if (selectedFrameIndex >= 0 && selectedFrameIndex < timeline.length) {
       const ts = timeline[selectedFrameIndex];
       getThumbnailScene(ts); // returns descriptor; store/hook handles actual fetch
     }
@@ -41,38 +41,38 @@ const Thumbnails: React.FC<ThumbnailsProps> = ({
   useEffect(() => {
     const c = thumbnailsRef.current;
     const t = itemsRef.current[selectedFrameIndex];
-    if(c && t) smoothScrollIntoView(c, t);
+    if (c && t) smoothScrollIntoView(c, t);
   }, [selectedFrameIndex]);
 
   const showSkeletons = isLoading && !timeline.length;
 
-  return(
-    <div className="raster-thumbnails" ref={thumbnailsRef} style={{ paddingBlock: '.25rem' }}>
+  return (
+    <div className="d-flex gap-1 overflow-x-auto raster-thumbnails" ref={thumbnailsRef} style={{ paddingBlock: '.25rem' }}>
       {showSkeletons
         ? Array.from({ length: 8 }, (_, i) => <ThumbnailSkeleton key={`thumb-skel-${i}`} />)
         : timeline.map((ts, idx) => {
-            const scene = getThumbnailScene(ts);
-            if(!scene) return null;
-            const isActive = idx === selectedFrameIndex;
-            return(
-              <div
-                key={`thumb-${ts}-${scene.model}`}
-                ref={(el) => {
-                  itemsRef.current[idx] = el;
-                }}
-              >
-                <ThumbnailItem
-                  scene={scene}
-                  timestep={ts}
-                  index={idx}
-                  isActive={isActive}
-                  isPlaying={isPlaying}
-                  selectedFrameIndex={selectedFrameIndex}
-                  onClick={onThumbnailClick}
-                />
-              </div>
-            );
-          })}
+          const scene = getThumbnailScene(ts);
+          if (!scene) return null;
+          const isActive = idx === selectedFrameIndex;
+          return (
+            <div
+              key={`thumb-${ts}-${scene.model}`}
+              ref={(el) => {
+                itemsRef.current[idx] = el;
+              }}
+            >
+              <ThumbnailItem
+                scene={scene}
+                timestep={ts}
+                index={idx}
+                isActive={isActive}
+                isPlaying={isPlaying}
+                selectedFrameIndex={selectedFrameIndex}
+                onClick={onThumbnailClick}
+              />
+            </div>
+          );
+        })}
     </div>
   );
 };

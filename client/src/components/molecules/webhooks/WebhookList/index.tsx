@@ -50,25 +50,25 @@ const WebhookList: React.FC<WebhookListProps> = ({
 
     if (loading) {
         return (
-            <div className="webhook-list-loading">
-                <div className="webhook-skeleton">
+            <div className="d-flex column gap-1 webhook-list-loading">
+                <div className="d-flex items-center gap-1 webhook-skeleton">
                     <div className="skeleton-icon"></div>
-                    <div className="skeleton-content">
+                    <div className="d-flex column gap-05 skeleton-content">
                         <div className="skeleton-line"></div>
                         <div className="skeleton-line short"></div>
                     </div>
-                    <div className="skeleton-actions">
+                    <div className="d-flex gap-05 skeleton-actions">
                         <div className="skeleton-button"></div>
                         <div className="skeleton-button"></div>
                     </div>
                 </div>
-                <div className="webhook-skeleton">
+                <div className="d-flex items-center gap-1 webhook-skeleton">
                     <div className="skeleton-icon"></div>
-                    <div className="skeleton-content">
+                    <div className="d-flex column gap-05 skeleton-content">
                         <div className="skeleton-line"></div>
                         <div className="skeleton-line short"></div>
                     </div>
-                    <div className="skeleton-actions">
+                    <div className="d-flex gap-05 skeleton-actions">
                         <div className="skeleton-button"></div>
                         <div className="skeleton-button"></div>
                     </div>
@@ -90,18 +90,18 @@ const WebhookList: React.FC<WebhookListProps> = ({
     }
 
     return (
-        <div className="webhook-list">
+        <div className="d-flex column gap-1 webhook-list">
             {webhooks.map((webhook) => (
-                <div key={webhook._id} className="webhook-item">
-                    <div className="webhook-info">
-                        <div className="webhook-icon">
+                <div key={webhook._id} className="d-flex items-center content-between webhook-item">
+                    <div className="d-flex items-center gap-1 webhook-info">
+                        <div className="d-flex flex-center webhook-icon">
                             <TbWebhook size={20} />
                         </div>
                         <div className="webhook-details">
-                            <div className="webhook-header">
+                            <div className="d-flex items-center gap-075 webhook-header">
                                 <span className="webhook-name">{webhook.name}</span>
                                 <span
-                                    className="webhook-status"
+                                    className="d-flex items-center gap-025 webhook-status"
                                     style={{ color: getStatusColor(webhook.status) }}
                                 >
                                     {getStatusIcon(webhook.status)}
@@ -109,7 +109,7 @@ const WebhookList: React.FC<WebhookListProps> = ({
                                 </span>
                             </div>
                             <div className="webhook-meta">
-                                <span className="webhook-url">
+                                <span className="d-flex items-center gap-025 webhook-url">
                                     <TbGlobe size={14} />
                                     {webhook.url}
                                 </span>
@@ -117,27 +117,27 @@ const WebhookList: React.FC<WebhookListProps> = ({
                                     {webhook.events.length} event{webhook.events.length !== 1 ? 's' : ''}
                                 </span>
                             </div>
-                            <div className="webhook-stats">
+                            <div className="d-flex flex-wrap gap-1 webhook-stats">
                                 {webhook.lastTriggered && (
-                                    <span className="webhook-stat">
+                                    <span className="d-flex items-center gap-025 webhook-stat">
                                         <TbActivity size={14} />
                                         Last triggered {formatDate(webhook.lastTriggered)}
                                     </span>
                                 )}
                                 {webhook.failureCount > 0 && (
-                                    <span className="webhook-stat error">
+                                    <span className="d-flex items-center gap-025 webhook-stat error">
                                         {webhook.failureCount} failure{webhook.failureCount !== 1 ? 's' : ''}
                                     </span>
                                 )}
-                                <span className="webhook-stat">
+                                <span className="d-flex items-center gap-025 webhook-stat">
                                     Created {formatDate(webhook.createdAt)}
                                 </span>
                             </div>
                         </div>
                     </div>
-                    <div className="webhook-actions">
+                    <div className="d-flex items-center gap-05 webhook-actions">
                         <button
-                            className="webhook-action-btn test"
+                            className="d-flex items-center gap-025 webhook-action-btn test"
                             onClick={() => onTest(webhook)}
                             title="Test webhook"
                         >
@@ -145,14 +145,14 @@ const WebhookList: React.FC<WebhookListProps> = ({
                             Test
                         </button>
                         <button
-                            className="webhook-action-btn"
+                            className="d-flex items-center gap-025 webhook-action-btn"
                             onClick={() => onEdit(webhook)}
                             title="Edit webhook"
                         >
                             <TbEdit size={16} />
                         </button>
                         <button
-                            className="webhook-action-btn danger"
+                            className="d-flex items-center gap-025 webhook-action-btn danger"
                             onClick={() => onDelete(webhook)}
                             title="Delete webhook"
                         >

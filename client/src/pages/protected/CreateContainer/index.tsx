@@ -262,14 +262,14 @@ const CreateContainer: React.FC = () => {
         }));
     };
 
-    const maxMemory = systemStats ? Math.floor(systemStats.memory.total * 1024) : 4096;
-    const maxCpus = systemStats ? systemStats.cpu.cores : 4;
+    const maxMemory = systemStats?.memory?.total ? Math.floor(systemStats.memory.total * 1024) : 4096;
+    const maxCpus = systemStats?.cpu?.cores ?? 4;
 
     return (
-        <div className="create-container-page">
-            <div className="create-header">
+        <div className="d-flex column create-container-page">
+            <div className="d-flex items-center gap-1-5 create-header">
                 <Button
-                    className="back-btn-icon"
+                    className="d-flex flex-center back-btn-icon"
                     onClick={() => navigate('/dashboard/containers')}
                 >
                     <ArrowLeft size={20} />
@@ -280,27 +280,27 @@ const CreateContainer: React.FC = () => {
                 </div>
             </div>
 
-            <div className="create-layout">
-                <div className="steps-sidebar">
-                    <div className={`step-item ${step >= 1 ? 'active' : ''}`} onClick={() => setStep(1)}>
-                        <div className="step-number">1</div>
-                        <div className="step-label">
+            <div className="d-flex create-layout">
+                <div className="d-flex column gap-05 steps-sidebar">
+                    <div className={`d-flex items-center gap-1 step-item ${step >= 1 ? 'active' : ''}`} onClick={() => setStep(1)}>
+                        <div className="d-flex flex-center step-number">1</div>
+                        <div className="d-flex column step-label">
                             <span>Image</span>
                             <small>Select template</small>
                         </div>
                     </div>
                     <div className={`step-line ${step >= 2 ? 'active' : ''}`}></div>
-                    <div className={`step-item ${step >= 2 ? 'active' : ''}`} onClick={() => (selectedTemplate || customImage) && setStep(2)}>
-                        <div className="step-number">2</div>
-                        <div className="step-label">
+                    <div className={`d-flex items-center gap-1 step-item ${step >= 2 ? 'active' : ''}`} onClick={() => (selectedTemplate || customImage) && setStep(2)}>
+                        <div className="d-flex flex-center step-number">2</div>
+                        <div className="d-flex column step-label">
                             <span>Configuration</span>
                             <small>Resources & Network</small>
                         </div>
                     </div>
                     <div className={`step-line ${step >= 3 ? 'active' : ''}`}></div>
-                    <div className={`step-item ${step >= 3 ? 'active' : ''}`} onClick={() => (selectedTemplate || customImage) && setStep(3)}>
-                        <div className="step-number">3</div>
-                        <div className="step-label">
+                    <div className={`d-flex items-center gap-1 step-item ${step >= 3 ? 'active' : ''}`} onClick={() => (selectedTemplate || customImage) && setStep(3)}>
+                        <div className="d-flex flex-center step-number">3</div>
+                        <div className="d-flex column step-label">
                             <span>Review</span>
                             <small>Deploy container</small>
                         </div>
@@ -315,10 +315,10 @@ const CreateContainer: React.FC = () => {
                                 {TEMPLATES.map(template => (
                                     <div
                                         key={template.id}
-                                        className={`template-card ${selectedTemplate === template.id ? 'selected' : ''}`}
+                                        className={`d-flex column items-center gap-1 template-card ${selectedTemplate === template.id ? 'selected' : ''}`}
                                         onClick={() => handleTemplateSelect(template.id)}
                                     >
-                                        <div className="template-icon">
+                                        <div className="d-flex flex-center template-icon">
                                             {template.icon}
                                         </div>
                                         <div className="template-info">
@@ -326,14 +326,14 @@ const CreateContainer: React.FC = () => {
                                             <Paragraph className="color-muted font-size-2">{template.description}</Paragraph>
                                         </div>
                                         {selectedTemplate === template.id && (
-                                            <div className="selected-check">
+                                            <div className="d-flex flex-center selected-check">
                                                 <Check size={16} />
                                             </div>
                                         )}
                                     </div>
                                 ))}
                                 <div
-                                    className={`template-card custom ${!selectedTemplate && customImage ? 'selected' : ''}`}
+                                    className={`d-flex column items-center gap-1 template-card custom ${!selectedTemplate && customImage ? 'selected' : ''}`}
                                     onClick={handleCustomImageClick}
                                 >
                                     <div className="template-icon">
@@ -344,7 +344,7 @@ const CreateContainer: React.FC = () => {
                                         <Paragraph className="color-muted font-size-2">Pull any image from Docker Hub.</Paragraph>
                                     </div>
                                     {!selectedTemplate && customImage && (
-                                        <div className="selected-check">
+                                        <div className="d-flex flex-center selected-check">
                                             <Check size={16} />
                                         </div>
                                     )}
@@ -357,7 +357,7 @@ const CreateContainer: React.FC = () => {
                     {step === 2 && (
                         <div className="fade-in">
                             <Title className="font-size-5 font-weight-6">Configure Container</Title>
-                            <div className="config-form">
+                            <div className="d-flex column gap-2 config-form">
                                 <div className="form-group">
                                     <label>Container Name</label>
                                     <Input
@@ -386,7 +386,7 @@ const CreateContainer: React.FC = () => {
                                 <div className="resources-section">
                                     <Title className="font-size-4 font-weight-6">Resources</Title>
                                     <div className="resource-slider-wrapper">
-                                        <div className="slider-header">
+                                        <div className="d-flex content-between slider-header">
                                             <label><Cpu size={16} /> CPU Cores</label>
                                             <span className="value-badge">{config.cpus} vCPU</span>
                                         </div>
@@ -397,14 +397,14 @@ const CreateContainer: React.FC = () => {
                                             value={config.cpus}
                                             onChange={(val) => setConfig(prev => ({ ...prev, cpus: val }))}
                                         />
-                                        <div className="slider-limits">
+                                        <div className="d-flex content-between slider-limits">
                                             <span>0.5 vCPU</span>
                                             <span>{maxCpus} vCPU(Max)</span>
                                         </div>
                                     </div>
 
                                     <div className="resource-slider-wrapper">
-                                        <div className="slider-header">
+                                        <div className="d-flex content-between slider-header">
                                             <label><HardDrive size={16} /> Memory</label>
                                             <span className="value-badge">{config.memory} MB</span>
                                         </div>
@@ -415,7 +415,7 @@ const CreateContainer: React.FC = () => {
                                             value={config.memory}
                                             onChange={(val) => setConfig(prev => ({ ...prev, memory: val }))}
                                         />
-                                        <div className="slider-limits">
+                                        <div className="d-flex content-between slider-limits">
                                             <span>128 MB</span>
                                             <span>{maxMemory} MB(Max)</span>
                                         </div>
@@ -423,13 +423,13 @@ const CreateContainer: React.FC = () => {
                                 </div>
 
                                 <div className="advanced-config">
-                                    <div className="config-group">
-                                        <div className="group-header">
+                                    <div className="d-flex column config-group">
+                                        <div className="d-flex content-between items-center group-header">
                                             <Title className="font-size-3 font-weight-6">Port Mapping</Title>
-                                            <button onClick={addPort} className="add-btn"><Plus size={14} /> Add Port</button>
+                                            <button onClick={addPort} className="d-flex items-center gap-025 add-btn"><Plus size={14} /> Add Port</button>
                                         </div>
                                         {config.ports.map((port, i) => (
-                                            <div key={i} className="port-row">
+                                            <div key={i} className="d-flex gap-05 port-row">
                                                 <div className="input-wrapper">
                                                     <label>Private</label>
                                                     <Input
@@ -449,26 +449,26 @@ const CreateContainer: React.FC = () => {
                                                         className="port-input"
                                                     />
                                                 </div>
-                                                <button onClick={() => removePort(i)} className="remove-btn">
+                                                <button onClick={() => removePort(i)} className="d-flex flex-center remove-btn">
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
                                         ))}
                                         {config.ports.length === 0 && (
-                                            <div className="empty-state-small">
+                                            <div className="d-flex items-center gap-075 empty-state-small">
                                                 <AlertCircle size={16} />
                                                 <span>No ports exposed. Add a port to access your container.</span>
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="config-group">
-                                        <div className="group-header">
+                                    <div className="d-flex column config-group">
+                                        <div className="d-flex content-between items-center group-header">
                                             <Title className="font-size-3 font-weight-6">Environment Variables</Title>
-                                            <button onClick={addEnv} className="add-btn"><Plus size={14} /> Add Variable</button>
+                                            <button onClick={addEnv} className="d-flex items-center gap-025 add-btn"><Plus size={14} /> Add Variable</button>
                                         </div>
                                         {config.env.map((env, i) => (
-                                            <div key={i} className="env-row">
+                                            <div key={i} className="d-flex gap-05 env-row">
                                                 <Input
                                                     type="text"
                                                     placeholder="KEY"
@@ -483,13 +483,13 @@ const CreateContainer: React.FC = () => {
                                                     onChange={(val) => updateEnv(i, 'value', val as string)}
                                                     className="env-input"
                                                 />
-                                                <button onClick={() => removeEnv(i)} className="remove-btn">
+                                                <button onClick={() => removeEnv(i)} className="d-flex flex-center remove-btn">
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>
                                         ))}
                                         {config.env.length === 0 && (
-                                            <div className="empty-state-small">
+                                            <div className="d-flex items-center gap-075 empty-state-small">
                                                 <AlertCircle size={16} />
                                                 <span>No environment variables configured.</span>
                                             </div>
@@ -497,7 +497,7 @@ const CreateContainer: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="step-actions">
+                            <div className="d-flex content-end gap-1 step-actions">
                                 <Button onClick={() => setStep(1)} className="secondary-btn">Back</Button>
                                 <Button onClick={() => setStep(3)} className="primary-btn">Next: Review</Button>
                             </div>
@@ -512,34 +512,30 @@ const CreateContainer: React.FC = () => {
                                     <span className="label">Name</span>
                                     <span className="value">{config.name}</span>
                                 </div>
-                                <div className="review-item">
+                                <div className="d-flex content-between review-item">
                                     <span className="label">Team</span>
                                     <span className="value">{teams.find(t => t._id === selectedTeamId)?.name || 'None'}</span>
                                 </div>
-                                <div className="review-item">
+                                <div className="d-flex content-between review-item">
                                     <span className="label">Image</span>
                                     <span className="value monospace">{selectedTemplate ? TEMPLATES.find(t => t.id === selectedTemplate)?.image : customImage}</span>
                                 </div>
-                                <div className="review-item">
+                                <div className="d-flex content-between review-item">
                                     <span className="label">CPU</span>
                                     <span className="value">{config.cpus} vCPU</span>
                                 </div>
-                                <div className="review-item">
+                                <div className="d-flex content-between review-item">
                                     <span className="label">Memory</span>
                                     <span className="value">{config.memory} MB</span>
                                 </div>
-                                <div className="review-item">
+                                <div className="d-flex content-between review-item">
                                     <span className="label">Ports</span>
                                     <span className="value">{config.ports.length > 0 ? config.ports.map(p => `${p.private}:${p.public || 'Auto'}`).join(', ') : 'None'}</span>
                                 </div>
                             </div>
-                            <div className="step-actions">
+                            <div className="d-flex content-end gap-1 step-actions">
                                 <Button onClick={() => setStep(2)} className="secondary-btn">Back</Button>
-                                <Button
-                                    onClick={handleCreate}
-                                    isLoading={loading}
-                                    className="primary-btn deploy-btn"
-                                >
+                                <Button onClick={handleCreate} isLoading={loading} className="d-flex primary-btn deploy-btn">
                                     {!loading && <Box size={18} style={{ marginRight: '8px' }} />}
                                     {!loading && "Deploy Container"}
                                 </Button>

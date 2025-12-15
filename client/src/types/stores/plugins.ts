@@ -19,6 +19,7 @@ export interface BoxMetric {
     decimals?: number;
     unit?: string;
     color?: string;
+    as_record_title?: boolean;
 }
 
 export interface RasterConfig {

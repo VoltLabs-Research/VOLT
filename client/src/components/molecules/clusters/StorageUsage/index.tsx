@@ -48,13 +48,13 @@ export function StorageUsage() {
   const totalPercentage = Math.round((totalUsed / totalCapacity) * 100)
 
   return (
-    <div className="storage-usage-container">
-      <div className="storage-usage-header">
-        <div className="storage-usage-title-group">
+    <div className="d-flex column storage-usage-container">
+      <div className="d-flex content-between items-center storage-usage-header">
+        <div className="d-flex items-center gap-05 storage-usage-title-group">
           <HardDrive className="storage-usage-icon" />
           <Title className='font-size-3 storage-usage-title'>Storage Distribution</Title>
         </div>
-        <div className="storage-total-badge">
+        <div className="d-flex column items-end gap-025 storage-total-badge">
           <span className="storage-total-value">{totalPercentage}%</span>
           <span className="storage-total-label">
             {(totalUsed / 1000).toFixed(1)}TB / {(totalCapacity / 1000).toFixed(1)}TB
@@ -92,16 +92,16 @@ export function StorageUsage() {
           <Legend
             wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
             content={() => (
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', fontSize: '12px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <div className="d-flex content-center gap-1" style={{ fontSize: '12px' }}>
+                <span className="d-flex items-center gap-025">
                   <span style={{ width: '12px', height: '12px', backgroundColor: '#0A84FF', borderRadius: '2px' }}></span>
                   Used Storage
                 </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span className="d-flex items-center gap-025">
                   <span style={{ width: '12px', height: '12px', backgroundColor: '#FF9F0A', borderRadius: '2px' }}></span>
                   {'>'}70% Warning
                 </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <span className="d-flex items-center gap-025">
                   <span style={{ width: '12px', height: '12px', backgroundColor: '#FF453A', borderRadius: '2px' }}></span>
                   {'>'}85% Critical
                 </span>

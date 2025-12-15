@@ -3,10 +3,10 @@ import { Skeleton } from '@mui/material';
 
 const DashboardStatsSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => {
     return(
-        <div className='dashboard-stats-container'>
+        <div className='d-flex dashboard-stats-container'>
             {Array.from({ length: count }).map((_, i) => (
                 <div className='dashboard-stat-container' key={i}>
-                    <div className='dashboard-stat-left-container'>
+                    <div className='d-flex column gap-2 dashboard-stat-left-container'>
                         <div className='dashboard-stat-header-container'>
                             <i className='dashboard-stat-icon-container'>
                                 <Skeleton variant='circular' width={28} height={28} />
@@ -15,11 +15,11 @@ const DashboardStatsSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => 
                                 <Skeleton variant='text' width='100%' height={22} />
                             </div>
                         </div>
-                        <div className='dashboard-stat-footer-container'>
+                        <div className='d-flex column gap-1'>
                             <div style={{ width: 100 }}>
                                 <Skeleton variant='text' width='100%' height={36} />
                             </div>
-                            <div className='dashboard-stat-last-month-container'>
+                            <div className='d-flex gap-025 dashboard-stat-last-month-container'>
                                 <div className='dashboard-stat-last-month-icon-container' style={{ gap: 6, display: 'flex', alignItems: 'center' }}>
                                     <Skeleton variant='circular' width={16} height={16} />
                                     <Skeleton variant='text' width={36} height={16} />

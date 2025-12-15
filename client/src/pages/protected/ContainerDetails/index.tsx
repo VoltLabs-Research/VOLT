@@ -11,9 +11,9 @@ import {
     Activity,
     ExternalLink,
     Box,
-    Layers
+    Layers,
+    RefreshCw
 } from 'lucide-react';
-import { Tooltip } from 'chart.js';
 import useToast from '@/hooks/ui/use-toast';
 import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
 import ContainerFileExplorer from '@/components/organisms/containers/ContainerFileExplorer';
@@ -23,7 +23,7 @@ import containerApi from '@/services/api/container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import './ContainerDetails.css';
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const ContainerDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();

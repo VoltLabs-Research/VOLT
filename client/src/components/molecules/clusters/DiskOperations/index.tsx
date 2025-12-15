@@ -89,7 +89,7 @@ export function DiskOperations() {
   const currentSpeed = metrics?.diskOperations?.speed || 0;
 
   const chartContent = (
-    <div className="disk-ops-chart">
+    <div className="d-flex column flex-1 disk-ops-chart">
       <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
         <defs>
           <linearGradient id="diskReadGradient" x1="0" y1="0" x2="0" y2="1">
@@ -125,16 +125,16 @@ export function DiskOperations() {
         )}
       </svg>
 
-      <div className="disk-ops-legend">
-        <div className="disk-ops-legend-item">
+      <div className="d-flex content-center gap-1 disk-ops-legend">
+        <div className="d-flex items-center gap-0375 disk-ops-legend-item">
           <span className="disk-ops-legend-dot" style={{ backgroundColor: '#0A84FF' }}></span>
           <span className="disk-ops-legend-label">Read(MB/s)</span>
         </div>
-        <div className="disk-ops-legend-item">
+        <div className="d-flex items-center gap-0375 disk-ops-legend-item">
           <span className="disk-ops-legend-dot" style={{ backgroundColor: '#30D158' }}></span>
           <span className="disk-ops-legend-label">Write(MB/s)</span>
         </div>
-        <div className="disk-ops-legend-item">
+        <div className="d-flex items-center gap-0375 disk-ops-legend-item">
           <span className="disk-ops-legend-dot" style={{ backgroundColor: '#FF9F0A' }}></span>
           <span className="disk-ops-legend-label">IOPS(x10)</span>
         </div>

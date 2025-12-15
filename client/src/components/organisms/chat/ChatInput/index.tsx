@@ -69,7 +69,7 @@ const ChatInput = ({
 
     return (
         <form onSubmit={handleSend} className='chat-input-container'>
-            <div className='chat-input-wrapper'>
+            <div className='d-flex items-center gap-075 chat-input-wrapper'>
                 <input
                     type='file'
                     ref={fileRef}
@@ -106,7 +106,7 @@ const ChatInput = ({
 
                 <button
                     type='submit'
-                    className='chat-send-button'
+                    className='d-flex flex-center chat-send-button'
                     title='Send Message'
                     disabled={disabled || (!message.trim() && files.length === 0)}
                 >
@@ -123,11 +123,11 @@ const ChatInput = ({
 
             {previews.length > 0 && (
                 <div className='chat-file-previews-container'>
-                    <div className='chat-file-previews-header'>
+                    <div className='d-flex items-center content-between chat-file-previews-header'>
                         <span>Archivos seleccionados({previews.length})</span>
                         <button
                             type='button'
-                            className='chat-clear-files'
+                            className='d-flex flex-center chat-clear-files'
                             onClick={handleClearFiles}
                         >✕</button>
                     </div>
@@ -135,13 +135,13 @@ const ChatInput = ({
                         {previews.map((item, index) => (
                             <div key={index} className='chat-file-preview-item'>
                                 <img src={item.preview} alt={item.file.name} className='chat-file-preview-image' />
-                                <div className='chat-file-preview-info'>
+                                <div className='d-flex column gap-025 chat-file-preview-info'>
                                     <span className='chat-file-preview-name'>{item.file.name}</span>
                                     <span className='chat-file-preview-size'>{(item.file.size / 1024).toFixed(1)} KB</span>
                                 </div>
                                 <button
                                     type='button'
-                                    className='chat-file-preview-remove'
+                                    className='d-flex flex-center chat-file-preview-remove'
                                     onClick={() => {
                                         setFiles(prev => prev.filter((_, i) => i !== index));
                                         setPreviews(prev => prev.filter((_, i) => i !== index));

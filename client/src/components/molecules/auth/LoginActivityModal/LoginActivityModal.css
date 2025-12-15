@@ -29,9 +29,6 @@
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(8px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: 1000;
     padding: 1rem;
 }
@@ -44,24 +41,13 @@
     width: 100%;
     max-width: 800px;
     max-height: 80vh;
-    display: flex;
-    flex-direction: column;
     overflow: hidden;
 }
 
 .login-activity-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     padding: 1.5rem;
     border-bottom: 1px solid var(--color-border-soft);
     background: var(--color-surface-2);
-}
-
-.login-activity-modal-title {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
 }
 
 .login-activity-modal-title h2 {
@@ -71,29 +57,14 @@
     color: var(--color-text-primary);
 }
 
-.login-activity-modal-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
 .login-activity-modal-content {
-    flex: 1;
+
     overflow-y: auto;
     padding: 1.5rem;
 }
 
 /* Activity Loading Skeleton */
-.activity-loading {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
 .activity-skeleton {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
     padding: 1rem;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
@@ -108,12 +79,6 @@
     animation: pulse 1.5s ease-in-out infinite;
 }
 
-.activity-skeleton-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
 
 .activity-skeleton-line {
     height: 1rem;
@@ -129,10 +94,6 @@
 /* Activity Error/Empty States */
 .activity-error,
 .activity-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     text-align: center;
     padding: 3rem 1rem;
     color: var(--color-text-secondary);
@@ -153,16 +114,7 @@
 }
 
 /* Activity List */
-.activity-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
 .activity-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 1rem;
     padding: 1.25rem;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
@@ -185,9 +137,6 @@
 }
 
 .activity-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 0.5rem;
@@ -204,19 +153,6 @@
     color: var(--accent-red);
 }
 
-.activity-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.activity-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-}
 
 .activity-title {
     font-size: 1rem;
@@ -228,12 +164,6 @@
     font-size: 0.875rem;
     color: var(--color-text-secondary);
     white-space: nowrap;
-}
-
-.activity-details {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
 }
 
 .activity-description {
@@ -250,9 +180,6 @@
 
 /* Action Buttons */
 .action-button {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
     padding: 0.5rem 1rem;
     border: none;
     border-radius: 0.5rem;
@@ -302,9 +229,12 @@
 
 /* Animations */
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.5;
     }
@@ -318,6 +248,7 @@
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }
@@ -329,21 +260,21 @@
         margin: 0.5rem;
         max-height: 90vh;
     }
-    
+
     .login-activity-modal-header {
         padding: 1rem;
     }
-    
+
     .login-activity-modal-content {
         padding: 1rem;
     }
-    
+
     .activity-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
     }
-    
+
     .activity-time {
         white-space: normal;
     }

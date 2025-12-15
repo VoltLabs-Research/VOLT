@@ -16,9 +16,6 @@
 }
 
 .back-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     width: 40px;
     height: 40px;
     border-radius: 0.8rem;
@@ -49,9 +46,6 @@
 }
 
 .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
     padding: 1rem 1.5rem;
     background: transparent;
     border: none;
@@ -61,7 +55,6 @@
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: left;
-    border-radius: 0;
     position: relative;
     margin: 0 0.5rem;
     border-radius: 0.8rem;
@@ -92,8 +85,8 @@
     border-radius: 0 2px 2px 0;
 }
 
-@media (max-width: 768px){
-    .settings-sidebar{
+@media (max-width: 768px) {
+    .settings-sidebar {
         width: 100%;
         position: static;
         max-height: none;

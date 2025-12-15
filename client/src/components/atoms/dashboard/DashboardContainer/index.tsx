@@ -26,7 +26,7 @@ import './DashboardContainer.css';
 const DashboardContainer = ({ children, pageName, className = '' }) => {
 
     return(
-        <Container className={'p-2 w-max h-max dashboard-container '.concat(className + '-wrapper')}>
+        <Container className={'p-2 wh-max h-max sm:p-1 dashboard-container '.concat(className + '-wrapper')}>
             <Container className={className}>
                 {children}
             </Container>

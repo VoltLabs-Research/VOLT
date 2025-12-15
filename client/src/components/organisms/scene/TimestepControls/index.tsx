@@ -40,9 +40,9 @@ const TimestepControls: React.FC = () => {
         setCurrentTimestep
     } = usePlaybackStore();
 
-    if(currentTimestep === undefined) return null;
+    if (currentTimestep === undefined) return null;
 
-    return(
+    return (
         <EditorWidget className='editor-timestep-controls' draggable={false}>
             <PlayControls
                 isPlaying={isPlaying}

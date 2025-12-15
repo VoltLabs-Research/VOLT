@@ -13,8 +13,8 @@ interface DataPoint {
   self: number
 }
 
-function createPathData(points: number[], maxValue: number, width: number, height: number): string{
-  if(points.length < 2) return ''
+function createPathData(points: number[], maxValue: number, width: number, height: number): string {
+  if (points.length < 2) return ''
 
   const stepX = width / Math.max(1, points.length - 1)
   const scaleY = height / maxValue
@@ -28,7 +28,7 @@ function createPathData(points: number[], maxValue: number, width: number, heigh
   return path
 }
 
-export function ResponseTimeChart(){
+export function ResponseTimeChart() {
   const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics()
   const [history, setHistory] = useState<DataPoint[]>([])
   const chartWidth = 100
@@ -36,12 +36,12 @@ export function ResponseTimeChart(){
 
   // Preload with historical data
   useEffect(() => {
-    if(isHistoryLoaded && metricsHistory.length > 0 && history.length === 0){
+    if (isHistoryLoaded && metricsHistory.length > 0 && history.length === 0) {
       console.log('[ResponseTimeChart] Preloading with', metricsHistory.length, 'historical points')
       const historicalData = metricsHistory
-          .filter(m => m.responseTimes)
-          .slice(-MAX_POINTS)
-          .map(m => ({
+        .filter(m => m.responseTimes)
+        .slice(-MAX_POINTS)
+        .map(m => ({
           mongodb: m.responseTimes!.mongodb,
           redis: m.responseTimes!.redis,
           minio: m.responseTimes!.minio || 0,
@@ -52,7 +52,7 @@ export function ResponseTimeChart(){
   }, [isHistoryLoaded, metricsHistory])
 
   useEffect(() => {
-    if(metrics?.responseTimes){
+    if (metrics?.responseTimes) {
       setHistory(prev => {
         const newHistory = [...prev, {
           mongodb: metrics.responseTimes!.mongodb,
@@ -93,7 +93,7 @@ export function ResponseTimeChart(){
   ]
 
   const maxValue = Math.max(
-      ...history.flatMap(d => [d.mongodb, d.redis, d.minio, d.self]),
+    ...history.flatMap(d => [d.mongodb, d.redis, d.minio, d.self]),
     100
   )
 
@@ -101,9 +101,9 @@ export function ResponseTimeChart(){
 
   const chartContent = (
     <>
-      <div className="response-chart-legend">
+      <div className="d-flex items-center response-chart-legend">
         {regions.map((region) => (
-          <div key={region.name} className="response-chart-legend-item">
+          <div key={region.name} className="d-flex items-center gap-05 response-chart-legend-item">
             <div className="response-chart-legend-dot" style={{ backgroundColor: region.color }} />
             <span className="response-chart-legend-label">{region.name}</span>
             <span className="response-chart-legend-value">{region.value}ms</span>
@@ -136,7 +136,7 @@ export function ResponseTimeChart(){
             const points = history.map(d => d[region.key])
             const pathData = createPathData(points, maxValue, chartWidth, chartHeight)
 
-            return(
+            return (
               <path
                 key={region.key}
                 d={pathData}
@@ -150,7 +150,7 @@ export function ResponseTimeChart(){
         </svg>
 
         {/* Y-axis labels */}
-        <div className="response-chart-y-labels">
+        <div className="d-flex column content-between response-chart-y-labels">
           {Array.from({ length: 6 }, (_, i) => {
             const value = Math.round(maxValue - (maxValue / 5) * i)
             return <span key={i} className="response-chart-y-label">{value}ms</span>
@@ -160,7 +160,7 @@ export function ResponseTimeChart(){
     </>
   )
 
-  return(
+  return (
     <ChartContainer
       icon={() => <div className="response-chart-bar" />}
       title="Response Time"

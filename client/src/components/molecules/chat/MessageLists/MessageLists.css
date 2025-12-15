@@ -3,9 +3,7 @@
     flex: 1;
     overflow-y: auto;
     padding: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+
     background: var(--color-bg);
     backdrop-filter: blur(10px);
     position: relative;
@@ -33,10 +31,7 @@
 
 /* Empty Messages */
 .chat-empty-messages {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+
     height: 100%;
     text-align: center;
     padding: 2rem;

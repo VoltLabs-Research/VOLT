@@ -92,17 +92,17 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
     if (!isOpen) return null;
 
     return (
-        <div className='modal-overlay'>
-            <div className='create-container-modal'>
-                <div className='modal-header'>
+        <div className='d-flex flex-center modal-overlay'>
+            <div className='d-flex column create-container-modal'>
+                <div className='d-flex content-between items-center modal-header'>
                     <Title className='font-size-2'>Create Container</Title>
                     <button onClick={onClose} className='close-btn'>
                         <IoClose size={24} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className='modal-body'>
-                    <div className='form-group'>
+                <form onSubmit={handleSubmit} className='d-flex column gap-1-25 modal-body'>
+                    <div className='d-flex column gap-05 form-group'>
                         <label>Container Name</label>
                         <input
                             type='text'
@@ -113,7 +113,7 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
                         />
                     </div>
 
-                    <div className='form-group'>
+                    <div className='d-flex column gap-05 form-group'>
                         <label>Docker Image</label>
                         <input
                             type='text'
@@ -124,7 +124,7 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
                         />
                     </div>
 
-                    <div className='form-group'>
+                    <div className='d-flex column gap-05 form-group'>
                         <label>Team</label>
                         <select
                             value={teamId}
@@ -139,15 +139,15 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
                         </select>
                     </div>
 
-                    <div className='form-section'>
-                        <div className='section-header'>
+                    <div className='d-flex column gap-075 form-section'>
+                        <div className='d-flex content-between items-center section-header'>
                             <label>Environment Variables</label>
-                            <button type='button' onClick={handleAddEnv} className='add-btn-small'>
+                            <button type='button' onClick={handleAddEnv} className='d-flex items-center gap-025 add-btn-small'>
                                 <IoAdd /> Add
                             </button>
                         </div>
                         {envVars.map((env, i) => (
-                            <div key={i} className='env-row'>
+                            <div key={i} className='d-flex items-center gap-075 env-row'>
                                 <input
                                     placeholder='KEY'
                                     value={env.key}
@@ -166,15 +166,15 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
                     </div>
 
                     <div className='form-section'>
-                        <div className='section-header'>
+                        <div className='d-flex content-between items-center section-header'>
                             <label>Port Mapping</label>
-                            <button type='button' onClick={handleAddPort} className='add-btn-small'>
+                            <button type='button' onClick={handleAddPort} className='d-flex items-center gap-025 add-btn-small'>
                                 <IoAdd /> Add
                             </button>
                         </div>
                         {ports.map((port, i) => (
-                            <div key={i} className='port-row'>
-                                <div className='port-input'>
+                            <div key={i} className='d-flex items-center gap-075 port-row'>
+                                <div className='d-flex column gap-025 port-input'>
                                     <span>Container</span>
                                     <input
                                         type='number'
@@ -183,7 +183,7 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
                                     />
                                 </div>
                                 <div className='port-arrow'>→</div>
-                                <div className='port-input'>
+                                <div className='d-flex column gap-025 port-input'>
                                     <span>Host</span>
                                     <input
                                         type='number'
@@ -198,7 +198,7 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
                         ))}
                     </div>
 
-                    <div className='modal-footer'>
+                    <div className='d-flex content-end gap-075 modal-footer'>
                         <button type='button' onClick={onClose} className='cancel-btn'>Cancel</button>
                         <button type='submit' disabled={loading} className='submit-btn'>
                             {loading ? 'Creating...' : 'Create Container'}

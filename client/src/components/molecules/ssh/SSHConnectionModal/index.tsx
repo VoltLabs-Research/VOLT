@@ -143,20 +143,20 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="ssh-connection-modal-overlay" onClick={onClose}>
-            <div className="ssh-connection-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="ssh-connection-modal-header">
-                    <div className="ssh-connection-modal-title">
+        <div className="d-flex flex-center ssh-connection-modal-overlay" onClick={onClose}>
+            <div className="d-flex column ssh-connection-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="d-flex items-center content-between ssh-connection-modal-header">
+                    <div className="d-flex items-center gap-075 ssh-connection-modal-title">
                         <TbServer size={24} />
                         <Title className='font-size-3'>{mode === 'create' ? 'Add SSH Connection' : 'Edit SSH Connection'}</Title>
                     </div>
-                    <button className="ssh-connection-modal-close" onClick={onClose}>
+                    <button className="d-flex flex-center ssh-connection-modal-close" onClick={onClose}>
                         <TbX size={20} />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="ssh-connection-modal-form">
-                    <div className="ssh-connection-modal-body">
+                <form onSubmit={handleSubmit} className="d-flex column flex-1 ssh-connection-modal-form">
+                    <div className="flex-1 ssh-connection-modal-body">
                         {error && (
                             <div className="ssh-connection-modal-error">
                                 {error}
@@ -232,17 +232,17 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
 
                         {mode === 'edit' && connection && (
                             <div className="ssh-connection-form-group">
-                                <div className="ssh-connection-test-container">
+                                <div className="d-flex items-center gap-075 ssh-connection-test-container">
                                     <button
                                         type="button"
-                                        className="ssh-connection-test-btn"
+                                        className="d-flex items-center gap-05 ssh-connection-test-btn"
                                         onClick={handleTest}
                                         disabled={testing}
                                     >
                                         {testing ? 'Testing...' : 'Test Connection'}
                                     </button>
                                     {testResult && (
-                                        <div className={`ssh-connection-test-result ${testResult.valid ? 'success' : 'error'}`}>
+                                        <div className={`d-flex items-center gap-05 ssh-connection-test-result ${testResult.valid ? 'success' : 'error'}`}>
                                             {testResult.valid ? (
                                                 <>
                                                     <TbCheck size={16} />
@@ -261,7 +261,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                         )}
                     </div>
 
-                    <div className="ssh-connection-modal-footer">
+                    <div className="d-flex content-end gap-075 ssh-connection-modal-footer">
                         <button type="button" onClick={onClose} className="ssh-connection-modal-cancel">
                             Cancel
                         </button>

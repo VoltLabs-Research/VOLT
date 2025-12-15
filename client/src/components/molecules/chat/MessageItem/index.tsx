@@ -41,19 +41,19 @@ const MessageItem: React.FC<MessageItemProps> = ({
     const sender = msg.sender;
 
     return (
-        <div className={`chat-message ${isOwn ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''} ${showAvatar ? 'with-avatar' : ''}`}>
+        <div className={`d-flex chat-message ${isOwn ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''} ${showAvatar ? 'with-avatar' : ''}`}>
             {showAvatar && (
-                <div className='chat-message-avatar'>
+                <div className='d-flex flex-center chat-message-avatar'>
                     {sender?.avatar ? (
                         <img src={sender.avatar} alt="Sender Avatar" className='chat-avatar-img' />
                     ) : (
-                        <span className='chat-avatar-initial'>
+                        <span className='d-flex flex-center chat-avatar-initial'>
                             {sender?.firstName?.[0]?.toUpperCase() || '?'}
                         </span>
                     )}
                 </div>
             )}
-            <div className='chat-message-wrapper'>
+            <div className='d-flex column chat-message-wrapper'>
                 {showAvatar && (
                     <div className='chat-message-sender-name'>
                         {sender?.firstName} {sender?.lastName}
@@ -79,9 +79,9 @@ const MessageItem: React.FC<MessageItemProps> = ({
                                 onDelete={() => onDelete(msg._id)}
                             />
                             {isReactionsOpen && (
-                                <div className='chat-message-reactions-menu'>
+                                <div className='d-flex gap-025 chat-message-reactions-menu'>
                                     {['👍', '❤️', '😂', '😮', '😢', '😡'].map(e =>
-                                        <button key={e} className='chat-reaction-btn' onClick={() => {
+                                        <button key={e} className='d-flex flex-center chat-reaction-btn' onClick={() => {
                                             onToggleReaction(msg._id, e);
                                             onToggleReactions(msg._id);
                                         }}>{e}</button>
@@ -95,7 +95,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                         </>
                     )}
 
-                    <div className='chat-message-time'>{formatTimeAgo(msg.createdAt)}</div>
+                    <div className='d-flex items-center gap-05 chat-message-time'>{formatTimeAgo(msg.createdAt)}</div>
                 </div>
             </div>
         </div>

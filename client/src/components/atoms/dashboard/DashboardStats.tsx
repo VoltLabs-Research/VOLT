@@ -34,7 +34,7 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
     }
 
     return (
-        <div className='dashboard-stats-container'>
+        <div className='d-flex dashboard-stats-container'>
             {cards.map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain }, index) => {
                 const iconKey = name.replace(/\s+/g, '');
                 const Icon = icons[iconKey] || HiOutlineServerStack;
@@ -47,17 +47,17 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
                         style={{ cursor: isClickable ? 'pointer' : 'default' }}
                         key={index}
                     >
-                        <div className='dashboard-stat-left-container'>
-                            <div className='dashboard-stat-header-container'>
-                                <i className='dashboard-stat-icon-container'>
+                        <div className='d-flex column gap-2 dashboard-stat-left-container'>
+                            <div className='d-flex items-center dashboard-stat-header-container'>
+                                <i className='d-flex flex-center dashboard-stat-icon-container'>
                                     <Icon />
                                 </i>
                                 <Title className='font-size-3 dashboard-stat-title'>{name}</Title>
                             </div>
-                            <div className='dashboard-stat-footer-container'>
+                            <div className='d-flex column gap-1'>
                                 <Title className='font-size-5 color-primary'>{count}</Title>
-                                <div className='dashboard-stat-last-month-container'>
-                                    <div className='dashboard-stat-last-month-icon-container'>
+                                <div className='d-flex gap-025 dashboard-stat-last-month-container'>
+                                    <div className='d-flex items-center gap-05 dashboard-stat-last-month-icon-container'>
                                         <i className={`dashboard-stat-last-month-icon ${up ? 'up' : 'down'}`}>
                                             {up ? <FaArrowUpLong /> : <FaArrowDownLong />}
                                         </i>

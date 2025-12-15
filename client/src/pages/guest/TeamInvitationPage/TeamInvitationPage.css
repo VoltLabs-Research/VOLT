@@ -1,7 +1,3 @@
-.invitation-badge {
-    gap: 0.5rem;
-}
-
 .invitation-badge-text {
     font-size: 0.9rem;
     color: var(--color-zinc-400);
@@ -48,21 +44,9 @@
     margin: 0 auto;
 }
 
-.btn-icon {
-    margin-right: 0.5rem;
-}
-
 .error-badge {
     margin-top: 1.5rem;
     background: rgba(239, 68, 68, 0.1);
     border-color: rgba(239, 68, 68, 0.2);
     color: #ef4444;
-}
-
-.skeleton-details {
-    gap: 1.5rem;
-}
-
-.skeleton-actions {
-    gap: 1rem;
 }

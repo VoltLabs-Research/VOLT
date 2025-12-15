@@ -1,5 +1,4 @@
-.dashboard-stats-container{
-    display: flex;
+.dashboard-stats-container {
     width: 100%;
     border-radius: 1rem;
     border: 1px solid var(--color-border);
@@ -16,46 +15,43 @@
     width: 100%;
 }
 
-.dashboard-body-left-container{
+.dashboard-body-left-container {
     height: 100%;
     width: 600px;
     gap: 2rem;
 }
 
-.dashboard-body-right-container{
+.dashboard-body-right-container {
     width: calc(100% - 600px - 3rem);
     gap: 2rem;
 }
 
-.badge-container{
+.badge-container {
     position: absolute;
     z-index: 300;
     padding: .5rem 1.2rem;
     border-radius: 5rem;
     color: var(--badge-fg);
-    display: flex;
-    align-items: center;
-    gap: .5rem;
 }
 
-.scene-preview-name-badge{
+.scene-preview-name-badge {
     top: 1rem;
     left: 1rem;
 }
 
-.scene-preview-natoms-badge{
+.scene-preview-natoms-badge {
     right: 1rem;
     bottom: 1rem;
 }
 
-.scene-preview-navigate-icon{
+.scene-preview-navigate-icon {
     right: 1rem;
     top: 1rem;
     padding: .5rem;
     font-size: 1.5rem;
 }
 
-.scene-preview-container{
+.scene-preview-container {
     position: relative;
     height: 100vh;
     box-shadow: var(--shadow-elevated);
@@ -64,17 +60,17 @@
     overflow: hidden;
 }
 
-.dashboard-body-left-header-title{
+.dashboard-body-left-header-title {
     font-size: 2rem;
     color: var(--color-text-primary);
     font-weight: 550;
 }
 
-.dashboard-stat-title{
+.dashboard-stat-title {
     color: var(--color-text-primary);
 }
 
-.dashboard-stat-arrow-icon-container{
+.dashboard-stat-arrow-icon-container {
     position: absolute;
     bottom: 1rem;
     right: 1rem;
@@ -84,15 +80,13 @@
     color: var(--accent-blue);
 }
 
-.dashboard-stat-container:hover .dashboard-stat-arrow-icon-container{
+.dashboard-stat-container:hover .dashboard-stat-arrow-icon-container {
     opacity: 1;
     transform: translateX(4px);
 }
 
-.dashboard-stat-container{
+.dashboard-stat-container {
     width: 33.3%;
-    display: flex;
-    gap: 2rem;
     padding: 1.5rem;
     position: relative;
     cursor: pointer;
@@ -100,191 +94,148 @@
     background: var(--clusters-card);
 }
 
-.dashboard-stat-container:hover{
+.dashboard-stat-container:hover {
     background: var(--color-surface-2);
 }
 
-.dashboard-stat-container:not(:last-child){
+.dashboard-stat-container:not(:last-child) {
     border-right: 1px solid var(--color-border);
 }
 
-.raster-frame{
+.raster-frame {
     width: 100%;
 }
 
-.dashboard-stat-analytic-container{
+.dashboard-stat-analytic-container {
     position: absolute;
     right: 2rem;
 }
 
-.dashboard-stat-analytic-container:has(.MuiChartsGrid-root){
+.dashboard-stat-analytic-container:has(.MuiChartsGrid-root) {
     top: 3rem;
 }
 
-.dashboard-stat-left-container{
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+.dashboard-stat-left-container {
     width: 100%;
-    gap: 3rem;
 }
 
-.dashboard-stat-header-container{
-    display: flex;
-    align-items: center;
+.dashboard-stat-header-container {
     gap: 1rem;
 }
 
-.dashboard-stat-last-month-icon-container{
-    display: flex;
-    gap: .5rem;
+.dashboard-stat-last-month-icon-container {
     color: #28b85d;
 }
 
-.dashboard-stat-last-month-helper-text{
+.dashboard-stat-last-month-helper-text {
     font-weight: 600;
     font-size: .9rem;
 }
 
-.dashboard-stat-last-month-title{
+.dashboard-stat-last-month-title {
     font-size: .9rem;
     color: var(--color-text-primary);
 }
 
-.dashboard-stat-last-month-container{
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-}
-
-.dashboard-stat-footer-container{
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-}
-
-.dashboard-stat-icon-container{
+.dashboard-stat-icon-container {
     background: var(--color-surface-2);
     width: 40px;
     height: 40px;
     border-radius: 0.75rem;
     color: var(--color-text-muted);
     font-size: 1.3rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     border: 1px solid var(--color-border);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.dashboard-stat-container:hover .dashboard-stat-icon-container{
+.dashboard-stat-container:hover .dashboard-stat-icon-container {
     color: var(--accent-blue);
     border-color: var(--accent-blue);
 }
 
-.dashboard-stat-analytic-container:has(.MuiSkeleton-root){
+.dashboard-stat-analytic-container:has(.MuiSkeleton-root) {
     right: 0;
 }
 
-.dashboard-wrapper-container{
-    display: flex;
-    height: 100%;
-    gap: 3rem;
+body.jobs-history-expanded {
+    overflow: hidden;
 }
 
-
-    body.jobs-history-expanded {
-        overflow: hidden;
-    }
-
-    .jobs-history-viewer-enhanced {
-        position: absolute;
-        z-index: 10;
-        overflow: hidden;
-        transition: .5s;
-        cursor: pointer;
-        width: 18rem;
-        height: 4rem;
-        left: 1rem;
-        bottom: 1rem;
-        border-radius: 2.25rem;
-        padding: 0.875rem 1.75rem;
+.jobs-history-viewer-enhanced {
+    position: absolute;
+    z-index: 10;
+    overflow: hidden;
+    transition: .5s;
+    cursor: pointer;
+    width: 18rem;
+    height: 4rem;
+    left: 1rem;
+    bottom: 1rem;
+    border-radius: 2.25rem;
+    padding: 0.875rem 1.75rem;
     background: var(--glass-bg);
     backdrop-filter: blur(18px) saturate(160%);
     box-shadow: var(--shadow-glass);
-        transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1), height 0.5s cubic-bezier(0.65, 0, 0.35, 1), left 0.5s cubic-bezier(0.65, 0, 0.35, 1), bottom 0.5s cubic-bezier(0.65, 0, 0.35, 1), border-radius 0.5s cubic-bezier(0.65, 0, 0.35, 1);
-    }
-    .jobs-history-viewer-enhanced.expanded {
-        left: 1rem;
-        bottom: 1rem;
-        border-radius: 1rem;
-        padding: 0;
-        cursor: default;
+    transition: width 0.5s cubic-bezier(0.65, 0, 0.35, 1), height 0.5s cubic-bezier(0.65, 0, 0.35, 1), left 0.5s cubic-bezier(0.65, 0, 0.35, 1), bottom 0.5s cubic-bezier(0.65, 0, 0.35, 1), border-radius 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.jobs-history-viewer-enhanced.expanded {
+    left: 1rem;
+    bottom: 1rem;
+    border-radius: 1rem;
+    padding: 0;
+    cursor: default;
     width: 420px;
     height: clamp(280px, 36vh, 420px);
-    }
-    /* No interaction/editing modes */
-    
-    .jobs-history-viewer-enhanced.expanded 
-    .jobs-history-expanded-content {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s ease-in-out 0.2s;
-    }
-    .jobs-history-viewer-enhanced.expanded .jobs-history-expanded-content {
-        opacity: 1;
-        pointer-events: auto;
-    }
-    .jobs-history-viewer-header-enhanced {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--color-border-soft);
-        flex-shrink: 0;
-    }
-    /* Remove edit-mode backgrounds */
-    .header-content {
-        flex: 1;
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        gap: .2rem;
-    }
-    .jobs-history-subtitle {
-        margin-top: 0.25rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    
-    .close-button-enhanced:hover {
-        transform: scale(1.08);
-    color: var(--color-text-primary);
-        background: rgba(239, 68, 68, 0.85);
-    }
-    .jobs-history-viewer-body-enhanced {
-        flex: 1;
-        overflow-y: auto;
-    }
-    /* Remove glow effect for a calmer look */
-    
-    
-    
-    
+}
 
-/* TODO: */
-.trajectories-container:has(.progress-border-container) .simulation-container:has(.MuiSkeleton-root){
+.jobs-history-viewer-enhanced.expanded .jobs-history-expanded-content {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out 0.2s;
+}
+
+.jobs-history-viewer-enhanced.expanded .jobs-history-expanded-content {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.jobs-history-viewer-header-enhanced {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    flex-shrink: 0;
+}
+
+.header-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.jobs-history-subtitle {
+    margin-top: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.close-button-enhanced:hover {
+    transform: scale(1.08);
+    color: var(--color-text-primary);
+    background: rgba(239, 68, 68, 0.85);
+}
+
+.jobs-history-viewer-body-enhanced {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.trajectories-container:has(.progress-border-container) .simulation-container:has(.MuiSkeleton-root) {
     display: none;
 }
 
-/* Overlay blur for disabled sections when no trajectories */
-
-.scene-preview-processing{
+.scene-preview-processing {
     background: var(--glass-bg);
     backdrop-filter: blur(18px) saturate(160%);
     box-shadow: var(--shadow-glass);
@@ -292,7 +243,7 @@
     border-radius: 5rem;
 }
 
-.dashboard-canvas-overlay{
+.dashboard-canvas-overlay {
     position: absolute;
     inset: 0;
     background: linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.4) 100%);
@@ -305,64 +256,58 @@
     max-width: 380px;
 }
 
-@media screen and (max-width: 768px){
-    .dashboard-body-left-container{
+@media screen and (max-width: 768px) {
+    .dashboard-body-left-container {
         width: 100%;
     }
 
-    .dashboard-wrapper-container{
-        flex-direction: column;
-        height: unset;
-    }
-
-    /* Smaller expansion on mobile */
-    .jobs-history-viewer-enhanced.expanded{
+    .jobs-history-viewer-enhanced.expanded {
         left: 0;
         bottom: 0;
         width: 100%;
         height: 30vh;
     }
 
-    .header-content{
+    .header-content {
         gap: 0;
     }
 
-    .job-name{
+    .job-name {
         font-size: .7rem;
     }
 
-    .job-message{
+    .job-message {
         font-size: .75rem;
     }
 
-    .job-status-badge{
+    .job-status-badge {
         font-size: .7rem;
     }
 
-    .scene-preview-navigate-icon{
+    .scene-preview-navigate-icon {
         font-size: 1.2rem;
         top: 0.8rem;
     }
 
-    .scene-preview-container{
+    .scene-preview-container {
         height: 80vh;
     }
 
-    .dashboard-body-right-container{
+    .dashboard-body-right-container {
         width: 100%;
     }
 
-    .dashboard-stats-container{
+    .dashboard-stats-container {
         flex-direction: column;
     }
 
-    .dashboard-stat-container{
+    .dashboard-stat-container {
         width: 100%;
         border-right: none;
         border-bottom: 1px solid var(--color-border);
     }
 
-    .dashboard-stat-container:last-child{
+    .dashboard-stat-container:last-child {
         border-bottom: none;
     }
 }

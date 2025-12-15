@@ -19,30 +19,30 @@ export type ChatHeaderProps = {
 
 const ChatHeader = ({ chat, currentParticipant, presence }: ChatHeaderProps) => {
     return (
-        <div className='chat-box-header-container'>
-            <div className='chat-header-user'>
-                <div className={`chat - header - avatar ${chat.isGroup ? 'group-avatar' : ''} `}>
+        <div className='d-flex items-center content-between chat-box-header-container'>
+            <div className='d-flex items-center gap-1 chat-header-user'>
+                <div className={`d-flex flex-center chat-header-avatar ${chat.isGroup ? 'group-avatar' : ''}`}>
                     {chat.isGroup
                         ? <IoPeopleOutline />
                         : currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
                 </div>
-                <div className='chat-header-info'>
+                <div className='d-flex column chat-header-info'>
                     <Title className='font-size-3 chat-header-name'>
                         {chat.isGroup ? chat.groupName : currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName} ` : 'Unknown'}
                     </Title>
-                    <div className='chat-header-status'>
+                    <div className='d-flex items-center gap-05 chat-header-status'>
                         {chat.isGroup ? `${chat.participants.length} members` : presence === 'online' ? 'Online' : presence === 'offline' ? 'Offline' : 'Connecting...'}
                     </div>
                 </div>
             </div>
-            <div className='chat-header-actions'>
-                <IconButton label='Call' className='chat-header-action'>
+            <div className='d-flex items-center gap-075 chat-header-actions'>
+                <IconButton label='Call' className='d-flex flex-center chat-header-action'>
                     <IoCallOutline />
                 </IconButton>
-                <IconButton label='Video Call' className='chat-header-action'>
+                <IconButton label='Video Call' className='d-flex flex-center chat-header-action'>
                     <IoVideocamOutline />
                 </IconButton>
-                <IconButton label='More Info' className='chat-header-action'>
+                <IconButton label='More Info' className='d-flex flex-center chat-header-action'>
                     <IoInformationCircleOutline />
                 </IconButton>
             </div>
