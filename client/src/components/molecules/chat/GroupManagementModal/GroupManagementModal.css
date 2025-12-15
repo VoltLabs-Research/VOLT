@@ -1259,11 +1259,7 @@
     color: #9ca3af;
 }
 
-:root[data-theme='light'] .group-management-form-note {
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
-    color: #166534;
-}
+:root[data-theme='light'] 
 
 /* Light Mode Button Styles */
 :root[data-theme='light'] .group-management-container .button.black-on-light {

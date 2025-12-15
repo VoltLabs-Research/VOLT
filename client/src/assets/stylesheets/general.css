@@ -133,10 +133,6 @@
     align-items: center;
 }
 
-.flex-start{
-    align-items: flex-start;
-}
-
 .content-center,
 .flex-center{
     justify-content: center;

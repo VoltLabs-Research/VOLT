@@ -135,11 +135,6 @@
     opacity: .8;
 }
 
-.file-explorer-right-header {
-    display: flex;
-    gap: 2rem;
-}
-
 .file-explorer-search-container {
     width: -webkit-fill-available;
     border-radius: .5rem;

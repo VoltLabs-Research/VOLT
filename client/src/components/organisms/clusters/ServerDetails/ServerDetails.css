@@ -203,13 +203,6 @@
   gap: 1rem;
 }
 
-.server-details-grid-3-cols {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  align-items: stretch;
-}
-
 .server-details-grid-3-cols > .server-details-section {
   display: flex;
   flex-direction: column;
@@ -246,254 +239,14 @@
   letter-spacing: -0.01em;
 }
 
-.server-details-capacity-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 400;
-}
-
-.server-details-capacity-percent {
-  padding: 0.25rem 0.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  font-size: 0.75rem;
-}
-
-.server-details-drives-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-}
-
-.server-details-drive-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: none;
-  border-radius: 10px;
-  padding: 1rem;
-  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 .server-details-drive-card:hover {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.server-details-drive-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
-}
-
-.server-details-drive-name {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 500;
-}
-
-.server-details-drive-capacity {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.server-details-capacity-bars {
-  display: flex;
-  gap: 2px;
-  height: 32px;
-}
-
-.server-details-capacity-bar {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 3px;
-  transition: background 0.2s;
-}
-
-.server-details-capacity-bar-active {
-  background: linear-gradient(180deg, #0A84FF 0%, rgba(10, 132, 255, 0.7) 100%);
-}
-
-.server-details-capacity-bar-critical {
-  background: linear-gradient(180deg, #FF453A 0%, rgba(255, 69, 58, 0.7) 100%);
-}
-
-.server-details-health {
-  background: rgba(255, 255, 255, 0.04);
-  border: none;
-  border-radius: 12px;
-  padding: 1.25rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.server-details-health-bars {
-  display: flex;
-  gap: 2px;
-  height: 100px;
-  margin-bottom: 1rem;
-}
-
-.server-details-health-bar {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-}
-
-.server-details-health-bar-good {
-  background: linear-gradient(to top, #30D158, #30D158);
-}
-
-.server-details-health-bar-warning {
-  background: linear-gradient(to top, #FF9F0A, #FF9F0A);
-}
-
-.server-details-health-bar-critical {
-  background: linear-gradient(to top, #FF453A, #FF453A);
-}
-
-.server-details-health-info {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.server-details-health-percent {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.server-details-health-status {
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.server-details-health-message {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0;
-}
-
-.server-details-temperature {
-  background: rgba(255, 255, 255, 0.04);
-  border: none;
-  border-radius: 12px;
-  padding: 1.25rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.server-details-temp-scale {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.server-details-temp-label {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.server-details-temp-bars {
-  display: flex;
-  gap: 2px;
-  height: 60px;
-  margin-bottom: 1rem;
-}
-
-.server-details-temp-bar {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-}
-
-.server-details-temp-bar-active {
-  background: linear-gradient(to top, rgba(255, 159, 10, 0.3), #FF9F0A);
-}
-
-.server-details-temp-current {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-
-.server-details-temp-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.server-details-temp-status {
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.server-details-performance-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
-}
-
-.server-details-gauge-container {
-  background: rgba(255, 255, 255, 0.04);
-  border: none;
-  border-radius: 12px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
-}
-
-.server-details-gauge {
-  width: 140px;
-  height: 140px;
-}
-
-.server-details-gauge-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  fill: rgba(255, 255, 255, 0.9);
-}
-
-.server-details-gauge-label {
-  font-size: 0.75rem;
-  fill: rgba(255, 255, 255, 0.5);
-}
-
-.server-details-gauge-footer {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  padding: 0 0.5rem;
-}
-
-.server-details-gauge-footer-label {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.server-details-gauge-footer-value {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 500;
-}
-
 @media (max-width: 1200px) {
-  .server-details-grid-3-cols {
-    grid-template-columns: 1fr;
-  }
   
-  .server-details-drives-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  
+  
 }
 
 @media (max-width: 768px) {
@@ -501,11 +254,7 @@
     grid-template-columns: 1fr;
   }
   
-  .server-details-drives-grid {
-    grid-template-columns: 1fr;
-  }
   
-  .server-details-performance-grid {
-    grid-template-columns: 1fr;
-  }
+  
+  
 }

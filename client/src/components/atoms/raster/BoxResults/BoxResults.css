@@ -22,12 +22,6 @@
     margin: 0;
 }
 
-.box-type-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-}
-
 .type-legend-item {
     display: flex;
     align-items: center;
@@ -67,26 +61,6 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.box-result-item-header-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-}
-
-.box-result-type {
-    width: 4px;
-    height: 24px;
-    border-radius: 2px;
-}
-
-.box-result-item-title {
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: var(--text-primary);
-    margin: 0;
-}
-
 .box-result-data-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -109,39 +83,6 @@
     font-size: 0.875rem;
     color: var(--text-primary);
     font-family: 'Courier New', monospace;
-}
-
-.vector-value {
-    font-family: 'Courier New', monospace;
-    font-size: 0.8125rem;
-}
-
-.box-results-summary-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 1rem;
-    padding-top: 1rem;
-    border-top: 1px solid var(--border-color);
-}
-
-.box-summary-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-.box-summary-value {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--accent-color);
-}
-
-.box-summary-label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
 }
 
 .box-result-data.as-record-title{

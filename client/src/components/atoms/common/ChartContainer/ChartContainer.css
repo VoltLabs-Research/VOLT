@@ -64,24 +64,6 @@
 }
 
 /* Metric Stat Styles */
-.metric-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.metric-stat-label {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.metric-stat-value {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--foreground);
-}
 
 @media (max-width: 768px) {
   .chart-container {

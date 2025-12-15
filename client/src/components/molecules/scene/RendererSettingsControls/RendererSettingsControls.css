@@ -1,42 +1,6 @@
 /* Section styling - Apple style */
-.renderer-controls-section {
-  margin-bottom: 2.5rem;
-}
-
-.renderer-controls-description {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text-primary);
-  margin-bottom: 0.75rem;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
-}
-
-.renderer-controls-note {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  line-height: 1.5;
-  background: transparent;
-  padding: 0;
-  border: none;
-  border-left: none;
-  margin-top: 0.5rem;
-  opacity: 0.8;
-}
 
 /* Grid layouts - Apple style */
-.renderer-controls-compact-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  margin-top: 1.5rem;
-}
-
-.renderer-controls-compact-selects {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
 
 /* Select styling */
 .renderer-controls-compact-selects .rh-select {
@@ -45,23 +9,6 @@
 }
 
 /* Reset button styling - Apple style */
-.renderer-reset-btn {
-  align-self: flex-start;
-  background: var(--color-surface-1);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-  padding: 0.625rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  margin-top: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 36px;
-}
 
 .renderer-reset-btn:hover {
   background: var(--accent-indigo);

@@ -57,10 +57,4 @@
 }
 
 /* xterm.js customization */
-.xterm-viewport {
-    overflow-y: auto !important;
-}
 
-.xterm-screen {
-    padding: 0 !important;
-}

@@ -34,11 +34,8 @@
 
 /* Monaco background only - don't override syntax colors */
 .code-editor-container .monaco-editor,
-.code-editor-container .monaco-editor-background,
-.code-editor-container .monaco-editor .margin {
+.code-editor-container .code-editor-container .monaco-editor .margin {
     background-color: #1e1e1e !important;
 }
 
-.code-editor-container .monaco-editor .line-numbers {
-    color: #858585 !important;
-}
+.code-editor-container .monaco-editor 

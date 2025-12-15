@@ -12,12 +12,6 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.notification-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
 .notification-info h4 {
     font-size: 1rem;
     font-weight: 600;

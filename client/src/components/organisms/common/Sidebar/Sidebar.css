@@ -36,18 +36,14 @@
 
 .editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-scene-option-title,
 .editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-option-title,
-.editor-sidebar-wrapper[data-collapsed="true"] .canvas-sidebar-option-title,
-.editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-scene-option-description {
-    display: none !important;
-}
+.editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-wrapper[data-collapsed="true"] 
 
 .editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-scene-options-container {
     gap: .25rem;
 }
 
 .editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-option-container,
-.editor-sidebar-wrapper[data-collapsed="true"] .canvas-sidebar-option,
-.editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-scene-option {
+.editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-scene-option {
     height: 40px;
     width: 40px;
     min-height: 40px;
@@ -59,9 +55,7 @@
 }
 
 .editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-scene-option-icon-container,
-.editor-sidebar-wrapper[data-collapsed="true"] .canvas-sidebar-option-icon {
-    padding: 0;
-}
+.editor-sidebar-wrapper[data-collapsed="true"] 
 
 .editor-sidebar-wrapper[data-collapsed="true"] .sidebar-user-details-container {
     display: none !important;
@@ -89,9 +83,7 @@
     justify-content: flex-start;
 }
 
-.editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-trajectory-info-header-container {
-    justify-content: center;
-}
+.editor-sidebar-wrapper[data-collapsed="true"] 
 
 .editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-top-container>.editor-sidebar-header-container {
     border-bottom: 1px solid #212121;

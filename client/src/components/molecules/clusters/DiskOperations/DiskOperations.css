@@ -1,66 +1,4 @@
-.disk-ops-container {
-  background: var(--card);
-  border: 1px solid var(--border);
-  backdrop-filter: blur(80px);
-  border-radius: 20px;
-  height: 100%;
-  padding: 1.5rem;
-  max-height: 400px;
-  display: flex;
-  flex-direction: column;
-}
 
-.disk-ops-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-shrink: 0;
-}
-
-.disk-ops-title-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.disk-ops-icon {
-  width: 20px;
-  height: 20px;
-  color: var(--accent);
-}
-
-.disk-ops-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--foreground);
-  margin: 0;
-}
-
-.disk-ops-stats {
-  display: flex;
-  gap: 1rem;
-}
-
-.disk-ops-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.125rem;
-}
-
-.disk-ops-stat-label {
-  font-size: 0.7rem;
-  color: var(--muted-foreground);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.disk-ops-stat-value {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--foreground);
-}
 
 .disk-ops-chart {
   flex: 1;
@@ -101,11 +39,3 @@
   white-space: nowrap;
 }
 
-.disk-ops-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  color: var(--muted-foreground);
-  font-size: 0.875rem;
-}

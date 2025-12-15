@@ -22,8 +22,6 @@
     opacity: 0.5;
 }
 
-
-
 .editor-floating-header-container {
     display: flex;
     justify-content: space-between;
@@ -36,13 +34,6 @@
 
 .editor-floating-header-icon {
     color: #cacaca;
-}
-
-.editor-floating-body-container {
-    min-height: 250px;
-    overflow: scroll;
-    max-height: 500px;
-    height: 100%;
 }
 
 @media screen and (max-width: 768px) {

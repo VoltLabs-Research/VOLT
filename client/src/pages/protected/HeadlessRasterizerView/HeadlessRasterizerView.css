@@ -1,22 +1,4 @@
-.structure-analysis-results-container{
-  position: absolute;
-  top: 0;
-  z-index: 99999999;
-  padding: 1rem;
-}
 
-.structure-type-legend{
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.dislocation-type-legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 8px;
-}
 
 .type-legend-item {
     display: flex;
@@ -49,31 +31,6 @@
 }
 
 /* Progress Indicator Styles */
-.preload-progress-indicator {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: var(--glass-bg);
-  color: var(--color-text-primary);
-  padding: 12px 16px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 1000;
-  font-size: 14px;
-  backdrop-filter: blur(5px);
-  border: 1px solid var(--color-border-soft);
-}
-
-.preload-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--color-border);
-  border-top: 2px solid var(--color-text-primary);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
 
 @keyframes spin {
   0% { transform: rotate(0deg); }
@@ -125,11 +82,6 @@
 }
 
 .raster-view-container .dislocation-results-summary-container{ background-color: var(--glass-bg); }
-
-.raster-scene-left-container,
-.raster-scene-right-container{
-  position: relative;
-}
 
 /* Header contenedor derecho */
 .raster-scene-header-nav-container{
@@ -355,9 +307,6 @@
   gap: 1rem;
 }
 
-.raster-scene-column-container{
-  position: relative;
-}
 .raster-scene-container{
   width: 100%;
   height: 100%;
@@ -376,50 +325,9 @@
   height: var(--raster-scene-height); 
 }
 
-.raster-floating-container{ 
-  position: static;
-   background-color: transparent; 
-  }
-.raster-view-trajectory-name-container,
-.raster-view-trajectory-frame-container,
 .raster-view-trajectory-playback-container,
-.raster-view-trajectory-editor-icon-container,
-.raster-analysis-selection-container{
-  position: static !important;
-  inset: auto !important;
-}
-
-.raster-chip{ 
-  background-color: var(--color-surface-2); 
-  color: var(--color-text-primary); 
-  padding: .5rem 1rem; 
-  border-radius: 5rem; 
-  border: 1px solid var(--color-border); 
-}
-.btn-chip{
-    background-color: var(--color-surface-2);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border); 
-    padding: .5rem 1rem; 
-    border-radius: 5rem; 
-    display: inline-flex;
-    align-items: center; 
-    gap: .5rem; 
-    font-size: 1rem; 
-    cursor: pointer; 
-}
-
 .btn-chip:hover{ 
   background-color: var(--color-surface-3); 
-}
-
-.raster-view-trajectory-name{ 
-  text-transform: capitalize; 
-  font-size: .95rem; 
-}
-.raster-floating-helper-text{ 
-  font-size: .95rem; 
-  font-weight: 500; 
 }
 
 /* Barras internas */
@@ -504,7 +412,7 @@
 }
 
 /* Varios */
-.raster-view-trajectory-frame-container{ grid-column: 1; justify-self: start; }
+
 .raster-frames-container{ width: 100%; display: flex; overflow-x: scroll; }
 
 /* ====== RESPONSIVE ====== */
@@ -513,7 +421,7 @@
 @media (max-width: 1024px) {
   .raster-scenes-top-container { flex-direction: column; height: auto; }
   .raster-scene-container { height: auto; min-height: 70vh; }
-  .raster-analyses-container { flex-direction: row; width: 100%; overflow-x: auto; gap: .75rem; }
+  
   .raster-analyses-container img,
   .raster-analyses-container .raster-analysis-scene { width: 160px; height: auto; flex-shrink: 0; }
   .raster-view-container .dislocation-results-container{ width: calc(100% - 1rem); margin: 0 .5rem; }
@@ -525,7 +433,7 @@
 @media (max-width: 600px) {
   .raster-scene-topbar { display: flex; flex-direction: column; gap: .5rem; }
   .raster-scene-topbar-center { min-width: unset; max-width: 100%; flex: 1; }
-  .btn-chip { width: 100%; justify-content: center; }
+  
   .raster-view-container .dislocation-results-container{
     width: calc(100% - 1rem);
     margin: 0 .5rem;
@@ -583,17 +491,6 @@
   border-top: 1px solid var(--color-border);
 }
 
-.raster-metrics-title{
-  display: inline-flex;
-  align-items: center;
-  gap: .5rem;
-  color: var(--color-text-primary);
-  font-weight: 700;
-  padding: .35rem .65rem;
-  border: 1px solid var(--color-border);
-  border-radius: 9999px;
-  background: var(--color-surface-2);
-}
 .raster-metrics-title svg{ opacity: .95; }
 
 .raster-metrics-list{
@@ -678,7 +575,7 @@
     padding: 0;
   }
   .raster-metrics-bar{ padding: .55rem .6rem; }
-  .raster-metrics-title{ display: none; }
+  
 }
 
 .preloading-container{
@@ -753,12 +650,7 @@
 .type-legend-item{
   font-size: .4rem;
 }
-.structure-type-legend{
-  gap: .5rem;
-}
-.dislocation-type-legend{
-  margin-top: 0;
-}
+
 .dislocation-summary-value,
 .dislocation-summary-label{
   font-size: .5rem;
@@ -818,9 +710,7 @@
     align-items: center;
   }
 
-  .raster-scene-header-.raster-metric-item.modifier-resultlast-edited{
-    font-size: .85rem;
-  }
+  .raster-scene-header-.raster-metric-item
 
   .raster-metrics-bar{
     padding: 0;

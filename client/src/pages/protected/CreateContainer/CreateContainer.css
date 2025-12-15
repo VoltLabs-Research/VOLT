@@ -236,13 +236,6 @@
 }
 
 /* Custom Image Input */
-.custom-image-input {
-    background: var(--card);
-    padding: 1.5rem;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    margin-bottom: 2rem;
-}
 
 .custom-image-input label {
     display: block;

@@ -21,9 +21,7 @@
     opacity: .9;
 }
 
-.button.sm-radius{
-    border-radius: .5rem;
-}
+.button
 
 .button-text{
     font-size: 1rem;

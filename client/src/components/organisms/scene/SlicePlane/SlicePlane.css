@@ -19,12 +19,6 @@
     color: #ebebeb;
 }
 
-.slice-plane-param-input-label{
-    color: #818181;
-    text-transform: uppercase;
-    font-size: .9rem;
-}
-
 .slice-plane-normal-input-extended,
 .slice-plane-toggle-extended{
     width: 150px;

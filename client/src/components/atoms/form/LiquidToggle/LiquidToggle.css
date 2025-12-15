@@ -1,10 +1,7 @@
 @layer normalize, base, demo, toggle, debug, transitions;
 
 @layer debug {
-  .knockout--debug {
-    translate: 0% 200%;
-    outline: 4px hotpink dashed;
-  }
+  
 }
 
 @layer transitions {
@@ -15,7 +12,7 @@
   
   [data-bounce='true']:has(button:active, [data-active='true']) {
     --transition: 0.4s;
-    --ease: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --ease: cubic-bezier(0.68, -0.55, 01.55);
   }
   
   .indicator--masked .mask {
@@ -261,7 +258,7 @@
 }
 
 @layer base {
-  :where(.x-link, .bear-link):is(:hover, :focus-visible) {
+  :where(.bear-link):is(:hover, :focus-visible) {
     opacity: 1;
   }
 

@@ -175,7 +175,6 @@
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-
 .trajectory-fs-list-headrow {
     display: grid;
     grid-template-columns: 6fr 2fr 2fr 2fr;
@@ -211,7 +210,6 @@
     text-transform: capitalize;
 }
 
-
 .trajectory-fs-list-body .trajectory-fs-list-row:hover {
     cursor: pointer;
     opacity: .8;
@@ -243,58 +241,10 @@
 }
 
 /* SSH-specific styles */
-.ssh-current-connection {
-    font-size: 0.75rem;
-    opacity: 0.7;
-    font-weight: 400;
-}
-
-.ssh-add-connection-btn,
-.ssh-delete-connection-btn {
-    background: none;
-    border: none;
-    color: inherit;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s;
-}
 
 .ssh-add-connection-btn:hover,
 .ssh-delete-connection-btn:hover {
     background-color: rgba(255, 255, 255, 0.1);
-}
-
-.ssh-delete-connection-btn {
-    font-size: 1.25rem;
-    line-height: 1;
-}
-
-.ssh-no-connection {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    gap: 1rem;
-    opacity: 0.5;
-}
-
-.ssh-import-btn {
-    padding: 0.5rem 1rem;
-    background-color: rgba(59, 130, 246, 0.8);
-    border: none;
-    border-radius: 6px;
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    transition: background-color 0.2s;
 }
 
 .ssh-import-btn:hover:not(:disabled) {
@@ -304,15 +254,6 @@
 .ssh-import-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-.ssh-error-message {
-    padding: 1rem;
-    background-color: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 6px;
-    color: #ef4444;
-    margin-bottom: 1rem;
 }
 
 .trajectory-fs-nav-item {

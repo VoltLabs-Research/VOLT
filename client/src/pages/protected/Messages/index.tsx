@@ -40,7 +40,7 @@ const MessagesPage = () => {
         showEditGroup
     } = useChatStore();
 
-    return(
+    return (
         <DashboardContainer pageName='Messages' className='chat-main-container'>
             <ChatSidebar />
             <ChatArea />

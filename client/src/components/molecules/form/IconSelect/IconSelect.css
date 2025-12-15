@@ -167,14 +167,6 @@
     font-size: .85rem;
 }
 
-.icon-select-hint {
-    padding: 1rem;
-    text-align: center;
-    color: var(--color-text-muted);
-    font-size: .8rem;
-    line-height: 1.4;
-}
-
 .icon-select-count {
     padding: .5rem .75rem;
     text-align: right;

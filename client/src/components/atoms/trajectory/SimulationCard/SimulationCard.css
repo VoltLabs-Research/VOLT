@@ -51,11 +51,6 @@
     width: 100%;
 }
 
-.progress-border-wrapper {
-    position: relative;
-    transition: all 0.3s ease;
-}
-
 .simulation-container.has-jobs{
     cursor: wait !important;
 }
@@ -109,13 +104,6 @@
 
 .simulation-container:hover .simulation-caption-container{
     opacity: 1;
-}
-
-.simulation-caption-content-wrapper {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    width: 100%;
 }
 
 .simulation-info-footer {
@@ -226,13 +214,6 @@
 }
 
 .simulation-last-edited {
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.simulation-running-jobs {
     margin: 0;
     white-space: nowrap;
     overflow: hidden;
