@@ -1,27 +1,17 @@
 import { Server, Cpu, MemoryStick, Activity, TrendingUp, TrendingDown, MoreVertical } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
+import { formatNetworkSpeedWithUnit } from '@/utilities/network'
 import './MetricsCards.css'
 
-function formatNetworkSpeed(kbs: number): { value: string; unit: string } {
-  if(kbs < 1){
-    return { value: (kbs * 1024).toFixed(0), unit: 'B/s' };
-  }else if(kbs < 1024){
-    return { value: kbs.toFixed(1), unit: 'KB/s' };
-  }else if(kbs < 1024 * 1024){
-    return { value: (kbs / 1024).toFixed(2), unit: 'MB/s' };
-  }else{
-    return { value: (kbs / (1024 * 1024)).toFixed(2), unit: 'GB/s' };
-  }
-}
 
-export function MetricsCards(){
+export function MetricsCards() {
   const { metrics, isHistoryLoaded } = useServerMetrics()
 
   const isLoading = !metrics || !isHistoryLoaded
 
-  if(isLoading){
-    return(
+  if (isLoading) {
+    return (
       <div className="metrics-cards">
         {[...Array(4)].map((_, i) => (
           <div key={i} className="metric-card">
@@ -59,7 +49,7 @@ export function MetricsCards(){
       icon: Cpu,
       title: 'CPU Load',
       value: metrics ? (() => {
-        if(metrics.cpu.coresUsage && metrics.cpu.coresUsage.length > 0){
+        if (metrics.cpu.coresUsage && metrics.cpu.coresUsage.length > 0) {
           const avgCoreUsage = metrics.cpu.coresUsage.reduce((sum, val) => sum + val, 0) / metrics.cpu.coresUsage.length;
           return `${avgCoreUsage.toFixed(1)}%`;
         }
@@ -80,14 +70,14 @@ export function MetricsCards(){
     {
       icon: Activity,
       title: 'Network Traffic',
-      value: metrics ? formatNetworkSpeed(metrics.network.incoming + metrics.network.outgoing).value : '--',
-      unit: metrics ? formatNetworkSpeed(metrics.network.incoming + metrics.network.outgoing).unit : '',
-      trend: metrics ? `↑${formatNetworkSpeed(metrics.network.outgoing).value} ↓${formatNetworkSpeed(metrics.network.incoming).value} ${formatNetworkSpeed(metrics.network.outgoing).unit}` : '--',
+      value: metrics ? formatNetworkSpeedWithUnit(metrics.network.incoming + metrics.network.outgoing).value : '--',
+      unit: metrics ? formatNetworkSpeedWithUnit(metrics.network.incoming + metrics.network.outgoing).unit : '',
+      trend: metrics ? `↑${formatNetworkSpeedWithUnit(metrics.network.outgoing).value} ↓${formatNetworkSpeedWithUnit(metrics.network.incoming).value} ${formatNetworkSpeedWithUnit(metrics.network.outgoing).unit}` : '--',
       trendUp: true,
       subtitle: 'Total Traffic'
     },
   ]
-  return(
+  return (
     <div className="metrics-cards">
       {cards.map((metric) => (
         <div key={metric.title} className="metric-card">

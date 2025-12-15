@@ -3,14 +3,9 @@ import { Activity } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { useState, useEffect } from 'react'
 import { ChartContainer } from '@/components/atoms/common/ChartContainer'
+import { formatNetworkSpeed } from '@/utilities/network'
 import './TrafficOverview.css'
 
-function formatNetworkSpeed(kbs: number): string {
-  if (kbs < 1) return `${(kbs * 1024).toFixed(0)} B/s`;
-  if (kbs < 1024) return `${kbs.toFixed(1)} KB/s`;
-  if (kbs < 1024 * 1024) return `${(kbs / 1024).toFixed(2)} MB/s`;
-  return `${(kbs / (1024 * 1024)).toFixed(2)} GB/s`;
-}
 
 const MAX_POINTS = 60
 
