@@ -190,11 +190,11 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     return (
         <div
             ref={panelRef}
-            className='team-invite-panel'
+            className='team-invite-panel d-flex column'
             style={styles as React.CSSProperties}
         >
-            <div className='team-invite-header'>
-                <div className='team-invite-tabs'>
+            <div className='team-invite-header d-flex items-center content-between f-shrink-0'>
+                <div className='team-invite-tabs d-flex flex-1'>
                     <button className='team-invite-tab active'>Share</button>
                     <button className='team-invite-tab' style={{ opacity: 0.5, cursor: 'not-allowed' }}>Publish</button>
                 </div>
@@ -203,8 +203,8 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 </button>
             </div>
 
-            <div className='team-invite-content'>
-                <div className='team-invite-input-section'>
+            <div className='team-invite-content d-flex column flex-1'>
+                <div className='team-invite-input-section d-flex items-center gap-05'>
                     <input
                         ref={inputRef}
                         type='email'
@@ -331,7 +331,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     </div>
                 </div>
 
-                <div className='team-invite-footer'>
+                <div className='team-invite-footer d-flex gap-05 content-between f-shrink-0'>
                     <button className='team-invite-footer-link'>
                         <MdContentCopy size={16} /> Copy link
                     </button>

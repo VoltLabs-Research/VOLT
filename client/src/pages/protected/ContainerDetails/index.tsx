@@ -129,8 +129,8 @@ const ContainerDetails: React.FC = () => {
     if (!container) return null;
 
     return (
-        <div className="details-page-layout">
-            <div className="details-sidebar">
+        <div className="details-page-layout d-flex overflow-hidden">
+            <div className="details-sidebar d-flex column f-shrink-0">
                 <div className="sidebar-header-details">
                     <button onClick={() => navigate('/dashboard/containers')} className="back-link">
                         <ArrowLeft size={16} /> Back
@@ -146,7 +146,7 @@ const ContainerDetails: React.FC = () => {
                     </div>
                 </div>
 
-                <nav className="sidebar-nav">
+                <nav className="sidebar-nav d-flex column gap-025">
                     <button
                         className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
                         onClick={() => setActiveTab('overview')}
@@ -179,7 +179,7 @@ const ContainerDetails: React.FC = () => {
                     </button>
                 </nav>
 
-                <div className="sidebar-actions">
+                <div className="sidebar-actions d-flex column gap-075">
                     {container.status !== 'running' ? (
                         <button onClick={() => handleAction('start')} disabled={actionLoading} className="action-btn start">
                             <Play size={16} /> Start Container
@@ -204,7 +204,7 @@ const ContainerDetails: React.FC = () => {
 
             <div className="details-content-area">
                 {activeTab === 'overview' && (
-                    <div className="content-pane">
+                    <div className="content-pane d-flex column gap-2">
                         <div className="pane-header">
                             <Title className="font-size-4 font-weight-6">Overview</Title>
                             <div className="meta-tags">
@@ -339,7 +339,7 @@ const ContainerDetails: React.FC = () => {
                         <div className="config-grid">
                             <div className="config-card">
                                 <Title className="font-size-3 font-weight-6">Environment Variables</Title>
-                                <div className="env-list">
+                                <div className="env-list d-flex column gap-075">
                                     {container.env && container.env.length > 0 ? (
                                         container.env.map((e: any, i: number) => (
                                             <div key={i} className="env-row">
@@ -354,7 +354,7 @@ const ContainerDetails: React.FC = () => {
                             </div>
                             <div className="config-card">
                                 <Title className="font-size-3 font-weight-6">Port Bindings</Title>
-                                <div className="port-list">
+                                <div className="port-list d-flex column gap-075">
                                     {container.ports && container.ports.length > 0 ? (
                                         container.ports.map((p: any, i: number) => (
                                             <div key={i} className="port-row">
@@ -377,7 +377,7 @@ const ContainerDetails: React.FC = () => {
                         {container.status === 'running' ? (
                             <ContainerProcesses containerId={container._id} />
                         ) : (
-                            <div className="placeholder-state">
+                            <div className="placeholder-state d-flex column items-center content-center gap-1-5">
                                 <Activity size={48} />
                                 <Paragraph className="color-muted">Container must be running to view processes</Paragraph>
                             </div>
@@ -394,7 +394,7 @@ const ContainerDetails: React.FC = () => {
                                 embedded={true}
                             />
                         ) : (
-                            <div className="placeholder-state">
+                            <div className="placeholder-state d-flex column items-center content-center gap-1-5">
                                 <Terminal size={48} />
                                 <Paragraph className="color-muted">Container must be running to view logs</Paragraph>
                             </div>
@@ -407,7 +407,7 @@ const ContainerDetails: React.FC = () => {
                         {container.status === 'running' ? (
                             <ContainerFileExplorer containerId={container._id} />
                         ) : (
-                            <div className="placeholder-state">
+                            <div className="placeholder-state d-flex column items-center content-center gap-1-5">
                                 <Folder size={48} />
                                 <Paragraph className="color-muted">Container must be running to browse files</Paragraph>
                             </div>

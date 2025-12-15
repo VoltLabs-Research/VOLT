@@ -3,7 +3,6 @@ import { TbUser, TbShield, TbKey, TbPalette, TbBell, TbDeviceDesktop, TbDownload
 import useAuthStore from '@/stores/authentication';
 import authApi from '@/services/api/auth';
 import LoginActivityModal from '@/components/molecules/auth/LoginActivityModal';
-import ApiTokenModal from '@/components/molecules/api-token/ApiTokenModal';
 import WebhookModal from '@/components/molecules/webhooks/WebhookModal';
 import SettingsSidebar from '@/components/molecules/settings/SettingsSidebar';
 import GeneralSettings from '@/components/molecules/settings/GeneralSettings';
@@ -14,13 +13,10 @@ import NotificationsSettings from '@/components/molecules/settings/Notifications
 import DataExportSettings from '@/components/molecules/settings/DataExportSettings';
 import AdvancedSettings from '@/components/molecules/settings/AdvancedSettings';
 import IntegrationsSettings from '@/components/molecules/settings/IntegrationsSettings';
-import TokensSettings from '@/components/molecules/settings/TokensSettings';
 import WebhooksSettings from '@/components/molecules/settings/WebhooksSettings';
 import useSessions from '@/hooks/auth/use-sessions';
 import useLoginActivity from '@/hooks/auth/use-login-activity';
-import useApiTokens from '@/hooks/api/use-api-tokens';
 import useWebhooks from '@/hooks/api/use-webhooks';
-import type { ApiToken, CreateTokenData, UpdateTokenData } from '@/types/models/api-token';
 import type { Webhook, CreateWebhookData, UpdateWebhookData } from '@/types/models/webhook';
 import './AccountSettings.css';
 import Container from '@/components/primitives/Container';
@@ -36,15 +32,7 @@ const AccountSettings: React.FC = () => {
         changePassword,
         getPasswordInfo
     } = useAuthStore();
-    const {
-        tokens,
-        loading: tokensLoading,
-        error: tokensError,
-        createToken,
-        updateToken,
-        deleteToken,
-        regenerateToken
-    } = useApiTokens();
+
     const {
         webhooks,
         loading: webhooksLoading,
@@ -70,9 +58,6 @@ const AccountSettings: React.FC = () => {
         newPassword: '',
         confirmPassword: ''
     });
-    const [showApiTokenModal, setShowApiTokenModal] = useState(false);
-    const [apiTokenModalMode, setApiTokenModalMode] = useState<'create' | 'edit'>('create');
-    const [selectedToken, setSelectedToken] = useState<ApiToken | null>(null);
     const [showWebhookModal, setShowWebhookModal] = useState(false);
     const [webhookModalMode, setWebhookModalMode] = useState<'create' | 'edit'>('create');
     const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
@@ -178,69 +163,6 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    const handleCreateToken = () => {
-        setApiTokenModalMode('create');
-        setSelectedToken(null);
-        setShowApiTokenModal(true);
-    };
-
-    const handleEditToken = (token: ApiToken) => {
-        setApiTokenModalMode('edit');
-        setSelectedToken(token);
-        setShowApiTokenModal(true);
-    };
-
-    const handleDeleteToken = async (token: ApiToken) => {
-        if (window.confirm(`Are you sure you want to delete the token "${token.name}" ? This action cannot be undone.`)) {
-            try {
-                await deleteToken(token._id);
-            } catch (error: any) {
-                const errorContext = {
-                    endpoint: `/ api - tokens / ${token._id} `,
-                    method: 'DELETE',
-                    tokenId: token._id,
-                    statusCode: error?.response?.status,
-                    errorMessage: error?.message,
-                    serverMessage: error?.response?.data?.message,
-                    timestamp: new Date().toISOString()
-                };
-                console.error('Failed to delete token:', errorContext);
-            }
-        }
-    };
-
-    const handleRegenerateToken = async (token: ApiToken) => {
-        if (window.confirm(`Are you sure you want to regenerate the token "${token.name}" ? The old token will be invalidated.`)) {
-            try {
-                await regenerateToken(token._id);
-            } catch (error: any) {
-                const errorContext = {
-                    endpoint: `/ api - tokens / ${token._id}/regenerate`,
-                    method: 'POST',
-                    tokenId: token._id,
-                    statusCode: error?.response?.status,
-                    errorMessage: error?.message,
-                    serverMessage: error?.response?.data?.message,
-                    timestamp: new Date().toISOString()
-                };
-                console.error('Failed to regenerate token:', errorContext);
-            }
-        }
-    };
-
-    const handleApiTokenSave = async (data: CreateTokenData | UpdateTokenData) => {
-        try {
-            if (apiTokenModalMode === 'create') {
-                await createToken(data as CreateTokenData);
-            } else {
-                await updateToken(selectedToken!._id, data as UpdateTokenData);
-            }
-            setShowApiTokenModal(false);
-        } catch (error: any) {
-            throw error;
-        }
-    };
-
     const handleCreateWebhook = () => {
         setWebhookModalMode('create');
         setSelectedWebhook(null);
@@ -322,7 +244,6 @@ const AccountSettings: React.FC = () => {
         { title: 'Sessions', icon: TbDeviceDesktop },
         { title: 'Integrations', icon: TbPlug },
         { title: 'Data & Export', icon: TbDownload },
-        { title: 'Tokens', icon: TbKey },
         { title: 'Webhooks', icon: TbWebhook },
         { title: 'Advanced', icon: TbSettings }
     ];
@@ -380,18 +301,6 @@ const AccountSettings: React.FC = () => {
                 return <AdvancedSettings />;
             case 'Integrations':
                 return <IntegrationsSettings />;
-            case 'Tokens':
-                return (
-                    <TokensSettings
-                        tokens={tokens}
-                        loading={tokensLoading}
-                        error={tokensError}
-                        onCreateToken={handleCreateToken}
-                        onEditToken={handleEditToken}
-                        onDeleteToken={handleDeleteToken}
-                        onRegenerateToken={handleRegenerateToken}
-                    />
-                );
             case 'Webhooks':
                 return (
                     <WebhooksSettings
@@ -443,14 +352,6 @@ const AccountSettings: React.FC = () => {
             <LoginActivityModal
                 isOpen={showLoginActivityModal}
                 onClose={() => setShowLoginActivityModal(false)}
-            />
-
-            <ApiTokenModal
-                isOpen={showApiTokenModal}
-                onClose={() => setShowApiTokenModal(false)}
-                onSave={handleApiTokenSave}
-                token={selectedToken}
-                mode={apiTokenModalMode}
             />
 
             <WebhookModal

@@ -51,7 +51,7 @@ const ChatArea = () => {
     return (
         <div className='chat-messages-container'>
             {currentChat ? (
-                <div className='chat-box-container'>
+                <div className='chat-box-container d-flex column flex-1'>
                     <ChatHeader
                         chat={currentChat as Chat}
                         currentParticipant={currentParticipant as Participant | null}
@@ -61,7 +61,7 @@ const ChatArea = () => {
                     <MessageList
                         messages={messages}
                         isLoading={isLoadingMessages}
-                        endRef={endRef}
+                        endRef={endRef as React.RefObject<HTMLDivElement>}
                         selfId={user?._id}
                         renderItem={(m, isOwn) => (
                             <MessageItem

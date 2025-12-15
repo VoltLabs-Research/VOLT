@@ -32,7 +32,7 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
     const bottom = React.Children.toArray(children).find((child) => child.type === SidebarBottom);
 
     useEffect(() => {
-        if(window.innerWidth <= MOBILE_BREAKPOINT){
+        if (window.innerWidth <= MOBILE_BREAKPOINT) {
             setCollapsed(true);
         }
     }, []);
@@ -49,15 +49,15 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
         })
         : null;
 
-    return(
+    return (
         <motion.aside
-            className={`editor-sidebar-wrapper ${className}`}
+            className={`editor-sidebar-wrapper d-flex ${className}`}
             data-collapsed={collapsed}
             initial={false}
             animate={{ width: collapsed ? 64 : 380 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
-            <EditorWidget className='editor-sidebar-container' draggable={false}>
+            <EditorWidget className='editor-sidebar-container d-flex column content-between overflow-hidden' draggable={false}>
                 <Container className='editor-sidebar-top-container'>
                     {headerElement}
 
@@ -69,7 +69,7 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
                         <>
                             <Container className='p-1-5'>
                                 <Container className='d-flex p-05 content-between editor-sidebar-options-container'>
-                                  {tags.map(tag => (
+                                    {tags.map(tag => (
                                         <CanvasSidebarTab option={tag.name} key={tag.id} />
                                     ))}
                                 </Container>

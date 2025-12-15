@@ -8,10 +8,7 @@
     letter-spacing: -0.025em;
 }
 
-.section-header:not(:has(.section-header-actions)){
-    flex-direction: column;
-    gap: .5rem;
-}
+
 
 .section-header .action-button.primary {
     background: var(--color-primary);

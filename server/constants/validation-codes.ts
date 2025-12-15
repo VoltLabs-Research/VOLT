@@ -22,10 +22,6 @@
 
 // Validation Codes Format: ModelName::Property::Type
 export const ValidationCodes = {
-    API_TOKEN_NAME_REQUIRED: 'ApiToken::Name::Required',
-    API_TOKEN_NAME_MAXLEN: 'ApiToken::Name::MaxLength',
-    API_TOKEN_DESCRIPTION_MAXLEN: 'ApiToken::Description::MaxLength',
-
     API_TRACKER_METHOD_REQUIRED: 'ApiTracker::Method::Required',
     API_TRACKER_URL_REQUIRED: 'ApiTracker::Url::Required',
     API_TRACKER_IP_REQUIRED: 'ApiTracker::Ip::Required',

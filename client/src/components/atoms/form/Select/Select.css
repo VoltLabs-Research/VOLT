@@ -1,14 +1,10 @@
-.rh-select{
+.rh-select {
     position: relative;
     display: inline-block;
 }
 
-.rh-select-trigger{
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;        
-    gap: .5rem;
+.rh-select-trigger {
+
     padding: .6rem .75rem;
     border-radius: .6rem;
     background: color-mix(in oklab, var(--color-text-primary) 6%, transparent);
@@ -18,11 +14,11 @@
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 
-.rh-select-trigger:hover{
+.rh-select-trigger:hover {
     border-color: var(--color-border);
 }
 
-.rh-select-trigger:focus-visible{
+.rh-select-trigger:focus-visible {
     outline: none;
     border-color: var(--accent-indigo);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-indigo) 25%, transparent);
@@ -35,37 +31,38 @@
 }
 
 .rh-select-value {
-    flex: 1 1 auto; 
+    flex: 1 1 auto;
     min-width: 0;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    display: block; 
+    display: block;
 }
 
-.rh-select-value.is-placeholder{
+.rh-select-value.is-placeholder {
     color: var(--color-text-muted);
 }
 
-.rh-select-chevron{
+.rh-select-chevron {
     margin-left: auto;
     flex: 0 0 auto;
     transition: transform .15s ease;
 }
-.rh-select.is-open .rh-select-chevron{
+
+.rh-select.is-open .rh-select-chevron {
     transform: rotate(180deg);
 }
 
-.rh-select-list{
+.rh-select-list {
     position: absolute;
     z-index: 999999999;
     top: calc(100% + 6px);
     left: 0;
     right: 0;
     width: max-content;
-	min-width: 100%;
-	max-width: var(--select-list-max-width, 480px);
+    min-width: 100%;
+    max-width: var(--select-list-max-width, 480px);
     overflow: auto;
     max-height: 200px;
     background: var(--color-surface-1);
@@ -75,11 +72,8 @@
     padding: .35rem;
 }
 
-.select-option-container{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .5rem;
+.select-option-container {
+
     padding: .5rem .6rem;
     border-radius: .5rem;
     cursor: pointer;
@@ -88,30 +82,31 @@
     transition: background .12s ease, color .12s ease;
     min-height: 40px;
 }
+
 .select-option-container:hover,
-.select-option-container.is-active{
+.select-option-container.is-active {
     background: color-mix(in srgb, var(--accent-indigo) 12%, transparent);
 }
-.select-option-container.is-selected{
+
+.select-option-container.is-selected {
     font-weight: 600;
 }
 
-.select-option-description{
+.select-option-description {
     font-size: .7rem;
 }
 
 .select-option-title {
     font-size: .85rem;
     flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;  
+    flex: 1 1 auto;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.select-option-check{
+.select-option-check {
     color: var(--accent-indigo);
     flex: 0 0 auto;
     width: 24px;
@@ -121,7 +116,7 @@
     justify-content: center;
 }
 
-.select-option-leave-btn{
+.select-option-leave-btn {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -137,15 +132,15 @@
     flex: 0 0 24px;
 }
 
-.select-option-leave-btn:hover{
+.select-option-leave-btn:hover {
     background: color-mix(in srgb, var(--accent-red, #ff6b6b) 20%, transparent);
     color: var(--accent-red, #ff6b6b);
 }
 
-.select-option-leave-btn:active{
+.select-option-leave-btn:active {
     background: color-mix(in srgb, var(--accent-red, #ff6b6b) 30%, transparent);
 }
 
-.rh-select.on-dark .rh-select-trigger{
+.rh-select.on-dark .rh-select-trigger {
     background-color: transparent !important;
 }

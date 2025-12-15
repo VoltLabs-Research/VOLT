@@ -92,7 +92,6 @@ configureApp({
         'trajectory-vfs',
         'color-coding',
         'auth',
-        'api-tokens',
         'api-tracker',
         'sessions',
         'password',

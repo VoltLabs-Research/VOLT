@@ -58,15 +58,6 @@ export const ErrorCodes = {
     CONTAINER_INVALID_ACTION: 'Container::InvalidAction',
     CONTAINER_FILE_PATH_REQUIRED: 'Container::File::PathRequired',
 
-    API_TOKEN_REQUIRED: 'ApiToken::Required',
-    API_TOKEN_INVALID: 'ApiToken::Invalid',
-    API_TOKEN_EXPIRED: 'ApiToken::Expired',
-    API_TOKEN_INACTIVE: 'ApiToken::Inactive',
-    API_TOKEN_INSUFFICIENT_PERMISSIONS: 'ApiToken::InsufficientPermissions',
-    API_TOKEN_INVALID_PERMISSIONS: 'ApiToken::InvalidPermissions',
-    API_TOKEN_NOT_FOUND: 'ApiToken::NotFound',
-    API_TOKEN_LOAD_ERROR: 'ApiToken::LoadError',
-
     SSH_CONNECTION_ID_REQUIRED: 'SSH::ConnectionId::Required',
     SSH_CONNECTION_NOT_FOUND: 'SSHConnection::NotFound',
     SSH_CONNECTION_LOAD_ERROR: 'SSHConnection::LoadError',

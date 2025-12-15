@@ -359,7 +359,7 @@ const DashboardLayout = () => {
     };
 
     return (
-        <main className='dashboard-main'>
+        <main className='dashboard-main d-flex column h-100'>
             {showTeamCreator && (
                 <TeamCreator isRequired={teams.length === 0} />
             )}

@@ -31,14 +31,6 @@ export const ErrorCodes = {
     CONTAINER_TEAM_LOAD_ERROR: 'Container::Team::LoadError',
     CONTAINER_INVALID_ACTION: 'Container::InvalidAction',
     CONTAINER_FILE_PATH_REQUIRED: 'Container::File::PathRequired',
-    API_TOKEN_REQUIRED: 'ApiToken::Required',
-    API_TOKEN_INVALID: 'ApiToken::Invalid',
-    API_TOKEN_EXPIRED: 'ApiToken::Expired',
-    API_TOKEN_INACTIVE: 'ApiToken::Inactive',
-    API_TOKEN_INSUFFICIENT_PERMISSIONS: 'ApiToken::InsufficientPermissions',
-    API_TOKEN_INVALID_PERMISSIONS: 'ApiToken::InvalidPermissions',
-    API_TOKEN_NOT_FOUND: 'ApiToken::NotFound',
-    API_TOKEN_LOAD_ERROR: 'ApiToken::LoadError',
     SSH_CONNECTION_ID_REQUIRED: 'SSH::ConnectionId::Required',
     SSH_CONNECTION_NOT_FOUND: 'SSHConnection::NotFound',
     SSH_CONNECTION_LOAD_ERROR: 'SSHConnection::LoadError',
@@ -229,15 +221,6 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'Session::GetLoginActivity::Failed': 'Failed to retrieve login activity',
     'Session::RevokeSession::Failed': 'Failed to revoke session',
     'Session::RevokeAllOtherSessions::Failed': 'Failed to revoke all other sessions',
-
-    // API Token errors
-    'ApiToken::NotFound': 'API token not found',
-    'ApiToken::InvalidPermissions': 'Invalid permissions provided',
-    'ApiToken::Required': 'API token is required',
-    'ApiToken::Invalid': 'Invalid API token',
-    'ApiToken::Inactive': 'API token is inactive',
-    'ApiToken::Expired': 'API token has expired',
-    'ApiToken::InsufficientPermissions': 'Insufficient permissions for this operation',
 
     // API Tracker errors
     'ApiTracker::Method::Required': 'HTTP method is required',

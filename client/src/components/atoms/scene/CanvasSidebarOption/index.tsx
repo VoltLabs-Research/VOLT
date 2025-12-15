@@ -3,8 +3,8 @@ import type { IconType } from 'react-icons/lib';
 import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
 import { RiMore2Fill } from "react-icons/ri";
 import Loader from '@/components/atoms/common/Loader';
-import './CanvasSidebarOption.css';
 import Title from '@/components/primitives/Title';
+import './CanvasSidebarOption.css';
 
 interface CanvasSidebarOptionProps {
     onSelect: (option: any) => void;
@@ -28,7 +28,6 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSel
             <div
                 className={`editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''}`}
                 onClick={() => onSelect(option)}
-
             >
                 <div className='editor-sidebar-scene-option-left-container'>
                     <i className='editor-sidebar-scene-option-icon-container'>
