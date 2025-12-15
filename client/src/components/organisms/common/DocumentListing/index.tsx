@@ -9,15 +9,14 @@ import Container from '@/components/primitives/Container'
 import DynamicIcon from '@/components/atoms/common/DynamicIcon'
 import Title from '@/components/primitives/Title'
 import Paragraph from '@/components/primitives/Paragraph'
-import { LuChevronRight } from 'react-icons/lu'
 
 const sortDataWorker = (
     data: any[],
     sortConfig: { key: string; direction: 'asc' | 'desc' } | null
 ): any[] => {
     const getValueByPath = (obj: any, path: string) => {
-        if (!obj || !path) return undefined
-        if (path.indexOf('.') === -1) return obj?.[path]
+        if(!obj || !path) return undefined
+        if(path.indexOf('.') === -1) return obj?.[path]
         return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj)
     }
 
@@ -70,7 +69,7 @@ const sortDataWorker = (
     })
 
     return workingData
-}
+};
 
 export type ColumnConfig = {
     key: string

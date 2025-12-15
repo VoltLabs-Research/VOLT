@@ -1,6 +1,7 @@
 import { type Node, type Edge } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
+import { getValueByPath } from '@/utilities/getValueByPath';
 
 export type ColumnDef = {
     path: string;
@@ -70,21 +71,21 @@ export const NODE_OUTPUT_SCHEMAS: Record<NodeType, NodeOutputSchema> = {
 };
 
 // Get all ancestor nodes(nodes that come before this node in the workflow)
-export function getAncestorNodes(nodeId: string, nodes: Node[], edges: Edge[]): Node[]{
+export function getAncestorNodes(nodeId: string, nodes: Node[], edges: Edge[]): Node[] {
     const ancestors: Node[] = [];
     const visited = new Set<string>();
     const queue: string[] = [nodeId];
 
-    while(queue.length > 0){
+    while (queue.length > 0) {
         const currentId = queue.shift()!;
-        if(visited.has(currentId)) continue;
+        if (visited.has(currentId)) continue;
         visited.add(currentId);
 
         // Find edges where this node is the target
         const incomingEdges = edges.filter(e => e.target === currentId);
-        for(const edge of incomingEdges){
+        for (const edge of incomingEdges) {
             const sourceNode = nodes.find(n => n.id === edge.source);
-            if(sourceNode && !visited.has(sourceNode.id)) {
+            if (sourceNode && !visited.has(sourceNode.id)) {
                 ancestors.push(sourceNode);
                 queue.push(sourceNode.id);
             }
@@ -109,19 +110,19 @@ export function getAvailableExpressions(
     nodeId: string,
     nodes: Node[],
     edges: Edge[]
-): AvailableExpression[]{
+): AvailableExpression[] {
     const ancestors = getAncestorNodes(nodeId, nodes, edges);
     const expressions: AvailableExpression[] = [];
 
-    for(const ancestor of ancestors){
+    for (const ancestor of ancestors) {
         const nodeType = ancestor.type as NodeType;
         const nodeName = (ancestor.data.name as string) || ancestor.id;
         const schema = NODE_OUTPUT_SCHEMAS[nodeType];
 
-        if(!schema) continue;
+        if (!schema) continue;
 
         // Add static schema properties
-        for(const [key, info] of Object.entries(schema)) {
+        for (const [key, info] of Object.entries(schema)) {
             expressions.push({
                 nodeId: ancestor.id,
                 nodeName,
@@ -133,8 +134,8 @@ export function getAvailableExpressions(
             });
 
             // For objects, we could expand children if defined
-            if(info.children){
-                for(const [childKey, childInfo] of Object.entries(info.children)) {
+            if (info.children) {
+                for (const [childKey, childInfo] of Object.entries(info.children)) {
                     expressions.push({
                         nodeId: ancestor.id,
                         nodeName,
@@ -149,11 +150,11 @@ export function getAvailableExpressions(
         }
 
         // Special handling for Arguments node - add dynamic argument keys
-        if(nodeType === NodeType.ARGUMENTS){
+        if (nodeType === NodeType.ARGUMENTS) {
             const nodeData = ancestor.data as Record<string, any>;
             const argDefs = nodeData.arguments?.arguments || [];
-            for(const arg of argDefs){
-                if(arg.argument){
+            for (const arg of argDefs) {
+                if (arg.argument) {
                     expressions.push({
                         nodeId: ancestor.id,
                         nodeName,
@@ -168,10 +169,10 @@ export function getAvailableExpressions(
         }
 
         // Special handling for Schema node - add definition keys
-        if(nodeType === NodeType.SCHEMA){
+        if (nodeType === NodeType.SCHEMA) {
             const nodeData = ancestor.data as Record<string, any>;
             const definition = nodeData.schema?.definition || {};
-            for(const key of Object.keys(definition)) {
+            for (const key of Object.keys(definition)) {
                 expressions.push({
                     nodeId: ancestor.id,
                     nodeName,
@@ -191,36 +192,36 @@ export function getAvailableExpressions(
 // Parse expression from text to extract the reference
 export function parseExpression(text: string): { isExpression: boolean; reference?: string } {
     const match = text.match(/\{\{\s*([^}]+)\s*\}\}/);
-    if(match){
+    if (match) {
         return { isExpression: true, reference: match[1].trim() };
     }
     return { isExpression: false };
 }
 
 export const formatCellValue = (value: any, path: string): string => {
-    if(value === null || value === undefined){
+    if (value === null || value === undefined) {
         return '-';
     }
 
-    if(typeof value === 'number'){
+    if (typeof value === 'number') {
         return Number.isInteger(value)
             ? value.toLocaleString()
             : Number(value).toFixed(4).replace(/\.?0+$/, '');
     }
 
-    if(typeof value === 'string'){
-        if(path.toLowerCase().includes('createdat') || path.toLowerCase().endsWith('date')) {
+    if (typeof value === 'string') {
+        if (path.toLowerCase().includes('createdat') || path.toLowerCase().endsWith('date')) {
             return formatTimeAgo(value);
         }
         return value;
     }
 
-    if(Array.isArray(value)) {
+    if (Array.isArray(value)) {
         return value.map((v) => formatCellValue(v, path)).join(', ');
     }
 
-    if(typeof value === 'object'){
-        if('name' in value && typeof value.name === 'string'){
+    if (typeof value === 'object') {
+        if ('name' in value && typeof value.name === 'string') {
             return String(value.name);
         }
         return JSON.stringify(value);
@@ -236,7 +237,7 @@ export const normalizeRows = (rows: any[], columns: ColumnDef[]) => {
             enriched[path] = formatCellValue(resolved, path);
         });
 
-        if(!enriched._id){
+        if (!enriched._id) {
             enriched._id = row.timestep ?? row._objectKey ?? `row-${Math.random().toString(36).slice(2)}`;
         }
         return enriched;
@@ -244,6 +245,6 @@ export const normalizeRows = (rows: any[], columns: ColumnDef[]) => {
 };
 
 // Check if value contains an expression
-export function containsExpression(value: string): boolean{
+export function containsExpression(value: string): boolean {
     return /\{\{[^}]+\}\}/.test(value);
 }

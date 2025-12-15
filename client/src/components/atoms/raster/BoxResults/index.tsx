@@ -2,6 +2,7 @@ import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import type { RasterConfig } from '@/types/stores/plugins';
 import './BoxResults.css';
 import Title from '@/components/primitives/Title';
+import { getValueByPath } from '@/utilities/getValueByPath';
 
 export interface BoxResultsProps {
     data: any;
@@ -34,10 +35,6 @@ const formatValue = (value: any, format?: string, decimals: number = 2): string 
         default:
             return String(value);
     }
-};
-
-const getValueByPath = (obj: any, path: string): any => {
-    return path.split('.').reduce((acc, part) => acc?.[part], obj);
 };
 
 const BoxResults = ({ data, config, onItemSelect }: BoxResultsProps) => {

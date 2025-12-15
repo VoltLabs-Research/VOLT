@@ -8,6 +8,7 @@ import usePluginStore from '@/stores/plugins/plugin';
 import { RiDeleteBin6Line } from 'react-icons/ri';
 import PerFrameListingModal from '@/components/organisms/common/PerFrameListingModal';
 import { formatCellValue, normalizeRows, type ColumnDef } from '@/utilities/plugins/expression-utils';
+import { getValueByPath } from '@/utilities/getValueByPath';
 
 type ListingResponse = {
     meta: {
@@ -24,27 +25,15 @@ type ListingResponse = {
     hasMore: boolean;
 };
 
-// TODO: Duplicated code
-const getValueByPath = (obj: any, path: string) => {
-    if(!obj || !path) return undefined;
-    if(path.indexOf('.') === -1) {
-        return obj?.[path];
-    }
-
-    return path
-        .split('.')
-        .reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj);
-};
-
 // TODO: FIX MANIFEST USAGE
 const buildColumns = (columnDefs: ColumnDef[], pluginId?: string, manifests?: any): ColumnConfig[] => {
     return columnDefs.map(({ path, label }) => {
         let isSelectField = false;
-        if(path.startsWith('analysis.config.') && pluginId && manifest?.[pluginId]) {
+        if (path.startsWith('analysis.config.') && pluginId && manifest?.[pluginId]) {
             const argName = path.replace('analysis.config.', '');
             const manifest = manifests[pluginId];
             const argument = manifest?.entrypoint?.argument?.[argName];
-            if(argument?.type === 'select'){
+            if (argument?.type === 'select') {
                 isSelectField = true;
             }
         }
@@ -55,7 +44,7 @@ const buildColumns = (columnDefs: ColumnDef[], pluginId?: string, manifests?: an
             sortable: true,
             render: (_value: any, row: any) => {
                 const value = getValueByPath(row, path);
-                if(isSelectField && value != null){
+                if (isSelectField && value != null) {
                     return <StatusBadge status={String(value)} />;
                 }
                 return formatCellValue(value, path);
@@ -85,20 +74,20 @@ const PluginListing = () => {
     const pluginsBySlug = usePluginStore((s) => s.pluginsBySlug);
     const fetchPlugins = usePluginStore((s) => s.fetchPlugins);
 
-    const fetchPage = useCallback(async(nextPage: number) => {
-        if(!pluginId || !listingKey || !trajectoryId){
+    const fetchPage = useCallback(async (nextPage: number) => {
+        if (!pluginId || !listingKey || !trajectoryId) {
             setError('Invalid listing parameters.');
             return;
         }
 
         setError(null);
-        if(nextPage === 1){
+        if (nextPage === 1) {
             setLoading(true);
-        }else{
+        } else {
             setIsFetchingMore(true);
         }
 
-        try{
+        try {
             const payload = await pluginApi.getListing(
                 pluginId,
                 listingKey,
@@ -114,17 +103,17 @@ const PluginListing = () => {
             setRows((prev) => (nextPage === 1 ? normalizedRows : [...prev, ...normalizedRows]));
             setPage(nextPage);
             setHasMore(payload.hasMore ?? ((payload.page * payload.limit) < payload.total));
-        }catch(err: any){
+        } catch (err: any) {
             const message = err?.response?.data?.message || err?.message || 'Failed to load listing.';
             setError(message);
-        }finally{
+        } finally {
             setLoading(false);
             setIsFetchingMore(false);
         }
     }, [listingKey, pluginId, trajectoryId]);
 
     useEffect(() => {
-        if(Object.keys(pluginsBySlug).length === 0) {
+        if (Object.keys(pluginsBySlug).length === 0) {
             fetchPlugins();
         }
     }, [pluginsBySlug, fetchPlugins]);
@@ -136,26 +125,26 @@ const PluginListing = () => {
         setPage(1);
         setHasMore(false);
 
-        if(pluginId && listingKey && trajectoryId){
+        if (pluginId && listingKey && trajectoryId) {
             fetchPage(1);
         }
     }, [pluginId, listingKey, trajectoryId, fetchPage]);
 
-    const handleMenuAction = useCallback(async(action: string, item: any) => {
-        if(action === 'delete'){
+    const handleMenuAction = useCallback(async (action: string, item: any) => {
+        if (action === 'delete') {
             const analysisId = item?.analysis?._id;
-            if(!analysisId){
+            if (!analysisId) {
                 console.error('No analysis ID found for deletion');
                 return;
             }
 
-            if(!window.confirm('Delete this analysis? This cannot be undone.')) return;
+            if (!window.confirm('Delete this analysis? This cannot be undone.')) return;
 
             setRows((prev) => prev.filter((row) => row?.analysis?._id !== analysisId));
 
-            try{
+            try {
                 await analysisConfigApi.delete(analysisId);
-            }catch(e){
+            } catch (e) {
                 console.error('Failed to delete analysis:', e);
                 fetchPage(1);
             }
@@ -165,7 +154,7 @@ const PluginListing = () => {
     const getMenuOptions = useCallback((item: any) => {
         const options: any[] = [];
 
-        if(item?.analysis?._id){
+        if (item?.analysis?._id) {
             options.push([
                 'Delete Analysis',
                 RiDeleteBin6Line,
@@ -196,7 +185,7 @@ const PluginListing = () => {
         return trail;
     }, [meta, trajectoryId, listingKey]);
 
-    return(
+    return (
         <>
             <DocumentListing
                 title={title}
@@ -209,7 +198,7 @@ const PluginListing = () => {
                 hasMore={hasMore}
                 isFetchingMore={isFetchingMore}
                 onLoadMore={() => {
-                    if(!loading && !isFetchingMore && hasMore){
+                    if (!loading && !isFetchingMore && hasMore) {
                         fetchPage(page + 1);
                     }
                 }}
