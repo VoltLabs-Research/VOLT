@@ -18,9 +18,12 @@ import {
     LuDownload
 } from 'react-icons/lu';
 import { Skeleton, Box, CircularProgress } from '@mui/material';
+import Container from '@/components/primitives/Container';
 import { formatSize } from '@/utilities/scene-utils';
 
 import './TrajectoryFileExplorer.css';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 type TrajectoryFileExplorerProps = {
     height?: number | string;
@@ -102,11 +105,11 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
         init();
     }, []);
 
-    const loadImagePreview = async(entry: FsEntry) => {
+    const loadImagePreview = async (entry: FsEntry) => {
         setPreviewLoading(true);
         setPreviewFileName(entry.name);
 
-        try{
+        try {
             const token = localStorage.getItem('authToken');
             const API_BASE_URL = import.meta.env.VITE_API_URL + '/api';
 
@@ -117,7 +120,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                 }
             });
 
-            if(!response.ok){
+            if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
@@ -134,7 +137,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                 setPreviewLoading(false);
             };
             reader.readAsDataURL(blob);
-        }catch(error){
+        } catch (error) {
             console.error('Error loading image preview:', error);
             setPreviewImage(null);
             setPreviewLoading(false);
@@ -149,7 +152,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
     };
 
     const handleDownloadPreview = () => {
-        if(!previewImage || !previewFileName) return;
+        if (!previewImage || !previewFileName) return;
         const a = document.createElement('a');
         a.href = previewImage;
         a.download = previewFileName;
@@ -159,15 +162,15 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
     };
 
     const handleDoubleClick = (e: FsEntry) => {
-        if(e.type === 'dir'){
+        if (e.type === 'dir') {
             enter(e.name);
-        }else{
+        } else {
             const isPNG = e.ext?.toLowerCase() === 'png' || e.name.toLowerCase().endsWith('.png');
-            if(isPNG){
+            if (isPNG) {
                 loadImagePreview(e);
-            }else if(onFileOpen){
+            } else if (onFileOpen) {
                 onFileOpen(e);
-            }else{
+            } else {
                 download(e.relPath);
             }
         }
@@ -212,7 +215,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
         </div>
     );
 
-    if(isMinimized) return null;
+    if (isMinimized) return null;
 
     const navItems = (
         <>
@@ -222,7 +225,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                 ))
             ) : trajectories.length === 0 ? (
                 <div className='file-explorer-nav-item'>
-                    <h3 className='file-explorer-nav-item-title' style={{ opacity: 0.5 }}>No trajectories available</h3>
+                    <Title className='font-size-3 file-explorer-nav-item-title' style={{ opacity: 0.5 }}>No trajectories available</Title>
                 </div>
             ) : (
                 trajectories.map((traj) => (
@@ -232,7 +235,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                         onClick={() => navigateToTrajectory(traj.id)}
                         style={{ cursor: 'pointer' }}
                     >
-                        <h3 className='file-explorer-nav-item-title'>{traj.name}</h3>
+                        <Title className='font-size-3 file-explorer-nav-item-title'>{traj.name}</Title>
                     </div>
                 ))
             )}
@@ -244,7 +247,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
             <i className='file-explorer-left-bottom-nav-icon'>
                 <Icon size={15} />
             </i>
-            <p className='file-explorer-left-bottom-nav-title'>{title}</p>
+            <Paragraph className='file-explorer-left-bottom-nav-title'>{title}</Paragraph>
         </div>
     ));
 
@@ -263,7 +266,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
     ) : (
         breadcrumbs.map(({ name }, i) => (
             <div className='search-breadcrumb-container' key={`${name}-${i}`}>
-                <p className='search-breadcrumb-name'>{name}</p>
+                <Paragraph className='search-breadcrumb-name'>{name}</Paragraph>
             </div>
         ))
     );
@@ -296,7 +299,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                     {e.type === 'dir' ? <LuFolder /> : <LuFile />}
                 </i>
 
-                <p className='file-explorer-file-name'>{e.name}</p>
+                <Paragraph className='file-explorer-file-name'>{e.name}</Paragraph>
             </div>
 
             <div className='file-explorer-list-column'>
@@ -313,7 +316,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
         </div>
     ));
 
-    return(
+    return (
         <>
             <FileExplorerWindow
                 title="Trajectories"

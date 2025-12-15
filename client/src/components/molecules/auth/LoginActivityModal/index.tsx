@@ -25,6 +25,8 @@ import { TbX, TbCheck, TbActivity, TbRefresh } from 'react-icons/tb';
 import { formatDistanceToNow, isValid } from 'date-fns';
 import useLoginActivity from '@/hooks/auth/use-login-activity';
 import './LoginActivityModal.css';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 interface LoginActivityModalProps {
     isOpen: boolean;
@@ -34,15 +36,15 @@ interface LoginActivityModalProps {
 const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose }) => {
     const { activities, loading, error, refetch } = useLoginActivity(50);
 
-    if(!isOpen) return null;
+    if (!isOpen) return null;
 
-    return(
+    return (
         <div className="login-activity-modal-overlay" onClick={onClose}>
             <div className="login-activity-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="login-activity-modal-header">
                     <div className="login-activity-modal-title">
                         <TbActivity size={24} />
-                        <h2>Login Activity</h2>
+                        <Title className='font-size-2 login-activity-modal-title'>Login Activity</Title>
                     </div>
                     <div className="login-activity-modal-actions">
                         <button
@@ -75,8 +77,8 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose
                     ) : error ? (
                         <div className="activity-error">
                             <TbActivity size={48} />
-                            <h4>Unable to load activity</h4>
-                            <p>{error}</p>
+                            <Title className='font-size-2-5'>Unable to load activity</Title>
+                            <Paragraph>{error}</Paragraph>
                             <button className="action-button" onClick={refetch}>
                                 Try Again
                             </button>
@@ -84,8 +86,8 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose
                     ) : activities.length === 0 ? (
                         <div className="activity-empty">
                             <TbActivity size={48} />
-                            <h4>No login activity</h4>
-                            <p>Your login attempts will appear here</p>
+                            <Title className='font-size-2-5'>No login activity</Title>
+                            <Paragraph>Your login attempts will appear here</Paragraph>
                         </div>
                     ) : (
                         <div className="activity-list">
@@ -98,33 +100,33 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose
                                         <div className="activity-header">
                                             <span className="activity-title">
                                                 {activity.action === 'login' ? 'Successful Login' :
-                                                 activity.action === 'failed_login' ? 'Failed Login Attempt' :
-                                                 'Logout'}
+                                                    activity.action === 'failed_login' ? 'Failed Login Attempt' :
+                                                        'Logout'}
                                             </span>
                                             <span className="activity-time">
                                                 {(() => {
-                                                    try{
+                                                    try {
                                                         const date = new Date(activity.createdAt);
                                                         return isValid(date) ?
                                                             formatDistanceToNow(date, { addSuffix: true }) :
                                                             'Unknown time';
-                                                    } catch{
+                                                    } catch {
                                                         return 'Unknown time';
                                                     }
                                                 })()}
                                             </span>
                                         </div>
                                         <div className="activity-details">
-                                            <p className="activity-description">
+                                            <Paragraph className="activity-description">
                                                 <strong>Device:</strong> {activity.userAgent}
-                                            </p>
-                                            <p className="activity-description">
+                                            </Paragraph>
+                                            <Paragraph className="activity-description">
                                                 <strong>IP Address:</strong> {activity.ip}
-                                            </p>
+                                            </Paragraph>
                                             {activity.failureReason && (
-                                                <p className="activity-description">
+                                                <Paragraph className="activity-description">
                                                     <strong>Reason:</strong> {activity.failureReason}
-                                                </p>
+                                                </Paragraph>
                                             )}
                                         </div>
                                     </div>

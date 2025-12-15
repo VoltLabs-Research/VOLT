@@ -4,6 +4,7 @@ import type { Webhook, CreateWebhookData, UpdateWebhookData } from '@/types/mode
 import { WEBHOOK_EVENTS } from '@/types/models/webhook';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './WebhookModal.css';
+import Title from '@/components/primitives/Title';
 
 interface WebhookModalProps {
     isOpen: boolean;
@@ -38,13 +39,13 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
     });
 
     useEffect(() => {
-        if(webhook){
+        if (webhook) {
             setFormData({
                 name: webhook.name,
                 url: webhook.url,
                 events: webhook.events
             });
-        }else{
+        } else {
             setFormData({
                 name: '',
                 url: '',
@@ -59,32 +60,32 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
         checkField(field, value);
     };
 
-    const handleSubmit = async(e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if(!validate(formData)) {
+        if (!validate(formData)) {
             return;
         }
 
-        try{
+        try {
             setLoading(true);
             setError(null);
             await onSave(formData);
             onClose();
-        }catch(err: any){
+        } catch (err: any) {
             setError(err.message || 'Failed to save webhook');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
 
     const handleEventChange = (event: string, checked: boolean) => {
-        if(checked){
+        if (checked) {
             setFormData(prev => ({
                 ...prev,
                 events: [...prev.events, event]
             }));
-        }else{
+        } else {
             setFormData(prev => ({
                 ...prev,
                 events: prev.events.filter(e => e !== event)
@@ -106,15 +107,15 @@ const WebhookModal: React.FC<WebhookModalProps> = ({
         }));
     };
 
-    if(!isOpen) return null;
+    if (!isOpen) return null;
 
-    return(
+    return (
         <div className="webhook-modal-overlay">
             <div className="webhook-modal">
                 <div className="webhook-modal-header">
                     <div className="webhook-modal-title">
                         <TbWebhook size={24} />
-                        <h3>{mode === 'create' ? 'Create Webhook' : 'Edit Webhook'}</h3>
+                        <Title className='font-size-3'>{mode === 'create' ? 'Create Webhook' : 'Edit Webhook'}</Title>
                     </div>
                     <button className="webhook-modal-close" onClick={onClose}>
                         <TbX size={20} />

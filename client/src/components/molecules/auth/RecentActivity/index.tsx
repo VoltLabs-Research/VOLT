@@ -32,6 +32,8 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import useApiTracker from '@/hooks/api/use-api-tracker';
 import './RecentActivity.css';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 interface RecentActivityProps {
     limit?: number;
@@ -50,21 +52,21 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         sort: '-createdAt'
     });
 
-    const handleRefresh = async() => {
+    const handleRefresh = async () => {
         setRefreshing(true);
         await refetch();
         setRefreshing(false);
     };
 
     const getStatusCodeClass = (statusCode: number) => {
-        if(statusCode >= 200 && statusCode < 300) return 'success';
-        if(statusCode >= 400 && statusCode < 500) return 'client-error';
-        if(statusCode >= 500) return 'server-error';
+        if (statusCode >= 200 && statusCode < 300) return 'success';
+        if (statusCode >= 400 && statusCode < 500) return 'client-error';
+        if (statusCode >= 500) return 'server-error';
         return 'success';
     };
 
     const formatResponseTime = (time: number) => {
-        if(time < 1000) return `${time}ms`;
+        if (time < 1000) return `${time}ms`;
         return `${(time / 1000).toFixed(1)}s`;
     };
 
@@ -79,14 +81,14 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         return colors[method as keyof typeof colors] || 'var(--accent-gray)';
     };
 
-    if(loading && !data){
-        return(
+    if (loading && !data) {
+        return (
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header">
-                    <h3 className="recent-activity-title">
+                    <Title className="font-size-3 recent-activity-title">
                         <HiChartBar className="recent-activity-icon" />
                         Recent Activity
-                    </h3>
+                    </Title>
                 </div>
                 <div className="recent-activity-loading">
                     {Array.from({ length: 3 }).map((_, index) => (
@@ -103,21 +105,21 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         );
     }
 
-    if(error){
-        return(
+    if (error) {
+        return (
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header">
-                    <h3 className="recent-activity-title">
+                    <Title className="font-size-3 recent-activity-title">
                         <HiChartBar className="recent-activity-icon" />
                         Recent Activity
-                    </h3>
+                    </Title>
                 </div>
                 <div className="recent-activity-empty">
                     <HiGlobeAlt className="recent-activity-empty-icon" />
-                    <h4 className="recent-activity-empty-title">Unable to load activity</h4>
-                    <p className="recent-activity-empty-description">
+                    <Title className="font-size-2-5 recent-activity-empty-title">Unable to load activity</Title>
+                    <Paragraph className="recent-activity-empty-description">
                         {error}
-                    </p>
+                    </Paragraph>
                 </div>
             </div>
         );
@@ -127,33 +129,33 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
     const requests = Array.isArray(data?.data) ? data.data : [];
     const summary = data?.data?.summary;
 
-    if(requests.length === 0){
-        return(
+    if (requests.length === 0) {
+        return (
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header">
-                    <h3 className="recent-activity-title">
+                    <Title className="font-size-3 recent-activity-title">
                         <HiChartBar className="recent-activity-icon" />
                         Recent Activity
-                    </h3>
+                    </Title>
                 </div>
                 <div className="recent-activity-empty">
                     <HiChartBar className="recent-activity-empty-icon" />
-                    <h4 className="recent-activity-empty-title">No activity yet</h4>
-                    <p className="recent-activity-empty-description">
+                    <Title className="font-size-2-5 recent-activity-empty-title">No activity yet</Title>
+                    <Paragraph className="recent-activity-empty-description">
                         Your API requests will appear here once you start using the platform.
-                    </p>
+                    </Paragraph>
                 </div>
             </div>
         );
     }
 
-    return(
+    return (
         <div className={`recent-activity-container ${className}`}>
             <div className="recent-activity-header">
-                <h3 className="recent-activity-title">
+                <Title className="font-size-3 recent-activity-title">
                     <HiChartBar className="recent-activity-icon" />
                     Recent Activity
-                </h3>
+                </Title>
 
                 {showStats && summary && (
                     <div className="recent-activity-stats">

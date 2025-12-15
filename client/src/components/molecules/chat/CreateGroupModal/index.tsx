@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/chat';
 import useTeamStore from '@/stores/team/team';
@@ -10,6 +11,7 @@ import FormInput from '@/components/atoms/form/FormInput';
 import CreateGroupBg from '@/assets/images/create-new-group.webp';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './CreateGroupModal.css';
+import Title from '@/components/primitives/Title';
 
 const CreateGroupModal = () => {
     const { teamMembers, createGroupChat } = useChat();
@@ -32,12 +34,14 @@ const CreateGroupModal = () => {
         groupDescription: { maxLength: 250, message: 'Description cannot exceed 250 characters' }
     });
 
-    const handleCreateGroup = async() => {
-        if(!validate({ groupName, groupDescription })) return;
-        if(selectedMembers.length === 0 || !selectedTeam) return; // Kept original validation
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleCreateGroup = async () => {
+        if (!validate({ groupName, groupDescription })) return;
+        if (selectedMembers.length === 0 || !selectedTeam) return; // Kept original validation
 
         setIsLoading(true);
-        try{
+        try {
             await createGroupChat( // Changed from createGroup to createGroupChat to match existing hook usage
                 selectedTeam._id, // Kept selectedTeam._id as it was in the original createGroupChat call
                 groupName.trim(),
@@ -48,9 +52,9 @@ const CreateGroupModal = () => {
             setGroupDescription('');
             setSelectedMembers([]);
             setShowCreateGroup(false);
-        }catch(error){
+        } catch (error) {
             console.error('Failed to create group:', error);
-        }finally{
+        } finally {
             setIsLoading(false);
         }
     };
@@ -65,7 +69,7 @@ const CreateGroupModal = () => {
         checkField('groupDescription', e.target.value);
     };
 
-    return(
+    return (
         <DraggableBinaryContainer
             title='Create New Group'
             description="Create a new group chat with your team members."
@@ -97,14 +101,14 @@ const CreateGroupModal = () => {
             </div>
 
             <div className='create-group-members-section'>
-                <h5>Select Members</h5>
+                <Title className='font-size-2-5'>Select Members</Title>
                 <div className='create-group-members-list'>
                     {teamMembers
                         .filter((member, index, self) =>
                             member._id !== user?._id &&
                             self.findIndex(m => m._id === member._id) === index
                         )
-                            .map((member) => (
+                        .map((member) => (
                             <div
                                 key={member._id}
                                 className={`create-group-member ${selectedMembers.includes(member._id) ? 'selected' : ''}`}

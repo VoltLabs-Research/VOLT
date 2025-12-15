@@ -7,20 +7,6 @@
 
 .dashboard-layout-header-container{
     padding: 1rem 2rem 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.dashboard-user-container{
-    display: flex;
-    gap: 1.5rem;
-}
-
-.dashboard-search-container{
-    display: flex;
-    gap: .5rem;
-    align-items: center;
 }
 
 .dashboard-search-container .rh-select-trigger{
@@ -30,8 +16,6 @@
     height: 2.7rem;
     padding: 0.5rem 1rem;
 }
-
-.dashboard-bell-wrapper{ position: relative; }
 
 .dashboard-bell-trigger {
     position: relative;
@@ -103,13 +87,8 @@
 }
 
 .dashboard-notifications-header{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     padding: 10px 12px;
     border-bottom: 1px solid var(--color-border);
-    color: var(--color-text-primary);
-    font-weight: 600;
 }
 .dashboard-notifications-close{
     background: transparent;
@@ -151,7 +130,6 @@
 }
 
 .mobile-menu-trigger{ display: none; position: relative; }
-.mobile-menu-wrapper{ position: relative; display: none; }
 
 /* Hide burger on desktop */
 @media screen and (min-width: 769px){
@@ -159,9 +137,6 @@
 }
 
 .navigation-container{
-    display: flex;
-    align-items: center;
-    gap: .5rem;
     border: 1px solid var(--color-border);
     background-color: var(--color-surface-2);
     width: fit-content;
@@ -170,10 +145,6 @@
 }
 
 .navigation-item-container{
-    display: flex;
-    cursor: pointer;
-    align-items: center;
-    gap: .5rem;
     padding: .5rem 1.5rem;
     transition: .1s;
     border-radius: 1rem;
@@ -196,34 +167,21 @@
     display: flex;
 }
 
-.navigation-item-name{
-    font-size: .95rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-}
-
 .navigation-item-container.is-selected .navigation-item-name{
     color: var(--color-text-primary);
 }
 
 @media screen and (max-width: 768px){
-    .navigation-container{
-        display: none;
-    }
-
     .dashboard-layout-header-container{
         padding: 1rem;
         gap: .75rem;
         flex-wrap: wrap;
     }
-    .mobile-menu-wrapper{ display: block; }
 
     .mobile-menu-trigger{ display: flex; }
 
     /* Hide only the middle (search) container on mobile */
     .dashboard-layout-header-container .dashboard-search-container{ display: none !important; }
-    /* Ensure user container remains visible on mobile */
-    .dashboard-user-container{ display: flex; }
 
 .dashboard-search-container{
     flex: 1 1 auto;
@@ -240,14 +198,8 @@
 }
 
 .team-selector-container{
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: nowrap;
     white-space: nowrap;
-    cursor: pointer;
     transition: all 0.2s ease;
-    padding: 0.5rem;
     border-radius: 0.5rem;
     margin: -0.5rem;
 }
@@ -275,10 +227,6 @@
     opacity: 1;
     transform: scale(1);
 }
-
-    .dashboard-user-container{
-        gap: 0.5rem;
-    }
 
     .dashboard-notifications-dropdown{
         right: -50px;

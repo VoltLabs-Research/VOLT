@@ -22,12 +22,14 @@
 
 import { useEffect } from 'react';
 import { useChatStore } from '@/stores/chat';
-import { useChat } from '@/hooks/chat/useChat';
 import {
     IoCloseOutline,
     IoCreateOutline
 } from 'react-icons/io5';
 import useAuthStore from '@/stores/authentication';
+import React from 'react';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 const EditGroupModal = () => {
     const {
@@ -42,36 +44,36 @@ const EditGroupModal = () => {
     const user = useAuthStore((store) => store.user);
     const [isLoading, setIsLoading] = React.useState(false);
 
-    if(!currentChat || !currentChat.isGroup) return null;
+    if (!currentChat || !currentChat.isGroup) return null;
 
     const isAdmin = currentChat.admins?.some(admin => admin._id === user?._id) || false;
     const isOwner = currentChat.createdBy?._id === user?._id;
 
     // Only show if user is admin or owner
-    if(!isAdmin && !isOwner) return null;
+    if (!isAdmin && !isOwner) return null;
 
     // Initialize form with current group data
     useEffect(() => {
-        if(currentChat){
+        if (currentChat) {
             setEditGroupName(currentChat.groupName || '');
             setEditGroupDescription(currentChat.groupDescription || '');
         }
     }, [currentChat, setEditGroupName, setEditGroupDescription]);
 
-    const handleSaveGroup = async() => {
-        if(!editGroupName.trim()) return;
+    const handleSaveGroup = async () => {
+        if (!editGroupName.trim()) return;
 
         setIsLoading(true);
-        try{
+        try {
             await updateGroupInfo(
                 currentChat._id,
                 editGroupName.trim(),
                 editGroupDescription.trim()
             );
             setShowEditGroup(false);
-        }catch(error){
+        } catch (error) {
             console.error('Failed to update group:', error);
-        }finally{
+        } finally {
             setIsLoading(false);
         }
     };
@@ -80,11 +82,11 @@ const EditGroupModal = () => {
         setShowEditGroup(false);
     };
 
-    return(
+    return (
         <div className='chat-group-management-modal'>
             <div className='chat-group-management-content'>
                 <div className='chat-group-management-header'>
-                    <h3>Edit Group</h3>
+                    <Title className='font-size-3'>Edit Group</Title>
                     <button
                         className='chat-close-modal'
                         onClick={handleClose}
@@ -133,23 +135,23 @@ const EditGroupModal = () => {
 
                     {/* Group Info Preview */}
                     <div className='chat-edit-group-preview'>
-                        <h5>Preview</h5>
+                        <Title className='font-size-2-5'>Preview</Title>
                         <div className='chat-edit-group-preview-content'>
                             <div className='chat-edit-group-preview-avatar'>
                                 <IoCreateOutline />
                             </div>
                             <div className='chat-edit-group-preview-details'>
-                                <h4 className='chat-edit-group-preview-name'>
+                                <Title className='font-size-2-5 chat-edit-group-preview-name'>
                                     {editGroupName || 'Group Name'}
-                                </h4>
+                                </Title>
                                 {editGroupDescription && (
-                                    <p className='chat-edit-group-preview-description'>
+                                    <Paragraph className='chat-edit-group-preview-description'>
                                         {editGroupDescription}
-                                    </p>
+                                    </Paragraph>
                                 )}
-                                <p className='chat-edit-group-preview-members'>
+                                <Paragraph className='chat-edit-group-preview-members'>
                                     {currentChat.participants.length} members
-                                </p>
+                                </Paragraph>
                             </div>
                         </div>
                     </div>

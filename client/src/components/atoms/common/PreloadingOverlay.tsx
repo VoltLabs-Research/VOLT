@@ -4,20 +4,22 @@ import { Canvas } from '@react-three/fiber';
 import TetrahedronLoader from './TetrahedronLoader';
 import usePlaybackStore from '@/stores/editor/playback';
 import Container from '@/components/primitives/Container';
+import Paragraph from '@/components/primitives/Paragraph';
+import Title from '@/components/primitives/Title';
 
 // TODO: move to scene/
 const PreloadingOverlay: React.FC = () => {
     const isPreloading = usePlaybackStore((state) => state.isPreloading ?? false);
     const preloadProgress = usePlaybackStore((state) => state.preloadProgress ?? 0);
 
-    if(!isPreloading) return null;
+    if (!isPreloading) return null;
 
     const ringVars = {
         ['--p' as any]: preloadProgress,
         ['--stroke' as any]: '1px'
     };
 
-    return(
+    return (
         <motion.div
             className="editor-model-loading-wrapper"
             initial={{ opacity: 0, scale: 1 }}
@@ -30,10 +32,10 @@ const PreloadingOverlay: React.FC = () => {
                     <TetrahedronLoader />
                 </Canvas>
                 <Container className="d-flex column gap-2">
-                    <h3 className="editor-model-loading-title">Setting up your scene...</h3>
-                    <p className="editor-model-loading-description">
+                    <Title className="font-size-5-5 font-weight-6 editor-model-loading-title">Setting up your scene...</Title>
+                    <Paragraph className="font-weight-4 font-size-4 line-height-5 editor-model-loading-description">
                         For quick analysis and visualizations you may prefer to rasterize your simulation.
-                    </p>
+                    </Paragraph>
                 </Container>
             </Container>
         </motion.div>

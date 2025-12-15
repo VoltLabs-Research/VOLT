@@ -1,7 +1,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { gsap } from 'gsap';
-import { MdKeyboardArrowDown } from 'react-icons/md';
+import { ChevronDown } from 'lucide-react';
 import './CollapsibleSection.css';
+import Title from '@/components/primitives/Title';
+import Container from '@/components/primitives/Container';
 
 interface CollapsibleSectionProps {
   title: string;
@@ -21,12 +23,12 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   const arrowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if(!bodyRef.current || !arrowRef.current) return;
+    if (!bodyRef.current || !arrowRef.current) return;
 
     const bodyElement = bodyRef.current;
     const arrowElement = arrowRef.current;
 
-    if(isExpanded){
+    if (isExpanded) {
       // Simple expand animation
       gsap.set(bodyElement, { height: 'auto' });
       const height = bodyElement.offsetHeight;
@@ -46,7 +48,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         duration: 0.25,
         ease: 'power2.out'
       });
-    }else{
+    } else {
       // Simple collapse animation
       const height = bodyElement.offsetHeight;
       gsap.set(bodyElement, { height: height });
@@ -67,7 +69,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 
   // Set initial state for collapsed sections
   useEffect(() => {
-    if(!isExpanded && bodyRef.current){
+    if (!isExpanded && bodyRef.current) {
       gsap.set(bodyRef.current, { height: 0 });
     }
   }, []);
@@ -76,29 +78,29 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
     setIsExpanded(!isExpanded);
   };
 
-  return(
-    <div className={`editor-sidebar-item-container ${className}`}>
-      <div
-        className="editor-sidebar-item-header-container"
+  return (
+    <Container className={`d-flex column mb-1-5 ${className}`}>
+      <Container
+        className="d-flex content-between items-center cursor-pointer editor-sidebar-item-header-container"
         onClick={handleToggle}
         style={{ cursor: 'pointer' }}
       >
-        <h3 className="editor-sidebar-item-header-title">{title}</h3>
-        <div
+        <Title className="font-size-3 font-weight-6 color-primary u-select-none">{title}</Title>
+        <Container
           ref={arrowRef}
-          className="editor-sidebar-item-arrow"
+          className="d-flex flex-center editor-sidebar-item-arrow"
         >
-          <MdKeyboardArrowDown size={20} />
-        </div>
-      </div>
-      <div
+          <ChevronDown size={20} />
+        </Container>
+      </Container>
+      <Container
         ref={bodyRef}
         className="editor-sidebar-item-body-container"
         style={{ overflow: 'hidden' }}
       >
         {children}
-      </div>
-    </div>
+      </Container>
+    </Container>
   );
 };
 

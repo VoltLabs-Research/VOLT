@@ -6,6 +6,7 @@ import { Skeleton } from '@mui/material'
 import { formatNetworkSpeed } from '@/utilities/network'
 import Container from '@/components/primitives/Container'
 import './ServerTable.css'
+import Title from '@/components/primitives/Title'
 
 export function ServerTable() {
   const { metrics, isHistoryLoaded } = useServerMetrics()
@@ -52,7 +53,7 @@ export function ServerTable() {
         <Container className="server-table-header">
           <Container className="d-flex items-center gap-075">
             <Container className="server-table-title-bar" />
-            <h3 className="server-table-title">Server Summary</h3>
+            <Title className='font-size-3 server-table-title'>Server Summary</Title>
           </Container>
           <Container className="d-flex items-center gap-05">
             <button className="server-table-btn">

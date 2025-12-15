@@ -4,31 +4,41 @@ import {
     ArrowLeft,
     Play,
     Square,
-    RefreshCw,
+    RotateCw,
     Trash2,
-    Terminal,
-    Folder,
     Settings,
+    Terminal,
+    FileText,
+    Folder,
+    Activity,
+    Cpu,
+    HardDrive,
+    Network,
+    Clock,
     ExternalLink,
     Box,
-    Layers,
-    Activity
+    Layers
 } from 'lucide-react';
+import { Line } from 'react-chartjs-2';
 import {
-    AreaChart,
-    Area,
-    XAxis,
-    YAxis,
-    CartesianGrid,
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title as ChartTitle,
     Tooltip,
-    ResponsiveContainer
-} from 'recharts';
+    Legend,
+} from 'chart.js';
 import useToast from '@/hooks/ui/use-toast';
+import Button from '@/components/atoms/common/Button';
 import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
 import ContainerFileExplorer from '@/components/organisms/containers/ContainerFileExplorer';
 import ContainerProcesses from '@/components/organisms/containers/ContainerProcesses';
 import EditContainerModal from '@/components/organisms/containers/EditContainerModal';
 import containerApi from '@/services/api/container';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 import './ContainerDetails.css';
 
 const ContainerDetails: React.FC = () => {
@@ -48,32 +58,32 @@ const ContainerDetails: React.FC = () => {
     }, [id]);
 
     useEffect(() => {
-        if(container && container.status === 'running'){
+        if (container && container.status === 'running') {
             const interval = setInterval(() => fetchStats(container._id), 2000);
-            return() => clearInterval(interval);
+            return () => clearInterval(interval);
         }
     }, [container]);
 
-    const fetchContainer = async() => {
-        try{
+    const fetchContainer = async () => {
+        try {
             const containers = await containerApi.getAll();
             const found = containers.find((c: any) => c._id === id);
-            if(found){
+            if (found) {
                 setContainer(found);
-            }else{
+            } else {
                 showError('Container not found');
                 navigate('/dashboard/containers');
             }
-        }catch(error){
+        } catch (error) {
             showError('Failed to fetch container details');
             navigate('/dashboard/containers');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
 
-    const fetchStats = async(containerId: string) => {
-        try{
+    const fetchStats = async (containerId: string) => {
+        try {
             const newStats = await containerApi.getStats(containerId);
 
             let cpuPercent = 0;
@@ -81,7 +91,7 @@ const ContainerDetails: React.FC = () => {
             const systemDelta = newStats.cpu_stats.system_cpu_usage - newStats.precpu_stats.system_cpu_usage;
             const onlineCpus = newStats.cpu_stats.online_cpus || newStats.cpu_stats.cpu_usage.percpu_usage?.length || 1;
 
-            if(systemDelta > 0 && cpuDelta > 0){
+            if (systemDelta > 0 && cpuDelta > 0) {
                 cpuPercent = (cpuDelta / systemDelta) * onlineCpus * 100;
             }
 
@@ -96,17 +106,17 @@ const ContainerDetails: React.FC = () => {
                 return updated.slice(-30);
             });
 
-        }catch(error){
+        } catch (error) {
             console.error('Failed to fetch stats', error);
         }
     };
 
-    const handleAction = async(action: 'start' | 'stop' | 'restart' | 'delete') => {
-        if(!container) return;
+    const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete') => {
+        if (!container) return;
         setActionLoading(true);
-        try{
-            if(action === 'delete'){
-                if(!window.confirm('Are you sure you want to delete this container?')) {
+        try {
+            if (action === 'delete') {
+                if (!window.confirm('Are you sure you want to delete this container?')) {
                     setActionLoading(false);
                     return;
                 }
@@ -116,44 +126,25 @@ const ContainerDetails: React.FC = () => {
                 return;
             }
 
-            if(action === 'restart'){
+            if (action === 'restart') {
                 await containerApi.restart(container._id);
-            }else{
+            } else {
                 await containerApi.control(container._id, action);
             }
 
             showSuccess(`Container ${action}ed successfully`);
             fetchContainer();
-        }catch(error: any){
+        } catch (error: any) {
             showError(error.response?.data?.message || `Failed to ${action} container`);
-        }finally{
+        } finally {
             setActionLoading(false);
         }
     };
 
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-        showSuccess('Copied to clipboard');
-    };
+    if (loading) return <div className="loading-spinner">Loading...</div>;
+    if (!container) return null;
 
-    const calculateUptime = (startDate: string) => {
-        const start = new Date(startDate).getTime();
-        const now = new Date().getTime();
-        const diff = now - start;
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-        if(days > 0) return `${days}d ${hours}h`;
-        if(hours > 0) return `${hours}h ${minutes}m`;
-        return `${minutes}m`;
-    };
-
-    if(loading) return <div className="loading-spinner">Loading...</div>;
-    if(!container) return null;
-
-    return(
+    return (
         <div className="details-page-layout">
             <div className="details-sidebar">
                 <div className="sidebar-header-details">
@@ -165,7 +156,7 @@ const ContainerDetails: React.FC = () => {
                             <Box size={24} />
                         </div>
                         <div className="identity-text">
-                            <h2>{container.name}</h2>
+                            <Title className="font-size-4 font-weight-6">{container.name}</Title>
                             <span className={`status-badge ${container.status}`}>{container.status}</span>
                         </div>
                     </div>
@@ -231,7 +222,7 @@ const ContainerDetails: React.FC = () => {
                 {activeTab === 'overview' && (
                     <div className="content-pane">
                         <div className="pane-header">
-                            <h2>Overview</h2>
+                            <Title className="font-size-4 font-weight-6">Overview</Title>
                             <div className="meta-tags">
                                 <span className="tag monospace">ID: {container.containerId.substring(0, 12)}</span>
                                 <span className="tag">Image: {container.image}</span>
@@ -242,7 +233,7 @@ const ContainerDetails: React.FC = () => {
                         <div className="stats-grid">
                             <div className="stat-card">
                                 <div className="card-header-row">
-                                    <h3>CPU Usage</h3>
+                                    <Title className="font-size-3 font-weight-6">CPU Usage</Title>
                                     <span className="limit-badge">Limit: {container.cpus || 1} vCPU</span>
                                 </div>
                                 <div className="chart-wrapper">
@@ -302,7 +293,7 @@ const ContainerDetails: React.FC = () => {
                             </div>
                             <div className="stat-card">
                                 <div className="card-header-row">
-                                    <h3>Memory Usage</h3>
+                                    <Title className="font-size-3 font-weight-6">Memory Usage</Title>
                                     <span className="limit-badge">Limit: {container.memory || 512} MB</span>
                                 </div>
                                 <div className="chart-wrapper">
@@ -363,7 +354,7 @@ const ContainerDetails: React.FC = () => {
 
                         <div className="config-grid">
                             <div className="config-card">
-                                <h3>Environment Variables</h3>
+                                <Title className="font-size-3 font-weight-6">Environment Variables</Title>
                                 <div className="env-list">
                                     {container.env && container.env.length > 0 ? (
                                         container.env.map((e: any, i: number) => (
@@ -373,12 +364,12 @@ const ContainerDetails: React.FC = () => {
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="empty-text">No environment variables</p>
+                                        <Paragraph className="color-muted font-size-2">No environment variables</Paragraph>
                                     )}
                                 </div>
                             </div>
                             <div className="config-card">
-                                <h3>Port Bindings</h3>
+                                <Title className="font-size-3 font-weight-6">Port Bindings</Title>
                                 <div className="port-list">
                                     {container.ports && container.ports.length > 0 ? (
                                         container.ports.map((p: any, i: number) => (
@@ -389,7 +380,7 @@ const ContainerDetails: React.FC = () => {
                                             </div>
                                         ))
                                     ) : (
-                                        <p className="empty-text">No ports exposed</p>
+                                        <Paragraph className="color-muted font-size-2">No ports exposed</Paragraph>
                                     )}
                                 </div>
                             </div>
@@ -404,7 +395,7 @@ const ContainerDetails: React.FC = () => {
                         ) : (
                             <div className="placeholder-state">
                                 <Activity size={48} />
-                                <p>Container must be running to view processes</p>
+                                <Paragraph className="color-muted">Container must be running to view processes</Paragraph>
                             </div>
                         )}
                     </div>
@@ -421,7 +412,7 @@ const ContainerDetails: React.FC = () => {
                         ) : (
                             <div className="placeholder-state">
                                 <Terminal size={48} />
-                                <p>Container must be running to view logs</p>
+                                <Paragraph className="color-muted">Container must be running to view logs</Paragraph>
                             </div>
                         )}
                     </div>
@@ -434,7 +425,7 @@ const ContainerDetails: React.FC = () => {
                         ) : (
                             <div className="placeholder-state">
                                 <Folder size={48} />
-                                <p>Container must be running to browse files</p>
+                                <Paragraph className="color-muted">Container must be running to browse files</Paragraph>
                             </div>
                         )}
                     </div>
@@ -442,11 +433,11 @@ const ContainerDetails: React.FC = () => {
 
                 {activeTab === 'settings' && (
                     <div className="content-pane settings-pane">
-                        <h2>Settings</h2>
+                        <Title className="font-size-4 font-weight-6">Settings</Title>
                         <div className="settings-card">
                             <div className="card-header">
-                                <h3>Configuration & Resources</h3>
-                                <p>Update environment variables, ports, and resource limits(CPU/RAM).</p>
+                                <Title className="font-size-3 font-weight-6">Configuration & Resources</Title>
+                                <Paragraph className="color-muted">Update environment variables, ports, and resource limits(CPU/RAM).</Paragraph>
                             </div>
                             <div className="card-body">
                                 <button
@@ -460,8 +451,8 @@ const ContainerDetails: React.FC = () => {
 
                         <div className="settings-card danger">
                             <div className="card-header">
-                                <h3>Delete Container</h3>
-                                <p>Permanently remove this container and all its data.</p>
+                                <Title className="font-size-3 font-weight-6">Delete Container</Title>
+                                <Paragraph className="color-muted">Permanently remove this container and all its data.</Paragraph>
                             </div>
                             <div className="card-body">
                                 <button

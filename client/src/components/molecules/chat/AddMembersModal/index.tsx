@@ -1,25 +1,3 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files(the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import { useState, useEffect } from 'react';
 import { useChatStore } from '@/stores/chat';
 import {
@@ -29,6 +7,8 @@ import {
 } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 const AddMembersModal = () => {
     const {
@@ -47,7 +27,7 @@ const AddMembersModal = () => {
 
     // Load team members when modal opens
     useEffect(() => {
-        if(currentChat?.team?._id){
+        if (currentChat?.team?._id) {
             loadTeamMembers(currentChat.team._id);
         }
     }, [currentChat, loadTeamMembers]);
@@ -64,17 +44,17 @@ const AddMembersModal = () => {
         return fullName.includes(searchQuery.toLowerCase());
     });
 
-    const handleAddMembers = async() => {
-        if(selectedMembers.length === 0) return;
+    const handleAddMembers = async () => {
+        if (selectedMembers.length === 0) return;
 
         setIsLoading(true);
-        try{
+        try {
             await addUsersToGroup(currentChat!._id, selectedMembers);
             setSelectedMembers([]);
             setShowAddMembers(false);
-        }catch(error){
+        } catch (error) {
             console.error('Failed to add members:', error);
-        }finally{
+        } finally {
             setIsLoading(false);
         }
     };
@@ -84,13 +64,13 @@ const AddMembersModal = () => {
         setShowAddMembers(false);
     };
 
-    if(!currentChat || !currentChat.isGroup) return null;
+    if (!currentChat || !currentChat.isGroup) return null;
 
-    return(
+    return (
         <div className='chat-group-management-modal'>
             <div className='chat-group-management-content'>
                 <div className='chat-group-management-header'>
-                    <h3>Add Members</h3>
+                    <Title className='font-size-3'>Add Members</Title>
                     <button
                         className='chat-close-modal'
                         onClick={handleClose}
@@ -116,17 +96,17 @@ const AddMembersModal = () => {
 
                     {/* Available Members */}
                     <div className='chat-add-members-list'>
-                        <h5>Available Members</h5>
+                        <Title className='font-size-2-5'>Available Members</Title>
                         {filteredMembers.length === 0 ? (
                             <div className='chat-add-members-empty'>
-                                <p>No available members to add</p>
+                                <Paragraph>No available members to add</Paragraph>
                             </div>
                         ) : (
                             <div className='chat-add-members-members'>
                                 {filteredMembers.map((member) => {
                                     const isSelected = selectedMembers.includes(member._id);
 
-                                    return(
+                                    return (
                                         <div
                                             key={member._id}
                                             className={`chat-add-members-member ${isSelected ? 'selected' : ''}`}
@@ -158,7 +138,7 @@ const AddMembersModal = () => {
                     {/* Selected Members Summary */}
                     {selectedMembers.length > 0 && (
                         <div className='chat-add-members-selected'>
-                            <p>{selectedMembers.length} member{selectedMembers.length !== 1 ? 's' : ''} selected</p>
+                            <Paragraph>{selectedMembers.length} member{selectedMembers.length !== 1 ? 's' : ''} selected</Paragraph>
                         </div>
                     )}
 

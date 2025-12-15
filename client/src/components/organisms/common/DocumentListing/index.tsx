@@ -9,6 +9,7 @@ import Container from '@/components/primitives/Container'
 import DynamicIcon from '@/components/atoms/common/DynamicIcon'
 import Title from '@/components/primitives/Title'
 import Paragraph from '@/components/primitives/Paragraph'
+import { LuChevronRight } from 'react-icons/lu'
 
 const sortDataWorker = (
     data: any[],
@@ -210,7 +211,7 @@ const DocumentListing = ({
                         {breadcrumbs.map((name, index) => (
                             <Container className='d-flex gap-05 breadcrumb-item-container' key={index}>
                                 {typeof name === 'string' ? (
-                                    <p className='breadcrumb-item-name'>{name}</p>
+                                    <Paragraph className='breadcrumb-item-name'>{name}</Paragraph>
                                 ) : (
                                     name
                                 )}

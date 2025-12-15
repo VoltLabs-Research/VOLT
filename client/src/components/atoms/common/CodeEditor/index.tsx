@@ -4,6 +4,7 @@ import type { Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import './CodeEditor.css';
 import Container from '@/components/primitives/Container';
+import Paragraph from '@/components/primitives/Paragraph';
 
 export type CodeLanguage = 'json' | 'javascript' | 'typescript' | 'yaml' | 'html' | 'css' | 'markdown' | 'plaintext';
 
@@ -41,7 +42,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
     const handleEditorMount = useCallback((editorInstance: editor.IStandaloneCodeEditor, monaco: Monaco) => {
         // Disable JSON completion provider to avoid weird behavior with numbers
-        if(language === 'json'){
+        if (language === 'json') {
             monaco.languages.json.jsonDefaults.setModeConfiguration({
                 documentFormattingEdits: false,
                 documentRangeFormattingEdits: false,
@@ -63,10 +64,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
     const editorHeight = typeof height === 'number' ? `${height}px` : height;
 
-    return(
+    return (
         <Container className={`d-flex column gap-05 ${className} ${error ? 'has-error' : ''}`}>
             {label && <label className="code-editor-label">{label}</label>}
-            {description && <p className="code-editor-description">{description}</p>}
+            {description && <Paragraph className="code-editor-description">{description}</Paragraph>}
 
             <Container className="p-relative overflow-hidden code-editor-container" style={{ height: editorHeight }}>
                 <Editor
@@ -123,7 +124,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                 />
             </Container>
 
-            {error && <p className="code-editor-error">{error}</p>}
+            {error && <Paragraph className="code-editor-error">{error}</Paragraph>}
         </Container>
     );
 };

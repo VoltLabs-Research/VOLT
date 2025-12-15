@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { IoCheckmarkCircle, IoCloseCircle, IoAlertCircle, IoTimeOutline } from 'react-icons/io5';
 import { Skeleton } from '@mui/material';
 import teamApi from '@/services/api/team';
 import type { TeamInvitation } from '@/types/team-invitation';
 import Button from '@/components/atoms/common/Button';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import Container from '@/components/primitives/Container';
+import useToast from '@/hooks/ui/use-toast';
+import useAuthStore from '@/stores/authentication';
+import { CheckCircle, XCircle, Mail, Clock } from 'lucide-react';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 import '../SignIn/SignIn.css';
 import './TeamInvitationPage.css';
 
@@ -98,7 +102,7 @@ const TeamInvitationPage: React.FC = () => {
             <Container className='auth-page-wrapper'>
                 <Container className='form-section'>
                     <EmptyState
-                        icon={<IoCloseCircle size={48} />}
+                        icon={<XCircle size={48} />}
                         title='Invalid Invitation'
                         description={error || 'This invitation is not valid or has expired'}
                         buttonText='Back to Dashboard'
@@ -117,7 +121,7 @@ const TeamInvitationPage: React.FC = () => {
             <Container className='auth-page-wrapper'>
                 <Container className='form-section'>
                     <EmptyState
-                        icon={<IoTimeOutline size={48} />}
+                        icon={<Clock size={48} />}
                         title='Invitation Expired'
                         description={`This invitation expired on ${expiresAt.toLocaleString()}`}
                         buttonText='Back to Dashboard'
@@ -134,16 +138,16 @@ const TeamInvitationPage: React.FC = () => {
                 <Container className='form-container text-center'>
                     <Container className='form-header'>
                         <Container className='user-badge d-flex flex-center invitation-badge'>
-                            <IoAlertCircle size={20} color='var(--color-zinc-400)' />
+                            <CheckCircle size={20} color='var(--color-zinc-400)' />
                             <span className='invitation-badge-text'>You've been invited!</span>
                         </Container>
-                        <h1 className='mt-3 form-title'>{invitation.team.name}</h1>
-                        <p className='form-subtitle'>
-                            {invitation.team.description || 'Join this team to start collaborating on projects together.'}
-                        </p>
-                        <p className='invited-by'>
-                            Invited by <strong>{invitation.invitedBy.email}</strong>
-                        </p>
+                        <Title className='mt-3 font-size-5 font-weight-6'>{invitation.team.name}</Title>
+                        <Paragraph className='form-subtitle'>
+                            You've been invited to join this team
+                        </Paragraph>
+                        <Paragraph className='invited-by'>
+                            Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
+                        </Paragraph>
                     </Container>
 
                     <Container className='d-flex gap-1 flex-center flex-wrap invitation-details'>
@@ -152,20 +156,28 @@ const TeamInvitationPage: React.FC = () => {
                             <Container className='user-badge role-badge'>{invitation.role}</Container>
                         </Container>
                         <Container className='detail-item'>
-                            <span className='detail-label'>Team Members</span>
-                            <p className='detail-value'>
-                                {invitation.team.memberCount || 0} {invitation.team.memberCount === 1 ? 'member' : 'members'}
-                            </p>
+                            <span className='detail-label'>Email</span>
+                            <Paragraph className='detail-value'>
+                                <Mail size={14} style={{ marginRight: '0.5rem' }} />
+                                {invitation.email}
+                            </Paragraph>
+                        </Container>
+                        <Container className='detail-item'>
+                            <span className='detail-label'>Invited:</span>
+                            <Paragraph className='detail-value'>
+                                <Clock size={14} style={{ marginRight: '0.5rem' }} />
+                                {new Date(invitation.createdAt).toLocaleDateString()}
+                            </Paragraph>
                         </Container>
                         <Container className='detail-item'>
                             <span className='detail-label'>Expires</span>
-                            <p className='detail-value'>
+                            <Paragraph className='detail-value'>
                                 {expiresAt.toLocaleString(undefined, {
                                     month: 'short',
                                     day: 'numeric',
                                     year: 'numeric'
                                 })}
-                            </p>
+                            </Paragraph>
                         </Container>
                     </Container>
 

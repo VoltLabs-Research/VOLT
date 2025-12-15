@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import useRasterFrame from '@/hooks/raster/use-raster-frame';
 import { useParams } from 'react-router';
 import { Skeleton } from '@mui/material';
+import Paragraph from '@/components/primitives/Paragraph';
 
 const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
   scene,
@@ -30,17 +31,17 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
   const isUnavailable = display?.isUnavailable;
   const isLoading = isActive ? false : (loadingFrame || (scene.isLoading && !hasData));
 
-  return(
+  return (
     <motion.div
-      key={`thumb-${timestep}-${scene.model}`}
-      className={`raster-thumbnail-container ${isActive ? 'active' : ''}`}
+      key={`thumb - ${timestep} -${scene.model} `}
+      className={`raster - thumbnail - container ${isActive ? 'active' : ''} `}
       animate={
         isPlaying
           ? {
-              scale: isActive ? 1.03 : 0.98,
-              opacity: isActive ? 1 : 0.7,
-              rotateY: isActive ? 0 : index < selectedFrameIndex ? -15 : 15,
-            }
+            scale: isActive ? 1.03 : 0.98,
+            opacity: isActive ? 1 : 0.7,
+            rotateY: isActive ? 0 : index < selectedFrameIndex ? -15 : 15,
+          }
           : { scale: isActive ? 1.03 : 1, opacity: 1, rotateY: 0 }
       }
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
@@ -48,11 +49,11 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
       style={{ flexShrink: 0, cursor: 'pointer' }}
     >
       <div className="raster-thumbnail-timestep-container">
-        <p className="raster-thumbnail-timestep">{timestep}</p>
+        <Paragraph className="raster-thumbnail-timestep">{timestep}</Paragraph>
       </div>
 
       {hasData ? (
-        <img className="raster-thumbnail" src={display!.data!} alt={`${display!.model} - Frame ${timestep}`} loading={isActive ? 'eager' : 'lazy'} />
+        <img className="raster-thumbnail" src={display!.data!} alt={`${display!.model} - Frame ${timestep} `} loading={isActive ? 'eager' : 'lazy'} />
       ) : isUnavailable ? (
         <div
           className="raster-thumbnail"

@@ -2,8 +2,10 @@ import React, { useState, useCallback, useMemo } from 'react';
 import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import CodeEditor from '@/components/atoms/common/CodeEditor';
+import FormField from '@/components/molecules/form/FormField';
 import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import type { ISchemaData } from '@/types/plugin';
+import Paragraph from '@/components/primitives/Paragraph';
 import { TbCheck, TbCopy, TbSparkles } from 'react-icons/tb';
 import './SchemaEditor.css';
 
@@ -125,7 +127,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
     const [showTemplates, setShowTemplates] = useState(false);
 
     const isValidJson = useMemo(() => {
-        try{
+        try {
             JSON.parse(jsonText);
             return true;
         } catch {
@@ -136,22 +138,22 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
     const handleJsonChange = useCallback((newText: string) => {
         setJsonText(newText);
 
-        try{
+        try {
             const parsed = JSON.parse(newText);
             setError(null);
             updateNodeData(node.id, { schema: { definition: parsed } });
-        }catch(err: any){
+        } catch (err: any) {
             setError(err.message);
         }
     }, [node.id, updateNodeData]);
 
     const formatJson = useCallback(() => {
-        try{
+        try {
             const parsed = JSON.parse(jsonText);
             const formatted = JSON.stringify(parsed, null, 2);
             setJsonText(formatted);
             setError(null);
-        }catch(err: any){
+        } catch (err: any) {
             setError(err.message);
         }
     }, [jsonText]);
@@ -168,14 +170,14 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
         navigator.clipboard.writeText(jsonText);
     }, [jsonText]);
 
-    return(
+    return (
         <>
             <CollapsibleSection title='Schema Definition' defaultExpanded>
                 <div className="schema-editor">
-                    <p className="schema-editor-description">
+                    <Paragraph className="schema-editor-description">
                         Define the JSON structure of your output data. This schema describes the shape of results
                         from your analysis and enables downstream nodes to reference specific fields.
-                    </p>
+                    </Paragraph>
 
                     <div className="schema-editor-toolbar">
                         <button

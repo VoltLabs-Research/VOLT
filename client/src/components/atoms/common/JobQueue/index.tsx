@@ -26,6 +26,8 @@ import { FaCheck, FaClock, FaExclamationTriangle, FaTimes, FaRedo } from 'react-
 import type { Job } from '@/types/jobs';
 import Container from '@/components/primitives/Container';
 import './JobQueue.css';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 const JobQueue = ({ job }: { job: Job }) => {
     const statusConfig = {
@@ -52,26 +54,26 @@ const JobQueue = ({ job }: { job: Job }) => {
         }
     };
 
-    if(!(job.status in statusConfig)) return;
+    if (!(job.status in statusConfig)) return;
 
     const IconComponent = statusConfig[job.status].icon;
 
-    return(
+    return (
         <Container className={'d-flex w-max content-between items-center p-1 job-container '.concat(job.status)}>
             <Container className='d-flex items-center gap-1'>
                 <i className='job-icon-container'>
                     {IconComponent}
                 </i>
                 <Container className='d-flex column gap-025'>
-                    <h3 className='job-name'>
+                    <Title className='font-size-3 job-name'>
                         {job.name}
                         {(job?.chunkIndex !== undefined && job?.totalChunks !== undefined) && (
                             <span> - Chunk {job.chunkIndex + 1}/{job.totalChunks}</span>
                         )}
-                    </h3>
-                    <p className='job-message'>
+                    </Title>
+                    <Paragraph className='job-message'>
                         {job.message || job.status}
-                    </p>
+                    </Paragraph>
                 </Container>
             </Container>
 

@@ -7,6 +7,10 @@
     margin-top: 3rem;
 }
 
+.mb-1-5{
+    margin-bottom: 1.5rem;
+}
+
 /** Padding */
 .p-05{
     padding: 0.5rem;
@@ -111,6 +115,10 @@
     overflow-y: scroll;
 }
 
+.y-auto{
+    overflow-y: auto;
+}
+
 .overflow-auto{
     overflow: auto;
 }
@@ -166,6 +174,15 @@
     flex-direction: column;
 }
 
+/** Display **/
+.d-none{
+    display: none;
+}
+
+.d-block{
+    display: block;
+}
+
 /** Text **/
 .text-center{
     text-align: center;
@@ -194,6 +211,10 @@
 
 .font-size-5{
     font-size: 1.5rem;
+}
+
+.font-size-5-5{
+    font-size: 1.8rem;
 }
 
 .font-size-6{
@@ -256,6 +277,11 @@
         padding: 1rem;
     }
 
+    /** Container **/
+    .sm\:w-max{
+        width: 100%;
+    }
+
     /** Flexbox **/
     .sm\:column{
         flex-direction: column;
@@ -267,6 +293,10 @@
 
     .sm\:item-start{
         align-items: flex-start;
+    }
+
+    .sm\:gap-05{
+        gap: 0.5rem;
     }
 
     .sm\:gap-1{
@@ -287,5 +317,18 @@
 
     .sm\:font-size-2{
         font-size: 0.875rem;
+    }
+
+    /** Display **/
+    .sm\:d-block{
+        display: block;
+    }
+
+    .sm\:d-none{
+        display: none;
+    }
+
+    .sm\:d-flex{
+        display: flex;
     }
 }

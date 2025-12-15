@@ -3,6 +3,8 @@ import { TbWebhook, TbEdit, TbTrash, TbTestPipe, TbActivity, TbGlobe, TbCheck, T
 import { formatDistanceToNow, isValid } from 'date-fns';
 import type { Webhook } from '@/types/models/webhook';
 import './WebhookList.css';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 interface WebhookListProps {
     webhooks: Webhook[];
@@ -20,7 +22,7 @@ const WebhookList: React.FC<WebhookListProps> = ({
     onTest
 }) => {
     const getStatusColor = (status: string) => {
-        switch(status){
+        switch (status) {
             case 'active': return 'var(--color-success)';
             case 'inactive': return 'var(--color-warning)';
             case 'failed': return 'var(--color-error)';
@@ -29,7 +31,7 @@ const WebhookList: React.FC<WebhookListProps> = ({
     };
 
     const getStatusIcon = (status: string) => {
-        switch(status){
+        switch (status) {
             case 'active': return <TbCheck size={16} />;
             case 'inactive': return <TbX size={16} />;
             case 'failed': return <TbX size={16} />;
@@ -38,16 +40,16 @@ const WebhookList: React.FC<WebhookListProps> = ({
     };
 
     const formatDate = (dateString: string) => {
-        try{
+        try {
             const date = new Date(dateString);
             return isValid(date) ? formatDistanceToNow(date, { addSuffix: true }) : 'Unknown';
-        } catch{
+        } catch {
             return 'Unknown';
         }
     };
 
-    if(loading){
-        return(
+    if (loading) {
+        return (
             <div className="webhook-list-loading">
                 <div className="webhook-skeleton">
                     <div className="skeleton-icon"></div>
@@ -75,19 +77,19 @@ const WebhookList: React.FC<WebhookListProps> = ({
         );
     }
 
-    if(webhooks.length === 0){
-        return(
+    if (webhooks.length === 0) {
+        return (
             <div className="webhook-list-empty">
                 <div className="empty-icon">
                     <TbWebhook size={48} />
                 </div>
-                <h3>No Webhooks</h3>
-                <p>Create your first webhook to receive real-time notifications from the app.</p>
+                <Title className='font-size-3'>No Webhooks</Title>
+                <Paragraph>Create your first webhook to receive real-time notifications from the app.</Paragraph>
             </div>
         );
     }
 
-    return(
+    return (
         <div className="webhook-list">
             {webhooks.map((webhook) => (
                 <div key={webhook._id} className="webhook-item">

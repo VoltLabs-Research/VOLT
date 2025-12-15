@@ -8,6 +8,7 @@ import { RiVipDiamondLine } from "react-icons/ri";
 import useDashboardMetrics from '@/hooks/dashboard/use-dashboard-metrics';
 import TinyLineChart from '@/components/atoms/common/TinyLineChart';
 import DashboardStatsSkeleton from '@/components/atoms/dashboard/DashboardStatsSkeleton';
+import Title from '@/components/primitives/Title';
 
 const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ teamId, trajectoryId }) => {
     const { loading, error, cards } = useDashboardMetrics(teamId, trajectoryId);
@@ -20,26 +21,26 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
         Dislocations: PiLineSegments
     };
 
-    if(loading){
+    if (loading) {
         return <DashboardStatsSkeleton count={3} />;
     }
 
-    if(error){
-        return(
+    if (error) {
+        return (
             <div className='dashboard-stats-container'>
                 <div className='dashboard-error'>{error}</div>
             </div>
         );
     }
 
-    return(
+    return (
         <div className='dashboard-stats-container'>
             {cards.map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain }, index) => {
                 const iconKey = name.replace(/\s+/g, '');
                 const Icon = icons[iconKey] || HiOutlineServerStack;
                 const up = (lastMonthStatus ?? 0) >= 0;
                 const isClickable = Boolean(listingUrl && !listingUrl.includes(':trajectoryId'));
-                return(
+                return (
                     <div
                         onClick={() => isClickable && listingUrl && navigate(listingUrl)}
                         className='dashboard-stat-container'
@@ -51,10 +52,10 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
                                 <i className='dashboard-stat-icon-container'>
                                     <Icon />
                                 </i>
-                                <h3 className='dashboard-stat-title'>{name}</h3>
+                                <Title className='font-size-3 dashboard-stat-title'>{name}</Title>
                             </div>
                             <div className='dashboard-stat-footer-container'>
-                                <h3 className='dashboard-stat-count'>{count}</h3>
+                                <Title className='font-size-5 color-primary'>{count}</Title>
                                 <div className='dashboard-stat-last-month-container'>
                                     <div className='dashboard-stat-last-month-icon-container'>
                                         <i className={`dashboard-stat-last-month-icon ${up ? 'up' : 'down'}`}>

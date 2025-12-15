@@ -25,6 +25,8 @@ import Select from '@/components/atoms/form/Select';
 import systemApi from '@/services/api/system';
 import teamApi from '@/services/api/team';
 import containerApi from '@/services/api/container';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 import './CreateContainer.css';
 
 interface Template {
@@ -120,23 +122,23 @@ const CreateContainer: React.FC = () => {
     });
 
     useEffect(() => {
-        const fetchSystemStats = async() => {
-            try{
+        const fetchSystemStats = async () => {
+            try {
                 const stats = await systemApi.getStats();
                 setSystemStats(stats);
-            }catch(error){
+            } catch (error) {
                 console.error('Failed to fetch system stats:', error);
             }
         };
 
-        const fetchTeams = async() => {
-            try{
+        const fetchTeams = async () => {
+            try {
                 const teamsList = await teamApi.getAll();
                 setTeams(teamsList);
-                if(teamsList.length > 0){
+                if (teamsList.length > 0) {
                     setSelectedTeamId(teamsList[0]._id);
                 }
-            }catch(error){
+            } catch (error) {
                 console.error('Failed to fetch teams:', error);
             }
         };
@@ -147,7 +149,7 @@ const CreateContainer: React.FC = () => {
 
     const handleTemplateSelect = (templateId: string) => {
         const template = TEMPLATES.find(t => t.id === templateId);
-        if(template){
+        if (template) {
             setSelectedTemplate(templateId);
             setCustomImage('');
             setConfig(prev => ({
@@ -165,7 +167,7 @@ const CreateContainer: React.FC = () => {
     };
 
     const confirmCustomImage = () => {
-        if(!tempCustomImage.trim()) {
+        if (!tempCustomImage.trim()) {
             showError('Please enter a valid image name');
             return;
         }
@@ -175,24 +177,24 @@ const CreateContainer: React.FC = () => {
         setStep(2);
     };
 
-    const handleCreate = async() => {
+    const handleCreate = async () => {
         setLoading(true);
-        try{
+        try {
             const image = selectedTemplate
                 ? TEMPLATES.find(t => t.id === selectedTemplate)?.image
                 : customImage;
 
-            if(!image){
+            if (!image) {
                 showError('Please select a template or specify an image');
                 return;
             }
 
-            if(!config.name){
+            if (!config.name) {
                 showError('Please give your container a name');
                 return;
             }
 
-            if(!selectedTeamId){
+            if (!selectedTeamId) {
                 showError('Please select a team for this container');
                 return;
             }
@@ -210,9 +212,9 @@ const CreateContainer: React.FC = () => {
             await containerApi.create(payload);
             showSuccess('Container created successfully');
             navigate('/dashboard/containers');
-        }catch(error: any){
+        } catch (error: any) {
             showError(error.response?.data?.message || 'Failed to create container');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
@@ -263,7 +265,7 @@ const CreateContainer: React.FC = () => {
     const maxMemory = systemStats ? Math.floor(systemStats.memory.total * 1024) : 4096;
     const maxCpus = systemStats ? systemStats.cpu.cores : 4;
 
-    return(
+    return (
         <div className="create-container-page">
             <div className="create-header">
                 <Button
@@ -273,8 +275,8 @@ const CreateContainer: React.FC = () => {
                     <ArrowLeft size={20} />
                 </Button>
                 <div className="header-text">
-                    <h1>Create New Container</h1>
-                    <p>Deploy a new containerized application in seconds.</p>
+                    <Title className="font-size-5 font-weight-6">Create New Container</Title>
+                    <Paragraph className="color-muted">Deploy a new containerized application in seconds.</Paragraph>
                 </div>
             </div>
 
@@ -308,7 +310,7 @@ const CreateContainer: React.FC = () => {
                 <div className="step-content">
                     {step === 1 && (
                         <div className="fade-in">
-                            <h2 className="step-title">Select a Template</h2>
+                            <Title className="font-size-5 font-weight-6">Select a Template</Title>
                             <div className="templates-grid">
                                 {TEMPLATES.map(template => (
                                     <div
@@ -320,8 +322,8 @@ const CreateContainer: React.FC = () => {
                                             {template.icon}
                                         </div>
                                         <div className="template-info">
-                                            <h3>{template.name}</h3>
-                                            <p>{template.description}</p>
+                                            <Title className="font-size-3 font-weight-6">{template.name}</Title>
+                                            <Paragraph className="color-muted font-size-2">{template.description}</Paragraph>
                                         </div>
                                         {selectedTemplate === template.id && (
                                             <div className="selected-check">
@@ -338,8 +340,8 @@ const CreateContainer: React.FC = () => {
                                         <Server size={32} color="#666" />
                                     </div>
                                     <div className="template-info">
-                                        <h3>Custom Image</h3>
-                                        <p>Pull any image from Docker Hub.</p>
+                                        <Title className="font-size-3 font-weight-6">Custom Image</Title>
+                                        <Paragraph className="color-muted font-size-2">Pull any image from Docker Hub.</Paragraph>
                                     </div>
                                     {!selectedTemplate && customImage && (
                                         <div className="selected-check">
@@ -354,7 +356,7 @@ const CreateContainer: React.FC = () => {
 
                     {step === 2 && (
                         <div className="fade-in">
-                            <h2 className="step-title">Configure Container</h2>
+                            <Title className="font-size-5 font-weight-6">Configure Container</Title>
                             <div className="config-form">
                                 <div className="form-group">
                                     <label>Container Name</label>
@@ -382,7 +384,7 @@ const CreateContainer: React.FC = () => {
                                 </div>
 
                                 <div className="resources-section">
-                                    <h3>Resources</h3>
+                                    <Title className="font-size-4 font-weight-6">Resources</Title>
                                     <div className="resource-slider-wrapper">
                                         <div className="slider-header">
                                             <label><Cpu size={16} /> CPU Cores</label>
@@ -423,7 +425,7 @@ const CreateContainer: React.FC = () => {
                                 <div className="advanced-config">
                                     <div className="config-group">
                                         <div className="group-header">
-                                            <h3>Port Mapping</h3>
+                                            <Title className="font-size-3 font-weight-6">Port Mapping</Title>
                                             <button onClick={addPort} className="add-btn"><Plus size={14} /> Add Port</button>
                                         </div>
                                         {config.ports.map((port, i) => (
@@ -462,7 +464,7 @@ const CreateContainer: React.FC = () => {
 
                                     <div className="config-group">
                                         <div className="group-header">
-                                            <h3>Environment Variables</h3>
+                                            <Title className="font-size-3 font-weight-6">Environment Variables</Title>
                                             <button onClick={addEnv} className="add-btn"><Plus size={14} /> Add Variable</button>
                                         </div>
                                         {config.env.map((env, i) => (
@@ -504,7 +506,7 @@ const CreateContainer: React.FC = () => {
 
                     {step === 3 && (
                         <div className="fade-in review-step">
-                            <h2 className="step-title">Review & Deploy</h2>
+                            <Title className="font-size-5 font-weight-6">Review & Deploy</Title>
                             <div className="review-card">
                                 <div className="review-item">
                                     <span className="label">Name</span>
@@ -552,13 +554,13 @@ const CreateContainer: React.FC = () => {
                     <div className="modal-overlay">
                         <div className="modal-content custom-image-modal">
                             <div className="modal-header">
-                                <h2>Custom Docker Image</h2>
+                                <Title className="font-size-4 font-weight-6">Custom Docker Image</Title>
                                 <button onClick={() => setShowCustomImageModal(false)} className="close-btn">
                                     <X size={24} />
                                 </button>
                             </div>
                             <div className="modal-body">
-                                <p>Enter the name of the Docker image you want to pull from Docker Hub.</p>
+                                <Paragraph className="color-muted">Enter the name of the Docker image you want to pull from Docker Hub.</Paragraph>
                                 <Input
                                     type="text"
                                     placeholder="e.g., nginx:latest, mysql:8.0"

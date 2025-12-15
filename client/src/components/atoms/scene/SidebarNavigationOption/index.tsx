@@ -15,28 +15,31 @@
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * LIABILITY, WHETHER IN AN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
 
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import Container from '@/components/primitives/Container';
 import './SidebarNavigationOption.css';
+import Title from '@/components/primitives/Title';
 
 const SidebarNavigationOption = ({ name, Icon, onClick = null, to = null, isSelected = false }) => {
     const navigate = useNavigate();
 
     const handleClick = () => {
-        if(onClick !== null){
+        if (onClick !== null) {
             onClick();
         }
 
-        if(to !== null){
+        if (to !== null) {
             navigate(to);
         }
     };
 
-    return(
+    return (
         <div
             onClick={handleClick}
             className={'sidebar-nav-option-container '.concat(isSelected ? 'selected' : '')}
@@ -45,7 +48,7 @@ const SidebarNavigationOption = ({ name, Icon, onClick = null, to = null, isSele
                 <Icon />
             </i>
 
-            <h3 className='sidebar-nav-option-name'>{name}</h3>
+            <Title className='font-size-3 sidebar-nav-option-name'>{name}</Title>
         </div>
     );
 };

@@ -4,8 +4,9 @@ import { RiArrowDownSLine, RiArrowUpSLine } from "react-icons/ri";
 import { RiMore2Fill } from "react-icons/ri";
 import Loader from '@/components/atoms/common/Loader';
 import './CanvasSidebarOption.css';
+import Title from '@/components/primitives/Title';
 
-interface CanvasSidebarOptionProps{
+interface CanvasSidebarOptionProps {
     onSelect: (option: any) => void;
     activeOption: boolean;
     option: {
@@ -22,7 +23,7 @@ interface CanvasSidebarOptionProps{
 
 const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSelect, activeOption, isLoading }) => {
 
-    return(
+    return (
         <>
             <div
                 className={`editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''}`}
@@ -33,7 +34,7 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSel
                     <i className='editor-sidebar-scene-option-icon-container'>
                         <option.Icon />
                     </i>
-                    <h3 className='editor-sidebar-scene-option-title'>{option.title}</h3>
+                    <Title className='font-size-3 editor-sidebar-scene-option-title'>{option.title}</Title>
                 </div>
 
                 {option.options && (
@@ -57,7 +58,7 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSel
                             onClick={() => onSelect({ title, modifierId })}
                             key={title + '-' + index}
                         >
-                            <h3 className='editor-sidebar-scene-option-title'>{title}</h3>
+                            <Title className='font-size-3 editor-sidebar-scene-option-title'>{title}</Title>
                             <i className='editor-sidebar-scene-option-more-icon-container'>
                                 <RiMore2Fill />
                             </i>

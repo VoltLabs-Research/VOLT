@@ -3,6 +3,7 @@ import FormField from '@/components/molecules/form/FormField';
 import { TbPlus, TbTrash } from 'react-icons/tb';
 import './KeyValueEditor.css';
 import Container from '@/components/primitives/Container';
+import Paragraph from '@/components/primitives/Paragraph';
 
 interface KeyValueEditorProps {
     entries: [string, string][];
@@ -37,10 +38,10 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
     expressionEnabled = false,
     expressionNodeId
 }) => {
-    return(
+    return (
         <Container className="d-flex column gap-05">
             {description && (
-                <p className="kv-editor-description">{description}</p>
+                <Paragraph className="kv-editor-description">{description}</Paragraph>
             )}
 
             {entries.map(([key, value], index) => (

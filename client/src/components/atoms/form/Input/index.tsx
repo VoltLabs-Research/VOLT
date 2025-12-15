@@ -23,6 +23,8 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import './Input.css';
+import Container from '@/components/primitives/Container';
+import Paragraph from '@/components/primitives/Paragraph';
 
 // Expression autocomplete types
 interface AvailableExpression {
@@ -270,9 +272,9 @@ const Input: React.FC<InputProps> = ({
         if(!showDropdown || !isExpressionEnabled) return null;
 
         return createPortal(
-            <div
+            <Container
                 ref={dropdownRef}
-                className="expression-dropdown"
+                className="d-flex column overflow-hidden expression-dropdown"
                 style={{
                     position: 'absolute',
                     top: dropdownPosition.top,
@@ -280,62 +282,62 @@ const Input: React.FC<InputProps> = ({
                     zIndex: 9999
                 }}
             >
-                <div className="expression-dropdown-header">
+                <Container className="d-flex content-between items-center expression-dropdown-header">
                     <span className="expression-dropdown-title">Available Data</span>
                     <span className="expression-dropdown-hint">↑↓ Navigate • Enter Select • Esc Close</span>
-                </div>
-                <div className="expression-dropdown-content">
+                </Container>
+                <Container className="y-auto p-05">
                     {flatExpressions.length === 0 ? (
-                        <div className="expression-empty">
-                            <p>No data available</p>
-                            <span>Connect this node to upstream nodes to access their data.</span>
-                        </div>
+                        <Container className="d-flex column gap-05 text-center p-1">
+                            <Paragraph className='font-size-2 font-weight-5'>No data available</Paragraph>
+                            <Paragraph className='font-size-1'>Connect this node to upstream nodes to access their data.</Paragraph>
+                        </Container>
                     ) : (
                         Object.entries(groupedExpressions).map(([nodeName, expressions]) =>{
                             const nodeType = expressions[0]?.nodeType;
                             const config = expressionAutocomplete.getNodeConfig?.(nodeType);
 
                             return(
-                                <div key={nodeName} className="expression-group">
-                                    <div className="expression-group-header">
+                                <Container key={nodeName} className="expression-group">
+                                    <Container className="d-flex items-center gap-05 expression-group-header">
                                         <span className="expression-group-icon">{config?.icon?.replace('Tb', '') || '📦'}</span>
                                         <span className="expression-group-name">{nodeName}</span>
                                         <span className="expression-group-type">{config?.label || nodeType}</span>
-                                    </div>
+                                    </Container>
                                     {expressions.map((expr) => {
                                         const globalIndex = flatExpressions.indexOf(expr);
                                         return(
-                                            <div
+                                            <Container
                                                 key={`${expr.nodeId}-${expr.path}`}
                                                 className={`expression-item ${globalIndex === selectedIndex ? 'expression-item--selected' : ''}`}
                                                 onClick={() => insertExpression(expr)}
                                                 onMouseEnter={() => setSelectedIndex(globalIndex)}
                                             >
-                                                <div className="expression-item-main">
+                                                <Container className="d-flex items-center gap-05">
                                                     <span className="expression-item-path">{expr.path}</span>
                                                     <span className={`expression-item-type expression-item-type--${expr.type}`}>
                                                         {expr.type}
                                                     </span>
-                                                </div>
+                                                </Container>
                                                 {expr.description && (
                                                     <span className="expression-item-description">{expr.description}</span>
                                                 )}
-                                            </div>
+                                            </Container>
                                         );
                                     })}
-                                </div>
+                                </Container>
                             );
                         })
                     )}
-                </div>
-            </div>,
+                </Container>
+            </Container>,
             document.body
         );
     };
 
     if(multiline){
         return(
-            <div className="input-wrapper">
+            <Container className="p-relative w-max input-wrapper">
                 <textarea
                     ref={inputRef as React.RefObject<HTMLTextAreaElement>}
                     value={String(value)}
@@ -351,19 +353,19 @@ const Input: React.FC<InputProps> = ({
                     rows={rows}
                 />
                 {hasExpression && (
-                    <div className="expression-badge" title="Contains dynamic expression">
+                    <Container className="expression-badge" title="Contains dynamic expression">
                         <span>{'{ }'}</span>
-                    </div>
+                    </Container>
                 )}
                 {renderDropdown()}
-            </div>
+            </Container>
         );
     }
 
     // If expression autocomplete is enabled, wrap in container
     if(isExpressionEnabled){
         return(
-            <div className="input-wrapper">
+            <Container className="p-relative w-max input-wrapper">
                 <input
                     ref={inputRef as React.RefObject<HTMLInputElement>}
                     type={type}
@@ -387,7 +389,7 @@ const Input: React.FC<InputProps> = ({
                     </div>
                 )}
                 {renderDropdown()}
-            </div>
+            </Container>
         );
     }
 

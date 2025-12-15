@@ -5,6 +5,7 @@ import TextMessage from '@/components/atoms/chat/TextMessage';
 import FileMessage from '@/components/atoms/chat/FileMessage';
 import MessageControls from '@/components/atoms/chat/MessageControls';
 import ReactionsBar from '@/components/atoms/chat/ReactionsBar';
+import Paragraph from '@/components/primitives/Paragraph';
 
 type MessageItemProps = {
     msg: Message;
@@ -38,7 +39,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
     const showAvatar = isGroupChat && !isOwn;
     const sender = msg.sender;
 
-    return(
+    return (
         <div className={`chat-message ${isOwn ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''} ${showAvatar ? 'with-avatar' : ''}`}>
             {showAvatar && (
                 <div className='chat-message-avatar'>
@@ -46,7 +47,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                         <img src={sender.avatar} alt="Sender Avatar" className='chat-avatar-img' />
                     ) : (
                         <span className='chat-avatar-initial'>
-                          {sender?.firstName?.[0]?.toUpperCase() || '?'}
+                            {sender?.firstName?.[0]?.toUpperCase() || '?'}
                         </span>
                     )}
                 </div>
@@ -59,7 +60,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                 )}
                 <div className='chat-message-content'>
                     {isDeleted ? (
-                        <p className='chat-message-text deleted-message'>This message was deleted</p>
+                        <Paragraph className='chat-message-text deleted-message'>This message was deleted</Paragraph>
                     ) : isFile ? (
                         <FileMessage currentChatId={currentChatId} msg={msg} />
                     ) : (

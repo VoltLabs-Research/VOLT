@@ -3,6 +3,7 @@ import { IoImageOutline, IoDocumentOutline, IoDownloadOutline } from 'react-icon
 import type { Message } from '@/types/chat';
 import { formatSize } from '@/utilities/scene-utils';
 import { chatApi } from '@/services/api/chat';
+import Paragraph from '@/components/primitives/Paragraph';
 
 type FileMessageProps = {
     msg: Message,
@@ -15,16 +16,16 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
     const [preview, setPreview] = useState<string | null>(null);
 
     useEffect(() => {
-        if(!isImage || !currentChatId) return;
+        if (!isImage || !currentChatId) return;
 
         let cancelled = false;
-        const run = async() => {
-            try{
+        const run = async () => {
+            try {
                 const res = await chatApi.getFilePreview(currentChatId, msg._id);
-                if(!cancelled){
+                if (!cancelled) {
                     setPreview(res.dataUrl);
                 }
-            }catch(error: any){
+            } catch (error: any) {
                 const errorContext = {
                     endpoint: `/chat/${currentChatId}/files/${msg._id}`,
                     method: 'GET',
@@ -41,13 +42,13 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
 
         run();
 
-        return() => {
+        return () => {
             cancelled = true;
         }
     }, [isImage, currentChatId, msg._id]);
 
-    if(isImage){
-        return(
+    if (isImage) {
+        return (
             <div className='chat-image-message'>
                 {preview ? (
                     <img src={preview} alt={meta.fileName} className='chat-image-preview' />
@@ -61,23 +62,23 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
                         <IoImageOutline />
                     </div>
                     <div className='chat-file-details'>
-                        <p className='chat-file-name'>{meta.fileName}</p>
-                        <p className='chat-file-size'>{formatSize(meta.fileSize ?? 0)}</p>
+                        <Paragraph className='chat-file-name'>{meta.fileName}</Paragraph>
+                        <Paragraph className='chat-file-size'>{formatSize(meta.fileSize ?? 0)}</Paragraph>
                     </div>
-                    <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download'><IoDownloadOutline/></a>
+                    <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download'><IoDownloadOutline /></a>
                 </div>
             </div>
         );
     }
 
-    return(
+    return (
         <div className='chat-file-info'>
             <div className='chat-file-icon'><IoDocumentOutline /></div>
             <div className='chat-file-details'>
-                <p className='chat-file-name'>{meta.fileName}</p>
-                <p className='chat-file-size'>{formatSize(meta.fileSize ?? 0)}</p>
+                <Paragraph className='chat-file-name'>{meta.fileName}</Paragraph>
+                <Paragraph className='chat-file-size'>{formatSize(meta.fileSize ?? 0)}</Paragraph>
             </div>
-            <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download'><IoDownloadOutline/></a>
+            <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download'><IoDownloadOutline /></a>
         </div>
     );
 };

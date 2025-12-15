@@ -7,9 +7,11 @@ import { motion } from 'framer-motion';
 import { TbCube3dSphere } from 'react-icons/tb';
 import RasterTrajectoryDetailsSkeleton from '@/components/atoms/raster/RasterTrajectoryDetailsSkeleton';
 import RasterSceneViewsSkeleton from '@/components/atoms/raster/RasterSceneViewsSkeleton';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView3D, onSignIn, connectedUsers }) => {
-    return(
+    return (
         <div className='raster-scene-header-container'>
             <div className='raster-scene-header-left-container'>
                 <i className='raster-scene-header-go-back-icon-container' onClick={onGoBack}>
@@ -21,11 +23,11 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                         <RasterTrajectoryDetailsSkeleton />
                     ) : (
                         <>
-                            <h3 className='raster-scene-header-title'>
-                              {trajectory?.name || 'Loading...'}
-                            </h3>
+                            <Title className='font-size-3 raster-scene-header-title'>
+                                {trajectory?.name || 'Loading...'}
+                            </Title>
 
-                            <p className='raster-scene-header-last-edited'>Last Edited by Rodolfo H</p>
+                            <Paragraph className='raster-scene-header-last-edited'>Last Edited by Rodolfo H</Paragraph>
                         </>
                     )}
                 </div>
@@ -41,13 +43,13 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                         const getInitials = (u: any) => {
                             const f = u.firstName?.[0] ?? '';
                             const l = u.lastName?.[0] ?? '';
-                            if(f || l) return `${f}${l}`.toUpperCase();
+                            if (f || l) return `${f}${l}`.toUpperCase();
                             const name = u.name ?? u.email ?? '';
                             const parts = String(name).trim().split(/\s+/);
-                            return(parts[0]?.[0] ?? '?').toUpperCase();
+                            return (parts[0]?.[0] ?? '?').toUpperCase();
                         };
 
-                        return(
+                        return (
                             <>
                                 {shown.map((u) => (
                                     <div
@@ -98,7 +100,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                             <RxEyeOpen />
                         </i>
 
-                        <p className='raster-scene-header-views'>{trajectory?.rasterSceneViews} views</p>
+                        <Paragraph className='raster-scene-header-views'>{trajectory?.rasterSceneViews} views</Paragraph>
                     </div>
                 )}
             </div>

@@ -23,6 +23,7 @@
 import React from 'react';
 import Container from '@/components/primitives/Container';
 import './ProcessingLoader.css';
+import Paragraph from '@/components/primitives/Paragraph';
 
 interface ProcessingLoaderProps {
     message?: string;
@@ -39,13 +40,13 @@ const ProcessingLoader: React.FC<ProcessingLoaderProps> = ({
     className = '',
     showProgress = false
 }) => {
-    if(!isVisible) return null;
+    if (!isVisible) return null;
 
-    return(
+    return (
         <Container className={`d-flex items-center gap-075 processing-loader-container ${className}`}>
             <Container className="processing-loader-spinner" />
             <Container className="d-flex column gap-035 flex-1 column">
-                <p className="processing-loader-text">{message}</p>
+                <Paragraph className="processing-loader-text">{message}</Paragraph>
                 {showProgress && completionRate > 0 && (
                     <Container className="w-max overflow-hidden processing-loader-progress-bar">
                         <Container

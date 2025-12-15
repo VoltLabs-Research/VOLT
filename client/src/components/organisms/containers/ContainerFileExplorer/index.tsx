@@ -30,14 +30,14 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         fetchFiles(currentPath);
     }, [containerId, currentPath]);
 
-    const fetchFiles = async(path: string) => {
+    const fetchFiles = async (path: string) => {
         setLoading(true);
-        try{
+        try {
             const data = await containerApi.fileExplorer.list(containerId, path);
             setFiles(data.files);
-        }catch(error){
+        } catch (error) {
             showError('Failed to fetch files');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
@@ -48,23 +48,23 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
     };
 
     const handleGoUp = () => {
-        if(currentPath === '/') return;
+        if (currentPath === '/') return;
         const parts = currentPath.split('/');
         parts.pop();
         const newPath = parts.join('/') || '/';
         setCurrentPath(newPath);
     };
 
-    const handleFileClick = async(fileName: string) => {
+    const handleFileClick = async (fileName: string) => {
         const filePath = currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`;
         setLoading(true);
-        try{
+        try {
             const data = await containerApi.fileExplorer.read(containerId, filePath);
             setFileContent(data.content);
             setViewingFile(fileName);
-        }catch(error){
+        } catch (error) {
             showError('Failed to read file');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
@@ -74,8 +74,8 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         setFileContent(null);
     };
 
-    if(viewingFile){
-        return(
+    if (viewingFile) {
+        return (
             <Container className='d-flex column h-max gap-1'>
                 <Container className="d-flex items-center gap-1 viewer-header">
                     <button onClick={closeFileViewer} className="back-btn-small">
@@ -88,7 +88,7 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         );
     }
 
-    return(
+    return (
         <Container>
             <Container className="d-flex content-between items-center explorer-header">
                 <Container className="d-flex items-center gap-1 flex-1">
@@ -107,7 +107,7 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
                     <Paragraph>Loading...</Paragraph>
                 ) : (
                     <>
-                        {files.length === 0 && <p className="empty-folder">Empty folder</p>}
+                        {files.length === 0 && <Paragraph className="empty-folder">Empty folder</Paragraph>}
                         {files.map((file, index) => (
                             <Container
                                 key={index}
@@ -115,7 +115,7 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
                                 onClick={() => file.isDirectory ? handleNavigate(file.name) : handleFileClick(file.name)}
                             >
                                 <span className="file-icon">
-                                 {file.isDirectory ? <IoFolder className="folder-icon" /> : <IoDocument className="doc-icon" />}
+                                    {file.isDirectory ? <IoFolder className="folder-icon" /> : <IoDocument className="doc-icon" />}
                                 </span>
                                 <span className="file-name">{file.name}</span>
                                 <span className="file-size">{file.size}</span>

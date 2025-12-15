@@ -13,6 +13,8 @@ import {
   CheckCircle2,
   Mail
 } from "lucide-react";
+import Title from "@/components/primitives/Title";
+import Paragraph from "@/components/primitives/Paragraph";
 import './SignIn.css';
 
 const WireframeBackground = () => {
@@ -20,10 +22,10 @@ const WireframeBackground = () => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if(!canvas) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    if(!ctx) return;
+    if (!ctx) return;
 
     let animationFrameId: number;
     let time = 0;
@@ -40,12 +42,12 @@ const WireframeBackground = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.lineWidth = 1;
 
-      for(let i = 0; i < lines; i++){
+      for (let i = 0; i < lines; i++) {
         ctx.beginPath();
         const alpha = (i / lines) * 0.3;
         ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
 
-        for(let x = 0; x <= canvas.width; x += 10){
+        for (let x = 0; x <= canvas.width; x += 10) {
           const yBase = (i * gap) - 100;
           const amplitude = 30 + (i * 2);
           const frequency = 0.003;
@@ -53,9 +55,9 @@ const WireframeBackground = () => {
           const noise = Math.sin(x * frequency + time * speed + (i * 0.5));
           const y = yBase + (noise * amplitude) + (Math.sin(x * 0.01) * 20);
 
-          if(x === 0){
+          if (x === 0) {
             ctx.moveTo(x, y);
-          }else{
+          } else {
             ctx.lineTo(x, y);
           }
         }
@@ -70,13 +72,13 @@ const WireframeBackground = () => {
     resize();
     draw();
 
-    return() => {
+    return () => {
       window.removeEventListener('resize', resize);
       window.cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
-  return(
+  return (
     <canvas
       ref={canvasRef}
       className="wireframe-canvas"
@@ -95,7 +97,7 @@ const WireframeBackground = () => {
 
 import Button from "@/components/atoms/common/Button";
 
-export default function AuthPage(){
+export default function AuthPage() {
   const navigate = useNavigate();
   const { signIn, signUp, user, isLoading } = useAuthStore();
 
@@ -137,32 +139,32 @@ export default function AuthPage(){
   });
 
   useEffect(() => {
-    if(user){
+    if (user) {
       navigate("/dashboard");
     }
   }, [user, navigate]);
 
-  const handleSubmit = async(e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    try{
-      if(step === "email"){
-        if(!validate({ email }, ['email'])) return;
+    try {
+      if (step === "email") {
+        if (!validate({ email }, ['email'])) return;
 
         const result = await authApi.checkEmail(email);
-        if(result.exists){
+        if (result.exists) {
           setStep("password");
-        }else{
+        } else {
           setStep("register");
         }
-      }else if(step === "password"){
-        if(!validate({ email, password }, ['email', 'password'])) return;
+      } else if (step === "password") {
+        if (!validate({ email, password }, ['email', 'password'])) return;
         await signIn({ email, password });
-      }else if(step === "register"){
-        if(!validate({ email, firstName, lastName, password, passwordConfirm }, ['email', 'firstName', 'lastName', 'password', 'passwordConfirm'])) return;
+      } else if (step === "register") {
+        if (!validate({ email, firstName, lastName, password, passwordConfirm }, ['email', 'firstName', 'lastName', 'password', 'passwordConfirm'])) return;
         await signUp({ email, firstName, lastName, password, passwordConfirm });
       }
-    }catch(error){
+    } catch (error) {
       console.error("Authentication error:", error);
     }
   };
@@ -175,7 +177,7 @@ export default function AuthPage(){
     checkField(field, value, formData);
   };
 
-  return(
+  return (
     <div className="auth-page-wrapper">
       <div className="auth-layout">
         <div className="hero-section">
@@ -193,12 +195,12 @@ export default function AuthPage(){
             </div>
 
             <div className="hero-text-container">
-              <h2 className="hero-headline">
+              <Title className="hero-headline">
                 Connect with<br />your VoltID
-              </h2>
-              <p className="hero-description">
+              </Title>
+              <Paragraph className="hero-description">
                 Everything your research needs, in one place. Collaborate seamlessly and connect your scientific stack.
-              </p>
+              </Paragraph>
             </div>
           </div>
         </div>
@@ -215,12 +217,12 @@ export default function AuthPage(){
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <h1 className="form-title">
+                  <Title className="form-title">
                     {step === "email" ? "Sign In or Join Now!" : step === "register" ? "Create Account" : "Welcome back"}
-                  </h1>
-                  <p className="form-subtitle">
+                  </Title>
+                  <Paragraph className="form-subtitle">
                     {step === "email" ? "Login or create your account." : step === "register" ? "Enter your details to get started." : "Enter your password to continue."}
-                  </p>
+                  </Paragraph>
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -400,9 +402,9 @@ export default function AuthPage(){
               )}
             </AnimatePresence>
 
-            <p className="footer-text">
+            <Paragraph className="footer-text">
               By clicking continue, you agree to our <a href="#" className="footer-link">Terms</a> and <a href="#" className="footer-link">Privacy Policy</a>.
-            </p>
+            </Paragraph>
           </div>
         </div>
       </div>

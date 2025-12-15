@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { ChartContainer } from '@/components/atoms/common/ChartContainer'
 import { formatNetworkSpeed } from '@/utilities/network'
 import './TrafficOverview.css'
+import Paragraph from '@/components/primitives/Paragraph'
 
 
 const MAX_POINTS = 60
@@ -20,11 +21,11 @@ const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="traffic-tooltip">
-        <p className="traffic-tooltip-label">{payload[0].payload.time}</p>
+        <Paragraph className="traffic-tooltip-label">{payload[0].payload.time}</Paragraph>
         {payload.map((entry: any, index: number) => (
-          <p key={index} className="traffic-tooltip-item" style={{ color: entry.color }}>
+          <Paragraph key={index} className="traffic-tooltip-item" style={{ color: entry.color }}>
             {entry.name}: <strong>{formatNetworkSpeed(entry.value)}</strong>
-          </p>
+          </Paragraph>
         ))}
       </div>
     )
@@ -44,7 +45,7 @@ export function TrafficOverview() {
         .slice(-MAX_POINTS)
         .map((m: any) => {
           const timestamp = new Date(m.timestamp)
-          const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')}`
+          const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')} `
           return {
             time: timeStr,
             incoming: m.network?.incoming ?? 0,
@@ -60,7 +61,7 @@ export function TrafficOverview() {
   useEffect(() => {
     if (metrics?.network && data.length > 0) {
       const timestamp = new Date()
-      const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')}`
+      const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')} `
 
       setData(prevData => {
         const newData = [...prevData, {
@@ -101,7 +102,7 @@ export function TrafficOverview() {
         <YAxis
           stroke="var(--muted-foreground)"
           style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}
-          tickFormatter={(value) => `${value}M`}
+          tickFormatter={(value) => `${value} M`}
         />
         <Tooltip content={<CustomTooltip />} />
         <Legend

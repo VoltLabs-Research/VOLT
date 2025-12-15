@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Message } from '@/types/chat';
 import MessageSkeleton from '@/components/atoms/chat/messages/MessagesSkeleton';
+import Paragraph from '@/components/primitives/Paragraph';
 
 export type MessageListProps = {
     messages: Message[];
@@ -11,7 +12,7 @@ export type MessageListProps = {
 };
 
 const MessageList = ({ messages, isLoading, endRef, renderItem, selfId }: MessageListProps) => {
-    return(
+    return (
         <div className='chat-box-messages-container'>
             {isLoading ? (
                 Array.from({ length: 5 }).map((_, index) => (
@@ -19,8 +20,8 @@ const MessageList = ({ messages, isLoading, endRef, renderItem, selfId }: Messag
                 ))
             ) : messages.length === 0 ? (
                 <div className='chat-empty-messages'>
-                    <p>No messages yet</p>
-                    <p>Start the conversation!</p>
+                    <Paragraph>No messages yet</Paragraph>
+                    <Paragraph>Start the conversation!</Paragraph>
                 </div>
             ) : (
                 messages.map((m) => renderItem(m, m.sender._id === selfId))

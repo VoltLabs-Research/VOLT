@@ -14,11 +14,18 @@ import PerformanceSettingsControls from '@/components/molecules/scene/Perfomance
 import EnvironmentControls from '@/components/molecules/scene/EnvironmentControls';
 import CameraSettingsControls from '@/components/molecules/scene/CameraSettingsControls';
 import RendererSettingsControls from '@/components/molecules/scene/RendererSettingsControls';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import SidebarNavigationOption from '@/components/atoms/scene/SidebarNavigationOption';
 import CanvasGridControls from '@/components/molecules/scene/CanvasGridControls';
 import OrbitControls from '@/components/molecules/scene/OrbitControls';
 import Container from '@/components/primitives/Container';
+import useTeamStore from '@/stores/team/team';
+import useWindowsStore from '@/stores/ui/windows';
+import { LuFlaskConical, LuFolder } from 'react-icons/lu';
 import './EditorSidebar.css';
 import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 const RenderConfig = () => (
     <Container className='d-flex column editor-render-options-container'>
@@ -51,7 +58,7 @@ const EditorSidebar = () => {
         props: {}
     }];
 
-    return(
+    return (
         <Sidebar
             tags={SCENE_TAGS}
             activeTag={activeSidebarTab}
@@ -87,9 +94,9 @@ const EditorSidebar = () => {
                 </Container>
 
                 {!showRenderConfig && trajectory?.team?.name && (
-                    <p className="editor-sidebar-header-team-name">
+                    <Paragraph className="editor-sidebar-header-team-name">
                         {trajectory.team.name}
-                    </p>
+                    </Paragraph>
                 )}
             </Sidebar.Header>
 

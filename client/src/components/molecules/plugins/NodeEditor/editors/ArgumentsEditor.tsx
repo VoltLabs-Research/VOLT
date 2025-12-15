@@ -7,6 +7,7 @@ import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import { ARGUMENT_TYPE_OPTIONS } from '@/utilities/plugins/node-types';
 import type { IArgumentsData, IArgumentDefinition, ArgumentType } from '@/types/plugin';
 import { TbPlus, TbTrash } from 'react-icons/tb';
+import Title from '@/components/primitives/Title';
 
 interface ArgumentsEditorProps {
     node: Node;
@@ -60,7 +61,7 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
 
     const handleAddOption = useCallback((argIndex: number, options: Array<{ key: string; label: string }>) =>
         () => {
-            const newOption = { key: `option_${options.length + 1}`, label: `Option ${options.length + 1}` };
+            const newOption = { key: `option_${options.length + 1} `, label: `Option ${options.length + 1} ` };
             updateArgument(argIndex, 'options', [...options, newOption]);
         }, [updateArgument]);
 
@@ -71,9 +72,9 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
 
     const addArgument = useCallback(() => {
         const newArg: IArgumentDefinition = {
-            argument: `arg_${args.length + 1}`,
+            argument: `arg_${args.length + 1} `,
             type: 'string' as ArgumentType,
-            label: `Argument ${args.length + 1}`
+            label: `Argument ${args.length + 1} `
         };
         updateNodeData(node.id, { arguments: { arguments: [...args, newArg] } });
     }, [args, node.id, updateNodeData]);
@@ -83,12 +84,12 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
         updateNodeData(node.id, { arguments: { arguments: updatedArgs } });
     }, [args, node.id, updateNodeData]);
 
-    return(
+    return (
         <>
             {args.map((arg, index) => (
                 <CollapsibleSection
                     key={index}
-                    title={arg.label || arg.argument || `Argument ${index + 1}`}
+                    title={arg.label || arg.argument || `Argument ${index + 1} `}
                     defaultExpanded={index === 0}
                 >
                     <FormField
@@ -161,7 +162,7 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                             onFieldChange={(_, value) => updateArgument(index, 'value', value)}
                             options={[
                                 { value: '', title: '-- No value --' },
-                                    ...arg.options.map(opt => ({ value: opt.key, title: opt.label }))
+                                ...arg.options.map(opt => ({ value: opt.key, title: opt.label }))
                             ]}
                         />
                     ) : (
@@ -213,7 +214,7 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                     {/* Select-specific fields - options */}
                     {arg.type === 'select' && (
                         <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: 'var(--gray-50)', borderRadius: '6px' }}>
-                            <h5 style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--gray-700)', marginBottom: '0.5rem' }}>Options</h5>
+                            <Title className='font-size-3' style={{ fontWeight: 600, color: 'var(--gray-700)', marginBottom: '0.5rem' }}>Options</Title>
                             <KeyValueEditor
                                 entries={optionsToEntries(arg.options || [])}
                                 onAdd={handleAddOption(index, arg.options || [])}

@@ -4,6 +4,7 @@ import teamApi from '@/services/api/team';
 import containerApi from '@/services/api/container';
 import useToast from '@/hooks/ui/use-toast';
 import './CreateContainerModal.css';
+import Title from '@/components/primitives/Title';
 
 interface CreateContainerModalProps {
     isOpen: boolean;
@@ -22,10 +23,10 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
     const [teams, setTeams] = useState<{ _id: string; name: string }[]>([]);
 
     useEffect(() => {
-        if(isOpen){
+        if (isOpen) {
             teamApi.getAll().then(teamsList => {
                 setTeams(teamsList as { _id: string; name: string }[]);
-                if(teamsList.length > 0){
+                if (teamsList.length > 0) {
                     setTeamId(teamsList[0]._id);
                 }
             });
@@ -60,11 +61,11 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
         setPorts(newPorts);
     };
 
-    const handleSubmit = async(e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
-        try{
+        try {
             await containerApi.create({
                 name,
                 image,
@@ -81,20 +82,20 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
             setImage('');
             setEnvVars([]);
             setPorts([]);
-        }catch(error: any){
+        } catch (error: any) {
             showError(error.response?.data?.message || 'Failed to create container');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
 
-    if(!isOpen) return null;
+    if (!isOpen) return null;
 
-    return(
+    return (
         <div className='modal-overlay'>
             <div className='create-container-modal'>
                 <div className='modal-header'>
-                    <h2>Create Container</h2>
+                    <Title className='font-size-2'>Create Container</Title>
                     <button onClick={onClose} className='close-btn'>
                         <IoClose size={24} />
                     </button>

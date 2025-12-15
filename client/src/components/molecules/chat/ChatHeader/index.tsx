@@ -5,7 +5,9 @@ import {
     IoCallOutline,
     IoVideocamOutline,
     IoInformationCircleOutline,
-    IoPeopleOutline } from 'react-icons/io5';
+    IoPeopleOutline
+} from 'react-icons/io5';
+import Title from '@/components/primitives/Title';
 
 export type ChatHeaderProps = {
     chat: Chat;
@@ -14,7 +16,7 @@ export type ChatHeaderProps = {
 };
 
 const ChatHeader = ({ chat, currentParticipant, presence }: ChatHeaderProps) => {
-    return(
+    return (
         <div className='chat-box-header-container'>
             <div className='chat-header-user'>
                 <div className={`chat-header-avatar ${chat.isGroup ? 'group-avatar' : ''}`}>
@@ -23,9 +25,9 @@ const ChatHeader = ({ chat, currentParticipant, presence }: ChatHeaderProps) => 
                         : currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
                 </div>
                 <div className='chat-header-info'>
-                    <h3 className='chat-header-name'>
-                     {chat.isGroup ? chat.groupName : currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
-                    </h3>
+                    <Title className='font-size-3 chat-header-name'>
+                        {chat.isGroup ? chat.groupName : currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
+                    </Title>
                     <div className='chat-header-status'>
                         {chat.isGroup ? `${chat.participants.length} members` : presence === 'online' ? 'Online' : presence === 'offline' ? 'Offline' : 'Connecting...'}
                     </div>

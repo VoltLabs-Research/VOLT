@@ -1,6 +1,8 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts'
 import { HardDrive } from 'lucide-react'
 import './StorageUsage.css'
+import Title from '@/components/primitives/Title'
+import Paragraph from '@/components/primitives/Paragraph'
 
 const data = [
   { name: 'DB-01', used: 1245, total: 2000, percentage: 62 },
@@ -11,46 +13,46 @@ const data = [
 ]
 
 const getColor = (percentage: number) => {
-  if(percentage >= 85) return 'url(#storageCritical)'
-  if(percentage >= 70) return 'url(#storageWarning)'
+  if (percentage >= 85) return 'url(#storageCritical)'
+  if (percentage >= 70) return 'url(#storageWarning)'
   return 'url(#storageNormal)'
 }
 
 const getSolidColor = (percentage: number) => {
-  if(percentage >= 85) return '#FF453A'
-  if(percentage >= 70) return '#FF9F0A'
+  if (percentage >= 85) return '#FF453A'
+  if (percentage >= 70) return '#FF9F0A'
   return '#0A84FF'
 }
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if(active && payload && payload.length){
+  if (active && payload && payload.length) {
     const data = payload[0].payload
-    return(
+    return (
       <div className="storage-tooltip">
-        <p className="storage-tooltip-label">{data.name}</p>
-        <p className="storage-tooltip-item">
+        <Paragraph className="storage-tooltip-label">{data.name}</Paragraph>
+        <Paragraph className="storage-tooltip-item">
           Used: <strong>{data.used} GB</strong> / {data.total} GB
-        </p>
-        <p className="storage-tooltip-item" style={{ color: getSolidColor(data.percentage) }}>
+        </Paragraph>
+        <Paragraph className="storage-tooltip-item" style={{ color: getSolidColor(data.percentage) }}>
           {data.percentage}% Full
-        </p>
+        </Paragraph>
       </div>
     )
   }
   return null
 }
 
-export function StorageUsage(){
+export function StorageUsage() {
   const totalUsed = data.reduce((sum, d) => sum + d.used, 0)
   const totalCapacity = data.reduce((sum, d) => sum + d.total, 0)
   const totalPercentage = Math.round((totalUsed / totalCapacity) * 100)
 
-  return(
+  return (
     <div className="storage-usage-container">
       <div className="storage-usage-header">
         <div className="storage-usage-title-group">
           <HardDrive className="storage-usage-icon" />
-          <h3 className="storage-usage-title">Storage Distribution</h3>
+          <Title className='font-size-3 storage-usage-title'>Storage Distribution</Title>
         </div>
         <div className="storage-total-badge">
           <span className="storage-total-value">{totalPercentage}%</span>
@@ -63,16 +65,16 @@ export function StorageUsage(){
         <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="storageNormal" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#0A84FF" stopOpacity={0.6}/>
-              <stop offset="95%" stopColor="#0A84FF" stopOpacity={0.05}/>
+              <stop offset="5%" stopColor="#0A84FF" stopOpacity={0.6} />
+              <stop offset="95%" stopColor="#0A84FF" stopOpacity={0.05} />
             </linearGradient>
             <linearGradient id="storageWarning" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#FF9F0A" stopOpacity={0.6}/>
-              <stop offset="95%" stopColor="#FF9F0A" stopOpacity={0.05}/>
+              <stop offset="5%" stopColor="#FF9F0A" stopOpacity={0.6} />
+              <stop offset="95%" stopColor="#FF9F0A" stopOpacity={0.05} />
             </linearGradient>
             <linearGradient id="storageCritical" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#FF453A" stopOpacity={0.6}/>
-              <stop offset="95%" stopColor="#FF453A" stopOpacity={0.05}/>
+              <stop offset="5%" stopColor="#FF453A" stopOpacity={0.6} />
+              <stop offset="95%" stopColor="#FF453A" stopOpacity={0.05} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />

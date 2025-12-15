@@ -3,6 +3,7 @@ import { TbX, TbServer, TbCheck, TbX as TbXIcon } from 'react-icons/tb';
 import useSSHConnections, { type CreateSSHConnectionData, type UpdateSSHConnectionData, type SSHConnection } from '@/stores/ssh-connections';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './SSHConnectionModal.css';
+import Title from '@/components/primitives/Title';
 
 interface SSHConnectionModalProps {
     isOpen: boolean;
@@ -55,7 +56,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
     });
 
     useEffect(() => {
-        if(mode === 'edit' && connection){
+        if (mode === 'edit' && connection) {
             setFormData({
                 name: connection.name,
                 host: connection.host,
@@ -63,11 +64,11 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                 username: connection.username,
                 password: ''
             });
-        }else{
+        } else {
             setFormData({
                 name: '',
                 host: '',
-                port: '22', 
+                port: '22',
                 username: '',
                 password: ''
             });
@@ -81,73 +82,73 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
         checkField(field, value);
     };
 
-    const handleSubmit = async(e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if(!validate(formData)) {
+        if (!validate(formData)) {
             return;
         }
 
-        try{
+        try {
             setLoading(true);
             setError(null);
 
-            if(mode === 'create'){
+            if (mode === 'create') {
                 const createData: CreateSSHConnectionData = {
                     ...formData,
                     port: typeof formData.port === 'string' ? parseInt(formData.port) : formData.port
                 };
                 await createConnection(createData);
-            }else if(connection){
+            } else if (connection) {
                 const updateData: UpdateSSHConnectionData = {
                     name: formData.name,
                     host: formData.host,
                     port: typeof formData.port === 'string' ? parseInt(formData.port) : formData.port,
                     username: formData.username
                 };
-                if(formData.password.trim()){
+                if (formData.password.trim()) {
                     updateData.password = formData.password;
                 }
                 await updateConnection(connection._id, updateData);
             }
 
             onClose();
-        }catch(err: any){
+        } catch (err: any) {
             setError(err.message || 'Failed to save SSH connection');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
 
-    const handleTest = async() => {
-        if(!connection && mode === 'edit') return;
+    const handleTest = async () => {
+        if (!connection && mode === 'edit') return;
 
-        if(mode === 'create'){
+        if (mode === 'create') {
             setError('Please save the connection first before testing');
             return;
         }
 
-        try{
+        try {
             setTesting(true);
             setTestResult(null);
             const result = await testConnection(connection!._id);
             setTestResult(result);
-        }catch(err: any){
+        } catch (err: any) {
             setTestResult({ valid: false, error: err.message });
-        }finally{
+        } finally {
             setTesting(false);
         }
     };
 
-    if(!isOpen) return null;
+    if (!isOpen) return null;
 
-    return(
+    return (
         <div className="ssh-connection-modal-overlay" onClick={onClose}>
             <div className="ssh-connection-modal" onClick={(e) => e.stopPropagation()}>
                 <div className="ssh-connection-modal-header">
                     <div className="ssh-connection-modal-title">
                         <TbServer size={24} />
-                        <h3>{mode === 'create' ? 'Add SSH Connection' : 'Edit SSH Connection'}</h3>
+                        <Title className='font-size-3'>{mode === 'create' ? 'Add SSH Connection' : 'Edit SSH Connection'}</Title>
                     </div>
                     <button className="ssh-connection-modal-close" onClick={onClose}>
                         <TbX size={20} />

@@ -24,6 +24,8 @@ import type { ApiToken, CreateTokenData, UpdateTokenData } from '@/types/models/
 import type { Webhook, CreateWebhookData, UpdateWebhookData } from '@/types/models/webhook';
 import './AccountSettings.css';
 import Container from '@/components/primitives/Container';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 const AccountSettings: React.FC = () => {
     const {
@@ -112,7 +114,7 @@ const AccountSettings: React.FC = () => {
 
             // Update local state with server response
             setUserData(prev => ({ ...prev, [field]: value }));
-            console.log(`Successfully updated ${field} on server:`, value);
+            console.log(`Successfully updated ${field} on server: `, value);
         } catch (error: any) {
             console.error('Error updating user data:', error);
             setUpdateError(`Failed to update ${field}. Please try again.`);
@@ -189,12 +191,12 @@ const AccountSettings: React.FC = () => {
     };
 
     const handleDeleteToken = async (token: ApiToken) => {
-        if (window.confirm(`Are you sure you want to delete the token "${token.name}"? This action cannot be undone.`)) {
+        if (window.confirm(`Are you sure you want to delete the token "${token.name}" ? This action cannot be undone.`)) {
             try {
                 await deleteToken(token._id);
             } catch (error: any) {
                 const errorContext = {
-                    endpoint: `/api-tokens/${token._id}`,
+                    endpoint: `/ api - tokens / ${token._id} `,
                     method: 'DELETE',
                     tokenId: token._id,
                     statusCode: error?.response?.status,
@@ -208,12 +210,12 @@ const AccountSettings: React.FC = () => {
     };
 
     const handleRegenerateToken = async (token: ApiToken) => {
-        if (window.confirm(`Are you sure you want to regenerate the token "${token.name}"? The old token will be invalidated.`)) {
+        if (window.confirm(`Are you sure you want to regenerate the token "${token.name}" ? The old token will be invalidated.`)) {
             try {
                 await regenerateToken(token._id);
             } catch (error: any) {
                 const errorContext = {
-                    endpoint: `/api-tokens/${token._id}/regenerate`,
+                    endpoint: `/ api - tokens / ${token._id}/regenerate`,
                     method: 'POST',
                     tokenId: token._id,
                     statusCode: error?.response?.status,
@@ -406,12 +408,12 @@ const AccountSettings: React.FC = () => {
                 return (
                     <div className='settings-content'>
                         <div className='settings-section'>
-                            <h2 className='settings-section-title'>{activeSection}</h2>
-                            <p className='settings-section-description'>
+                            <Title className='settings-section-title'>{activeSection}</Title>
+                            <Paragraph className='settings-section-description'>
                                 Configure your {activeSection.toLowerCase()} settings.
-                            </p>
+                            </Paragraph>
                             <div className='settings-placeholder'>
-                                <p>{activeSection} settings coming soon...</p>
+                                <Paragraph>{activeSection} settings coming soon...</Paragraph>
                             </div>
                         </div>
                     </div>

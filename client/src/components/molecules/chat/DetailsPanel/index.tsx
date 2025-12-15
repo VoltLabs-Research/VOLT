@@ -1,13 +1,10 @@
 import type { Chat, Message, Participant } from '@/types/chat';
 import { getInitials } from '@/utilities/guest';
 import MessageSkeleton from '@/components/atoms/chat/MessageSkeleton';
-import {
-    IoChatbubblesOutline,
-    IoCallOutline,
-    IoVideocamOutline,
-    IoPeopleOutline,
-    IoInformationCircleOutline } from 'react-icons/io5';
+import { IoChatbubblesOutline, IoCallOutline, IoVideocamOutline, IoPeopleOutline, IoInformationCircleOutline } from 'react-icons/io5';
 import SharedFilesList from '@/components/molecules/chat/SharedFilesList';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 type DetailsPanelProps = {
     chat: Chat | null | undefined;
@@ -26,10 +23,10 @@ const DetailsPanel = ({
     onOpenGroupManagement,
     currentParticipant
 }: DetailsPanelProps) => {
-    return(
+    return (
         <div className='chat-details-container'>
             <div className='chat-details-header'>
-                <h3 className='chat-details-title'>{chat?.isGroup ? 'Group Info' : 'Contact Info'}</h3>
+                <Title className='chat-details-title'>{chat?.isGroup ? 'Group Info' : 'Contact Info'}</Title>
             </div>
             <div className='chat-details-content'>
                 {!chat ? (
@@ -37,8 +34,8 @@ const DetailsPanel = ({
                         <div className='chat-no-selection-icon'>
                             <IoChatbubblesOutline />
                         </div>
-                        <h4 className='chat-no-selection-title'>No chat selected</h4>
-                        <p className='chat-no-selection-description'>Select a conversation to view details</p>
+                        <Title className='font-size-3 chat-no-selection-title'>No chat selected</Title>
+                        <Paragraph className='chat-no-selection-description'>Select a conversation to view details</Paragraph>
                     </div>
                 ) : isLoading ? (
                     <MessageSkeleton variant='contact' />
@@ -48,9 +45,9 @@ const DetailsPanel = ({
                             <div className='chat-group-avatar'>
                                 <IoPeopleOutline />
                             </div>
-                            <h4 className='chat-group-name'>{chat.groupName}</h4>
-                            {chat.groupDescription && <p className='chat-group-description'>{chat.groupDescription}</p>}
-                            <p className='chat-group-members-count'>{chat.participants.length} members</p>
+                            <Title className='font-size-3 chat-group-name'>{chat.groupName}</Title>
+                            {chat.groupDescription && <Paragraph className='chat-group-description'>{chat.groupDescription}</Paragraph>}
+                            <Paragraph className='chat-group-members-count'>{chat.participants.length} members</Paragraph>
                         </div>
                     </div>
                 ) : (
@@ -59,9 +56,9 @@ const DetailsPanel = ({
                             <div className='chat-details-avatar'>
                                 {currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
                             </div>
-                            <h4 className='chat-details-name'>
-                             {currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
-                            </h4>
+                            <Title className='font-size-2-5 chat-details-name'>
+                                {currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
+                            </Title>
                             <div className='chat-details-status'>
                                 {presence === 'online' ? 'Online' : presence === 'offline' ? 'Offline' : 'Connecting...'}
                             </div>
@@ -71,7 +68,7 @@ const DetailsPanel = ({
 
                 {chat && !isLoading && (
                     <div className='chat-details-section'>
-                        <h4 className='chat-details-section-title'>Actions</h4>
+                        <Title className='font-size-2-5 chat-details-section-title'>Actions</Title>
                         <div className='chat-details-actions'>
                             <button className='chat-details-action'>
                                 <i className='chat-details-action-icon'>
@@ -106,7 +103,7 @@ const DetailsPanel = ({
 
                 {chat && !isLoading && (
                     <div className='chat-details-section'>
-                        <h4 className='chat-details-section-title'>Shared Files</h4>
+                        <Title className='font-size-2-5 chat-details-section-title'>Shared Files</Title>
                         {chat && <SharedFilesList currentChatId={chat._id} messages={messages} />}
                     </div>
                 )}

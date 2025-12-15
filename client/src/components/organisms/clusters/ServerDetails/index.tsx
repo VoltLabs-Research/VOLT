@@ -1,5 +1,7 @@
 import { X, Server } from 'lucide-react'
 import './ServerDetails.css'
+import Title from '@/components/primitives/Title'
+import Paragraph from '@/components/primitives/Paragraph'
 
 interface ServerDetailsProps {
   server: {
@@ -16,11 +18,11 @@ interface ServerDetailsProps {
   onClose: () => void
 }
 
-export function ServerDetails({ server, onClose }: ServerDetailsProps){
-  if(!server) return null
+export function ServerDetails({ server, onClose }: ServerDetailsProps) {
+  if (!server) return null
 
   const getStatusColor = (status: string) => {
-    switch(status){
+    switch (status) {
       case 'Healthy': return '#30D158'
       case 'Warning': return '#FF9F0A'
       case 'Critical': return '#FF453A'
@@ -51,17 +53,17 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps){
     freeDisk: '250.00',
   }
 
-  return(
+  return (
     <div className="server-details-overlay" onClick={onClose}>
       <div className="server-details-panel" onClick={(e) => e.stopPropagation()}>
         <div className="server-details-header">
           <div className="server-details-header-left">
             <Server className="server-details-header-icon" />
             <div>
-              <h2 className="server-details-title">{server.id}</h2>
-              <p className="server-details-subtitle">
+              <Title className='font-size-4 server-details-title'>{server.id}</Title>
+              <Paragraph className='server-details-subtitle'>
                 {osInfo.platform} {osInfo.arch}
-              </p>
+              </Paragraph>
             </div>
           </div>
           <div className="server-details-header-right">
@@ -87,7 +89,7 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps){
 
         <div className="server-details-content">
           <div className="server-details-section">
-            <h3 className="server-details-section-title">Summary</h3>
+            <Title className='font-size-3 server-details-section-title'>Summary</Title>
             <div className="server-details-grid-3">
               <div className="server-details-info-card">
                 <span className="server-details-info-label">Name</span>

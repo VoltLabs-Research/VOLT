@@ -20,11 +20,26 @@
  * SOFTWARE.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
-import { TbCube3dSphere } from "react-icons/tb";
-import { IoSearchOutline, IoSettingsOutline, IoMenuOutline, IoCubeOutline } from "react-icons/io5";
-import { TbBook } from 'react-icons/tb';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import {
+    IoPersonOutline,
+    IoTelescopeOutline,
+    IoSettingsOutline,
+    IoChevronBack,
+    IoChevronForward,
+    IoSyncOutline,
+    IoStatsChart,
+    IoCubeOutline,
+    IoCloudOutline,
+    IoLayersOutline,
+    IoCodeSlashOutline,
+    IoMenuOutline,
+    IoSearchOutline,
+} from 'react-icons/io5';
+import './DashboardLayout.css';
+import Paragraph from '@/components/primitives/Paragraph';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { IoNotificationsOutline } from "react-icons/io5";
 import { CiChat1 } from 'react-icons/ci';
@@ -52,6 +67,8 @@ import TeamCreator from '@/components/organisms/team/TeamCreator';
 import TeamInvitePanel from '@/components/organisms/team/TeamInvitePanel';
 import SSHFileExplorer from '@/components/organisms/ssh/SSHFileExplorer';
 import './DashboardLayout.css';
+import Container from '@/components/primitives/Container';
+import { TbBook } from 'react-icons/tb';
 
 const DashboardLayout = () => {
     const teams = useTeamStore((state) => state.teams);
@@ -80,7 +97,6 @@ const DashboardLayout = () => {
     const notificationBodyRef = useRef<HTMLDivElement | null>(null);
     const observedNotificationsRef = useRef<Set<string>>(new Set());
 
-    // Memoized values - must be declared before useEffect
     const notificationList = useMemo(() => notifications, [notifications]);
     const navItems: Array<[string, IconType, string]> = useMemo(() => ([
         ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
@@ -94,12 +110,12 @@ const DashboardLayout = () => {
     const [teamsInitialized, setTeamsInitialized] = useState(false);
 
     useEffect(() => {
-        if(selectedTeam === null || trajectories.length) return;
+        if (selectedTeam === null || trajectories.length) return;
         getTrajectories(selectedTeam._id);
     }, [selectedTeam]);
 
     useEffect(() => {
-        if(teams.length) return;
+        if (teams.length) return;
         getUserTeams().finally(() => setTeamsInitialized(true));
     }, []);
 
@@ -107,10 +123,10 @@ const DashboardLayout = () => {
     // Wait for teams to finish loading first
     useEffect(() => {
         // Only check after teams have been initialized(fetched at least once)
-        if(!teamsInitialized) return;
-        if(isLoadingTeams) return; // Still loading, don't check yet
+        if (!teamsInitialized) return;
+        if (isLoadingTeams) return; // Still loading, don't check yet
 
-        if(teams.length === 0 && !showTeamCreator){
+        if (teams.length === 0 && !showTeamCreator) {
             // User has no teams after loading, force team creation
             toggleTeamCreator();
         }
@@ -126,28 +142,28 @@ const DashboardLayout = () => {
 
     // Handle team query param and localStorage synchronization
     useEffect(() => {
-        if(!teams.length) return;
+        if (!teams.length) return;
 
         const urlTeamId = searchParams.get('team');
         const storedTeamId = localStorage.getItem('selectedTeamId');
 
         // If URL has team param and it's different from localStorage, update localStorage
-        if(urlTeamId && urlTeamId !== storedTeamId){
+        if (urlTeamId && urlTeamId !== storedTeamId) {
             const team = teams.find(t => t._id === urlTeamId);
-            if(team){
+            if (team) {
                 localStorage.setItem('selectedTeamId', urlTeamId);
                 setSelectedTeam(urlTeamId);
             }
         }
         // If no URL param but localStorage exists, update URL
-        else if(!urlTeamId && storedTeamId){
+        else if (!urlTeamId && storedTeamId) {
             const team = teams.find(t => t._id === storedTeamId);
-            if(team){
+            if (team) {
                 setSearchParams({ team: storedTeamId });
             }
         }
         // If no URL param and no localStorage, set first team
-        else if(!urlTeamId && !storedTeamId && teams.length > 0){
+        else if (!urlTeamId && !storedTeamId && teams.length > 0) {
             const firstTeam = teams[0];
             setSearchParams({ team: firstTeam._id });
             localStorage.setItem('selectedTeamId', firstTeam._id);
@@ -155,40 +171,40 @@ const DashboardLayout = () => {
     }, [teams, searchParams, setSearchParams, setSelectedTeam]);
 
     useEffect(() => {
-        if(notifOpen){
+        if (notifOpen) {
             fetch({ force: true });
-        }else{
+        } else {
             // Clear observed notifications when closing panel
             observedNotificationsRef.current.clear();
         }
     }, [notifOpen]);
 
     useEffect(() => {
-        if(!notifOpen) return;
+        if (!notifOpen) return;
         const onDoc = (e: MouseEvent) => {
-            if(!bellWrapperRef.current) return;
-            if(!bellWrapperRef.current.contains(e.target as Node)) {
+            if (!bellWrapperRef.current) return;
+            if (!bellWrapperRef.current.contains(e.target as Node)) {
                 setNotifOpen(false);
             }
         };
         document.addEventListener('mousedown', onDoc);
-        return() => document.removeEventListener('mousedown', onDoc);
+        return () => document.removeEventListener('mousedown', onDoc);
     }, [notifOpen]);
 
     // Mark notifications as read when they become visible
     useEffect(() => {
-        if(!notifOpen || !notificationBodyRef.current){
+        if (!notifOpen || !notificationBodyRef.current) {
             return;
         }
 
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
-                    if(entry.isIntersecting){
+                    if (entry.isIntersecting) {
                         const notificationId = entry.target.getAttribute('data-notification-id');
                         const isRead = entry.target.getAttribute('data-notification-read') === 'true';
 
-                        if(notificationId && !isRead && !observedNotificationsRef.current.has(notificationId)) {
+                        if (notificationId && !isRead && !observedNotificationsRef.current.has(notificationId)) {
                             observedNotificationsRef.current.add(notificationId);
                             // Mark as read after a short delay to ensure user saw it
                             setTimeout(() => {
@@ -208,21 +224,21 @@ const DashboardLayout = () => {
         const notificationItems = notificationBodyRef.current.querySelectorAll('.dashboard-notification-item');
         notificationItems.forEach((item) => observer.observe(item));
 
-        return() => {
+        return () => {
             observer.disconnect();
         };
     }, [notifOpen, notificationList, markAsRead]);
 
     useEffect(() => {
-        if(!mobileMenuOpen) return;
+        if (!mobileMenuOpen) return;
         const onDoc = (e: MouseEvent) => {
-            if(!mobileMenuWrapperRef.current) return;
-            if(!mobileMenuWrapperRef.current.contains(e.target as Node)) {
+            if (!mobileMenuWrapperRef.current) return;
+            if (!mobileMenuWrapperRef.current.contains(e.target as Node)) {
                 setMobileMenuOpen(false);
             }
         };
         document.addEventListener('mousedown', onDoc);
-        return() => document.removeEventListener('mousedown', onDoc);
+        return () => document.removeEventListener('mousedown', onDoc);
     }, [mobileMenuOpen]);
     const setSearchQuery = useDashboardSearchStore((s) => s.setQuery);
     const [localQuery, setLocalQuery] = useState(searchQuery);
@@ -233,15 +249,15 @@ const DashboardLayout = () => {
     // Debounce updates to global query to reduce re-renders/network chatter
     useEffect(() => {
         const id = setTimeout(() => setSearchQuery(localQuery), 300);
-        return() => clearTimeout(id);
+        return () => clearTimeout(id);
     }, [localQuery, setSearchQuery]);
 
     // Keyboard shortcut for SSH File Explorer(Ctrl+I)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Handle both 'i' and 'I' (case-insensitive)
-            if((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
-                if(e.repeat) return; // Prevent multiple toggles when holding key
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
+                if (e.repeat) return; // Prevent multiple toggles when holding key
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('SSH File Explorer shortcut triggered!');
@@ -250,7 +266,7 @@ const DashboardLayout = () => {
         };
 
         window.addEventListener('keydown', handleKeyDown);
-        return() => window.removeEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, [toggleSSHFileExplorer]);
 
     // Convert teams to Select options
@@ -265,7 +281,7 @@ const DashboardLayout = () => {
     // Handle team selection change
     const handleTeamChange = (teamId: string) => {
         // Only proceed if it's actually a different team
-        if(selectedTeam?._id === teamId) return;
+        if (selectedTeam?._id === teamId) return;
 
         // Clean up team-dependent states
         const { reset: resetTrajectories } = useTrajectoryStore.getState();
@@ -296,8 +312,8 @@ const DashboardLayout = () => {
         setSearchParams({ team: teamId });
     };
 
-    const handleLeaveTeam = async(teamId: string) => {
-        try{
+    const handleLeaveTeam = async (teamId: string) => {
+        try {
             await leaveTeam(teamId);
 
             // Get the state after leaving
@@ -306,7 +322,7 @@ const DashboardLayout = () => {
             const currentSelected = state.selectedTeam;
 
             // If the left team was the selected one, switch to the first available team
-            if(currentSelected?._id === teamId && remainingTeams.length > 0){
+            if (currentSelected?._id === teamId && remainingTeams.length > 0) {
                 const newTeamId = remainingTeams[0]._id;
                 setSelectedTeam(newTeamId);
 
@@ -336,27 +352,27 @@ const DashboardLayout = () => {
             }
 
             showSuccess(`Left team successfully`);
-        }catch(err: any){
+        } catch (err: any) {
             const errorMessage = err?.message || 'Failed to leave team';
             showError(errorMessage);
         }
     };
 
-    return(
+    return (
         <main className='dashboard-main'>
             {showTeamCreator && (
                 <TeamCreator isRequired={teams.length === 0} />
             )}
 
-            <section className='dashboard-layout-header-container'>
-                <div ref={mobileMenuWrapperRef} className='mobile-menu-wrapper'>
-                    <div className='mobile-menu-trigger badge-container as-icon-container over-light-bg' onClick={() => setMobileMenuOpen((v) => !v)}>
+            <Container className='d-flex items-center content-between dashboard-layout-header-container'>
+                <Container ref={mobileMenuWrapperRef} className='p-relative d-none sm:d-block'>
+                    <Container className='mobile-menu-trigger badge-container as-icon-container over-light-bg' onClick={() => setMobileMenuOpen((v) => !v)}>
                         <IoMenuOutline />
-                    </div>
+                    </Container>
                     {mobileMenuOpen && (
-                        <div className='mobile-dropdown' onMouseDown={(e) => e.stopPropagation()}>
-                            <div className='mobile-dropdown-section'>
-                                <div className='search-container'>
+                        <Container className='mobile-dropdown' onMouseDown={(e) => e.stopPropagation()}>
+                            <Container className='mobile-dropdown-section'>
+                                <Container className='search-container'>
                                     <i className='search-icon-container'>
                                         <IoSearchOutline />
                                     </i>
@@ -366,9 +382,9 @@ const DashboardLayout = () => {
                                         value={localQuery}
                                         onChange={(e) => setLocalQuery(e.target.value)}
                                     />
-                                </div>
-                            </div>
-                            <div className='mobile-dropdown-section'>
+                                </Container>
+                            </Container>
+                            <Container className='mobile-dropdown-section'>
                                 <nav className='mobile-nav-list'>
                                     {navItems.map(([name, Icon, to], index) => (
                                         <button key={`mdrop-${index}`} className={`mobile-nav-item ${(index === 0) ? 'is-selected' : ''}`} onClick={() => { navigate(to); setMobileMenuOpen(false); }}>
@@ -377,9 +393,9 @@ const DashboardLayout = () => {
                                         </button>
                                     ))}
                                 </nav>
-                            </div>
-                            <div className='mobile-dropdown-section'>
-                                <div className='team-selector-container'>
+                            </Container>
+                            <Container className='mobile-dropdown-section'>
+                                <Container className='team-selector-container'>
                                     <Select
                                         options={teamOptions}
                                         value={selectedTeam?._id || null}
@@ -389,31 +405,31 @@ const DashboardLayout = () => {
                                         maxListWidth={300}
                                         renderInPortal
                                     />
-                                </div>
+                                </Container>
                                 <div onClick={() => { toggleTeamCreator(); setMobileMenuOpen(false); }} className='badge-container as-icon-container over-light-bg'>
                                     <IoIosAdd size={25} />
                                 </div>
-                            </div>
-                        </div>
+                            </Container>
+                        </Container>
                     )}
-                </div>
-                <nav className='navigation-container'>
+                </Container>
+                <Container className='d-flex items-center gap-05 navigation-container sm:d-none'>
                     {navItems.map(([name, Icon, to], index) => (
-                        <div
-                            className={`navigation-item-container ${(index === 0) ? 'is-selected' : ''}`}
+                        <Container
+                            className={`d-flex cursor-pointer items-center gap-05 navigation-item-container ${(index === 0) ? 'is-selected' : ''}`}
                             key={index}
                             onClick={() => navigate(to)}
                         >
                             <i className='navigation-item-icon'>
                                 <Icon />
                             </i>
-                            <p className='navigation-item-name'>{name}</p>
-                        </div>
+                            <Paragraph className='font-size-2-5 font-weight-5 color-secondary navigation-item-name'>{name}</Paragraph>
+                        </Container>
                     ))}
-                </nav>
+                </Container>
 
-                <div className='dashboard-search-container'>
-                    <div className='search-container'>
+                <Container className='d-flex gap-05 items-center dashboard-search-container'>
+                    <Container className='search-container'>
                         <i className='search-icon-container'>
                             <IoSearchOutline />
                         </i>
@@ -423,11 +439,11 @@ const DashboardLayout = () => {
                             value={localQuery}
                             onChange={(e) => setLocalQuery(e.target.value)}
                         />
-                    </div>
+                    </Container>
 
-                    <div
+                    <Container
                         ref={teamSelectorRef}
-                        className='team-selector-container'
+                        className='d-flex items-center gap-05 cursor-pointer p-05 team-selector-container'
                     >
                         <Select
                             options={teamOptions}
@@ -438,7 +454,7 @@ const DashboardLayout = () => {
                             className="team-select"
                             maxListWidth={300}
                         />
-                    </div>
+                    </Container>
 
                     <button
                         className='team-invite-icon-btn badge-container as-icon-container over-light-bg'
@@ -449,33 +465,33 @@ const DashboardLayout = () => {
                         <GoPersonAdd size={20} />
                     </button>
 
-                    <div
+                    <Container
                         onClick={toggleTeamCreator}
                         className='badge-container as-icon-container over-light-bg'
                     >
                         <IoIosAdd size={25} />
-                    </div>
-                </div>
+                    </Container>
+                </Container>
 
-                <div className='dashboard-user-container'>
-                    <div className='badge-container as-icon-container over-light-bg'>
+                <Container className='d-flex gap-1-5 sm:d-flex sm:gap-05 dashboard-user-container'>
+                    <Container className='badge-container as-icon-container over-light-bg'>
                         <IoSettingsOutline />
-                    </div>
+                    </Container>
 
-                    <div ref={bellWrapperRef} className='dashboard-bell-wrapper'>
-                        <div onClick={() => setNotifOpen((v) => !v)} className='badge-container as-icon-container over-light-bg dashboard-bell-trigger'>
+                    <Container ref={bellWrapperRef} className='p-relative'>
+                        <Container onClick={() => setNotifOpen((v) => !v)} className='badge-container as-icon-container over-light-bg dashboard-bell-trigger'>
                             <IoNotificationsOutline />
                             {unreadCount > 0 && (
                                 <span className='notification-badge'>{unreadCount > 99 ? '99+' : unreadCount}</span>
                             )}
-                        </div>
+                        </Container>
                         {notifOpen && (
-                            <div className='dashboard-notifications-dropdown'>
-                                <div className='dashboard-notifications-header'>
+                            <Container className='dashboard-notifications-dropdown'>
+                                <Container className='d-flex items-center content-between color-primary font-weight-6 dashboard-notifications-header'>
                                     <span>Notifications</span>
                                     <button className='dashboard-notifications-close' onClick={(e) => { e.stopPropagation(); setNotifOpen(false); }}>×</button>
-                                </div>
-                                <div ref={notificationBodyRef} className='dashboard-notifications-body'>
+                                </Container>
+                                <Container ref={notificationBodyRef} className='dashboard-notifications-body'>
                                     {loading ? (
                                         Array.from({ length: 5 }).map((_, i) => (
                                             <div key={`notif-skel-${i}`} className='dashboard-notification-item'>
@@ -494,7 +510,7 @@ const DashboardLayout = () => {
                                                     className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`}
                                                     data-notification-id={n._id}
                                                     data-notification-read={n.read}
-                                                    onClick={() => { if(n.link) navigate(n.link); setNotifOpen(false); }}
+                                                    onClick={() => { if (n.link) navigate(n.link); setNotifOpen(false); }}
                                                 >
                                                     <div className='dashboard-notification-title'>{n.title}</div>
                                                     <div className='dashboard-notification-content'>{n.content}</div>
@@ -502,16 +518,14 @@ const DashboardLayout = () => {
                                             ))}
                                         </>
                                     )}
-                                </div>
-                            </div>
+                                </Container>
+                            </Container>
                         )}
-                    </div>
+                    </Container>
 
                     <SidebarUserAvatar avatarrounded />
-                </div>
-            </section>
-
-            {/* Floating dropdown replaces side panel */}
+                </Container>
+            </Container>
 
             <Outlet />
 
@@ -520,7 +534,7 @@ const DashboardLayout = () => {
                     onClose={toggleSSHFileExplorer}
                     onImportSuccess={() => {
                         // Refresh trajectories after import
-                        if(selectedTeam){
+                        if (selectedTeam) {
                             getTrajectories(selectedTeam._id);
                         }
                     }}

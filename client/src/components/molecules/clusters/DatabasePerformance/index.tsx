@@ -4,6 +4,7 @@ import { Database } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { ChartContainer } from '@/components/atoms/common/ChartContainer'
 import './DatabasePerformance.css'
+import Paragraph from '@/components/primitives/Paragraph'
 
 interface DataPoint {
   queries: number;
@@ -18,16 +19,16 @@ const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length >= 3) {
     return (
       <div className="db-tooltip">
-        <p className="db-tooltip-label">{payload[0].payload.time}</p>
-        <p className="db-tooltip-item" style={{ color: '#3b82f6' }}>
-          Queries: <strong>{payload[0].value}/s</strong>
-        </p>
-        <p className="db-tooltip-item" style={{ color: '#8b5cf6' }}>
-          Connections: <strong>{payload[1].value}</strong>
-        </p>
-        <p className="db-tooltip-item" style={{ color: '#06b6d4' }}>
-          Latency: <strong>{payload[2].value}ms</strong>
-        </p>
+        <Paragraph className="db-tooltip-label">{payload[0].payload.time}</Paragraph>
+        <Paragraph className="db-tooltip-item" style={{ color: '#3b82f6' }}>
+          Queries: {payload[0].value}
+        </Paragraph>
+        <Paragraph className="db-tooltip-item" style={{ color: '#8b5cf6' }}>
+          Connections: {payload[1].value}
+        </Paragraph>
+        <Paragraph className="db-tooltip-item" style={{ color: '#06b6d4' }}>
+          Latency: {payload[2].value}ms
+        </Paragraph>
       </div>
     )
   }
@@ -161,6 +162,6 @@ export function DatabasePerformance() {
           />
         </LineChart>
       </ResponsiveContainer>
-    </ChartContainer>
+    </ChartContainer >
   )
 }

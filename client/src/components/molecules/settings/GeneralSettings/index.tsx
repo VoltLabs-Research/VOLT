@@ -9,6 +9,8 @@ import StatusBadge from "@/components/atoms/common/StatusBadge";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import Container from "@/components/primitives/Container";
 import "./GeneralSettings.css";
+import Title from "@/components/primitives/Title";
+import Paragraph from "@/components/primitives/Paragraph";
 
 interface GeneralSettingsProps {
     user: { firstName?: string; lastName?: string; email?: string; avatar?: string } | null;
@@ -19,13 +21,13 @@ interface GeneralSettingsProps {
     onDeleteAccount: () => void;
 }
 
-const GeneralSettings: React.FC<GeneralSettingsProps> = ({ 
-    user, 
-    userData, 
-    isUpdating, 
-    updateError, 
-    onFieldChange, 
-    onDeleteAccount 
+const GeneralSettings: React.FC<GeneralSettingsProps> = ({
+    user,
+    userData,
+    isUpdating,
+    updateError,
+    onFieldChange,
+    onDeleteAccount
 }) => {
     const [formData, setFormData] = useState({
         firstName: userData.firstName,
@@ -137,10 +139,10 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                     </Container>
 
                     <Container className="flex-1">
-                        <h2 className="profile-name">
+                        <Title className='font-size-4 profile-name'>
                             {user?.firstName} {user?.lastName}
-                        </h2>
-                        <p className="profile-email">{user?.email}</p>
+                        </Title>
+                        <Paragraph className='profile-email'>{user?.email}</Paragraph>
                         <Container className="d-flex items-center gap-05">
                             <StatusBadge variant="active">
                                 <TbCheck size={14} />
@@ -212,8 +214,8 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                 <Container className="d-flex column gap-1">
                     <Container className="danger-item d-flex items-center content-between">
                         <Container className="danger-info">
-                            <h4>Delete Account</h4>
-                            <p>Permanently delete your account and all associated data. This action cannot be undone.</p>
+                            <Title className='font-size-2-5'>Delete Account</Title>
+                            <Paragraph>Permanently delete your account and all associated data. This action cannot be undone.</Paragraph>
                         </Container>
                         <button className="action-button danger" onClick={onDeleteAccount}>
                             <TbTrash size={16} />

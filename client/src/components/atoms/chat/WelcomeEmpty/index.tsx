@@ -1,12 +1,14 @@
+import Title from '@/components/primitives/Title';
+
 type WelcomeEmptyProps = {
     isConnected: boolean
 };
 
 const WelcomeEmpty = ({ isConnected }: WelcomeEmptyProps) => {
-    return(
+    return (
         <div className='chat-welcome-container'>
             <div className='chat-welcome-content'>
-                <h2>Welcome to Chat</h2>
+                <Title className="font-size-4 font-weight-6">Welcome to Chat</Title>
                 <p>Select a conversation or start a new chat with a team member</p>
                 {!isConnected && (
                     <div className='chat-connection-status'>

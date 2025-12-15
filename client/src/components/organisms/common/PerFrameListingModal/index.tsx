@@ -5,7 +5,9 @@ import WindowIcons from '@/components/molecules/common/WindowIcons';
 import Draggable from '@/components/atoms/common/Draggable';
 import pluginApi from '@/services/api/plugin';
 import Container from '@/components/primitives/Container';
+import type { PerFrameListingConfig } from '@/types/scene';
 import './PerFrameListingModal.css';
+import Title from '@/components/primitives/Title';
 
 export type PerFrameListingModalProps = {
     item: any;
@@ -31,18 +33,18 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
         title: col.label,
         skeleton: { variant: 'text', width: 100 },
         render: (val: any) => {
-            if(col.format === 'number' && typeof val === 'number'){
+            if (col.format === 'number' && typeof val === 'number') {
                 return val.toFixed(4).replace(/\.?0+$/, '');
             }
-            if(Array.isArray(val)) return val.join(', ');
+            if (Array.isArray(val)) return val.join(', ');
             return String(val ?? '');
         }
     })), [config]);
 
-    const fetchPage = async(pageNum: number) => {
-        if(!item) return;
+    const fetchPage = async (pageNum: number) => {
+        if (!item) return;
         setLoading(true);
-        try{
+        try {
             const analysis = item.analysis;
             const trajectoryId = analysis.trajectory?._id || analysis.trajectory || item.trajectory?._id || item.trajectory;
             const analysisId = analysis._id;
@@ -59,9 +61,9 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
 
             setRows(prev => pageNum === 1 ? data.rows : [...prev, ...data.rows]);
             setHasMore(data.hasMore);
-        }catch(err){
+        } catch (err) {
             console.error(err);
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
@@ -75,11 +77,11 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
     useEffect(() => {
         const container = scrollContainerRef.current;
         const sentinel = sentinelRef.current;
-        if(!container || !sentinel) return;
+        if (!container || !sentinel) return;
         const observer = new IntersectionObserver(
             (entries) => {
                 const entry = entries[0];
-                if(entry.isIntersecting && hasMore && !loading){
+                if (entry.isIntersecting && hasMore && !loading) {
                     setPage((p) => {
                         const nextPage = p + 1;
                         fetchPage(nextPage);
@@ -90,12 +92,12 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
             { root: container, rootMargin: '0px 0px 200px 0px', threshold: 0 }
         );
         observer.observe(sentinel);
-        return() => observer.disconnect();
+        return () => observer.disconnect();
     }, [hasMore, loading]);
 
-    if(isMinimized) return null;
+    if (isMinimized) return null;
 
-    return(
+    return (
         <Draggable
             enabled
             bounds='viewport'
@@ -115,7 +117,7 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
                         onExpand={() => setIsMaximized(!isMaximized)}
                         onMinimize={() => setIsMinimized(true)}
                     />
-                    <h3 className='per-frame-listing-modal-header-title'>{config.title}</h3>
+                    <Title className='font-size-3 per-frame-listing-modal-header-title'>{config.title}</Title>
                 </Container>
 
                 <Container className='p-1 flex-1 overflow-auto' ref={scrollContainerRef}>

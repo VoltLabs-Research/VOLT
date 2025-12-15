@@ -3,6 +3,7 @@ import { IoClose, IoAdd, IoTrash } from 'react-icons/io5';
 import containerApi from '@/services/api/container';
 import useToast from '@/hooks/ui/use-toast';
 import './EditContainerModal.css';
+import Title from '@/components/primitives/Title';
 
 interface EditContainerModalProps {
     isOpen: boolean;
@@ -20,7 +21,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
     const { showSuccess, showError } = useToast();
 
     useEffect(() => {
-        if(container){
+        if (container) {
             setEnv(container.env || []);
             setPorts(container.ports || []);
             setMemory(container.memory || 512);
@@ -28,7 +29,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
         }
     }, [container]);
 
-    if(!isOpen) return null;
+    if (!isOpen) return null;
 
     const handleAddEnv = () => setEnv([...env, { key: '', value: '' }]);
     const handleRemoveEnv = (index: number) => setEnv(env.filter((_, i) => i !== index));
@@ -46,10 +47,10 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
         setPorts(newPorts);
     };
 
-    const handleSubmit = async(e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        try{
+        try {
             await containerApi.update(container._id, {
                 environment: Object.fromEntries(env.filter(e => e.key).map(e => [e.key, e.value])),
                 ports: Object.fromEntries(ports.map(p => [p.private.toString(), p.public])),
@@ -59,18 +60,18 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
             showSuccess('Container updated successfully');
             onSuccess();
             onClose();
-        }catch(error: any){
+        } catch (error: any) {
             showError(error.response?.data?.message || 'Failed to update container');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
 
-    return(
+    return (
         <div className="modal-overlay">
             <div className="modal-content">
                 <div className="modal-header">
-                    <h2>Edit Container: {container.name}</h2>
+                    <Title className='font-size-2'>Edit Container: {container.name}</Title>
                     <button onClick={onClose} className="close-btn"><IoClose size={24} /></button>
                 </div>
                 <form onSubmit={handleSubmit} className="modal-form">

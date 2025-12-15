@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import type { Message } from '@/types/chat';
+import Paragraph from '@/components/primitives/Paragraph';
 
 type TextMessageProps = {
     msg: Message;
@@ -11,12 +12,12 @@ const TextMessage = ({ msg, onSave }: TextMessageProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [draft, setDraft] = useState(msg.content);
 
-    if(!isEditing){
-        return <p className='chat-message-text'>{msg.content}</p>;
+    if (!isEditing) {
+        return <Paragraph className='chat-message-text'>{msg.content}</Paragraph>;
     }
 
     const handleEditSave = () => {
-        if(draft.trim()){
+        if (draft.trim()) {
             onSave(draft);
         }
 
@@ -28,7 +29,7 @@ const TextMessage = ({ msg, onSave }: TextMessageProps) => {
         setDraft(msg.content);
     };
 
-    return(
+    return (
         <div className='chat-message-edit'>
             <textarea value={draft} onChange={(e) => setDraft(e.target.value)} className='chat-message-edit-input' autoFocus />
             <div className='chat-message-edit-actions'>

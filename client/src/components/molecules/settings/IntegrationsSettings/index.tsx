@@ -5,6 +5,8 @@ import SectionHeader from "@/components/atoms/settings/SectionHeader";
 import Container from "@/components/primitives/Container";
 import SettingsRow from "@/components/atoms/settings/SettingsRow";
 import "./IntegrationsSettings.css";
+import Title from "@/components/primitives/Title";
+import Paragraph from "@/components/primitives/Paragraph";
 
 const IntegrationsSettings: React.FC = () => {
     const integrations = [{
@@ -65,8 +67,8 @@ const IntegrationsSettings: React.FC = () => {
             </Container>
 
             <Container className="integration-help">
-                <h4>Need help with integrations?</h4>
-                <p>Check our documentation or contact support for assistance with setting up third-party connections.</p>
+                <Title className='font-size-2-5'>Need help with integrations?</Title>
+                <Paragraph>Check our documentation or contact support for assistance with setting up third-party connections.</Paragraph>
                 <Container className="d-flex gap-1 flex-wrap">
                     <button className="action-button">
                         <TbFileText size={16} />

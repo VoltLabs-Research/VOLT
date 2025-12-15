@@ -4,6 +4,7 @@ import Draggable from '@/components/atoms/common/Draggable';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import './FileExplorerWindow.css';
 import Container from '@/components/primitives/Container';
+import Title from '@/components/primitives/Title';
 
 interface FileExplorerWindowProps {
     title: string;
@@ -73,7 +74,7 @@ const FileExplorerWindow: React.FC<FileExplorerWindowProps> = ({
 
                         <Container>
                             <Container className='d-flex column gap-05'>
-                                <h3 className='file-explorer-nav-title'>{title}</h3>
+                                <Title className='font-size-3 file-explorer-nav-title'>{title}</Title>
                                 <Container className='d-flex column gap-025'>
                                     {navItems}
                                 </Container>

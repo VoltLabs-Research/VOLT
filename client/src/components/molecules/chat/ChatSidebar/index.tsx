@@ -6,6 +6,8 @@ import { getInitials } from '@/utilities/guest';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import ChatListSkeleton from '@/components/atoms/chat/messages/ChatListSkeleton';
 import useAuthStore from '@/stores/authentication';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 const ChatSidebar: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -17,17 +19,17 @@ const ChatSidebar: React.FC = () => {
 
     // Filter chats based on search query
     const filteredChats = chats.filter(chat => {
-        if(!searchQuery) return true;
+        if (!searchQuery) return true;
         const participant = chat.participants.find(p => p._id !== user?._id);
-        if(!participant) return false;
+        if (!participant) return false;
         const name = `${participant.firstName} ${participant.lastName}`.toLowerCase();
         return name.includes(searchQuery.toLowerCase());
     });
 
-    return(
+    return (
         <div className='chat-sidebar-container'>
             <div className='chat-sidebar-header-container'>
-                <h3 className='chat-sidebar-header-title'>Messages</h3>
+                <Title className='chat-sidebar-header-title'>Messages</Title>
                 <div className='chat-sidebar-actions-row'>
                     <div className='chat-sidebar-search-container'>
                         <i className='chat-sidebar-search-icon-container'>
@@ -60,31 +62,31 @@ const ChatSidebar: React.FC = () => {
             {/* Team Members for New Chat */}
             {showTeamMembers && (
                 <div className='chat-team-members-container'>
-                    <h4 className='chat-team-members-title'>Team Members</h4>
+                    <Title className='font-size-3 chat-team-members-title'>Team Members</Title>
                     {teamMembers
                         .filter((member, index, self) =>
                             self.findIndex(m => m._id === member._id) === index
                         )
-                            .map((member) => (
-                        <div
-                            key={member._id}
-                            className='chat-team-member-item'
-                            onClick={() => {
-                                startChatWithMember(member);
-                                setShowTeamMembers(false);
-                            }}
-                        >
-                            <div className='chat-team-member-avatar'>
-                                {getInitials(member.firstName, member.lastName)}
+                        .map((member) => (
+                            <div
+                                key={member._id}
+                                className='chat-team-member-item'
+                                onClick={() => {
+                                    startChatWithMember(member);
+                                    setShowTeamMembers(false);
+                                }}
+                            >
+                                <div className='chat-team-member-avatar'>
+                                    {getInitials(member.firstName, member.lastName)}
+                                </div>
+                                <div className='chat-team-member-info'>
+                                    <Title className='font-size-2-5 chat-team-member-name'>
+                                        {member.firstName} {member.lastName}
+                                    </Title>
+                                    <Paragraph className='chat-team-member-email'>{member.email}</Paragraph>
+                                </div>
                             </div>
-                            <div className='chat-team-member-info'>
-                                <h5 className='chat-team-member-name'>
-                                    {member.firstName} {member.lastName}
-                                </h5>
-                                <p className='chat-team-member-email'>{member.email}</p>
-                            </div>
-                        </div>
-                    ))}
+                        ))}
                 </div>
             )}
 
@@ -96,8 +98,8 @@ const ChatSidebar: React.FC = () => {
                     ))
                 ) : filteredChats.length === 0 ? (
                     <div className='chat-empty-state'>
-                        <p>No conversations yet</p>
-                        <p>Start a chat with a team member!</p>
+                        <Paragraph>No conversations yet</Paragraph>
+                        <Paragraph>Start a chat with a team member!</Paragraph>
                     </div>
                 ) : (
                     filteredChats.map((chat) => {
@@ -106,9 +108,9 @@ const ChatSidebar: React.FC = () => {
                             chat.participants.find(p => p._id !== user?._id)?.firstName + ' ' +
                             chat.participants.find(p => p._id !== user?._id)?.lastName;
 
-                        if(!displayName) return null;
+                        if (!displayName) return null;
 
-                        return(
+                        return (
                             <div
                                 key={chat._id}
                                 className={`chat-conversation-item ${currentChat?._id === chat._id ? 'active' : ''}`}
@@ -126,9 +128,9 @@ const ChatSidebar: React.FC = () => {
                                 </div>
                                 <div className='chat-conversation-content'>
                                     <div className='chat-conversation-header'>
-                                        <h4 className='chat-conversation-name'>
+                                        <Title className='font-size-3 chat-conversation-name'>
                                             {displayName}
-                                        </h4>
+                                        </Title>
                                         {chat.lastMessageAt && (
                                             <span className='chat-conversation-time'>
                                                 {formatTimeAgo(chat.lastMessageAt)}
@@ -136,9 +138,9 @@ const ChatSidebar: React.FC = () => {
                                         )}
                                     </div>
                                     {chat.lastMessage && (
-                                        <p className='chat-conversation-preview'>
+                                        <Paragraph className='chat-conversation-preview'>
                                             {chat.lastMessage.content}
-                                        </p>
+                                        </Paragraph>
                                     )}
                                     {isGroup && (
                                         <div className='chat-conversation-meta'>

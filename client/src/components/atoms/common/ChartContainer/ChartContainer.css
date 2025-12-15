@@ -3,26 +3,8 @@
   background: var(--card);
   backdrop-filter: blur(80px);
   border-radius: 20px;
-  padding: 1.5rem;
-  height: 100%;
   max-height: 400px;
-  display: flex;
-  flex-direction: column;
   border: 1px solid var(--border);
-}
-
-.chart-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  flex-shrink: 0;
-}
-
-.chart-title-group {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
 }
 
 .chart-icon {
@@ -38,17 +20,6 @@
   margin: 0;
 }
 
-.chart-stats {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.chart-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
 
 .chart-stat-label {
   font-size: 0.75rem;
@@ -61,22 +32,4 @@
   font-size: 1rem;
   font-weight: 700;
   color: var(--foreground);
-}
-
-/* Metric Stat Styles */
-
-@media (max-width: 768px) {
-  .chart-container {
-    padding: 1rem;
-  }
-
-  .chart-header {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .chart-stats {
-    width: 100%;
-    gap: 1rem;
-  }
 }

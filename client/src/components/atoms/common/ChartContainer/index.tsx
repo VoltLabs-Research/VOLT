@@ -2,6 +2,8 @@ import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { Skeleton } from '@mui/material'
 import './ChartContainer.css'
+import Title from '@/components/primitives/Title';
+import Container from '@/components/primitives/Container';
 
 interface ChartContainerProps {
   icon: LucideIcon
@@ -23,28 +25,28 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
   stats,
   statsLoading = false
 }) => {
-  return(
-    <div className="chart-container">
-      <div className="chart-header">
-        <div className="chart-title-group">
+  return (
+    <Container className="d-flex h-max column p-1-5 chart-container sm:p-1">
+      <Container className="d-flex content-between mb-1-5 sm:column sm:gap-1">
+        <Container className="d-flex items-center gap-075">
           <Icon className="chart-icon" />
-          <h3 className="chart-title">{title}</h3>
-        </div>
+          <Title className='font-size-3 chart-title'>{title}</Title>
+        </Container>
         {stats && (
-          <div className="chart-stats">
+          <Container className="d-flex gap-1-5 flex-wrap sm:w-max sm:gap-1">
             {stats.map((stat) => (
-              <div key={stat.label} className="chart-stat">
+              <Container key={stat.label} className="d-flex column gap-025">
                 <span className="chart-stat-label">{stat.label}</span>
                 {statsLoading ? (
                   <Skeleton variant="text" width={60} height={18} />
                 ) : (
                   <span className="chart-stat-value">{stat.value}</span>
                 )}
-              </div>
+              </Container>
             ))}
-          </div>
+          </Container>
         )}
-      </div>
+      </Container>
 
       {isLoading ? (
         <Skeleton
@@ -56,6 +58,6 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
       ) : (
         children
       )}
-    </div>
+    </Container>
   )
 }

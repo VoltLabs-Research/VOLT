@@ -97,17 +97,12 @@
 }
 
 .editor-model-loading-title {
-    font-size: 1.8rem;
-    font-weight: 600;
     letter-spacing: -0.5px;
     line-height: 1.2;
 }
 
 .editor-model-loading-description {
     color: rgba(255, 255, 255, 0.7);
-    font-size: 1.2rem;
-    font-weight: 400;
-    line-height: 1.5;
     letter-spacing: -0.1px;
     margin: 0 auto;
 }

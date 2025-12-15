@@ -10,6 +10,7 @@ import { NodeType } from '@/types/plugin';
 import pluginApi from '@/services/api/plugin';
 import './FormField.css';
 import Container from '@/components/primitives/Container';
+import Title from '@/components/primitives/Title';
 
 interface FormFieldProps {
     label: string;
@@ -54,7 +55,7 @@ const FormField: React.FC<FormFieldProps> = ({
     const [schemas, setSchemas] = useState<Record<NodeType, NodeOutputSchema> | null>(schemasCache);
 
     useEffect(() => {
-        if(schemasCache || !expressionEnabled) return;
+        if (schemasCache || !expressionEnabled) return;
 
         pluginApi.getNodeSchemas().then(data => {
             schemasCache = data as Record<NodeType, NodeOutputSchema>;
@@ -71,7 +72,7 @@ const FormField: React.FC<FormFieldProps> = ({
 
     // Create expression autocomplete config if enabled
     const expressionAutocomplete = useMemo(() => {
-        if(!expressionEnabled || !expressionNodeId) return undefined;
+        if (!expressionEnabled || !expressionNodeId) return undefined;
 
         return {
             nodeId: expressionNodeId,
@@ -81,7 +82,7 @@ const FormField: React.FC<FormFieldProps> = ({
     }, [expressionEnabled, expressionNodeId, nodes, edges]);
 
     const renderInput = () => {
-        switch(fieldType){
+        switch (fieldType) {
             case 'select':
                 return (
                     <Select
@@ -139,7 +140,7 @@ const FormField: React.FC<FormFieldProps> = ({
 
     return (
         <Container className={`d-flex content-between items-center ${fieldType === 'checkbox' ? 'checkbox-container' : ''} ${isLoading ? 'form-field-loading' : ''}`}>
-            <h4 className='labeled-input-label'>{label}</h4>
+            <Title className='font-size-2-5 labeled-input-label'>{label}</Title>
             <Container className='d-flex items-center'>
                 {renderInput()}
             </Container>

@@ -3,6 +3,8 @@ import Section from "@/components/atoms/settings/Section";
 import SectionHeader from "@/components/atoms/settings/SectionHeader";
 import Container from "@/components/primitives/Container";
 import "./ThemeSettings.css";
+import Title from "@/components/primitives/Title";
+import Paragraph from "@/components/primitives/Paragraph";
 
 interface ThemeSettingsProps {
     currentTheme: string;
@@ -14,7 +16,7 @@ const ThemeSettings: React.FC<ThemeSettingsProps> = ({ currentTheme, onThemeChan
         key: "dark",
         label: "Dark Mode",
         value: "dark"
-    },{
+    }, {
         key: "light",
         label: "Light Mode",
         value: "light"
@@ -36,8 +38,8 @@ const ThemeSettings: React.FC<ThemeSettingsProps> = ({ currentTheme, onThemeChan
                         </Container>
 
                         <Container className="theme-info flex-1">
-                            <h4>{t.label}</h4>
-                            <p>{currentTheme === t.value ? "Currently active" : `Switch to ${t.value} theme`}</p>
+                            <Title className='font-size-2-5'>{t.label}</Title>
+                            <Paragraph>{currentTheme === t.value ? "Currently active" : `Switch to ${t.value} theme`}</Paragraph>
                         </Container>
 
                         <Container className="a-self-end">

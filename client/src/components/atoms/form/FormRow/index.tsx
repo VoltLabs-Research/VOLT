@@ -15,7 +15,7 @@ const FormRow = ({
 
     return(
         <Container className={`d-flex items-center content-between ${className ?? ''}`}>
-            <Container className='labeled-input-label'>{label}</label>
+            <label className='labeled-input-label'>{label}</label>
 
             <Container className='flex items-center gap-02'>
                 <Slider

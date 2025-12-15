@@ -29,6 +29,7 @@ import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
 import Container from '@/components/primitives/Container';
 import './TrajectoryList.css';
+import Title from '@/components/primitives/Title';
 
 interface TrajectoryListProps {
     onFileSelect: (folderId: string) => void;
@@ -43,26 +44,26 @@ const TrajectoryList: React.FC<TrajectoryListProps> = ({ onFileSelect }) => {
     const logger = useLogger('trajectory-list');
 
     useEffect(() => {
-        if(!trajectories.length){
+        if (!trajectories.length) {
             getTrajectories();
         }
     }, []);
 
-    const handleDelete = async(trajectoryId: string, e: React.MouseEvent) => {
+    const handleDelete = async (trajectoryId: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        try{
+        try {
             await deleteTrajectoryById(trajectoryId);
-        }catch(err){
+        } catch (err) {
             logger.error('Error deleting folder:', err);
         }
     };
 
-    return(
+    return (
         <EditorWidget className='overflow-hidden editor-file-list-container'>
             <Container className='editor-floating-header-container'>
-                <h3 className='editor-floating-header-title'>
+                <Title className='font-size-3 editor-floating-header-title'>
                     Uploaded Trajectories({trajectories?.length || 0})
-                </h3>
+                </Title>
                 <IoIosArrowDown className='editor-floating-header-icon' />
             </Container>
 
