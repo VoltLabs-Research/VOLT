@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import type { Message } from '@/types/chat';
 import Paragraph from '@/components/primitives/Paragraph';
+import Container from '@/components/primitives/Container';
+import './TextMessage.css';
 
 type TextMessageProps = {
     msg: Message;
@@ -30,9 +32,9 @@ const TextMessage = ({ msg, onSave }: TextMessageProps) => {
     };
 
     return (
-        <div className='chat-message-edit'>
+        <Container className='d-flex column gap-05'>
             <textarea value={draft} onChange={(e) => setDraft(e.target.value)} className='chat-message-edit-input' autoFocus />
-            <div className='chat-message-edit-actions'>
+            <Container className='d-flex gap-05 content-end'>
                 <button
                     className='chat-message-edit-save'
                     onClick={handleEditSave}
@@ -46,8 +48,8 @@ const TextMessage = ({ msg, onSave }: TextMessageProps) => {
                 >
                     <IoCloseOutline />
                 </button>
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 

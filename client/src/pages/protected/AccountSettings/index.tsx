@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TbUser, TbShield, TbCreditCard, TbFileText, TbLock, TbKey, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbWebhook } from 'react-icons/tb';
+import { TbUser, TbShield, TbKey, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbWebhook } from 'react-icons/tb';
 import useAuthStore from '@/stores/authentication';
 import authApi from '@/services/api/auth';
 import LoginActivityModal from '@/components/molecules/auth/LoginActivityModal';

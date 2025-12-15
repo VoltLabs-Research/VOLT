@@ -12,6 +12,7 @@ import useAuthStore from '@/stores/authentication';
 import React from 'react';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import './ManageAdminsModal.css';
 
 const ManageAdminsModal = () => {
     const {

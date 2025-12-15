@@ -1,6 +1,7 @@
 import { IoCloseOutline } from 'react-icons/io5';
+import './EmojiPicker.css';
 
-const DEFAULT_EMOJIS = ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😉','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤓','😎','🤩','🥳','😏','😒','😞','😔','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴'];
+const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😉', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴'];
 
 type EmojiPickerProps = {
     onSelect: (e: string) => void;
@@ -9,11 +10,11 @@ type EmojiPickerProps = {
 }
 
 const EmojiPicker = ({ onSelect, onClose, emojis = DEFAULT_EMOJIS }: EmojiPickerProps) => {
-    return(
+    return (
         <div className='chat-emoji-picker'>
             <div className='chat-emoji-picker-header'>
                 <span>Select an emoji</span>
-                <button type='button' className='chat-emoji-picker-close' onClick={onClose}><IoCloseOutline/></button>
+                <button type='button' className='chat-emoji-picker-close' onClick={onClose}><IoCloseOutline /></button>
             </div>
             <div className='chat-emoji-picker-grid'>
                 {emojis.map((e) => (

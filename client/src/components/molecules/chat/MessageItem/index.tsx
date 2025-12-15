@@ -6,6 +6,7 @@ import FileMessage from '@/components/atoms/chat/FileMessage';
 import MessageControls from '@/components/atoms/chat/MessageControls';
 import ReactionsBar from '@/components/atoms/chat/ReactionsBar';
 import Paragraph from '@/components/primitives/Paragraph';
+import './MessageItem.css';
 
 type MessageItemProps = {
     msg: Message;

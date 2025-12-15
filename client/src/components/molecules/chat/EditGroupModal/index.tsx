@@ -30,6 +30,7 @@ import useAuthStore from '@/stores/authentication';
 import React from 'react';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import './EditGroupModal.css';
 
 const EditGroupModal = () => {
     const {

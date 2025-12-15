@@ -1,4 +1,5 @@
 import { Skeleton } from '@mui/material';
+import './ChatListSkeleton.css';
 
 const ChatListSkeleton = () => (
     <div className='chat-skeleton-list-item'>

@@ -8,6 +8,7 @@ import ChatListSkeleton from '@/components/atoms/chat/messages/ChatListSkeleton'
 import useAuthStore from '@/stores/authentication';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import './ChatSidebar.css';
 
 const ChatSidebar: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');

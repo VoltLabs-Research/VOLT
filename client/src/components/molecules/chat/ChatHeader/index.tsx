@@ -1,3 +1,4 @@
+
 import IconButton from '@/components/atoms/common/IconButton';
 import type { Chat, Participant, Presence } from '@/types/chat';
 import { getInitials } from '@/utilities/guest';
@@ -8,6 +9,7 @@ import {
     IoPeopleOutline
 } from 'react-icons/io5';
 import Title from '@/components/primitives/Title';
+import './ChatHeader.css';
 
 export type ChatHeaderProps = {
     chat: Chat;
@@ -19,14 +21,14 @@ const ChatHeader = ({ chat, currentParticipant, presence }: ChatHeaderProps) => 
     return (
         <div className='chat-box-header-container'>
             <div className='chat-header-user'>
-                <div className={`chat-header-avatar ${chat.isGroup ? 'group-avatar' : ''}`}>
+                <div className={`chat - header - avatar ${chat.isGroup ? 'group-avatar' : ''} `}>
                     {chat.isGroup
                         ? <IoPeopleOutline />
                         : currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
                 </div>
                 <div className='chat-header-info'>
                     <Title className='font-size-3 chat-header-name'>
-                        {chat.isGroup ? chat.groupName : currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
+                        {chat.isGroup ? chat.groupName : currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName} ` : 'Unknown'}
                     </Title>
                     <div className='chat-header-status'>
                         {chat.isGroup ? `${chat.participants.length} members` : presence === 'online' ? 'Online' : presence === 'offline' ? 'Offline' : 'Connecting...'}

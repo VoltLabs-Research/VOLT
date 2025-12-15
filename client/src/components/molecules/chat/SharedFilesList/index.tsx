@@ -4,6 +4,7 @@ import type { Message } from '@/types/chat';
 import { formatSize } from '@/utilities/scene-utils';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import { chatApi } from '@/services/api/chat';
+import './SharedFilesList.css';
 
 type SharedFilesListProps = {
     messages: Message[];
@@ -17,34 +18,34 @@ const SharedFilesList = ({ messages, currentChatId }: SharedFilesListProps) => {
     useEffect(() => {
         let cancelled = false;
 
-        const run = async() => {
-            for(const m of fileMessages){
+        const run = async () => {
+            for (const m of fileMessages) {
                 const isImg = m.metadata?.fileType?.startsWith('image/');
-                if(!isImg || previews[m._id]) continue;
-                    try{
+                if (!isImg || previews[m._id]) continue;
+                try {
                     const p = await chatApi.getFilePreview(currentChatId, m._id);
-                    if(!cancelled) setPreviews(prev => ({ ...prev, [m._id]: p.dataUrl }));
-                }catch(error: any){
+                    if (!cancelled) setPreviews(prev => ({ ...prev, [m._id]: p.dataUrl }));
+                } catch (error: any) {
                     console.error('Failed to load file preview:', error);
                 }
             }
         }
 
         run();
-        return() => { cancelled = true; };
+        return () => { cancelled = true; };
     }, [fileMessages.map(f => f._id).join(','), currentChatId]);
-    if(!fileMessages.length)
-        return(
+    if (!fileMessages.length)
+        return (
             <div className='chat-empty-state'>
                 <div className='chat-empty-description'>No shared files yet</div>
             </div>
         );
 
-    return(
+    return (
         <div className='chat-shared-files'>
             {fileMessages.map((m) => {
                 const isImg = m.metadata?.fileType?.startsWith('image/');
-                return(
+                return (
                     <div key={m._id} className='chat-shared-file-item'>
                         {isImg ? (
                             <div className='chat-shared-file-preview'>

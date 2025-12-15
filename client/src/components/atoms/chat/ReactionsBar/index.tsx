@@ -1,4 +1,6 @@
 import type { Reaction } from '@/types/chat';
+import './ReactionsBar.css';
+import Container from '@/components/primitives/Container';
 
 type ReactionsBarProps = {
     reactions?: Reaction[];
@@ -12,13 +14,13 @@ const ReactionsBar = ({
     if(!reactions.length) return null;
 
     return(
-        <div className='chat-message-reactions-display'>
+        <Container className='d-flex flex-wrap p-absolute gap-025 chat-message-reactions-display'>
             {reactions.filter(r => (r.users?.length ?? 0) > 0).map((r) => (
-                <span key={r.emoji} className='chat-reaction' onClick={() => onToggle(r.emoji)}>
+                <span key={r.emoji} className='d-flex items-center gap-025 font-size-1 color-muted cursor-pointer chat-reaction' onClick={() => onToggle(r.emoji)}>
                     {r.emoji} {r.users?.length ?? 0}
                 </span>
             ))}
-        </div>
+        </Container>
     );
 };
 

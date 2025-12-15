@@ -3,6 +3,8 @@ import {
     IoEllipsisVerticalOutline,
     IoCreateOutline,
     IoTrashOutline } from 'react-icons/io5';
+import './MessageControls.css';
+import Container from '@/components/primitives/Container';
 
 export type MessageControlsProps = {
     isOwn: boolean;
@@ -22,7 +24,7 @@ const MessageControls = ({
     onDelete
 }: MessageControlsProps) => {
     return(
-        <div className='chat-message-controls'>
+        <Container className='d-flex gap-025 p-absolute chat-message-controls'>
             <button
                 className='chat-message-reaction-btn'
                 onClick={onOpenReactions}
@@ -31,7 +33,7 @@ const MessageControls = ({
             </button>
 
             {isOwn && (
-                <div className='relative'>
+                <Container className='p-relative'>
                     <button
                         className='chat-message-options'
                         onClick={onOpenOptions}
@@ -40,7 +42,7 @@ const MessageControls = ({
                     </button>
 
                     {isOptionsOpen && (
-                        <div className='chat-message-options-menu'>
+                        <Container className='chat-message-options-menu'>
                             <button
                                 className='chat-message-option'
                                 onClick={onEdit}
@@ -53,11 +55,11 @@ const MessageControls = ({
                             >
                                 <IoTrashOutline/> Delete
                             </button>
-                        </div>
+                        </Container>
                     )}
-                </div>
+                </Container>
             )}
-        </div>
+        </Container>
     );
 };
 

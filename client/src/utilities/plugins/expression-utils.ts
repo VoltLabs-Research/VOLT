@@ -1,5 +1,11 @@
 import { type Node, type Edge } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
+import formatTimeAgo from '@/utilities/formatTimeAgo';
+
+export type ColumnDef = {
+    path: string;
+    label: string;
+};
 
 export interface NodeOutputSchema {
     [key: string]: {
@@ -190,6 +196,52 @@ export function parseExpression(text: string): { isExpression: boolean; referenc
     }
     return { isExpression: false };
 }
+
+export const formatCellValue = (value: any, path: string): string => {
+    if(value === null || value === undefined){
+        return '-';
+    }
+
+    if(typeof value === 'number'){
+        return Number.isInteger(value)
+            ? value.toLocaleString()
+            : Number(value).toFixed(4).replace(/\.?0+$/, '');
+    }
+
+    if(typeof value === 'string'){
+        if(path.toLowerCase().includes('createdat') || path.toLowerCase().endsWith('date')) {
+            return formatTimeAgo(value);
+        }
+        return value;
+    }
+
+    if(Array.isArray(value)) {
+        return value.map((v) => formatCellValue(v, path)).join(', ');
+    }
+
+    if(typeof value === 'object'){
+        if('name' in value && typeof value.name === 'string'){
+            return String(value.name);
+        }
+        return JSON.stringify(value);
+    }
+    return String(value);
+};
+
+export const normalizeRows = (rows: any[], columns: ColumnDef[]) => {
+    return rows.map((row) => {
+        const enriched = { ...row };
+        columns.forEach(({ path }) => {
+            const resolved = getValueByPath(row, path);
+            enriched[path] = formatCellValue(resolved, path);
+        });
+
+        if(!enriched._id){
+            enriched._id = row.timestep ?? row._objectKey ?? `row-${Math.random().toString(36).slice(2)}`;
+        }
+        return enriched;
+    });
+};
 
 // Check if value contains an expression
 export function containsExpression(value: string): boolean{

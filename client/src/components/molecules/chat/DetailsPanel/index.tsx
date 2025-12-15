@@ -5,6 +5,7 @@ import { IoChatbubblesOutline, IoCallOutline, IoVideocamOutline, IoPeopleOutline
 import SharedFilesList from '@/components/molecules/chat/SharedFilesList';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import './DetailsPanel.css';
 
 type DetailsPanelProps = {
     chat: Chat | null | undefined;

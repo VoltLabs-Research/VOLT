@@ -1,0 +1,167 @@
+/* ManageAdminsModal Component Styles */
+.chat-manage-admins-owner {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--color-surface-2);
+    border-radius: 0.75rem;
+}
+
+.chat-manage-admins-owner-member {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.chat-manage-admins-owner-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.chat-manage-admins-owner-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-manage-admins-owner-name {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 0.125rem;
+}
+
+.chat-manage-admins-owner-role {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.chat-manage-admins-owner-badge {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--accent-gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+}
+
+.chat-manage-admins-list {
+    margin-bottom: 1rem;
+}
+
+.chat-manage-admins-empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--color-text-muted);
+}
+
+.chat-manage-admins-empty p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.chat-manage-admins-members {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.chat-manage-admins-member {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.chat-manage-admins-member:hover {
+    background: var(--color-surface-2);
+}
+
+.chat-manage-admins-member.selected {
+    background: var(--accent-blue);
+    color: white;
+}
+
+.chat-manage-admins-member.current-admin {
+    background: var(--color-surface-2);
+    border: 1px solid var(--accent-blue);
+}
+
+.chat-manage-admins-member-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.chat-manage-admins-member-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-manage-admins-member-name {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 0.125rem;
+}
+
+.chat-manage-admins-member-role {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.chat-manage-admins-member.selected .chat-manage-admins-member-name,
+.chat-manage-admins-member.selected .chat-manage-admins-member-role {
+    color: white;
+}
+
+.chat-manage-admins-member-check {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--accent-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+}
+
+.chat-manage-admins-selected {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--color-surface-2);
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.chat-manage-admins-selected p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}

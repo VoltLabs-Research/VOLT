@@ -9,6 +9,7 @@ import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import './AddMembersModal.css';
 
 const AddMembersModal = () => {
     const {

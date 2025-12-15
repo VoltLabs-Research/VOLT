@@ -2,6 +2,7 @@ import React from 'react';
 import type { Message } from '@/types/chat';
 import MessageSkeleton from '@/components/atoms/chat/messages/MessagesSkeleton';
 import Paragraph from '@/components/primitives/Paragraph';
+import './MessageLists.css';
 
 export type MessageListProps = {
     messages: Message[];

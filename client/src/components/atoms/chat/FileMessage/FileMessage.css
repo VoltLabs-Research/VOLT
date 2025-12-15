@@ -1,0 +1,95 @@
+/* FileMessage Component Styles */
+.chat-file-message {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.chat-image-message {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.chat-image-preview {
+    max-width: 300px;
+    max-height: 300px;
+    border-radius: 0.8rem;
+    object-fit: cover;
+    border: 1px solid var(--color-border-soft);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.chat-image-preview:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.chat-image-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 200px;
+    background: var(--color-surface-3);
+    color: var(--color-text-secondary);
+    font-size: 2rem;
+    border-radius: 0.5rem;
+}
+
+.chat-file-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--color-surface-2);
+    border: none;
+    border-radius: 0.5rem;
+}
+
+.chat-file-icon {
+    font-size: 1.2rem;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-file-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-file-name {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 0.25rem 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-file-size {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin: 0;
+}
+
+.chat-file-download {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    padding: 0.5rem;
+    border-radius: 0.4rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.chat-file-download:hover {
+    background: var(--color-surface-3);
+    color: var(--color-text-primary);
+    transform: scale(1.05);
+}

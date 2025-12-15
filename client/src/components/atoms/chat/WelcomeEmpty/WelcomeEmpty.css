@@ -1,0 +1,29 @@
+
+.chat-welcome-container {
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-bg);
+}
+
+.chat-welcome-content {
+    max-width: 400px;
+}
+
+.chat-connection-status {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.8rem;
+}
+
+:root[data-theme='light'] {
+    .chat-welcome-container {
+        background: rgba(248, 250, 252, 0.5);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .chat-connection-status {
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+}

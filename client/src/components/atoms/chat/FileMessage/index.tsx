@@ -4,6 +4,7 @@ import type { Message } from '@/types/chat';
 import { formatSize } from '@/utilities/scene-utils';
 import { chatApi } from '@/services/api/chat';
 import Paragraph from '@/components/primitives/Paragraph';
+import './FileMessage.css';
 
 type FileMessageProps = {
     msg: Message,

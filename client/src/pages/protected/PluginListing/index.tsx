@@ -3,17 +3,11 @@ import { useParams } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
 import pluginApi from '@/services/api/plugin';
 import analysisConfigApi from '@/services/api/analysis-config';
-import type { ApiResponse } from '@/types/api';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
 import { Skeleton } from '@mui/material';
 import usePluginStore from '@/stores/plugins/plugin';
-import { RiDeleteBin6Line, RiListSettingsLine } from 'react-icons/ri';
+import { RiDeleteBin6Line } from 'react-icons/ri';
 import PerFrameListingModal from '@/components/organisms/common/PerFrameListingModal';
-
-type ColumnDef = {
-    path: string;
-    label: string;
-};
+import { formatCellValue, normalizeRows, type ColumnDef } from '@/utilities/plugins/expression-utils';
 
 type ListingResponse = {
     meta: {
@@ -30,6 +24,7 @@ type ListingResponse = {
     hasMore: boolean;
 };
 
+// TODO: Duplicated code
 const getValueByPath = (obj: any, path: string) => {
     if(!obj || !path) return undefined;
     if(path.indexOf('.') === -1) {
@@ -39,52 +34,6 @@ const getValueByPath = (obj: any, path: string) => {
     return path
         .split('.')
         .reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj);
-};
-
-const formatCellValue = (value: any, path: string): string => {
-    if(value === null || value === undefined){
-        return '-';
-    }
-
-    if(typeof value === 'number'){
-        return Number.isInteger(value)
-            ? value.toLocaleString()
-            : Number(value).toFixed(4).replace(/\.?0+$/, '');
-    }
-
-    if(typeof value === 'string'){
-        if(path.toLowerCase().includes('createdat') || path.toLowerCase().endsWith('date')) {
-            return formatTimeAgo(value);
-        }
-        return value;
-    }
-
-    if(Array.isArray(value)) {
-        return value.map((v) => formatCellValue(v, path)).join(', ');
-    }
-
-    if(typeof value === 'object'){
-        if('name' in value && typeof value.name === 'string'){
-            return String(value.name);
-        }
-        return JSON.stringify(value);
-    }
-    return String(value);
-};
-
-const normalizeRows = (rows: any[], columns: ColumnDef[]) => {
-    return rows.map((row) => {
-        const enriched = { ...row };
-        columns.forEach(({ path }) => {
-            const resolved = getValueByPath(row, path);
-            enriched[path] = formatCellValue(resolved, path);
-        });
-
-        if(!enriched._id){
-            enriched._id = row.timestep ?? row._objectKey ?? `row-${Math.random().toString(36).slice(2)}`;
-        }
-        return enriched;
-    });
 };
 
 // TODO: FIX MANIFEST USAGE
@@ -215,13 +164,6 @@ const PluginListing = () => {
 
     const getMenuOptions = useCallback((item: any) => {
         const options: any[] = [];
-
-        // TODO: Re-implement per-frame listing when manifest system is available
-        // const analysis = item?.analysis;
-        // if(analysis && pluginsBySlug && listingKey){
-        //     const plugin = pluginsBySlug[analysis.plugin];
-        //     // Add per-frame listing logic here
-        // }
 
         if(item?.analysis?._id){
             options.push([

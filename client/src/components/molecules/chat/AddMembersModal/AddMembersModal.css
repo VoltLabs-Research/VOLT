@@ -1,0 +1,140 @@
+/* AddMembersModal Component Styles */
+.chat-add-members-search {
+    margin-bottom: 1.5rem;
+}
+
+.chat-add-members-search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.chat-add-members-search-icon {
+    position: absolute;
+    left: 0.75rem;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    z-index: 1;
+}
+
+.chat-add-members-search-input {
+    width: 100%;
+    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+    border: 1px solid var(--color-border-soft);
+    border-radius: 0.5rem;
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.chat-add-members-search-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.chat-add-members-list {
+    margin-bottom: 1rem;
+}
+
+.chat-add-members-empty {
+    text-align: center;
+    padding: 2rem;
+    color: var(--color-text-muted);
+}
+
+.chat-add-members-empty p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.chat-add-members-members {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.chat-add-members-member {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.chat-add-members-member:hover {
+    background: var(--color-surface-2);
+}
+
+.chat-add-members-member.selected {
+    background: var(--accent-blue);
+    color: white;
+}
+
+.chat-add-members-member-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.chat-add-members-member-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-add-members-member-name {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    margin-bottom: 0.125rem;
+}
+
+.chat-add-members-member-email {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+}
+
+.chat-add-members-member.selected .chat-add-members-member-name,
+.chat-add-members-member.selected .chat-add-members-member-email {
+    color: white;
+}
+
+.chat-add-members-member-check {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--accent-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.8rem;
+}
+
+.chat-add-members-selected {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--color-surface-2);
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.chat-add-members-selected p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}

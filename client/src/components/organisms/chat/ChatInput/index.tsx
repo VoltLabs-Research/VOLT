@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline } from 'react-icons/io5';
 import EmojiPicker from '@/components/atoms/chat/EmojiPicker';
+import './ChatInput.css';
 
 type Preview = {
     file: File;
@@ -29,7 +30,7 @@ const ChatInput = ({
 
     const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newFiles = Array.from(e.target.files || []);
-        if(!newFiles.length) return;
+        if (!newFiles.length) return;
         setFiles((prev) => [...prev, ...newFiles]);
 
         newFiles.filter(f => f.type.startsWith('image/')).forEach(file => {
@@ -39,18 +40,18 @@ const ChatInput = ({
         });
     };
 
-      const handleSend = async(e: React.FormEvent) => {
+    const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if(!message.trim() && files.length === 0) return;
+        if (!message.trim() && files.length === 0) return;
 
-        if(files.length){
+        if (files.length) {
             await onSendFiles(files);
             setFiles([]);
             setPreviews([]);
         }
 
-        if(message.trim()) {
+        if (message.trim()) {
             await onSendText(message);
             setMessage('');
         }
@@ -66,7 +67,7 @@ const ChatInput = ({
         setPreviews([]);
     };
 
-    return(
+    return (
         <form onSubmit={handleSend} className='chat-input-container'>
             <div className='chat-input-wrapper'>
                 <input
@@ -82,7 +83,7 @@ const ChatInput = ({
                     title='Attach File'
                     onClick={() => fileRef.current?.click()}
                 >
-                    <IoAttachOutline/>
+                    <IoAttachOutline />
                 </button>
 
                 <textarea
@@ -100,7 +101,7 @@ const ChatInput = ({
                     title='Emoji'
                     onClick={() => setShowPicker(v => !v)}
                 >
-                    <IoHappyOutline/>
+                    <IoHappyOutline />
                 </button>
 
                 <button
@@ -109,14 +110,14 @@ const ChatInput = ({
                     title='Send Message'
                     disabled={disabled || (!message.trim() && files.length === 0)}
                 >
-                    <IoPaperPlaneOutline/>
+                    <IoPaperPlaneOutline />
                 </button>
             </div>
 
             {showPicker && (
                 <EmojiPicker
-                onSelect={(e) => { setMessage((m) => m + e); setShowPicker(false); }}
-                onClose={() => setShowPicker(false)}
+                    onSelect={(e) => { setMessage((m) => m + e); setShowPicker(false); }}
+                    onClose={() => setShowPicker(false)}
                 />
             )}
 

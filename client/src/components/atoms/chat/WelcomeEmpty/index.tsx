@@ -1,4 +1,7 @@
 import Title from '@/components/primitives/Title';
+import './WelcomeEmpty.css';
+import Container from '@/components/primitives/Container';
+import Paragraph from '@/components/primitives/Paragraph';
 
 type WelcomeEmptyProps = {
     isConnected: boolean
@@ -6,17 +9,17 @@ type WelcomeEmptyProps = {
 
 const WelcomeEmpty = ({ isConnected }: WelcomeEmptyProps) => {
     return (
-        <div className='chat-welcome-container'>
-            <div className='chat-welcome-content'>
-                <Title className="font-size-4 font-weight-6">Welcome to Chat</Title>
-                <p>Select a conversation or start a new chat with a team member</p>
+        <Container className='d-flex flex-1 flex-center chat-welcome-container'>
+            <Container className='text-center p-2 chat-welcome-content d-flex gap-05 column'>
+                <Title className="font-size-5 font-weight-6 color-primary">Welcome to Chat</Title>
+                <Paragraph className='font-size-3 color-secondary'>Select a conversation or start a new chat with a team member</Paragraph>
                 {!isConnected && (
-                    <div className='chat-connection-status'>
-                        <p>Connecting to chat service...</p>
-                    </div>
+                    <Container className='chat-connection-status'>
+                        <Paragraph className='font-size-2-5 color-muted'>Connecting to chat service...</Paragraph>
+                    </Container>
                 )}
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 
