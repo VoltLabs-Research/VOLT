@@ -95,7 +95,6 @@ configureApp({
         'api-tracker',
         'sessions',
         'password',
-        'webhooks',
         'chat',
         'ssh-connections',
         'ssh-file-explorer',

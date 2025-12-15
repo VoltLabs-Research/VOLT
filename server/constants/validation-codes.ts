@@ -120,11 +120,6 @@ export const ValidationCodes = {
     USER_LAST_NAME_MINLEN: 'User::LastName::MinLength',
     USER_LAST_NAME_MAXLEN: 'User::LastName::MaxLength',
 
-    WEBHOOK_NAME_REQUIRED: 'Webhook::Name::Required',
-    WEBHOOK_NAME_MAXLEN: 'Webhook::Name::MaxLength',
-    WEBHOOK_URL_REQUIRED: 'Webhook::Url::Required',
-    WEBHOOK_URL_INVALID: 'Webhook::Url::Invalid',
-
     CHAT_PARTICIPANTS_REQUIRED: 'Chat::Participants::Required',
     CHAT_TEAM_REQUIRED: 'Chat::Team::Required'
 };

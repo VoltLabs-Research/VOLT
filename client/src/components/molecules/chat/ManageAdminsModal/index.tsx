@@ -174,15 +174,15 @@ const ManageAdminsModal = () => {
                     )}
 
                     {/* Actions */}
-                    <div className='chat-group-management-actions'>
+                    <div className='chat-group-management-actions d-flex content-end gap-075 sm:column'>
                         <button
-                            className='chat-group-management-cancel'
+                            className='chat-group-management-cancel d-flex items-center gap-05'
                             onClick={handleClose}
                         >
                             Cancel
                         </button>
                         <button
-                            className='chat-group-management-save'
+                            className='chat-group-management-save d-flex items-center gap-05'
                             onClick={handleSaveAdmins}
                             disabled={isLoading}
                         >

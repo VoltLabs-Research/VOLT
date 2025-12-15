@@ -97,7 +97,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   if (!scene?.data) {
     return (
       <figure className="d-flex column raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
-        <div className="raster-scene-topbar">
+        <div className="raster-scene-topbar sm:d-flex sm:column sm:gap-05">
           <div className="raster-scene-topbar-center">
             <AnalysisSelect {...analysisSelect} />
           </div>
@@ -124,7 +124,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
 
   return (
     <figure className="d-flex column raster-scene-container" style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-      <div className="raster-scene-topbar">
+      <div className="raster-scene-topbar sm:d-flex sm:column sm:gap-05">
         <div className="raster-scene-topbar-center">
           <AnalysisSelect {...analysisSelect} />
         </div>

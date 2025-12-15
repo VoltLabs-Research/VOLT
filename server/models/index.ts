@@ -1,6 +1,5 @@
 export { default as ApiTracker } from '@/models/api-tracker';
 export { default as Session } from '@/models/session';
-export { default as Webhook } from '@/models/webhook';
 export { default as Chat } from '@/models/chat';
 export { default as Message } from '@/models/message';
 export { default as Analysis } from '@/models/analysis';

@@ -111,9 +111,6 @@ export const ErrorCodes = {
     PLUGIN_BINARY_PATH_REQUIRED: 'Plugin::Binary::PathRequired',
     PLUGIN_BINARY_INVALID_PATH: 'Plugin::Binary::InvalidPath',
 
-    WEBHOOK_NOT_FOUND: 'Webhook::NotFound',
-    WEBHOOK_INVALID_EVENT_TYPE: 'Webhook::InvalidEventType',
-
     CHAT_NOT_FOUND: 'Chat::NotFound',
     CHAT_PARTICIPANTS_NOT_IN_TEAM: 'Chat::Participants::NotInTeam',
     CHAT_USERS_NOT_IN_TEAM: 'Chat::Users::NotInTeam',
@@ -172,9 +169,6 @@ export const ErrorCodes = {
 
     TRAJECTORY_NOT_FOUND: 'Trajectory::NotFound',
     TRAJECTORY_DUMP_NOT_FOUND: 'Trajectory::Dump::NotFound',
-
-    WEBHOOK_EVENTS_AT_LEAST_ONE_REQUIRED: 'Webhook::Events::AtLeastOneRequired',
-    WEBHOOK_EVENT_INVALID: 'Webhook::Event::Invalid',
 } as const;
 
 export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];

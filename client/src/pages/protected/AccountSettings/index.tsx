@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { TbUser, TbShield, TbKey, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug, TbWebhook } from 'react-icons/tb';
+import { TbUser, TbShield, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug } from 'react-icons/tb';
 import useAuthStore from '@/stores/authentication';
 import authApi from '@/services/api/auth';
 import LoginActivityModal from '@/components/molecules/auth/LoginActivityModal';
-import WebhookModal from '@/components/molecules/webhooks/WebhookModal';
 import SettingsSidebar from '@/components/molecules/settings/SettingsSidebar';
 import GeneralSettings from '@/components/molecules/settings/GeneralSettings';
 import AuthenticationSettings from '@/components/molecules/settings/AuthenticationSettings';
@@ -13,11 +12,8 @@ import NotificationsSettings from '@/components/molecules/settings/Notifications
 import DataExportSettings from '@/components/molecules/settings/DataExportSettings';
 import AdvancedSettings from '@/components/molecules/settings/AdvancedSettings';
 import IntegrationsSettings from '@/components/molecules/settings/IntegrationsSettings';
-import WebhooksSettings from '@/components/molecules/settings/WebhooksSettings';
 import useSessions from '@/hooks/auth/use-sessions';
 import useLoginActivity from '@/hooks/auth/use-login-activity';
-import useWebhooks from '@/hooks/api/use-webhooks';
-import type { Webhook, CreateWebhookData, UpdateWebhookData } from '@/types/models/webhook';
 import './AccountSettings.css';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
@@ -33,15 +29,7 @@ const AccountSettings: React.FC = () => {
         getPasswordInfo
     } = useAuthStore();
 
-    const {
-        webhooks,
-        loading: webhooksLoading,
-        error: webhooksError,
-        createWebhook,
-        updateWebhook,
-        deleteWebhook,
-        testWebhook
-    } = useWebhooks();
+ 
     const [activeSection, setActiveSection] = useState('General');
     const [userData, setUserData] = useState({
         firstName: user?.firstName || '',
@@ -58,9 +46,6 @@ const AccountSettings: React.FC = () => {
         newPassword: '',
         confirmPassword: ''
     });
-    const [showWebhookModal, setShowWebhookModal] = useState(false);
-    const [webhookModalMode, setWebhookModalMode] = useState<'create' | 'edit'>('create');
-    const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
     const { sessions, loading: sessionsLoading, revokeSession, revokeAllOtherSessions } = useSessions();
     const { activities: loginActivities, loading: loginActivityLoading } = useLoginActivity(10);
 
@@ -163,76 +148,9 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    const handleCreateWebhook = () => {
-        setWebhookModalMode('create');
-        setSelectedWebhook(null);
-        setShowWebhookModal(true);
-    };
-
-    const handleEditWebhook = (webhook: Webhook) => {
-        setWebhookModalMode('edit');
-        setSelectedWebhook(webhook);
-        setShowWebhookModal(true);
-    };
-
-    const handleDeleteWebhook = async (webhook: Webhook) => {
-        if (window.confirm(`Are you sure you want to delete the webhook "${webhook.name}"? This action cannot be undone.`)) {
-            try {
-                await deleteWebhook(webhook._id);
-            } catch (error: any) {
-                const errorContext = {
-                    endpoint: `/webhooks/${webhook._id}`,
-                    method: 'DELETE',
-                    webhookId: webhook._id,
-                    statusCode: error?.response?.status,
-                    errorMessage: error?.message,
-                    serverMessage: error?.response?.data?.message,
-                    timestamp: new Date().toISOString()
-                };
-                console.error('Failed to delete webhook:', errorContext);
-            }
-        }
-    };
-
-    const handleTestWebhook = async (webhook: Webhook) => {
-        try {
-            await testWebhook(webhook._id);
-            alert('Webhook test sent successfully!');
-        } catch (error: any) {
-            const errorContext = {
-                endpoint: `/webhooks/${webhook._id}/test`,
-                method: 'POST',
-                webhookId: webhook._id,
-                statusCode: error?.response?.status,
-                errorMessage: error?.message,
-                serverMessage: error?.response?.data?.message,
-                timestamp: new Date().toISOString()
-            };
-            console.error('Webhook test failed:', errorContext);
-            alert(`Webhook test failed: ${error?.response?.data?.message || error?.message || 'Unknown error'}`);
-        }
-    };
-
-    const handleWebhookSave = async (data: CreateWebhookData | UpdateWebhookData) => {
-        try {
-            if (webhookModalMode === 'create') {
-                await createWebhook(data as CreateWebhookData);
-            } else {
-                await updateWebhook(selectedWebhook!._id, data as UpdateWebhookData);
-            }
-            setShowWebhookModal(false);
-        } catch (error: any) {
-            throw error;
-        }
-    };
-
-    // Handle account deletion
     const handleDeleteAccount = () => {
         if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-            // Here you would typically call an API to delete the account
-            console.log('Account deletion requested');
-            // For now, just show an alert
-            alert('Account deletion functionality would be implemented here');
+            alert('TODO:');
         }
     };
 
@@ -244,7 +162,6 @@ const AccountSettings: React.FC = () => {
         { title: 'Sessions', icon: TbDeviceDesktop },
         { title: 'Integrations', icon: TbPlug },
         { title: 'Data & Export', icon: TbDownload },
-        { title: 'Webhooks', icon: TbWebhook },
         { title: 'Advanced', icon: TbSettings }
     ];
 
@@ -301,18 +218,6 @@ const AccountSettings: React.FC = () => {
                 return <AdvancedSettings />;
             case 'Integrations':
                 return <IntegrationsSettings />;
-            case 'Webhooks':
-                return (
-                    <WebhooksSettings
-                        webhooks={webhooks}
-                        loading={webhooksLoading}
-                        error={webhooksError}
-                        onCreateWebhook={handleCreateWebhook}
-                        onEditWebhook={handleEditWebhook}
-                        onDeleteWebhook={handleDeleteWebhook}
-                        onTestWebhook={handleTestWebhook}
-                    />
-                );
             default:
                 return (
                     <div className='settings-content'>
@@ -352,14 +257,6 @@ const AccountSettings: React.FC = () => {
             <LoginActivityModal
                 isOpen={showLoginActivityModal}
                 onClose={() => setShowLoginActivityModal(false)}
-            />
-
-            <WebhookModal
-                isOpen={showWebhookModal}
-                onClose={() => setShowWebhookModal(false)}
-                onSave={handleWebhookSave}
-                webhook={selectedWebhook}
-                mode={webhookModalMode}
             />
         </>
     );

@@ -77,8 +77,6 @@ export const ErrorCodes = {
     PLUGIN_BINARY_REQUIRED: 'Plugin::Binary::Required',
     PLUGIN_BINARY_PATH_REQUIRED: 'Plugin::Binary::PathRequired',
     PLUGIN_BINARY_INVALID_PATH: 'Plugin::Binary::InvalidPath',
-    WEBHOOK_NOT_FOUND: 'Webhook::NotFound',
-    WEBHOOK_INVALID_EVENT_TYPE: 'Webhook::InvalidEventType',
     CHAT_NOT_FOUND: 'Chat::NotFound',
     CHAT_PARTICIPANTS_NOT_IN_TEAM: 'Chat::Participants::NotInTeam',
     CHAT_USERS_NOT_IN_TEAM: 'Chat::Users::NotInTeam',
@@ -231,11 +229,6 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'ApiTracker::StatusCode::Max': 'Invalid status code(maximum: 599)',
     'ApiTracker::ResponseTime::Required': 'Response time is required',
     'ApiTracker::ResponseTime::Min': 'Response time cannot be negative',
-
-    // Webhook errors
-    'Webhook::NotFound': 'Webhook not found',
-    'Webhook::Events::AtLeastOneRequired': 'At least one event must be selected',
-    'Webhook::Event::Invalid': 'Invalid event type provided',
 
     // Socket errors
     'Socket::Auth::TokenRequired': 'Authentication token is required for socket connection',

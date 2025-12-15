@@ -138,7 +138,7 @@ const Containers: React.FC = () => {
             key: 'name',
             sortable: true,
             render: (value, row) => (
-                <div className='d-flex items-center gap-075 container-name-cell'>
+                <div className='d-flex items-center gap-075 sm:column sm:items-start sm:gap-05 container-name-cell'>
                     <div className='d-flex flex-center container-icon-small'>
                         <Box size={16} />
                     </div>

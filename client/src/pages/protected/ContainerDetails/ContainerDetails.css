@@ -1,9 +1,10 @@
-/* Layout */
-background: var(--background);
-font-family: 'Inter',
--apple-system,
-BlinkMacSystemFont,
-sans-serif;
+.details-page-layout {
+    background: var(--background);
+    font-family: 'Inter',
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+}
 
 /* Sidebar */
 .details-sidebar {

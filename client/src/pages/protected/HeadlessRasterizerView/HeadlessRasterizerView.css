@@ -473,11 +473,7 @@
 }
 
 @media (max-width: 600px) {
-  .raster-scene-topbar {
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-  }
+  .raster-scene-topbar {}
 
   .raster-scene-topbar-center {
     min-width: unset;

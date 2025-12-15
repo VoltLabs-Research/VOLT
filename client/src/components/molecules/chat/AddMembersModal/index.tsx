@@ -144,15 +144,15 @@ const AddMembersModal = () => {
                     )}
 
                     {/* Actions */}
-                    <div className='chat-group-management-actions'>
+                    <div className='chat-group-management-actions d-flex content-end gap-075 sm:column'>
                         <button
-                            className='chat-group-management-cancel'
+                            className='chat-group-management-cancel d-flex items-center gap-05'
                             onClick={handleClose}
                         >
                             Cancel
                         </button>
                         <button
-                            className='chat-group-management-add'
+                            className='chat-group-management-add d-flex items-center gap-05'
                             onClick={handleAddMembers}
                             disabled={selectedMembers.length === 0 || isLoading}
                         >
