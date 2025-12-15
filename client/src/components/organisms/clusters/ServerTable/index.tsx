@@ -4,6 +4,7 @@ import { ServerDetails } from '../ServerDetails'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
 import { formatNetworkSpeed } from '@/utilities/network'
+import Container from '@/components/primitives/Container'
 import './ServerTable.css'
 
 export function ServerTable() {
@@ -47,13 +48,13 @@ export function ServerTable() {
       {selectedServer && (
         <ServerDetails server={selectedServer} onClose={() => setSelectedServer(null)} />
       )}
-      <div className="server-table-container">
-        <div className="server-table-header">
-          <div className="server-table-title-group">
-            <div className="server-table-bar" />
+      <Container className="server-table-container">
+        <Container className="server-table-header">
+          <Container className="d-flex items-center gap-075">
+            <Container className="server-table-title-bar" />
             <h3 className="server-table-title">Server Summary</h3>
-          </div>
-          <div className="server-table-actions">
+          </Container>
+          <Container className="d-flex items-center gap-05">
             <button className="server-table-btn">
               Region
               <ChevronDown className="server-table-icon-sm" />
@@ -72,10 +73,10 @@ export function ServerTable() {
             <button className="server-table-icon-btn">
               <Download className="server-table-icon" />
             </button>
-          </div>
-        </div>
+          </Container>
+        </Container>
 
-        <div className="server-table-wrapper">
+        <Container className="server-table-wrapper">
           <table className="server-table">
             <thead>
               <tr>
@@ -93,9 +94,9 @@ export function ServerTable() {
               {isLoading ? (
                 <tr>
                   <td colSpan={8}>
-                    <div style={{ padding: '40px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <Container className="d-flex column gap-1" style={{ padding: '40px' }}>
                       {[...Array(1)].map((_, i) => (
-                        <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <Container key={i} className="d-flex items-center" style={{ gap: '16px' }}>
                           <Skeleton variant="text" width={100} height={20} />
                           <Skeleton variant="rectangular" width={60} height={24} sx={{ borderRadius: '4px' }} />
                           <Skeleton variant="rectangular" width={80} height={24} sx={{ borderRadius: '12px' }} />
@@ -104,18 +105,18 @@ export function ServerTable() {
                           <Skeleton variant="text" width={60} height={20} />
                           <Skeleton variant="text" width={80} height={20} />
                           <Skeleton variant="text" width={60} height={20} />
-                        </div>
+                        </Container>
                       ))}
-                    </div>
+                    </Container>
                   </td>
                 </tr>
               ) : server && (
                 <tr key={server.id} onClick={() => setSelectedServer(server)} style={{ cursor: 'pointer' }}>
                   <td>
-                    <div className="server-table-cell-id">
-                      <div className="server-table-status-dot" />
+                    <Container className="d-flex items-center gap-05">
+                      <Container className="server-table-status-dot" />
                       <span className="server-table-id">{server.id}</span>
-                    </div>
+                    </Container>
                   </td>
                   <td>
                     <span className="server-table-region-badge">{server.region}</span>
@@ -124,43 +125,43 @@ export function ServerTable() {
                     <span className={`server-table-status ${server.statusColor === 'text-emerald-500' ? 'server-table-status-healthy' : server.statusColor === 'text-red-500' ? 'server-table-status-critical' : 'server-table-status-warning'}`}>{server.status}</span>
                   </td>
                   <td>
-                    <div className="server-table-metric">
-                      <div className="server-table-bar-group">
+                    <Container className="d-flex items-center gap-05">
+                      <Container className="d-flex gap-01">
                         {[...Array(5)].map((_, i) => (
-                          <div
+                          <Container
                             key={i}
                             className={`server-table-bar ${i < Math.floor(server.cpu / 20) ? 'server-table-bar-active' : ''}`}
                           />
                         ))}
-                      </div>
+                      </Container>
                       <span className="server-table-metric-value">{server.cpu}%</span>
-                    </div>
+                    </Container>
                   </td>
                   <td>
-                    <div className="server-table-metric">
-                      <div className="server-table-bar-group">
+                    <Container className="d-flex items-center gap-05">
+                      <Container className="d-flex gap-01">
                         {[...Array(5)].map((_, i) => (
-                          <div
+                          <Container
                             key={i}
                             className={`server-table-bar ${i < Math.floor(server.memory / 20) ? 'server-table-bar-active' : ''}`}
                           />
                         ))}
-                      </div>
+                      </Container>
                       <span className="server-table-metric-value">{server.memory}%</span>
-                    </div>
+                    </Container>
                   </td>
                   <td>
-                    <div className="server-table-metric">
-                      <div className="server-table-bar-group">
+                    <Container className="d-flex items-center gap-05">
+                      <Container className="d-flex gap-01">
                         {[...Array(5)].map((_, i) => (
-                          <div
+                          <Container
                             key={i}
                             className={`server-table-bar ${i < Math.floor(server.diskUsagePercent / 20) ? 'server-table-bar-active' : ''}`}
                           />
                         ))}
-                      </div>
+                      </Container>
                       <span className="server-table-metric-value">{server.disk.toFixed(1)}GB Available</span>
-                    </div>
+                    </Container>
                   </td>
                   <td>
                     <span className="server-table-network">{server.network}</span>
@@ -172,8 +173,8 @@ export function ServerTable() {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
+        </Container>
+      </Container>
     </>
   )
 }

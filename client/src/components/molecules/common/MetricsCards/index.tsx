@@ -2,8 +2,8 @@ import { Server, Cpu, MemoryStick, Activity, TrendingUp, TrendingDown, MoreVerti
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
 import { formatNetworkSpeedWithUnit } from '@/utilities/network'
+import Container from '@/components/primitives/Container'
 import './MetricsCards.css'
-
 
 export function MetricsCards() {
   const { metrics, isHistoryLoaded } = useServerMetrics()
@@ -12,26 +12,26 @@ export function MetricsCards() {
 
   if (isLoading) {
     return (
-      <div className="metrics-cards">
+      <Container className="metrics-cards">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="metric-card">
-            <div className="metric-card-header">
-              <div className="metric-card-title-group">
+          <Container key={i} className="metric-card">
+            <Container className="d-flex items-start content-between" style={{ marginBottom: '0.75rem' }}>
+              <Container className="d-flex items-center gap-05">
                 <Skeleton variant="circular" width={16} height={16} />
                 <Skeleton variant="text" width={120} height={20} />
-              </div>
+              </Container>
               <Skeleton variant="circular" width={16} height={16} />
-            </div>
-            <div className="metric-card-body">
+            </Container>
+            <Container className="d-flex column gap-05">
               <Skeleton variant="rectangular" width={100} height={48} sx={{ borderRadius: '4px' }} />
-              <div className="metric-card-footer" style={{ marginTop: '12px' }}>
+              <Container className="d-flex items-center content-between">
                 <Skeleton variant="text" width={100} height={16} />
                 <Skeleton variant="text" width={80} height={16} />
-              </div>
-            </div>
-          </div>
+              </Container>
+            </Container>
+          </Container>
         ))}
-      </div>
+      </Container>
     )
   }
 
@@ -50,7 +50,7 @@ export function MetricsCards() {
       title: 'CPU Load',
       value: metrics ? (() => {
         if (metrics.cpu.coresUsage && metrics.cpu.coresUsage.length > 0) {
-          const avgCoreUsage = metrics.cpu.coresUsage.reduce((sum, val) => sum + val, 0) / metrics.cpu.coresUsage.length;
+          const avgCoreUsage = metrics.cpu.coresUsage.reduce((sum: number, val: number) => sum + val, 0) / metrics.cpu.coresUsage.length;
           return `${avgCoreUsage.toFixed(1)}%`;
         }
         return `${metrics.cpu.usage.toFixed(1)}%`;
@@ -77,34 +77,35 @@ export function MetricsCards() {
       subtitle: 'Total Traffic'
     },
   ]
+
   return (
-    <div className="metrics-cards">
+    <Container className="metrics-cards">
       {cards.map((metric) => (
-        <div key={metric.title} className="metric-card">
-          <div className="metric-card-header">
-            <div className="metric-card-title-group">
+        <Container key={metric.title} className="metric-card">
+          <Container className="d-flex items-start content-between" style={{ marginBottom: '0.75rem' }}>
+            <Container className="d-flex items-center gap-05">
               <metric.icon className="metric-card-icon" />
               <span className="metric-card-title">{metric.title}</span>
-            </div>
+            </Container>
             <button className="metric-card-menu">
               <MoreVertical className="metric-card-icon" />
             </button>
-          </div>
-          <div className="metric-card-body">
-            <div className="metric-card-value-group">
+          </Container>
+          <Container className="d-flex column gap-05">
+            <Container className="d-flex" style={{ alignItems: 'baseline', gap: '0.5rem' }}>
               <span className="metric-card-value">{metric.value}</span>
               {metric.unit && <span className="metric-card-unit">{metric.unit}</span>}
-            </div>
-            <div className="metric-card-footer">
+            </Container>
+            <Container className="d-flex items-center content-between">
               <span className="metric-card-subtitle">{metric.subtitle}</span>
-              <span className={`metric-card-trend ${metric.trendUp ? 'metric-card-trend-up' : 'metric-card-trend-down'}`}>
+              <span className="d-flex items-center" style={{ fontSize: '0.75rem', gap: '0.25rem', color: metric.trendUp ? 'rgba(52, 199, 89, 1)' : 'rgba(255, 69, 58, 1)' }}>
                 {metric.trendUp ? <TrendingUp className="metric-card-trend-icon" /> : <TrendingDown className="metric-card-trend-icon" />}
                 {metric.trend}
               </span>
-            </div>
-          </div>
-        </div>
+            </Container>
+          </Container>
+        </Container>
       ))}
-    </div>
+    </Container>
   )
 }

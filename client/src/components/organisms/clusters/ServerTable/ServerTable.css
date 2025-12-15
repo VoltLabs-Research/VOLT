@@ -15,13 +15,7 @@
   margin-bottom: 1.5rem;
 }
 
-.server-table-title-group {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.server-table-bar {
+.server-table-title-bar {
   width: 3px;
   height: 1.5rem;
   background: var(--muted-foreground);
@@ -34,12 +28,6 @@
   margin: 0;
   color: var(--foreground);
   letter-spacing: -0.01em;
-}
-
-.server-table-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
 .server-table-btn {
@@ -125,12 +113,6 @@
   padding: 1rem;
 }
 
-.server-table-cell-id {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .server-table-status-dot {
   width: 0.5rem;
   height: 0.5rem;
@@ -166,17 +148,6 @@
 
 .server-table-status-warning {
   color: #f59e0b;
-}
-
-.server-table-metric {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.server-table-bar-group {
-  display: flex;
-  gap: 0.125rem;
 }
 
 .server-table-bar {

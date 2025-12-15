@@ -201,79 +201,32 @@
   .clusters-main {
     padding: 3rem 2rem;
   }
-}
 
-@media (min-width: 1440px) {
-  .clusters-main {
-    padding: 4rem 3rem;
-  }
-}
-
-.clusters-chart-grid,
-.clusters-chart-grid-2,
-.clusters-chart-grid-3,
-
-.clusters-chart-grid>*,
-.clusters-chart-grid-2>*,
-.clusters-chart-grid-3>*,
-.clusters-chart-grid-4>*,
-.clusters-chart-grid-5>* {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.clusters-chart-main,
-.clusters-chart-wide,
-.clusters-chart-small,
-.clusters-chart-half {
-  grid-column: span 1;
-}
-
-@media (min-width: 768px) {
-
-  .clusters-chart-grid,
-  .clusters-chart-grid-2,
-  .clusters-chart-grid-3 {
+  .clusters-grid,
+  .clusters-grid-equal {
     display: grid;
     gap: 1.5rem;
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (min-width: 1440px) {
+@media (min-width: 1024px) {
+  .clusters-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 
-  .clusters-chart-grid,
-  .clusters-chart-grid-2,
-  .clusters-chart-grid-3 {
-    gap: 2rem;
+  .clusters-grid-main {
+    grid-column: span 2;
   }
 }
 
-@media (min-width: 1024px) {
-  .clusters-chart-grid {
-    grid-template-columns: repeat(3, 1fr);
+@media (min-width: 1440px) {
+  .clusters-main {
+    padding: 4rem 3rem;
   }
 
-  .clusters-chart-main {
-    grid-column: span 2;
-    height: 350px;
-  }
-
-  .clusters-chart-grid-2 {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .clusters-chart-wide {
-    grid-column: span 2;
-  }
-
-  .clusters-chart-small {
-    height: 400px;
-    grid-column: span 1;
-  }
-
-  .clusters-chart-grid-3 {
-    grid-template-columns: repeat(2, 1fr);
+  .clusters-grid,
+  .clusters-grid-equal {
+    gap: 2rem;
   }
 }

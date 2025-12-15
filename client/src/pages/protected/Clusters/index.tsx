@@ -6,45 +6,36 @@ import { CpuDistribution } from '@/components/molecules/clusters/CpuDistribution
 import { DiskOperations } from '@/components/molecules/clusters/DiskOperations'
 import { DatabasePerformance } from '@/components/molecules/clusters/DatabasePerformance'
 import { ServerTable } from '@/components/organisms/clusters/ServerTable'
+import Container from '@/components/primitives/Container'
 import './Clusters.css'
 
 export default function DashboardPage() {
   return (
-    <div className="clusters-page">
-      <main className="clusters-main d-flex column gap-2">
+    <Container className="clusters-page">
+      <Container className="clusters-main d-flex column gap-2">
         <MetricsCards />
 
-        <div className="clusters-chart-grid">
-          <div className="clusters-chart-main">
+        <Container className="clusters-grid">
+          <Container className="clusters-grid-main">
             <ResponseTimeChart />
-          </div>
-          <div>
-            <ResourceUsage />
-          </div>
-        </div>
+          </Container>
+          <ResourceUsage />
+        </Container>
 
-        <div className="clusters-chart-grid-2">
-          <div className="clusters-chart-wide">
+        <Container className="clusters-grid">
+          <Container className="clusters-grid-main">
             <TrafficOverview />
-          </div>
-          <div className="clusters-chart-small">
-            <CpuDistribution />
-          </div>
-        </div>
+          </Container>
+          <CpuDistribution />
+        </Container>
 
-        <div className="clusters-chart-grid-3">
-          <div className="clusters-chart-half">
-            <DatabasePerformance />
-          </div>
-          <div className="clusters-chart-half">
-            <DiskOperations />
-          </div>
-        </div>
+        <Container className="clusters-grid-equal">
+          <DatabasePerformance />
+          <DiskOperations />
+        </Container>
 
-        <div className="clusters-table-section">
-          <ServerTable />
-        </div>
-      </main>
-    </div>
+        <ServerTable />
+      </Container>
+    </Container>
   )
 }
