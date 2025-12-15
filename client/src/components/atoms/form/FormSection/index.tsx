@@ -1,5 +1,6 @@
 import FormField from '@/components/molecules/form/FormField';
 import './FormSection.css';
+import Container from '@/components/primitives/Container';
 
 const FormSection = ({
     title,
@@ -8,8 +9,8 @@ const FormSection = ({
     children
 }) => {
     return(
-        <div className='form-control-section'>
-            <div className='form-control-top-container'>
+        <Container>
+            <Container className='d-flex column gap-1'>
                 <FormField
                     fieldValue={enabled}
                     fieldKey='enabled'
@@ -19,12 +20,12 @@ const FormSection = ({
                 />
 
                 {enabled && (
-                    <div className='form-control-group'>
+                    <Container className='d-flex column gap-2'>
                         {children}
-                    </div>
+                    </Container>
                 )}
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 

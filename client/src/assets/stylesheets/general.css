@@ -50,6 +50,10 @@
     gap: .1rem;
 }
 
+.gap-02{
+    gap: .2rem;
+}
+
 .gap-025{
     gap: 0.25rem;
 }
@@ -142,6 +146,10 @@
     justify-content: space-between;
 }
 
+.row-reverse{
+    flex-direction: row-reverse;
+}
+
 .flex-wrap{
     flex-wrap: wrap;
 }
@@ -163,6 +171,71 @@
     text-align: center;
 }
 
+/** TODO: Use tokens for this: md, lg, sm... **/
+.font-size-1{
+    font-size: 0.75rem;
+}
+
+.font-size-2{
+    font-size: 0.875rem;
+}
+
+.font-size-2-5{
+    font-size: 0.95rem;
+}
+
+.font-size-3{
+    font-size: 1rem;
+}
+
+.font-size-4{
+    font-size: 1.25rem;
+}
+
+.font-size-5{
+    font-size: 1.5rem;
+}
+
+.font-size-6{
+    font-size: 2rem;
+}
+
+.font-weight-4{
+    font-weight: 400;
+}
+
+.font-weight-5{
+    font-weight: 500;
+}
+
+.font-weight-5-5{
+    font-weight: 550;
+}
+
+.font-weight-6{
+    font-weight: 600;
+}
+
+.color-muted-foreground{
+    color: var(--muted-foreground);
+}
+
+.color-primary{
+    color: var(--color-text-primary);
+}
+
+.color-secondary{
+    color: var(--color-text-secondary);
+}
+
+.color-muted{
+    color: var(--color-text-muted);    
+}
+
+.line-height-5{
+    line-height: 1.5;
+}
+
 /** Other **/
 .u-select-none{
     user-select: none;
@@ -177,6 +250,10 @@
     /** Padding **/
     .sm\:p-1-5{
         padding: 1.5rem;
+    }
+    
+    .sm\:p-1{
+        padding: 1rem;
     }
 
     /** Flexbox **/
@@ -202,5 +279,13 @@
 
     .sm\:a-self-end{
         align-self: flex-end;
+    }
+
+    .sm\:font-size-4{
+        font-size: 1.25rem;
+    }
+
+    .sm\:font-size-2{
+        font-size: 0.875rem;
     }
 }

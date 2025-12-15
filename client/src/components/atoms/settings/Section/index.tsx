@@ -1,4 +1,5 @@
 import React from 'react';
+import Container from '@/components/primitives/Container';
 import './Section.css';
 
 interface SectionProps {
@@ -8,9 +9,9 @@ interface SectionProps {
 
 const Section: React.FC<SectionProps> = ({ children, className = '' }) => {
     return(
-        <div className={`settings-section ${className}`}>
+        <Container className={`settings-section ${className}`}>
             {children}
-        </div>
+        </Container>
     );
 };
 

@@ -4,18 +4,8 @@
 }
 
 .section-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
     margin: 0 0 0.5rem 0;
     letter-spacing: -0.025em;
-}
-
-.section-description {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-    margin: 0;
-    line-height: 1.5;
 }
 
 .section-header:not(:has(.section-header-actions)){

@@ -24,6 +24,7 @@ import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import useConfigurationStore from '@/stores/editor/configuration';
 import Container from '@/components/primitives/Container';
 import './SlicePlane.css';
+import Title from '@/components/primitives/Title';
 
 const SlicePlane = () => {
     const slicePlaneConfig = useConfigurationStore((state) => state.slicePlaneConfig);
@@ -36,8 +37,8 @@ const SlicePlane = () => {
 
     return(
         <EditorWidget className='slice-plane-container' draggable={false}>
-            <Container className='editor-floting-header-container'>
-                <h3 className='editor-floating-header-title'>Slice Modifier</h3>
+            <Container className='d-flex content-between items-center'>
+                <Title className='font-weight-5-5'>Slice Modifier</Title>
             </Container>
 
             <Container className='d-flex column gap-1'>

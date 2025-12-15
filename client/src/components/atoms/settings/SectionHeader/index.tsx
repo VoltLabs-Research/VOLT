@@ -1,6 +1,8 @@
 import React from 'react';
 import Container from '@/components/primitives/Container';
 import './SectionHeader.css';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 interface SectionHeaderProps {
     title: string;
@@ -12,8 +14,8 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({ title, description, child
     return(
         <Container className='d-flex content-between'>
             <Container className='d-flex column gap-05'>
-                <h3 className='section-title'>{title}</h3>
-                {description && <p className='section-description'>{description}</p>}
+                <Title className='font-size-4 font-weight-6 text-primary section-title'>{title}</Title>
+                {description && <Paragraph className='font-size-2-5 text-secondary line-height-5'>{description}</Paragraph>}
             </Container>
             {children && (
                 <Container className='d-flex items-center gap-1 mt-1'>

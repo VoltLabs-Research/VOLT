@@ -22,16 +22,6 @@
     opacity: 0.5;
 }
 
-.editor-floating-header-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.editor-floating-header-title {
-    font-weight: 500;
-}
-
 .editor-floating-header-icon {
     color: #cacaca;
 }

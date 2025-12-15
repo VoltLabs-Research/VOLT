@@ -4,9 +4,3 @@
     min-width: 40px;
     text-align: right;
 }
-
-.form-control-row-slider-container{
-    display: flex;
-    align-items: center;
-    gap: .2rem;
-}

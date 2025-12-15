@@ -21,9 +21,3 @@
     background: var(--gray-200);
     border-color: var(--gray-400);
 }
-
-.plugin-sidebar-title {
-    font-weight: 600;
-    color: var(--gray-800);
-    margin: 0;
-}

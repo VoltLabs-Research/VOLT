@@ -9,6 +9,7 @@ import useToast from '@/hooks/ui/use-toast';
 import DraggableBinaryContainer from '@/components/organisms/common/DraggableBinaryContainer';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './TeamCreator.css';
+import Container from '@/components/primitives/Container';
 
 interface TeamCreatorProps {
     onClose?: () => void;
@@ -112,9 +113,9 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
             />
 
             {(isLoading || isSubmitting) ? (
-                <div className='team-creator-loader-container'>
+                <Container className='mt-1'>
                     <Loader scale={0.6} />
-                </div>
+                </Container>
             ) : (
                 <Button
                     type='submit'

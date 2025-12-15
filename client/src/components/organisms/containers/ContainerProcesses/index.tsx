@@ -3,6 +3,7 @@ import containerApi from '@/services/api/container';
 import { RefreshCw, Activity } from 'lucide-react';
 import Container from '@/components/primitives/Container';
 import './ContainerProcesses.css';
+import Paragraph from '@/components/primitives/Paragraph';
 
 interface ContainerProcessesProps {
     containerId: string;
@@ -54,16 +55,20 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
     }, [containerId]);
 
     if(loading && processes.length === 0){
-        return <div className="processes-loading">Loading processes...</div>;
+        return (
+            <Container className='d-flex column flex-center h-max color-muted-foreground gap-1 p-2 text-center'>
+                Loading processes...
+            </Container>
+        );
     }
 
     if(error){
         return(
-            <div className="processes-error">
+            <Container className="d-flex column flex-center h-max gap-1 p-2 text-center color-muted-foreground">
                 <Activity size={48} />
-                <p>{error}</p>
+                <Paragraph>{error}</Paragraph>
                 <button onClick={fetchProcesses} className="retry-btn">Retry</button>
-            </div>
+            </Container>
         );
     }
 

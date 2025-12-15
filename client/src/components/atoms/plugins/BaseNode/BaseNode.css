@@ -11,22 +11,8 @@
     border-color: #3b82f6;
 }
 
-.workflow-node-header-container{
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.workflow-node-header-content{
-    display: flex;
-    flex-direction: column;
-    gap: .2rem;
-}
-
 .workflow-node-description{
     font-size: .8rem;
-    color: var(--color-text-muted);
-    overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;

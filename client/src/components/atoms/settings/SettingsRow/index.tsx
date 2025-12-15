@@ -1,5 +1,6 @@
 import React from "react";
 import Container from "@/components/primitives/Container";
+import Paragraph from "@/components/primitives/Paragraph";
 
 type IconType = React.ComponentType<{ size?: number; className?: string }>;
 
@@ -47,7 +48,7 @@ const SettingsRow: React.FC<SettingsRowProps> = ({
                 {left ? (
                     <Container className={infoClassName}>
                         <h4>{title}</h4>
-                        <p>{description}</p>
+                        <Paragraph>{description}</Paragraph>
                     </Container>
                 ) : null}
             </Container>

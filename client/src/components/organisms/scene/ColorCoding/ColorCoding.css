@@ -9,9 +9,3 @@
 .color-coding-footer-container .button{
     width: 100%;
 }
-
-.color-coding-body-container{
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}

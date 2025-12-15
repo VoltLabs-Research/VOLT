@@ -28,6 +28,7 @@ import useDragState from '@/hooks/ui/drag-drop/use-drag-state';
 import useFileUpload from '@/hooks/ui/drag-drop/use-file-upload';
 import useLogger from '@/hooks/core/use-logger';
 import './FileUpload.css';
+import Container from '@/components/primitives/Container';
 
 interface FileUploadProps{
     children?: React.ReactNode;
@@ -121,7 +122,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     }, [isDraggingOver]);
 
     const dropZone = (
-        <div
+        <Container
             ref={dropRef}
             onDrop={handleDrop}
             onDragOver={handleDragOver}

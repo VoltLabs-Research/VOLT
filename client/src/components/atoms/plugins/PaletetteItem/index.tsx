@@ -2,6 +2,9 @@ import React from 'react';
 import type { NodeType } from '@/types/plugin';
 import type { NodeTypeConfig } from '@/utilities/plugins/node-types';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
+import Container from '@/components/primitives/Container';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 import './PaletteItem.css';
 
 interface PaletteItemProps{
@@ -12,19 +15,19 @@ interface PaletteItemProps{
 const PaletteItem = ({ config, onDragStart }: PaletteItemProps) => {
 
     return(
-        <div
-            className='plugin-palette-item-container'
+        <Container
+            className='d-flex gap-1-5 items-center'
             draggable
             onDragStart={(e) => onDragStart(e, config.type)}
         >
-            <div className='plugin-palette-item-icon'>
+            <Container>
                 <DynamicIcon iconName={config.icon} />
-            </div>
-            <div className='plugin-palette-item-content'>
-                <h3 className='plugin-palette-item-label'>{config.label}</h3>
-                <p className='plugin-palette-item-description'>{config.description}</p>
-            </div>
-        </div>
+            </Container>
+            <Container className='d-flex column'>
+                <Title>{config.label}</Title>
+                <Paragraph>{config.description}</Paragraph>
+            </Container>
+        </Container>
     );
 };
 

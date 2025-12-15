@@ -23,6 +23,8 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
 import './FormInput.css';
+import Container from '@/components/primitives/Container';
+import Title from '@/components/primitives/Title';
 
 interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     label?: string;
@@ -35,24 +37,24 @@ const FormInput: React.FC<FormInputProps> = ({ label, error, showError = true, v
     const variantClass = variant === 'auth' ? 'form-input-auth' : '';
 
     return(
-        <div className={`form-input-wrapper-container ${variantClass}`}>
+        <Container className={`d-flex w-max columnform-input-wrapper-container ${variantClass}`}>
             {label && (
-                <label className='form-input-label-container'>
-                    <h3 className='form-input-label'>{label}</h3>
+                <label>
+                    <Title className='font-weight-4 text-secondary form-input-label'>{label}</Title>
                 </label>
             )}
 
-            <div className={`form-input-container ${error ? 'form-input-error' : ''} ${variantClass}`}>
+            <Container className={`form-input-container ${error ? 'form-input-error' : ''} ${variantClass}`}>
                 <input className={`form-input ${className}`} {...props} />
-            </div>
+            </Container>
 
             {error && showError && (
-                <div className="form-error-message">
+                <Container className="d-flex items-center gap-025 form-error-message">
                     <AlertCircle size={12} />
                     <span>{error}</span>
-                </div>
+                </Container>
             )}
-        </div>
+        </Container>
     );
 };
 

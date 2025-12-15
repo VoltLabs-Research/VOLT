@@ -18,6 +18,7 @@ import CanvasGridControls from '@/components/molecules/scene/CanvasGridControls'
 import OrbitControls from '@/components/molecules/scene/OrbitControls';
 import Container from '@/components/primitives/Container';
 import './EditorSidebar.css';
+import Title from '@/components/primitives/Title';
 
 const RenderConfig = () => (
     <Container className='d-flex column editor-render-options-container'>
@@ -67,7 +68,7 @@ const EditorSidebar = () => {
                                         <BsArrowLeft size={30} />
                                     </i>
 
-                                    <h3 className='editor-sidebar-render-title'>Render Settings</h3>
+                                    <Title>Render Settings</Title>
                                 </Container>
                             ) : (
                                 <>

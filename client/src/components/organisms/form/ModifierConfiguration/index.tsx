@@ -8,6 +8,8 @@ import useTrajectoryStore from '@/stores/trajectories';
 import pluginApi from '@/services/api/plugin';
 import Container from '@/components/primitives/Container';
 import './ModifierConfiguration.css';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 interface ModifierConfigurationProps {
     pluginId: string;
@@ -190,15 +192,15 @@ const ModifierConfiguration = ({
     return (
         <EditorWidget className={`modifier-configuration ${className}`} draggable={false}>
             <Container className='d-flex content-between items-center'>
-                <h3 className='modifier-configuration-header-title'>{displayTitle}</h3>
+                <Title className='font-weight-5-5'>{displayTitle}</Title>
                 {icon}
             </Container>
 
             <Container className='d-flex column gap-1 modifier-configuration-body-container'>
                 {configFields.length === 0 ? (
-                    <p className='modifier-configuration-no-fields'>
+                    <Paragraph className='color-muted font-size-2 text-center no-fields-text'>
                         This modifier has no configurable parameters.
-                    </p>
+                    </Paragraph>
                 ) : (
                     configFields.map((field) => (
                         <FormField
@@ -216,7 +218,7 @@ const ModifierConfiguration = ({
                 )}
             </Container>
 
-            <div className='modifier-configuration-footer-container'>
+            <Container>
                 <Button
                     isLoading={isLoading}
                     className='smooth click-scale start-analysis-btn'
@@ -224,7 +226,7 @@ const ModifierConfiguration = ({
                     onClick={startAnalysis}
                     disabled={isLoading}
                 />
-            </div>
+            </Container>
         </EditorWidget>
     );
 };

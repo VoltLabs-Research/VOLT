@@ -8,6 +8,8 @@ import FormField from '@/components/molecules/form/FormField';
 import rasterApi from '@/services/api/raster';
 import { useState, useEffect } from 'react';
 import useModelStore from '@/stores/editor/model';
+import Title from '@/components/primitives/Title';
+import Container from '@/components/primitives/Container';
 import './ColorCoding.css';
 
 const COLOR_GRADIENTS = [
@@ -107,11 +109,11 @@ const ColorCoding = () => {
 
     return(
         <EditorWidget className='color-coding-container' draggable={false}>
-            <div className='editor-floating-header-container'>
-                <h3 className='editor-floating-header-title'>Color Coding</h3>
-            </div>
+            <Container className='d-flex content-between items-center'>
+                <Title className='font-weight-5-5'>Color Coding</Title>
+            </Container>
 
-            <div className='color-coding-body-container'>
+            <Container className='d-flex column gap-1'>
                 <FormField
                     fieldKey='property'
                     fieldType='select'
@@ -160,9 +162,9 @@ const ColorCoding = () => {
                     fieldValue={symmetricRange}
                     onFieldChange={(_, v) => setSymmetricRange(v)}
                 />
-            </div>
+            </Container>
 
-            <div className='color-coding-footer-container'>
+            <Container className='color-coding-footer-container'>
                 <Button
                     isLoading={isLoading}
                     className='smooth click-scale start-analysis-btn'
@@ -170,7 +172,7 @@ const ColorCoding = () => {
                     onClick={applyColorCoding}
                     disabled={isLoading}
                 />
-            </div>
+            </Container>
         </EditorWidget>
     );
 };

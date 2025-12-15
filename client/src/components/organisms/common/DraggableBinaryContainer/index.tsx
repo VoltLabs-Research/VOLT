@@ -4,6 +4,8 @@ import WindowIcons from '@/components/molecules/common/WindowIcons';
 import { motion } from 'framer-motion';
 import Container from '@/components/primitives/Container';
 import './DraggableBinaryContainer.css';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 interface DraggableBinaryContainerProps{
     onClose?: () => void;
@@ -25,8 +27,6 @@ const DraggableBinaryContainer: React.FC<DraggableBinaryContainerProps> = ({ tit
         const centerY = (window.innerHeight / 2) - (containerHeight / 2);
         return { x: Math.max(0, centerX), y: Math.max(0, centerY) };
     }, []);
-
-    const containerRef = useRef<HTMLDivElement>(null);
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if(isRequired){
@@ -59,7 +59,7 @@ const DraggableBinaryContainer: React.FC<DraggableBinaryContainerProps> = ({ tit
                 }}
             />
             <Draggable
-                className='team-creator-container primary-surface'
+                className='d-flex team-creator-container primary-surface'
                 initial={initialPos}
                 style={{
                     position: 'fixed',
@@ -102,13 +102,13 @@ const DraggableBinaryContainer: React.FC<DraggableBinaryContainerProps> = ({ tit
                 )}
 
                 <Container className='w-50'>
-                    <img src={bg} className='team-creator-background' />
+                    <img src={bg} className='h-max w-max' />
                 </Container>
 
                 <Container className='w-50 p-2 d-flex column gap-2'>
                     <Container className='d-flex column gap-05'>
-                        <h3 className='team-creator-title'>{title}</h3>
-                        <p className='team-creator-description'>{description}</p>
+                        <Title className='font-size-1-5'>{title}</Title>
+                        <Paragraph className='font-size-3 line-height-5'>{description}</Paragraph>
                     </Container>
 
                     <form onSubmit={handleSubmit} className='d-flex column gap-2 items-center team-creator-body-container'>

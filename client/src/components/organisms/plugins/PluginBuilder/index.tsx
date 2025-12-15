@@ -12,8 +12,10 @@ import NodeEditor from '@/components/molecules/plugins/NodeEditor';
 import EditableTag from '@/components/atoms/common/EditableTag';
 import Container from '@/components/primitives/Container';
 import { TbArrowLeft } from 'react-icons/tb';
-import './PluginBuilder.css';
+import Paragraph from '@/components/primitives/Paragraph';
 import '@xyflow/react/dist/style.css';
+import './PluginBuilder.css';
+import Title from '@/components/primitives/Title';
 
 const nodeTypesList = Object.values(NODE_CONFIGS);
 
@@ -27,7 +29,7 @@ const PaletteContent: React.FC<{ onDragStart: (e: React.DragEvent, type: NodeTyp
 
 const OptionsContent = () => (
     <Container>
-        <p>Select a node or add global plugin options here.</p>
+        <Paragraph>Select a node or add global plugin options here.</Paragraph>
     </Container>
 );
 
@@ -161,12 +163,11 @@ const PluginBuilder = () => {
                             <button className='plugin-sidebar-back-btn' onClick={handleClearSelection}>
                                 <TbArrowLeft size={18} />
                             </button>
-                            <h3 className='plugin-sidebar-title'>{selectedNodeConfig?.label || 'Node'}</h3>
+                            <Title className='font-weight-6'>{selectedNodeConfig?.label}</Title>
                         </Container>
                     ) : (
                         <EditableTag
                             as='h3'
-                            className='plugin-sidebar-title'
                             onSave={handlePluginNameChange}
                             title='Double-click to edit plugin name'
                             children={pluginName}

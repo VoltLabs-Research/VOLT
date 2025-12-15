@@ -4,6 +4,7 @@ import useToast from '@/hooks/ui/use-toast';
 import containerApi from '@/services/api/container';
 import Container from '@/components/primitives/Container';
 import './ContainerFileExplorer.css';
+import Paragraph from '@/components/primitives/Paragraph';
 
 interface FileItem {
     name: string;
@@ -103,7 +104,7 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
 
             <Container className="d-flex flex-1 y-scroll column">
                 {loading ? (
-                    <p>Loading...</p>
+                    <Paragraph>Loading...</Paragraph>
                 ) : (
                     <>
                         {files.length === 0 && <p className="empty-folder">Empty folder</p>}

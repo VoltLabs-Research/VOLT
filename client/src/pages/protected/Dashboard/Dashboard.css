@@ -38,11 +38,6 @@
     gap: .5rem;
 }
 
-.badge-text{
-    font-size: .95rem;
-    font-weight: 500;
-}
-
 .scene-preview-name-badge{
     top: 1rem;
     left: 1rem;
@@ -202,19 +197,11 @@
     gap: 3rem;
 }
 
-.jobs-history-title-enhanced {
-    font-size: 1.5rem;
-}
-.jobs-history-subtitle {
-    display: none;
-}
 
     body.jobs-history-expanded {
         overflow: hidden;
     }
-    .jobs-history-subtitle {
-        display: block;
-    }
+
     .jobs-history-viewer-enhanced {
         position: absolute;
         z-index: 10;
@@ -273,15 +260,7 @@
         flex-direction: column;
         gap: .2rem;
     }
-    .jobs-history-title-enhanced {
-        font-size: 1.2rem;
-        font-weight: 800;
-    color: var(--color-text-primary);
-        margin: 0;
-    }
     .jobs-history-subtitle {
-        font-size: 0.8rem;
-    color: var(--color-text-secondary);
         margin-top: 0.25rem;
         white-space: nowrap;
         overflow: hidden;
@@ -327,20 +306,8 @@
     z-index: 100;
 }
 
-.dashboard-overlay-title {
-    color: rgba(255, 255, 255, 0.95);
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin: 0 0 0.75rem 0;
-}
-
 .dashboard-overlay-description {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 1rem;
-    margin: 0;
-    line-height: 1.5;
-    max-width: 350px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    max-width: 380px;
 }
 
 @media screen and (max-width: 768px){
@@ -365,14 +332,6 @@
         gap: 0;
     }
 
-    .jobs-history-title-enhanced{
-        font-size: .9rem;
-    }
-
-    .jobs-history-subtitle{
-        font-size: .8rem;
-    }
-
     .job-name{
         font-size: .7rem;
     }
@@ -392,14 +351,6 @@
 
     .scene-preview-container{
         height: 80vh;
-    }
-
-    .badge-text{
-        font-size: .8rem;
-    }
-
-    .dashboard-body-left-header-title{
-        font-size: 2rem;
     }
 
     .dashboard-body-right-container{

@@ -1,9 +1,11 @@
+import Container from "@/components/primitives/Container";
+
 const SidebarBottom = ({ children }) => {
 
     return(
-        <div className='editor-sidebar-bottom-container'>
+        <Container className='editor-sidebar-bottom-container'>
             {children}
-        </div>
+        </Container>
     );
 };
 

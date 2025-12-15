@@ -3,6 +3,7 @@ import type { AnalysisSelectProps } from '@/types/raster';
 import Select from '@/components/atoms/form/Select';
 import usePluginStore from '@/stores/plugins/plugin';
 import { useMemo } from 'react';
+import Container from '@/components/primitives/Container';
 
 const AnalysisSelect: React.FC<AnalysisSelectProps> = ({
     analysesNames,
@@ -25,7 +26,7 @@ const AnalysisSelect: React.FC<AnalysisSelectProps> = ({
     }, [analysesNames, getModifiers]);
 
     return(
-        <div className='raster-analyses-selection-container'>
+        <Container>
             <Select
                 onDark
                 value={selectedAnalysis ?? ''}
@@ -34,7 +35,7 @@ const AnalysisSelect: React.FC<AnalysisSelectProps> = ({
                 options={options}
                 disabled={!analysesNames.length || isLoading}
             />
-        </div>
+        </Container>
     );
 };
 

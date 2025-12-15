@@ -90,19 +90,6 @@
     font-family: 'JetBrains Mono', monospace;
 }
 
-.processes-loading,
-.processes-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--muted-foreground);
-    gap: 1rem;
-    padding: 2rem;
-    text-align: center;
-}
-
 .retry-btn {
     background: var(--primary);
     color: white;

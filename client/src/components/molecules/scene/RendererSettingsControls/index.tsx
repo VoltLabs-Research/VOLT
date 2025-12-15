@@ -60,7 +60,8 @@ const RendererSettingsControls: React.FC = () => {
 		extras: (
 			<div style={{ display: 'grid', gap: 12 }}>
 				<div>
-					<div className='form-control-row'>
+					{/** TODO: DUPLICATED CODE */}
+					<div className='d-flex items-center content-between'>
 						<label className='labeled-input-label'>Exposure</label>
 						<div className='form-control-row-slider-container'>
 							<input

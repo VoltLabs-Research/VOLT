@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { RxDotsHorizontal } from 'react-icons/rx'
-import { RiListUnordered } from 'react-icons/ri'
 import DocumentListingTable from '@/components/molecules/common/DocumentListingTable'
 import { Skeleton } from '@mui/material'
 import useWorker from '@/hooks/core/use-worker'
@@ -8,6 +7,8 @@ import { WorkerStatus } from '@/utilities/worker-utils'
 import './DocumentListing.css'
 import Container from '@/components/primitives/Container'
 import DynamicIcon from '@/components/atoms/common/DynamicIcon'
+import Title from '@/components/primitives/Title'
+import Paragraph from '@/components/primitives/Paragraph'
 
 const sortDataWorker = (
     data: any[],
@@ -203,45 +204,45 @@ const DocumentListing = ({
 
     return (
         <Container className='d-flex column h-max document-listing-container'>
-            <Container className='d-flex column document-listing-header-container'>
-                <Container className='d-flex column document-listing-header-top-container'>
-                    <Container className='d-flex breadcrumbs-container'>
+            <Container className='d-flex column gap-3'>
+                <Container className='d-flex column gap-1-5 document-listing-header-top-container'>
+                    <Container className='d-flex gap-05'>
                         {breadcrumbs.map((name, index) => (
-                            <div className='breadcrumb-item-container' key={index}>
+                            <Container className='d-flex gap-05 breadcrumb-item-container' key={index}>
                                 {typeof name === 'string' ? (
                                     <p className='breadcrumb-item-name'>{name}</p>
                                 ) : (
                                     name
                                 )}
-                            </div>
+                            </Container>
                         ))}
                     </Container>
-                    <Container className='d-flex document-listing-header-title-container'>
+                    <Container className='d-flex gap-1-5'>
                         {isLoading && !data.length ? (
                             <Skeleton variant='text' width={220} height={32} />
                         ) : (
-                            <h3 className='document-listing-header-title'>{title}</h3>
+                            <Title className='font-size-6 font-weight-5 sm:font-size-4'>{title}</Title>
                         )}
-                        <i className='document-listing-header-icon-container'>
+                        <i>
                             <RxDotsHorizontal />
                         </i>
                     </Container>
                 </Container>
 
                 <Container>
-                    <Container className='d-flex w-max document-listing-header-tabs-container'>
-                        <Container className='d-flex items-center document-listing-header-tab-container'>
-                            <Container className='d-flex flex-center document-listing-header-tab-icon-container'>
+                    <Container className='d-flex w-max gap-1 document-listing-header-tabs-container'>
+                        <Container className='d-flex items-center gap-1 color-secondary document-listing-header-tab-container'>
+                            <Container className='d-flex flex-center font-size-4'>
                                 <DynamicIcon iconName='RiListUnordered' />
                             </Container>
-                            <p className='document-listing-header-tab-name'>List</p>
+                            <Paragraph>List</Paragraph>
                         </Container>
                     </Container>
                     <Container className='document-listing-header-filters-container' />
                 </Container>
             </Container>
 
-            <div className='document-listing-body-container' ref={bodyRef}>
+            <Container className='document-listing-body-container' ref={bodyRef}>
                 <DocumentListingTable
                     columns={columns}
                     data={sortedData}
@@ -257,7 +258,7 @@ const DocumentListing = ({
                     keyExtractor={_keyExtractor}
                     scrollContainerRef={bodyRef}
                 />
-            </div>
+            </Container>
         </Container>
     )
 }

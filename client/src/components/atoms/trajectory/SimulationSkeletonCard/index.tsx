@@ -22,21 +22,22 @@
 
 import { Skeleton } from '@mui/material';
 import './SimulationSkeletonCard.css';
+import Container from '@/components/primitives/Container';
 
 type Props = { n?: number };
 
 const SimulationSkeletonCard: React.FC<Props> = ({ n = 8 }) => {
 
     return(new Array(n).fill(0)).map((_, index) => (
-        <div className='simulation-container' key={index}>
+        <Container className='simulation-container' key={index}>
             <Skeleton variant='rounded' width='100%' height={200} />
-            <div className='simulation-caption-container'>
-                <div className='simulation-caption-left-container'>
+            <Container className='simulation-caption-container'>
+                <Container className='simulation-caption-left-container'>
                     <Skeleton variant='text' sx={{ fontSize: '1rem' }} width='60%' />
                     <Skeleton variant='text' sx={{ fontSize: '1rem' }} width='40%' />
-                </div>
-            </div>
-        </div>
+                </Container>
+            </Container>
+        </Container>
     ));
 };
 

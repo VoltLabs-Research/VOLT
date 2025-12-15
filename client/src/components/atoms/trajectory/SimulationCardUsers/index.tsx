@@ -24,6 +24,7 @@ import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTrajectoryPresence, type CardPresenceUser } from '@/hooks/socket/use-trajectory-presence';
 import './SimulationCardUsers.css';
+import Container from '@/components/primitives/Container';
 
 interface SimulationCardUsersProps {
     trajectoryId: string;
@@ -44,53 +45,49 @@ const getInitialsFromUser = (user: CardPresenceUser): string => {
 };
 
 const SimulationCardUsers: React.FC<SimulationCardUsersProps> = memo(({ trajectoryId }) => {
-    // Use centralized hook that prevents duplicate subscriptions
     const { users } = useTrajectoryPresence(trajectoryId);
-
-    // Show max 3 avatars in card
     const displayUsers = users.slice(0, 3);
     const extraCount = Math.max(0, users.length - 3);
 
-    // Always render to keep useEffect subscriptions active, hide with CSS
     if(users.length === 0){
         return null;
     }
 
     return(
-        <div className="simulation-card-users">
-            <div className="card-users-avatars">
+        <Container className="simulation-card-users">
+            <Container className="d-flex items-center row-reverse">
                 <AnimatePresence mode="popLayout">
                     {displayUsers.map((user, index) => (
                         <motion.div
                             key={user.id}
-                            className="card-user-avatar-wrapper"
+                            className="p-relative f-shrink-0 card-user-avatar-wrapper"
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0, opacity: 0 }}
                             transition={{ delay: index * 0.05 }}
                         >
-                            <div className="card-user-avatar">
-                                <div className="avatar-initials">{getInitialsFromUser(user)}</div>
+                            <Container className="d-flex flex-center overflow-hidden p-relative card-user-avatar">
+                                <Container className="avatar-initials">{getInitialsFromUser(user)}</Container>
                                 {user.isAnonymous && <div className="avatar-anonymous-badge">?</div>}
-                            </div>
+                            </Container>
                         </motion.div>
                     ))}
                     {extraCount > 0 && (
                         <motion.div
                             key="extra"
-                            className="card-user-avatar-wrapper"
+                            className="p-relative f-shrink-0 card-user-avatar-wrapper"
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0, opacity: 0 }}
                         >
-                            <div className="card-user-avatar card-user-avatar-extra">
-                                <div className="avatar-initials">+{extraCount}</div>
-                            </div>
+                            <Container className="d-flex flex-center overflow-hidden p-relative card-user-avatar card-user-avatar-extra">
+                                <Container className="avatar-initials">+{extraCount}</Container>
+                            </Container>
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 });
 

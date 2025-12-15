@@ -18,6 +18,8 @@ import useAuthStore from '@/stores/authentication';
 import useEnvironmentConfigStore from '@/stores/editor/environment-config';
 import DashboardStats from '@/components/atoms/dashboard/DashboardStats';
 import './Dashboard.css';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 const getGreeting = (): string => {
     const hour = new Date().getHours();
@@ -90,9 +92,7 @@ const DashboardPage: React.FC = memo(() => {
             <DashboardContainer pageName='Dashboard' className='dashboard-wrapper-container'>
                 <Container className='d-flex column dashboard-body-left-container'>
                     <Container>
-                        <h3 className='dashboard-body-left-header-title'>
-                            {getGreeting()}, {capitalize(user?.firstName)}
-                        </h3>
+                        <Title className='font-size-6 color-primary font-weight-5-5'>{getGreeting()}, {capitalize(user?.firstName)}</Title>
                     </Container>
 
                     <Container className='scene-preview-container'>
@@ -108,13 +108,13 @@ const DashboardPage: React.FC = memo(() => {
                         ) : (trajectory?._id && currentTimestep !== undefined) && (
                             <>
                                 <Container className='badge-container scene-preview-name-badge primary-surface'>
-                                    <p className='badge-text'>{trajectory.name}</p>
+                                    <Paragraph className='font-size-2 font-weight-5'>{trajectory.name}</Paragraph>
                                 </Container>
 
                                 <Container className='badge-container scene-preview-natoms-badge primary-surface'>
-                                    <p className='badge-text'>
+                                    <Paragraph className='font-size-2 font-weight-5'>
                                         {formatNumber((trajectory.frames || []).find((f: any) => f.timestep === currentTimestep)?.natoms ?? 0)} atoms
-                                    </p>
+                                    </Paragraph>
                                 </Container>
 
                                 <Container className='badge-container scene-preview-navigate-icon primary-surface'>
@@ -157,12 +157,10 @@ const DashboardPage: React.FC = memo(() => {
                         </Container>
 
                         {hasNoTrajectories && (
-                            <Container className='d-flex flex-center dashboard-canvas-overlay' aria-label="Canvas preview disabled">
-                                <Container className='text-center'>
-                                    <h3 className='dashboard-overlay-title'>Preview</h3>
-                                    <p className='dashboard-overlay-description'>
-                                        Real-time visualization of atomic structures from your trajectory data will appear here once loaded
-                                    </p>
+                            <Container className='d-flex flex-center dashboard-canvas-overlay'>
+                                <Container className='d-flex column gap-05 text-center'>
+                                    <Title className='font-size-5 color-primary font-weight-6'>Preview</Title>
+                                    <Paragraph className='color-secondary font-size-3 line-height-5 dashboard-overlay-description'>Real-time visualization of atomic structures from your trajectory data will appear here once loaded.</Paragraph>
                                 </Container>
                             </Container>
                         )}

@@ -11,9 +11,6 @@ import pluginApi from '@/services/api/plugin';
 const RASTER_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
     BoxResults: lazy(() => import('@/components/atoms/raster/BoxResults')),
     StatisticsResults: lazy(() => import('@/components/atoms/raster/StatisticsResults')),
-    // Future components can be added here
-    // ChartResults: lazy(() => import('@/components/atoms/raster/ChartResults')),
-    // TableResults: lazy(() => import('@/components/atoms/raster/TableResults')),
 };
 
 export interface RasterResultsRendererProps {

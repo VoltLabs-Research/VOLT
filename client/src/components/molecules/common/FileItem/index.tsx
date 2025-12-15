@@ -24,6 +24,7 @@ import React from 'react';
 import { BsThreeDots } from 'react-icons/bs';
 import './FileItem.css';
 import Container from '@/components/primitives/Container';
+import Title from '@/components/primitives/Title';
 
 interface FileItemProps {
     data: object;
@@ -44,7 +45,7 @@ const FileItem: React.FC<FileItemProps> = ({
             onClick={onSelect}
         >
             <Container className='d-flex content-between items-center'>
-                <h4>{data.name}</h4>
+                <Title>{data.name}</Title>
                 <i className='file-delete-icon-container'>
                     <BsThreeDots
                         onClick={onDelete}

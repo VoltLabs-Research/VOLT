@@ -4,6 +4,9 @@ import { NodeType } from '@/types/plugin';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import './BaseNode.css';
+import Container from '@/components/primitives/Container';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 interface BaseNodeProps extends NodeProps{
     nodeType: NodeType;
@@ -21,7 +24,7 @@ const BaseNode: React.FC<BaseNodeProps> = memo(({
     const config = NODE_CONFIGS[nodeType];
 
     return(
-        <div className={`workflow-node ${selected ? 'workflow-node--selected' : ''}`}>
+        <Container className={`workflow-node ${selected ? 'workflow-node--selected' : ''}`}>
             {config.inputs > 0 && (
                 <Handle
                     type='target'
@@ -30,20 +33,18 @@ const BaseNode: React.FC<BaseNodeProps> = memo(({
                 />
             )}
 
-            <div className='workflow-node-header-container'>
+            <Container className='d-flex items-center gap-1'>
                 <span className='workflow-node-icon'>
                     <DynamicIcon iconName={config.icon} />
                 </span>
-                <div className='workflow-node-header-content'>
-                    <h3 className='workflow-node-header-title'>
-                        {nodeTitle ? nodeTitle : config.label}
-                    </h3>
+                <Container className='d-flex column gap-02'>
+                    <Title>{nodeTitle ? nodeTitle : config.label}</Title>
 
                     {description && (
-                        <p className='workflow-node-description'>{description}</p>
+                        <Paragraph className='color-muted overflow-hidden workflow-node-description'>{description}</Paragraph>
                     )}
-                </div>
-            </div>
+                </Container>
+            </Container>
 
             {config.outputs !== 0 && (
                 <Handle
@@ -52,7 +53,7 @@ const BaseNode: React.FC<BaseNodeProps> = memo(({
                     id='output'
                 />
             )}
-        </div>
+        </Container>
     );
 });
 

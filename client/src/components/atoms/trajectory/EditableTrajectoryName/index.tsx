@@ -1,6 +1,7 @@
 import EditableTag from '@/components/atoms/common/EditableTag';
 import useTrajectoryStore from '@/stores/trajectories';
 import useAuthStore from '@/stores/authentication';
+import Title from '@/components/primitives/Title';
 
 const EditableTrajectoryName = ({ trajectory, className }) => {
     const updateTrajectoryById = useTrajectoryStore((state) => state.updateTrajectoryById);
@@ -8,7 +9,7 @@ const EditableTrajectoryName = ({ trajectory, className }) => {
     const isAuthenticated = !!user;
 
     const handleNameUpdate = async(newName: string) => {
-        if(!isAuthenticated) return; // No permitir editar si no hay usuario autenticado
+        if(!isAuthenticated) return; 
         try{
             await updateTrajectoryById(trajectory._id, { name: newName });
         }catch(error: any){
@@ -37,8 +38,7 @@ const EditableTrajectoryName = ({ trajectory, className }) => {
                 {trajectory?.name}
             </EditableTag>
         ) : (
-            // Si no está autenticado, mostrar como texto normal
-            <h3 className={className}>{trajectory?.name}</h3>
+            <Title className={className}>{trajectory?.name}</Title>
         )
     );
 };

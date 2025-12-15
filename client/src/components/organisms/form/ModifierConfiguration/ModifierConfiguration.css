@@ -3,22 +3,14 @@
     top: 6.5rem;
 }
 
-.modifier-configuration-header-title {
-    font-weight: 500;
-}
-
 .modifier-configuration-body-container {
     max-height: 500px;
     padding-right: 1rem;
     overflow-y: scroll;
 }
 
-.modifier-configuration-no-fields {
-    color: #999;
-    font-size: 0.875rem;
-    font-style: italic;
+.no-fields-text{
     padding: 1rem 0;
-    text-align: center;
 }
 
 .modifier-configuration .start-analysis-btn {

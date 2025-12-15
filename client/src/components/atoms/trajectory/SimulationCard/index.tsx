@@ -1,7 +1,3 @@
-/**
-* Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
-*/
-
 import React, { useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PiAtomThin, PiDotsThreeVerticalBold, PiImagesSquareThin } from 'react-icons/pi';
@@ -18,7 +14,10 @@ import useCardInteractions from '@/hooks/ui/interaction/use-card-interaction';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
 import useRasterStore from '@/stores/raster';
 import './SimulationCard.css';
+import Container from '@/components/primitives/Container';
+import Paragraph from '@/components/primitives/Paragraph';
 
+// TODO: refactor
 interface Trajectory {
     _id: string;
     name?: string;
@@ -164,17 +163,17 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
             className={containerClasses}
             onClick={(e) => handleClick(e, trajectory._id)}
         >
-            <div className='container-content'>
-                <div className='simulation-cover-container'>
+            <Container className='container-content'>
+                <Container className='d-flex flex-center overflow-hidden p-relative w-max simulation-cover-container'>
                     {shouldShowPlaceholder && (
-                        <i className='simulation-cover-icon-container'>
+                        <i className='d-flex flex-center w-max h-max color-muted simulation-cover-icon-container'>
                             <PiAtomThin />
                         </i>
                     )}
 
                     {shouldShowPreview && (
                         <img
-                            className='simulation-image'
+                            className='w-max h-max simulation-image'
                             src={previewBlobUrl}
                             alt={`Preview of ${trajectory.name || 'Trajectory'}`}
                             key={`${trajectory._id}-${trajectory.preview}-${trajectory.updatedAt}`}
@@ -184,8 +183,8 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                         />
                     )}
 
-                </div>
-            </div>
+                </Container>
+            </Container>
 
             <motion.figcaption
                 className='simulation-caption-container'
@@ -275,11 +274,9 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                                 isVisible={true}
                             />
                         ) : (
-                            <>
-                                <p className='simulation-last-edited'>
-                                    Edited {formatTimeAgo(trajectory.updatedAt)}
-                                </p>
-                            </>
+                            <Paragraph className='simulation-last-edited'>
+                                Edited {formatTimeAgo(trajectory.updatedAt)}
+                            </Paragraph>
                         )}
                     </div>
                 </div>

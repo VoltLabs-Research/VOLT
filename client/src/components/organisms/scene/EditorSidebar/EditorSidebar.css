@@ -2,12 +2,6 @@
     color: #dadada; 
 }
 
-.editor-sidebar-header-content{
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-}
-
 .editor-sidebar-trajectory-drop-icon-container{
     font-size: 1.4rem; 
     margin-top: 5px;
@@ -50,12 +44,6 @@
     font-size: 1.3rem;
 }
 
-.editor-sidebar-header-container{ 
-    padding: 1.5rem 1.5rem;
-    display: flex;
-    justify-content: space-between;
-}
-
 @media screen and (max-width: 768px){
     .editor-sidebar-header-team-name{
         font-size: .85rem;
@@ -88,7 +76,6 @@
     }
 
     .editor-sidebar-options-wrapper-container,
-    .editor-sidebar-header-container,
     .editor-sidebar-user-avatar-wrapper{
         padding: 1rem;
     }

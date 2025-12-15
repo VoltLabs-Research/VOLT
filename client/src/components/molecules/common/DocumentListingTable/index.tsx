@@ -4,6 +4,9 @@ import EmptyState from '@/components/atoms/common/EmptyState';
 import { Skeleton } from '@mui/material';
 import { useEffect, useRef } from 'react';
 import { List, type ListImperativeAPI } from 'react-window';
+import Container from '@/components/primitives/Container';
+import Title from '@/components/primitives/Title';
+import Paragraph from '@/components/primitives/Paragraph';
 
 const ROW_HEIGHT = 48;
 
@@ -143,7 +146,7 @@ const DocumentListingTable = ({
     const shouldShowEmptyState = hasNoData && !isLoading;
 
     return(
-        <div className='document-listing-table-container'>
+        <Container className='d-flex column'>
             {columns.length > 0 && (
                 <div className='document-listing-table-header-container'>
                     {columns.map((col: any, colIdx: number) => (
@@ -152,15 +155,13 @@ const DocumentListingTable = ({
                             key={`header-${col.title}-${colIdx}`}
                             onClick={() => onCellClick(col)}
                         >
-                            <h4 className='document-listing-cell-title'>
-                                {getCellTitle(col)}
-                            </h4>
+                            <Title className='font-size-2-5 font-weight-5 text-secondary'>{getCellTitle(col)}</Title>
                         </div>
                     ))}
                 </div>
             )}
 
-            <div className='document-listing-table-body-container'>
+            <Container className='d-flex column p-relative document-listing-table-body-container'>
                 {!hasNoData && useVirtualization && Array.isArray(data) ? (
                     <div style={{ height: listHeight, overflow: 'auto' }} onScroll={(e) => handleScroll(e)}>
                         <List
@@ -242,10 +243,10 @@ const DocumentListingTable = ({
                         </div>
                     </div>
                 )}
-            </div>
+            </Container>
 
             <div className='document-listing-table-footer-container' />
-        </div>
+        </Container>
     );
 };
 

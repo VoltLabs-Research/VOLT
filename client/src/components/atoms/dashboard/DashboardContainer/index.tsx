@@ -20,16 +20,17 @@
  * SOFTWARE.
  */
 
+import Container from '@/components/primitives/Container';
 import './DashboardContainer.css';
 
 const DashboardContainer = ({ children, pageName, className = '' }) => {
 
     return(
-        <div className={'dashboard-container '.concat(className + '-wrapper')}>
-            <div className={className}>
+        <Container className={'p-2 w-max h-max dashboard-container '.concat(className + '-wrapper')}>
+            <Container className={className}>
                 {children}
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 
