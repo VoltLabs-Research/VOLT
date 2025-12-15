@@ -269,11 +269,7 @@
         padding: 1rem;
     }
 
-    .activity-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
+
 
     .activity-time {
         white-space: normal;

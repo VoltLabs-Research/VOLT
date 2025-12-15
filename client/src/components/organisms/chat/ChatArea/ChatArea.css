@@ -1,10 +1,7 @@
 /* ChatArea Component Styles */
 .chat-messages-container {
-    flex: 1;
-    display: flex;
     background: var(--color-bg);
     backdrop-filter: blur(10px);
-    position: relative;
 }
 
 .chat-box-container {
@@ -34,9 +31,7 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-    .chat-messages-container {
-        flex-direction: column;
-    }
+
 
     .chat-box-container {
         border-right: none;

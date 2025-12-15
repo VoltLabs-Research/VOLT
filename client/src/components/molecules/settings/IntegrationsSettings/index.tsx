@@ -14,25 +14,25 @@ const IntegrationsSettings: React.FC = () => {
         icon: TbBrandGithub,
         title: "GitHub",
         description: "Sync repositories and manage code",
-        action: <button className="action-button">Connect</button>
+        action: <button className="d-flex items-center gap-05 action-button">Connect</button>
     }, {
         key: "google-drive",
         icon: TbBrandGoogle,
         title: "Google Drive",
         description: "Access and sync your files",
-        action: <button className="action-button">Connect</button>
+        action: <button className="d-flex items-center gap-05 action-button">Connect</button>
     }, {
         key: "gemini",
         icon: TbBrain,
         title: "Gemini",
         description: "AI-powered assistance and analysis",
-        action: <button className="action-button">Connect</button>
+        action: <button className="d-flex items-center gap-05 action-button">Connect</button>
     }, {
         key: "openai",
         icon: TbBrandOpenai,
         title: "OpenAI",
         description: "Advanced AI models and capabilities",
-        action: <button className="action-button">Connect</button>
+        action: <button className="d-flex items-center gap-05 action-button">Connect</button>
     }];
 
     return (
@@ -70,7 +70,7 @@ const IntegrationsSettings: React.FC = () => {
                 <Title className='font-size-2-5'>Need help with integrations?</Title>
                 <Paragraph>Check our documentation or contact support for assistance with setting up third-party connections.</Paragraph>
                 <Container className="d-flex gap-1 flex-wrap">
-                    <button className="action-button">
+                    <button className="d-flex items-center gap-05 action-button">
                         <TbFileText size={16} />
                         Documentation
                     </button>

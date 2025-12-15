@@ -10,9 +10,6 @@
     color: #cacaca;
     line-height: 1.6rem;
     width: 400px;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
     /*cursor: grab;*/
     opacity: 1;
     transition: opacity 500ms ease;
@@ -28,14 +25,12 @@
 
 @media screen and (max-width: 768px) {
     .editor-floating-container {
-    left: 0;
-    right: 0;
-    width: auto;
-    margin: 0 1rem 1rem;
-    padding: 1rem;
-    max-width: none;
-    transform: none !important;
-    /* keep it visible on mobile */
-    display: flex !important;
+        left: 0;
+        right: 0;
+        width: auto;
+        margin: 0 1rem 1rem;
+        padding: 1rem;
+        max-width: none;
+        transform: none !important;
     }
 }

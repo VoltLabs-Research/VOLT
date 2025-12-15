@@ -78,7 +78,7 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         return (
             <Container className='d-flex column h-max gap-1'>
                 <Container className="d-flex items-center gap-1 viewer-header">
-                    <button onClick={closeFileViewer} className="back-btn-small">
+                    <button onClick={closeFileViewer} className="d-flex items-center gap-05 back-btn-small">
                         <IoArrowBack /> Back
                     </button>
                     <span>{viewingFile}</span>
@@ -114,7 +114,7 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
                                 className="file-item"
                                 onClick={() => file.isDirectory ? handleNavigate(file.name) : handleFileClick(file.name)}
                             >
-                                <span className="file-icon">
+                                <span className="d-flex items-center content-center file-icon">
                                     {file.isDirectory ? <IoFolder className="folder-icon" /> : <IoDocument className="doc-icon" />}
                                 </span>
                                 <span className="file-name">{file.name}</span>

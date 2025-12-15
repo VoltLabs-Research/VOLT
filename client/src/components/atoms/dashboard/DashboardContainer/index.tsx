@@ -23,10 +23,17 @@
 import Container from '@/components/primitives/Container';
 import './DashboardContainer.css';
 
-const DashboardContainer = ({ children, pageName, className = '' }) => {
+import type { ReactNode } from 'react';
 
-    return(
-        <Container className={'p-2 wh-max h-max sm:p-1 dashboard-container '.concat(className + '-wrapper')}>
+type DashboardContainerProps = {
+    children: ReactNode;
+    className?: string;
+};
+
+const DashboardContainer = ({ children, className = '' }: DashboardContainerProps) => {
+
+    return (
+        <Container className={'p-2 w-max flex-1 y-auto sm:p-1 dashboard-container '.concat(className + '-wrapper')}>
             <Container className={className}>
                 {children}
             </Container>

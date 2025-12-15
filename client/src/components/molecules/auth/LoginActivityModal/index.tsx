@@ -97,7 +97,7 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose
                                         {activity.success ? <TbCheck size={20} /> : <TbX size={20} />}
                                     </div>
                                     <div className="d-flex column gap-075 flex-1 activity-content">
-                                        <div className="d-flex items-center content-between gap-1 activity-header">
+                                        <div className="d-flex items-center content-between gap-1 sm:column sm:item-start sm:gap-05 activity-header">
                                             <span className="activity-title">
                                                 {activity.action === 'login' ? 'Successful Login' :
                                                     activity.action === 'failed_login' ? 'Failed Login Attempt' :

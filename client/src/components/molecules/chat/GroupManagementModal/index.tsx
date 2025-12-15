@@ -240,7 +240,7 @@ const GroupManagementModal = () => {
                 return (
                     <div className='group-management-content'>
                         <div className='group-management-section'>
-                            <div className='d-flex items-center content-between gap-1 group-management-section-header'>
+                            <div className='d-flex items-center content-between gap-1 sm:column sm:items-start group-management-section-header'>
                                 <Title className='font-size-3 group-management-section-title'>Group Information</Title>
                             </div>
                             <div className='d-flex column gap-1 group-management-form'>
@@ -275,7 +275,7 @@ const GroupManagementModal = () => {
                             </div>
                             <Button
                                 type='button'
-                                className='red-on-light sm'
+                                className='red-on-light sm d-flex content-start gap-05'
                                 title='Leave Group'
                                 onClick={handleLeaveGroup}
                                 disabled={isLoading}
@@ -292,7 +292,7 @@ const GroupManagementModal = () => {
                     <div className='group-management-content'>
                         <div className='group-management-section'>
                             {!showAddMembers && (
-                                <div className='d-flex items-center content-between gap-1 group-management-section-header'>
+                                <div className='d-flex items-center content-between gap-1 sm:column sm:items-start group-management-section-header'>
                                     <Title className='font-size-3 group-management-section-title'>Group Members</Title>
                                     {(isAdmin || isOwner) && (
                                         <Button
@@ -443,7 +443,7 @@ const GroupManagementModal = () => {
                     <div className='group-management-content'>
                         <div className='group-management-section'>
                             {!showManageAdmins && (
-                                <div className='d-flex items-center content-between gap-1 group-management-section-header'>
+                                <div className='d-flex items-center content-between gap-1 sm:column sm:items-start group-management-section-header'>
                                     <Title className='font-size-3 group-management-section-title'>Group Administrators</Title>
                                     {isOwner && (
                                         <Button

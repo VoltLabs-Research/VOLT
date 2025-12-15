@@ -69,19 +69,19 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
 
     return (
         <div className="modal-overlay">
-            <div className="modal-content">
-                <div className="modal-header">
+            <div className="d-flex column modal-content">
+                <div className="d-flex items-center content-between modal-header">
                     <Title className='font-size-2'>Edit Container: {container.name}</Title>
                     <button onClick={onClose} className="close-btn"><IoClose size={24} /></button>
                 </div>
-                <form onSubmit={handleSubmit} className="modal-form">
-                    <div className="form-section">
+                <form onSubmit={handleSubmit} className="d-flex column modal-form">
+                    <div className="d-flex column form-section">
                         <div className="section-header">
                             <label>Environment Variables</label>
-                            <button type="button" onClick={handleAddEnv} className="add-btn"><IoAdd /> Add</button>
+                            <button type="button" onClick={handleAddEnv} className="d-flex items-center add-btn"><IoAdd /> Add</button>
                         </div>
                         {env.map((e, i) => (
-                            <div key={i} className="row-inputs">
+                            <div key={i} className="d-flex items-center gap-075 row-inputs">
                                 <input
                                     placeholder="Key"
                                     value={e.key}
@@ -92,18 +92,18 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
                                     value={e.value}
                                     onChange={(ev) => handleEnvChange(i, 'value', ev.target.value)}
                                 />
-                                <button type="button" onClick={() => handleRemoveEnv(i)} className="remove-btn"><IoTrash /></button>
+                                <button type="button" onClick={() => handleRemoveEnv(i)} className="d-flex items-center content-center remove-btn"><IoTrash /></button>
                             </div>
                         ))}
                     </div>
 
-                    <div className="form-section">
+                    <div className="d-flex column form-section">
                         <div className="section-header">
                             <label>Port Bindings</label>
-                            <button type="button" onClick={handleAddPort} className="add-btn"><IoAdd /> Add</button>
+                            <button type="button" onClick={handleAddPort} className="d-flex items-center add-btn"><IoAdd /> Add</button>
                         </div>
                         {ports.map((p, i) => (
-                            <div key={i} className="row-inputs">
+                            <div key={i} className="d-flex items-center gap-075 row-inputs">
                                 <input
                                     type="number"
                                     placeholder="Container Port"
@@ -116,12 +116,12 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
                                     value={p.public}
                                     onChange={(ev) => handlePortChange(i, 'public', ev.target.value)}
                                 />
-                                <button type="button" onClick={() => handleRemovePort(i)} className="remove-btn"><IoTrash /></button>
+                                <button type="button" onClick={() => handleRemovePort(i)} className="d-flex items-center content-center remove-btn"><IoTrash /></button>
                             </div>
                         ))}
                     </div>
 
-                    <div className="modal-actions">
+                    <div className="d-flex content-end gap-1 modal-actions">
                         <button type="button" onClick={onClose} className="cancel-btn">Cancel</button>
                         <button type="submit" disabled={loading} className="submit-btn">
                             {loading ? 'Updating...' : 'Save Changes(Recreate)'}

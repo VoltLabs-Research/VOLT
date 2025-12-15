@@ -151,7 +151,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
 
     return (
         <div className={`recent-activity-container ${className}`}>
-            <div className="d-flex items-center content-between recent-activity-header">
+            <div className="d-flex items-center content-between sm:column sm:item-start sm:gap-1 recent-activity-header">
                 <Title className="d-flex items-center gap-05 font-size-3 recent-activity-title">
                     <HiChartBar className="recent-activity-icon" />
                     Recent Activity
@@ -183,7 +183,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
 
             <div className="d-flex column gap-075 recent-activity-list">
                 {requests.map((request) => (
-                    <div key={request._id} className="d-flex items-center gap-1 recent-activity-item">
+                    <div key={request._id} className="d-flex items-center gap-1 sm:column sm:item-start sm:gap-075 recent-activity-item">
                         <div className="flex-1 d-flex column gap-05 recent-activity-item-content">
                             <div className="d-flex items-center gap-075 recent-activity-item-header">
                                 <span

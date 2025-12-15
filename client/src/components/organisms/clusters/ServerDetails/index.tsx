@@ -54,10 +54,10 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
   }
 
   return (
-    <div className="server-details-overlay" onClick={onClose}>
-      <div className="server-details-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="server-details-header">
-          <div className="server-details-header-left">
+    <div className="d-flex items-center content-center server-details-overlay" onClick={onClose}>
+      <div className="d-flex column server-details-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="d-flex content-between items-center server-details-header">
+          <div className="d-flex items-center gap-1 server-details-header-left">
             <Server className="server-details-header-icon" />
             <div>
               <Title className='font-size-4 server-details-title'>{server.id}</Title>
@@ -66,8 +66,8 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
               </Paragraph>
             </div>
           </div>
-          <div className="server-details-header-right">
-            <div className="server-details-badges">
+          <div className="d-flex items-center gap-1 server-details-header-right">
+            <div className="d-flex gap-05 server-details-badges">
               <span className="server-details-badge">{server.region}</span>
               <span className="server-details-badge" style={{
                 background: getStatusColor(server.status) + '20',
@@ -77,21 +77,21 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
                 {server.status}
               </span>
             </div>
-            <button className="server-details-close" onClick={onClose}>
+            <button className="d-flex items-center content-center server-details-close" onClick={onClose}>
               <X />
             </button>
           </div>
         </div>
 
-        <div className="server-details-tabs">
+        <div className="d-flex gap-025 server-details-tabs">
           <button className="server-details-tab server-details-tab-active">Server Info</button>
         </div>
 
         <div className="server-details-content">
           <div className="server-details-section">
-            <Title className='font-size-3 server-details-section-title'>Summary</Title>
+            <Title className='d-flex items-center content-between font-size-3 server-details-section-title'>Summary</Title>
             <div className="server-details-grid-3">
-              <div className="server-details-info-card">
+              <div className="d-flex column server-details-info-card">
                 <span className="server-details-info-label">Name</span>
                 <span className="server-details-info-value">{server.id}</span>
               </div>

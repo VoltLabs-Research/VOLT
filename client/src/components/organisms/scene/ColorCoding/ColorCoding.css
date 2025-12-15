@@ -1,11 +1,10 @@
-.color-coding-container{
+.color-coding-container {
     bottom: 2rem;
     overflow: hidden;
     right: 2rem;
-    display: flex;
-    flex-direction: column;
+    /* display: flex handled by EditorWidget */
 }
 
-.color-coding-footer-container .button{
+.color-coding-footer-container .button {
     width: 100%;
 }

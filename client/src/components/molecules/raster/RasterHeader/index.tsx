@@ -81,7 +81,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                 </div>
 
                 <div className='dashboard-search-container'>
-                    <div className='search-container'>
+                    <div className='d-flex gap-1 search-container'>
                         <i className='search-icon-container'>
                             <IoSearchOutline />
                         </i>

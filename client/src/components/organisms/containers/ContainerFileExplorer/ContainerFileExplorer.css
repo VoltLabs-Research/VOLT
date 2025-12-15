@@ -46,9 +46,6 @@
 }
 
 .file-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-size: 1.2rem;
 }
 
@@ -76,9 +73,6 @@
 }
 
 .back-btn-small {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
     background: transparent;
     border: 1px solid var(--border-color);
     padding: 0.25rem 0.75rem;

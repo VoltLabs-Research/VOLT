@@ -104,21 +104,21 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
         : sortedStats;
 
     return (
-        <EditorWidget draggable={false} className='statistics-results-container'>
+        <EditorWidget draggable={false} className='d-flex column gap-025 statistics-results-container'>
             {config.title && (
-                <div className='statistics-results-header'>
+                <div className='d-flex items-center content-between statistics-results-header'>
                     <Title className='font-size-3 statistics-results-title'>{config.title}</Title>
                 </div>
             )}
 
-            <div className='statistics-type-legend'>
+            <div className='d-flex column statistics-type-legend'>
                 {displayStats.map((stat: any, index: number) => {
                     const name = stat[config.nameKey || 'name'] || `Item ${index + 1}`;
                     const value = stat[config.valueKey || 'count'];
                     const percentage = stat[config.percentageKey || 'percentage'];
 
                     return (
-                        <div key={`${name}-${index}`} className='type-legend-item'>
+                        <div key={`${name}-${index}`} className='d-flex items-center gap-075 type-legend-item'>
                             <div
                                 style={{ backgroundColor: getColor(name) }}
                                 className='type-legend-color'
@@ -134,8 +134,8 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
             </div>
 
             {config.showSummary && data?.total && (
-                <div className='statistics-summary'>
-                    <div className='summary-item'>
+                <div className='d-flex gap-1 statistics-summary'>
+                    <div className='d-flex items-center gap-05 summary-item'>
                         <span className='summary-label'>Total:</span>
                         <span className='summary-value'>{formatNumber(data.total)}</span>
                     </div>

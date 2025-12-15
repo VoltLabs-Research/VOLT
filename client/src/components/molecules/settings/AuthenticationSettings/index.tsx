@@ -100,7 +100,7 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
                     ? `Last changed ${passwordInfo.lastChanged}`
                     : "Password information unavailable",
             right: (
-                <button className="action-button" onClick={() => setShowPasswordForm(!showPasswordForm)}>
+                <button className="d-flex items-center gap-05 action-button" onClick={() => setShowPasswordForm(!showPasswordForm)}>
                     <TbEdit size={16} />
                     {showPasswordForm ? "Cancel" : "Change"}
                 </button>
@@ -164,7 +164,7 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
             title: "Login Activity",
             description: "Monitor your account access and sessions",
             right: (
-                <button className="action-button" onClick={onOpenLoginActivity}>
+                <button className="d-flex items-center gap-05 action-button" onClick={onOpenLoginActivity}>
                     <TbDots size={16} />
                     View
                 </button>

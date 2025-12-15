@@ -1,5 +1,4 @@
 import FormField from '@/components/molecules/form/FormField';
-import './FormSection.css';
 import Container from '@/components/primitives/Container';
 
 const FormSection = ({
@@ -8,7 +7,7 @@ const FormSection = ({
     onToggle,
     children
 }) => {
-    return(
+    return (
         <Container>
             <Container className='d-flex column gap-1'>
                 <FormField

@@ -60,7 +60,7 @@ const getMessageForStage = (stage: ProcessingStage): string => {
     }
 };
 
-const getInitialsFromUser = (user): string => {
+const getInitialsFromUser = (user: Trajectory['createdBy']): string => {
     if (!user) return '?';
     if (user.firstName && user.lastName) {
         return (user.firstName[0] + user.lastName[0]).toUpperCase();
@@ -75,7 +75,7 @@ const getInitialsFromUser = (user): string => {
     return '?';
 };
 
-const getUserDisplayName = (user): string => {
+const getUserDisplayName = (user: Trajectory['createdBy']): string => {
     if (!user) return 'Unknown';
     if (user.firstName && user.lastName) {
         return `${user.firstName} ${user.lastName}`;
@@ -187,7 +187,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                 </Container>
 
                 <motion.figcaption
-                    className='simulation-caption-container'
+                    className='d-flex column gap-075 simulation-caption-container'
                     initial={false}
                     whileHover="hover"
                     animate="normal"
@@ -203,7 +203,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                 >
                     {trajectory?.createdBy?.firstName && (
                         <motion.div
-                            className='simulation-caption-header'
+                            className='d-flex items-center simulation-caption-header'
                             variants={{
                                 normal: {
                                     padding: 0
@@ -215,7 +215,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                         >
                             <motion.div
-                                className='simulation-user-avatar'
+                                className='d-flex items-center content-center simulation-user-avatar'
                                 variants={{
                                     normal: {
                                         scale: 0.8,
@@ -233,7 +233,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                                 </span>
                             </motion.div>
                             <motion.div
-                                className='simulation-user-info'
+                                className='d-flex column content-center simulation-user-info'
                                 variants={{
                                     normal: {
                                         width: 0,
@@ -259,14 +259,14 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                     )}
                 </motion.figcaption>
 
-                <div className='simulation-info-footer'>
-                    <div className='simulation-caption-left-container'>
+                <div className='d-flex items-start gap-05 simulation-info-footer'>
+                    <div className='d-flex column gap-05 simulation-caption-left-container'>
                         <EditableTrajectoryName
                             trajectory={trajectory}
                             className='simulation-caption-title'
                         />
 
-                        <div className='simulation-caption-left-bottom-container'>
+                        <div className='d-flex items-center gap-05 simulation-caption-left-bottom-container'>
                             {showProcessingLoader ? (
                                 <ProcessingLoader
                                     message={processingStatus.message}

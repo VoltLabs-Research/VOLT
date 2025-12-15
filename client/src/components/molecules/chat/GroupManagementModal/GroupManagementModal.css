@@ -362,8 +362,7 @@
 
 .group-management-danger-zone .button {
     width: fit-content;
-    justify-content: flex-start;
-    gap: 0.5rem;
+    width: fit-content;
     position: relative;
     z-index: 1;
     background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
@@ -394,10 +393,7 @@
         width: 70%;
     }
 
-    .group-management-section-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
+    /* .group-management-section-header handled by utility classes */
 
     .group-management-actions .button,
     .group-management-form-actions .button {

@@ -35,10 +35,7 @@
     opacity: 0.7;
 }
 
-.search-breadcrumb-container {
-    display: flex;
-    align-items: center;
-}
+/* .search-breadcrumb-container handled by utility classes */
 
 .search-breadcrumb-name {
     font-size: .85rem;

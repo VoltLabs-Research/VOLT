@@ -118,9 +118,6 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: var(--invite-text-secondary);
     transition: all 0.2s ease;
     padding: 10px;
@@ -185,9 +182,6 @@
 }
 
 .team-invite-invite-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     gap: 6px;
     padding: 10px 20px;
     border: none;
@@ -309,9 +303,6 @@
 }
 
 .team-invite-member-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     padding: 10px 20px;
     gap: 12px;
     transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -323,8 +314,6 @@
 }
 
 .team-invite-member-info {
-    display: flex;
-    align-items: center;
     gap: 12px;
     flex: 1;
     min-width: 0;
@@ -334,8 +323,6 @@
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
     justify-content: center;
     color: white;
     font-size: 13px;
@@ -373,8 +360,6 @@
 }
 
 .team-invite-member-role {
-    display: flex;
-    align-items: center;
     gap: 6px;
 }
 
@@ -425,8 +410,6 @@
 }
 
 .team-invite-general-item {
-    display: flex;
-    align-items: center;
     gap: 12px;
     border-radius: 10px;
 }
@@ -435,8 +418,6 @@
     width: 32px;
     height: 32px;
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
     justify-content: center;
     color: var(--invite-text-primary);
     background: var(--invite-input-bg);
@@ -482,8 +463,6 @@
 }
 
 .team-invite-footer-link {
-    display: flex;
-    align-items: center;
     gap: 8px;
     background: transparent;
     border: none;

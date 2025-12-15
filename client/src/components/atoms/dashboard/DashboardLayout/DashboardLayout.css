@@ -27,9 +27,7 @@
     min-width: 18px;
     height: 18px;
     border-radius: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border-radius: 9px;
     padding: 0 4px;
     animation: badge-pop 0.3s cubic-bezier(0.175, 00.32, 1.275);
 }
@@ -141,10 +139,7 @@
     padding: .5rem;
     width: 2.5rem;
     height: 2.5rem;
-    display: flex;
     backdrop-filter: blur(5px);
-    justify-content: center;
-    align-items: center;
 
     border: 1px solid var(--color-border);
     background-color: var(--color-surface-2);
@@ -338,22 +333,13 @@
 .mobile-dropdown-section {
     padding: 12px;
     border-bottom: 1px solid var(--color-border);
-    display: flex;
-    align-items: center;
-    gap: 10px;
 }
 
 .mobile-nav-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
     width: 100%;
 }
 
 .mobile-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
     padding: 12px 14px;
     border-radius: 14px;
     background: color-mix(in srgb, var(--color-surface-2) 92%, transparent);

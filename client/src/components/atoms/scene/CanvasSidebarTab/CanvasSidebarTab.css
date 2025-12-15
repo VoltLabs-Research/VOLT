@@ -1,23 +1,20 @@
-.editor-sidebar-option-container.selected{
+.editor-sidebar-option-container.selected {
     background-color: rgba(49, 49, 49, 0.8);
 }
 
-.editor-sidebar-option-container:not(.selected):hover{
+.editor-sidebar-option-container:not(.selected):hover {
     background-color: rgba(49, 49, 49, 0.3);
 }
 
-.editor-sidebar-option-container{
+.editor-sidebar-option-container {
     border-radius: 5rem;
     width: 48%;
     transition: .1s;
     cursor: pointer;
     height: 45px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
-.editor-sidebar-option-title{
+.editor-sidebar-option-title {
     font-size: 1.05rem;
     font-weight: 500;
 }

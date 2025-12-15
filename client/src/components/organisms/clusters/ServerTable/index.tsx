@@ -50,13 +50,13 @@ export function ServerTable() {
         <ServerDetails server={selectedServer} onClose={() => setSelectedServer(null)} />
       )}
       <Container className="server-table-container">
-        <Container className="server-table-header">
+        <Container className="d-flex items-center content-between server-table-header">
           <Container className="d-flex items-center gap-075">
             <Container className="server-table-title-bar" />
             <Title className='font-size-3 server-table-title'>Server Summary</Title>
           </Container>
           <Container className="d-flex items-center gap-05">
-            <button className="server-table-btn">
+            <button className="d-flex items-center gap-025 server-table-btn">
               Region
               <ChevronDown className="server-table-icon-sm" />
             </button>
@@ -68,7 +68,7 @@ export function ServerTable() {
               Sort
               <ChevronDown className="server-table-icon-sm" />
             </button>
-            <button className="server-table-icon-btn">
+            <button className="d-flex items-center content-center server-table-icon-btn">
               <RefreshCw className="server-table-icon" />
             </button>
             <button className="server-table-icon-btn">

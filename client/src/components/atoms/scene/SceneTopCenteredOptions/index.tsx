@@ -27,8 +27,8 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
         let rafId: number | null = null;
 
         const updateZoom = () => {
-            try{
-                if(!scene3DRef?.current?.getCurrentZoom){
+            try {
+                if (!scene3DRef?.current?.getCurrentZoom) {
                     rafId = requestAnimationFrame(updateZoom);
                     return;
                 }
@@ -36,7 +36,7 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
                 const newZoom = scene3DRef.current.getCurrentZoom();
 
                 // Only update if zoom changed significantly(more than 1%)
-                if(Math.abs(newZoom - lastZoomRef.current) > 1) {
+                if (Math.abs(newZoom - lastZoomRef.current) > 1) {
                     lastZoomRef.current = newZoom;
                     // Find closest preset
                     const closest = ZOOM_PRESETS.reduce((prev, curr) =>
@@ -44,7 +44,7 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
                     );
                     setCurrentZoom(closest.toString());
                 }
-            }catch(error){
+            } catch (error) {
                 console.error('Error updating zoom:', error);
             }
 
@@ -53,8 +53,8 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
 
         rafId = requestAnimationFrame(updateZoom);
 
-        return() => {
-            if(rafId !== null){
+        return () => {
+            if (rafId !== null) {
                 cancelAnimationFrame(rafId);
             }
         };
@@ -74,20 +74,20 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
         lastZoomRef.current = zoomPercent;
 
         // Use scene3DRef to zoom via OrbitControls if available
-        if(scene3DRef?.current?.zoomTo){
+        if (scene3DRef?.current?.zoomTo) {
             scene3DRef.current.zoomTo(zoomPercent);
         }
     }, [scene3DRef]);
 
-    return(
-        <EditorWidget className='editor-top-centered-options-container' draggable={false}>
+    return (
+        <EditorWidget className='d-flex items-center gap-1 row editor-top-centered-options-container' draggable={false}>
             {[
                 [GrHomeRounded, () => navigate('/dashboard')],
-                [MdOutlineLightMode, () => {}],
-                [LuLayoutDashboard, () => {}]
+                [MdOutlineLightMode, () => { }],
+                [LuLayoutDashboard, () => { }]
             ].map((item, index) => {
                 const [Icon, callback] = item as [any, () => void];
-                return(
+                return (
                     <i
                         onClick={callback}
                         className={'editor-sidebar-scene-option-icon-container '.concat((index === 0) ? 'selected' : '')}
@@ -111,12 +111,12 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
             </div>
 
             {[
-                [TbAugmentedReality2, () => {}],
-                [GoDownload, () => {}],
-                [CiShare1, () => {}]
+                [TbAugmentedReality2, () => { }],
+                [GoDownload, () => { }],
+                [CiShare1, () => { }]
             ].map((item, index) => {
                 const [Icon] = item as [any, () => void];
-                return(
+                return (
                     <i className={'editor-sidebar-scene-option-icon-container '.concat((index === 0) ? 'selected' : '')} key={index}>
                         <Icon />
                     </i>

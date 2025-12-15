@@ -49,7 +49,7 @@ const ChatArea = () => {
     const { openId: reactionsId, toggle: toggleReactions } = useToggleId<string>();
 
     return (
-        <div className='chat-messages-container'>
+        <div className='chat-messages-container d-flex flex-1 relative sm:column'>
             {currentChat ? (
                 <div className='chat-box-container d-flex column flex-1'>
                     <ChatHeader

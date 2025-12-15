@@ -67,60 +67,59 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
     }, []);
 
     useEffect(() => {
-        return() => reset();
+        return () => reset();
     }, []);
 
-    const handleConnectionSelect = async(conn: SSHConnection) => {
+    const handleConnectionSelect = async (conn: SSHConnection) => {
         setConnection(conn._id);
-        try{
+        try {
             await open('.');
-        }catch(err: any){
+        } catch (err: any) {
             showError(err.message || 'Failed to connect to SSH server');
         }
     };
 
-    const handleImport = async() => {
-        if(!selected || !selectedTeam) return;
+    const handleImport = async () => {
+        if (!selected || !selectedTeam) return;
 
-        try{
+        try {
             await importTrajectory(selectedTeam._id);
             showSuccess('Trajectory import started successfully');
-            if(onImportSuccess) onImportSuccess();
-            if(onClose) onClose();
-        }catch(err: any){
+            if (onImportSuccess) onImportSuccess();
+            if (onClose) onClose();
+        } catch (err: any) {
             showError(err.message || 'Failed to import trajectory');
         }
     };
 
-    const handleDeleteConnection = async(conn: SSHConnection) => {
-        if(!confirm(`Delete connection "${conn.name}"?`)) return;
+    const handleDeleteConnection = async (conn: SSHConnection) => {
+        if (!confirm(`Delete connection "${conn.name}"?`)) return;
 
-        try{
+        try {
             await deleteConnection(conn._id);
-            if(connectionId === conn._id){
+            if (connectionId === conn._id) {
                 reset();
             }
             showSuccess('Connection deleted successfully');
-        }catch(err: any){
+        } catch (err: any) {
             showError(err.message || 'Failed to delete connection');
         }
     };
 
     const navItems = (
         <>
-            <div className="ssh-connections-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <div className="d-flex column gap-025 ssh-connections-list">
                 {connections.map((conn) => (
                     <div
                         key={conn._id}
-                        className={`file-explorer-nav-item ${connectionId === conn._id ? 'active' : ''}`}
+                        className={`d-flex items-center content-between pointer file-explorer-nav-item ${connectionId === conn._id ? 'active' : ''}`}
                         onClick={() => handleConnectionSelect(conn)}
-                        style={{ justifyContent: 'space-between', display: 'flex', alignItems: 'center', cursor: 'pointer' }}
                     >
-                        <div className="file-explorer-list-name-container">
+                        <div className="d-flex items-center gap-05 file-explorer-list-name-container">
                             <TbServer className="file-explorer-icon" />
                             <span className="file-explorer-nav-item-title">{conn.name}</span>
                         </div>
-                        <div className="ssh-connection-actions" style={{ display: 'flex', gap: '0.25rem', opacity: 0.5 }}>
+                        <div className="d-flex gap-025 ssh-connection-actions" style={{ opacity: 0.5 }}>
                             <LuSettings
                                 size={14}
                                 onClick={(e) => { e.stopPropagation(); setEditingConnection(conn); setShowConnectionModal(true); }}
@@ -136,7 +135,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
                 ))}
             </div>
             <button
-                className="ssh-add-btn"
+                className="d-flex items-center content-center gap-05 ssh-add-btn"
                 onClick={() => { setEditingConnection(null); setShowConnectionModal(true); }}
                 style={{
                     marginTop: '1rem',
@@ -146,10 +145,6 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
                     padding: '0.5rem',
                     borderRadius: '0.25rem',
                     cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
                     fontSize: '0.85rem'
                 }}
             >
@@ -173,7 +168,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
     );
 
     const breadcrumbsContent = breadcrumbs.map((b, i) => (
-        <div key={i} className="search-breadcrumb-container">
+        <div key={i} className="d-flex items-center search-breadcrumb-container">
             <span
                 className="search-breadcrumb-name"
                 onClick={() => open(b.relPath)}
@@ -193,10 +188,10 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
             {selected && (
                 <button
                     onClick={handleImport}
-                    className="breadcrumb-btn"
+                    className="d-flex items-center breadcrumb-btn"
                     title="Import Trajectory"
                     disabled={importing}
-                    style={{ background: 'var(--accent-blue)', color: 'white', padding: '0.25rem 0.75rem', border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    style={{ background: 'var(--accent-blue)', color: 'white', padding: '0.25rem 0.75rem', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                 >
                     {importing ? <CircularProgress size={14} color="inherit" /> : <LuDownload />}
                     <span style={{ marginLeft: '0.5rem' }}>Import</span>
@@ -238,9 +233,9 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
                         onClick={() => select(entry.relPath)}
                         onDoubleClick={() => entry.type === 'dir' ? enter(entry.name) : null}
                     >
-                        <div className="file-explorer-list-column file-explorer-list-name-container">
+                        <div className="d-flex items-center gap-05 file-explorer-list-column file-explorer-list-name-container">
                             <span className="file-explorer-file-icon-container">
-                             {entry.type === 'dir' ? <LuFolder /> : <LuFile />}
+                                {entry.type === 'dir' ? <LuFolder /> : <LuFile />}
                             </span>
                             <span className="file-explorer-file-name">{entry.name}</span>
                         </div>
@@ -253,7 +248,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
         </>
     );
 
-    return(
+    return (
         <>
             <FileExplorerWindow
                 title="SSH Connections"

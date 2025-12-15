@@ -12,7 +12,7 @@ const DataExportSettings: React.FC = () => {
         title: "Export Data",
         description: "Download all your data in JSON format",
         right: (
-            <button className="action-button">
+            <button className="d-flex items-center gap-05 action-button">
                 <TbDownload size={16} />
                 Export
             </button>
@@ -23,7 +23,7 @@ const DataExportSettings: React.FC = () => {
         title: "Delete Account",
         description: "Permanently delete your account and all data",
         right: (
-            <button className="action-button danger">
+            <button className="d-flex items-center gap-05 action-button danger">
                 <TbX size={16} />
                 Delete
             </button>

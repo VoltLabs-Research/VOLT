@@ -68,7 +68,7 @@ const SimulationCardUsers: React.FC<SimulationCardUsersProps> = memo(({ trajecto
                         >
                             <Container className="d-flex flex-center overflow-hidden p-relative card-user-avatar">
                                 <Container className="avatar-initials">{getInitialsFromUser(user)}</Container>
-                                {user.isAnonymous && <div className="avatar-anonymous-badge">?</div>}
+                                {user.isAnonymous && <div className="d-flex items-center content-center avatar-anonymous-badge">?</div>}
                             </Container>
                         </motion.div>
                     ))}

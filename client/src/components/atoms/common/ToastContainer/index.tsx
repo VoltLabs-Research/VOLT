@@ -11,13 +11,13 @@ import Container from '@/components/primitives/Container';
 const getIcon = (type: ToastType) => {
   switch (type) {
     case 'error':
-      return <MdError className='toast-icon' />;
+      return <MdError className='toast-icon f-shrink-0' />;
     case 'success':
-      return <MdCheckCircle className='toast-icon' />;
+      return <MdCheckCircle className='toast-icon f-shrink-0' />;
     case 'warning':
-      return <MdWarning className='toast-icon' />;
+      return <MdWarning className='toast-icon f-shrink-0' />;
     case 'info':
-      return <MdInfo className='toast-icon' />;
+      return <MdInfo className='toast-icon f-shrink-0' />;
     default:
       return null;
   }
@@ -27,13 +27,13 @@ const Toast: React.FC<{ toast: Toast }> = ({ toast }) => {
   const removeToast = useToastStore((s) => s.removeToast);
 
   return (
-    <div className={`toast toast - ${toast.type} `}>
-      <div className='toast-content'>
+    <div className={`d-flex items-center content-between gap-1 toast toast-${toast.type}`}>
+      <div className='d-flex items-center gap-075 flex-1 toast-content'>
         {getIcon(toast.type)}
         <Paragraph className='toast-message'>{toast.message}</Paragraph>
       </div>
       <button
-        className='toast-close-btn'
+        className='d-flex items-center content-center f-shrink-0 toast-close-btn'
         onClick={() => removeToast(toast.id)}
         aria-label='Close notification'
       >

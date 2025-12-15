@@ -1,4 +1,4 @@
-.plugin-builder-palette-list-container{
+.plugin-builder-palette-list-container {
     overflow: scroll;
     padding: 2rem;
     /* TODO: */
@@ -6,9 +6,6 @@
 }
 
 .plugin-sidebar-back-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     background: var(--gray-100);
     border: 1px solid var(--gray-300);
     border-radius: 6px;

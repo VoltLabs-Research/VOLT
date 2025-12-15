@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { useEffect, useState } from 'react';
 import useTrajectoryFS, { type FsEntry } from '@/stores/trajectory-vfs';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
@@ -193,7 +194,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
 
     const FileRowSkeleton = () => (
         <div className='file-explorer-list-row'>
-            <div className='file-explorer-list-column file-explorer-list-name-container'>
+            <div className='d-flex items-center gap-05 file-explorer-list-column file-explorer-list-name-container'>
                 <Skeleton variant="circular" width={18} height={18} />
                 <Skeleton variant="text" width="60%" height={18} />
             </div>
@@ -243,7 +244,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
     );
 
     const bottomNavItemsContent = bottomNavIcons.map(({ Icon, title }, index) => (
-        <div className='file-explorer-left-bottom-nav-icon-container' key={'bottom-icon-' + index}>
+        <div className='d-flex items-center gap-1 file-explorer-left-bottom-nav-icon-container' key={'bottom-icon-' + index}>
             <i className='file-explorer-left-bottom-nav-icon'>
                 <Icon size={15} />
             </i>
@@ -265,7 +266,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
         <BreadcrumbsSkeleton />
     ) : (
         breadcrumbs.map(({ name }, i) => (
-            <div className='search-breadcrumb-container' key={`${name}-${i}`}>
+            <div className='d-flex items-center search-breadcrumb-container' key={`${name}-${i}`}>
                 <Paragraph className='search-breadcrumb-name'>{name}</Paragraph>
             </div>
         ))
@@ -294,7 +295,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
             onDoubleClick={() => handleDoubleClick(e)}
             onClick={() => select(e.relPath)}
         >
-            <div className='file-explorer-list-column file-explorer-list-name-container'>
+            <div className='d-flex items-center gap-05 file-explorer-list-column file-explorer-list-name-container'>
                 <i className='file-explorer-file-icon-container'>
                     {e.type === 'dir' ? <LuFolder /> : <LuFile />}
                 </i>
@@ -346,19 +347,13 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                     minWidth={400}
                     minHeight={400}
                 >
-                    <div className={`trajectory-fs-preview-wrapper ${previewMaximized ? 'maximized' : ''}`} style={{
+                    <div className={`d-flex column gap-1 trajectory-fs-preview-wrapper ${previewMaximized ? 'maximized' : ''}`} style={{
                         borderRadius: '8px',
                         padding: '1rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '1rem',
                     }}>
                         <div
-                            className='trajectory-fs-preview-header'
+                            className='d-flex column gap-05 trajectory-fs-preview-header'
                             style={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '0.5rem',
                                 cursor: 'grab',
                                 userSelect: 'none',
                             }}
@@ -369,31 +364,25 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                                 onMinimize={() => setPreviewMinimized(true)}
                             />
 
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
+                            <div className="d-flex items-center content-between" style={{
                                 borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
                                 paddingBottom: '0.75rem',
                             }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <div className="d-flex items-center gap-05">
                                     <LuFile size={20} />
                                     <span style={{ fontSize: '14px', fontWeight: 500 }}>
                                         {previewFileName}
                                     </span>
                                 </div>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <div className="d-flex gap-05">
                                     <i
                                         onClick={handleDownloadPreview}
                                         style={{
                                             cursor: 'pointer',
                                             padding: '0.5rem',
                                             borderRadius: '4px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
                                         }}
-                                        className='trajectory-fs-preview-icon'
+                                        className='d-flex items-center content-center trajectory-fs-preview-icon'
                                     >
                                         <LuDownload size={20} />
                                     </i>
@@ -401,10 +390,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                             </div>
                         </div>
 
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
+                        <div className="d-flex items-center content-center" style={{
                             minWidth: '400px',
                             minHeight: '400px',
                             maxWidth: '80vw',

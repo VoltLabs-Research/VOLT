@@ -198,7 +198,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     <button className='team-invite-tab active'>Share</button>
                     <button className='team-invite-tab' style={{ opacity: 0.5, cursor: 'not-allowed' }}>Publish</button>
                 </div>
-                <button className='team-invite-close' onClick={onClose} aria-label='Close'>
+                <button className='d-flex items-center content-center team-invite-close' onClick={onClose} aria-label='Close'>
                     <IoClose size={20} />
                 </button>
             </div>
@@ -216,7 +216,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                         disabled={loading}
                     />
                     <button
-                        className={`team-invite-invite-btn team-invite-invite-btn--${buttonState}`}
+                        className={`d-flex items-center content-center team-invite-invite-btn team-invite-invite-btn--${buttonState}`}
                         onClick={handleAddMember}
                         disabled={loading}
                     >
@@ -264,10 +264,10 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                         </div>
                     ) : (
                         members.map((member) => (
-                            <div key={member.email} className='team-invite-member-item'>
-                                <div className='team-invite-member-info'>
+                            <div key={member.email} className='d-flex items-center content-between gap-075 team-invite-member-item'>
+                                <div className='d-flex items-center gap-075 team-invite-member-info'>
                                     <div
-                                        className='team-invite-avatar'
+                                        className='d-flex items-center content-center team-invite-avatar'
                                         style={{ backgroundColor: member.avatar ? 'transparent' : getAvatarColor(member.email) }}
                                     >
                                         {member.avatar ? (
@@ -285,7 +285,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                                         {member.name && member.name !== member.email && <Paragraph className='team-invite-member-email'>{member.email}</Paragraph>}
                                     </div>
                                 </div>
-                                <div className='team-invite-member-role'>
+                                <div className='d-flex items-center gap-05 team-invite-member-role'>
                                     <Select
                                         options={[
                                             { value: 'Can view', title: 'Can view' },
@@ -309,8 +309,8 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     <div className='team-invite-general-header'>
                         <Title className='font-size-2-5 team-invite-general-title'>General Access</Title>
                     </div>
-                    <div className='team-invite-general-item'>
-                        <div className='team-invite-general-icon'>
+                    <div className='d-flex items-center gap-075 team-invite-general-item'>
+                        <div className='d-flex items-center content-center team-invite-general-icon'>
                             <MdPublic size={18} />
                         </div>
                         <div className='team-invite-general-info'>
@@ -332,10 +332,10 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 </div>
 
                 <div className='team-invite-footer d-flex gap-05 content-between f-shrink-0'>
-                    <button className='team-invite-footer-link'>
+                    <button className='d-flex items-center gap-05 team-invite-footer-link'>
                         <MdContentCopy size={16} /> Copy link
                     </button>
-                    <button className='team-invite-footer-link'>
+                    <button className='d-flex items-center gap-05 team-invite-footer-link'>
                         <IoBook size={16} /> Learn more
                     </button>
                 </div>

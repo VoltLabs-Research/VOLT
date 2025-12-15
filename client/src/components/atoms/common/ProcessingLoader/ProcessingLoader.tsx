@@ -28,7 +28,7 @@ import Paragraph from '@/components/primitives/Paragraph';
 interface ProcessingLoaderProps {
     message?: string;
     completionRate?: number;
-    className: string,
+    className?: string,
     isVisible: boolean;
     showProgress?: boolean;
 }

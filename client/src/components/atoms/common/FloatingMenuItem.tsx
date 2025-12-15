@@ -7,9 +7,9 @@ const FloatingMenuItem: React.FC<FloatingMenuItemProps> = ({
     onClick,
     onItemClick
 }) => {
-    return(
+    return (
         <div
-            className='action-based-floating-option-container'
+            className='d-flex items-center gap-2 action-based-floating-option-container'
             onClick={(e) => onItemClick(onClick, e)}
         >
             <i className='action-based-floating-option-icon-container'>

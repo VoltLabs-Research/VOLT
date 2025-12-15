@@ -18,7 +18,7 @@ export interface EditorWidgetRef {
 }
 
 const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>((
-  { children, className = '', style = {}, draggable = true }, ref
+    { children, className = '', style = {}, draggable = true }, ref
 ) => {
     const isSceneInteracting = useEditorUIStore((s) => s.isSceneInteracting);
     const innerRef = React.useRef<any | null>(null);
@@ -26,11 +26,11 @@ const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>((
     useImperativeHandle(ref, () => ({
         getElement: () => innerRef.current?.getElement() ?? null,
         resetPosition: () => innerRef.current?.resetPosition(),
-        setPosition: (x: number, y: number) =>   innerRef.current?.setPosition(x, y),
+        setPosition: (x: number, y: number) => innerRef.current?.setPosition(x, y),
         getPosition: () => innerRef.current?.getPosition() ?? { x: 0, y: 0 },
     }), []);
 
-    return(
+    return (
         <Draggable
             ref={innerRef}
             enabled={draggable}
@@ -39,7 +39,7 @@ const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>((
             scaleWhileDragging={0.95}
             bounds="parent"
             grid={undefined}
-            className={`editor-floating-container ${isSceneInteracting ? 'dimmed' : ''} ${className}`}
+            className={`d-flex gap-1 editor-floating-container ${isSceneInteracting ? 'dimmed' : ''} ${className}`}
             style={style}
         >
             {children}

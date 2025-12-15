@@ -26,10 +26,6 @@
     border-radius: 0;
 }
 
-.search-breadcrumb-container {
-    display: flex;
-    align-items: center;
-}
 
 .file-explorer-left-top-container {
     padding: 1rem;
@@ -41,12 +37,7 @@
     opacity: .4;
 }
 
-.file-explorer-left-bottom-nav-icon-container {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    gap: 1rem;
-}
+
 
 .file-explorer-left-bottom-nav-icon-container:hover {
     opacity: .8;
@@ -60,11 +51,7 @@
     width: 80%;
 }
 
-.file-explorer-nav {
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-}
+
 
 .file-explorer-nav-title {
     font-size: .9rem;
@@ -120,11 +107,6 @@
     min-height: 0;
 }
 
-.file-explorer-list-name-container {
-    display: flex;
-    align-items: center;
-    gap: .5rem;
-}
 
 .file-explorer-list-headrow .file-explorer-list-column {
     text-transform: capitalize;

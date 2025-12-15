@@ -1,21 +1,17 @@
-.editor-top-centered-options-container .editor-sidebar-scene-option-icon-container{
+.editor-top-centered-options-container .editor-sidebar-scene-option-icon-container {
     background-color: transparent;
     transition: .1s;
 }
 
-.editor-top-centered-options-container .editor-sidebar-scene-option-icon-container:hover{
+.editor-top-centered-options-container .editor-sidebar-scene-option-icon-container:hover {
     background-color: #212121;
 }
 
-.editor-top-centered-options-container{
+.editor-top-centered-options-container {
     position: absolute;
     top: 2rem;
     left: 50%;
     transform: translate(-50%, 0) !important;
-    display: flex !important;
-    gap: 1rem;
-    align-items: center;
-    flex-direction: row;
     height: 55px;
     margin: 0 auto;
     width: auto;
@@ -28,19 +24,19 @@
     z-index: 100;
 }
 
-@media screen and (max-width: 768px){
-    .editor-top-centered-options-container{
+@media screen and (max-width: 768px) {
+    .editor-top-centered-options-container {
         width: auto;
         gap: .1rem;
         top: 1rem;
         z-index: 20;
     }
 
-    .editor-top-centered-options-container .editor-sidebar-scene-option-icon-container{
+    .editor-top-centered-options-container .editor-sidebar-scene-option-icon-container {
         font-size: .8rem;
     }
 
-    .editor-top-centered-options-container{
+    .editor-top-centered-options-container {
         position: absolute;
         width: fit-content;
         left: 50%;

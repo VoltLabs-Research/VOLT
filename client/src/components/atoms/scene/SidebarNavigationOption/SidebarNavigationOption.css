@@ -1,8 +1,5 @@
 .sidebar-nav-option-container{
-    display: flex;
-    cursor: pointer;
     padding: .8rem;
-    align-items: center;
     gap: .8rem;
 }
 

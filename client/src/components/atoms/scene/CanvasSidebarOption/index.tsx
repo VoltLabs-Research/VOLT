@@ -26,10 +26,10 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSel
     return (
         <>
             <div
-                className={`editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''}`}
+                className={`d-flex content-between items-center editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''}`}
                 onClick={() => onSelect(option)}
             >
-                <div className='editor-sidebar-scene-option-left-container'>
+                <div className='d-flex items-center gap-1 editor-sidebar-scene-option-left-container'>
                     <i className='editor-sidebar-scene-option-icon-container'>
                         <option.Icon />
                     </i>
@@ -53,7 +53,7 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSel
                 <div className={`editor-sidebar-scene-option-select-container`}>
                     {option.options.map(({ title, modifierId }, index) => (
                         <div
-                            className={`editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''}`}
+                            className={`d-flex content-between items-center editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''}`}
                             onClick={() => onSelect({ title, modifierId })}
                             key={title + '-' + index}
                         >

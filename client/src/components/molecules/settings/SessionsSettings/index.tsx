@@ -63,7 +63,7 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
                                         Current
                                     </StatusBadge>
                                 ) : (
-                                    <button className='action-button danger' onClick={() => revokeSession(session._id)}>
+                                    <button className='d-flex items-center gap-05 action-button danger' onClick={() => revokeSession(session._id)}>
                                         <TbX size={16} />
                                         Revoke
                                     </button>
@@ -74,7 +74,7 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
 
                     {sessions.length > 1 && (
                         <Container className='d-flex content-center session-actions-bulk'>
-                            <button className='action-button danger' onClick={revokeAllOtherSessions}>
+                            <button className='d-flex items-center gap-05 action-button danger' onClick={revokeAllOtherSessions}>
                                 <TbX size={16} />
                                 Revoke All Other Sessions
                             </button>

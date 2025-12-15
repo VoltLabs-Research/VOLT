@@ -30,13 +30,13 @@ interface CanvasPresenceAvatarsProps {
 }
 
 const getInitialsFromUser = (user: CanvasPresenceUser): string => {
-    if(user.firstName && user.lastName){
-        return(user.firstName[0] + user.lastName[0]).toUpperCase();
+    if (user.firstName && user.lastName) {
+        return (user.firstName[0] + user.lastName[0]).toUpperCase();
     }
-    if(user.email){
+    if (user.email) {
         const parts = user.email.split('@')[0].split('.');
-        if(parts.length >= 2){
-            return(parts[0][0] + parts[1][0]).toUpperCase();
+        if (parts.length >= 2) {
+            return (parts[0][0] + parts[1][0]).toUpperCase();
         }
         return user.email[0].toUpperCase();
     }
@@ -44,26 +44,26 @@ const getInitialsFromUser = (user: CanvasPresenceUser): string => {
 };
 
 const getDisplayName = (user: CanvasPresenceUser): string => {
-    if(user.firstName && user.lastName){
+    if (user.firstName && user.lastName) {
         return `${user.firstName} ${user.lastName}`;
     }
-    if(user.email){
+    if (user.email) {
         return user.email.split('@')[0];
     }
     return 'Anonymous User';
 };
 
 const CanvasPresenceAvatars: React.FC<CanvasPresenceAvatarsProps> = ({ users }) => {
-    if(!users || users.length === 0){
+    if (!users || users.length === 0) {
         return null;
     }
 
     const displayUsers = users.slice(0, 5); // Show max 5 avatars
     const extraCount = Math.max(0, users.length - 5);
 
-    return(
+    return (
         <div className='canvas-presence-container'>
-            <div className='canvas-presence-avatars'>
+            <div className='d-flex items-center canvas-presence-avatars'>
                 <AnimatePresence mode='popLayout'>
                     {displayUsers.map((user) => (
                         <motion.div
@@ -75,12 +75,12 @@ const CanvasPresenceAvatars: React.FC<CanvasPresenceAvatarsProps> = ({ users }) 
                             transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                             title={getDisplayName(user)}
                         >
-                            <div className='canvas-presence-avatar'>
+                            <div className='d-flex items-center content-center canvas-presence-avatar'>
                                 <span className='avatar-initials'>
                                     {getInitialsFromUser(user)}
                                 </span>
                                 {user.isAnonymous && (
-                                    <div className='avatar-anonymous-badge' title='Anonymous'>
+                                    <div className='d-flex items-center content-center avatar-anonymous-badge' title='Anonymous'>
                                         ?
                                     </div>
                                 )}
@@ -101,7 +101,7 @@ const CanvasPresenceAvatars: React.FC<CanvasPresenceAvatarsProps> = ({ users }) 
                         exit={{ scale: 0, opacity: 0 }}
                         title={`${extraCount} more users`}
                     >
-                        <div className='canvas-presence-avatar canvas-presence-avatar-extra'>
+                        <div className='d-flex items-center content-center canvas-presence-avatar canvas-presence-avatar-extra'>
                             <span className='avatar-initials'>+{extraCount}</span>
                         </div>
                         <div className='avatar-tooltip'>

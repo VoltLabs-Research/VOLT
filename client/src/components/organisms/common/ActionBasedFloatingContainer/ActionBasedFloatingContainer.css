@@ -1,4 +1,4 @@
-.action-based-floating-container{
+.action-based-floating-container {
     width: 250px;
     height: auto;
     background-color: var(--color-surface-1);
@@ -10,22 +10,19 @@
     z-index: 9999;
 }
 
-.action-based-floating-option-container{
-    display: flex;
+.action-based-floating-option-container {
     width: 100%;
-    align-items: center;
-    gap: 2rem;
     padding: 1rem;
     cursor: pointer;
     transition: background-color 0.2s ease, color 0.2s ease;
     color: var(--color-text-primary);
 }
 
-.action-based-floating-option-container:hover{
+.action-based-floating-option-container:hover {
     background-color: var(--color-surface-2);
 }
 
-.action-based-floating-option-name-container{
+.action-based-floating-option-name-container {
     font-size: .95rem;
     font-weight: 500;
     color: inherit;

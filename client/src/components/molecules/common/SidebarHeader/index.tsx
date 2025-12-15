@@ -8,14 +8,14 @@ interface SidebarHeaderProps {
 }
 
 const SidebarHeader = ({ collapsed, onToggle, children }: SidebarHeaderProps) => {
-    return(
+    return (
         <Container className="d-flex content-between p-1-5 sm:p-1 editor-sidebar-header-container">
             <Container className="d-flex column gap-05">
                 {children}
             </Container>
 
             <button
-                className="editor-sidebar-toggle-btn"
+                className="d-flex items-center content-center editor-sidebar-toggle-btn"
                 onClick={onToggle}
             >
                 <LuPanelRight

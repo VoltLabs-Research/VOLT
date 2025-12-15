@@ -8,10 +8,6 @@
 
 /** TODO: Unused? **/
 .toast {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
   padding: 1rem;
   border-radius: 0.75rem;
   backdrop-filter: blur(5px);
@@ -27,6 +23,7 @@
     transform: translateX(400px);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -49,16 +46,10 @@
   color: #3b82f6;
 }
 
-.toast-content {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex: 1;
-}
+
 
 .toast-icon {
   font-size: 1.25rem;
-  flex-shrink: 0;
 }
 
 .toast-message {
@@ -70,9 +61,6 @@
 }
 
 .toast-close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   width: 2rem;
   height: 2rem;
   background: transparent;
@@ -81,7 +69,6 @@
   color: var(--color-text-secondary);
   font-size: 1.25rem;
   transition: all 0.2s;
-  flex-shrink: 0;
   border-radius: 0.5rem;
 }
 

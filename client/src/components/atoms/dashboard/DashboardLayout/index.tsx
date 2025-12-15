@@ -359,20 +359,20 @@ const DashboardLayout = () => {
     };
 
     return (
-        <main className='dashboard-main d-flex column h-100'>
+        <main className='dashboard-main d-flex column vh-max'>
             {showTeamCreator && (
                 <TeamCreator isRequired={teams.length === 0} />
             )}
 
             <Container className='d-flex items-center content-between dashboard-layout-header-container'>
                 <Container ref={mobileMenuWrapperRef} className='p-relative d-none sm:d-block'>
-                    <Container className='mobile-menu-trigger badge-container as-icon-container over-light-bg' onClick={() => setMobileMenuOpen((v) => !v)}>
+                    <Container className='d-flex content-center items-center mobile-menu-trigger badge-container as-icon-container over-light-bg' onClick={() => setMobileMenuOpen((v) => !v)}>
                         <IoMenuOutline />
                     </Container>
                     {mobileMenuOpen && (
                         <Container className='mobile-dropdown' onMouseDown={(e) => e.stopPropagation()}>
                             <Container className='mobile-dropdown-section'>
-                                <Container className='search-container'>
+                                <Container className='d-flex gap-1 search-container'>
                                     <i className='search-icon-container'>
                                         <IoSearchOutline />
                                     </i>
@@ -385,9 +385,9 @@ const DashboardLayout = () => {
                                 </Container>
                             </Container>
                             <Container className='mobile-dropdown-section'>
-                                <nav className='mobile-nav-list'>
+                                <nav className='d-flex column gap-05 mobile-nav-list'>
                                     {navItems.map(([name, Icon, to], index) => (
-                                        <button key={`mdrop-${index}`} className={`mobile-nav-item ${(index === 0) ? 'is-selected' : ''}`} onClick={() => { navigate(to); setMobileMenuOpen(false); }}>
+                                        <button key={`mdrop-${index}`} className={`d-flex items-center gap-075 mobile-nav-item ${(index === 0) ? 'is-selected' : ''}`} onClick={() => { navigate(to); setMobileMenuOpen(false); }}>
                                             <i className='mobile-nav-icon'><Icon /></i>
                                             <span className='mobile-nav-name'>{name}</span>
                                         </button>
@@ -406,7 +406,7 @@ const DashboardLayout = () => {
                                         renderInPortal
                                     />
                                 </Container>
-                                <div onClick={() => { toggleTeamCreator(); setMobileMenuOpen(false); }} className='badge-container as-icon-container over-light-bg'>
+                                <div onClick={() => { toggleTeamCreator(); setMobileMenuOpen(false); }} className='d-flex content-center items-center badge-container as-icon-container over-light-bg'>
                                     <IoIosAdd size={25} />
                                 </div>
                             </Container>
@@ -429,7 +429,7 @@ const DashboardLayout = () => {
                 </Container>
 
                 <Container className='d-flex gap-05 items-center dashboard-search-container'>
-                    <Container className='search-container'>
+                    <Container className='d-flex gap-1 search-container'>
                         <i className='search-icon-container'>
                             <IoSearchOutline />
                         </i>
@@ -457,7 +457,7 @@ const DashboardLayout = () => {
                     </Container>
 
                     <button
-                        className='team-invite-icon-btn badge-container as-icon-container over-light-bg'
+                        className='d-flex content-center items-center team-invite-icon-btn badge-container as-icon-container over-light-bg'
                         onClick={() => selectedTeam && setInvitePanelOpen(true)}
                         title='Invite members or share team'
                         aria-label='Invite members or share team'
@@ -467,22 +467,22 @@ const DashboardLayout = () => {
 
                     <Container
                         onClick={toggleTeamCreator}
-                        className='badge-container as-icon-container over-light-bg'
+                        className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
                     >
                         <IoIosAdd size={25} />
                     </Container>
                 </Container>
 
                 <Container className='d-flex gap-1-5 sm:d-flex sm:gap-05 dashboard-user-container'>
-                    <Container className='badge-container as-icon-container over-light-bg'>
+                    <Container className='d-flex content-center items-center badge-container as-icon-container over-light-bg'>
                         <IoSettingsOutline />
                     </Container>
 
                     <Container ref={bellWrapperRef} className='p-relative'>
-                        <Container onClick={() => setNotifOpen((v) => !v)} className='badge-container as-icon-container over-light-bg dashboard-bell-trigger'>
+                        <Container onClick={() => setNotifOpen((v) => !v)} className='d-flex content-center items-center badge-container as-icon-container over-light-bg dashboard-bell-trigger'>
                             <IoNotificationsOutline />
                             {unreadCount > 0 && (
-                                <span className='notification-badge'>{unreadCount > 99 ? '99+' : unreadCount}</span>
+                                <span className='d-flex items-center content-center notification-badge'>{unreadCount > 99 ? '99+' : unreadCount}</span>
                             )}
                         </Container>
                         {notifOpen && (

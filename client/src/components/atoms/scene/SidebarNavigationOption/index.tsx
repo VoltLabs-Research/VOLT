@@ -42,7 +42,7 @@ const SidebarNavigationOption = ({ name, Icon, onClick = null, to = null, isSele
     return (
         <div
             onClick={handleClick}
-            className={'sidebar-nav-option-container '.concat(isSelected ? 'selected' : '')}
+            className={'d-flex cursor-pointer items-center sidebar-nav-option-container '.concat(isSelected ? 'selected' : '')}
         >
             <i className='sidebar-nav-option-icon-container'>
                 <Icon />
