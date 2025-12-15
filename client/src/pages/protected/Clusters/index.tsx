@@ -8,43 +8,43 @@ import { DatabasePerformance } from '@/components/molecules/clusters/DatabasePer
 import { ServerTable } from '@/components/organisms/clusters/ServerTable'
 import './Clusters.css'
 
-export default function DashboardPage(){
-  return(
+export default function DashboardPage() {
+  return (
     <div className="clusters-page">
-      <main className="clusters-main">
-          <MetricsCards />
+      <main className="clusters-main d-flex column gap-2">
+        <MetricsCards />
 
-          <div className="clusters-chart-grid">
-            <div className="clusters-chart-main">
-              <ResponseTimeChart />
-            </div>
-            <div>
-              <ResourceUsage />
-            </div>
+        <div className="clusters-chart-grid">
+          <div className="clusters-chart-main">
+            <ResponseTimeChart />
           </div>
+          <div>
+            <ResourceUsage />
+          </div>
+        </div>
 
-          <div className="clusters-chart-grid-2">
-            <div className="clusters-chart-wide">
-              <TrafficOverview />
-            </div>
-            <div className="clusters-chart-small">
-              <CpuDistribution />
-            </div>
+        <div className="clusters-chart-grid-2">
+          <div className="clusters-chart-wide">
+            <TrafficOverview />
           </div>
+          <div className="clusters-chart-small">
+            <CpuDistribution />
+          </div>
+        </div>
 
-          <div className="clusters-chart-grid-3">
-            <div className="clusters-chart-half">
-              <DatabasePerformance />
-            </div>
-            <div className="clusters-chart-half">
-              <DiskOperations />
-            </div>
+        <div className="clusters-chart-grid-3">
+          <div className="clusters-chart-half">
+            <DatabasePerformance />
           </div>
+          <div className="clusters-chart-half">
+            <DiskOperations />
+          </div>
+        </div>
 
-          <div className="clusters-table-section">
-            <ServerTable />
-          </div>
-        </main>
+        <div className="clusters-table-section">
+          <ServerTable />
+        </div>
+      </main>
     </div>
   )
 }

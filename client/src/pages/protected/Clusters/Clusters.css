@@ -1,7 +1,8 @@
 /* Clusters Page Styles */
 
 /* Variables CSS para Clusters - Dark Mode (default) */
-:root, .theme-dark {
+:root,
+.theme-dark {
   --clusters-background: #000000;
   --clusters-foreground: rgba(255, 255, 255, 0.95);
   --clusters-card: rgba(255, 255, 255, 0.05);
@@ -95,11 +96,11 @@
   --shadow-sm: var(--clusters-shadow-sm);
   --shadow-md: var(--clusters-shadow-md);
   --shadow-lg: var(--clusters-shadow-lg);
-  
+
   /* Font families */
   --font-sans: 'Geist', 'Geist Fallback', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
-  
+
   /* Alias for colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -136,6 +137,7 @@
   from {
     transform: scaleX(0);
   }
+
   to {
     transform: scaleX(1);
   }
@@ -146,6 +148,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -156,15 +159,19 @@
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.7;
   }
@@ -206,11 +213,11 @@
 .clusters-chart-grid-2,
 .clusters-chart-grid-3,
 
-.clusters-chart-grid > *,
-.clusters-chart-grid-2 > *,
-.clusters-chart-grid-3 > *,
-.clusters-chart-grid-4 > *,
-.clusters-chart-grid-5 > * {
+.clusters-chart-grid>*,
+.clusters-chart-grid-2>*,
+.clusters-chart-grid-3>*,
+.clusters-chart-grid-4>*,
+.clusters-chart-grid-5>* {
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -223,36 +230,38 @@
   grid-column: span 1;
 }
 
-.clusters-table-section {
-  margin-top: 2rem;
-}
-
 @media (min-width: 768px) {
+
   .clusters-chart-grid,
   .clusters-chart-grid-2,
-  .clusters-chart-grid-3,
-  
+  .clusters-chart-grid-3 {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (min-width: 1440px) {
+
   .clusters-chart-grid,
   .clusters-chart-grid-2,
-  .clusters-chart-grid-3,
-  
+  .clusters-chart-grid-3 {
+    gap: 2rem;
+  }
 }
 
 @media (min-width: 1024px) {
   .clusters-chart-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .clusters-chart-main {
     grid-column: span 2;
     height: 350px;
   }
 
   .clusters-chart-grid-2 {
-    grid-template-columns: repeat(3, 1fr)
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .clusters-chart-wide {
@@ -267,8 +276,4 @@
   .clusters-chart-grid-3 {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  
-
-  
 }
