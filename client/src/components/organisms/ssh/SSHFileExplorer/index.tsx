@@ -29,7 +29,6 @@ type SSHFileExplorerProps = {
 
 const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => {
     const [isMaximized, setIsMaximized] = useState(false);
-    const [showConnectionModal, setShowConnectionModal] = useState(false);
     const [editingConnection, setEditingConnection] = useState<SSHConnection | null>(null);
 
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
@@ -106,6 +105,15 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
         }
     };
 
+
+    const openConnectionModal = (connection: SSHConnection | null = null) => {
+        setEditingConnection(connection);
+        // Small timeout to allow React to update props before showing modal
+        setTimeout(() => {
+            (document.getElementById('ssh-connection-modal') as HTMLDialogElement)?.showModal();
+        }, 0);
+    };
+
     const navItems = (
         <>
             <div className="d-flex column gap-025 ssh-connections-list">
@@ -122,7 +130,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
                         <div className="d-flex gap-025 ssh-connection-actions" style={{ opacity: 0.5 }}>
                             <LuSettings
                                 size={14}
-                                onClick={(e) => { e.stopPropagation(); setEditingConnection(conn); setShowConnectionModal(true); }}
+                                onClick={(e) => { e.stopPropagation(); openConnectionModal(conn); }}
                                 style={{ cursor: 'pointer' }}
                             />
                             <LuTrash
@@ -136,7 +144,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
             </div>
             <button
                 className="d-flex items-center content-center gap-05 ssh-add-btn"
-                onClick={() => { setEditingConnection(null); setShowConnectionModal(true); }}
+                onClick={() => openConnectionModal(null)}
                 style={{
                     marginTop: '1rem',
                     background: 'rgba(255, 255, 255, 0.1)',
@@ -152,6 +160,15 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
             </button>
         </>
     );
+
+    // ... existing content (headerLeftIcons, breadcrumbsContent, headerRightIcons, fileListHeader, fileListContent, return statement) ...
+    // Note: I will only replace the parts that need changing. 
+    // Wait, replace_file_content replaces a block usually.
+    // I should target the navItems block and the return statement separately? Or the whole file is too big.
+    // I will do separate edits.
+
+    // This replacement handles the navItems definition update.
+
 
     const headerLeftIcons = (
         <>
@@ -261,20 +278,13 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
                 headerRightIcons={headerRightIcons}
                 fileListHeader={fileListHeader}
                 fileListContent={fileListContent}
-                hidden={showConnectionModal}
+                hidden={false}
             />
 
-            {showConnectionModal && (
-                <SSHConnectionModal
-                    isOpen={showConnectionModal}
-                    onClose={() => {
-                        setShowConnectionModal(false);
-                        setEditingConnection(null);
-                    }}
-                    connection={editingConnection}
-                    mode={editingConnection ? 'edit' : 'create'}
-                />
-            )}
+            <SSHConnectionModal
+                connection={editingConnection}
+                mode={editingConnection ? 'edit' : 'create'}
+            />
         </>
     );
 };

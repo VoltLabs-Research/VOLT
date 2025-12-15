@@ -36,8 +36,8 @@ interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 const FormInput: React.FC<FormInputProps> = ({ label, error, showError = true, variant = 'default', className = '', ...props }) => {
     const variantClass = variant === 'auth' ? 'form-input-auth' : '';
 
-    return(
-        <Container className={`d-flex w-max columnform-input-wrapper-container ${variantClass}`}>
+    return (
+        <Container className={`d-flex w-max column gap-05 form-input-wrapper-container ${variantClass}`}>
             {label && (
                 <label>
                     <Title className='font-weight-4 text-secondary form-input-label'>{label}</Title>

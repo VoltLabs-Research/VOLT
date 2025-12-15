@@ -126,11 +126,12 @@ const DashboardLayout = () => {
         if (!teamsInitialized) return;
         if (isLoadingTeams) return; // Still loading, don't check yet
 
-        if (teams.length === 0 && !showTeamCreator) {
+        if (teams.length === 0) {
             // User has no teams after loading, force team creation
-            toggleTeamCreator();
+            const modal = document.getElementById('team-creator-modal') as HTMLDialogElement;
+            if (modal) modal.showModal();
         }
-    }, [teamsInitialized, isLoadingTeams, teams.length, showTeamCreator, toggleTeamCreator]);
+    }, [teamsInitialized, isLoadingTeams, teams.length]);
 
     // Initialize socket listener for notifications
     useEffect(() => {
@@ -360,9 +361,7 @@ const DashboardLayout = () => {
 
     return (
         <main className='dashboard-main d-flex column vh-max'>
-            {showTeamCreator && (
-                <TeamCreator isRequired={teams.length === 0} />
-            )}
+            <TeamCreator isRequired={teams.length === 0} />
 
             <Container className='d-flex items-center content-between dashboard-layout-header-container'>
                 <Container ref={mobileMenuWrapperRef} className='p-relative d-none sm:d-block'>
@@ -394,6 +393,7 @@ const DashboardLayout = () => {
                                     ))}
                                 </nav>
                             </Container>
+
                             <Container className='mobile-dropdown-section'>
                                 <Container className='team-selector-container'>
                                     <Select
@@ -406,13 +406,26 @@ const DashboardLayout = () => {
                                         renderInPortal
                                     />
                                 </Container>
-                                <div onClick={() => { toggleTeamCreator(); setMobileMenuOpen(false); }} className='d-flex content-center items-center badge-container as-icon-container over-light-bg'>
+                                <button
+                                    commandfor='team-creator-modal'
+                                    command='showModal'
+                                    onClick={() => {
+                                        setMobileMenuOpen(false);
+                                        const modal = document.getElementById('team-creator-modal') as HTMLDialogElement;
+                                        if (modal && !modal.open) {
+                                            modal.showModal();
+                                        }
+                                    }}
+                                    className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
+                                    style={{ border: 'none', cursor: 'pointer' }}
+                                >
                                     <IoIosAdd size={25} />
-                                </div>
+                                </button>
                             </Container>
                         </Container>
                     )}
                 </Container>
+
                 <Container className='d-flex items-center gap-05 navigation-container sm:d-none'>
                     {navItems.map(([name, Icon, to], index) => (
                         <Container
@@ -465,12 +478,20 @@ const DashboardLayout = () => {
                         <GoPersonAdd size={20} />
                     </button>
 
-                    <Container
-                        onClick={toggleTeamCreator}
+                    <button
+                        commandfor='team-creator-modal'
+                        command='showModal'
+                        onClick={() => {
+                            // Fallback for browsers that don't support Invoker Commands API
+                            const modal = document.getElementById('team-creator-modal') as HTMLDialogElement;
+                            if (modal && !modal.open) {
+                                modal.showModal();
+                            }
+                        }}
                         className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
                     >
                         <IoIosAdd size={25} />
-                    </Container>
+                    </button>
                 </Container>
 
                 <Container className='d-flex gap-1-5 sm:d-flex sm:gap-05 dashboard-user-container'>

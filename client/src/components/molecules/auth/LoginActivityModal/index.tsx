@@ -27,116 +27,117 @@ import useLoginActivity from '@/hooks/auth/use-login-activity';
 import './LoginActivityModal.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import Modal from '@/components/molecules/common/Modal';
 
-interface LoginActivityModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-}
+interface LoginActivityModalProps { }
 
-const LoginActivityModal: React.FC<LoginActivityModalProps> = ({ isOpen, onClose }) => {
+const LoginActivityModal: React.FC<LoginActivityModalProps> = () => {
     const { activities, loading, error, refetch } = useLoginActivity(50);
 
-    if (!isOpen) return null;
+    const closeModal = () => {
+        (document.getElementById('login-activity-modal') as HTMLDialogElement)?.close();
+    };
 
     return (
-        <div className="d-flex flex-center login-activity-modal-overlay" onClick={onClose}>
-            <div className="d-flex column login-activity-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="d-flex items-center content-between login-activity-modal-header">
-                    <div className="d-flex items-center gap-075 login-activity-modal-title">
-                        <TbActivity size={24} />
-                        <Title className='font-size-2 login-activity-modal-title'>Login Activity</Title>
-                    </div>
-                    <div className="d-flex items-center gap-075 login-activity-modal-actions">
-                        <button
-                            className="d-flex items-center gap-05 action-button refresh"
-                            onClick={refetch}
-                            disabled={loading}
-                        >
-                            <TbRefresh size={16} className={loading ? 'animate-spin' : ''} />
-                            Refresh
-                        </button>
-                        <button className="d-flex items-center gap-05 action-button close" onClick={onClose}>
-                            <TbX size={20} />
-                        </button>
-                    </div>
+        <Modal
+            id='login-activity-modal'
+            title='Login Activity'
+            width='600px'
+            className='login-activity-modal'
+        >
+            <div className="d-flex column flex-1 login-activity-modal-content">
+                <div className="d-flex items-center content-end gap-075 login-activity-modal-actions mb-1">
+                    <button
+                        className="d-flex items-center gap-05 action-button refresh"
+                        onClick={refetch}
+                        disabled={loading}
+                    >
+                        <TbRefresh size={16} className={loading ? 'animate-spin' : ''} />
+                        Refresh
+                    </button>
+                    <button
+                        className="d-flex items-center gap-05 action-button close"
+                        commandfor='login-activity-modal'
+                        command='close'
+                    >
+                        <TbX size={20} />
+                    </button>
                 </div>
 
-                <div className="flex-1 login-activity-modal-content">
-                    {loading ? (
-                        <div className="d-flex column gap-1 activity-loading">
-                            {Array.from({ length: 5 }).map((_, index) => (
-                                <div key={index} className="d-flex items-center gap-1 activity-skeleton">
-                                    <div className="activity-skeleton-icon"></div>
-                                    <div className="d-flex column gap-05 flex-1 activity-skeleton-content">
-                                        <div className="activity-skeleton-line"></div>
-                                        <div className="activity-skeleton-line short"></div>
+                {loading ? (
+                    <div className="d-flex column gap-1 activity-loading">
+                        {Array.from({ length: 5 }).map((_, index) => (
+                            <div key={index} className="d-flex items-center gap-1 activity-skeleton">
+                                <div className="activity-skeleton-icon"></div>
+                                <div className="d-flex column gap-05 flex-1 activity-skeleton-content">
+                                    <div className="activity-skeleton-line"></div>
+                                    <div className="activity-skeleton-line short"></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : error ? (
+                    <div className="d-flex column flex-center activity-error">
+                        <TbActivity size={48} />
+                        <Title className='font-size-2-5'>Unable to load activity</Title>
+                        <Paragraph>{error}</Paragraph>
+                        <button className="action-button" onClick={refetch}>
+                            Try Again
+                        </button>
+                    </div>
+                ) : activities.length === 0 ? (
+                    <div className="d-flex column flex-center activity-empty">
+                        <TbActivity size={48} />
+                        <Title className='font-size-2-5'>No login activity</Title>
+                        <Paragraph>Your login attempts will appear here</Paragraph>
+                    </div>
+                ) : (
+                    <div className="d-flex column gap-1 activity-list">
+                        {activities.map((activity) => (
+                            <div key={activity._id} className={`d-flex items-start gap-1 activity-item ${activity.success ? 'success' : 'failed'}`}>
+                                <div className="d-flex flex-center activity-icon">
+                                    {activity.success ? <TbCheck size={20} /> : <TbX size={20} />}
+                                </div>
+                                <div className="d-flex column gap-075 flex-1 activity-content">
+                                    <div className="d-flex items-center content-between gap-1 sm:column sm:item-start sm:gap-05 activity-header">
+                                        <span className="activity-title">
+                                            {activity.action === 'login' ? 'Successful Login' :
+                                                activity.action === 'failed_login' ? 'Failed Login Attempt' :
+                                                    'Logout'}
+                                        </span>
+                                        <span className="activity-time">
+                                            {(() => {
+                                                try {
+                                                    const date = new Date(activity.createdAt);
+                                                    return isValid(date) ?
+                                                        formatDistanceToNow(date, { addSuffix: true }) :
+                                                        'Unknown time';
+                                                } catch {
+                                                    return 'Unknown time';
+                                                }
+                                            })()}
+                                        </span>
+                                    </div>
+                                    <div className="d-flex column gap-05 activity-details">
+                                        <Paragraph className="activity-description">
+                                            <strong>Device:</strong> {activity.userAgent}
+                                        </Paragraph>
+                                        <Paragraph className="activity-description">
+                                            <strong>IP Address:</strong> {activity.ip}
+                                        </Paragraph>
+                                        {activity.failureReason && (
+                                            <Paragraph className="activity-description">
+                                                <strong>Reason:</strong> {activity.failureReason}
+                                            </Paragraph>
+                                        )}
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    ) : error ? (
-                        <div className="d-flex column flex-center activity-error">
-                            <TbActivity size={48} />
-                            <Title className='font-size-2-5'>Unable to load activity</Title>
-                            <Paragraph>{error}</Paragraph>
-                            <button className="action-button" onClick={refetch}>
-                                Try Again
-                            </button>
-                        </div>
-                    ) : activities.length === 0 ? (
-                        <div className="d-flex column flex-center activity-empty">
-                            <TbActivity size={48} />
-                            <Title className='font-size-2-5'>No login activity</Title>
-                            <Paragraph>Your login attempts will appear here</Paragraph>
-                        </div>
-                    ) : (
-                        <div className="d-flex column gap-1 activity-list">
-                            {activities.map((activity) => (
-                                <div key={activity._id} className={`d-flex items-start gap-1 activity-item ${activity.success ? 'success' : 'failed'}`}>
-                                    <div className="d-flex flex-center activity-icon">
-                                        {activity.success ? <TbCheck size={20} /> : <TbX size={20} />}
-                                    </div>
-                                    <div className="d-flex column gap-075 flex-1 activity-content">
-                                        <div className="d-flex items-center content-between gap-1 sm:column sm:item-start sm:gap-05 activity-header">
-                                            <span className="activity-title">
-                                                {activity.action === 'login' ? 'Successful Login' :
-                                                    activity.action === 'failed_login' ? 'Failed Login Attempt' :
-                                                        'Logout'}
-                                            </span>
-                                            <span className="activity-time">
-                                                {(() => {
-                                                    try {
-                                                        const date = new Date(activity.createdAt);
-                                                        return isValid(date) ?
-                                                            formatDistanceToNow(date, { addSuffix: true }) :
-                                                            'Unknown time';
-                                                    } catch {
-                                                        return 'Unknown time';
-                                                    }
-                                                })()}
-                                            </span>
-                                        </div>
-                                        <div className="d-flex column gap-05 activity-details">
-                                            <Paragraph className="activity-description">
-                                                <strong>Device:</strong> {activity.userAgent}
-                                            </Paragraph>
-                                            <Paragraph className="activity-description">
-                                                <strong>IP Address:</strong> {activity.ip}
-                                            </Paragraph>
-                                            {activity.failureReason && (
-                                                <Paragraph className="activity-description">
-                                                    <strong>Reason:</strong> {activity.failureReason}
-                                                </Paragraph>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
-        </div>
+        </Modal>
     );
 };
 

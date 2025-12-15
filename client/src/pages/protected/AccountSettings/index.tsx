@@ -29,7 +29,7 @@ const AccountSettings: React.FC = () => {
         getPasswordInfo
     } = useAuthStore();
 
- 
+
     const [activeSection, setActiveSection] = useState('General');
     const [userData, setUserData] = useState({
         firstName: user?.firstName || '',
@@ -39,7 +39,6 @@ const AccountSettings: React.FC = () => {
     const [currentTheme, setCurrentTheme] = useState('dark');
     const [isUpdating, setIsUpdating] = useState(false);
     const [updateError, setUpdateError] = useState<string | null>(null);
-    const [showLoginActivityModal, setShowLoginActivityModal] = useState(false);
     const [showPasswordForm, setShowPasswordForm] = useState(false);
     const [passwordForm, setPasswordForm] = useState({
         currentPassword: '',
@@ -191,7 +190,7 @@ const AccountSettings: React.FC = () => {
                         onSubmitPassword={handlePasswordChange}
                         loginActivities={loginActivities}
                         loginActivityLoading={loginActivityLoading}
-                        onOpenLoginActivity={() => setShowLoginActivityModal(true)}
+                        onOpenLoginActivity={() => (document.getElementById('login-activity-modal') as HTMLDialogElement)?.showModal()}
                     />
                 );
             case 'Theme':
@@ -254,10 +253,7 @@ const AccountSettings: React.FC = () => {
                 </div>
             </Container>
 
-            <LoginActivityModal
-                isOpen={showLoginActivityModal}
-                onClose={() => setShowLoginActivityModal(false)}
-            />
+            <LoginActivityModal />
         </>
     );
 };

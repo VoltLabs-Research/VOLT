@@ -4,17 +4,14 @@ import useSSHConnections, { type CreateSSHConnectionData, type UpdateSSHConnecti
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './SSHConnectionModal.css';
 import Title from '@/components/primitives/Title';
+import Modal from '@/components/molecules/common/Modal';
 
 interface SSHConnectionModalProps {
-    isOpen: boolean;
-    onClose: () => void;
     connection?: SSHConnection | null;
     mode: 'create' | 'edit';
 }
 
 const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
-    isOpen,
-    onClose,
     connection,
     mode
 }) => {
@@ -75,11 +72,15 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
         }
         setError(null);
         setTestResult(null);
-    }, [mode, connection, isOpen]);
+    }, [mode, connection]);
 
     const handleInputChange = (field: keyof typeof formData, value: string | number) => {
         setFormData(prev => ({ ...prev, [field]: value }));
         checkField(field, value);
+    };
+
+    const closeModal = () => {
+        (document.getElementById('ssh-connection-modal') as HTMLDialogElement)?.close();
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -112,7 +113,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                 await updateConnection(connection._id, updateData);
             }
 
-            onClose();
+            closeModal();
         } catch (err: any) {
             setError(err.message || 'Failed to save SSH connection');
         } finally {
@@ -140,142 +141,138 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="d-flex flex-center ssh-connection-modal-overlay" onClick={onClose}>
-            <div className="d-flex column ssh-connection-modal" onClick={(e) => e.stopPropagation()}>
-                <div className="d-flex items-center content-between ssh-connection-modal-header">
-                    <div className="d-flex items-center gap-075 ssh-connection-modal-title">
-                        <TbServer size={24} />
-                        <Title className='font-size-3'>{mode === 'create' ? 'Add SSH Connection' : 'Edit SSH Connection'}</Title>
+        <Modal
+            id='ssh-connection-modal'
+            title={mode === 'create' ? 'Add SSH Connection' : 'Edit SSH Connection'}
+            width='500px'
+            className='ssh-connection-modal'
+        >
+            <form onSubmit={handleSubmit} className="d-flex column gap-1 ssh-connection-modal-form">
+                <div className="flex-1 ssh-connection-modal-body">
+                    {error && (
+                        <div className="ssh-connection-modal-error">
+                            {error}
+                        </div>
+                    )}
+
+                    <div className="ssh-connection-form-group">
+                        <label htmlFor="name">Connection Name *</label>
+                        <input
+                            id="name"
+                            type="text"
+                            value={formData.name}
+                            onChange={(e) => handleInputChange('name', e.target.value)}
+                            placeholder="e.g., Production Server, Lab Computer"
+                            className={errors.name ? 'error' : ''}
+                        />
+                        {errors.name && <span className="ssh-connection-field-error">{errors.name}</span>}
                     </div>
-                    <button className="d-flex flex-center ssh-connection-modal-close" onClick={onClose}>
-                        <TbX size={20} />
-                    </button>
+
+                    <div className="ssh-connection-form-group">
+                        <label htmlFor="host">Host *</label>
+                        <input
+                            id="host"
+                            type="text"
+                            value={formData.host}
+                            onChange={(e) => handleInputChange('host', e.target.value)}
+                            placeholder="hostname or IP address"
+                            className={errors.host ? 'error' : ''}
+                        />
+                        {errors.host && <span className="ssh-connection-field-error">{errors.host}</span>}
+                    </div>
+
+                    <div className="ssh-connection-form-group">
+                        <label htmlFor="port">Port</label>
+                        <input
+                            id="port"
+                            type="number"
+                            value={formData.port}
+                            onChange={(e) => handleInputChange('port', e.target.value)}
+                            min="1"
+                            max="65535"
+                            className={errors.port ? 'error' : ''}
+                        />
+                        <small>Default: 22</small>
+                        {errors.port && <span className="ssh-connection-field-error">{errors.port}</span>}
+                    </div>
+
+                    <div className="ssh-connection-form-group">
+                        <label htmlFor="username">Username *</label>
+                        <input
+                            id="username"
+                            type="text"
+                            value={formData.username}
+                            onChange={(e) => handleInputChange('username', e.target.value)}
+                            placeholder="SSH username"
+                            className={errors.username ? 'error' : ''}
+                        />
+                        {errors.username && <span className="ssh-connection-field-error">{errors.username}</span>}
+                    </div>
+
+                    <div className="ssh-connection-form-group">
+                        <label htmlFor="password">Password {mode === 'create' ? '*' : ''}</label>
+                        <input
+                            id="password"
+                            type="password"
+                            value={formData.password}
+                            onChange={(e) => handleInputChange('password', e.target.value)}
+                            placeholder={mode === 'edit' ? 'Leave empty to keep current' : 'SSH password'}
+                            className={errors.password ? 'error' : ''}
+                        />
+                        {errors.password && <span className="ssh-connection-field-error">{errors.password}</span>}
+                    </div>
+
+                    {mode === 'edit' && connection && (
+                        <div className="ssh-connection-form-group">
+                            <div className="d-flex items-center gap-075 ssh-connection-test-container">
+                                <button
+                                    type="button"
+                                    className="d-flex items-center gap-05 ssh-connection-test-btn"
+                                    onClick={handleTest}
+                                    disabled={testing}
+                                >
+                                    {testing ? 'Testing...' : 'Test Connection'}
+                                </button>
+                                {testResult && (
+                                    <div className={`d-flex items-center gap-05 ssh-connection-test-result ${testResult.valid ? 'success' : 'error'}`}>
+                                        {testResult.valid ? (
+                                            <>
+                                                <TbCheck size={16} />
+                                                <span>Connection successful</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <TbXIcon size={16} />
+                                                <span>{testResult.error || 'Connection failed'}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                <form onSubmit={handleSubmit} className="d-flex column flex-1 ssh-connection-modal-form">
-                    <div className="flex-1 ssh-connection-modal-body">
-                        {error && (
-                            <div className="ssh-connection-modal-error">
-                                {error}
-                            </div>
-                        )}
-
-                        <div className="ssh-connection-form-group">
-                            <label htmlFor="name">Connection Name *</label>
-                            <input
-                                id="name"
-                                type="text"
-                                value={formData.name}
-                                onChange={(e) => handleInputChange('name', e.target.value)}
-                                placeholder="e.g., Production Server, Lab Computer"
-                                className={errors.name ? 'error' : ''}
-                            />
-                            {errors.name && <span className="ssh-connection-field-error">{errors.name}</span>}
-                        </div>
-
-                        <div className="ssh-connection-form-group">
-                            <label htmlFor="host">Host *</label>
-                            <input
-                                id="host"
-                                type="text"
-                                value={formData.host}
-                                onChange={(e) => handleInputChange('host', e.target.value)}
-                                placeholder="hostname or IP address"
-                                className={errors.host ? 'error' : ''}
-                            />
-                            {errors.host && <span className="ssh-connection-field-error">{errors.host}</span>}
-                        </div>
-
-                        <div className="ssh-connection-form-group">
-                            <label htmlFor="port">Port</label>
-                            <input
-                                id="port"
-                                type="number"
-                                value={formData.port}
-                                onChange={(e) => handleInputChange('port', e.target.value)}
-                                min="1"
-                                max="65535"
-                                className={errors.port ? 'error' : ''}
-                            />
-                            <small>Default: 22</small>
-                            {errors.port && <span className="ssh-connection-field-error">{errors.port}</span>}
-                        </div>
-
-                        <div className="ssh-connection-form-group">
-                            <label htmlFor="username">Username *</label>
-                            <input
-                                id="username"
-                                type="text"
-                                value={formData.username}
-                                onChange={(e) => handleInputChange('username', e.target.value)}
-                                placeholder="SSH username"
-                                className={errors.username ? 'error' : ''}
-                            />
-                            {errors.username && <span className="ssh-connection-field-error">{errors.username}</span>}
-                        </div>
-
-                        <div className="ssh-connection-form-group">
-                            <label htmlFor="password">Password {mode === 'create' ? '*' : ''}</label>
-                            <input
-                                id="password"
-                                type="password"
-                                value={formData.password}
-                                onChange={(e) => handleInputChange('password', e.target.value)}
-                                placeholder={mode === 'edit' ? 'Leave empty to keep current' : 'SSH password'}
-                                className={errors.password ? 'error' : ''}
-                            />
-                            {errors.password && <span className="ssh-connection-field-error">{errors.password}</span>}
-                        </div>
-
-                        {mode === 'edit' && connection && (
-                            <div className="ssh-connection-form-group">
-                                <div className="d-flex items-center gap-075 ssh-connection-test-container">
-                                    <button
-                                        type="button"
-                                        className="d-flex items-center gap-05 ssh-connection-test-btn"
-                                        onClick={handleTest}
-                                        disabled={testing}
-                                    >
-                                        {testing ? 'Testing...' : 'Test Connection'}
-                                    </button>
-                                    {testResult && (
-                                        <div className={`d-flex items-center gap-05 ssh-connection-test-result ${testResult.valid ? 'success' : 'error'}`}>
-                                            {testResult.valid ? (
-                                                <>
-                                                    <TbCheck size={16} />
-                                                    <span>Connection successful</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <TbXIcon size={16} />
-                                                    <span>{testResult.error || 'Connection failed'}</span>
-                                                </>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="d-flex content-end gap-075 ssh-connection-modal-footer">
-                        <button type="button" onClick={onClose} className="ssh-connection-modal-cancel">
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="ssh-connection-modal-save"
-                            disabled={loading}
-                        >
-                            {loading ? 'Saving...' : (mode === 'create' ? 'Add Connection' : 'Save Changes')}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <div className="d-flex content-end gap-075 ssh-connection-modal-footer">
+                    <button
+                        type="button"
+                        commandfor="ssh-connection-modal"
+                        command="close"
+                        className="ssh-connection-modal-cancel"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        className="ssh-connection-modal-save"
+                        disabled={loading}
+                    >
+                        {loading ? 'Saving...' : (mode === 'create' ? 'Add Connection' : 'Save Changes')}
+                    </button>
+                </div>
+            </form>
+        </Modal>
     );
 };
 

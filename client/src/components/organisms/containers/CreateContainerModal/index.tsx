@@ -5,14 +5,14 @@ import containerApi from '@/services/api/container';
 import useToast from '@/hooks/ui/use-toast';
 import './CreateContainerModal.css';
 import Title from '@/components/primitives/Title';
+import Modal from '@/components/molecules/common/Modal';
 
 interface CreateContainerModalProps {
     isOpen: boolean;
-    onClose: () => void;
     onSuccess: () => void;
 }
 
-const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onClose, onSuccess }) => {
+const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onSuccess }) => {
     const [name, setName] = useState('');
     const [image, setImage] = useState('');
     const [teamId, setTeamId] = useState('');
@@ -61,6 +61,10 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
         setPorts(newPorts);
     };
 
+    const closeModal = () => {
+        (document.getElementById('create-container-modal') as HTMLDialogElement)?.close();
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -76,7 +80,7 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
 
             showSuccess('Container created successfully');
             onSuccess();
-            onClose();
+            closeModal();
             // Reset form
             setName('');
             setImage('');
@@ -92,121 +96,124 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
     if (!isOpen) return null;
 
     return (
-        <div className='d-flex flex-center modal-overlay'>
-            <div className='d-flex column create-container-modal'>
-                <div className='d-flex content-between items-center modal-header'>
-                    <Title className='font-size-2'>Create Container</Title>
-                    <button onClick={onClose} className='close-btn'>
-                        <IoClose size={24} />
-                    </button>
+        <Modal
+            id='create-container-modal'
+            title='Create Container'
+            width='600px'
+            className='create-container-modal'
+        >
+            <form onSubmit={handleSubmit} className='d-flex column gap-1-25 modal-body'>
+                <div className='d-flex column gap-05 form-group'>
+                    <label>Container Name</label>
+                    <input
+                        type='text'
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        placeholder='e.g., my-web-server'
+                        required
+                    />
                 </div>
 
-                <form onSubmit={handleSubmit} className='d-flex column gap-1-25 modal-body'>
-                    <div className='d-flex column gap-05 form-group'>
-                        <label>Container Name</label>
-                        <input
-                            type='text'
-                            value={name}
-                            onChange={e => setName(e.target.value)}
-                            placeholder='e.g., my-web-server'
-                            required
-                        />
-                    </div>
+                <div className='d-flex column gap-05 form-group'>
+                    <label>Docker Image</label>
+                    <input
+                        type='text'
+                        value={image}
+                        onChange={e => setImage(e.target.value)}
+                        placeholder='e.g., nginx:latest'
+                        required
+                    />
+                </div>
 
-                    <div className='d-flex column gap-05 form-group'>
-                        <label>Docker Image</label>
-                        <input
-                            type='text'
-                            value={image}
-                            onChange={e => setImage(e.target.value)}
-                            placeholder='e.g., nginx:latest'
-                            required
-                        />
-                    </div>
-
-                    <div className='d-flex column gap-05 form-group'>
-                        <label>Team</label>
-                        <select
-                            value={teamId}
-                            onChange={e => setTeamId(e.target.value)}
-                            className='team-select'
-                        >
-                            {teams.map(team => (
-                                <option key={team._id} value={team._id}>
-                                    {team.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className='d-flex column gap-075 form-section'>
-                        <div className='d-flex content-between items-center section-header'>
-                            <label>Environment Variables</label>
-                            <button type='button' onClick={handleAddEnv} className='d-flex items-center gap-025 add-btn-small'>
-                                <IoAdd /> Add
-                            </button>
-                        </div>
-                        {envVars.map((env, i) => (
-                            <div key={i} className='d-flex items-center gap-075 env-row'>
-                                <input
-                                    placeholder='KEY'
-                                    value={env.key}
-                                    onChange={e => handleEnvChange(i, 'key', e.target.value)}
-                                />
-                                <input
-                                    placeholder='VALUE'
-                                    value={env.value}
-                                    onChange={e => handleEnvChange(i, 'value', e.target.value)}
-                                />
-                                <button type='button' onClick={() => handleRemoveEnv(i)} className='remove-btn'>
-                                    <IoTrash />
-                                </button>
-                            </div>
+                <div className='d-flex column gap-05 form-group'>
+                    <label>Team</label>
+                    <select
+                        value={teamId}
+                        onChange={e => setTeamId(e.target.value)}
+                        className='team-select'
+                    >
+                        {teams.map(team => (
+                            <option key={team._id} value={team._id}>
+                                {team.name}
+                            </option>
                         ))}
-                    </div>
+                    </select>
+                </div>
 
-                    <div className='form-section'>
-                        <div className='d-flex content-between items-center section-header'>
-                            <label>Port Mapping</label>
-                            <button type='button' onClick={handleAddPort} className='d-flex items-center gap-025 add-btn-small'>
-                                <IoAdd /> Add
-                            </button>
-                        </div>
-                        {ports.map((port, i) => (
-                            <div key={i} className='d-flex items-center gap-075 port-row'>
-                                <div className='d-flex column gap-025 port-input'>
-                                    <span>Container</span>
-                                    <input
-                                        type='number'
-                                        value={port.private}
-                                        onChange={e => handlePortChange(i, 'private', e.target.value)}
-                                    />
-                                </div>
-                                <div className='port-arrow'>→</div>
-                                <div className='d-flex column gap-025 port-input'>
-                                    <span>Host</span>
-                                    <input
-                                        type='number'
-                                        value={port.public}
-                                        onChange={e => handlePortChange(i, 'public', e.target.value)}
-                                    />
-                                </div>
-                                <button type='button' onClick={() => handleRemovePort(i)} className='remove-btn'>
-                                    <IoTrash />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className='d-flex content-end gap-075 modal-footer'>
-                        <button type='button' onClick={onClose} className='cancel-btn'>Cancel</button>
-                        <button type='submit' disabled={loading} className='submit-btn'>
-                            {loading ? 'Creating...' : 'Create Container'}
+                <div className='d-flex column gap-075 form-section'>
+                    <div className='d-flex content-between items-center section-header'>
+                        <label>Environment Variables</label>
+                        <button type='button' onClick={handleAddEnv} className='d-flex items-center gap-025 add-btn-small'>
+                            <IoAdd /> Add
                         </button>
                     </div>
-                </form>
-            </div>
-        </div>
+                    {envVars.map((env, i) => (
+                        <div key={i} className='d-flex items-center gap-075 env-row'>
+                            <input
+                                placeholder='KEY'
+                                value={env.key}
+                                onChange={e => handleEnvChange(i, 'key', e.target.value)}
+                            />
+                            <input
+                                placeholder='VALUE'
+                                value={env.value}
+                                onChange={e => handleEnvChange(i, 'value', e.target.value)}
+                            />
+                            <button type='button' onClick={() => handleRemoveEnv(i)} className='remove-btn'>
+                                <IoTrash />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
+                <div className='form-section'>
+                    <div className='d-flex content-between items-center section-header'>
+                        <label>Port Mapping</label>
+                        <button type='button' onClick={handleAddPort} className='d-flex items-center gap-025 add-btn-small'>
+                            <IoAdd /> Add
+                        </button>
+                    </div>
+                    {ports.map((port, i) => (
+                        <div key={i} className='d-flex items-center gap-075 port-row'>
+                            <div className='d-flex column gap-025 port-input'>
+                                <span>Container</span>
+                                <input
+                                    type='number'
+                                    value={port.private}
+                                    onChange={e => handlePortChange(i, 'private', e.target.value)}
+                                />
+                            </div>
+                            <div className='port-arrow'>→</div>
+                            <div className='d-flex column gap-025 port-input'>
+                                <span>Host</span>
+                                <input
+                                    type='number'
+                                    value={port.public}
+                                    onChange={e => handlePortChange(i, 'public', e.target.value)}
+                                />
+                            </div>
+                            <button type='button' onClick={() => handleRemovePort(i)} className='remove-btn'>
+                                <IoTrash />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
+                <div className='d-flex content-end gap-075 modal-footer'>
+                    <button
+                        type='button'
+                        commandfor='create-container-modal'
+                        command='close'
+                        className='cancel-btn'
+                    >
+                        Cancel
+                    </button>
+                    <button type='submit' disabled={loading} className='submit-btn'>
+                        {loading ? 'Creating...' : 'Create Container'}
+                    </button>
+                </div>
+            </form>
+        </Modal>
     );
 };
 

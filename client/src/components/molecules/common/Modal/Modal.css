@@ -1,0 +1,80 @@
+dialog.volt-modal {
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 0;
+    width: 100%;
+    max-width: 500px;
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-elevated);
+
+    margin: auto;
+
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), overlay 0.2s allow-discrete, display 0.2s allow-discrete;
+}
+
+dialog.volt-modal[open] {
+    opacity: 1;
+    transform: scale(1);
+}
+
+@starting-style {
+    dialog.volt-modal[open] {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+dialog.volt-modal::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), overlay 0.2s allow-discrete, display 0.2s allow-discrete;
+}
+
+dialog.volt-modal[open]::backdrop {
+    opacity: 1;
+}
+
+@starting-style {
+    dialog.volt-modal[open]::backdrop {
+        opacity: 0;
+    }
+}
+
+.volt-modal-header {
+    padding: 1.5rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.volt-modal-body {
+    padding: 1.5rem;
+}
+
+.volt-modal-footer {
+    padding: 1rem 1.5rem;
+    background: var(--color-surface-1);
+    border-top: 1px solid var(--color-border-soft);
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.volt-modal-close-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.volt-modal-close-btn:hover {
+    color: var(--color-text-primary);
+    background: var(--color-surface-2);
+}

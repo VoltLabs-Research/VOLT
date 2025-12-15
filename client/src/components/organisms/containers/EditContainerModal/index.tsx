@@ -4,15 +4,14 @@ import containerApi from '@/services/api/container';
 import useToast from '@/hooks/ui/use-toast';
 import './EditContainerModal.css';
 import Title from '@/components/primitives/Title';
+import Modal from '@/components/molecules/common/Modal';
 
 interface EditContainerModalProps {
-    isOpen: boolean;
-    onClose: () => void;
     container: any;
     onSuccess: () => void;
 }
 
-const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose, container, onSuccess }) => {
+const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSuccess }) => {
     const [env, setEnv] = useState<{ key: string; value: string }[]>([]);
     const [ports, setPorts] = useState<{ private: number; public: number }[]>([]);
     const [memory, setMemory] = useState<number>(512);
@@ -29,7 +28,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
         }
     }, [container]);
 
-    if (!isOpen) return null;
+    if (!container) return null;
 
     const handleAddEnv = () => setEnv([...env, { key: '', value: '' }]);
     const handleRemoveEnv = (index: number) => setEnv(env.filter((_, i) => i !== index));
@@ -47,6 +46,10 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
         setPorts(newPorts);
     };
 
+    const closeModal = () => {
+        (document.getElementById('edit-container-modal') as HTMLDialogElement)?.close();
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -59,7 +62,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
             });
             showSuccess('Container updated successfully');
             onSuccess();
-            onClose();
+            closeModal();
         } catch (error: any) {
             showError(error.response?.data?.message || 'Failed to update container');
         } finally {
@@ -68,68 +71,74 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ isOpen, onClose
     };
 
     return (
-        <div className="modal-overlay">
-            <div className="d-flex column modal-content">
-                <div className="d-flex items-center content-between modal-header">
-                    <Title className='font-size-2'>Edit Container: {container.name}</Title>
-                    <button onClick={onClose} className="close-btn"><IoClose size={24} /></button>
+        <Modal
+            id='edit-container-modal'
+            title={`Edit Container: ${container.name}`}
+            width='600px'
+            className='edit-container-modal'
+        >
+            <form onSubmit={handleSubmit} className="d-flex column modal-form">
+                <div className="d-flex column form-section">
+                    <div className="section-header">
+                        <label>Environment Variables</label>
+                        <button type="button" onClick={handleAddEnv} className="d-flex items-center add-btn"><IoAdd /> Add</button>
+                    </div>
+                    {env.map((e, i) => (
+                        <div key={i} className="d-flex items-center gap-075 row-inputs">
+                            <input
+                                placeholder="Key"
+                                value={e.key}
+                                onChange={(ev) => handleEnvChange(i, 'key', ev.target.value)}
+                            />
+                            <input
+                                placeholder="Value"
+                                value={e.value}
+                                onChange={(ev) => handleEnvChange(i, 'value', ev.target.value)}
+                            />
+                            <button type="button" onClick={() => handleRemoveEnv(i)} className="d-flex items-center content-center remove-btn"><IoTrash /></button>
+                        </div>
+                    ))}
                 </div>
-                <form onSubmit={handleSubmit} className="d-flex column modal-form">
-                    <div className="d-flex column form-section">
-                        <div className="section-header">
-                            <label>Environment Variables</label>
-                            <button type="button" onClick={handleAddEnv} className="d-flex items-center add-btn"><IoAdd /> Add</button>
-                        </div>
-                        {env.map((e, i) => (
-                            <div key={i} className="d-flex items-center gap-075 row-inputs">
-                                <input
-                                    placeholder="Key"
-                                    value={e.key}
-                                    onChange={(ev) => handleEnvChange(i, 'key', ev.target.value)}
-                                />
-                                <input
-                                    placeholder="Value"
-                                    value={e.value}
-                                    onChange={(ev) => handleEnvChange(i, 'value', ev.target.value)}
-                                />
-                                <button type="button" onClick={() => handleRemoveEnv(i)} className="d-flex items-center content-center remove-btn"><IoTrash /></button>
-                            </div>
-                        ))}
-                    </div>
 
-                    <div className="d-flex column form-section">
-                        <div className="section-header">
-                            <label>Port Bindings</label>
-                            <button type="button" onClick={handleAddPort} className="d-flex items-center add-btn"><IoAdd /> Add</button>
+                <div className="d-flex column form-section">
+                    <div className="section-header">
+                        <label>Port Bindings</label>
+                        <button type="button" onClick={handleAddPort} className="d-flex items-center add-btn"><IoAdd /> Add</button>
+                    </div>
+                    {ports.map((p, i) => (
+                        <div key={i} className="d-flex items-center gap-075 row-inputs">
+                            <input
+                                type="number"
+                                placeholder="Container Port"
+                                value={p.private}
+                                onChange={(ev) => handlePortChange(i, 'private', ev.target.value)}
+                            />
+                            <input
+                                type="number"
+                                placeholder="Host Port"
+                                value={p.public}
+                                onChange={(ev) => handlePortChange(i, 'public', ev.target.value)}
+                            />
+                            <button type="button" onClick={() => handleRemovePort(i)} className="d-flex items-center content-center remove-btn"><IoTrash /></button>
                         </div>
-                        {ports.map((p, i) => (
-                            <div key={i} className="d-flex items-center gap-075 row-inputs">
-                                <input
-                                    type="number"
-                                    placeholder="Container Port"
-                                    value={p.private}
-                                    onChange={(ev) => handlePortChange(i, 'private', ev.target.value)}
-                                />
-                                <input
-                                    type="number"
-                                    placeholder="Host Port"
-                                    value={p.public}
-                                    onChange={(ev) => handlePortChange(i, 'public', ev.target.value)}
-                                />
-                                <button type="button" onClick={() => handleRemovePort(i)} className="d-flex items-center content-center remove-btn"><IoTrash /></button>
-                            </div>
-                        ))}
-                    </div>
+                    ))}
+                </div>
 
-                    <div className="d-flex content-end gap-1 modal-actions">
-                        <button type="button" onClick={onClose} className="cancel-btn">Cancel</button>
-                        <button type="submit" disabled={loading} className="submit-btn">
-                            {loading ? 'Updating...' : 'Save Changes(Recreate)'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+                <div className="d-flex content-end gap-1 modal-actions">
+                    <button
+                        type="button"
+                        commandfor="edit-container-modal"
+                        command="close"
+                        className="cancel-btn"
+                    >
+                        Cancel
+                    </button>
+                    <button type="submit" disabled={loading} className="submit-btn">
+                        {loading ? 'Updating...' : 'Save Changes(Recreate)'}
+                    </button>
+                </div>
+            </form>
+        </Modal>
     );
 };
 

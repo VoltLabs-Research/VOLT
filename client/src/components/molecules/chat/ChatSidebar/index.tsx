@@ -52,7 +52,8 @@ const ChatSidebar: React.FC = () => {
                     </button>
                     <button
                         className='d-flex flex-center chat-new-group-button'
-                        onClick={() => setShowCreateGroup(true)}
+                        commandfor='create-group-modal'
+                        command='showModal'
                         title='Create group'
                     >
                         <IoPeopleOutline />

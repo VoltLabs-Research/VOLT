@@ -84,7 +84,11 @@ const DetailsPanel = ({
                                 <span className='chat-details-action-text'>Video Call</span>
                             </button>
                             {chat.isGroup ? (
-                                <button className='d-flex items-center gap-075 chat-details-action' onClick={onOpenGroupManagement}>
+                                <button
+                                    className='d-flex items-center gap-075 chat-details-action'
+                                    commandfor='group-management-modal'
+                                    command='showModal'
+                                >
                                     <i className='d-flex flex-center chat-details-action-icon'>
                                         <IoPeopleOutline />
                                     </i>

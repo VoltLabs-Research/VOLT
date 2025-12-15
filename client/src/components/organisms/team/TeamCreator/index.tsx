@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import FormInput from '@/components/atoms/form/FormInput';
-import TeamCreatorBg from '@/assets/images/create-new-team.webp';
+
 import Button from '@/components/atoms/common/Button';
 import useTeamStore from '@/stores/team/team';
 import Loader from '@/components/atoms/common/Loader';
 import useWindowsStore from '@/stores/ui/windows';
 import useToast from '@/hooks/ui/use-toast';
-import DraggableBinaryContainer from '@/components/organisms/common/DraggableBinaryContainer';
+import Modal from '@/components/molecules/common/Modal';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './TeamCreator.css';
 import Container from '@/components/primitives/Container';
@@ -39,7 +39,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
     });
 
     const handleClose = () => {
-        if(isRequired){
+        if (isRequired) {
             showError('You must create a team to continue.');
             return;
         }
@@ -47,17 +47,17 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
         onClose?.();
     };
 
-    const handleSubmit = async(e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if(!validate({ teamName, teamDescription })) {
+        if (!validate({ teamName, teamDescription })) {
             return;
         }
 
         setIsSubmitting(true);
         clearError();
 
-        try{
+        try {
             await createTeam({
                 name: teamName.trim(),
                 description: teamDescription.trim() || undefined
@@ -66,9 +66,9 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
             setTeamName('');
             setTeamDescription('');
             onClose?.();
-        }catch(err){
+        } catch (err) {
             console.error('Failed to create team:', err);
-        }finally{
+        } finally {
             setIsSubmitting(false);
             toggleTeamCreator();
         }
@@ -76,7 +76,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTeamName(e.target.value);
-        if(error) clearError();
+        if (error) clearError();
         checkField('teamName', e.target.value);
     };
 
@@ -85,48 +85,55 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
         checkField('teamDescription', e.target.value);
     };
 
-    return(
-        <DraggableBinaryContainer
-            title='Create a new team'
-            description="When you create an account, you're assigned a personal team. You can create new teams to manage your trajectories and work with others."
-            bg={TeamCreatorBg}
-            handleSubmit={handleSubmit}
-            onClose={handleClose}
-            isRequired={isRequired}
+    return (
+        <Modal
+            id='team-creator-modal'
+            title='Create Team'
+            description="Create a new workspace for your trajectories."
+            width="450px"
         >
-            <FormInput
-                label='Enter a name for your team'
-                value={teamName}
-                onChange={handleNameChange}
-                placeholder='Team name'
-                required
-                disabled={isLoading || isSubmitting}
-                error={errors.teamName}
-            />
-            <FormInput
-                label='Description(optional)'
-                value={teamDescription}
-                onChange={handleDescriptionChange}
-                placeholder='Team description'
-                disabled={isLoading || isSubmitting}
-                error={errors.teamDescription}
-            />
+            <form onSubmit={handleSubmit} className='d-flex column gap-1-5'>
+                <FormInput
+                    label='Team Name'
+                    value={teamName}
+                    onChange={handleNameChange}
+                    placeholder='Ex. My Research Group'
+                    required
+                    disabled={isLoading || isSubmitting}
+                    error={errors.teamName}
+                />
 
-            {(isLoading || isSubmitting) ? (
-                <Container className='mt-1'>
-                    <Loader scale={0.6} />
+                <FormInput
+                    label='Description (Optional)'
+                    value={teamDescription}
+                    onChange={handleDescriptionChange}
+                    placeholder='What is this team for?'
+                    disabled={isLoading || isSubmitting}
+                    error={errors.teamDescription}
+                />
+
+                <Container className='d-flex content-end gap-05 mt-1'>
+                    {!isRequired && (
+                        <button
+                            type='button'
+                            className='button ghost'
+                            commandfor='team-creator-modal'
+                            command='close'
+                        >
+                            Cancel
+                        </button>
+                    )}
+
+                    <Button
+                        type='submit'
+                        isLoading={isLoading || isSubmitting}
+                        disabled={!teamName.trim() || isLoading || isSubmitting}
+                    >
+                        Create Team
+                    </Button>
                 </Container>
-            ) : (
-                <Button
-                    type='submit'
-                    className='black-on-light sm'
-                    title={'Continue'}
-                    disabled={!teamName.trim() || isLoading || isSubmitting}
-                >
-                    Continue
-                </Button>
-            )}
-        </DraggableBinaryContainer>
+            </form>
+        </Modal>
     );
 };
 

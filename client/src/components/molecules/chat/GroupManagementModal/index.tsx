@@ -37,8 +37,7 @@ import {
 } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
-import Draggable from '@/components/atoms/common/Draggable';
-import WindowIcons from '@/components/molecules/common/WindowIcons';
+import Modal from '@/components/molecules/common/Modal';
 import Button from '@/components/atoms/common/Button';
 import FormInput from '@/components/atoms/form/FormInput';
 import { useFormValidation } from '@/hooks/useFormValidation';
@@ -605,51 +604,56 @@ const GroupManagementModal = () => {
     };
 
     return (
-        <Draggable className='d-flex group-management-container primary-surface'>
-            <div className='d-flex column content-between group-management-left-container'>
-                <div className='d-flex column gap-2 group-management-left-top-container'>
-                    <WindowIcons onClose={() => setShowGroupManagement(false)} />
+        <Modal
+            id='group-management-modal'
+            title='Group Settings'
+            width='1050px'
+            className='group-management-modal'
+        >
+            <div className='d-flex group-management-container-inner'>
+                <div className='d-flex column content-between group-management-left-container'>
+                    <div className='d-flex column gap-2 group-management-left-top-container'>
+                        <div className='d-flex column gap-05 group-management-nav-container'>
+                            <div className='d-flex column gap-05 group-management-nav'>
+                                <Title className='font-size-3 group-management-nav-title'>Settings</Title>
+                                <div className='d-flex column gap-02 group-management-nav-items'>
+                                    {navigationItems.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className={`d-flex items-center gap-075 group-management-nav-item ${activeSection === item.id ? 'active' : ''}`}
+                                            onClick={() => setActiveSection(item.id as any)}
+                                        >
+                                            <i className='d-flex flex-center group-management-nav-item-icon'>
+                                                <item.icon size={16} />
+                                            </i>
+                                            <span className='group-management-nav-item-title'>{item.title}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                    <div className='d-flex column gap-05 group-management-nav-container'>
-                        <div className='d-flex column gap-05 group-management-nav'>
-                            <Title className='font-size-3 group-management-nav-title'>Group Settings</Title>
-                            <div className='d-flex column gap-02 group-management-nav-items'>
-                                {navigationItems.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className={`d-flex items-center gap-075 group-management-nav-item ${activeSection === item.id ? 'active' : ''}`}
-                                        onClick={() => setActiveSection(item.id as any)}
-                                    >
-                                        <i className='d-flex flex-center group-management-nav-item-icon'>
-                                            <item.icon size={16} />
-                                        </i>
-                                        <span className='group-management-nav-item-title'>{item.title}</span>
-                                    </div>
-                                ))}
+                    <div className='group-management-left-bottom-container'>
+                        <div className='d-flex items-center gap-075 group-management-group-info'>
+                            <div className='d-flex flex-center group-management-group-avatar'>
+                                <IoPeopleOutline />
+                            </div>
+                            <div className='group-management-group-details'>
+                                <Title className='font-size-2-5 group-management-group-name'>{currentChat.groupName}</Title>
+                                <Paragraph className='group-management-group-members-count'>
+                                    {currentChat.participants.length} members
+                                </Paragraph>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className='group-management-left-bottom-container'>
-                    <div className='d-flex items-center gap-075 group-management-group-info'>
-                        <div className='d-flex flex-center group-management-group-avatar'>
-                            <IoPeopleOutline />
-                        </div>
-                        <div className='group-management-group-details'>
-                            <Title className='font-size-2-5 group-management-group-name'>{currentChat.groupName}</Title>
-                            <Paragraph className='group-management-group-members-count'>
-                                {currentChat.participants.length} members
-                            </Paragraph>
-                        </div>
-                    </div>
+                <div className='d-flex column gap-1 group-management-right-container'>
+                    {renderContent()}
                 </div>
             </div>
-
-            <div className='d-flex column gap-1 group-management-right-container'>
-                {renderContent()}
-            </div>
-        </Draggable>
+        </Modal>
     );
 };
 

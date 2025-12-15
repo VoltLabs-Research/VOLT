@@ -1,16 +1,10 @@
 /* Group Management Modal Styles - Enhanced Modern Design */
-.group-management-container {
-    height: 650px;
-    width: 1050px;
-    position: absolute;
-    z-index: 99999999;
-
+.group-management-container-inner {
+    height: 600px;
+    width: 100%;
     overflow: hidden;
     border-radius: 1rem;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(16px);
-    background: linear-gradient(135deg, var(--background-primary) 0%, var(--background-secondary) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
 }
 
 .group-management-left-container {

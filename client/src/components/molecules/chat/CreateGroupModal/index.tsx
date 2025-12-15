@@ -5,10 +5,9 @@ import useTeamStore from '@/stores/team/team';
 import { IoCheckmarkOutline } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
-import DraggableBinaryContainer from '@/components/organisms/common/DraggableBinaryContainer';
+import Modal from '@/components/molecules/common/Modal';
 import Button from '@/components/atoms/common/Button';
 import FormInput from '@/components/atoms/form/FormInput';
-import CreateGroupBg from '@/assets/images/create-new-group.webp';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './CreateGroupModal.css';
 import Title from '@/components/primitives/Title';
@@ -70,12 +69,11 @@ const CreateGroupModal = () => {
     };
 
     return (
-        <DraggableBinaryContainer
+        <Modal
+            id='create-group-modal'
             title='Create New Group'
             description="Create a new group chat with your team members."
-            bg={CreateGroupBg}
-            handleSubmit={handleCreateGroup}
-            onClose={() => setShowCreateGroup(false)}
+            width='500px'
         >
             <div className="space-y-4">
                 <div>
@@ -94,13 +92,13 @@ const CreateGroupModal = () => {
                         label='Group Description'
                         value={groupDescription}
                         onChange={handleDescriptionChange}
-                        placeholder='Enter group description(optional)'
+                        placeholder='Enter group description (optional)'
                         error={errors.groupDescription}
                     />
                 </div>
             </div>
 
-            <div className='d-flex column gap-1 create-group-members-section'>
+            <div className='d-flex column gap-1 create-group-members-section mt-1'>
                 <Title className='font-size-2-5'>Select Members</Title>
                 <div className='d-flex column gap-05 create-group-members-list'>
                     {teamMembers
@@ -130,15 +128,26 @@ const CreateGroupModal = () => {
                 </div>
             </div>
 
-            <Button
-                type='submit'
-                className='black-on-light sm'
-                title='Create Group'
-                disabled={!groupName.trim() || selectedMembers.length === 0}
-            >
-                Create Group
-            </Button>
-        </DraggableBinaryContainer>
+            <div className='d-flex content-end gap-05 mt-1'>
+                <button
+                    className='button ghost'
+                    commandfor='create-group-modal'
+                    command='close'
+                >
+                    Cancel
+                </button>
+                <Button
+                    type='button'
+                    className='black-on-light sm'
+                    title='Create Group'
+                    disabled={!groupName.trim() || selectedMembers.length === 0 || isLoading}
+                    onClick={handleCreateGroup}
+                    isLoading={isLoading}
+                >
+                    Create Group
+                </Button>
+            </div>
+        </Modal>
     );
 };
 

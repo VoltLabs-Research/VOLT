@@ -35,7 +35,6 @@ const ContainerDetails: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'overview' | 'processes' | 'logs' | 'storage' | 'settings'>('overview');
     const [actionLoading, setActionLoading] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     useEffect(() => {
         fetchContainer();
@@ -426,7 +425,7 @@ const ContainerDetails: React.FC = () => {
                             <div className="d-flex content-end card-body">
                                 <button
                                     className="d-flex items-center gap-05 secondary-btn"
-                                    onClick={() => setIsEditModalOpen(true)}
+                                    onClick={() => (document.getElementById('edit-container-modal') as HTMLDialogElement)?.showModal()}
                                 >
                                     <Settings size={16} /> Edit Configuration
                                 </button>
@@ -452,8 +451,6 @@ const ContainerDetails: React.FC = () => {
             </div>
 
             <EditContainerModal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
                 container={container}
                 onSuccess={fetchContainer}
             />
