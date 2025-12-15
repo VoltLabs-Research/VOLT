@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import containerApi from '@/services/api/container';
 import { RefreshCw, Activity } from 'lucide-react';
+import Container from '@/components/primitives/Container';
 import './ContainerProcesses.css';
 
 interface ContainerProcessesProps {
@@ -17,9 +18,6 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
         setError(null);
         try{
             const data = await containerApi.getProcesses(containerId) as any;
-            // containerApi.getProcesses returns the processes object directly
-            // with { Titles: string[], Processes: string[][] }
-
             const mapped = (data?.Processes || []).map((p: string[]) => {
                 // p indices correspond to: 0:PID, 1:COMM, 2:ARGS, 3:NLWP, 4:USER, 5:RSS, 6:PCPU
                 return {
@@ -28,7 +26,7 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
                     Command: p[2],
                     Threads: p[3],
                     User: p[4],
-                    MemB: formatMemory(p[5]), // RSS is usually in KB
+                    MemB: formatMemory(p[5]), 
                     Cpu: p[6]
                 };
             });
@@ -70,14 +68,14 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
     }
 
     return(
-        <div className="processes-container">
-            <div className="processes-header">
+        <Container className="d-flex h-max column overflow-hidden processes-container">
+            <Container className="d-flex content-between items-center processes-header">
                 <h3>Running Processes</h3>
                 <button onClick={fetchProcesses} className="refresh-btn">
                     <RefreshCw size={14} /> Refresh
                 </button>
-            </div>
-            <div className="processes-table-wrapper">
+            </Container>
+            <Container className="flex-1 overflow-auto">
                 <table className="processes-table">
                     <thead>
                         <tr>
@@ -104,8 +102,8 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
                         ))}
                     </tbody>
                 </table>
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 

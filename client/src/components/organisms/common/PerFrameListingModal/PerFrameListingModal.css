@@ -5,8 +5,6 @@
     background-color: var(--color-bg);
     box-shadow: 0 12px 30px rgba(0, 0, 0, .25);
     transition: width 0.3s ease, height 0.3s ease;
-    display: flex;
-    flex-direction: column;
 }
 
 .per-frame-listing-modal-draggable {
@@ -31,15 +29,6 @@
     border-radius: 0;
 }
 
-.per-frame-listing-modal-header-container {
-    display: flex;
-    gap: 1.5rem;
-    flex-direction: column;
-    padding: 1rem;
-    user-select: none;
-    flex-shrink: 0;
-}
-
 .per-frame-listing-modal-header-title {
     font-size: 1.7rem;
     font-weight: 300;
@@ -48,13 +37,6 @@
 
 .per-frame-listing-modal-header-title:active {
     cursor: grabbing;
-}
-
-.per-frame-listing-modal-body-container {
-    padding: 1rem;
-    flex: 1;
-    overflow: auto;
-    min-height: 0;
 }
 
 .per-frame-listing-modal-container .document-listing-table-row-container,

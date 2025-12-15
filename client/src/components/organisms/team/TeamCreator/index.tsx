@@ -62,11 +62,8 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
                 description: teamDescription.trim() || undefined
             });
 
-            // Reset form
             setTeamName('');
             setTeamDescription('');
-
-            // Close modal if onClose is provided
             onClose?.();
         }catch(err){
             console.error('Failed to create team:', err);

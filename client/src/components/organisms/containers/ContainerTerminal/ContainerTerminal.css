@@ -1,13 +1,5 @@
 .terminal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: 1000;
     backdrop-filter: blur(4px);
 }
@@ -17,9 +9,6 @@
     border-radius: 8px;
     width: 90vw;
     height: 80vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     border: 1px solid #333;
 }
@@ -35,9 +24,6 @@
 .terminal-header {
     background: #2d2d2d;
     padding: 0.75rem 1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     border-bottom: 1px solid #333;
 }
 
@@ -45,9 +31,6 @@
     color: #e5e5e5;
     font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
     font-size: 0.9rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
 }
 
 .close-btn {
@@ -69,11 +52,8 @@
 }
 
 .terminal-body {
-    flex: 1;
     padding: 1rem;
-    overflow: hidden;
     background: #1e1e1e;
-    position: relative;
 }
 
 /* xterm.js customization */

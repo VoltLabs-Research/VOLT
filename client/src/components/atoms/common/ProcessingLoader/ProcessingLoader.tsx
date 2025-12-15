@@ -21,6 +21,7 @@
  */
 
 import React from 'react';
+import Container from '@/components/primitives/Container';
 import './ProcessingLoader.css';
 
 interface ProcessingLoaderProps {
@@ -41,20 +42,20 @@ const ProcessingLoader: React.FC<ProcessingLoaderProps> = ({
     if(!isVisible) return null;
 
     return(
-        <div className={`processing-loader-container ${className}`}>
-            <div className="processing-loader-spinner" />
-            <div className="processing-loader-content">
+        <Container className={`d-flex items-center gap-075 processing-loader-container ${className}`}>
+            <Container className="processing-loader-spinner" />
+            <Container className="d-flex column gap-035 flex-1 column">
                 <p className="processing-loader-text">{message}</p>
                 {showProgress && completionRate > 0 && (
-                    <div className="processing-loader-progress-bar">
-                        <div
+                    <Container className="w-max overflow-hidden processing-loader-progress-bar">
+                        <Container
                             className="processing-loader-progress-fill"
                             style={{ width: `${Math.min(completionRate * 100, 100)}%` }}
                         />
-                    </div>
+                    </Container>
                 )}
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 

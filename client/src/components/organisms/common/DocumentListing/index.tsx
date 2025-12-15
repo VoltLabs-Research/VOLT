@@ -164,11 +164,8 @@ const DocumentListing = ({
 }: DocumentListingProps) => {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
     const [sortedData, setSortedData] = useState<any[]>(data)
-
-    // useWorker for sorting in background thread
     const [sortWorker, { status: sortStatus }] = useWorker(sortDataWorker)
 
-    // Sort data using worker when data or sortConfig changes
     useEffect(() => {
         if (!sortConfig) {
             setSortedData(data)
@@ -178,11 +175,7 @@ const DocumentListing = ({
         sortWorker(data, sortConfig)
             .then(result => {
                 setSortedData(result)
-            })
-            .catch(() => {
-                // Fallback to unsorted if worker fails
-                setSortedData(data)
-            })
+            });
     }, [data, sortConfig, sortWorker])
 
     const handleSort = useCallback((col: ColumnConfig) => {

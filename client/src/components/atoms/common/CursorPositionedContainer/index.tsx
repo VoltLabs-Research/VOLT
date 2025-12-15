@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 
+import Container from '@/components/primitives/Container';
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -164,13 +165,13 @@ const CursorPositionedContainer: React.FC<CursorPositionedContainerProps> = ({
     };
 
     return createPortal(
-        <div
+        <Container
             ref={containerRef}
             className={className}
             style={styles}
         >
             {children}
-        </div>,
+        </Container>,
         document.body
     );
 };

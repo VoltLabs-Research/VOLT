@@ -50,9 +50,6 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                 })}
 
                 {tools.map((tool) => {
-                    // If tool has an icon name, resolve it.
-                    // Note: You might need to add icons to the tool definition or resolve them in parent.
-                    // For now assuming tool.icon is a string name like exposures.
                     const Icon = resolveIcon(tool.icon);
 
                     return(

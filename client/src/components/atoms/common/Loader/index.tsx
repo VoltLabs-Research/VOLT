@@ -20,22 +20,22 @@
  * SOFTWARE.
  */
 
-import React from 'react';
+import Container from '@/components/primitives/Container';
 import './Loader.css';
 
 const Loader = ({ scale }) => {
     const loaderItems = Array.from({ length: 12 }, (_, index) => index + 1);
 
     return(
-        <div className='Loader-Container'>
-            <div className='Loader' style={{ transform: 'scale(' + scale + ')' }}>
+        <Container className='p-fixed d-flex content-center items-center'>
+            <Container className='p-relative' style={{ transform: 'scale(' + scale + ')' }}>
                 {loaderItems.map((item) => (
                     <div
                         key={item}
                         className={`Loader-Item Loader-Item-${item}`} />
                 ))}
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 

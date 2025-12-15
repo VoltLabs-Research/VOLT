@@ -4,6 +4,7 @@ import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import CanvasSidebarTab from '@/components/atoms/scene/CanvasSidebarTab';
 import SidebarHeader from '@/components/molecules/common/SidebarHeader';
 import SidebarBottom from '@/components/molecules/common/SidebarBottom';
+import Container from '@/components/primitives/Container';
 import './Sidebar.css';
 
 const MOBILE_BREAKPOINT = 768;
@@ -57,29 +58,29 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
             <EditorWidget className='editor-sidebar-container' draggable={false}>
-                <div className='editor-sidebar-top-container'>
+                <Container className='editor-sidebar-top-container'>
                     {headerElement}
 
                     {overrideContent ? (
-                        <div className='editor-sidebar-override-container'>
+                        <Container>
                             {overrideContent}
-                        </div>
+                        </Container>
                     ) : (
                         <>
-                            <div className='editor-sidebar-options-wrapper-container'>
-                                <div className='editor-sidebar-options-container'>
+                            <Container className='p-1-5'>
+                                <Container className='d-flex p-05 content-between editor-sidebar-options-container'>
                                   {tags.map(tag => (
                                         <CanvasSidebarTab option={tag.name} key={tag.id} />
                                     ))}
-                                </div>
-                            </div>
+                                </Container>
+                            </Container>
 
                             {active && (
                                 <active.Component {...active.props} />
                             )}
                         </>
                     )}
-                </div>
+                </Container>
 
                 {bottom}
             </EditorWidget>

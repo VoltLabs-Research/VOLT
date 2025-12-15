@@ -26,7 +26,6 @@ import usePerformanceSettingsStore from '@/stores/editor/perfomance-settings';
 import useCameraSettings from '@/stores/editor/camera-config';
 import { useRendererSettings } from '@/stores/editor/renderer-settings';
 import useOrbitControlsSettings from '@/stores/editor/orbit-controls';
-import usePluginStore from '@/stores/plugins/plugin';
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
 import './Scene3D.css';
 
@@ -34,10 +33,6 @@ interface Scene3DProps {
 	children?: React.ReactNode;
 	cameraControlsEnabled?: boolean;
 	background?: string;
-	/**
-	 * Optional CSS background for the canvas container(allows gradients or CSS variables)
-	 * If provided, it will be applied as `background` css property instead of `backgroundColor`.
-	 */
 	cssBackground?: string;
 	showGizmo?: boolean;
 	orbitControlsConfig?: any;
@@ -218,15 +213,13 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 			// Calculate current distance
 			const currentDistance = camera.position.distanceTo(controls.target);
 
-			// Calculate zoom percentage relative to initial distance
-			// From: targetDistance = initialDistance * (100 / zoomPercent)
-			// Solve for zoomPercent: zoomPercent = initialDistance * 100 / currentDistance
 			const zoomPercent = (initialDistanceRef.current * 100) / currentDistance;
 
 			// Round to nearest preset or to nearest 5%
 			const roundedZoom = Math.round(zoomPercent / 5) * 5;
 
-			return Math.max(10, Math.min(1000, roundedZoom)); // Clamp between 10% and 1000%
+			// Clamp between 10% and 1000%
+			return Math.max(10, Math.min(1000, roundedZoom));
 		}
 	}), [tools]);
 
@@ -259,12 +252,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 		}
 	}, []);
 
-	/**
-	 * Determina el tipo de escena basándose en el nombre de la escena.
-	 * TODO: Re-implement using plugin workflow data when available
-	 */
 	const { isDefectScene, isTrajectoryScene } = useMemo(() => {
-		// Default to trajectory scene for now
 		// TODO: Implement proper scene type detection using plugin workflow data
 		return { isDefectScene: false, isTrajectoryScene: true };
 	}, [activeScene]);
@@ -272,7 +260,6 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	const canvasStyle = useMemo(() => ({
 		width: '100%',
 		height: '100%',
-		// Prefer an explicit CSS background(allows gradients) otherwise fall back to a plain background color
       ...(cssBackground ? { background: cssBackground } : { backgroundColor }),
 		touchAction: 'none',
 		willChange: 'transform',
@@ -280,7 +267,6 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	}), [backgroundColor, cssBackground]);
 
 	const threeBackgroundColor = useMemo(() => {
-		// If a CSS gradient is used and alpha is enabled in renderer, keep the WebGL background transparent so the gradient shows through
 		if(cssBackground && rCreate.alpha) return 'transparent';
 		return backgroundColor;
 	}, [cssBackground, rCreate.alpha, backgroundColor]);

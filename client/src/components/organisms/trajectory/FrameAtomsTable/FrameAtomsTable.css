@@ -29,14 +29,6 @@
   border-radius: 0;
 }
 
-.frame-atoms-table-header-container{
-  display: flex;
-  gap: 1.5rem;
-  flex-direction: column;
-  padding: 1rem;
-  user-select: none;
-}
-
 .frame-atoms-table-header-title{
   font-size: 1.7rem;
   font-weight: 300;
@@ -48,9 +40,7 @@
 }
 
 .frame-atoms-table-body-container{
-  padding: 1rem;
   max-height: 60vh;
-  overflow: auto;
 }
 
 .frame-atoms-table-container.maximized .frame-atoms-table-body-container{

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoClose, IoAdd, IoTrash } from 'react-icons/io5';
 import teamApi from '@/services/api/team';
 import containerApi from '@/services/api/container';
@@ -18,18 +18,10 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onC
     const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>([]);
     const [ports, setPorts] = useState<{ private: number; public: number }[]>([]);
     const [loading, setLoading] = useState(false);
-
     const { showSuccess, showError } = useToast();
-
-    // Get user's teams(mock/simplified for now, ideally fetch from store or API)
-    // Assuming the user object has teams or we fetch them.
-    // For this implementation, we'll fetch teams on mount if needed,
-    // but let's assume we can get them from the auth store or a hook.
-    // Since we don't have a global teams store ready in the context provided,
-    // we'll fetch them when the modal opens.
     const [teams, setTeams] = useState<{ _id: string; name: string }[]>([]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if(isOpen){
             teamApi.getAll().then(teamsList => {
                 setTeams(teamsList as { _id: string; name: string }[]);

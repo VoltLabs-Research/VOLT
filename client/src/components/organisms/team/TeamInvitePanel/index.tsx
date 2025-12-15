@@ -1,7 +1,3 @@
-/**
-* Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
-*/
-
 import React, { useState, useRef, useEffect } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { MdContentCopy } from 'react-icons/md';
@@ -53,7 +49,6 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         isOpen
     );
 
-    // Fetch team members when panel opens
     useEffect(() => {
         const fetchMembers = async() => {
             if(!isOpen || !teamId) return;
@@ -61,8 +56,6 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             setLoadingMembers(true);
             try{
                 const membersData = await teamApi.members.getAll(teamId);
-
-                // Map members to the expected format
                 const formattedMembers: TeamMember[] = (membersData as any[])?.map((member: any) => ({
                     email: member.email || member._id,
                     name: member.username || member.email,
@@ -81,18 +74,15 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         fetchMembers();
     }, [isOpen, teamId]);
 
-    // Initialize position when panel opens
     useEffect(() => {
         if(isOpen){
             setInitialPosition();
-            // Auto-focus input when panel opens
             setTimeout(() => {
                 inputRef.current?.focus();
             }, 150);
         }
     }, [isOpen, setInitialPosition]);
 
-    // Close when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if(panelRef.current && !panelRef.current.contains(event.target as Node)) {
@@ -112,7 +102,6 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     }, [isOpen, onClose, triggerRef]);
 
     const handleAddMember = async(e: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>) => {
-        // Handle both Enter key and button click
         if('key' in e && e.key !== 'Enter') return;
         if('key' in e) e.preventDefault();
 
@@ -202,7 +191,6 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             className='team-invite-panel'
             style={styles as React.CSSProperties}
         >
-            {/* Header */}
             <div className='team-invite-header'>
                 <div className='team-invite-tabs'>
                     <button className='team-invite-tab active'>Share</button>
@@ -213,9 +201,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 </button>
             </div>
 
-            {/* Content */}
             <div className='team-invite-content'>
-                {/* Input Section */}
                 <div className='team-invite-input-section'>
                     <input
                         ref={inputRef}
@@ -254,7 +240,6 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     </button>
                 </div>
 
-                {/* Members List */}
                 <div className='team-invite-members-section'>
                     {loadingMembers ? (
                         <>
@@ -318,7 +303,6 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     )}
                 </div>
 
-                {/* General Access */}
                 <div className='team-invite-general-access'>
                     <div className='team-invite-general-header'>
                         <h4 className='team-invite-general-title'>General Access</h4>
@@ -345,7 +329,6 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     </div>
                 </div>
 
-                {/* Footer Links */}
                 <div className='team-invite-footer'>
                     <button className='team-invite-footer-link'>
                         <MdContentCopy size={16} /> Copy link

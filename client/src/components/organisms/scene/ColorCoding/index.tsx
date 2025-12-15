@@ -5,10 +5,10 @@ import useFrameProperties from '@/hooks/trajectory/use-frame-properties';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Button from '@/components/atoms/common/Button';
 import FormField from '@/components/molecules/form/FormField';
-import './ColorCoding.css';
 import rasterApi from '@/services/api/raster';
 import { useState, useEffect } from 'react';
 import useModelStore from '@/stores/editor/model';
+import './ColorCoding.css';
 
 const COLOR_GRADIENTS = [
     'Viridis',

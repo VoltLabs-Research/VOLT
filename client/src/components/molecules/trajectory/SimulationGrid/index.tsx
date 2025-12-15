@@ -3,8 +3,6 @@ import SimulationCard from '@/components/atoms/trajectory/SimulationCard';
 import SimulationSkeletonCard from '@/components/atoms/trajectory/SimulationSkeletonCard';
 import useTrajectoryStore from '@/stores/trajectories';
 import useAnimationPresence from '@/hooks/ui/animation/use-animation-presence';
-import useTeamJobsStore from '@/stores/team/jobs';
-import type { Job } from '@/types/jobs';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import './SimulationGrid.css';
 

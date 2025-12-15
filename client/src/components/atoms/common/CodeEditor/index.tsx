@@ -3,6 +3,7 @@ import Editor from '@monaco-editor/react';
 import type { Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import './CodeEditor.css';
+import Container from '@/components/primitives/Container';
 
 export type CodeLanguage = 'json' | 'javascript' | 'typescript' | 'yaml' | 'html' | 'css' | 'markdown' | 'plaintext';
 
@@ -63,11 +64,11 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
     const editorHeight = typeof height === 'number' ? `${height}px` : height;
 
     return(
-        <div className={`code-editor-wrapper ${className} ${error ? 'has-error' : ''}`}>
+        <Container className={`d-flex column gap-05 ${className} ${error ? 'has-error' : ''}`}>
             {label && <label className="code-editor-label">{label}</label>}
             {description && <p className="code-editor-description">{description}</p>}
 
-            <div className="code-editor-container" style={{ height: editorHeight }}>
+            <Container className="p-relative overflow-hidden code-editor-container" style={{ height: editorHeight }}>
                 <Editor
                     value={value}
                     language={language}
@@ -120,10 +121,10 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
                         quickSuggestions: false
                     }}
                 />
-            </div>
+            </Container>
 
             {error && <p className="code-editor-error">{error}</p>}
-        </div>
+        </Container>
     );
 };
 

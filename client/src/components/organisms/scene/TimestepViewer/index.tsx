@@ -53,7 +53,6 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
 
     useImperativeHandle(ref, () => ({
         loadModel: () => {
-            // Usar los métodos del hook según necesites
             resetModel();
         }
     }), [resetModel]);
@@ -63,16 +62,14 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         [autoFit, modelBounds]
     );
 
+    if(!shouldRenderCamera) return null;
+
     return(
-        <>
-            {shouldRenderCamera && (
-                <CameraManager
-                    modelBounds={modelBounds || undefined}
-                    orbitControlsRef={orbitControlsRef}
-                    face='ny'
-                />
-            )}
-        </>
+        <CameraManager
+            modelBounds={modelBounds || undefined}
+            orbitControlsRef={orbitControlsRef}
+            face='ny'
+        />
     );
 });
 

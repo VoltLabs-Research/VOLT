@@ -10,24 +10,25 @@ import Sidebar from '@/components/organisms/common/Sidebar';
 import PaletteItem from '@/components/atoms/plugins/PaletetteItem';
 import NodeEditor from '@/components/molecules/plugins/NodeEditor';
 import EditableTag from '@/components/atoms/common/EditableTag';
-import { TbArrowLeft, TbDeviceFloppy, TbCheck, TbAlertCircle } from 'react-icons/tb';
+import Container from '@/components/primitives/Container';
+import { TbArrowLeft } from 'react-icons/tb';
 import './PluginBuilder.css';
 import '@xyflow/react/dist/style.css';
 
 const nodeTypesList = Object.values(NODE_CONFIGS);
 
 const PaletteContent: React.FC<{ onDragStart: (e: React.DragEvent, type: NodeType) => void }> = ({ onDragStart }) => (
-    <div className='plugin-builder-palette-list-container'>
+    <Container className='d-flex column gap-1-5 plugin-builder-palette-list-container'>
         {nodeTypesList.map((config) => (
             <PaletteItem config={config} onDragStart={onDragStart} key={config.type} />
         ))}
-    </div>
+    </Container>
 );
 
 const OptionsContent = () => (
-    <div className="plugin-builder-options-placeholder">
+    <Container>
         <p>Select a node or add global plugin options here.</p>
-    </div>
+    </Container>
 );
 
 const PluginBuilder = () => {
@@ -36,7 +37,6 @@ const PluginBuilder = () => {
     const [activeTab, setActiveTab] = useState('Palette');
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-    // Suscripciones optimizadas con useShallow para el canvas
     const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onNodeClick, onPaneClick, addNode, validateConnection, saveWorkflow, isSaving, saveError, currentPlugin } =
         usePluginBuilderStore(
             useShallow((state) => ({
@@ -56,7 +56,6 @@ const PluginBuilder = () => {
             }))
         );
 
-    // Handle save workflow
     const handleSave = useCallback(async() => {
         if(isSaving) return;
         setSaveStatus('saving');
@@ -70,7 +69,6 @@ const PluginBuilder = () => {
         }
     }, [saveWorkflow, isSaving]);
 
-    // Keyboard shortcuts(Ctrl+S to save)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -82,12 +80,10 @@ const PluginBuilder = () => {
         return() => window.removeEventListener('keydown', handleKeyDown);
     }, [handleSave]);
 
-    // Suscripción separada para el sidebar
     const selectedNode = usePluginBuilderStore((state) => state.selectedNode);
     const selectNode = usePluginBuilderStore((state) => state.selectNode);
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
 
-    // Get the Modifier node to sync plugin name
     const modifierNode = useMemo(() => {
         return nodes.find(n => n.type === NodeType.MODIFIER);
     }, [nodes]);
@@ -136,7 +132,6 @@ const PluginBuilder = () => {
         selectNode(null);
     }, [selectNode]);
 
-    // Memoizar SIDEBAR_TAGS para evitar recreación en cada render
     const SIDEBAR_TAGS = useMemo(() => [
         {
             id: "Palette",
@@ -153,7 +148,7 @@ const PluginBuilder = () => {
     const selectedNodeConfig = selectedNode ? NODE_CONFIGS[selectedNode.type as NodeType] : null;
 
     return(
-        <div className='plugin-builder-container'>
+        <Container className='wh-max vh-max'>
             <Sidebar
                 tags={SIDEBAR_TAGS}
                 activeTag={activeTab}
@@ -162,12 +157,12 @@ const PluginBuilder = () => {
             >
                 <Sidebar.Header>
                     {selectedNode ? (
-                        <div className='plugin-sidebar-header-back'>
+                        <Container className='d-flex items-center gap-075'>
                             <button className='plugin-sidebar-back-btn' onClick={handleClearSelection}>
                                 <TbArrowLeft size={18} />
                             </button>
                             <h3 className='plugin-sidebar-title'>{selectedNodeConfig?.label || 'Node'}</h3>
-                        </div>
+                        </Container>
                     ) : (
                         <EditableTag
                             as='h3'
@@ -180,16 +175,19 @@ const PluginBuilder = () => {
                 </Sidebar.Header>
 
                 <Sidebar.Bottom>
-                    <div className='editor-sidebar-user-avatar-wrapper'>
+                    <Container className='editor-sidebar-user-avatar-wrapper'>
                         <SidebarUserAvatar
                             avatarrounded={false}
                             hideEmail={true}
                         />
-                    </div>
+                    </Container>
                 </Sidebar.Bottom>
             </Sidebar>
 
-            <div className='plugin-builder-canvas' ref={reactFlowWrapper}>
+            <Container 
+                className='h-max w-max' 
+                ref={reactFlowWrapper}
+            >
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
@@ -213,8 +211,8 @@ const PluginBuilder = () => {
                 >
                     <Background bgColor='#080808ff' color='#3d3d3dff' gap={16} size={0.8} />
                 </ReactFlow>
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 

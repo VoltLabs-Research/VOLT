@@ -22,15 +22,16 @@
 
 import React from 'react';
 import Loader from '@/components/atoms/common/Loader';
+import Container from '@/components/primitives/Container';
 
 const LoadingOverlay = React.memo(() => (
-    <div
-        className='loader-layer-container'
+    <Container
+        className='w-max h-max p-absolute d-flex flex-center loader-layer-container'
         role="status"
         aria-label="Loading trajectory"
     >
         <Loader scale={0.7} />
-    </div>
+    </Container>
 ));
 
 LoadingOverlay.displayName = 'LoadingOverlay';

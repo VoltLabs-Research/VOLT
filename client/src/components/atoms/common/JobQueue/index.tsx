@@ -24,6 +24,7 @@ import UseAnimations from 'react-useanimations';
 import activity from 'react-useanimations/lib/activity';
 import { FaCheck, FaClock, FaExclamationTriangle, FaTimes, FaRedo } from 'react-icons/fa';
 import type { Job } from '@/types/jobs';
+import Container from '@/components/primitives/Container';
 import './JobQueue.css';
 
 const JobQueue = ({ job }: { job: Job }) => {
@@ -56,12 +57,12 @@ const JobQueue = ({ job }: { job: Job }) => {
     const IconComponent = statusConfig[job.status].icon;
 
     return(
-        <div className={'job-container '.concat(job.status)}>
-            <div className='job-left-container'>
+        <Container className={'d-flex w-max content-between items-center p-1 job-container '.concat(job.status)}>
+            <Container className='d-flex items-center gap-1'>
                 <i className='job-icon-container'>
                     {IconComponent}
                 </i>
-                <div className='job-info-container'>
+                <Container className='d-flex column gap-025'>
                     <h3 className='job-name'>
                         {job.name}
                         {(job?.chunkIndex !== undefined && job?.totalChunks !== undefined) && (
@@ -71,10 +72,10 @@ const JobQueue = ({ job }: { job: Job }) => {
                     <p className='job-message'>
                         {job.message || job.status}
                     </p>
-                </div>
-            </div>
+                </Container>
+            </Container>
 
-            <div className='job-status-info'>
+            <Container className='d-flex column gap-05 items-center'>
                 {(job.progress !== undefined && job.progress > 0 && job.status === 'running') && (
                     <span className='job-progress'>
                         {job.progress}%
@@ -84,8 +85,8 @@ const JobQueue = ({ job }: { job: Job }) => {
                     {job.status}
                 </span>
                 {/*<p className='job-timestamp'>{formatTimeAgo(job.timestamp)}</p>*/}
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 

@@ -24,6 +24,7 @@ import { memo } from 'react';
 import useTeamJobsStore from '@/stores/team/jobs';
 import JobSkeleton from '@/components/atoms/common/JobSkeleton';
 import JobQueue from '@/components/atoms/common/JobQueue';
+import Container from '@/components/primitives/Container';
 import './JobsHistory.css';
 
 const JobsHistory = memo(() => {
@@ -34,7 +35,7 @@ const JobsHistory = memo(() => {
     const shouldShowSkeleton = !isConnected || isLoading;
 
     return(
-        <div className='jobs-history-container'>
+        <Container className='d-flex column'>
             {shouldShowSkeleton ? (
                 <JobSkeleton />
             ) : (
@@ -45,7 +46,7 @@ const JobsHistory = memo(() => {
                     />
                 ))
             )}
-        </div>
+        </Container>
     );
 });
 

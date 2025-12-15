@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IoFolder, IoDocument, IoArrowBack } from 'react-icons/io5';
 import useToast from '@/hooks/ui/use-toast';
 import containerApi from '@/services/api/container';
+import Container from '@/components/primitives/Container';
 import './ContainerFileExplorer.css';
 
 interface FileItem {
@@ -74,40 +75,40 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
 
     if(viewingFile){
         return(
-            <div className="file-viewer">
-                <div className="viewer-header">
+            <Container className='d-flex column h-max gap-1'>
+                <Container className="d-flex items-center gap-1 viewer-header">
                     <button onClick={closeFileViewer} className="back-btn-small">
                         <IoArrowBack /> Back
                     </button>
                     <span>{viewingFile}</span>
-                </div>
+                </Container>
                 <pre className="file-content">{fileContent}</pre>
-            </div>
+            </Container>
         );
     }
 
     return(
-        <div className="container-file-explorer">
-            <div className="explorer-header">
-                <div className="path-bar">
+        <Container>
+            <Container className="d-flex content-between items-center explorer-header">
+                <Container className="d-flex items-center gap-1 flex-1">
                     <button onClick={handleGoUp} disabled={currentPath === '/'} className="up-btn">
                         <IoArrowBack />
                     </button>
                     <span className="current-path">{currentPath}</span>
-                </div>
+                </Container>
                 <button onClick={() => fetchFiles(currentPath)} className="refresh-btn-small">
                     Refresh
                 </button>
-            </div>
+            </Container>
 
-            <div className="file-list">
+            <Container className="d-flex flex-1 y-scroll column">
                 {loading ? (
-                    <div className="loading-files">Loading...</div>
+                    <p>Loading...</p>
                 ) : (
                     <>
-                        {files.length === 0 && <div className="empty-folder">Empty folder</div>}
+                        {files.length === 0 && <p className="empty-folder">Empty folder</p>}
                         {files.map((file, index) => (
-                            <div
+                            <Container
                                 key={index}
                                 className="file-item"
                                 onClick={() => file.isDirectory ? handleNavigate(file.name) : handleFileClick(file.name)}
@@ -118,12 +119,12 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
                                 <span className="file-name">{file.name}</span>
                                 <span className="file-size">{file.size}</span>
                                 <span className="file-date">{file.updatedAt}</span>
-                            </div>
+                            </Container>
                         ))}
                     </>
                 )}
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 

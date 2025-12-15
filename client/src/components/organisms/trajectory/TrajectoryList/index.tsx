@@ -27,6 +27,7 @@ import Loader from '@/components/atoms/common/Loader';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
+import Container from '@/components/primitives/Container';
 import './TrajectoryList.css';
 
 interface TrajectoryListProps {
@@ -57,19 +58,19 @@ const TrajectoryList: React.FC<TrajectoryListProps> = ({ onFileSelect }) => {
     };
 
     return(
-        <EditorWidget className='editor-file-list-container'>
-            <div className='editor-floating-header-container'>
+        <EditorWidget className='overflow-hidden editor-file-list-container'>
+            <Container className='editor-floating-header-container'>
                 <h3 className='editor-floating-header-title'>
                     Uploaded Trajectories({trajectories?.length || 0})
                 </h3>
                 <IoIosArrowDown className='editor-floating-header-icon' />
-            </div>
+            </Container>
 
-            <div className='file-list-body-container'>
+            <Container className='d-flex w-max column gap-05 y-scroll file-list-body-container'>
                 {isLoading ? (
-                    <div className='file-list-loading-container'>
+                    <Container className='d-flex content-center items-center file-list-loading-container'>
                         <Loader scale={0.5} />
-                    </div>
+                    </Container>
                 ) : (
                     trajectories?.map((data) => (
                         <FileItem
@@ -82,7 +83,7 @@ const TrajectoryList: React.FC<TrajectoryListProps> = ({ onFileSelect }) => {
                         />
                     ))
                 )}
-            </div>
+            </Container>
         </EditorWidget>
     );
 };

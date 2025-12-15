@@ -37,7 +37,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
 
     const { createConnection, updateConnection, testConnection } = useSSHConnections();
 
-    const { errors, validate, checkField, clearError } = useFormValidation({
+    const { errors, validate, checkField } = useFormValidation({
         name: { required: true, message: 'Connection name is required' },
         host: { required: true, message: 'Host is required' },
         port: {
@@ -59,15 +59,15 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
             setFormData({
                 name: connection.name,
                 host: connection.host,
-                port: connection.port.toString(), // Ensure port is string
+                port: connection.port.toString(),
                 username: connection.username,
-                password: '' // Don't populate password for security
+                password: ''
             });
         }else{
             setFormData({
                 name: '',
                 host: '',
-                port: '22', // Ensure port is string
+                port: '22', 
                 username: '',
                 password: ''
             });
@@ -105,7 +105,6 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                     port: typeof formData.port === 'string' ? parseInt(formData.port) : formData.port,
                     username: formData.username
                 };
-                // Only include password if it was changed
                 if(formData.password.trim()){
                     updateData.password = formData.password;
                 }
@@ -123,7 +122,6 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
     const handleTest = async() => {
         if(!connection && mode === 'edit') return;
 
-        // If creating, we need to save first
         if(mode === 'create'){
             setError('Please save the connection first before testing');
             return;

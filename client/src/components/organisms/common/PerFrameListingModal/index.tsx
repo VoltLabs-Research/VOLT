@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import DocumentListingTable from '@/components/molecules/common/DocumentListingTable';
 import type { ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import Draggable from '@/components/atoms/common/Draggable';
 import pluginApi from '@/services/api/plugin';
+import Container from '@/components/primitives/Container';
 import './PerFrameListingModal.css';
 
 export type PerFrameListingModalProps = {
@@ -46,10 +47,7 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
             const trajectoryId = analysis.trajectory?._id || analysis.trajectory || item.trajectory?._id || item.trajectory;
             const analysisId = analysis._id;
             const exposureId = analysis.modifier;
-            // Ensure timestep is a raw number string(remove commas if present)
             const rawTimestep = String(item.timestep ?? analysis.timestep ?? 0).replace(/,/g, '');
-
-            const url = `/plugins/per-frame-listing/${trajectoryId}/${analysisId}/${exposureId}/${rawTimestep}`;
 
             const data = await pluginApi.getPerFrameListing(
                 trajectoryId,
@@ -110,28 +108,28 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
             minWidth={600}
             minHeight={400}
         >
-            <div className={`per-frame-listing-modal-container primary-surface ${isMaximized ? 'maximized' : ''}`}>
-                <div className='per-frame-listing-modal-header-container'>
+            <Container className={`d-flex column per-frame-listing-modal-container primary-surface ${isMaximized ? 'maximized' : ''}`}>
+                <Container className='d-flex gap-1-5 column p-1 u-select-none f-shrink-0'>
                     <WindowIcons
                         onClose={onClose}
                         onExpand={() => setIsMaximized(!isMaximized)}
                         onMinimize={() => setIsMinimized(true)}
                     />
                     <h3 className='per-frame-listing-modal-header-title'>{config.title}</h3>
-                </div>
+                </Container>
 
-                <div className='per-frame-listing-modal-body-container' ref={scrollContainerRef}>
+                <Container className='p-1 flex-1 overflow-auto' ref={scrollContainerRef}>
                     <DocumentListingTable
                         columns={columns}
                         data={rows}
                         isLoading={loading && rows.length === 0}
                     />
-                    <div style={{ padding: '0.5rem 1rem', opacity: 0.8 }}>
+                    <Container style={{ padding: '0.5rem 1rem', opacity: 0.8 }}>
                         {loading && rows.length > 0 ? 'Loading more...' : ''}
-                    </div>
-                    <div ref={sentinelRef} style={{ height: 1 }} />
-                </div>
-            </div>
+                    </Container>
+                    <Container ref={sentinelRef} style={{ height: 1 }} />
+                </Container>
+            </Container>
         </Draggable>
     );
 };

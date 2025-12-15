@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import Draggable from '@/components/atoms/common/Draggable';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import { motion } from 'framer-motion';
+import Container from '@/components/primitives/Container';
 import './DraggableBinaryContainer.css';
 
 interface DraggableBinaryContainerProps{
@@ -17,10 +18,9 @@ interface DraggableBinaryContainerProps{
 const DraggableBinaryContainer: React.FC<DraggableBinaryContainerProps> = ({ title, handleSubmit, description, onClose, bg, children, isRequired = false }) => {
     const [showRequiredMessage, setShowRequiredMessage] = useState(false);
 
-    // Use useMemo to calculate center position only once
     const initialPos = useMemo(() => {
-        const containerWidth = 1000; // Match CSS width
-        const containerHeight = 600; // Match CSS height
+        const containerWidth = 1000;
+        const containerHeight = 600;
         const centerX = (window.innerWidth / 2) - (containerWidth / 2);
         const centerY = (window.innerHeight / 2) - (containerHeight / 2);
         return { x: Math.max(0, centerX), y: Math.max(0, centerY) };
@@ -101,20 +101,20 @@ const DraggableBinaryContainer: React.FC<DraggableBinaryContainerProps> = ({ tit
                     </motion.div>
                 )}
 
-                <div className='team-creator-left-container'>
+                <Container className='w-50'>
                     <img src={bg} className='team-creator-background' />
-                </div>
+                </Container>
 
-                <div className='team-creator-right-container'>
-                    <div className='team-creator-header-container'>
+                <Container className='w-50 p-2 d-flex column gap-2'>
+                    <Container className='d-flex column gap-05'>
                         <h3 className='team-creator-title'>{title}</h3>
                         <p className='team-creator-description'>{description}</p>
-                    </div>
+                    </Container>
 
-                    <form onSubmit={handleSubmit} className='team-creator-body-container'>
+                    <form onSubmit={handleSubmit} className='d-flex column gap-2 items-center team-creator-body-container'>
                         {children}
                     </form>
-                </div>
+                </Container>
             </Draggable>
         </>
     );

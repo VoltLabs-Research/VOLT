@@ -40,7 +40,6 @@ import useTimestepStore from '@/stores/editor/timesteps';
 import usePlaybackStore from '@/stores/editor/playback';
 import useEditorUIStore from '@/stores/ui/editor';
 import useRenderConfigStore from '@/stores/editor/render-config';
-import ShortcutsModal from '@/components/organisms/common/ShortcutsModal';
 import useNotificationStore from '@/stores/notifications';
 import useWindowsStore from '@/stores/ui/windows';
 import Select from '@/components/atoms/form/Select';
@@ -515,8 +514,6 @@ const DashboardLayout = () => {
             {/* Floating dropdown replaces side panel */}
 
             <Outlet />
-
-            <ShortcutsModal />
 
             {showSSHFileExplorer && (
                 <SSHFileExplorer

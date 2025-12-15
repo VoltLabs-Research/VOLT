@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 import './WindowIcons.css';
+import Container from '@/components/primitives/Container';
 
 type IconDef = {
     variant: 'close' | 'minimize' | 'expand';
@@ -83,8 +84,8 @@ const WindowIcons: React.FC<WindowIconsProps> = ({
     }];
 
     return(
-        <div
-            className={`window-icons-container ${withBackground ? 'with-background' : ''}`}
+        <Container
+            className={`window-icons-container d-flex items-center ${withBackground ? 'with-background' : ''}`}
             role='toolbar'
             aria-label='Window controls'
         >
@@ -92,7 +93,7 @@ const WindowIcons: React.FC<WindowIconsProps> = ({
                 <IconCircle
                     key={icon.variant} {...icon} />
             ))}
-        </div>
+        </Container>
     );
 };
 

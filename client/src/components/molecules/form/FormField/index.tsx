@@ -9,6 +9,7 @@ import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import { NodeType } from '@/types/plugin';
 import pluginApi from '@/services/api/plugin';
 import './FormField.css';
+import Container from '@/components/primitives/Container';
 
 interface FormFieldProps {
     label: string;
@@ -20,17 +21,14 @@ interface FormFieldProps {
     options?: SelectOption[];
     isLoading?: boolean;
     renderInPortal?: boolean;
-    // Expression support(for plugin builder)
     expressionEnabled?: boolean;
     expressionNodeId?: string;
     expressionMultiline?: boolean;
     expressionRows?: number;
 }
 
-// Cache schemas at module level(same pattern as useTemplateAutocomplete)
 let schemasCache: Record<NodeType, NodeOutputSchema> | null = null;
 
-// Stable selectors outside component
 const selectNodes = (state: ReturnType<typeof usePluginBuilderStore.getState>) => state.nodes;
 const selectEdges = (state: ReturnType<typeof usePluginBuilderStore.getState>) => state.edges;
 const emptyArray: never[] = [];
@@ -51,12 +49,10 @@ const FormField: React.FC<FormFieldProps> = ({
     expressionMultiline = false,
     expressionRows = 3
 }) => {
-    // Only subscribe to store if expressions are enabled - use stable selectors
     const nodes = usePluginBuilderStore(expressionEnabled ? selectNodes : selectEmpty);
     const edges = usePluginBuilderStore(expressionEnabled ? selectEdges : selectEmpty);
     const [schemas, setSchemas] = useState<Record<NodeType, NodeOutputSchema> | null>(schemasCache);
 
-    // Fetch schemas from backend if not cached
     useEffect(() => {
         if(schemasCache || !expressionEnabled) return;
 
@@ -64,7 +60,6 @@ const FormField: React.FC<FormFieldProps> = ({
             schemasCache = data as Record<NodeType, NodeOutputSchema>;
             setSchemas(data as Record<NodeType, NodeOutputSchema>);
         }).catch(() => {
-            // Fallback: empty schemas
             schemasCache = {} as Record<NodeType, NodeOutputSchema>;
             setSchemas({} as Record<NodeType, NodeOutputSchema>);
         });
@@ -143,12 +138,12 @@ const FormField: React.FC<FormFieldProps> = ({
     };
 
     return (
-        <div className={`labeled-input-container ${fieldType === 'checkbox' ? 'checkbox-container' : ''} ${isLoading ? 'is-loading' : ''}`}>
+        <Container className={`d-flex content-between items-center ${fieldType === 'checkbox' ? 'checkbox-container' : ''} ${isLoading ? 'form-field-loading' : ''}`}>
             <h4 className='labeled-input-label'>{label}</h4>
-            <div className='labeled-input-tag-container'>
+            <Container className='d-flex items-center'>
                 {renderInput()}
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 

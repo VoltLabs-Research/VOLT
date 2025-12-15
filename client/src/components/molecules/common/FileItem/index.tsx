@@ -23,6 +23,7 @@
 import React from 'react';
 import { BsThreeDots } from 'react-icons/bs';
 import './FileItem.css';
+import Container from '@/components/primitives/Container';
 
 interface FileItemProps {
     data: object;
@@ -38,11 +39,11 @@ const FileItem: React.FC<FileItemProps> = ({
     onDelete
 }) => {
     return(
-        <div
-            className={`file-item ${isSelected ? 'selected' : ''}`}
+        <Container
+            className={`file-item cursor-pointer ${isSelected ? 'selected' : ''}`}
             onClick={onSelect}
         >
-            <div className='file-header-container'>
+            <Container className='d-flex content-between items-center'>
                 <h4>{data.name}</h4>
                 <i className='file-delete-icon-container'>
                     <BsThreeDots
@@ -50,8 +51,8 @@ const FileItem: React.FC<FileItemProps> = ({
                         className='file-delete-icon'
                     />
                 </i>
-            </div>
-        </div>
+            </Container>
+        </Container>
     );
 };
 

@@ -22,6 +22,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Container from '@/components/primitives/Container';
 
 interface SidePositionedContainerProps {
     isVisible: boolean;
@@ -51,7 +52,6 @@ const SidePositionedContainer: React.FC<SidePositionedContainerProps> = ({
     const [position, setPosition] = useState({ x: 0, y: 0, side: 'right' as 'left' | 'right' });
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // Calculate position relative to reference element
     const calculatePosition = () => {
         if(!referenceElement || !containerRef.current) return;
 
@@ -63,7 +63,6 @@ const SidePositionedContainer: React.FC<SidePositionedContainerProps> = ({
         let y = referenceRect.top;
         let side: 'left' | 'right' = 'right';
 
-        // Determine which side to show based on available space
         if(preferredSide === 'auto'){
             const spaceRight = window.innerWidth - referenceRect.right - padding;
             const spaceLeft = referenceRect.left - padding;
@@ -167,14 +166,14 @@ const SidePositionedContainer: React.FC<SidePositionedContainerProps> = ({
     };
 
     return createPortal(
-        <div
+        <Container
             ref={containerRef}
             className={`side-positioned-container ${className}`}
             style={styles}
             data-side={position.side}
         >
             {children}
-        </div>,
+        </Container>,
         document.body
     );
 };

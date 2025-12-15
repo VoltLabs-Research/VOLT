@@ -17,7 +17,7 @@ const EmojiPicker = ({ onSelect, onClose, emojis = DEFAULT_EMOJIS }: EmojiPicker
             </div>
             <div className='chat-emoji-picker-grid'>
                 {emojis.map((e) => (
-                <button key={e} type='button' className='chat-emoji-picker-item' onClick={() => onSelect(e)}>{e}</button>
+                    <button key={e} type='button' className='chat-emoji-picker-item' onClick={() => onSelect(e)}>{e}</button>
                 ))}
             </div>
         </div>

@@ -1,8 +1,4 @@
 .sidebar-user-container {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    cursor: pointer;
     transition: .2s;
 }
 
@@ -25,19 +21,9 @@
     height: 40px;
     border-radius: 50%;
     background-color: var(--primary-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    align-items: center;
     color: #FFF;
     font-weight: 500;
     font-size: 1.2rem;
-}
-
-.sidebar-user-details-container {
-    display: flex;
-    flex-direction: column;
-    gap: .1rem;
 }
 
 .sidebar-user-avatar-container[data-avatarrounded='true'] {

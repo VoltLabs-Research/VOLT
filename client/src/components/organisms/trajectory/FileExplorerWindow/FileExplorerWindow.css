@@ -16,8 +16,6 @@
 .file-explorer-wrapper {
     height: 600px;
     width: 1000px;
-    display: flex;
-    overflow: hidden;
     border-radius: .5rem;
     transition: width 0.3s ease, height 0.3s ease;
 }
@@ -28,11 +26,6 @@
     border-radius: 0;
 }
 
-.search-breadcrumbs-container {
-    display: flex;
-    align-items: center;
-}
-
 .search-breadcrumb-container {
     display: flex;
     align-items: center;
@@ -40,21 +33,12 @@
 
 .file-explorer-left-top-container {
     padding: 1rem;
-    display: flex;
     min-width: 220px;
-    flex-direction: column;
     width: 20%;
-    gap: 3rem;
 }
 
 .file-explorer-header-icon-container.is-disabled {
     opacity: .4;
-}
-
-.file-explorer-left-bottom-nav-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
 }
 
 .file-explorer-left-bottom-nav-icon-container {
@@ -72,35 +56,14 @@
     font-size: .95rem;
 }
 
-.file-explorer-left-bottom-container {
-    padding: 1rem;
-}
-
-.file-explorer-left-container {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
 .file-explorer-right-container {
-    height: 100%;
     width: 80%;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
 }
 
 .file-explorer-nav {
     display: flex;
     flex-direction: column;
     gap: .5rem;
-}
-
-.file-explorer-nav-items {
-    display: flex;
-    flex-direction: column;
-    gap: .2rem;
 }
 
 .file-explorer-nav-title {
@@ -136,7 +99,6 @@
 
 .file-explorer-list-headrow {
     display: grid;
-    /* Default grid, can be overridden inline or via specific class if needed */
     grid-template-columns: 6fr 2fr 2fr 2fr;
     gap: 8px;
     padding: 8px 10px;
@@ -146,7 +108,6 @@
 
 .file-explorer-list-row {
     display: grid;
-    /* Default grid */
     grid-template-columns: 6fr 2fr 2fr 2fr;
     gap: 8px;
     padding: 8px 10px;
@@ -155,8 +116,6 @@
 }
 
 .file-explorer-list-body {
-    height: 100%;
-    overflow-y: scroll;
     flex: 1 1 auto;
     min-height: 0;
 }
@@ -185,10 +144,7 @@
     width: -webkit-fill-available;
     border-radius: .5rem;
     height: 2rem;
-    display: flex;
-    align-items: center;
     padding-left: .8rem;
-    gap: .8rem;
 }
 
 .search-breadcrumb-name {

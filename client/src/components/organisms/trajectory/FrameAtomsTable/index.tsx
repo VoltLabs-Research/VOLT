@@ -5,6 +5,7 @@ import useFrameAtoms from '@/hooks/trajectory/use-frame-atoms';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import Draggable from '@/components/atoms/common/Draggable';
 import './FrameAtomsTable.css';
+import Container from '@/components/primitives/Container';
 
 export type FrameAtomsTableProps = {
     trajectoryId: string;
@@ -162,17 +163,17 @@ const FrameAtomsTable = ({
             minWidth={600}
             minHeight={400}
         >
-            <div className={`frame-atoms-table-container primary-surface ${isMaximized ? 'maximized' : ''}`}>
-                <div className='frame-atoms-table-header-container'>
+            <Container className={`frame-atoms-table-container primary-surface ${isMaximized ? 'maximized' : ''}`}>
+                <Container className='d-flex gap-1-5 column p-1 u-select-none'>
                     <WindowIcons
                         onClose={onClose}
                         onExpand={() => setIsMaximized(!isMaximized)}
                         onMinimize={() => setIsMinimized(true)}
                     />
                     <h3 className='frame-atoms-table-header-title'>Particles</h3>
-                </div>
+                </Container>
 
-                <div className='frame-atoms-table-body-container'>
+                <Container className='p-1 overflow-auto frame-atoms-table-body-container'>
                     <DocumentListingTable
                         columns={columns}
                         data={rows}
@@ -185,8 +186,8 @@ const FrameAtomsTable = ({
                         isFetchingMore={loading && rows.length > 0}
                         keyExtractor={(item: any) => `particle-${item.idx}`}
                     />
-                </div>
-            </div>
+                </Container>
+            </Container>
         </Draggable>
     );
 };

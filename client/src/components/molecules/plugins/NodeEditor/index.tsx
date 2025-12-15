@@ -1,8 +1,8 @@
 import React from 'react';
 import type { Node } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
-import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import { TbTrash } from 'react-icons/tb';
+import Container from '@/components/primitives/Container';
 import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import {
     ModifierEditor,
@@ -15,7 +15,6 @@ import {
     VisualizersEditor,
     ExportEditor
 } from './editors';
-import './NodeEditor.css';
 
 interface NodeEditorProps {
     node: Node;
@@ -38,7 +37,6 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ node }) => {
     const selectNode = usePluginBuilderStore((state) => state.selectNode);
 
     const nodeType = node.type as NodeType;
-    const config = NODE_CONFIGS[nodeType];
     const EditorComponent = EDITOR_COMPONENTS[nodeType];
 
     const handleDelete = () => {
@@ -47,22 +45,22 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ node }) => {
     };
 
     return(
-        <div className='node-editor-container'>
-            <div className='node-editor-section'>
+        <Container className='p-2'>
+            <Container>
                 {EditorComponent ? (
                     <EditorComponent node={node} />
                 ) : (
-                    <div className='node-editor-empty'>
+                    <Container>
                         <p>No editor available for this node type.</p>
-                    </div>
+                    </Container>
                 )}
-            </div>
+            </Container>
 
             <button className='node-editor-delete-btn' onClick={handleDelete}>
                 <TbTrash size={14} />
                 Delete Node
             </button>
-        </div>
+        </Container>
     );
 };
 

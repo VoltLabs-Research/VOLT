@@ -1,13 +1,7 @@
 .loader-layer-container {
-    width: 100%;
-    height: 100%;
     background-color: rgba(0, 0, 0, .2);
     backdrop-filter: blur(1.5px);
-    position: absolute;
     z-index: 1000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 .chart-viewer-container{
@@ -44,19 +38,12 @@
     border-radius: 24px;
     padding: 60px;
     max-width: 550px;
-    width: 100%;
-    text-align: center;
     box-shadow:
         0 20px 40px rgba(0, 0, 0, 0.4),
         0 8px 16px rgba(0, 0, 0, 0.2),
         inset 0 1px 0 rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
-    position: relative;
-    overflow: hidden;
     background: rgba(26, 26, 26, 0.93);
-    display: flex;
-    flex-direction: column;
-    gap: 3rem;
     isolation: isolate;
 }
 
@@ -99,14 +86,6 @@
     filter: drop-shadow(0 2px 16px rgba(255, 255, 255, 0.10));
     transition: background 360ms cubic-bezier(.2, .7, .2, 1);
     pointer-events: none;
-}
-
-.editor-model-loading-body-container {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-    position: relative;
-    z-index: 1;
 }
 
 .editor-loading-indicator {

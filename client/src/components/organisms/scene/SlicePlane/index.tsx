@@ -22,6 +22,7 @@
 
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import useConfigurationStore from '@/stores/editor/configuration';
+import Container from '@/components/primitives/Container';
 import './SlicePlane.css';
 
 const SlicePlane = () => {
@@ -35,17 +36,17 @@ const SlicePlane = () => {
 
     return(
         <EditorWidget className='slice-plane-container' draggable={false}>
-            <div className='editor-floting-header-container'>
+            <Container className='editor-floting-header-container'>
                 <h3 className='editor-floating-header-title'>Slice Modifier</h3>
-            </div>
+            </Container>
 
-            <div className='slice-plane-body-container'>
-                <div className='slice-plane-normals-container'>
+            <Container className='d-flex column gap-1'>
+                <Container className='d-flex content-between items-center gap-05'>
                     <span className='slice-plane-normals-title'>Normals</span>
-                    <div className='slice-plane-normals-inputs-container'>
+                    <Container className='d-flex gap-05'>
                         {(['x','y','z'] as const).map((axis, index) => (
-                            <div className='slice-plane-normals-inputs' key={index}>
-                                <div className='slice-plane-normal-input-container'>
+                            <Container className='d-flex gap-05 content-between' key={index}>
+                                <Container className='d-flex items-center gap-1 slice-plane-normal-input-container'>
                                     <span className='slice-plane-normal-input-label'>{axis}</span>
                                     <input
                                         value={slicePlaneConfig.normal[axis]}
@@ -54,43 +55,43 @@ const SlicePlane = () => {
                                         step={0.01}
                                         type='number'
                                     />
-                                </div>
-                            </div>
+                                </Container>
+                            </Container>
                         ))}
-                    </div>
-                </div>
+                    </Container>
+                </Container>
 
-                <div className='slice-plane-params-container'>
+                <Container className='d-flex column gap-1'>
                     {[
                         ['Slab Width', slicePlaneConfig.slabWidth, 'slabWidth', 0.01],
                         ['Distance', slicePlaneConfig.distance, 'distance', 0.1]
                     ].map(([ inputTitle, value, keyName, step ], index) => (
-                        <div className='slice-plane-normals-inputs extended' key={index}>
-                            <span className='slice-plane-param-input-title'>{inputTitle}</span>
-                            <div className='slice-plane-normal-input-container'>
+                        <Container className='d-flex gap-05 content-between' key={index}>
+                            <span>{inputTitle}</span>
+                            <Container className='d-flex items-center gap-1 slice-plane-normal-input-container'>
                                 <input
                                     value={value as number}
                                     onChange={(e) => setSlicePlaneConfig({ [keyName as 'slabWidth'|'distance']: e.currentTarget.valueAsNumber })}
-                                    className='slice-plane-normal-input'
+                                    className='slice-plane-normal-input-extended'
                                     step={step as number}
                                     type='number'
                                 />
-                            </div>
-                        </div>
+                            </Container>
+                        </Container>
                     ))}
-                    <div className='slice-plane-normals-inputs extended'>
-                        <span className='slice-plane-param-input-title'>Reverse Orientation</span>
-                        <div className='slice-plane-normal-input-container'>
+                    <Container>
+                        <span>Reverse Orientation</span>
+                        <Container className='d-flex items-center gap-1 slice-plane-normal-input-container'>
                             <input
                                 type='checkbox'
-                                className='slice-plane-toggle'
+                                className='slice-plane-toggle-extended'
                                 checked={slicePlaneConfig.reverseOrientation}
                                 onChange={(e) => setSlicePlaneConfig({ reverseOrientation: e.currentTarget.checked })}
                             />
-                        </div>
-                    </div>
-                </div>
-            </div>
+                        </Container>
+                    </Container>
+                </Container>
+            </Container>
         </EditorWidget>
     );
 };

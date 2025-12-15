@@ -24,6 +24,7 @@ import useAuthStore from '@/stores/authentication';
 import ActionBasedFloatingContainer from '@/components/organisms/common/ActionBasedFloatingContainer';
 import { CiLogout, CiSettings } from 'react-icons/ci';
 import { useNavigate } from 'react-router';
+import Container from '@/components/primitives/Container';
 import './SidebarUserAvatar.css';
 
 // TODO: USER AVATAR SHOULD BE A NEW COMPONENT
@@ -43,9 +44,9 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
                 ['Sign Out', CiLogout, signOut]
             ]}
         >
-            <div className='sidebar-user-container' onClick={onClick}>
-                <div
-                    className='sidebar-user-avatar-container'
+            <Container className='sidebar-user-container d-flex items-center gap-1 cursor-pointer' onClick={onClick}>
+                <Container
+                    className='d-flex flex-center sidebar-user-avatar-container'
                     data-avatarrounded={avatarrounded}
                 >
                     {user.avatar ? (
@@ -53,14 +54,14 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
                     ) : (
                         <span className='sidebar-user-avatar'>{user.firstName?.[0] || '?'}</span>
                     )}
-                </div>
+                </Container>
 
-                <div className='sidebar-user-details-container'>
+                <Container className='d-flex column gap-01'>
                     {!hideUsername && (
                         <span className='sidebar-user-fullname'>{user.firstName || ''} {user.lastName || ''}</span>
                     )}
-                </div>
-            </div>
+                </Container>
+            </Container>
         </ActionBasedFloatingContainer>
     );
 };

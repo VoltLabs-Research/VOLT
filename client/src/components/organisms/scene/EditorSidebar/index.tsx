@@ -16,10 +16,11 @@ import CameraSettingsControls from '@/components/molecules/scene/CameraSettingsC
 import RendererSettingsControls from '@/components/molecules/scene/RendererSettingsControls';
 import CanvasGridControls from '@/components/molecules/scene/CanvasGridControls';
 import OrbitControls from '@/components/molecules/scene/OrbitControls';
+import Container from '@/components/primitives/Container';
 import './EditorSidebar.css';
 
 const RenderConfig = () => (
-    <div className='editor-render-options-container'>
+    <Container className='d-flex column editor-render-options-container'>
         <LightsControls />
         <EffectsControls />
         <PerformanceSettingsControls />
@@ -28,7 +29,7 @@ const RenderConfig = () => (
         <OrbitControls />
         <RendererSettingsControls />
         <CanvasGridControls />
-    </div>
+    </Container>
 );
 
 const EditorSidebar = () => {
@@ -37,20 +38,17 @@ const EditorSidebar = () => {
     const showRenderConfig = useEditorUIStore((state) => state.showRenderConfig);
     const setShowRenderConfig = useEditorUIStore((state) => state.setShowRenderConfig);
 
-    const SCENE_TAGS = [
-        {
-            id: "Scene",
-            name: "Scene",
-            Component: CanvasSidebarScene,
-            props: { trajectory }
-        },
-        {
-            id: "Modifiers",
-            name: "Modifiers",
-            Component: CanvasSidebarModifiers,
-            props: {}
-        }
-    ];
+    const SCENE_TAGS = [{
+        id: "Scene",
+        name: "Scene",
+        Component: CanvasSidebarScene,
+        props: { trajectory }
+    }, {
+        id: "Modifiers",
+        name: "Modifiers",
+        Component: CanvasSidebarModifiers,
+        props: {}
+    }];
 
     return(
         <Sidebar
@@ -60,20 +58,17 @@ const EditorSidebar = () => {
             showCollapseButton
         >
             <Sidebar.Header>
-                <div className='editor-sidebar-trajectory-info-container'>
-                    <div className='editor-sidebar-trajectory-info-header-container'>
-                        <div
-                            className='editor-sidebar-trajectory-drop-container'
-                            data-collapsible="true"
-                        >
+                <Container className='d-flex column gap-1 sm:gap-0'>
+                    <Container className='d-flex content-between items-center'>
+                        <Container className='d-flex gap-1 items-center'>
                             {showRenderConfig ? (
-                                <div className='editor-sidebar-render-title-container'>
-                                    <i className='editor-sidebar-render-title-icon-container' onClick={() => setShowRenderConfig(false)}>
+                                <Container className='d-flex items-center gap-05'>
+                                    <i onClick={() => setShowRenderConfig(false)}>
                                         <BsArrowLeft size={30} />
                                     </i>
 
                                     <h3 className='editor-sidebar-render-title'>Render Settings</h3>
-                                </div>
+                                </Container>
                             ) : (
                                 <>
                                     <EditableTrajectoryName
@@ -86,9 +81,10 @@ const EditorSidebar = () => {
                                     </i>
                                 </>
                             )}
-                        </div>
-                    </div>
-                </div>
+                        </Container>
+                    </Container>
+                </Container>
+
                 {!showRenderConfig && trajectory?.team?.name && (
                     <p className="editor-sidebar-header-team-name">
                         {trajectory.team.name}
@@ -97,12 +93,12 @@ const EditorSidebar = () => {
             </Sidebar.Header>
 
             <Sidebar.Bottom>
-                <div className='editor-sidebar-user-avatar-wrapper'>
+                <Container className='editor-sidebar-user-avatar-wrapper'>
                     <SidebarUserAvatar
                         avatarrounded={false}
                         hideEmail={true}
                     />
-                </div>
+                </Container>
             </Sidebar.Bottom>
         </Sidebar>
     );

@@ -24,6 +24,7 @@ import React from 'react';
 import useFloatingContainer from '@/hooks/ui/positioning/use-floating-container';
 import FloatingMenu from '@/components/molecules/common/FloatingMenu';
 import type { FloatingContainerProps } from '@/types/floating-container';
+import Container from '@/components/primitives/Container';
 import './ActionBasedFloatingContainer.css';
 
 interface ExtendedFloatingContainerProps extends FloatingContainerProps {
@@ -55,13 +56,13 @@ const ActionBasedFloatingContainer: React.FC<ExtendedFloatingContainerProps> = (
 
     return(
         <>
-            <div
+            <Container
                 onClick={handleToggle}
                 ref={triggerRef}
-                className={className || 'action-based-floating-container-element-wrapper'}
+                className={className}
             >
                 {children}
-            </div>
+            </Container>
 
             <FloatingMenu
                 isVisible={isVisible}

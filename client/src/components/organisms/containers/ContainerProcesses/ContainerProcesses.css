@@ -1,19 +1,12 @@
 .processes-container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 8px;
-    overflow: hidden;
 }
 
 .processes-header {
     padding: 1rem;
     border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     background: var(--background-secondary);
 }
 
@@ -40,11 +33,6 @@
 
 .refresh-btn:hover {
     background: var(--hover);
-}
-
-.processes-table-wrapper {
-    flex: 1;
-    overflow: auto;
 }
 
 .processes-table {

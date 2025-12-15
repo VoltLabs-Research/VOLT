@@ -28,9 +28,6 @@ const SkeletonRow = ({ columns }: { columns: ColumnConfig[] }) => {
     )
 };
 
-// Virtualized row component for react-window
-// react-window automatically provides: index, style, ariaAttributes
-// rowProps contains our custom props: data, columns, getMenuOptions, keyExtractor
 const VirtualizedRow = (props: any) => {
     const { index, style, data, columns, getMenuOptions, keyExtractor } = props;
     const item = data[index];

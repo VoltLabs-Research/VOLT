@@ -40,19 +40,3 @@
 .editor-sidebar-item-header-container:hover .editor-sidebar-item-arrow {
   color: #e0e0e0;
 }
-
-.editor-sidebar-item-body-container {
-  padding-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-/*
-??? 
-.editor-sidebar-item-body-container > div {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-*/

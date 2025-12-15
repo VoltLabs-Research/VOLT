@@ -1,17 +1,6 @@
 .job-container {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     font-size: .9rem;
     color: var(--color-text-primary);
-    padding: 1rem;
-}
-
-.job-left-container {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
 }
 
 .job-icon-container {
@@ -24,13 +13,6 @@
     border: 1px solid var(--color-border-soft);
 }
 
-.job-status-info {
-    display: flex;
-    flex-direction: column;
-    gap: .5rem;
-    align-items: center;
-}
-
 .job-status-badge {
     padding: .45rem .9rem;
     border-radius: 999px;
@@ -41,12 +23,6 @@
     text-transform: capitalize;
     background: color-mix(in srgb, var(--color-text-primary) 4%, transparent);
     border: 1px solid var(--color-border-soft);
-}
-
-.job-info-container {
-    display: flex;
-    flex-direction: column;
-    gap: .2rem;
 }
 
 .job-name {

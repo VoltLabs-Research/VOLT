@@ -2,6 +2,7 @@ import React from 'react';
 import FormField from '@/components/molecules/form/FormField';
 import { TbPlus, TbTrash } from 'react-icons/tb';
 import './KeyValueEditor.css';
+import Container from '@/components/primitives/Container';
 
 interface KeyValueEditorProps {
     entries: [string, string][];
@@ -20,6 +21,7 @@ interface KeyValueEditorProps {
     expressionNodeId?: string;
 }
 
+// TODO: REFACTOR
 const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
     entries,
     onAdd,
@@ -36,14 +38,14 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
     expressionNodeId
 }) => {
     return(
-        <div className="kv-editor">
+        <Container className="d-flex column gap-05">
             {description && (
                 <p className="kv-editor-description">{description}</p>
             )}
 
             {entries.map(([key, value], index) => (
-                <div key={index} className="kv-editor-row">
-                    <div className="kv-editor-field">
+                <Container key={index} className="d-flex gap-05 items-start">
+                    <Container className="flex-1 d-flex column">
                         {index === 0 && <label className="kv-editor-label">{keyLabel}</label>}
                         <FormField
                             label=""
@@ -55,8 +57,8 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
                             expressionEnabled={expressionEnabled}
                             expressionNodeId={expressionNodeId}
                         />
-                    </div>
-                    <div className="kv-editor-field">
+                    </Container>
+                    <Container className="flex-1 d-flex column">
                         {index === 0 && <label className="kv-editor-label">{valueLabel}</label>}
                         <FormField
                             label=""
@@ -68,7 +70,7 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
                             expressionEnabled={expressionEnabled}
                             expressionNodeId={expressionNodeId}
                         />
-                    </div>
+                    </Container>
                     <button
                         onClick={() => onRemove(key)}
                         className="kv-editor-remove"
@@ -76,14 +78,14 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
                     >
                         <TbTrash size={14} />
                     </button>
-                </div>
+                </Container>
             ))}
 
             <button onClick={onAdd} className="kv-editor-add">
                 <TbPlus size={12} />
                 {addButtonText}
             </button>
-        </div>
+        </Container>
     );
 };
 

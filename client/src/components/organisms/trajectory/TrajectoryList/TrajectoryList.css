@@ -1,21 +1,12 @@
 .editor-file-list-container {
     bottom: 2rem;
-    overflow: hidden;
     right: 2rem;
 }
 
 .file-list-loading-container{
     height: 100px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
 
 .file-list-body-container {
-    display: flex;
-    width: 100%;
-    flex-direction: column;
-    gap: .5rem;
     max-height: 300px;
-    overflow-y: auto;
 }

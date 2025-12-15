@@ -6,6 +6,7 @@ import Button from '@/components/atoms/common/Button';
 import usePluginStore from '@/stores/plugins/plugin';
 import useTrajectoryStore from '@/stores/trajectories';
 import pluginApi from '@/services/api/plugin';
+import Container from '@/components/primitives/Container';
 import './ModifierConfiguration.css';
 
 interface ModifierConfigurationProps {
@@ -188,12 +189,12 @@ const ModifierConfiguration = ({
 
     return (
         <EditorWidget className={`modifier-configuration ${className}`} draggable={false}>
-            <div className='modifier-configuration-header-container'>
+            <Container className='d-flex content-between items-center'>
                 <h3 className='modifier-configuration-header-title'>{displayTitle}</h3>
                 {icon}
-            </div>
+            </Container>
 
-            <div className='modifier-configuration-body-container'>
+            <Container className='d-flex column gap-1 modifier-configuration-body-container'>
                 {configFields.length === 0 ? (
                     <p className='modifier-configuration-no-fields'>
                         This modifier has no configurable parameters.
@@ -213,7 +214,7 @@ const ModifierConfiguration = ({
                         />
                     ))
                 )}
-            </div>
+            </Container>
 
             <div className='modifier-configuration-footer-container'>
                 <Button

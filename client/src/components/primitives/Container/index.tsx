@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 
 interface ContainerProps extends React.HTMLAttributes<HTMLDivElement>{
     children?: React.ReactNode;
@@ -12,4 +12,4 @@ const Container = ({ children, className, ...props }: ContainerProps) => {
     );
 };
 
-export default Container;
+export default forwardRef(Container);

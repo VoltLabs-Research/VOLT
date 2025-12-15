@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import Draggable from '@/components/atoms/common/Draggable';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import './FileExplorerWindow.css';
+import Container from '@/components/primitives/Container';
 
 interface FileExplorerWindowProps {
     title: string;
@@ -54,7 +55,6 @@ const FileExplorerWindow: React.FC<FileExplorerWindowProps> = ({
             minWidth={800}
             minHeight={500}
             style={{
-                // Ensure it respects the CSS class position/z-index unless maximized
                 width: isMaximized ? '100vw' : undefined,
                 height: isMaximized ? '100vh' : undefined,
                 top: isMaximized ? 0 : undefined,
@@ -62,68 +62,57 @@ const FileExplorerWindow: React.FC<FileExplorerWindowProps> = ({
                 display: hidden ? 'none' : undefined
             }}
         >
-            <div className={`file-explorer-wrapper ${isMaximized ? 'maximized' : ''}`}>
-                <div className='file-explorer-left-container'>
-                    <div className='file-explorer-left-top-container'>
+            <Container className={`d-flex overflow-hidden file-explorer-wrapper ${isMaximized ? 'maximized' : ''}`}>
+                <Container className='d-flex column content-between'>
+                    <Container className='d-flex column gap-3 file-explorer-left-top-container'>
                         <WindowIcons
                             onClose={onClose}
                             onExpand={() => setIsMaximized(!isMaximized)}
                             onMinimize={onMinimize}
                         />
 
-                        <div className='file-explorer-nav-container'>
-                            <div className='file-explorer-nav'>
+                        <Container>
+                            <Container className='d-flex column gap-05'>
                                 <h3 className='file-explorer-nav-title'>{title}</h3>
-                                <div className='file-explorer-nav-items'>
+                                <Container className='d-flex column gap-025'>
                                     {navItems}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                                </Container>
+                            </Container>
+                        </Container>
+                    </Container>
 
-                    <div className='file-explorer-left-bottom-container'>
-                        <div className='file-explorer-left-bottom-nav-container'>
+                    <Container className='p-1'>
+                        <Container className='d-flex column gap-1-5'>
                             {bottomNavItems}
-                        </div>
-                    </div>
-                </div>
+                        </Container>
+                    </Container>
+                </Container>
 
-                <div className='file-explorer-right-container'>
-                    <div className='file-explorer-right-header'>
+                <Container className='d-flex column p-1 h-max gap-05 file-explorer-right-container'>
+                    <Container className='d-flex gap-2'>
                         {headerLeftIcons}
 
-                        <div className='file-explorer-search-container'>
+                        <Container className='d-flex items-center gap-075 file-explorer-search-container'>
                             <i className='search-icon-container'>
-                                {/* Icon should be passed in breadcrumbs or here?
-                                    TrajectoryFileExplorer has IoSearchOutline hardcoded.
-                                    We'll assume breadcrumbs includes the container inner structure or just the list.
-                                    Actually TrajectoryFileExplorer has:
-                                    <div className='search-container trajectory-fs-search-container'>
-                                        <i ...><IoSearchOutline /></i>
-                                        <div className='search-breadcrumbs-container'>...</div>
-                                    </div>
-
-                                    I'll make breadcrumbs just the content, and keep the container here to match style.
-                                */}
                                 <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 512 512" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M456.69 421.39 362.6 327.3a173.81 173.81 0 0 0 34.84-104.58C397.44 126.38 319.06 48 222.72 48S48 126.38 48 222.72s78.38 174.72 174.72 174.72A173.81 173.81 0 0 0 327.3 362.6l94.09 94.09a25 25 0 0 0 35.3-35.3zM97.92 222.72a124.8 124.8 0 1 1 124.8 124.8 124.8 124.8 0 0 1-124.8-124.8z"></path></svg>
                             </i>
-                            <div className='search-breadcrumbs-container'>
+                            <Container className='d-flex items-center'>
                                 {breadcrumbs}
-                            </div>
-                        </div>
+                            </Container>
+                        </Container>
 
                         {headerRightIcons}
-                    </div>
+                    </Container>
 
-                    <div className='file-explorer-list-headrow'>
+                    <Container className='file-explorer-list-headrow'>
                         {fileListHeader}
-                    </div>
+                    </Container>
 
-                    <div className='file-explorer-list-body'>
+                    <Container className='y-scroll h-max file-explorer-list-body'>
                         {fileListContent}
-                    </div>
-                </div>
-            </div>
+                    </Container>
+                </Container>
+            </Container>
         </Draggable>,
         document.body
     );

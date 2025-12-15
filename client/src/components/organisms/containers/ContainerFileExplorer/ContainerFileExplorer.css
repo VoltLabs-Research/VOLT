@@ -1,23 +1,6 @@
-.container-file-explorer {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    gap: 1rem;
-}
-
 .explorer-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-color);
-}
-
-.path-bar {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    flex: 1;
 }
 
 .up-btn {
@@ -46,13 +29,6 @@
     padding: 0.25rem 0.75rem;
     border-radius: 4px;
     cursor: pointer;
-}
-
-.file-list {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
 }
 
 .file-item {
@@ -102,9 +78,6 @@
 }
 
 .viewer-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-color);
 }
