@@ -4,6 +4,7 @@ import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/form/FormField';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import useCameraSettings from '@/stores/editor/camera-config';
+import Button from '@/components/primitives/Button';
 import { MdCameraAlt, MdViewInAr, MdTransform } from 'react-icons/md';
 import { IoCameraOutline } from 'react-icons/io5';
 
@@ -26,7 +27,7 @@ const CameraSettingsControls: React.FC = () => {
         key: 'projection',
         title: 'Projection',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 8 }}>
@@ -39,14 +40,15 @@ const CameraSettingsControls: React.FC = () => {
                         { title: 'Orthographic', value: 'orthographic' },
                     ]}
                 />
-                <button
-                    type="button"
-                    className="btn-reset-camera"
+                <Button
+                    variant='ghost'
+                    intent='neutral'
+                    size='sm'
                     onClick={() => reset()}
                     style={{ justifySelf: 'start' }}
                 >
                     Reset Camera
-                </button>
+                </Button>
             </div>
         )
     };
@@ -55,7 +57,7 @@ const CameraSettingsControls: React.FC = () => {
         key: 'perspective',
         title: 'Perspective Optics',
         enabled: type === 'perspective',
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [
             {
                 label: 'FOV(°)',
@@ -172,7 +174,7 @@ const CameraSettingsControls: React.FC = () => {
         key: 'orthographic',
         title: 'Orthographic Optics',
         enabled: type === 'orthographic',
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [
             {
                 label: 'Near',
@@ -208,7 +210,7 @@ const CameraSettingsControls: React.FC = () => {
         key: 'transform',
         title: 'Transform(Z-up)',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [
             {
                 label: 'Pos X',
@@ -269,12 +271,12 @@ const CameraSettingsControls: React.FC = () => {
 
     const sections = [
         projectionSection,
-            ...(type === 'perspective' ? [perspectiveSection] : []),
-            ...(type === 'orthographic' ? [orthographicSection] : []),
+        ...(type === 'perspective' ? [perspectiveSection] : []),
+        ...(type === 'orthographic' ? [orthographicSection] : []),
         transformSection
     ];
 
-    return(
+    return (
         <CollapsibleSection
             title="Camera Settings"
             icon={<MdCameraAlt size={16} />}

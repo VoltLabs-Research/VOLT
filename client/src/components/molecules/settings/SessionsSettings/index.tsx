@@ -4,6 +4,7 @@ import Section from '@/components/atoms/settings/Section';
 import SectionHeader from '@/components/atoms/settings/SectionHeader';
 import StatusBadge from '@/components/atoms/common/StatusBadge';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 
 interface Session {
     _id: string;
@@ -63,10 +64,9 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
                                         Current
                                     </StatusBadge>
                                 ) : (
-                                    <button className='d-flex items-center gap-05 action-button danger' onClick={() => revokeSession(session._id)}>
-                                        <TbX size={16} />
+                                    <Button variant='soft' intent='danger' size='sm' leftIcon={<TbX size={16} />} onClick={() => revokeSession(session._id)}>
                                         Revoke
-                                    </button>
+                                    </Button>
                                 )}
                             </Container>
                         </Container>
@@ -74,10 +74,9 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
 
                     {sessions.length > 1 && (
                         <Container className='d-flex content-center session-actions-bulk'>
-                            <button className='d-flex items-center gap-05 action-button danger' onClick={revokeAllOtherSessions}>
-                                <TbX size={16} />
+                            <Button variant='soft' intent='danger' size='sm' leftIcon={<TbX size={16} />} onClick={revokeAllOtherSessions}>
                                 Revoke All Other Sessions
-                            </button>
+                            </Button>
                         </Container>
                     )}
                 </Container>

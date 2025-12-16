@@ -11,6 +11,7 @@ import PaletteItem from '@/components/atoms/plugins/PaletetteItem';
 import NodeEditor from '@/components/molecules/plugins/NodeEditor';
 import EditableTag from '@/components/atoms/common/EditableTag';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 import { TbArrowLeft } from 'react-icons/tb';
 import Paragraph from '@/components/primitives/Paragraph';
 import '@xyflow/react/dist/style.css';
@@ -160,9 +161,9 @@ const PluginBuilder = () => {
                 <Sidebar.Header>
                     {selectedNode ? (
                         <Container className='d-flex items-center gap-075'>
-                            <button className='d-flex items-center content-center plugin-sidebar-back-btn' onClick={handleClearSelection}>
+                            <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleClearSelection}>
                                 <TbArrowLeft size={18} />
-                            </button>
+                            </Button>
                             <Title className='font-weight-6'>{selectedNodeConfig?.label}</Title>
                         </Container>
                     ) : (

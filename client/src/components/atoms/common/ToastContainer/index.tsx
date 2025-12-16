@@ -7,6 +7,7 @@ import type { Toast, ToastType } from '@/stores/ui/toast';
 import './ToastContainer.css';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 
 const getIcon = (type: ToastType) => {
   switch (type) {
@@ -32,13 +33,16 @@ const Toast: React.FC<{ toast: Toast }> = ({ toast }) => {
         {getIcon(toast.type)}
         <Paragraph className='toast-message'>{toast.message}</Paragraph>
       </div>
-      <button
-        className='d-flex items-center content-center f-shrink-0 toast-close-btn'
+      <Button
+        variant='ghost'
+        intent='neutral'
+        iconOnly
+        size='sm'
         onClick={() => removeToast(toast.id)}
         aria-label='Close notification'
       >
         <IoCloseOutline />
-      </button>
+      </Button>
     </div>
   );
 };

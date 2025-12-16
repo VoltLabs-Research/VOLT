@@ -8,6 +8,7 @@ import ChatListSkeleton from '@/components/atoms/chat/messages/ChatListSkeleton'
 import useAuthStore from '@/stores/authentication';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import Button from '@/components/primitives/Button';
 import './ChatSidebar.css';
 
 const ChatSidebar: React.FC = () => {
@@ -43,21 +44,27 @@ const ChatSidebar: React.FC = () => {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <button
-                        className='d-flex flex-center chat-new-chat-button'
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        iconOnly
+                        size='sm'
                         onClick={() => setShowTeamMembers(!showTeamMembers)}
                         title='Start new chat'
                     >
                         <IoPersonAddOutline />
-                    </button>
-                    <button
-                        className='d-flex flex-center chat-new-group-button'
+                    </Button>
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        iconOnly
+                        size='sm'
                         commandfor='create-group-modal'
                         command='showModal'
                         title='Create group'
                     >
                         <IoPeopleOutline />
-                    </button>
+                    </Button>
                 </div>
             </div>
 

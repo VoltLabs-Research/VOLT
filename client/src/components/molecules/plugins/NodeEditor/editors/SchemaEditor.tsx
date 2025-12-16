@@ -4,6 +4,7 @@ import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import CodeEditor from '@/components/atoms/common/CodeEditor';
 import FormField from '@/components/molecules/form/FormField';
 import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
+import Button from '@/components/primitives/Button';
 import type { ISchemaData } from '@/types/plugin';
 import Paragraph from '@/components/primitives/Paragraph';
 import { TbCheck, TbCopy, TbSparkles } from 'react-icons/tb';
@@ -180,43 +181,51 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
                     </Paragraph>
 
                     <div className="d-flex gap-05 schema-editor-toolbar">
-                        <button
-                            className="d-flex items-center gap-05 schema-editor-btn"
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            size='sm'
+                            leftIcon={<TbSparkles size={14} />}
                             onClick={() => setShowTemplates(!showTemplates)}
                             title="Use template"
                         >
-                            <TbSparkles size={14} />
                             Templates
-                        </button>
-                        <button
-                            className="d-flex items-center gap-05 schema-editor-btn"
+                        </Button>
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            size='sm'
+                            leftIcon={<TbCheck size={14} />}
                             onClick={formatJson}
                             disabled={!isValidJson}
                             title="Format JSON"
                         >
-                            <TbCheck size={14} />
                             Format
-                        </button>
-                        <button
-                            className="d-flex items-center gap-05 schema-editor-btn"
+                        </Button>
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            size='sm'
+                            leftIcon={<TbCopy size={14} />}
                             onClick={copyToClipboard}
                             title="Copy to clipboard"
                         >
-                            <TbCopy size={14} />
                             Copy
-                        </button>
+                        </Button>
                     </div>
 
                     {showTemplates && (
                         <div className="d-flex flex-wrap gap-05 schema-templates">
                             {SCHEMA_TEMPLATES.map((template, idx) => (
-                                <button
+                                <Button
                                     key={idx}
-                                    className="schema-template-item"
+                                    variant='soft'
+                                    intent='neutral'
+                                    size='sm'
                                     onClick={() => applyTemplate(template)}
                                 >
                                     {template.name}
-                                </button>
+                                </Button>
                             ))}
                         </div>
                     )}

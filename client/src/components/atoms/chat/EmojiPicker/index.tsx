@@ -1,4 +1,5 @@
 import { IoCloseOutline } from 'react-icons/io5';
+import Button from '@/components/primitives/Button';
 import './EmojiPicker.css';
 
 const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😉', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴'];
@@ -14,11 +15,11 @@ const EmojiPicker = ({ onSelect, onClose, emojis = DEFAULT_EMOJIS }: EmojiPicker
         <div className='chat-emoji-picker'>
             <div className='d-flex items-center content-between chat-emoji-picker-header'>
                 <span>Select an emoji</span>
-                <button type='button' className='d-flex flex-center chat-emoji-picker-close' onClick={onClose}><IoCloseOutline /></button>
+                <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={onClose}><IoCloseOutline /></Button>
             </div>
             <div className='chat-emoji-picker-grid'>
                 {emojis.map((e) => (
-                    <button key={e} type='button' className='d-flex flex-center chat-emoji-picker-item' onClick={() => onSelect(e)}>{e}</button>
+                    <Button key={e} variant='ghost' intent='neutral' iconOnly size='sm' onClick={() => onSelect(e)}>{e}</Button>
                 ))}
             </div>
         </div>

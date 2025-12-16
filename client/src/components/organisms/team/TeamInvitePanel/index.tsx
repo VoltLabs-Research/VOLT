@@ -11,6 +11,7 @@ import teamApi from '@/services/api/team';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 import './TeamInvitePanel.css';
 
 interface TeamMember {
@@ -150,17 +151,20 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         <>
             <Container className='team-invite-header d-flex items-center content-between f-shrink-0'>
                 <Container className='team-invite-tabs d-flex flex-1'>
-                    <button className='team-invite-tab active'>Share</button>
-                    <button className='team-invite-tab' style={{ opacity: 0.5, cursor: 'not-allowed' }}>Publish</button>
+                    <Button variant='ghost' intent='brand' size='sm'>Share</Button>
+                    <Button variant='ghost' intent='neutral' size='sm' disabled style={{ opacity: 0.5 }}>Publish</Button>
                 </Container>
-                <button
-                    className='d-flex items-center content-center team-invite-close'
+                <Button
+                    variant='ghost'
+                    intent='neutral'
+                    iconOnly
+                    size='sm'
                     popoverTarget={popoverId}
                     popoverTargetAction="hide"
                     aria-label='Close'
                 >
                     <IoClose size={20} />
-                </button>
+                </Button>
             </Container>
 
             <Container className='team-invite-content d-flex column flex-1'>
@@ -176,31 +180,16 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                         className='team-invite-search-input'
                         disabled={loading}
                     />
-                    <button
-                        className={`d-flex items-center content-center team-invite-invite-btn team-invite-invite-btn--${buttonState}`}
+                    <Button
+                        variant='solid'
+                        intent='brand'
                         onClick={handleAddMember}
                         disabled={loading}
+                        isLoading={buttonState === 'loading'}
+                        leftIcon={buttonState === 'success' ? <IoCheckmark size={18} /> : buttonState === 'error' ? <IoClose size={18} /> : undefined}
                     >
-                        {buttonState === 'loading' && (
-                            <>
-                                <span className='team-invite-btn-spinner'></span>
-                                <span>Sending...</span>
-                            </>
-                        )}
-                        {buttonState === 'success' && (
-                            <>
-                                <IoCheckmark size={18} />
-                                <span>Sent!</span>
-                            </>
-                        )}
-                        {buttonState === 'error' && (
-                            <>
-                                <IoClose size={18} />
-                                <span>Error</span>
-                            </>
-                        )}
-                        {buttonState === 'idle' && 'Invite'}
-                    </button>
+                        {buttonState === 'success' ? 'Sent!' : buttonState === 'error' ? 'Error' : 'Invite'}
+                    </Button>
                 </Container>
 
                 <Container className='team-invite-members-section'>
@@ -293,12 +282,12 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 </Container>
 
                 <Container className='team-invite-footer d-flex gap-05 content-between f-shrink-0'>
-                    <button className='d-flex items-center gap-05 team-invite-footer-link'>
-                        <MdContentCopy size={16} /> Copy link
-                    </button>
-                    <button className='d-flex items-center gap-05 team-invite-footer-link'>
-                        <IoBook size={16} /> Learn more
-                    </button>
+                    <Button variant='ghost' intent='neutral' size='sm' leftIcon={<MdContentCopy size={16} />}>
+                        Copy link
+                    </Button>
+                    <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoBook size={16} />}>
+                        Learn more
+                    </Button>
                 </Container>
             </Container>
         </>

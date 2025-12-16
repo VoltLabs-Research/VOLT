@@ -1,4 +1,5 @@
 import Container from "@/components/primitives/Container";
+import Button from "@/components/primitives/Button";
 import { LuPanelRight } from "react-icons/lu";
 
 interface SidebarHeaderProps {
@@ -14,14 +15,17 @@ const SidebarHeader = ({ collapsed, onToggle, children }: SidebarHeaderProps) =>
                 {children}
             </Container>
 
-            <button
-                className="d-flex items-center content-center editor-sidebar-toggle-btn"
+            <Button
+                variant='ghost'
+                intent='neutral'
+                iconOnly
+                size='sm'
                 onClick={onToggle}
             >
                 <LuPanelRight
                     className={`editor-sidebar-toggle-icon ${collapsed ? "rotated" : ""}`}
                 />
-            </button>
+            </Button>
         </Container>
     );
 };

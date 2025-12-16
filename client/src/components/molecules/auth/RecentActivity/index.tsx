@@ -34,6 +34,7 @@ import useApiTracker from '@/hooks/api/use-api-tracker';
 import './RecentActivity.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import Button from '@/components/primitives/Button';
 
 interface RecentActivityProps {
     limit?: number;
@@ -219,20 +220,26 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                         </div>
 
                         <div className="d-flex items-center gap-05 recent-activity-item-actions">
-                            <button
-                                className="d-flex flex-center recent-activity-action-button"
+                            <Button
+                                variant='ghost'
+                                intent='neutral'
+                                iconOnly
+                                size='sm'
                                 title="View details"
                             >
                                 <HiEye />
-                            </button>
-                            <button
-                                className="d-flex flex-center recent-activity-action-button"
+                            </Button>
+                            <Button
+                                variant='ghost'
+                                intent='neutral'
+                                iconOnly
+                                size='sm'
                                 title="Refresh"
                                 onClick={handleRefresh}
                                 disabled={refreshing}
                             >
                                 <HiRefresh className={refreshing ? 'animate-spin' : ''} />
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 ))}

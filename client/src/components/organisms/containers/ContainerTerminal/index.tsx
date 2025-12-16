@@ -4,6 +4,7 @@ import { FitAddon } from 'xterm-addon-fit';
 import { IoClose } from 'react-icons/io5';
 import { socketService } from '@/services/socketio';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 import 'xterm/css/xterm.css';
 import './ContainerTerminal.css';
 
@@ -144,9 +145,9 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
                     <span>root@{container.name}:~</span>
                 </Container>
                 {!embedded && (
-                    <button onClick={onClose} className='close-btn'>
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={onClose}>
                         <IoClose size={20} />
-                    </button>
+                    </Button>
                 )}
             </Container>
             <Container className='flex-1 overflow-hidden p-relative terminal-body' ref={terminalRef} />

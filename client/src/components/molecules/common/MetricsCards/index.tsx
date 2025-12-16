@@ -3,6 +3,7 @@ import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
 import { formatNetworkSpeedWithUnit } from '@/utilities/network'
 import Container from '@/components/primitives/Container'
+import Button from '@/components/primitives/Button'
 import './MetricsCards.css'
 
 export function MetricsCards() {
@@ -87,9 +88,9 @@ export function MetricsCards() {
               <metric.icon className="metric-card-icon" />
               <span className="metric-card-title">{metric.title}</span>
             </Container>
-            <button className="metric-card-menu">
+            <Button variant='ghost' intent='neutral' iconOnly size='sm'>
               <MoreVertical className="metric-card-icon" />
-            </button>
+            </Button>
           </Container>
           <Container className="d-flex column gap-05">
             <Container className="d-flex" style={{ alignItems: 'baseline', gap: '0.5rem' }}>

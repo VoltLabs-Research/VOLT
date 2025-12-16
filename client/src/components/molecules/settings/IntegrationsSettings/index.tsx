@@ -3,6 +3,7 @@ import { TbBrandGithub, TbBrandGoogle, TbBrandOpenai, TbBrain, TbFileText } from
 import Section from "@/components/atoms/settings/Section";
 import SectionHeader from "@/components/atoms/settings/SectionHeader";
 import Container from "@/components/primitives/Container";
+import Button from "@/components/primitives/Button";
 import SettingsRow from "@/components/atoms/settings/SettingsRow";
 import "./IntegrationsSettings.css";
 import Title from "@/components/primitives/Title";
@@ -14,25 +15,25 @@ const IntegrationsSettings: React.FC = () => {
         icon: TbBrandGithub,
         title: "GitHub",
         description: "Sync repositories and manage code",
-        action: <button className="d-flex items-center gap-05 action-button">Connect</button>
+        action: <Button variant='ghost' intent='neutral' size='sm'>Connect</Button>
     }, {
         key: "google-drive",
         icon: TbBrandGoogle,
         title: "Google Drive",
         description: "Access and sync your files",
-        action: <button className="d-flex items-center gap-05 action-button">Connect</button>
+        action: <Button variant='ghost' intent='neutral' size='sm'>Connect</Button>
     }, {
         key: "gemini",
         icon: TbBrain,
         title: "Gemini",
         description: "AI-powered assistance and analysis",
-        action: <button className="d-flex items-center gap-05 action-button">Connect</button>
+        action: <Button variant='ghost' intent='neutral' size='sm'>Connect</Button>
     }, {
         key: "openai",
         icon: TbBrandOpenai,
         title: "OpenAI",
         description: "Advanced AI models and capabilities",
-        action: <button className="d-flex items-center gap-05 action-button">Connect</button>
+        action: <Button variant='ghost' intent='neutral' size='sm'>Connect</Button>
     }];
 
     return (
@@ -70,10 +71,9 @@ const IntegrationsSettings: React.FC = () => {
                 <Title className='font-size-2-5'>Need help with integrations?</Title>
                 <Paragraph>Check our documentation or contact support for assistance with setting up third-party connections.</Paragraph>
                 <Container className="d-flex gap-1 flex-wrap">
-                    <button className="d-flex items-center gap-05 action-button">
-                        <TbFileText size={16} />
+                    <Button variant='ghost' intent='neutral' size='sm' leftIcon={<TbFileText size={16} />}>
                         Documentation
-                    </button>
+                    </Button>
                 </Container>
             </Container>
         </Section>

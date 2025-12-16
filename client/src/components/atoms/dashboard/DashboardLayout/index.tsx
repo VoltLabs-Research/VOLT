@@ -20,26 +20,11 @@
  * SOFTWARE.
  */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import {
-    IoPersonOutline,
-    IoTelescopeOutline,
-    IoSettingsOutline,
-    IoChevronBack,
-    IoChevronForward,
-    IoSyncOutline,
-    IoStatsChart,
-    IoCubeOutline,
-    IoCloudOutline,
-    IoLayersOutline,
-    IoCodeSlashOutline,
-    IoMenuOutline,
-    IoSearchOutline,
-} from 'react-icons/io5';
-import './DashboardLayout.css';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
+import { IoSettingsOutline, IoCubeOutline, IoMenuOutline, IoSearchOutline } from 'react-icons/io5';
 import Paragraph from '@/components/primitives/Paragraph';
+import Button from '@/components/primitives/Button';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { IoNotificationsOutline } from "react-icons/io5";
 import { CiChat1 } from 'react-icons/ci';
@@ -66,10 +51,10 @@ import { IoIosAdd } from 'react-icons/io';
 import TeamCreator from '@/components/organisms/team/TeamCreator';
 import TeamInvitePanel from '@/components/organisms/team/TeamInvitePanel';
 import SSHFileExplorer from '@/components/organisms/ssh/SSHFileExplorer';
-import './DashboardLayout.css';
 import Container from '@/components/primitives/Container';
 import Popover from '@/components/molecules/common/Popover';
 import { TbBook } from 'react-icons/tb';
+import './DashboardLayout.css';
 
 const DashboardLayout = () => {
     const teams = useTeamStore((state) => state.teams);
@@ -80,8 +65,6 @@ const DashboardLayout = () => {
     const leaveTeam = useTeamStore((state) => state.leaveTeam);
     const navigate = useNavigate();
     const { showError, showSuccess } = useToast();
-    const toggleTeamCreator = useWindowsStore((state) => state.toggleTeamCreator);
-    const showTeamCreator = useWindowsStore((state) => state.showTeamCreator);
     const toggleSSHFileExplorer = useWindowsStore((state) => state.toggleSSHFileExplorer);
     const showSSHFileExplorer = useWindowsStore((state) => state.showSSHFileExplorer);
     const [searchParams, setSearchParams] = useSearchParams();
@@ -364,10 +347,19 @@ const DashboardLayout = () => {
                             <Container className='mobile-dropdown-section'>
                                 <nav className='d-flex column gap-05 mobile-nav-list'>
                                     {navItems.map(([name, Icon, to], index) => (
-                                        <button key={`mdrop-${index}`} className={`d-flex items-center gap-075 mobile-nav-item ${(index === 0) ? 'is-selected' : ''}`} onClick={() => { navigate(to); setMobileMenuOpen(false); }}>
-                                            <i className='mobile-nav-icon'><Icon /></i>
+                                        <Button
+                                            key={`mdrop-${index}`}
+                                            variant='ghost'
+                                            intent='neutral'
+                                            size='sm'
+                                            block
+                                            align='start'
+                                            className={`mobile-nav-item ${(index === 0) ? 'is-selected' : ''}`}
+                                            leftIcon={<i className='mobile-nav-icon'><Icon /></i>}
+                                            onClick={() => { navigate(to); setMobileMenuOpen(false); }}
+                                        >
                                             <span className='mobile-nav-name'>{name}</span>
-                                        </button>
+                                        </Button>
                                     ))}
                                 </nav>
                             </Container>
@@ -385,8 +377,7 @@ const DashboardLayout = () => {
                                     />
                                 </Container>
                                 <button
-                                    commandfor='team-creator-modal'
-                                    command='showModal'
+                                    className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
                                     onClick={() => {
                                         setMobileMenuOpen(false);
                                         const modal = document.getElementById('team-creator-modal') as HTMLDialogElement;
@@ -394,8 +385,6 @@ const DashboardLayout = () => {
                                             modal.showModal();
                                         }
                                     }}
-                                    className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
-                                    style={{ border: 'none', cursor: 'pointer' }}
                                 >
                                     <IoIosAdd size={25} />
                                 </button>
@@ -451,7 +440,7 @@ const DashboardLayout = () => {
                         id="team-invite-popover"
                         trigger={
                             <button
-                                className='d-flex content-center items-center team-invite-icon-btn badge-container as-icon-container over-light-bg'
+                                className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
                                 title='Invite members or share team'
                                 aria-label='Invite members or share team'
                             >
@@ -471,16 +460,13 @@ const DashboardLayout = () => {
                     </Popover>
 
                     <button
-                        commandfor='team-creator-modal'
-                        command='showModal'
+                        className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
                         onClick={() => {
-                            // Fallback for browsers that don't support Invoker Commands API
                             const modal = document.getElementById('team-creator-modal') as HTMLDialogElement;
                             if (modal && !modal.open) {
                                 modal.showModal();
                             }
                         }}
-                        className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
                     >
                         <IoIosAdd size={25} />
                     </button>

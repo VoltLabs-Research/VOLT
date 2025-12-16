@@ -5,6 +5,7 @@ import { IoChatbubblesOutline, IoCallOutline, IoVideocamOutline, IoPeopleOutline
 import SharedFilesList from '@/components/molecules/chat/SharedFilesList';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import Button from '@/components/primitives/Button';
 import './DetailsPanel.css';
 
 type DetailsPanelProps = {
@@ -71,36 +72,28 @@ const DetailsPanel = ({
                     <div className='chat-details-section'>
                         <Title className='font-size-2-5 chat-details-section-title'>Actions</Title>
                         <div className='d-flex column gap-075 chat-details-actions'>
-                            <button className='d-flex items-center gap-075 chat-details-action'>
-                                <i className='d-flex flex-center chat-details-action-icon'>
-                                    <IoCallOutline />
-                                </i>
-                                <span className='chat-details-action-text'>Voice Call</span>
-                            </button>
-                            <button className='d-flex items-center gap-075 chat-details-action'>
-                                <i className='d-flex flex-center chat-details-action-icon'>
-                                    <IoVideocamOutline />
-                                </i>
-                                <span className='chat-details-action-text'>Video Call</span>
-                            </button>
+                            <Button variant='ghost' intent='neutral' leftIcon={<IoCallOutline />} block className='content-start'>
+                                Voice Call
+                            </Button>
+                            <Button variant='ghost' intent='neutral' leftIcon={<IoVideocamOutline />} block className='content-start'>
+                                Video Call
+                            </Button>
                             {chat.isGroup ? (
-                                <button
-                                    className='d-flex items-center gap-075 chat-details-action'
+                                <Button
+                                    variant='ghost'
+                                    intent='neutral'
+                                    leftIcon={<IoPeopleOutline />}
+                                    block
+                                    className='content-start'
                                     commandfor='group-management-modal'
                                     command='showModal'
                                 >
-                                    <i className='d-flex flex-center chat-details-action-icon'>
-                                        <IoPeopleOutline />
-                                    </i>
-                                    <span className='chat-details-action-text'>Manage Group</span>
-                                </button>
+                                    Manage Group
+                                </Button>
                             ) : (
-                                <button className='d-flex items-center gap-075 chat-details-action'>
-                                    <i className='d-flex flex-center chat-details-action-icon'>
-                                        <IoInformationCircleOutline />
-                                    </i>
-                                    <span className='chat-details-action-text'>View Profile</span>
-                                </button>
+                                <Button variant='ghost' intent='neutral' leftIcon={<IoInformationCircleOutline />} block className='content-start'>
+                                    View Profile
+                                </Button>
                             )}
                         </div>
                     </div>

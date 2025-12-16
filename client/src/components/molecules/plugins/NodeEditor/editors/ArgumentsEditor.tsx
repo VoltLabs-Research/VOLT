@@ -4,6 +4,7 @@ import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
 import KeyValueEditor from '@/components/molecules/plugins/KeyValueEditor';
 import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
+import Button from '@/components/primitives/Button';
 import { ARGUMENT_TYPE_OPTIONS } from '@/utilities/plugins/node-types';
 import type { IArgumentsData, IArgumentDefinition, ArgumentType } from '@/types/plugin';
 import { TbPlus, TbTrash } from 'react-icons/tb';
@@ -230,29 +231,30 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                         </div>
                     )}
 
-                    <button
-                        className='node-editor-delete-btn'
+                    <Button
+                        variant='ghost'
+                        intent='danger'
+                        size='sm'
+                        align='start'
+                        leftIcon={<TbTrash size={14} />}
                         onClick={() => removeArgument(index)}
                         style={{ marginTop: '0.5rem' }}
                     >
-                        <TbTrash size={14} />
                         Remove Argument
-                    </button>
+                    </Button>
                 </CollapsibleSection>
             ))}
 
-            <button
-                className='node-editor-delete-btn'
+            <Button
+                variant='outline'
+                intent='neutral'
+                size='sm'
+                align='start'
+                leftIcon={<TbPlus size={14} />}
                 onClick={addArgument}
-                style={{
-                    background: 'var(--gray-100)',
-                    borderColor: 'var(--gray-300)',
-                    color: 'var(--gray-700)'
-                }}
             >
-                <TbPlus size={14} />
                 Add Argument
-            </button>
+            </Button>
         </>
     );
 };

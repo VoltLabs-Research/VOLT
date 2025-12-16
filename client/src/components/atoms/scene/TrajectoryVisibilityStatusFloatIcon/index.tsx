@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { CiLock, CiUnlock } from "react-icons/ci";
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import useTrajectoryStore from '@/stores/trajectories';
+import Button from '@/components/primitives/Button';
 import './TrajectoryVisibilityStatusFloatIcon.css';
 
 const TrajectoryVisibilityStatusFloatIcon = () => {
@@ -12,12 +13,12 @@ const TrajectoryVisibilityStatusFloatIcon = () => {
     const isPublic = !!trajectory?.isPublic;
     const id = trajectory?._id;
 
-    const onToggle = useCallback(async() => {
-        if(isUpdating || !id) return;
+    const onToggle = useCallback(async () => {
+        if (isUpdating || !id) return;
         setIsUpdating(true);
-        try{
+        try {
             await updateTrajectoryById(id, { isPublic: !isPublic });
-        }catch(error: any){
+        } catch (error: any) {
             const errorContext = {
                 endpoint: `/trajectories/${id}`,
                 method: 'PATCH',
@@ -28,26 +29,28 @@ const TrajectoryVisibilityStatusFloatIcon = () => {
                 timestamp: new Date().toISOString()
             };
             console.error('Failed to toggle trajectory visibility:', errorContext);
-        }finally{
+        } finally {
             setIsUpdating(false);
         }
     }, [isUpdating, updateTrajectoryById, id, isPublic]);
 
-    if(!trajectory) return null;
+    if (!trajectory) return null;
 
-    return(
+    return (
         <EditorWidget
             className={`trajectory-share-status-container ${isUpdating ? 'is-disabled' : ''}`}
         >
-            <button
-                className='trajectory-share-status-icon-container'
+            <Button
+                variant='ghost'
+                intent='neutral'
+                iconOnly
                 onClick={onToggle}
                 title={isPublic ? 'Public · Click to make Private' : 'Private · Click to make Public'}
                 disabled={isUpdating}
                 aria-label={isPublic ? 'Make trajectory private' : 'Make trajectory public'}
             >
                 {isPublic ? <CiUnlock /> : <CiLock />}
-            </button>
+            </Button>
         </EditorWidget>
     );
 };

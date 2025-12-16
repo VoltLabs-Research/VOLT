@@ -241,6 +241,7 @@ export default function AuthPage() {
                     <Button
                       variant="outline"
                       intent="white"
+                      size="lg"
                       block
                       leftIcon={<Github size={20} />}
                       onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/github`}
@@ -250,6 +251,7 @@ export default function AuthPage() {
                     <Button
                       variant="outline"
                       intent="white"
+                      size="lg"
                       block
                       leftIcon={
                         <svg viewBox="0 0 24 24" width="20" height="20">
@@ -266,6 +268,7 @@ export default function AuthPage() {
                     <Button
                       variant="outline"
                       intent="white"
+                      size="lg"
                       block
                       leftIcon={
                         <svg viewBox="0 0 23 23" width="20" height="20">

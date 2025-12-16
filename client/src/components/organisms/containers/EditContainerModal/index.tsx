@@ -4,6 +4,7 @@ import containerApi from '@/services/api/container';
 import useToast from '@/hooks/ui/use-toast';
 import './EditContainerModal.css';
 import Title from '@/components/primitives/Title';
+import Button from '@/components/primitives/Button';
 import Modal from '@/components/molecules/common/Modal';
 
 interface EditContainerModalProps {
@@ -81,7 +82,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                 <div className="d-flex column form-section">
                     <div className="section-header">
                         <label>Environment Variables</label>
-                        <button type="button" onClick={handleAddEnv} className="d-flex items-center add-btn"><IoAdd /> Add</button>
+                        <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddEnv}>Add</Button>
                     </div>
                     {env.map((e, i) => (
                         <div key={i} className="d-flex items-center gap-075 row-inputs">
@@ -95,7 +96,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                                 value={e.value}
                                 onChange={(ev) => handleEnvChange(i, 'value', ev.target.value)}
                             />
-                            <button type="button" onClick={() => handleRemoveEnv(i)} className="d-flex items-center content-center remove-btn"><IoTrash /></button>
+                            <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => handleRemoveEnv(i)}><IoTrash /></Button>
                         </div>
                     ))}
                 </div>
@@ -103,7 +104,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                 <div className="d-flex column form-section">
                     <div className="section-header">
                         <label>Port Bindings</label>
-                        <button type="button" onClick={handleAddPort} className="d-flex items-center add-btn"><IoAdd /> Add</button>
+                        <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddPort}>Add</Button>
                     </div>
                     {ports.map((p, i) => (
                         <div key={i} className="d-flex items-center gap-075 row-inputs">
@@ -119,23 +120,23 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                                 value={p.public}
                                 onChange={(ev) => handlePortChange(i, 'public', ev.target.value)}
                             />
-                            <button type="button" onClick={() => handleRemovePort(i)} className="d-flex items-center content-center remove-btn"><IoTrash /></button>
+                            <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => handleRemovePort(i)}><IoTrash /></Button>
                         </div>
                     ))}
                 </div>
 
                 <div className="d-flex content-end gap-1 modal-actions">
-                    <button
-                        type="button"
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
                         commandfor="edit-container-modal"
                         command="close"
-                        className="cancel-btn"
                     >
                         Cancel
-                    </button>
-                    <button type="submit" disabled={loading} className="submit-btn">
-                        {loading ? 'Updating...' : 'Save Changes(Recreate)'}
-                    </button>
+                    </Button>
+                    <Button variant='solid' intent='brand' type="submit" disabled={loading} isLoading={loading}>
+                        Save Changes (Recreate)
+                    </Button>
                 </div>
             </form>
         </Modal>

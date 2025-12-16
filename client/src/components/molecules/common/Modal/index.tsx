@@ -2,6 +2,7 @@ import React, { type ReactNode } from 'react';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 import { IoClose } from 'react-icons/io5';
 import './Modal.css';
 
@@ -14,7 +15,7 @@ declare module 'react' {
 
 interface ModalProps {
     id: string;
-    trigger?: ReactNode; 
+    trigger?: ReactNode;
     title?: string;
     description?: string;
     children: ReactNode;
@@ -65,15 +66,17 @@ const Modal = ({
                                 {title && <Title className='font-size-4 font-weight-6'>{title}</Title>}
                                 {description && <Paragraph className='font-size-2 color-secondary'>{description}</Paragraph>}
                             </Container>
-                            <button
-                                className='volt-modal-close-btn'
+                            <Button
+                                variant='ghost'
+                                intent='neutral'
+                                iconOnly
+                                size='sm'
                                 commandfor={id}
                                 command="close"
                                 aria-label="Close modal"
-                                type="button"
                             >
                                 <IoClose size={20} />
-                            </button>
+                            </Button>
                         </Container>
                     )}
 

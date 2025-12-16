@@ -3,6 +3,7 @@ import { IoFolder, IoDocument, IoArrowBack } from 'react-icons/io5';
 import useToast from '@/hooks/ui/use-toast';
 import containerApi from '@/services/api/container';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 import './ContainerFileExplorer.css';
 import Paragraph from '@/components/primitives/Paragraph';
 
@@ -78,9 +79,9 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         return (
             <Container className='d-flex column h-max gap-1'>
                 <Container className="d-flex items-center gap-1 viewer-header">
-                    <button onClick={closeFileViewer} className="d-flex items-center gap-05 back-btn-small">
-                        <IoArrowBack /> Back
-                    </button>
+                    <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoArrowBack />} onClick={closeFileViewer}>
+                        Back
+                    </Button>
                     <span>{viewingFile}</span>
                 </Container>
                 <pre className="file-content">{fileContent}</pre>
@@ -92,14 +93,14 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         <Container>
             <Container className="d-flex content-between items-center explorer-header">
                 <Container className="d-flex items-center gap-1 flex-1">
-                    <button onClick={handleGoUp} disabled={currentPath === '/'} className="up-btn">
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleGoUp} disabled={currentPath === '/'}>
                         <IoArrowBack />
-                    </button>
+                    </Button>
                     <span className="current-path">{currentPath}</span>
                 </Container>
-                <button onClick={() => fetchFiles(currentPath)} className="refresh-btn-small">
+                <Button variant='ghost' intent='neutral' size='sm' onClick={() => fetchFiles(currentPath)}>
                     Refresh
-                </button>
+                </Button>
             </Container>
 
             <Container className="d-flex flex-1 y-scroll column">

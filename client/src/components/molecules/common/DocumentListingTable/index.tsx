@@ -6,6 +6,7 @@ import { Skeleton } from '@mui/material';
 import { useEffect, useRef } from 'react';
 import { List, type ListImperativeAPI } from 'react-window';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 
@@ -59,7 +60,7 @@ const VirtualizedRow = (props: any) => {
                 <Popover
                     id={`row-menu-${rowKey}`}
                     trigger={
-                        <button className='document-listing-row-menu-trigger'>⋮</button>
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm'>⋮</Button>
                     }
                 >
                     {menuOptions.map((option: any, idx: number) => {
@@ -229,7 +230,7 @@ const DocumentListingTable = ({
                                         <Popover
                                             id={`row-menu-fallback-${rowKey}`}
                                             trigger={
-                                                <button className='document-listing-row-menu-trigger'>⋮</button>
+                                                <Button variant='ghost' intent='neutral' iconOnly size='sm'>⋮</Button>
                                             }
                                         >
                                             {menuOptions.map((option: any, optIdx: number) => {

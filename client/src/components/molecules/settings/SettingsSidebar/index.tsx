@@ -1,6 +1,7 @@
 import React from 'react';
 import { TbArrowLeft } from 'react-icons/tb';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 import './SettingsSidebar.css';
 import Title from '@/components/primitives/Title';
 
@@ -19,9 +20,14 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection, navOpt
 	return (
 		<Container className='d-flex column p-sticky settings-sidebar'>
 			<Container className='d-flex items-center gap-1 sidebar-header'>
-				<button className='d-flex flex-center back-button'>
+				<Button
+					variant='ghost'
+					intent='neutral'
+					iconOnly
+					className='back-button'
+				>
 					<TbArrowLeft size={20} />
-				</button>
+				</Button>
 				<Title className='font-size-1 sidebar-title'>Settings</Title>
 			</Container>
 
@@ -30,14 +36,19 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection, navOpt
 					const Icon = option.icon;
 					const isActive = activeSection === option.title;
 					return (
-						<button
+						<Button
 							key={option.title}
-							className={`d-flex items-center gap-1 nav-item ${isActive ? 'active' : ''}`}
+							variant='ghost'
+							intent='neutral'
+							size='sm'
+							block
+							align='start'
+							className={`nav-item ${isActive ? 'active' : ''}`}
+							leftIcon={<Icon size={20} />}
 							onClick={() => onChange(option.title)}
 						>
-							<Icon size={20} />
-							<span>{option.title}</span>
-						</button>
+							{option.title}
+						</Button>
 					);
 				})}
 			</Container>

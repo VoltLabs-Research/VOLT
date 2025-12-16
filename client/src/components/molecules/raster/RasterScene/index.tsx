@@ -2,6 +2,7 @@ import React from 'react';
 import type { RasterSceneProps } from '@/types/raster';
 import AnalysisSelect from '@/components/atoms/raster/AnalysisSelect';
 import Loader from '@/components/atoms/common/Loader';
+import Button from '@/components/primitives/Button';
 import { Skeleton } from '@mui/material';
 import RasterSceneSkeleton from '@/components/atoms/raster/RasterSceneSkeleton';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -10,6 +11,7 @@ import ModelRail from '@/components/atoms/raster/ModelRail';
 import analysisConfigApi from '@/services/api/analysis-config';
 import rasterApi from '@/services/api/raster';
 import trajectoryApi from '@/services/api/trajectory';
+import { LuDownload } from 'react-icons/lu';
 import './RasterScene.css';
 
 const RasterScene: React.FC<RasterSceneProps> = ({
@@ -129,46 +131,30 @@ const RasterScene: React.FC<RasterSceneProps> = ({
           <AnalysisSelect {...analysisSelect} />
         </div>
         <div className="d-flex items-center gap-05 raster-scene-topbar-right">
-          <button
+          <Button
+            variant='ghost'
+            intent='neutral'
+            iconOnly
+            size='sm'
             aria-label="Download"
             title="Download"
             onClick={() => setIsMenuOpen(v => !v)}
             disabled={!canDownload}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--color-text-primary, #fff)',
-              cursor: canDownload ? 'pointer' : 'not-allowed',
-              padding: 6,
-              borderRadius: 8,
-              position: 'relative'
-            }}
+            isLoading={typeof downloadProgress === 'number'}
           >
-            <svg
-              style={{ position: 'relative', zIndex: 5, opacity: typeof downloadProgress === 'number' ? 0 : 1, transition: 'opacity .2s ease' }}
-              xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {typeof downloadProgress === 'number' && (
-              <div className='download-loader-container'>
-                <Loader scale={0.5} />
-              </div>
-            )}
-          </button>
+            <LuDownload size={18} />
+          </Button>
           {isMenuOpen && (
             <div className="d-flex column raster-scene-download-menu">
-              <button className="d-flex items-center gap-05" onClick={handleDownloadDislocations} disabled={!scene?.analysisId}>
-                <span>Dislocations data(JSON)</span>
-              </button>
-              <button className="d-flex items-center gap-05" onClick={handleDownloadGLBZip} disabled={!canDownload}>
-                <span>Frames GLBs(zip)</span>
-              </button>
-              <button className="d-flex items-center gap-05" onClick={handleDownloadRasterImagesZip} disabled={!canDownload}>
-                <span>Raster images(zip)</span>
-              </button>
+              <Button variant='ghost' intent='neutral' size='sm' align='start' block onClick={handleDownloadDislocations} disabled={!scene?.analysisId}>
+                Dislocations data (JSON)
+              </Button>
+              <Button variant='ghost' intent='neutral' size='sm' align='start' block onClick={handleDownloadGLBZip} disabled={!canDownload}>
+                Frames GLBs (zip)
+              </Button>
+              <Button variant='ghost' intent='neutral' size='sm' align='start' block onClick={handleDownloadRasterImagesZip} disabled={!canDownload}>
+                Raster images (zip)
+              </Button>
             </div>
           )}
         </div>

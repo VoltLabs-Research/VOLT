@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import containerApi from '@/services/api/container';
 import { RefreshCw, Activity } from 'lucide-react';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 import './ContainerProcesses.css';
 import Paragraph from '@/components/primitives/Paragraph';
 import Title from '@/components/primitives/Title';
@@ -68,7 +69,7 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
             <Container className="d-flex column flex-center h-max gap-1 p-2 text-center color-muted-foreground">
                 <Activity size={48} />
                 <Paragraph>{error}</Paragraph>
-                <button onClick={fetchProcesses} className="retry-btn">Retry</button>
+                <Button variant='ghost' intent='neutral' size='sm' onClick={fetchProcesses}>Retry</Button>
             </Container>
         );
     }
@@ -77,9 +78,9 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
         <Container className="d-flex h-max column overflow-hidden processes-container">
             <Container className="d-flex content-between items-center processes-header">
                 <Title className='font-size-3'>Running Processes</Title>
-                <button onClick={fetchProcesses} className="refresh-btn">
-                    <RefreshCw size={14} /> Refresh
-                </button>
+                <Button variant='ghost' intent='neutral' size='sm' leftIcon={<RefreshCw size={14} />} onClick={fetchProcesses}>
+                    Refresh
+                </Button>
             </Container>
             <Container className="flex-1 overflow-auto">
                 <table className="processes-table">

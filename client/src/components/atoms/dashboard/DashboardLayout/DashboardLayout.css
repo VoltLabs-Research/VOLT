@@ -137,9 +137,16 @@
     width: 2.5rem;
     height: 2.5rem;
     backdrop-filter: blur(5px);
-
     border: 1px solid var(--color-border);
     background-color: var(--color-surface-2);
+    border-radius: 6rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.badge-container.as-icon-container:hover {
+    background-color: var(--color-surface-3);
+    border-color: var(--color-border);
 }
 
 .badge-container.as-icon-container.over-light-bg {

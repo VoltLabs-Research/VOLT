@@ -3,6 +3,7 @@ import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
 import './ResourceUsage.css'
 import Title from '@/components/primitives/Title';
+import Button from '@/components/primitives/Button';
 
 function getLoadColor(value: number): string {
   if (value >= 80) return '#FF453A' // Rojo - Sobrecarga
@@ -51,9 +52,9 @@ export function ResourceUsage() {
     <div className="d-flex column resource-usage">
       <div className="d-flex items-start content-between resource-usage-header">
         <Title className='font-size-3 resource-usage-title'>Resource Usage(Real-time)</Title>
-        <button className="resource-usage-menu">
+        <Button variant='ghost' intent='neutral' iconOnly size='sm'>
           <MoreVertical className="resource-usage-icon" />
-        </button>
+        </Button>
       </div>
 
       {isLoading ? (

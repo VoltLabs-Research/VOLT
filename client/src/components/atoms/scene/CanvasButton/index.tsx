@@ -21,6 +21,7 @@
  */
 
 import React from 'react';
+import Button from '@/components/primitives/Button';
 
 interface ButtonProps {
     children?: React.ReactNode;
@@ -37,15 +38,18 @@ const CanvasButton: React.FC<ButtonProps> = ({
     icon: Icon,
     className = ''
 }) => {
-    return(
-        <button
+    return (
+        <Button
+            variant='ghost'
+            intent='neutral'
+            size='sm'
             className={className}
             onClick={onClick}
             disabled={disabled}
+            leftIcon={Icon ? <Icon /> : undefined}
         >
-            {Icon && <Icon />}
             {children}
-        </button>
+        </Button>
     );
 };
 

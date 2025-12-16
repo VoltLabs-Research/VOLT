@@ -4,6 +4,7 @@ import useSSHConnections, { type SSHConnection } from '@/stores/ssh-connections'
 import useTeamStore from '@/stores/team/team';
 import FileExplorerWindow from '@/components/organisms/trajectory/FileExplorerWindow';
 import SSHConnectionModal from '@/components/molecules/ssh/SSHConnectionModal';
+import Button from '@/components/primitives/Button';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import {
     LuFolder,
@@ -142,22 +143,17 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
                     </div>
                 ))}
             </div>
-            <button
-                className="d-flex items-center content-center gap-05 ssh-add-btn"
+            <Button
+                variant='soft'
+                intent='neutral'
+                size='sm'
+                block
+                leftIcon={<LuPlus />}
                 onClick={() => openConnectionModal(null)}
-                style={{
-                    marginTop: '1rem',
-                    background: 'rgba(255, 255, 255, 0.1)',
-                    border: 'none',
-                    color: 'white',
-                    padding: '0.5rem',
-                    borderRadius: '0.25rem',
-                    cursor: 'pointer',
-                    fontSize: '0.85rem'
-                }}
+                style={{ marginTop: '1rem' }}
             >
-                <LuPlus /> Add Connection
-            </button>
+                Add Connection
+            </Button>
         </>
     );
 
@@ -203,16 +199,18 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
             </i>
 
             {selected && (
-                <button
+                <Button
+                    variant='solid'
+                    intent='brand'
+                    size='sm'
                     onClick={handleImport}
-                    className="d-flex items-center breadcrumb-btn"
                     title="Import Trajectory"
                     disabled={importing}
-                    style={{ background: 'var(--accent-blue)', color: 'white', padding: '0.25rem 0.75rem', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                    isLoading={importing}
+                    leftIcon={<LuDownload />}
                 >
-                    {importing ? <CircularProgress size={14} color="inherit" /> : <LuDownload />}
-                    <span style={{ marginLeft: '0.5rem' }}>Import</span>
-                </button>
+                    Import
+                </Button>
             )}
         </>
     );
@@ -236,7 +234,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
             ) : error ? (
                 <div style={{ padding: '2rem', textAlign: 'center', color: '#ff6b6b' }}>
                     <p>{error}</p>
-                    <button onClick={refresh} style={{ marginTop: '1rem', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', cursor: 'pointer' }}>Retry</button>
+                    <Button variant='soft' intent='neutral' size='sm' onClick={refresh} style={{ marginTop: '1rem' }}>Retry</Button>
                 </div>
             ) : entries.length === 0 ? (
                 <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>

@@ -27,6 +27,7 @@ import useLoginActivity from '@/hooks/auth/use-login-activity';
 import './LoginActivityModal.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import Button from '@/components/primitives/Button';
 import Modal from '@/components/molecules/common/Modal';
 
 interface LoginActivityModalProps { }
@@ -47,21 +48,25 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = () => {
         >
             <div className="d-flex column flex-1 login-activity-modal-content">
                 <div className="d-flex items-center content-end gap-075 login-activity-modal-actions mb-1">
-                    <button
-                        className="d-flex items-center gap-05 action-button refresh"
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        size='sm'
+                        leftIcon={<TbRefresh size={16} className={loading ? 'animate-spin' : ''} />}
                         onClick={refetch}
                         disabled={loading}
                     >
-                        <TbRefresh size={16} className={loading ? 'animate-spin' : ''} />
                         Refresh
-                    </button>
-                    <button
-                        className="d-flex items-center gap-05 action-button close"
+                    </Button>
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        iconOnly
                         commandfor='login-activity-modal'
                         command='close'
                     >
                         <TbX size={20} />
-                    </button>
+                    </Button>
                 </div>
 
                 {loading ? (
@@ -81,9 +86,9 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = () => {
                         <TbActivity size={48} />
                         <Title className='font-size-2-5'>Unable to load activity</Title>
                         <Paragraph>{error}</Paragraph>
-                        <button className="action-button" onClick={refetch}>
+                        <Button variant='ghost' intent='neutral' onClick={refetch}>
                             Try Again
-                        </button>
+                        </Button>
                     </div>
                 ) : activities.length === 0 ? (
                     <div className="d-flex column flex-center activity-empty">

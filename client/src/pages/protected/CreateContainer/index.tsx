@@ -428,7 +428,7 @@ const CreateContainer: React.FC = () => {
                                     <div className="d-flex column config-group">
                                         <div className="d-flex content-between items-center group-header">
                                             <Title className="font-size-3 font-weight-6">Port Mapping</Title>
-                                            <button onClick={addPort} className="d-flex items-center gap-025 add-btn"><Plus size={14} /> Add Port</button>
+                                            <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Plus size={14} />} onClick={addPort}>Add Port</Button>
                                         </div>
                                         {config.ports.map((port, i) => (
                                             <div key={i} className="d-flex gap-05 port-row">
@@ -451,9 +451,9 @@ const CreateContainer: React.FC = () => {
                                                         className="port-input"
                                                     />
                                                 </div>
-                                                <button onClick={() => removePort(i)} className="d-flex flex-center remove-btn">
+                                                <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => removePort(i)}>
                                                     <Trash2 size={16} />
-                                                </button>
+                                                </Button>
                                             </div>
                                         ))}
                                         {config.ports.length === 0 && (
@@ -467,7 +467,7 @@ const CreateContainer: React.FC = () => {
                                     <div className="d-flex column config-group">
                                         <div className="d-flex content-between items-center group-header">
                                             <Title className="font-size-3 font-weight-6">Environment Variables</Title>
-                                            <button onClick={addEnv} className="d-flex items-center gap-025 add-btn"><Plus size={14} /> Add Variable</button>
+                                            <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Plus size={14} />} onClick={addEnv}>Add Variable</Button>
                                         </div>
                                         {config.env.map((env, i) => (
                                             <div key={i} className="d-flex gap-05 env-row">
@@ -485,9 +485,9 @@ const CreateContainer: React.FC = () => {
                                                     onChange={(val) => updateEnv(i, 'value', val as string)}
                                                     className="env-input"
                                                 />
-                                                <button onClick={() => removeEnv(i)} className="d-flex flex-center remove-btn">
+                                                <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => removeEnv(i)}>
                                                     <Trash2 size={16} />
-                                                </button>
+                                                </Button>
                                             </div>
                                         ))}
                                         {config.env.length === 0 && (
@@ -552,9 +552,9 @@ const CreateContainer: React.FC = () => {
                         <div className="modal-content custom-image-modal">
                             <div className="modal-header">
                                 <Title className="font-size-4 font-weight-6">Custom Docker Image</Title>
-                                <button onClick={() => setShowCustomImageModal(false)} className="close-btn">
+                                <Button variant='ghost' intent='neutral' iconOnly onClick={() => setShowCustomImageModal(false)}>
                                     <X size={24} />
-                                </button>
+                                </Button>
                             </div>
                             <div className="modal-body">
                                 <Paragraph className="color-muted">Enter the name of the Docker image you want to pull from Docker Hub.</Paragraph>

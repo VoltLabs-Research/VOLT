@@ -5,6 +5,7 @@ import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
 import { formatNetworkSpeed } from '@/utilities/network'
 import Container from '@/components/primitives/Container'
+import Button from '@/components/primitives/Button'
 import './ServerTable.css'
 import Title from '@/components/primitives/Title'
 
@@ -56,24 +57,21 @@ export function ServerTable() {
             <Title className='font-size-3 server-table-title'>Server Summary</Title>
           </Container>
           <Container className="d-flex items-center gap-05">
-            <button className="d-flex items-center gap-025 server-table-btn">
+            <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown className="server-table-icon-sm" />}>
               Region
-              <ChevronDown className="server-table-icon-sm" />
-            </button>
-            <button className="server-table-btn">
+            </Button>
+            <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown className="server-table-icon-sm" />}>
               Status
-              <ChevronDown className="server-table-icon-sm" />
-            </button>
-            <button className="server-table-btn">
+            </Button>
+            <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown className="server-table-icon-sm" />}>
               Sort
-              <ChevronDown className="server-table-icon-sm" />
-            </button>
-            <button className="d-flex items-center content-center server-table-icon-btn">
+            </Button>
+            <Button variant='ghost' intent='neutral' iconOnly size='sm'>
               <RefreshCw className="server-table-icon" />
-            </button>
-            <button className="server-table-icon-btn">
+            </Button>
+            <Button variant='ghost' intent='neutral' iconOnly size='sm'>
               <Download className="server-table-icon" />
-            </button>
+            </Button>
           </Container>
         </Container>
 

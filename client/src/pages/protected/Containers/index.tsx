@@ -6,6 +6,7 @@ import useToast from '@/hooks/ui/use-toast';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
 import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
 import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
+import Button from '@/components/primitives/Button';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import containerApi from '@/services/api/container';
@@ -194,13 +195,14 @@ const Containers: React.FC = () => {
     return (
         <DashboardContainer pageName='Containers' className='d-flex column h-100 containers-page-wrapper'>
             <div className='containers-listing-header'>
-                <button
-                    className='d-flex items-center gap-05 new-container-btn'
+                <Button
+                    variant='solid'
+                    intent='brand'
+                    leftIcon={<Plus size={18} />}
                     onClick={() => navigate('/dashboard/containers/new')}
                 >
-                    <Plus size={18} />
-                    <span>New Container</span>
-                </button>
+                    New Container
+                </Button>
             </div>
 
             <DocumentListing

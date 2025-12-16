@@ -2,6 +2,7 @@ import React from "react";
 import Section from "@/components/atoms/settings/Section";
 import SectionHeader from "@/components/atoms/settings/SectionHeader";
 import Container from "@/components/primitives/Container";
+import Button from "@/components/primitives/Button";
 import "./ThemeSettings.css";
 import Title from "@/components/primitives/Title";
 import Paragraph from "@/components/primitives/Paragraph";
@@ -43,9 +44,9 @@ const ThemeSettings: React.FC<ThemeSettingsProps> = ({ currentTheme, onThemeChan
                         </Container>
 
                         <Container className="a-self-end">
-                            <button className="action-button" onClick={() => onThemeChange(t.value)}>
+                            <Button variant={currentTheme === t.value ? 'solid' : 'ghost'} intent={currentTheme === t.value ? 'brand' : 'neutral'} size='sm' onClick={() => onThemeChange(t.value)}>
                                 {currentTheme === t.value ? "Active" : "Switch"}
-                            </button>
+                            </Button>
                         </Container>
                     </Container>
                 ))}

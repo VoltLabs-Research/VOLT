@@ -5,6 +5,7 @@ import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/form/FormField';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import useRendererSettings from '@/stores/editor/renderer-settings';
+import Button from '@/components/primitives/Button';
 import { MdTune } from 'react-icons/md';
 
 const RendererSettingsControls: React.FC = () => {
@@ -18,7 +19,7 @@ const RendererSettingsControls: React.FC = () => {
 		key: 'context',
 		title: 'Context(GL Create)',
 		enabled: true,
-		onToggle: () => {},
+		onToggle: () => { },
 		rows: [],
 		extras: (
 			<div style={{ display: 'grid', gap: 12 }}>
@@ -46,7 +47,7 @@ const RendererSettingsControls: React.FC = () => {
 					<FormField fieldKey="preserve" label="Preserve Drawing Buffer" fieldType="checkbox" fieldValue={create.preserveDrawingBuffer} onFieldChange={(_, v) => setCreate({ preserveDrawingBuffer: Boolean(v) })} />
 					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Keep frame buffer between renders(screenshots)</div>
 				</div>
-				<button type="button" onClick={() => reset()} style={{ justifySelf: 'start' }}>Reset Renderer</button>
+				<Button variant='ghost' intent='neutral' size='sm' onClick={() => reset()} style={{ justifySelf: 'start' }}>Reset Renderer</Button>
 			</div>
 		)
 	};
@@ -55,7 +56,7 @@ const RendererSettingsControls: React.FC = () => {
 		key: 'tone',
 		title: 'Tone Mapping & Color',
 		enabled: true,
-		onToggle: () => {},
+		onToggle: () => { },
 		rows: [],
 		extras: (
 			<div style={{ display: 'grid', gap: 12 }}>
@@ -113,7 +114,7 @@ const RendererSettingsControls: React.FC = () => {
 		key: 'lighting',
 		title: 'Lighting & Clipping',
 		enabled: true,
-		onToggle: () => {},
+		onToggle: () => { },
 		rows: [],
 		extras: (
 			<div style={{ display: 'grid', gap: 12 }}>
@@ -137,7 +138,7 @@ const RendererSettingsControls: React.FC = () => {
 		key: 'shadows',
 		title: 'Shadows',
 		enabled: true,
-		onToggle: () => {},
+		onToggle: () => { },
 		rows: [],
 		extras: (
 			<div style={{ display: 'grid', gap: 12 }}>
@@ -163,7 +164,7 @@ const RendererSettingsControls: React.FC = () => {
 		)
 	};
 
-	return(
+	return (
 		<CollapsibleSection
 			title="Renderer Settings"
 			icon={<MdTune size={16} />}

@@ -6,6 +6,7 @@ import { useNodeData } from '@/hooks/plugins/use-node-data';
 import type { IEntrypointData } from '@/types/plugin';
 import pluginApi from '@/services/api/plugin';
 import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
+import Button from '@/components/primitives/Button';
 import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
 import Paragraph from '@/components/primitives/Paragraph';
 import './EntrypointEditor.css';
@@ -101,23 +102,30 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
                                 <span className='binary-filename'>{entrypoint.binaryFileName || entrypoint.binary}</span>
                                 <TbCheck size={16} className='binary-check-icon' />
                             </div>
-                            <button
-                                className='d-flex flex-center binary-remove-btn'
+                            <Button
+                                variant='ghost'
+                                intent='danger'
+                                iconOnly
+                                size='sm'
+                                className='binary-remove-btn'
                                 onClick={handleRemoveBinary}
                                 title='Remove binary'
                             >
                                 <TbTrash size={16} />
-                            </button>
+                            </Button>
                         </div>
                     ) : (
-                        <button
-                            className='d-flex flex-center gap-05 binary-upload-btn'
+                        <Button
+                            variant='outline'
+                            intent='neutral'
+                            size='sm'
+                            className='binary-upload-btn'
                             onClick={triggerFileSelect}
                             disabled={isUploading || !currentPlugin?._id}
+                            leftIcon={<TbUpload size={18} />}
                         >
-                            <TbUpload size={18} />
-                            <span>{isUploading ? `Uploading... ${uploadProgress}% ` : 'Upload Binary'}</span>
-                        </button>
+                            {isUploading ? `Uploading... ${uploadProgress}%` : 'Upload Binary'}
+                        </Button>
                     )}
 
                     {!currentPlugin?._id && (

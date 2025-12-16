@@ -1,5 +1,5 @@
 
-import IconButton from '@/components/atoms/common/IconButton';
+import Button from '@/components/primitives/Button';
 import type { Chat, Participant, Presence } from '@/types/chat';
 import { getInitials } from '@/utilities/guest';
 import {
@@ -36,15 +36,15 @@ const ChatHeader = ({ chat, currentParticipant, presence }: ChatHeaderProps) => 
                 </div>
             </div>
             <div className='d-flex items-center gap-075 chat-header-actions'>
-                <IconButton label='Call' className='d-flex flex-center chat-header-action'>
+                <Button variant='ghost' intent='neutral' iconOnly size='sm' title='Call'>
                     <IoCallOutline />
-                </IconButton>
-                <IconButton label='Video Call' className='d-flex flex-center chat-header-action'>
+                </Button>
+                <Button variant='ghost' intent='neutral' iconOnly size='sm' title='Video Call'>
                     <IoVideocamOutline />
-                </IconButton>
-                <IconButton label='More Info' className='d-flex flex-center chat-header-action'>
+                </Button>
+                <Button variant='ghost' intent='neutral' iconOnly size='sm' title='More Info'>
                     <IoInformationCircleOutline />
-                </IconButton>
+                </Button>
             </div>
         </div>
     );

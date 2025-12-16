@@ -6,6 +6,7 @@ import SectionHeader from "@/components/atoms/settings/SectionHeader";
 import StatusBadge from "@/components/atoms/common/StatusBadge";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import Container from "@/components/primitives/Container";
+import Button from "@/components/primitives/Button";
 import SettingsRow from "@/components/atoms/settings/SettingsRow";
 import "./AuthenticationSettings.css";
 
@@ -100,10 +101,9 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
                     ? `Last changed ${passwordInfo.lastChanged}`
                     : "Password information unavailable",
             right: (
-                <button className="d-flex items-center gap-05 action-button" onClick={() => setShowPasswordForm(!showPasswordForm)}>
-                    <TbEdit size={16} />
+                <Button variant='ghost' intent='neutral' size='sm' leftIcon={<TbEdit size={16} />} onClick={() => setShowPasswordForm(!showPasswordForm)}>
                     {showPasswordForm ? "Cancel" : "Change"}
-                </button>
+                </Button>
             ),
             after: showPasswordForm ? (
                 <div className="password-form">
@@ -139,16 +139,16 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
                             />
                         </div>
                         <div className="form-actions">
-                            <button
-                                type="button"
-                                className="action-button secondary"
+                            <Button
+                                variant='outline'
+                                intent='neutral'
                                 onClick={() => setShowPasswordForm(false)}
                             >
                                 Cancel
-                            </button>
-                            <button type="submit" className="action-button primary" disabled={isChangingPassword}>
-                                {isChangingPassword ? "Changing..." : "Change Password"}
-                            </button>
+                            </Button>
+                            <Button variant='solid' intent='brand' type="submit" disabled={isChangingPassword} isLoading={isChangingPassword}>
+                                Change Password
+                            </Button>
                         </div>
                     </form>
                 </div>
@@ -164,10 +164,9 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
             title: "Login Activity",
             description: "Monitor your account access and sessions",
             right: (
-                <button className="d-flex items-center gap-05 action-button" onClick={onOpenLoginActivity}>
-                    <TbDots size={16} />
+                <Button variant='ghost' intent='neutral' size='sm' leftIcon={<TbDots size={16} />} onClick={onOpenLoginActivity}>
                     View
-                </button>
+                </Button>
             ),
             after: null
         }

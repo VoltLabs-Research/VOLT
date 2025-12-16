@@ -22,6 +22,7 @@ import EditContainerModal from '@/components/organisms/containers/EditContainerM
 import containerApi from '@/services/api/container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import Button from '@/components/primitives/Button';
 import './ContainerDetails.css';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -131,9 +132,7 @@ const ContainerDetails: React.FC = () => {
         <div className="details-page-layout d-flex overflow-hidden">
             <div className="details-sidebar d-flex column f-shrink-0">
                 <div className="sidebar-header-details">
-                    <button onClick={() => navigate('/dashboard/containers')} className="d-flex items-center gap-05 back-link">
-                        <ArrowLeft size={16} /> Back
-                    </button>
+                    <Button variant='ghost' intent='neutral' size='sm' leftIcon={<ArrowLeft size={16} />} onClick={() => navigate('/dashboard/containers')}>Back</Button>
                     <div className="d-flex items-center gap-1 container-identity">
                         <div className="d-flex items-center content-center container-icon-large">
                             <Box size={24} />
@@ -146,51 +145,60 @@ const ContainerDetails: React.FC = () => {
                 </div>
 
                 <nav className="sidebar-nav d-flex column gap-025">
-                    <button
-                        className={`d-flex items-center gap-075 nav-item ${activeTab === 'overview' ? 'active' : ''}`}
+                    <Button
+                        variant={activeTab === 'overview' ? 'soft' : 'ghost'}
+                        intent={activeTab === 'overview' ? 'brand' : 'neutral'}
+                        size='sm'
+                        block
+                        align='start'
+                        leftIcon={<Layers size={18} />}
                         onClick={() => setActiveTab('overview')}
-                    >
-                        <Layers size={18} /> Overview
-                    </button>
-                    <button
-                        className={`d-flex items-center gap-075 nav-item ${activeTab === 'processes' ? 'active' : ''}`}
+                    >Overview</Button>
+                    <Button
+                        variant={activeTab === 'processes' ? 'soft' : 'ghost'}
+                        intent={activeTab === 'processes' ? 'brand' : 'neutral'}
+                        size='sm'
+                        block
+                        align='start'
+                        leftIcon={<Activity size={18} />}
                         onClick={() => setActiveTab('processes')}
-                    >
-                        <Activity size={18} /> Processes
-                    </button>
-                    <button
-                        className={`d-flex items-center gap-075 nav-item ${activeTab === 'logs' ? 'active' : ''}`}
+                    >Processes</Button>
+                    <Button
+                        variant={activeTab === 'logs' ? 'soft' : 'ghost'}
+                        intent={activeTab === 'logs' ? 'brand' : 'neutral'}
+                        size='sm'
+                        block
+                        align='start'
+                        leftIcon={<Terminal size={18} />}
                         onClick={() => setActiveTab('logs')}
-                    >
-                        <Terminal size={18} /> Terminal & Logs
-                    </button>
-                    <button
-                        className={`d-flex items-center gap-075 nav-item ${activeTab === 'storage' ? 'active' : ''}`}
+                    >Terminal & Logs</Button>
+                    <Button
+                        variant={activeTab === 'storage' ? 'soft' : 'ghost'}
+                        intent={activeTab === 'storage' ? 'brand' : 'neutral'}
+                        size='sm'
+                        block
+                        align='start'
+                        leftIcon={<Folder size={18} />}
                         onClick={() => setActiveTab('storage')}
-                    >
-                        <Folder size={18} /> Files & Storage
-                    </button>
-                    <button
-                        className={`d-flex items-center gap-075 nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+                    >Files & Storage</Button>
+                    <Button
+                        variant={activeTab === 'settings' ? 'soft' : 'ghost'}
+                        intent={activeTab === 'settings' ? 'brand' : 'neutral'}
+                        size='sm'
+                        block
+                        align='start'
+                        leftIcon={<Settings size={18} />}
                         onClick={() => setActiveTab('settings')}
-                    >
-                        <Settings size={18} /> Settings
-                    </button>
+                    >Settings</Button>
                 </nav>
 
                 <div className="sidebar-actions d-flex column gap-075">
                     {container.status !== 'running' ? (
-                        <button onClick={() => handleAction('start')} disabled={actionLoading} className="d-flex items-center content-center gap-05 action-btn start">
-                            <Play size={16} /> Start Container
-                        </button>
+                        <Button variant='solid' intent='success' block leftIcon={<Play size={16} />} onClick={() => handleAction('start')} disabled={actionLoading}>Start Container</Button>
                     ) : (
                         <>
-                            <button onClick={() => handleAction('restart')} disabled={actionLoading} className="d-flex items-center content-center gap-05 action-btn">
-                                <RefreshCw size={16} /> Restart
-                            </button>
-                            <button onClick={() => handleAction('stop')} disabled={actionLoading} className="d-flex items-center content-center gap-05 action-btn stop">
-                                <Square size={16} /> Stop
-                            </button>
+                            <Button variant='outline' intent='neutral' block leftIcon={<RefreshCw size={16} />} onClick={() => handleAction('restart')} disabled={actionLoading}>Restart</Button>
+                            <Button variant='soft' intent='danger' block leftIcon={<Square size={16} />} onClick={() => handleAction('stop')} disabled={actionLoading}>Stop</Button>
                         </>
                     )}
                     {container.ports?.[0] && (
@@ -423,12 +431,14 @@ const ContainerDetails: React.FC = () => {
                                 <Paragraph className="color-muted">Update environment variables, ports, and resource limits(CPU/RAM).</Paragraph>
                             </div>
                             <div className="d-flex content-end card-body">
-                                <button
-                                    className="d-flex items-center gap-05 secondary-btn"
+                                <Button
+                                    variant='outline'
+                                    intent='neutral'
+                                    leftIcon={<Settings size={16} />}
                                     onClick={() => (document.getElementById('edit-container-modal') as HTMLDialogElement)?.showModal()}
                                 >
-                                    <Settings size={16} /> Edit Configuration
-                                </button>
+                                    Edit Configuration
+                                </Button>
                             </div>
                         </div>
 
@@ -438,12 +448,14 @@ const ContainerDetails: React.FC = () => {
                                 <Paragraph className="color-muted">Permanently remove this container and all its data.</Paragraph>
                             </div>
                             <div className="d-flex content-end card-body">
-                                <button
-                                    className="d-flex items-center gap-05 danger-btn"
+                                <Button
+                                    variant='solid'
+                                    intent='danger'
+                                    leftIcon={<Trash2 size={16} />}
                                     onClick={() => handleAction('delete')}
                                 >
-                                    <Trash2 size={16} /> Delete Container
-                                </button>
+                                    Delete Container
+                                </Button>
                             </div>
                         </div>
                     </div>

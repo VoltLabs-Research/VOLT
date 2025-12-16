@@ -6,6 +6,7 @@ import FileMessage from '@/components/atoms/chat/FileMessage';
 import MessageControls from '@/components/atoms/chat/MessageControls';
 import ReactionsBar from '@/components/atoms/chat/ReactionsBar';
 import Paragraph from '@/components/primitives/Paragraph';
+import Button from '@/components/primitives/Button';
 import './MessageItem.css';
 
 type MessageItemProps = {
@@ -81,10 +82,10 @@ const MessageItem: React.FC<MessageItemProps> = ({
                             {isReactionsOpen && (
                                 <div className='d-flex gap-025 chat-message-reactions-menu'>
                                     {['👍', '❤️', '😂', '😮', '😢', '😡'].map(e =>
-                                        <button key={e} className='d-flex flex-center chat-reaction-btn' onClick={() => {
+                                        <Button key={e} variant='ghost' intent='neutral' iconOnly size='sm' onClick={() => {
                                             onToggleReaction(msg._id, e);
                                             onToggleReactions(msg._id);
-                                        }}>{e}</button>
+                                        }}>{e}</Button>
                                     )}
                                 </div>
                             )}

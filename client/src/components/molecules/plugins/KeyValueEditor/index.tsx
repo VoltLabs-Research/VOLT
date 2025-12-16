@@ -3,6 +3,7 @@ import FormField from '@/components/molecules/form/FormField';
 import { TbPlus, TbTrash } from 'react-icons/tb';
 import './KeyValueEditor.css';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 import Paragraph from '@/components/primitives/Paragraph';
 
 interface KeyValueEditorProps {
@@ -72,20 +73,22 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
                             expressionNodeId={expressionNodeId}
                         />
                     </Container>
-                    <button
+                    <Button
+                        variant='ghost'
+                        intent='danger'
+                        iconOnly
+                        size='sm'
                         onClick={() => onRemove(key)}
-                        className="kv-editor-remove"
                         style={{ marginTop: index === 0 ? '1.25rem' : 0 }}
                     >
                         <TbTrash size={14} />
-                    </button>
+                    </Button>
                 </Container>
             ))}
 
-            <button onClick={onAdd} className="d-flex flex-center gap-025 kv-editor-add">
-                <TbPlus size={12} />
+            <Button variant='ghost' intent='neutral' size='sm' leftIcon={<TbPlus size={12} />} onClick={onAdd}>
                 {addButtonText}
-            </button>
+            </Button>
         </Container>
     );
 };

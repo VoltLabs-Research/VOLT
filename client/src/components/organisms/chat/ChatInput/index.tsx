@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline } from 'react-icons/io5';
 import EmojiPicker from '@/components/atoms/chat/EmojiPicker';
+import Button from '@/components/primitives/Button';
 import './ChatInput.css';
 
 type Preview = {
@@ -77,14 +78,16 @@ const ChatInput = ({
                     multiple
                     style={{ display: 'none' }} />
 
-                <button
-                    type='button'
-                    className='chat-header-action'
+                <Button
+                    variant='ghost'
+                    intent='neutral'
+                    iconOnly
+                    size='sm'
                     title='Attach File'
                     onClick={() => fileRef.current?.click()}
                 >
                     <IoAttachOutline />
-                </button>
+                </Button>
 
                 <textarea
                     className='chat-input'
@@ -95,23 +98,27 @@ const ChatInput = ({
                     disabled={disabled}
                 />
 
-                <button
-                    type='button'
-                    className='chat-header-action'
+                <Button
+                    variant='ghost'
+                    intent='neutral'
+                    iconOnly
+                    size='sm'
                     title='Emoji'
                     onClick={() => setShowPicker(v => !v)}
                 >
                     <IoHappyOutline />
-                </button>
+                </Button>
 
-                <button
+                <Button
+                    variant='solid'
+                    intent='brand'
+                    iconOnly
                     type='submit'
-                    className='d-flex flex-center chat-send-button'
                     title='Send Message'
                     disabled={disabled || (!message.trim() && files.length === 0)}
                 >
                     <IoPaperPlaneOutline />
-                </button>
+                </Button>
             </div>
 
             {showPicker && (
@@ -125,11 +132,13 @@ const ChatInput = ({
                 <div className='chat-file-previews-container'>
                     <div className='d-flex items-center content-between chat-file-previews-header'>
                         <span>Archivos seleccionados({previews.length})</span>
-                        <button
-                            type='button'
-                            className='d-flex flex-center chat-clear-files'
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            iconOnly
+                            size='sm'
                             onClick={handleClearFiles}
-                        >✕</button>
+                        >✕</Button>
                     </div>
                     <div className='chat-file-previews-grid'>
                         {previews.map((item, index) => (
@@ -139,14 +148,16 @@ const ChatInput = ({
                                     <span className='chat-file-preview-name'>{item.file.name}</span>
                                     <span className='chat-file-preview-size'>{(item.file.size / 1024).toFixed(1)} KB</span>
                                 </div>
-                                <button
-                                    type='button'
-                                    className='d-flex flex-center chat-file-preview-remove'
+                                <Button
+                                    variant='ghost'
+                                    intent='danger'
+                                    iconOnly
+                                    size='sm'
                                     onClick={() => {
                                         setFiles(prev => prev.filter((_, i) => i !== index));
                                         setPreviews(prev => prev.filter((_, i) => i !== index));
                                     }}
-                                >✕</button>
+                                >✕</Button>
                             </div>
                         ))}
                     </div>

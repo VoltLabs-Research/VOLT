@@ -3,6 +3,7 @@ import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/form/FormField';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import useOrbitControlsSettings from '@/stores/editor/orbit-controls';
+import Button from '@/components/primitives/Button';
 import { MdRotateLeft } from 'react-icons/md';
 
 const OrbitControls: React.FC = () => {
@@ -33,7 +34,7 @@ const OrbitControls: React.FC = () => {
 		key: 'general',
 		title: 'OrbitControls',
 		enabled: true,
-		onToggle: () => {},
+		onToggle: () => { },
 		rows: [],
 		extras: (
 			<div style={{ display: 'grid', gap: 8 }}>
@@ -43,7 +44,7 @@ const OrbitControls: React.FC = () => {
 				<FormField fieldKey="enableZoom" label="Enable Zoom" fieldType="checkbox" fieldValue={enableZoom} onFieldChange={(_, v) => set({ enableZoom: Boolean(v) })} />
 				<FormField fieldKey="enableRotate" label="Enable Rotate" fieldType="checkbox" fieldValue={enableRotate} onFieldChange={(_, v) => set({ enableRotate: Boolean(v) })} />
 				<FormField fieldKey="enablePan" label="Enable Pan" fieldType="checkbox" fieldValue={enablePan} onFieldChange={(_, v) => set({ enablePan: Boolean(v) })} />
-				<button type="button" onClick={() => reset()} style={{ justifySelf: 'start' }}>Reset Orbit</button>
+				<Button variant='ghost' intent='neutral' size='sm' onClick={() => reset()} style={{ justifySelf: 'start' }}>Reset Orbit</Button>
 			</div>
 		)
 	};
@@ -52,7 +53,7 @@ const OrbitControls: React.FC = () => {
 		key: 'speeds',
 		title: 'Speeds',
 		enabled: true,
-		onToggle: () => {},
+		onToggle: () => { },
 		rows: [
 			{ label: 'Rotate Speed', min: 0.01, max: 10, step: 0.01, get: () => rotateSpeed, set: (v: number) => set({ rotateSpeed: v }), format: (v: number) => v.toFixed(2) },
 			{ label: 'Zoom Speed', min: 0.01, max: 10, step: 0.01, get: () => zoomSpeed, set: (v: number) => set({ zoomSpeed: v }), format: (v: number) => v.toFixed(2) },
@@ -69,7 +70,7 @@ const OrbitControls: React.FC = () => {
 		key: 'limits',
 		title: 'Limits',
 		enabled: true,
-		onToggle: () => {},
+		onToggle: () => { },
 		rows: [
 			{ label: 'Min Distance', min: 0.001, max: Math.max(10, maxDistance), step: 0.001, get: () => minDistance, set: (v: number) => set({ minDistance: v }), format: (v: number) => v.toFixed(3) },
 			{ label: 'Max Distance', min: Math.max(0.001, minDistance + 0.001), max: 100000, step: 0.1, get: () => maxDistance, set: (v: number) => set({ maxDistance: v }), format: (v: number) => v.toFixed(1) },
@@ -85,7 +86,7 @@ const OrbitControls: React.FC = () => {
 		key: 'target',
 		title: 'Target(Z-up)',
 		enabled: true,
-		onToggle: () => {},
+		onToggle: () => { },
 		rows: [
 			{ label: 'Target X', min: -100000, max: 100000, step: 0.1, get: () => target[0], set: (v: number) => setTarget([v, target[1], target[2]]), format: (v: number) => v.toFixed(2) },
 			{ label: 'Target Y', min: -100000, max: 100000, step: 0.1, get: () => target[1], set: (v: number) => setTarget([target[0], v, target[2]]), format: (v: number) => v.toFixed(2) },
@@ -94,7 +95,7 @@ const OrbitControls: React.FC = () => {
 		extras: null
 	};
 
-	return(
+	return (
 		<CollapsibleSection
 			title="Orbit Controls"
 			icon={<MdRotateLeft size={16} />}

@@ -8,6 +8,7 @@ import SectionHeader from "@/components/atoms/settings/SectionHeader";
 import StatusBadge from "@/components/atoms/common/StatusBadge";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import Container from "@/components/primitives/Container";
+import Button from "@/components/primitives/Button";
 import "./GeneralSettings.css";
 import Title from "@/components/primitives/Title";
 import Paragraph from "@/components/primitives/Paragraph";
@@ -217,10 +218,9 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                             <Title className='font-size-2-5'>Delete Account</Title>
                             <Paragraph>Permanently delete your account and all associated data. This action cannot be undone.</Paragraph>
                         </Container>
-                        <button className="action-button danger" onClick={onDeleteAccount}>
-                            <TbTrash size={16} />
+                        <Button variant='soft' intent='danger' leftIcon={<TbTrash size={16} />} onClick={onDeleteAccount}>
                             Delete Account
-                        </button>
+                        </Button>
                     </Container>
                 </Container>
             </Section>

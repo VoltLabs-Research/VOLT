@@ -2,6 +2,7 @@ import { X, Server } from 'lucide-react'
 import './ServerDetails.css'
 import Title from '@/components/primitives/Title'
 import Paragraph from '@/components/primitives/Paragraph'
+import Button from '@/components/primitives/Button'
 
 interface ServerDetailsProps {
   server: {
@@ -77,14 +78,14 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
                 {server.status}
               </span>
             </div>
-            <button className="d-flex items-center content-center server-details-close" onClick={onClose}>
+            <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={onClose}>
               <X />
-            </button>
+            </Button>
           </div>
         </div>
 
         <div className="d-flex gap-025 server-details-tabs">
-          <button className="server-details-tab server-details-tab-active">Server Info</button>
+          <Button variant='solid' intent='brand' size='sm'>Server Info</Button>
         </div>
 
         <div className="server-details-content">

@@ -5,6 +5,7 @@ import containerApi from '@/services/api/container';
 import useToast from '@/hooks/ui/use-toast';
 import './CreateContainerModal.css';
 import Title from '@/components/primitives/Title';
+import Button from '@/components/primitives/Button';
 import Modal from '@/components/molecules/common/Modal';
 
 interface CreateContainerModalProps {
@@ -143,9 +144,9 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                 <div className='d-flex column gap-075 form-section'>
                     <div className='d-flex content-between items-center section-header'>
                         <label>Environment Variables</label>
-                        <button type='button' onClick={handleAddEnv} className='d-flex items-center gap-025 add-btn-small'>
-                            <IoAdd /> Add
-                        </button>
+                        <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddEnv}>
+                            Add
+                        </Button>
                     </div>
                     {envVars.map((env, i) => (
                         <div key={i} className='d-flex items-center gap-075 env-row'>
@@ -159,9 +160,9 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                                 value={env.value}
                                 onChange={e => handleEnvChange(i, 'value', e.target.value)}
                             />
-                            <button type='button' onClick={() => handleRemoveEnv(i)} className='remove-btn'>
+                            <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => handleRemoveEnv(i)}>
                                 <IoTrash />
-                            </button>
+                            </Button>
                         </div>
                     ))}
                 </div>
@@ -169,9 +170,9 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                 <div className='form-section'>
                     <div className='d-flex content-between items-center section-header'>
                         <label>Port Mapping</label>
-                        <button type='button' onClick={handleAddPort} className='d-flex items-center gap-025 add-btn-small'>
-                            <IoAdd /> Add
-                        </button>
+                        <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddPort}>
+                            Add
+                        </Button>
                     </div>
                     {ports.map((port, i) => (
                         <div key={i} className='d-flex items-center gap-075 port-row'>
@@ -192,25 +193,25 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                                     onChange={e => handlePortChange(i, 'public', e.target.value)}
                                 />
                             </div>
-                            <button type='button' onClick={() => handleRemovePort(i)} className='remove-btn'>
+                            <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => handleRemovePort(i)}>
                                 <IoTrash />
-                            </button>
+                            </Button>
                         </div>
                     ))}
                 </div>
 
                 <div className='d-flex content-end gap-075 modal-footer'>
-                    <button
-                        type='button'
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
                         commandfor='create-container-modal'
                         command='close'
-                        className='cancel-btn'
                     >
                         Cancel
-                    </button>
-                    <button type='submit' disabled={loading} className='submit-btn'>
-                        {loading ? 'Creating...' : 'Create Container'}
-                    </button>
+                    </Button>
+                    <Button variant='solid' intent='brand' type='submit' disabled={loading} isLoading={loading}>
+                        Create Container
+                    </Button>
                 </div>
             </form>
         </Modal>

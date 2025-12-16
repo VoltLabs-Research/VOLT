@@ -1,4 +1,5 @@
 import React, { type ReactNode } from 'react';
+import Button from '@/components/primitives/Button';
 import './PopoverMenuItem.css';
 
 interface PopoverMenuItemProps {
@@ -17,16 +18,22 @@ const PopoverMenuItem = ({
     disabled = false
 }: PopoverMenuItemProps) => {
     return (
-        <button
-            className={`popover-menu-item d-flex items-center gap-05 w-max ${variant} ${disabled ? 'disabled' : ''}`}
+        <Button
+            variant='ghost'
+            intent={variant === 'danger' ? 'danger' : 'neutral'}
+            size='sm'
+            block
+            align='start'
+            className={`popover-menu-item ${disabled ? 'disabled' : ''}`}
             onClick={onClick}
             disabled={disabled}
-            type="button"
+            leftIcon={icon ? <span className="popover-menu-item-icon f-shrink-0">{icon}</span> : undefined}
         >
-            {icon && <span className="popover-menu-item-icon d-flex items-center content-center f-shrink-0">{icon}</span>}
-            <span className="popover-menu-item-label flex-1">{children}</span>
-        </button>
+            {children}
+        </Button>
     );
 };
 
 export default PopoverMenuItem;
+
+

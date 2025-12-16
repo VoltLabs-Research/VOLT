@@ -35,6 +35,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
     block?: boolean;
 
     /**
+     * Content alignment
+     * @default 'center'
+     */
+    align?: 'start' | 'center' | 'end';
+
+    /**
      * Loading state
      * @default false
      */
@@ -81,6 +87,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     size = 'md',
     shape = 'rounded',
     block = false,
+    align = 'center',
     isLoading = false,
     to,
     disabled,
@@ -118,6 +125,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
         `size-${size}`,
         `shape-${shape}`,
         block ? 'block' : '',
+        align !== 'center' ? `align-${align}` : '',
         isLoading ? 'is-loading' : '',
         iconOnly ? 'icon-only' : '',
         premium ? 'premium' : '',

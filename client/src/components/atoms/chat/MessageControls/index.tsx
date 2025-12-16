@@ -6,6 +6,7 @@ import {
 } from 'react-icons/io5';
 import './MessageControls.css';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 
 export type MessageControlsProps = {
     isOwn: boolean;
@@ -26,36 +27,52 @@ const MessageControls = ({
 }: MessageControlsProps) => {
     return (
         <Container className='d-flex gap-025 p-absolute chat-message-controls'>
-            <button
-                className='d-flex flex-center chat-message-reaction-btn'
+            <Button
+                variant='ghost'
+                intent='neutral'
+                iconOnly
+                size='sm'
                 onClick={onOpenReactions}
             >
                 <IoHappyOutline />
-            </button>
+            </Button>
 
             {isOwn && (
                 <Container className='p-relative'>
-                    <button
-                        className='d-flex flex-center chat-message-options'
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        iconOnly
+                        size='sm'
                         onClick={onOpenOptions}
                     >
                         <IoEllipsisVerticalOutline />
-                    </button>
+                    </Button>
 
                     {isOptionsOpen && (
                         <Container className='chat-message-options-menu'>
-                            <button
-                                className='d-flex items-center gap-05 w-max chat-message-option'
+                            <Button
+                                variant='ghost'
+                                intent='neutral'
+                                size='sm'
+                                leftIcon={<IoCreateOutline />}
                                 onClick={onEdit}
+                                block
+                                className='content-start'
                             >
-                                <IoCreateOutline /> Edit
-                            </button>
-                            <button
-                                className='d-flex items-center gap-05 w-max chat-message-option danger'
+                                Edit
+                            </Button>
+                            <Button
+                                variant='ghost'
+                                intent='danger'
+                                size='sm'
+                                leftIcon={<IoTrashOutline />}
                                 onClick={onDelete}
+                                block
+                                className='content-start'
                             >
-                                <IoTrashOutline /> Delete
-                            </button>
+                                Delete
+                            </Button>
                         </Container>
                     )}
                 </Container>

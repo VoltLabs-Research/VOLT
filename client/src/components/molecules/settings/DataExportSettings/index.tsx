@@ -3,6 +3,7 @@ import { TbDownload, TbX } from "react-icons/tb";
 import Section from "@/components/atoms/settings/Section";
 import SectionHeader from "@/components/atoms/settings/SectionHeader";
 import Container from "@/components/primitives/Container";
+import Button from "@/components/primitives/Button";
 import SettingsRow from "@/components/atoms/settings/SettingsRow";
 
 const DataExportSettings: React.FC = () => {
@@ -12,10 +13,9 @@ const DataExportSettings: React.FC = () => {
         title: "Export Data",
         description: "Download all your data in JSON format",
         right: (
-            <button className="d-flex items-center gap-05 action-button">
-                <TbDownload size={16} />
+            <Button variant='ghost' intent='neutral' size='sm' leftIcon={<TbDownload size={16} />}>
                 Export
-            </button>
+            </Button>
         )
     }, {
         key: "delete",
@@ -23,10 +23,9 @@ const DataExportSettings: React.FC = () => {
         title: "Delete Account",
         description: "Permanently delete your account and all data",
         right: (
-            <button className="d-flex items-center gap-05 action-button danger">
-                <TbX size={16} />
+            <Button variant='soft' intent='danger' size='sm' leftIcon={<TbX size={16} />}>
                 Delete
-            </button>
+            </Button>
         )
     }];
 

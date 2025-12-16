@@ -3,6 +3,7 @@ import type { Node } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
 import { TbTrash } from 'react-icons/tb';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import {
     ModifierEditor,
@@ -44,7 +45,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ node }) => {
         selectNode(null);
     };
 
-    return(
+    return (
         <Container className='p-2'>
             <Container>
                 {EditorComponent ? (
@@ -56,10 +57,17 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ node }) => {
                 )}
             </Container>
 
-            <button className='node-editor-delete-btn' onClick={handleDelete}>
-                <TbTrash size={14} />
+            <Button
+                variant='ghost'
+                intent='danger'
+                size='sm'
+                align='start'
+                leftIcon={<TbTrash size={14} />}
+                onClick={handleDelete}
+                style={{ marginTop: '1rem' }}
+            >
                 Delete Node
-            </button>
+            </Button>
         </Container>
     );
 };
