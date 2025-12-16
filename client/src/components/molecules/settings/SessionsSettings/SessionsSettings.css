@@ -1,3 +1,4 @@
+/* Session list uses .settings-card from general.css */
 .session-item {
     padding: 1rem;
     background: var(--color-surface-1);
@@ -66,18 +67,4 @@
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid var(--color-border-soft);
-}
-
-.session-actions-bulk .action-button {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--accent-red);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-}
-
-.session-actions-bulk .action-button:hover {
-    background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.3);
-    transform: translateY(-1px);
 }

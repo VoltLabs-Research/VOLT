@@ -379,14 +379,3 @@
         0 8px 20px rgba(14, 116, 144, 0.3),
         0 6px 16px rgba(0, 0, 0, 0.15);
 }
-
-/* Animations */
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.animate-spin {
-    animation: spin 1s linear infinite;
-}

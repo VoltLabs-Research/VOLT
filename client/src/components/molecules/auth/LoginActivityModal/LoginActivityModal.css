@@ -227,32 +227,7 @@
     transform: none;
 }
 
-/* Animations */
-@keyframes pulse {
 
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.5;
-    }
-}
-
-.animate-spin {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
 
 /* Responsive Design */
 @media (max-width: 768px) {

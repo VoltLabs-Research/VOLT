@@ -120,7 +120,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
 
     return(
         <div className='editor-sidebar-scene-container'>
-            <div className='editor-sidebar-scene-options-container'>
+            <div className='editor-sidebar-scene-options-container d-flex gap-1 column'>
                 {defaultOptions.map((option, index) => (
                     <div
                         key={`${option.sceneType.source}-${option.sceneType.sceneType}-${index}`}

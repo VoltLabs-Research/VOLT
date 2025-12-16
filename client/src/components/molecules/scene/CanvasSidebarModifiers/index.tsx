@@ -91,7 +91,7 @@ const CanvasSidebarModifiers = () => {
 
     return(
         <div className='editor-sidebar-scene-container'>
-            <div className='editor-sidebar-scene-options-container'>
+            <div className='editor-sidebar-scene-options-container d-flex gap-1 column'>
                 {allModifiers.map((option) => (
                     <CanvasSidebarOption
                         key={option.modifierId}

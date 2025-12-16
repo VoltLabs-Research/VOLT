@@ -291,7 +291,7 @@ export default function AuthPage() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <div className="input-group">
-                        <div className="input-icon">
+                        <div className="input-icon d-flex flex-center">
                           <Mail size={18} />
                         </div>
                         <FormInput
@@ -392,7 +392,7 @@ export default function AuthPage() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <div className="input-group">
-                        <div className="input-icon"><Lock size={18} /></div>
+                        <div className="input-icon d-flex flex-center"><Lock size={18} /></div>
                         <FormInput
                           variant="auth"
                           value={password}

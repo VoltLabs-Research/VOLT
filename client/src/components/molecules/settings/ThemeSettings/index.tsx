@@ -32,7 +32,7 @@ const ThemeSettings: React.FC<ThemeSettingsProps> = ({ currentTheme, onThemeChan
 
             <Container className="theme-options gap-1-5">
                 {themes.map((t) => (
-                    <Container key={t.key} className="d-flex items-center gap-1 sm:column sm:item-start theme-option">
+                    <Container key={t.key} className="d-flex items-center gap-1 sm:column sm:item-start theme-option settings-card settings-card-lg">
                         <Container className="theme-preview p-relative dark">
                             <Container className="preview-header"></Container>
                             <Container className="preview-content"></Container>

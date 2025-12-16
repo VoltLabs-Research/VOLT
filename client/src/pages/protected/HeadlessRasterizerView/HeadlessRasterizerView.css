@@ -22,16 +22,6 @@
 
 /* Progress Indicator Styles */
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
 .raster-view-container {
   height: 100%;
   overflow: hidden;

@@ -11,35 +11,3 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
-
-.data-info h4 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin: 0 0 0.25rem 0;
-}
-
-.data-info p {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-    margin: 0;
-}
-
-.advanced-item:hover {
-    border-color: var(--color-border);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.advanced-info h4 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin: 0 0 0.25rem 0;
-}
-
-.advanced-info p {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-    margin: 0;
-}
