@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { IoIosArrowDown } from 'react-icons/io';
 import FormField from '@/components/molecules/form/FormField';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
-import Button from '@/components/atoms/common/Button';
+import Button from '@/components/primitives/Button';
 import usePluginStore from '@/stores/plugins/plugin';
 import useTrajectoryStore from '@/stores/trajectories';
 import pluginApi from '@/services/api/plugin';
@@ -48,7 +48,7 @@ const ModifierConfiguration = ({
     const fetchTrajectory = useTrajectoryStore((state) => state.getTrajectoryById);
 
     useEffect(() => {
-        if(trajectoryId && (!trajectory || trajectory._id !== trajectoryId)) {
+        if (trajectoryId && (!trajectory || trajectory._id !== trajectoryId)) {
             fetchTrajectory(trajectoryId);
         }
     }, [trajectoryId, trajectory, fetchTrajectory]);
@@ -63,7 +63,7 @@ const ModifierConfiguration = ({
 
     const modifierInfo = useMemo(() => {
         const plugin = plugins.find((plugin) => plugin.slug === modifierId);  // Use modifierId(slug)
-        if(!plugin) return null;
+        if (!plugin) return null;
 
         const modifierNode = plugin.workflow.nodes.find((node: any) => node.type === 'modifier');
         const modifierData = modifierNode?.data?.modifier || {};
@@ -83,7 +83,7 @@ const ModifierConfiguration = ({
                 fieldKey: key
             };
 
-            switch(argDef.type){
+            switch (argDef.type) {
                 case 'select':
                     field.type = 'select';
                     field.options = (argDef.options || []).map((opt: any) => ({
@@ -98,7 +98,7 @@ const ModifierConfiguration = ({
                         value: String(frame.timestep),
                         title: `Frame ${index + 1} (Time ${frame.timestep})`
                     }));
-                    if(field.options.length === 0){
+                    if (field.options.length === 0) {
                         field.options = [{ value: '0', title: 'Default(First Frame)' }];
                     }
                     field.selectProps = { renderInPortal: true };
@@ -124,7 +124,7 @@ const ModifierConfiguration = ({
             }
 
             const defaultValue = argDef.default ?? argDef.value;
-            if(defaultValue !== undefined && config[key] === undefined){
+            if (defaultValue !== undefined && config[key] === undefined) {
                 setConfig((prev) => ({ ...prev, [key]: defaultValue }));
             }
 
@@ -136,10 +136,10 @@ const ModifierConfiguration = ({
         setConfig((prev) => ({ ...prev, [key]: value }));
     };
 
-    const startAnalysis = useCallback(async() => {
+    const startAnalysis = useCallback(async () => {
         setIsLoading(true);
         onAnalysisStart?.();
-        try{
+        try {
             const response = await pluginApi.executeModifier(
                 modifierId,
                 modifierId,
@@ -148,10 +148,10 @@ const ModifierConfiguration = ({
             );
             const analysisId = (response as any)?.analysisId;
             onAnalysisSuccess?.(analysisId);
-        }catch(error){
+        } catch (error) {
             console.error('Analysis failed:', error);
             onAnalysisError?.(error);
-        }finally{
+        } finally {
             setIsLoading(false);
         }
     }, [modifierId, trajectoryId, config, modifierInfo, onAnalysisStart, onAnalysisSuccess, onAnalysisError, currentTimestep]);
@@ -160,13 +160,13 @@ const ModifierConfiguration = ({
 
     // if config.length === 0 then handle auto start
     useEffect(() => {
-        if(!hasAutoStarted.current && !isLoading && config.length === 0 && trajectoryId){
+        if (!hasAutoStarted.current && !isLoading && config.length === 0 && trajectoryId) {
             hasAutoStarted.current = true;
             // TODO: another function for this
-            (async() => {
+            (async () => {
                 setIsLoading(true);
                 onAnalysisStart?.();
-                try{
+                try {
                     const response = await pluginApi.executeModifier(
                         modifierId,
                         modifierId,
@@ -175,17 +175,17 @@ const ModifierConfiguration = ({
                     );
                     const analysisId = (response as any)?.analysisId;
                     onAnalysisSuccess?.(analysisId);
-                }catch(error){
+                } catch (error) {
                     console.error('Analysis failed:', error);
                     onAnalysisError?.(error);
-                }finally{
+                } finally {
                     setIsLoading(false);
                 }
             })();
         }
     }, [configFields.length, isLoading, trajectoryId, modifierInfo, modifierId, onAnalysisStart, onAnalysisSuccess, onAnalysisError]);
 
-    if(configFields.length === 0 && hasAutoStarted.current){
+    if (configFields.length === 0 && hasAutoStarted.current) {
         return null;
     }
 
@@ -221,11 +221,14 @@ const ModifierConfiguration = ({
             <Container>
                 <Button
                     isLoading={isLoading}
-                    className='smooth click-scale start-analysis-btn'
-                    title='Start Analysis'
+                    variant='solid'
+                    intent='brand'
+                    block
                     onClick={startAnalysis}
                     disabled={isLoading}
-                />
+                >
+                    Start Analysis
+                </Button>
             </Container>
         </EditorWidget>
     );

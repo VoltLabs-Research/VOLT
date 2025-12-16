@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Skeleton } from '@mui/material';
 import teamApi from '@/services/api/team';
 import type { TeamInvitation } from '@/types/team-invitation';
-import Button from '@/components/atoms/common/Button';
+import Button from '@/components/primitives/Button';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import Container from '@/components/primitives/Container';
 import useToast from '@/hooks/ui/use-toast';
@@ -183,20 +183,24 @@ const TeamInvitationPage: React.FC = () => {
 
                     <Container className='space-y-4 invitation-actions'>
                         <Button
-                            className='d-flex items-center flex-center gap-05 btn btn-primary'
+                            variant='solid'
+                            intent='white'
+                            block
+                            leftIcon={<CheckCircle size={20} />}
                             onClick={handleAccept}
                             disabled={actionLoading}
                             isLoading={actionLoading}
                         >
-                            <CheckCircle size={20} />
                             Accept Invitation
                         </Button>
                         <Button
-                            className='d-flex items-center flex-center gap-05 btn btn-outline'
+                            variant='outline'
+                            intent='white'
+                            block
+                            leftIcon={<XCircle size={20} />}
                             onClick={handleReject}
                             disabled={actionLoading}
                         >
-                            <XCircle size={20} />
                             Reject Invitation
                         </Button>
                     </Container>

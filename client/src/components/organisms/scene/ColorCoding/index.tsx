@@ -3,7 +3,7 @@ import usePlaybackStore from '@/stores/editor/playback';
 import useTrajectoryStore from '@/stores/trajectories';
 import useFrameProperties from '@/hooks/trajectory/use-frame-properties';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
-import Button from '@/components/atoms/common/Button';
+import Button from '@/components/primitives/Button';
 import FormField from '@/components/molecules/form/FormField';
 import rasterApi from '@/services/api/raster';
 import { useState, useEffect } from 'react';
@@ -37,7 +37,7 @@ const ColorCoding = () => {
         frame: currentTimestep
     });
 
-    const applyColorCoding = async() => {
+    const applyColorCoding = async () => {
         await rasterApi.colorCoding.apply(trajectory!._id, analysisConfig!._id, currentTimestep!, {
             property, startValue, endValue, gradient, exposureId: exposureId || undefined
         });
@@ -65,13 +65,13 @@ const ColorCoding = () => {
         setExposureId(selectedOption?.exposureId || null);
     };
 
-    const fetchStats = async() => {
-        if(!property || !trajectory?._id || !analysisConfig?._id) return;
+    const fetchStats = async () => {
+        if (!property || !trajectory?._id || !analysisConfig?._id) return;
 
         const selectedOption = propertyOptions.find(opt => opt.value === property);
         const type = selectedOption?.exposureId ? 'modifier' : 'base';
 
-        try{
+        try {
             const stats = await rasterApi.colorCoding.getStats(trajectory._id, analysisConfig._id, {
                 timestep: currentTimestep,
                 property,
@@ -80,34 +80,34 @@ const ColorCoding = () => {
             });
             const { min, max } = stats;
 
-            if(symmetricRange){
+            if (symmetricRange) {
                 const limit = Math.max(Math.abs(min), Math.abs(max));
                 setStartValue(-limit);
                 setEndValue(limit);
-            }else{
+            } else {
                 setStartValue(min);
                 setEndValue(max);
             }
-        }catch(e){
+        } catch (e) {
             console.error(e);
         }
     };
 
     useEffect(() => {
-        if(automaticRange){
+        if (automaticRange) {
             fetchStats();
         }
     }, [automaticRange, currentTimestep, property, exposureId, symmetricRange]);
 
     useEffect(() => {
-        if(symmetricRange && !automaticRange){
+        if (symmetricRange && !automaticRange) {
             const limit = Math.max(Math.abs(startValue), Math.abs(endValue));
             setStartValue(-limit);
             setEndValue(limit);
         }
     }, [symmetricRange]);
 
-    return(
+    return (
         <EditorWidget className='color-coding-container' draggable={false}>
             <Container className='d-flex content-between items-center'>
                 <Title className='font-weight-5-5'>Color Coding</Title>
@@ -167,11 +167,14 @@ const ColorCoding = () => {
             <Container className='color-coding-footer-container'>
                 <Button
                     isLoading={isLoading}
-                    className='smooth click-scale start-analysis-btn'
-                    title='Apply'
+                    variant='solid'
+                    intent='brand'
+                    block
                     onClick={applyColorCoding}
                     disabled={isLoading}
-                />
+                >
+                    Apply
+                </Button>
             </Container>
         </EditorWidget>
     );

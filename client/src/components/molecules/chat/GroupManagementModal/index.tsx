@@ -38,7 +38,7 @@ import {
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
 import Modal from '@/components/molecules/common/Modal';
-import Button from '@/components/atoms/common/Button';
+import Button from '@/components/primitives/Button';
 import FormInput from '@/components/atoms/form/FormInput';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './GroupManagementModal.css';
@@ -273,13 +273,13 @@ const GroupManagementModal = () => {
                                 <Title className='font-size-3 group-management-section-title'>Danger Zone</Title>
                             </div>
                             <Button
-                                type='button'
-                                className='red-on-light sm d-flex content-start gap-05'
-                                title='Leave Group'
+                                variant='soft'
+                                intent='danger'
+                                size='sm'
+                                leftIcon={<IoExitOutline />}
                                 onClick={handleLeaveGroup}
                                 disabled={isLoading}
                             >
-                                <IoExitOutline />
                                 Leave Group
                             </Button>
                         </div>
@@ -295,12 +295,12 @@ const GroupManagementModal = () => {
                                     <Title className='font-size-3 group-management-section-title'>Group Members</Title>
                                     {(isAdmin || isOwner) && (
                                         <Button
-                                            type='button'
-                                            className='black-on-light sm'
-                                            title='Add Members'
+                                            variant='solid'
+                                            intent='brand'
+                                            size='sm'
+                                            leftIcon={<IoPersonAddOutline />}
                                             onClick={handleAddMembers}
                                         >
-                                            <IoPersonAddOutline />
                                             Add Members
                                         </Button>
                                     )}
@@ -422,13 +422,14 @@ const GroupManagementModal = () => {
 
                                     <div className='d-flex content-end group-management-add-members-actions'>
                                         <Button
-                                            type='button'
-                                            className='black-on-light sm'
-                                            title='Add Selected Members'
+                                            variant='solid'
+                                            intent='brand'
+                                            size='sm'
                                             onClick={handleAddSelectedMembers}
                                             disabled={selectedMembers.length === 0 || isLoading}
+                                            isLoading={isLoading}
                                         >
-                                            {isLoading ? 'Adding...' : `Add ${selectedMembers.length} Member${selectedMembers.length !== 1 ? 's' : ''}`}
+                                            Add {selectedMembers.length} Member{selectedMembers.length !== 1 ? 's' : ''}
                                         </Button>
                                     </div>
                                 </div>
@@ -446,12 +447,12 @@ const GroupManagementModal = () => {
                                     <Title className='font-size-3 group-management-section-title'>Group Administrators</Title>
                                     {isOwner && (
                                         <Button
-                                            type='button'
-                                            className='black-on-light sm'
-                                            title='Manage Admins'
+                                            variant='solid'
+                                            intent='brand'
+                                            size='sm'
+                                            leftIcon={<IoShieldOutline />}
                                             onClick={handleManageAdmins}
                                         >
-                                            <IoShieldOutline />
                                             Manage Admins
                                         </Button>
                                     )}
@@ -583,13 +584,14 @@ const GroupManagementModal = () => {
 
                                     <div className='d-flex content-end group-management-manage-admins-actions'>
                                         <Button
-                                            type='button'
-                                            className='black-on-light sm'
-                                            title='Save Changes'
+                                            variant='solid'
+                                            intent='brand'
+                                            size='sm'
                                             onClick={handleSaveAdmins}
                                             disabled={isLoading}
+                                            isLoading={isLoading}
                                         >
-                                            {isLoading ? 'Saving...' : 'Save Changes'}
+                                            Save Changes
                                         </Button>
                                     </div>
                                 </div>

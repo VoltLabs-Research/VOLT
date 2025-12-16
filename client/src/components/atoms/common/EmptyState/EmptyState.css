@@ -28,87 +28,6 @@
     color: var(--color-text-primary);
 }
 
-.empty-state-button {
-    margin-top: 0.5rem;
-    padding: 0.75rem 2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    background: radial-gradient(130% 180% at 50% 0%, #062a2f 0%, #071c1e 65%);
-    color: #d2faff;
-    border: 1px solid #0e3c44;
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
-    outline: none;
-    display: inline-block;
-}
-
-.empty-state-button:hover {
-    border-color: #0f4e57;
-    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.28),
-                0 10px 30px rgba(34, 211, 238, 0.28),
-                0 8px 20px rgba(0, 0, 0, 0.45);
-    color: #e6fdff;
-}
-
-.empty-state-button:active {
-    transform: translateY(1px) scale(0.99);
-}
-
-/* Light Mode Adjustments */
-@media (prefers-color-scheme: light) {
-    .empty-state-button {
-        background: radial-gradient(130% 180% at 50% 0%, #0891b2 0%, #0e7490 65%);
-        color: #ffffff;
-        border: 1px solid #0e7490;
-        box-shadow: 0 4px 12px rgba(14, 116, 144, 0.25);
-    }
-
-    .empty-state-button:hover {
-        border-color: #155e75;
-        box-shadow: 0 0 0 2px rgba(14, 116, 144, 0.3),
-                    0 8px 20px rgba(14, 116, 144, 0.3),
-                    0 6px 16px rgba(0, 0, 0, 0.15);
-        color: #ffffff;
-    }
-}
-
-/* Dark Mode Explicit (if theme class is used) */
-:root[data-theme='dark'] .empty-state-button,
-.dark .empty-state-button {
-    background: radial-gradient(130% 180% at 50% 0%, #062a2f 0%, #071c1e 65%);
-    color: #d2faff;
-    border: 1px solid #0e3c44;
-}
-
-:root[data-theme='dark'] .empty-state-button:hover,
-.dark .empty-state-button:hover {
-    border-color: #0f4e57;
-    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.28),
-                0 10px 30px rgba(34, 211, 238, 0.28),
-                0 8px 20px rgba(0, 0, 0, 0.45);
-    color: #e6fdff;
-}
-
-/* Light Mode Explicit (if theme class is used) */
-:root[data-theme='light'] .empty-state-button,
-.light .empty-state-button {
-    background: radial-gradient(130% 180% at 50% 0%, #0891b2 0%, #0e7490 65%);
-    color: #ffffff;
-    border: 1px solid #0e7490;
-    box-shadow: 0 4px 12px rgba(14, 116, 144, 0.25);
-}
-
-:root[data-theme='light'] .empty-state-button:hover,
-.light .empty-state-button:hover {
-    border-color: #155e75;
-    box-shadow: 0 0 0 2px rgba(14, 116, 144, 0.3),
-                0 8px 20px rgba(14, 116, 144, 0.3),
-                0 6px 16px rgba(0, 0, 0, 0.15);
-    color: #ffffff;
-}
-
 @media (max-width: 768px) {
     .empty-state-container {
         min-height: 300px;
@@ -128,10 +47,5 @@
 
     .empty-state-description {
         font-size: 0.9rem;
-    }
-
-    .empty-state-button {
-        padding: 0.65rem 1.5rem;
-        font-size: 0.95rem;
     }
 }

@@ -4,6 +4,7 @@ import useSSHConnections, { type CreateSSHConnectionData, type UpdateSSHConnecti
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './SSHConnectionModal.css';
 import Title from '@/components/primitives/Title';
+import Button from '@/components/primitives/Button';
 import Modal from '@/components/molecules/common/Modal';
 
 interface SSHConnectionModalProps {
@@ -226,14 +227,15 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                     {mode === 'edit' && connection && (
                         <div className="ssh-connection-form-group">
                             <div className="d-flex items-center gap-075 ssh-connection-test-container">
-                                <button
-                                    type="button"
-                                    className="d-flex items-center gap-05 ssh-connection-test-btn"
+                                <Button
+                                    variant="outline"
+                                    intent="neutral"
+                                    size="sm"
                                     onClick={handleTest}
                                     disabled={testing}
                                 >
                                     {testing ? 'Testing...' : 'Test Connection'}
-                                </button>
+                                </Button>
                                 {testResult && (
                                     <div className={`d-flex items-center gap-05 ssh-connection-test-result ${testResult.valid ? 'success' : 'error'}`}>
                                         {testResult.valid ? (
@@ -255,21 +257,23 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                 </div>
 
                 <div className="d-flex content-end gap-075 ssh-connection-modal-footer">
-                    <button
-                        type="button"
+                    <Button
+                        variant="outline"
+                        intent="neutral"
                         commandfor="ssh-connection-modal"
                         command="close"
-                        className="ssh-connection-modal-cancel"
                     >
                         Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="submit"
-                        className="ssh-connection-modal-save"
+                        variant="solid"
+                        intent="brand"
                         disabled={loading}
+                        isLoading={loading}
                     >
-                        {loading ? 'Saving...' : (mode === 'create' ? 'Add Connection' : 'Save Changes')}
-                    </button>
+                        {mode === 'create' ? 'Add Connection' : 'Save Changes'}
+                    </Button>
                 </div>
             </form>
         </Modal>

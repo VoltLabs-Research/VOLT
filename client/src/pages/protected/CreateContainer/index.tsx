@@ -20,7 +20,7 @@ import {
 import useToast from '@/hooks/ui/use-toast';
 import Slider from '@/components/atoms/form/Slider';
 import Input from '@/components/atoms/form/Input';
-import Button from '@/components/atoms/common/Button';
+import Button from '@/components/primitives/Button';
 import Select from '@/components/atoms/form/Select';
 import systemApi from '@/services/api/system';
 import teamApi from '@/services/api/team';
@@ -269,7 +269,9 @@ const CreateContainer: React.FC = () => {
         <div className="d-flex column create-container-page">
             <div className="d-flex items-center gap-1-5 create-header">
                 <Button
-                    className="d-flex flex-center back-btn-icon"
+                    variant='ghost'
+                    intent='neutral'
+                    iconOnly
                     onClick={() => navigate('/dashboard/containers')}
                 >
                     <ArrowLeft size={20} />
@@ -498,8 +500,8 @@ const CreateContainer: React.FC = () => {
                                 </div>
                             </div>
                             <div className="d-flex content-end gap-1 step-actions">
-                                <Button onClick={() => setStep(1)} className="secondary-btn">Back</Button>
-                                <Button onClick={() => setStep(3)} className="primary-btn">Next: Review</Button>
+                                <Button variant='outline' intent='neutral' onClick={() => setStep(1)}>Back</Button>
+                                <Button variant='solid' intent='brand' onClick={() => setStep(3)}>Next: Review</Button>
                             </div>
                         </div>
                     )}
@@ -534,9 +536,8 @@ const CreateContainer: React.FC = () => {
                                 </div>
                             </div>
                             <div className="d-flex content-end gap-1 step-actions">
-                                <Button onClick={() => setStep(2)} className="secondary-btn">Back</Button>
-                                <Button onClick={handleCreate} isLoading={loading} className="d-flex primary-btn deploy-btn">
-                                    {!loading && <Box size={18} style={{ marginRight: '8px' }} />}
+                                <Button variant='outline' intent='neutral' onClick={() => setStep(2)}>Back</Button>
+                                <Button variant='solid' intent='brand' onClick={handleCreate} isLoading={loading} leftIcon={!loading ? <Box size={18} /> : undefined}>
                                     {!loading && "Deploy Container"}
                                 </Button>
                             </div>
@@ -567,8 +568,8 @@ const CreateContainer: React.FC = () => {
                                 />
                             </div>
                             <div className="modal-actions">
-                                <Button onClick={() => setShowCustomImageModal(false)} className="secondary-btn">Cancel</Button>
-                                <Button onClick={confirmCustomImage} className="primary-btn">Confirm</Button>
+                                <Button variant='outline' intent='neutral' onClick={() => setShowCustomImageModal(false)}>Cancel</Button>
+                                <Button variant='solid' intent='brand' onClick={confirmCustomImage}>Confirm</Button>
                             </div>
                         </div>
                     </div>

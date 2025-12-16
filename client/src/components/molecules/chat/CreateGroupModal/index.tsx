@@ -6,7 +6,7 @@ import { IoCheckmarkOutline } from 'react-icons/io5';
 import { getInitials } from '@/utilities/guest';
 import useAuthStore from '@/stores/authentication';
 import Modal from '@/components/molecules/common/Modal';
-import Button from '@/components/atoms/common/Button';
+import Button from '@/components/primitives/Button';
 import FormInput from '@/components/atoms/form/FormInput';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './CreateGroupModal.css';
@@ -129,17 +129,18 @@ const CreateGroupModal = () => {
             </div>
 
             <div className='d-flex content-end gap-05 mt-1'>
-                <button
-                    className='button ghost'
+                <Button
+                    variant='ghost'
+                    intent='neutral'
                     commandfor='create-group-modal'
                     command='close'
                 >
                     Cancel
-                </button>
+                </Button>
                 <Button
-                    type='button'
-                    className='black-on-light sm'
-                    title='Create Group'
+                    variant='solid'
+                    intent='brand'
+                    size='sm'
                     disabled={!groupName.trim() || selectedMembers.length === 0 || isLoading}
                     onClick={handleCreateGroup}
                     isLoading={isLoading}

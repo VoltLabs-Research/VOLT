@@ -95,7 +95,7 @@ const WireframeBackground = () => {
   );
 };
 
-import Button from "@/components/atoms/common/Button";
+import Button from "@/components/primitives/Button";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -208,7 +208,7 @@ export default function AuthPage() {
         <div className="d-flex column form-section">
           <div className="form-bg-glow" />
 
-          <div className="d-flex column content-center gap-2-5 flex-1 form-container">
+          <div className="d-flex column content-center gap-2 flex-1 form-container">
             <div className="form-header">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -239,34 +239,44 @@ export default function AuthPage() {
                 >
                   <div className="space-y-4">
                     <Button
-                      className="d-flex items-center flex-center btn btn-outline"
+                      variant="outline"
+                      intent="white"
+                      block
+                      leftIcon={<Github size={20} />}
                       onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/github`}
                     >
-                      <Github size={20} style={{ marginRight: "0.75rem" }} />
                       Continue with GitHub
                     </Button>
                     <Button
-                      className="d-flex items-center flex-center btn btn-outline"
+                      variant="outline"
+                      intent="white"
+                      block
+                      leftIcon={
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                        </svg>
+                      }
                       onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/google`}
                     >
-                      <svg viewBox="0 0 24 24" width="20" height="20" style={{ marginRight: "0.75rem" }}>
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                      </svg>
                       Continue with Google
                     </Button>
                     <Button
-                      className="d-flex items-center flex-center btn btn-outline"
+                      variant="outline"
+                      intent="white"
+                      block
+                      leftIcon={
+                        <svg viewBox="0 0 23 23" width="20" height="20">
+                          <path fill="#f35325" d="M1 1h10v10H1z" />
+                          <path fill="#81bc06" d="M12 1h10v10H12z" />
+                          <path fill="#05a6f0" d="M1 12h10v10H1z" />
+                          <path fill="#ffba08" d="M12 12h10v10H12z" />
+                        </svg>
+                      }
                       onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/microsoft`}
                     >
-                      <svg viewBox="0 0 23 23" width="20" height="20" style={{ marginRight: "0.75rem" }}>
-                        <path fill="#f35325" d="M1 1h10v10H1z" />
-                        <path fill="#81bc06" d="M12 1h10v10H12z" />
-                        <path fill="#05a6f0" d="M1 12h10v10H1z" />
-                        <path fill="#ffba08" d="M12 12h10v10H12z" />
-                      </svg>
                       Continue with Microsoft
                     </Button>
                   </div>
@@ -292,7 +302,7 @@ export default function AuthPage() {
                         />
                       </div>
                     </div>
-                    <Button type="submit" isLoading={isLoading} className="d-flex items-center flex-center btn btn-primary">
+                    <Button type="submit" isLoading={isLoading} variant="solid" intent="white" block>
                       Continue
                     </Button>
                   </form>
@@ -313,7 +323,7 @@ export default function AuthPage() {
                         <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{email}</span>
                       </div>
                     </div>
-                    <button onClick={() => setStep("email")} className="btn-ghost" style={{ height: 'auto', padding: '0.5rem' }}>Change</button>
+                    <Button variant="ghost" intent="white" size="sm" onClick={() => setStep("email")}>Change</Button>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4 form-sign-up">
@@ -347,11 +357,11 @@ export default function AuthPage() {
                       type="password"
                       error={errors.passwordConfirm}
                     />
-                    <Button type="submit" isLoading={isLoading} className="d-flex items-center flex-center btn btn-primary">
+                    <Button type="submit" isLoading={isLoading} variant="solid" intent="white" block>
                       Create Account
                     </Button>
-                    <Button className="d-flex items-center flex-center btn btn-ghost" onClick={() => setStep("email")} type="button">
-                      <ArrowLeft size={16} style={{ marginRight: "0.5rem" }} /> Back
+                    <Button variant="ghost" intent="white" block leftIcon={<ArrowLeft size={16} />} onClick={() => setStep("email")}>
+                      Back
                     </Button>
                   </form>
                 </motion.div>
@@ -373,7 +383,7 @@ export default function AuthPage() {
                         <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{email}</span>
                       </div>
                     </div>
-                    <button onClick={() => setStep("email")} className="btn-ghost" style={{ height: 'auto', padding: '0.5rem' }}>Change</button>
+                    <Button variant="ghost" intent="white" size="sm" onClick={() => setStep("email")}>Change</Button>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -391,11 +401,11 @@ export default function AuthPage() {
                         />
                       </div>
                     </div>
-                    <Button type="submit" isLoading={isLoading} className="d-flex items-center flex-center btn btn-primary">
+                    <Button type="submit" isLoading={isLoading} variant="solid" intent="white" block>
                       Sign In
                     </Button>
-                    <Button className="d-flex items-center flex-center btn btn-ghost" onClick={() => setStep("email")} type="button">
-                      <ArrowLeft size={16} style={{ marginRight: "0.5rem" }} /> Back
+                    <Button variant="ghost" intent="white" block leftIcon={<ArrowLeft size={16} />} onClick={() => setStep("email")}>
+                      Back
                     </Button>
                   </form>
                 </motion.div>

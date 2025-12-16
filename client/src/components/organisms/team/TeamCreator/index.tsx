@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import FormInput from '@/components/atoms/form/FormInput';
 
-import Button from '@/components/atoms/common/Button';
+import Button from '@/components/primitives/Button';
 import useTeamStore from '@/stores/team/team';
 import Loader from '@/components/atoms/common/Loader';
 import useWindowsStore from '@/stores/ui/windows';
@@ -114,18 +114,20 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
 
                 <Container className='d-flex content-end gap-05 mt-1'>
                     {!isRequired && (
-                        <button
-                            type='button'
-                            className='button ghost'
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
                             commandfor='team-creator-modal'
                             command='close'
                         >
                             Cancel
-                        </button>
+                        </Button>
                     )}
 
                     <Button
                         type='submit'
+                        variant='solid'
+                        intent='brand'
                         isLoading={isLoading || isSubmitting}
                         disabled={!teamName.trim() || isLoading || isSubmitting}
                     >

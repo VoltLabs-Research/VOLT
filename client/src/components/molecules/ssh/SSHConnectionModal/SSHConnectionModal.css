@@ -127,27 +127,6 @@
     margin-bottom: 1rem;
 }
 
-.ssh-connection-test-btn {
-    padding: 0.625rem 1rem;
-    background-color: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
-    color: inherit;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s;
-
-}
-
-.ssh-connection-test-btn:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.15);
-}
-
-.ssh-connection-test-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
 .ssh-connection-test-result {
     font-size: 0.875rem;
 
@@ -165,39 +144,4 @@
     padding: 1.5rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 
-}
-
-.ssh-connection-modal-cancel,
-.ssh-connection-modal-save {
-    padding: 0.625rem 1.25rem;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: none;
-}
-
-.ssh-connection-modal-cancel {
-    background-color: transparent;
-    color: inherit;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.ssh-connection-modal-cancel:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-}
-
-.ssh-connection-modal-save {
-    background-color: rgba(59, 130, 246, 0.8);
-    color: white;
-}
-
-.ssh-connection-modal-save:hover:not(:disabled) {
-    background-color: rgba(59, 130, 246, 1);
-}
-
-.ssh-connection-modal-save:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
 }

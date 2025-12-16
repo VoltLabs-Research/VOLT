@@ -1,5 +1,6 @@
 import React from 'react';
 import Container from '@/components/primitives/Container';
+import Button from '@/components/primitives/Button';
 import './EmptyState.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
@@ -33,12 +34,13 @@ const EmptyState: React.FC<EmptyStateProps> = ({
                 <Title className='font-size-4 empty-state-title'>{title}</Title>
                 <Paragraph className='empty-state-description'>{description}</Paragraph>
                 {buttonText && buttonOnClick && (
-                    <button
-                        className='empty-state-button'
+                    <Button
+                        premium
+                        shape="pill"
                         onClick={buttonOnClick}
                     >
                         {buttonText}
-                    </button>
+                    </Button>
                 )}
             </Container>
         </Container>
@@ -46,3 +48,4 @@ const EmptyState: React.FC<EmptyStateProps> = ({
 };
 
 export default EmptyState;
+
