@@ -41,6 +41,7 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
     return (
         <Popover
             id="user-menu-popover"
+            className='gap-1'
             trigger={
                 <Container className='sidebar-user-container d-flex items-center gap-1 cursor-pointer' onClick={onClick}>
                     <Container

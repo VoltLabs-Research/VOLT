@@ -284,6 +284,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
 
                     <Popover
                         id={`simulation-card-menu-${trajectory._id}`}
+                        className='gap-1'
                         trigger={
                             <i className='simulation-options-icon-container'>
                                 <PiDotsThreeVerticalBold />
