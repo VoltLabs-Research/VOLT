@@ -55,6 +55,7 @@ const AnalysisConfigSelection = () => {
                 value={selectedId}
                 className="analysis-config-select-container"
                 onChange={handleChange}
+                placeholder='No analysis selected'
                 options={options}
                 showSelectionIcon={false}
                 disabled={!analysisList.length}

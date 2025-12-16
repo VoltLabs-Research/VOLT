@@ -1,140 +1,122 @@
-.rh-select {
-    position: relative;
-    display: inline-block;
+.volt-select {
+    appearance: base-select;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+    background-color: transparent;
+    outline: none;
+    width: 100%;
 }
 
-.rh-select-trigger {
-
-    padding: .6rem .75rem;
-    border-radius: .6rem;
-    background: color-mix(in oklab, var(--color-text-primary) 6%, transparent);
+.volt-select-trigger {
+    padding: .6rem .8rem;
+    border-radius: 5rem;
+    background-color: var(--color-surface-2);
     color: var(--color-text-primary);
     cursor: pointer;
-    line-height: 1.2;
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    width: 100%;
+    border: 1px solid var(--color-border);
+    text-align: left;
 }
 
-.rh-select-trigger:hover {
-    border-color: var(--color-border);
-}
-
-.rh-select-trigger:focus-visible {
-    outline: none;
+.volt-select:focus-visible .volt-select-trigger {
     border-color: var(--accent-indigo);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-indigo) 25%, transparent);
 }
 
-.rh-select.is-disabled .rh-select-trigger {
+.volt-select:disabled .volt-select-trigger {
+    cursor: not-allowed;
     background: var(--color-surface-3);
     color: var(--color-text-muted);
-    cursor: not-allowed;
 }
 
-.rh-select-value {
+.volt-select-value {
     flex: 1 1 auto;
     min-width: 0;
-    max-width: 100%;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: block;
 }
 
-.rh-select-value.is-placeholder {
-    color: var(--color-text-muted);
-}
-
-.rh-select-chevron {
+.volt-select-chevron {
     margin-left: auto;
-    flex: 0 0 auto;
     transition: transform .15s ease;
 }
 
-.rh-select.is-open .rh-select-chevron {
+.volt-select:open .volt-select-chevron {
     transform: rotate(180deg);
 }
 
-.rh-select-list {
-    position: absolute;
-    z-index: 999999999;
-    top: calc(100% + 6px);
-    left: 0;
-    right: 0;
-    width: max-content;
-    min-width: 100%;
-    max-width: var(--select-list-max-width, 480px);
-    overflow: auto;
-    max-height: 200px;
+.volt-select-value .select-option-check,
+.volt-select-value .select-option-leave-wrapper {
+    display: none;
+}
+
+/** NOTE: .volt-select::picker(select) is the dropdown container **/
+.volt-select::picker(select) {
+    appearance: base-select;
     background: var(--color-surface-1);
     border: 1px solid var(--color-border);
     border-radius: .6rem;
     box-shadow: var(--shadow-elevated);
     padding: .35rem;
+    margin-top: 6px;
 }
 
-.select-option-container {
-
+option.select-option-container {
+    appearance: base-select;
     padding: .5rem .6rem;
     border-radius: .5rem;
     cursor: pointer;
-    user-select: none;
     color: var(--color-text-primary);
-    transition: background .12s ease, color .12s ease;
+    transition: background .12s ease;
     min-height: 40px;
+    background-color: transparent;
 }
 
-.select-option-container:hover,
-.select-option-container.is-active {
+option.select-option-container:hover,
+option.select-option-container:checked {
     background: color-mix(in srgb, var(--accent-indigo) 12%, transparent);
 }
 
-.select-option-container.is-selected {
+option.select-option-container:checked {
     font-weight: 600;
-}
-
-.select-option-description {
-    font-size: .7rem;
-}
-
-.select-option-title {
-    font-size: .85rem;
-    flex: 1 1 auto;
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .select-option-check {
     color: var(--accent-indigo);
-    flex: 0 0 auto;
-    width: 24px;
-    height: 24px;
+    margin-left: auto;
 }
 
-.select-option-leave-btn {
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    background: transparent;
-    border: none;
+.volt-select-selected-check {
+    color: var(--accent-indigo);
+}
+
+.select-option-leave-wrapper {
+    padding: 2px;
+    margin-left: .5rem;
+    color: var(--color-text-muted);
     border-radius: 4px;
-    cursor: pointer;
-    color: var(--color-text-primary);
-    transition: background .12s ease, color .12s ease;
-    flex: 0 0 24px;
 }
 
-.select-option-leave-btn:hover {
-    background: color-mix(in srgb, var(--accent-red, #ff6b6b) 20%, transparent);
+.select-option-leave-wrapper:hover {
     color: var(--accent-red, #ff6b6b);
+    background: color-mix(in srgb, var(--accent-red) 10%, transparent);
 }
 
-.select-option-leave-btn:active {
-    background: color-mix(in srgb, var(--accent-red, #ff6b6b) 30%, transparent);
+.volt-select.on-dark .volt-select-trigger {
+    background-color: transparent;
+    border-color: transparent;
 }
 
-.rh-select.on-dark .rh-select-trigger {
-    background-color: transparent !important;
+.volt-select.on-dark .volt-select-trigger:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/*
+ * These are icons that the browser provides natively (::checkmark and ::picker-icon)
+ * for the selector. We already use our chevron, so we don't need them.
+ **/
+option.select-option-container::checkmark,
+.volt-select::picker-icon {
+    display: none;
 }
