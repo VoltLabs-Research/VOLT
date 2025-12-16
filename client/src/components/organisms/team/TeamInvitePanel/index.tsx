@@ -284,9 +284,9 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                                 { value: 'Can edit', title: 'Can edit' }
                             ]}
                             value={generalAccess}
+                            style={{ width: 150 }}
                             onChange={(value) => setGeneralAccess(value as 'Can edit' | 'Can view' | 'Restricted')}
                             className='team-invite-general-select'
-                            maxListWidth={150}
                             renderInPortal={true}
                         />
                     </Container>
