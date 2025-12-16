@@ -5,13 +5,12 @@ import { MdPublic } from 'react-icons/md';
 import { IoBook } from 'react-icons/io5';
 import { IoCheckmark } from 'react-icons/io5';
 import { Skeleton } from '@mui/material';
-import usePositioning from '@/hooks/ui/positioning/use-positioning';
 import useToast from '@/hooks/ui/use-toast';
 import Select from '@/components/atoms/form/Select';
 import teamApi from '@/services/api/team';
-import './TeamInvitePanel.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import './TeamInvitePanel.css';
 
 interface TeamMember {
     email: string;
@@ -21,18 +20,14 @@ interface TeamMember {
 }
 
 interface TeamInvitePanelProps {
-    isOpen: boolean;
-    onClose: () => void;
     teamName: string;
     teamId: string;
-    triggerRef?: React.RefObject<HTMLElement | null>;
+    popoverId: string;
 }
 
 const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
-    isOpen,
-    onClose,
     teamId,
-    triggerRef
+    popoverId
 }) => {
     const [email, setEmail] = useState('');
     const [generalAccess, setGeneralAccess] = useState<'Can edit' | 'Can view' | 'Restricted'>('Restricted');
@@ -40,20 +35,12 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     const [loading, setLoading] = useState(false);
     const [loadingMembers, setLoadingMembers] = useState(true);
     const [buttonState, setButtonState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-    const panelRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const { showError, showSuccess } = useToast();
 
-    // Use positioning hook for intelligent positioning
-    const { styles, setInitialPosition } = usePositioning(
-        triggerRef as React.RefObject<HTMLElement>,
-        panelRef as React.RefObject<HTMLDivElement>,
-        isOpen
-    );
-
     useEffect(() => {
         const fetchMembers = async () => {
-            if (!isOpen || !teamId) return;
+            if (!teamId) return;
 
             setLoadingMembers(true);
             try {
@@ -74,34 +61,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         };
 
         fetchMembers();
-    }, [isOpen, teamId]);
-
-    useEffect(() => {
-        if (isOpen) {
-            setInitialPosition();
-            setTimeout(() => {
-                inputRef.current?.focus();
-            }, 150);
-        }
-    }, [isOpen, setInitialPosition]);
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-                if (triggerRef?.current && !triggerRef.current.contains(event.target as Node)) {
-                    onClose();
-                }
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isOpen, onClose, triggerRef]);
+    }, [teamId]);
 
     const handleAddMember = async (e: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>) => {
         if ('key' in e && e.key !== 'Enter') return;
@@ -185,20 +145,19 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         return email.split('@')[0].charAt(0).toUpperCase();
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div
-            ref={panelRef}
-            className='team-invite-panel d-flex column'
-            style={styles as React.CSSProperties}
-        >
+        <>
             <div className='team-invite-header d-flex items-center content-between f-shrink-0'>
                 <div className='team-invite-tabs d-flex flex-1'>
                     <button className='team-invite-tab active'>Share</button>
                     <button className='team-invite-tab' style={{ opacity: 0.5, cursor: 'not-allowed' }}>Publish</button>
                 </div>
-                <button className='d-flex items-center content-center team-invite-close' onClick={onClose} aria-label='Close'>
+                <button
+                    className='d-flex items-center content-center team-invite-close'
+                    popoverTarget={popoverId}
+                    popoverTargetAction="hide"
+                    aria-label='Close'
+                >
                     <IoClose size={20} />
                 </button>
             </div>
@@ -206,6 +165,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             <div className='team-invite-content d-flex column flex-1'>
                 <div className='team-invite-input-section d-flex items-center gap-05'>
                     <input
+                        autoFocus
                         ref={inputRef}
                         type='email'
                         placeholder='Add people by email...'
@@ -307,7 +267,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
                 <div className='team-invite-general-access'>
                     <div className='team-invite-general-header'>
-                        <Title className='font-size-2-5 team-invite-general-title'>General Access</Title>
+                        <Title className='font-size-1 team-invite-general-title'>General Access</Title>
                     </div>
                     <div className='d-flex items-center gap-075 team-invite-general-item'>
                         <div className='d-flex items-center content-center team-invite-general-icon'>
@@ -340,7 +300,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     </button>
                 </div>
             </div>
-        </div>
+        </>
     );
 };
 

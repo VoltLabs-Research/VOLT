@@ -1,0 +1,40 @@
+.volt-popover {
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-elevated);
+    color: var(--color-text-primary);
+    min-width: 180px;
+    max-width: 320px;
+    z-index: 9999;
+
+    /* Remove default popover styles */
+    margin: 0;
+
+    /* Animation */
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+    transition:
+        opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+        overlay 0.15s allow-discrete,
+        display 0.15s allow-discrete;
+}
+
+.volt-popover:popover-open {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+}
+
+/* Starting style for animation */
+@starting-style {
+    .volt-popover:popover-open {
+        opacity: 0;
+        transform: scale(0.95) translateY(-4px);
+    }
+}
+
+/* Backdrop for auto popovers */
+.volt-popover::backdrop {
+    background-color: transparent;
+}

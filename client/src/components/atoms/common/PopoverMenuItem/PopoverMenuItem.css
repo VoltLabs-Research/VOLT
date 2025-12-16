@@ -1,0 +1,43 @@
+.popover-menu-item {
+    padding: 0.5rem 0.75rem;
+    background: none;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--color-text-primary);
+    text-align: left;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    user-select: none;
+}
+
+.popover-menu-item:hover:not(.disabled) {
+    background-color: var(--color-surface-2);
+}
+
+.popover-menu-item:active:not(.disabled) {
+    background-color: var(--color-surface-3);
+    transform: scale(0.98);
+}
+
+.popover-menu-item.danger {
+    color: var(--accent-red);
+}
+
+.popover-menu-item.danger:hover:not(.disabled) {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.popover-menu-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.popover-menu-item-icon {
+    font-size: 1rem;
+}
+
+.popover-menu-item-label {
+    font-weight: 500;
+}

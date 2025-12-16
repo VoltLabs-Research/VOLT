@@ -68,6 +68,7 @@ import TeamInvitePanel from '@/components/organisms/team/TeamInvitePanel';
 import SSHFileExplorer from '@/components/organisms/ssh/SSHFileExplorer';
 import './DashboardLayout.css';
 import Container from '@/components/primitives/Container';
+import Popover from '@/components/molecules/common/Popover';
 import { TbBook } from 'react-icons/tb';
 
 const DashboardLayout = () => {
@@ -88,11 +89,8 @@ const DashboardLayout = () => {
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
     const { notifications, loading, fetch, markAsRead, unreadCount, initializeSocket } = useNotificationStore();
-    const [notifOpen, setNotifOpen] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [invitePanelOpen, setInvitePanelOpen] = useState(false);
     const mobileMenuWrapperRef = useRef<HTMLDivElement | null>(null);
-    const bellWrapperRef = useRef<HTMLDivElement | null>(null);
     const teamSelectorRef = useRef<HTMLDivElement | null>(null);
     const notificationBodyRef = useRef<HTMLDivElement | null>(null);
     const observedNotificationsRef = useRef<Set<string>>(new Set());
@@ -171,30 +169,10 @@ const DashboardLayout = () => {
         }
     }, [teams, searchParams, setSearchParams, setSelectedTeam]);
 
-    useEffect(() => {
-        if (notifOpen) {
-            fetch({ force: true });
-        } else {
-            // Clear observed notifications when closing panel
-            observedNotificationsRef.current.clear();
-        }
-    }, [notifOpen]);
-
-    useEffect(() => {
-        if (!notifOpen) return;
-        const onDoc = (e: MouseEvent) => {
-            if (!bellWrapperRef.current) return;
-            if (!bellWrapperRef.current.contains(e.target as Node)) {
-                setNotifOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', onDoc);
-        return () => document.removeEventListener('mousedown', onDoc);
-    }, [notifOpen]);
 
     // Mark notifications as read when they become visible
     useEffect(() => {
-        if (!notifOpen || !notificationBodyRef.current) {
+        if (!notificationBodyRef.current) {
             return;
         }
 
@@ -228,7 +206,7 @@ const DashboardLayout = () => {
         return () => {
             observer.disconnect();
         };
-    }, [notifOpen, notificationList, markAsRead]);
+    }, [notificationList, markAsRead]);
 
     useEffect(() => {
         if (!mobileMenuOpen) return;
@@ -469,14 +447,28 @@ const DashboardLayout = () => {
                         />
                     </Container>
 
-                    <button
-                        className='d-flex content-center items-center team-invite-icon-btn badge-container as-icon-container over-light-bg'
-                        onClick={() => selectedTeam && setInvitePanelOpen(true)}
-                        title='Invite members or share team'
-                        aria-label='Invite members or share team'
+                    <Popover
+                        id="team-invite-popover"
+                        trigger={
+                            <button
+                                className='d-flex content-center items-center team-invite-icon-btn badge-container as-icon-container over-light-bg'
+                                title='Invite members or share team'
+                                aria-label='Invite members or share team'
+                            >
+                                <GoPersonAdd size={20} />
+                            </button>
+                        }
+                        className="team-invite-panel d-flex column"
+                        noPadding
                     >
-                        <GoPersonAdd size={20} />
-                    </button>
+                        {selectedTeam && (
+                            <TeamInvitePanel
+                                teamName={selectedTeam.name}
+                                teamId={selectedTeam._id}
+                                popoverId="team-invite-popover"
+                            />
+                        )}
+                    </Popover>
 
                     <button
                         commandfor='team-creator-modal'
@@ -499,49 +491,65 @@ const DashboardLayout = () => {
                         <IoSettingsOutline />
                     </Container>
 
-                    <Container ref={bellWrapperRef} className='p-relative'>
-                        <Container onClick={() => setNotifOpen((v) => !v)} className='d-flex content-center items-center badge-container as-icon-container over-light-bg dashboard-bell-trigger'>
-                            <IoNotificationsOutline />
-                            {unreadCount > 0 && (
-                                <span className='d-flex items-center content-center notification-badge'>{unreadCount > 99 ? '99+' : unreadCount}</span>
-                            )}
-                        </Container>
-                        {notifOpen && (
-                            <Container className='dashboard-notifications-dropdown'>
-                                <Container className='d-flex items-center content-between color-primary font-weight-6 dashboard-notifications-header'>
-                                    <span>Notifications</span>
-                                    <button className='dashboard-notifications-close' onClick={(e) => { e.stopPropagation(); setNotifOpen(false); }}>×</button>
-                                </Container>
-                                <Container ref={notificationBodyRef} className='dashboard-notifications-body'>
-                                    {loading ? (
-                                        Array.from({ length: 5 }).map((_, i) => (
-                                            <div key={`notif-skel-${i}`} className='dashboard-notification-item'>
-                                                <Skeleton variant='text' width='60%' height={20} />
-                                                <Skeleton variant='text' width='90%' height={16} />
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <>
-                                            {notificationList.length === 0 && (
-                                                <div className='dashboard-notifications-empty'>No notifications</div>
-                                            )}
-                                            {notificationList.map((n) => (
-                                                <div
-                                                    key={n._id}
-                                                    className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`}
-                                                    data-notification-id={n._id}
-                                                    data-notification-read={n.read}
-                                                    onClick={() => { if (n.link) navigate(n.link); setNotifOpen(false); }}
-                                                >
-                                                    <div className='dashboard-notification-title'>{n.title}</div>
-                                                    <div className='dashboard-notification-content'>{n.content}</div>
-                                                </div>
-                                            ))}
-                                        </>
+                    <Container className='p-relative'>
+                        <Popover
+                            id="notifications-popover"
+                            trigger={
+                                <button
+                                    className='d-flex content-center items-center badge-container as-icon-container over-light-bg dashboard-bell-trigger cursor-pointer'
+                                    type="button"
+                                >
+                                    <IoNotificationsOutline size={18} />
+                                    {unreadCount > 0 && (
+                                        <span className='d-flex items-center content-center notification-badge'>{unreadCount > 99 ? '99+' : unreadCount}</span>
                                     )}
-                                </Container>
+                                </button>
+                            }
+                            className="dashboard-notifications-dropdown p-0"
+                            noPadding
+                        >
+                            <Container className='d-flex items-center content-between color-primary font-weight-6 dashboard-notifications-header'>
+                                <span>Notifications</span>
+                                <button
+                                    className='dashboard-notifications-close'
+                                    popoverTarget="notifications-popover"
+                                    popoverTargetAction="hide"
+                                    onClick={(e) => e.stopPropagation()}
+                                >×</button>
                             </Container>
-                        )}
+                            <Container ref={notificationBodyRef} className='dashboard-notifications-body'>
+                                {loading ? (
+                                    Array.from({ length: 5 }).map((_, i) => (
+                                        <div key={`notif-skel-${i}`} className='dashboard-notification-item'>
+                                            <Skeleton variant='text' width='60%' height={20} />
+                                            <Skeleton variant='text' width='90%' height={16} />
+                                        </div>
+                                    ))
+                                ) : (
+                                    <>
+                                        {notificationList.length === 0 && (
+                                            <div className='dashboard-notifications-empty'>No notifications</div>
+                                        )}
+                                        {notificationList.map((n) => (
+                                            <div
+                                                key={n._id}
+                                                className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`}
+                                                data-notification-id={n._id}
+                                                data-notification-read={n.read}
+                                                onClick={() => {
+                                                    if (n.link) navigate(n.link);
+                                                    // Close popover manually if navigating
+                                                    document.getElementById('notifications-popover')?.hidePopover();
+                                                }}
+                                            >
+                                                <div className='dashboard-notification-title'>{n.title}</div>
+                                                <div className='dashboard-notification-content'>{n.content}</div>
+                                            </div>
+                                        ))}
+                                    </>
+                                )}
+                            </Container>
+                        </Popover>
                     </Container>
 
                     <SidebarUserAvatar avatarrounded />
@@ -559,16 +567,6 @@ const DashboardLayout = () => {
                             getTrajectories(selectedTeam._id);
                         }
                     }}
-                />
-            )}
-
-            {selectedTeam && (
-                <TeamInvitePanel
-                    isOpen={invitePanelOpen}
-                    onClose={() => setInvitePanelOpen(false)}
-                    teamName={selectedTeam.name}
-                    teamId={selectedTeam._id}
-                    triggerRef={teamSelectorRef}
                 />
             )}
         </main>

@@ -6,7 +6,8 @@ import { HiOutlineViewfinderCircle } from "react-icons/hi2";
 import { motion } from 'framer-motion';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import EditableTrajectoryName from '@/components/atoms/trajectory/EditableTrajectoryName';
-import ActionBasedFloatingContainer from '@/components/organisms/common/ActionBasedFloatingContainer';
+import Popover from '@/components/molecules/common/Popover';
+import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';
 import SimulationCardUsers from '@/components/atoms/trajectory/SimulationCardUsers';
 import useTrajectoryStore from '@/stores/trajectories';
@@ -281,17 +282,24 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                         </div>
                     </div>
 
-                    <ActionBasedFloatingContainer
-                        options={[
-                            ['View Scene', HiOutlineViewfinderCircle, handleViewScene],
-                            ['Rasterize', PiImagesSquareThin, handleRasterize],
-                            ['Delete', RxTrash, onDelete],
-                        ]}
+                    <Popover
+                        id={`simulation-card-menu-${trajectory._id}`}
+                        trigger={
+                            <i className='simulation-options-icon-container'>
+                                <PiDotsThreeVerticalBold />
+                            </i>
+                        }
                     >
-                        <i className='simulation-options-icon-container'>
-                            <PiDotsThreeVerticalBold />
-                        </i>
-                    </ActionBasedFloatingContainer>
+                        <PopoverMenuItem icon={<HiOutlineViewfinderCircle />} onClick={handleViewScene}>
+                            View Scene
+                        </PopoverMenuItem>
+                        <PopoverMenuItem icon={<PiImagesSquareThin />} onClick={handleRasterize}>
+                            Rasterize
+                        </PopoverMenuItem>
+                        <PopoverMenuItem icon={<RxTrash />} onClick={onDelete} variant="danger">
+                            Delete
+                        </PopoverMenuItem>
+                    </Popover>
                 </div>
 
                 <SimulationCardUsers trajectoryId={trajectory._id} />

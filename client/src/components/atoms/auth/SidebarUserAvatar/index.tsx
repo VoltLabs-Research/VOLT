@@ -21,7 +21,8 @@
  */
 
 import useAuthStore from '@/stores/authentication';
-import ActionBasedFloatingContainer from '@/components/organisms/common/ActionBasedFloatingContainer';
+import Popover from '@/components/molecules/common/Popover';
+import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import { CiLogout, CiSettings } from 'react-icons/ci';
 import { useNavigate } from 'react-router';
 import Container from '@/components/primitives/Container';
@@ -33,36 +34,41 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
     const navigate = useNavigate();
 
     // Si no hay usuario autenticado, mostrar una interfaz genérica o nada
-    if(!user){
+    if (!user) {
         return null;
     }
 
-    return(
-        <ActionBasedFloatingContainer
-            options={[
-                ['Account Settings', CiSettings, () => navigate('/account/settings/')],
-                ['Sign Out', CiLogout, signOut]
-            ]}
-        >
-            <Container className='sidebar-user-container d-flex items-center gap-1 cursor-pointer' onClick={onClick}>
-                <Container
-                    className='d-flex flex-center sidebar-user-avatar-container'
-                    data-avatarrounded={avatarrounded}
-                >
-                    {user.avatar ? (
-                        <img src={user.avatar} alt="User Avatar" className='sidebar-user-avatar-img' />
-                    ) : (
-                        <span className='sidebar-user-avatar'>{user.firstName?.[0] || '?'}</span>
-                    )}
-                </Container>
+    return (
+        <Popover
+            id="user-menu-popover"
+            trigger={
+                <Container className='sidebar-user-container d-flex items-center gap-1 cursor-pointer' onClick={onClick}>
+                    <Container
+                        className='d-flex flex-center sidebar-user-avatar-container'
+                        data-avatarrounded={avatarrounded}
+                    >
+                        {user.avatar ? (
+                            <img src={user.avatar} alt="User Avatar" className='sidebar-user-avatar-img' />
+                        ) : (
+                            <span className='sidebar-user-avatar'>{user.firstName?.[0] || '?'}</span>
+                        )}
+                    </Container>
 
-                <Container className='d-flex column gap-01'>
-                    {!hideUsername && (
-                        <span className='sidebar-user-fullname'>{user.firstName || ''} {user.lastName || ''}</span>
-                    )}
+                    <Container className='d-flex column gap-01'>
+                        {!hideUsername && (
+                            <span className='sidebar-user-fullname'>{user.firstName || ''} {user.lastName || ''}</span>
+                        )}
+                    </Container>
                 </Container>
-            </Container>
-        </ActionBasedFloatingContainer>
+            }
+        >
+            <PopoverMenuItem icon={<CiSettings />} onClick={() => navigate('/account/settings/')}>
+                Account Settings
+            </PopoverMenuItem>
+            <PopoverMenuItem icon={<CiLogout />} onClick={signOut}>
+                Sign Out
+            </PopoverMenuItem>
+        </Popover>
     );
 };
 
