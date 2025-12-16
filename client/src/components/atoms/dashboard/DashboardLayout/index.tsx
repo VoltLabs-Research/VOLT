@@ -458,7 +458,7 @@ const DashboardLayout = () => {
                                 <GoPersonAdd size={20} />
                             </button>
                         }
-                        className="team-invite-panel d-flex column"
+                        className="team-invite-panel glass-bg d-flex column"
                         noPadding
                     >
                         {selectedTeam && (
@@ -505,7 +505,7 @@ const DashboardLayout = () => {
                                     )}
                                 </button>
                             }
-                            className="dashboard-notifications-dropdown p-0"
+                            className="dashboard-notifications-dropdown glass-bg p-0"
                             noPadding
                         >
                             <Container className='d-flex items-center content-between color-primary font-weight-6 dashboard-notifications-header'>

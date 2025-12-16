@@ -10,6 +10,7 @@ import Select from '@/components/atoms/form/Select';
 import teamApi from '@/services/api/team';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import Container from '@/components/primitives/Container';
 import './TeamInvitePanel.css';
 
 interface TeamMember {
@@ -147,11 +148,11 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
     return (
         <>
-            <div className='team-invite-header d-flex items-center content-between f-shrink-0'>
-                <div className='team-invite-tabs d-flex flex-1'>
+            <Container className='team-invite-header d-flex items-center content-between f-shrink-0'>
+                <Container className='team-invite-tabs d-flex flex-1'>
                     <button className='team-invite-tab active'>Share</button>
                     <button className='team-invite-tab' style={{ opacity: 0.5, cursor: 'not-allowed' }}>Publish</button>
-                </div>
+                </Container>
                 <button
                     className='d-flex items-center content-center team-invite-close'
                     popoverTarget={popoverId}
@@ -160,10 +161,10 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 >
                     <IoClose size={20} />
                 </button>
-            </div>
+            </Container>
 
-            <div className='team-invite-content d-flex column flex-1'>
-                <div className='team-invite-input-section d-flex items-center gap-05'>
+            <Container className='team-invite-content d-flex column flex-1'>
+                <Container className='team-invite-input-section d-flex items-center gap-05'>
                     <input
                         autoFocus
                         ref={inputRef}
@@ -200,33 +201,33 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                         )}
                         {buttonState === 'idle' && 'Invite'}
                     </button>
-                </div>
+                </Container>
 
-                <div className='team-invite-members-section'>
+                <Container className='team-invite-members-section'>
                     {loadingMembers ? (
                         <>
                             {[1, 2, 3].map((i) => (
-                                <div key={i} className='team-invite-member-item' style={{ padding: '10px 20px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <Container key={i} className='team-invite-member-item' style={{ padding: '10px 20px' }}>
+                                    <Container style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                         <Skeleton variant='circular' width={36} height={36} />
-                                        <div>
+                                        <Container>
                                             <Skeleton variant='text' width='8rem' height={20} sx={{ mb: 0.5 }} />
                                             <Skeleton variant='text' width='85%' height={16} />
-                                        </div>
-                                    </div>
+                                        </Container>
+                                    </Container>
                                     <Skeleton variant='rectangular' width={120} height={36} sx={{ borderRadius: '6px' }} />
-                                </div>
+                                </Container>
                             ))}
                         </>
                     ) : members.length === 0 ? (
-                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--invite-text-secondary)', fontSize: '13px' }}>
+                        <Container style={{ padding: '20px', textAlign: 'center', color: 'var(--invite-text-secondary)', fontSize: '13px' }}>
                             No members yet
-                        </div>
+                        </Container>
                     ) : (
                         members.map((member) => (
-                            <div key={member.email} className='d-flex items-center content-between gap-075 team-invite-member-item'>
-                                <div className='d-flex items-center gap-075 team-invite-member-info'>
-                                    <div
+                            <Container key={member.email} className='d-flex items-center content-between gap-075 team-invite-member-item'>
+                                <Container className='d-flex items-center gap-075 team-invite-member-info'>
+                                    <Container
                                         className='d-flex items-center content-center team-invite-avatar'
                                         style={{ backgroundColor: member.avatar ? 'transparent' : getAvatarColor(member.email) }}
                                     >
@@ -239,13 +240,13 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                                         ) : (
                                             getInitials(member.email)
                                         )}
-                                    </div>
-                                    <div className='team-invite-member-details'>
+                                    </Container>
+                                    <Container className='team-invite-member-details'>
                                         <Paragraph className='team-invite-member-name'>{member.name || member.email}</Paragraph>
                                         {member.name && member.name !== member.email && <Paragraph className='team-invite-member-email'>{member.email}</Paragraph>}
-                                    </div>
-                                </div>
-                                <div className='d-flex items-center gap-05 team-invite-member-role'>
+                                    </Container>
+                                </Container>
+                                <Container className='d-flex items-center gap-05 team-invite-member-role'>
                                     <Select
                                         options={[
                                             { value: 'Can view', title: 'Can view' },
@@ -259,23 +260,23 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                                         maxListWidth={150}
                                         renderInPortal={true}
                                     />
-                                </div>
-                            </div>
+                                </Container>
+                            </Container>
                         ))
                     )}
-                </div>
+                </Container>
 
-                <div className='team-invite-general-access'>
-                    <div className='team-invite-general-header'>
+                <Container className='team-invite-general-access'>
+                    <Container className='team-invite-general-header'>
                         <Title className='font-size-1 team-invite-general-title'>General Access</Title>
-                    </div>
-                    <div className='d-flex items-center gap-075 team-invite-general-item'>
-                        <div className='d-flex items-center content-center team-invite-general-icon'>
+                    </Container>
+                    <Container className='d-flex items-center gap-075 team-invite-general-item'>
+                        <Container className='d-flex items-center content-center team-invite-general-icon'>
                             <MdPublic size={18} />
-                        </div>
-                        <div className='team-invite-general-info'>
+                        </Container>
+                        <Container className='team-invite-general-info'>
                             <Paragraph className='team-invite-general-name'>Anyone with the link</Paragraph>
-                        </div>
+                        </Container>
                         <Select
                             options={[
                                 { value: 'Restricted', title: 'Restricted' },
@@ -288,18 +289,18 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                             maxListWidth={150}
                             renderInPortal={true}
                         />
-                    </div>
-                </div>
+                    </Container>
+                </Container>
 
-                <div className='team-invite-footer d-flex gap-05 content-between f-shrink-0'>
+                <Container className='team-invite-footer d-flex gap-05 content-between f-shrink-0'>
                     <button className='d-flex items-center gap-05 team-invite-footer-link'>
                         <MdContentCopy size={16} /> Copy link
                     </button>
                     <button className='d-flex items-center gap-05 team-invite-footer-link'>
                         <IoBook size={16} /> Learn more
                     </button>
-                </div>
-            </div>
+                </Container>
+            </Container>
         </>
     );
 };
