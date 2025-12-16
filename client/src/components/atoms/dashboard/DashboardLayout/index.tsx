@@ -153,41 +153,29 @@ const DashboardLayout = () => {
     }, [teams, searchParams, setSearchParams, setSelectedTeam]);
 
 
-    // Mark notifications as read when they become visible
+    // Mark notifications as read when popover opens
     useEffect(() => {
-        if (!notificationBodyRef.current) {
-            return;
-        }
+        const popoverEl = document.getElementById('notifications-popover');
+        if (!popoverEl) return;
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        const notificationId = entry.target.getAttribute('data-notification-id');
-                        const isRead = entry.target.getAttribute('data-notification-read') === 'true';
-
-                        if (notificationId && !isRead && !observedNotificationsRef.current.has(notificationId)) {
-                            observedNotificationsRef.current.add(notificationId);
-                            // Mark as read after a short delay to ensure user saw it
-                            setTimeout(() => {
-                                markAsRead(notificationId);
-                            }, 1000);
+        const handleToggle = (e: Event) => {
+            const toggleEvent = e as ToggleEvent;
+            if (toggleEvent.newState === 'open') {
+                setTimeout(() => {
+                    notificationList.forEach((notification) => {
+                        if (!notification.read && !observedNotificationsRef.current.has(notification._id)) {
+                            observedNotificationsRef.current.add(notification._id);
+                            markAsRead(notification._id);
                         }
-                    }
-                });
-            },
-            {
-                root: notificationBodyRef.current,
-                threshold: 0.8, // 80% visible
+                    });
+                }, 2000); 
             }
-        );
+        };
 
-        // Observe all notification items
-        const notificationItems = notificationBodyRef.current.querySelectorAll('.dashboard-notification-item');
-        notificationItems.forEach((item) => observer.observe(item));
+        popoverEl.addEventListener('toggle', handleToggle);
 
         return () => {
-            observer.disconnect();
+            popoverEl.removeEventListener('toggle', handleToggle);
         };
     }, [notificationList, markAsRead]);
 
@@ -219,7 +207,7 @@ const DashboardLayout = () => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Handle both 'i' and 'I' (case-insensitive)
             if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
-                if (e.repeat) return; // Prevent multiple toggles when holding key
+                if (e.repeat) return; 
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('SSH File Explorer shortcut triggered!');
