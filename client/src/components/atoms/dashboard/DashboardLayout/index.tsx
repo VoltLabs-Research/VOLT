@@ -168,7 +168,7 @@ const DashboardLayout = () => {
                             markAsRead(notification._id);
                         }
                     });
-                }, 2000); 
+                }, 2000);
             }
         };
 
@@ -207,7 +207,7 @@ const DashboardLayout = () => {
         const handleKeyDown = (e: KeyboardEvent) => {
             // Handle both 'i' and 'I' (case-insensitive)
             if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
-                if (e.repeat) return; 
+                if (e.repeat) return;
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('SSH File Explorer shortcut triggered!');
@@ -449,12 +449,8 @@ const DashboardLayout = () => {
 
                     <button
                         className='d-flex content-center items-center badge-container as-icon-container over-light-bg p-absolute'
-                        onClick={() => {
-                            const modal = document.getElementById('team-creator-modal') as HTMLDialogElement;
-                            if (modal && !modal.open) {
-                                modal.showModal();
-                            }
-                        }}
+                        commandfor="team-creator-modal"
+                        command="show-modal"
                     >
                         <IoIosAdd size={25} />
                     </button>
@@ -486,8 +482,8 @@ const DashboardLayout = () => {
                                 <span>Notifications</span>
                                 <button
                                     className='dashboard-notifications-close color-secondary cursor-pointer'
-                                    popoverTarget="notifications-popover"
-                                    popoverTargetAction="hide"
+                                    commandfor="notifications-popover"
+                                    command="hide-popover"
                                     onClick={(e) => e.stopPropagation()}
                                 >×</button>
                             </Container>

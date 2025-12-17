@@ -7,6 +7,8 @@ declare global {
             popover?: '' | 'auto' | 'manual' | 'hint';
             popovertarget?: string;
             popovertargetaction?: 'toggle' | 'show' | 'hide';
+            commandfor?: string;
+            command?: string;
         }
     }
 }
@@ -28,24 +30,8 @@ const Popover = ({
     className = '',
     noPadding = false
 }: PopoverProps) => {
-    const handleTriggerClick = (e: React.MouseEvent) => {
-        const target = e.currentTarget as HTMLElement;
-        // Native support works only on <button> or <input>
-        const isNativeTrigger = (target.tagName === 'BUTTON' || target.tagName === 'INPUT') &&
-            'popover' in HTMLElement.prototype;
 
-        if (isNativeTrigger) return;
 
-        // Fallback or explicit toggle for non-button elements
-        const popover = document.getElementById(id) as any;
-        if (popover) {
-            if (typeof popover.togglePopover === 'function') {
-                popover.togglePopover();
-            } else if (typeof popover.showPopover === 'function') {
-                popover.showPopover();
-            }
-        }
-    };
 
     // Position the popover near the trigger when it opens
     React.useEffect(() => {
@@ -53,7 +39,8 @@ const Popover = ({
         if (!popover) return;
 
         const positionPopover = () => {
-            const triggerElement = document.querySelector(`[popovertarget="${id}"]`);
+            // Find trigger by commandfor attribute also
+            const triggerElement = document.querySelector(`[popovertarget="${id}"], [commandfor="${id}"]`);
             if (!triggerElement || !popover) return;
 
             const triggerRect = triggerElement.getBoundingClientRect();
@@ -78,16 +65,19 @@ const Popover = ({
             popover.style.margin = '0';
         };
 
-        // Position when popover opens
-        popover.addEventListener('toggle', (e: any) => {
+        // Watch for toggle events to handle positioning
+        const handleToggle = (e: any) => {
             if (e.newState === 'open') {
                 // Use setTimeout to ensure popover is rendered
                 setTimeout(positionPopover, 0);
             }
-        });
+        };
+
+        // Position when popover opens
+        popover.addEventListener('toggle', handleToggle);
 
         return () => {
-            popover.removeEventListener('toggle', positionPopover);
+            popover.removeEventListener('toggle', handleToggle);
         };
     }, [id]);
 
@@ -95,17 +85,9 @@ const Popover = ({
         <>
             {trigger && React.isValidElement(trigger) ? (
                 React.cloneElement(trigger as React.ReactElement<any>, {
-                    popovertarget: id,
-                    type: "button",
-                    onClick: (e: React.MouseEvent) => {
-                        // Call original onClick if it exists
-                        const originalOnClick = (trigger as any).props?.onClick;
-                        if (originalOnClick) {
-                            originalOnClick(e);
-                        }
-                        // Then call our fallback/explicit handler
-                        handleTriggerClick(e);
-                    }
+                    commandfor: id,
+                    command: "toggle-popover",
+                    type: "button"
                 })
             ) : null}
 

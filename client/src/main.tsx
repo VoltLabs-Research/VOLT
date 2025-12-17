@@ -32,6 +32,7 @@ import cssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker';
 import htmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker';
 import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker';
 import App from './App.tsx'
+import 'invokers-polyfill';
 import './assets/stylesheets/theme.css';
 import './assets/stylesheets/base.css';
 import './assets/stylesheets/general.css';

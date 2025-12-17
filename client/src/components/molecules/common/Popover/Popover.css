@@ -4,17 +4,21 @@
     max-width: 320px;
     z-index: 9999;
 
+    /* Override any utility classes (like d-flex) when closed */
+    &:not(:popover-open) {
+        display: none !important;
+    }
+
     /* Remove default popover styles */
     margin: 0;
 
     /* Animation */
     opacity: 0;
     transform: scale(0.95) translateY(-4px);
-    transition:
-        opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-        transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-        overlay 0.15s allow-discrete,
-        display 0.15s allow-discrete;
+    transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    overlay 0.15s allow-discrete,
+    display 0.15s allow-discrete;
 }
 
 .volt-popover:popover-open {

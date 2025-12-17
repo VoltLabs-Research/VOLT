@@ -159,8 +159,8 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     intent='neutral'
                     iconOnly
                     size='sm'
-                    popoverTarget={popoverId}
-                    popoverTargetAction="hide"
+                    commandfor={popoverId}
+                    command="hide-popover"
                     aria-label='Close'
                 >
                     <IoClose size={20} />
