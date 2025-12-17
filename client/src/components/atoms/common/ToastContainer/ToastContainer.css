@@ -46,17 +46,12 @@
   color: #3b82f6;
 }
 
-
-
 .toast-icon {
-  font-size: 1.25rem;
 }
 
 .toast-message {
   margin: 0;
-  font-size: 0.95rem;
   line-height: 1.4;
-  color: var(--color-text-primary);
   word-break: break-word;
 }
 
@@ -65,9 +60,6 @@
   height: 2rem;
   background: transparent;
   border: none;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-  font-size: 1.25rem;
   transition: all 0.2s;
   border-radius: 0.5rem;
 }

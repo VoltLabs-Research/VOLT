@@ -69,8 +69,8 @@ const ChatInput = ({
     };
 
     return (
-        <form onSubmit={handleSend} className='chat-input-container'>
-            <div className='d-flex items-center gap-075 chat-input-wrapper'>
+        <form onSubmit={handleSend} className='chat-input-container p-relative'>
+            <div className='d-flex items-center gap-075 chat-input-wrapper p-relative overflow-hidden'>
                 <input
                     type='file'
                     ref={fileRef}
@@ -90,7 +90,7 @@ const ChatInput = ({
                 </Button>
 
                 <textarea
-                    className='chat-input'
+                    className='chat-input y-auto flex-1 font-size-3 font-weight-4 color-primary line-height-5'
                     placeholder='Type a message...'
                     rows={1}
                     value={message}
@@ -130,7 +130,7 @@ const ChatInput = ({
 
             {previews.length > 0 && (
                 <div className='chat-file-previews-container'>
-                    <div className='d-flex items-center content-between chat-file-previews-header'>
+                    <div className='d-flex items-center content-between chat-file-previews-header font-weight-6 color-primary'>
                         <span>Archivos seleccionados({previews.length})</span>
                         <Button
                             variant='ghost'
@@ -140,13 +140,13 @@ const ChatInput = ({
                             onClick={handleClearFiles}
                         >✕</Button>
                     </div>
-                    <div className='chat-file-previews-grid'>
+                    <div className='chat-file-previews-grid gap-075'>
                         {previews.map((item, index) => (
-                            <div key={index} className='chat-file-preview-item'>
-                                <img src={item.preview} alt={item.file.name} className='chat-file-preview-image' />
+                            <div key={index} className='chat-file-preview-item p-relative'>
+                                <img src={item.preview} alt={item.file.name} className='chat-file-preview-image w-max' />
                                 <div className='d-flex column gap-025 chat-file-preview-info'>
-                                    <span className='chat-file-preview-name'>{item.file.name}</span>
-                                    <span className='chat-file-preview-size'>{(item.file.size / 1024).toFixed(1)} KB</span>
+                                    <span className='chat-file-preview-name overflow-hidden font-size-1 font-weight-6 color-primary'>{item.file.name}</span>
+                                    <span className='chat-file-preview-size color-muted'>{(item.file.size / 1024).toFixed(1)} KB</span>
                                 </div>
                                 <Button
                                     variant='ghost'

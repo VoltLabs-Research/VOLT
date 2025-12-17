@@ -18,16 +18,11 @@
 }
 
 .refresh-btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
     background: transparent;
     border: 1px solid var(--border);
     color: var(--foreground);
     padding: 0.25rem 0.75rem;
     border-radius: 4px;
-    font-size: 0.75rem;
-    cursor: pointer;
     transition: all 0.2s;
 }
 
@@ -36,9 +31,7 @@
 }
 
 .processes-table {
-    width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
 }
 
 .processes-table th {
@@ -74,14 +67,11 @@
 .program-cell {
     color: #10b981;
     /* Green for program name */
-    font-weight: 500;
 }
 
 .command-cell {
-    color: var(--muted-foreground);
     max-width: 250px;
     white-space: nowrap;
-    overflow: hidden;
     text-overflow: ellipsis;
     font-family: 'JetBrains Mono', monospace;
 }
@@ -96,5 +86,4 @@
     border: none;
     padding: 0.5rem 1rem;
     border-radius: 4px;
-    cursor: pointer;
 }

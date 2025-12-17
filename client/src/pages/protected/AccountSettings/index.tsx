@@ -220,7 +220,7 @@ const AccountSettings: React.FC = () => {
             default:
                 return (
                     <div className='settings-content'>
-                        <div className='settings-section'>
+                        <div className='settings-section p-relative'>
                             <Title className='settings-section-title'>{activeSection}</Title>
                             <Paragraph className='settings-section-description'>
                                 Configure your {activeSection.toLowerCase()} settings.
@@ -236,8 +236,8 @@ const AccountSettings: React.FC = () => {
 
     return (
         <>
-            <Container className='d-flex column account-settings-container'>
-                <div className='d-flex gap-2 account-settings-layout'>
+            <Container className='d-flex column account-settings-container vh-max'>
+                <div className='d-flex gap-2 account-settings-layout w-max'>
                     <SettingsSidebar
                         activeSection={activeSection}
                         navOptions={navOptions}
@@ -245,7 +245,7 @@ const AccountSettings: React.FC = () => {
                     />
 
                     {/* Main Content */}
-                    <main className='settings-main'>
+                    <main className='settings-main y-auto flex-1'>
                         <div className='settings-content-wrapper'>
                             {renderContent()}
                         </div>

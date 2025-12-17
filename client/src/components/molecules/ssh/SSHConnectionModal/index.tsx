@@ -147,12 +147,12 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
             id='ssh-connection-modal'
             title={mode === 'create' ? 'Add SSH Connection' : 'Edit SSH Connection'}
             width='500px'
-            className='ssh-connection-modal'
+            className='ssh-connection-modal overflow-hidden'
         >
-            <form onSubmit={handleSubmit} className="d-flex column gap-1 ssh-connection-modal-form">
-                <div className="flex-1 ssh-connection-modal-body">
+            <form onSubmit={handleSubmit} className="d-flex column gap-1 ssh-connection-modal-form overflow-hidden">
+                <div className="flex-1 ssh-connection-modal-body y-auto">
                     {error && (
-                        <div className="ssh-connection-modal-error">
+                        <div className="ssh-connection-modal-error font-size-2">
                             {error}
                         </div>
                     )}
@@ -237,7 +237,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                                     {testing ? 'Testing...' : 'Test Connection'}
                                 </Button>
                                 {testResult && (
-                                    <div className={`d-flex items-center gap-05 ssh-connection-test-result ${testResult.valid ? 'success' : 'error'}`}>
+                                    <div className={`d-flex items-center gap-05 ssh-connection-test-result ${testResult.valid ? 'success' : 'error'} font-size-2`}>
                                         {testResult.valid ? (
                                             <>
                                                 <TbCheck size={16} />

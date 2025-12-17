@@ -24,10 +24,10 @@ const PopoverMenuItem = ({
             size='sm'
             block
             align='start'
-            className={`popover-menu-item ${disabled ? 'disabled' : ''}`}
+            className={`popover-menu-item ${disabled ? 'disabled' : ''} font-size-2 color-primary u-select-none cursor-pointer`}
             onClick={onClick}
             disabled={disabled}
-            leftIcon={icon ? <span className="popover-menu-item-icon d-flex flex-center f-shrink-0">{icon}</span> : undefined}
+            leftIcon={icon ? <span className="popover-menu-item-icon d-flex flex-center f-shrink-0 font-size-3">{icon}</span> : undefined}
         >
             {children}
         </Button>

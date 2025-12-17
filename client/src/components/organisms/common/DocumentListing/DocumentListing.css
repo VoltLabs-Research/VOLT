@@ -1,6 +1,5 @@
-.document-listing-container{
+.document-listing-container {
     border-top: unset;
-    color: var(--color-text-primary);
     border-bottom: unset;
     border-right: unset;
 }
@@ -27,11 +26,9 @@
     border-bottom: 2px solid var(--accent-indigo);
 }
 
-.document-listing-body-container{
+.document-listing-body-container {
     border-top: 1px solid var(--color-border);
     padding: 0 2rem 0;
-    flex: 1;
-    overflow: auto;
 }
 
 @media screen and (max-width: 768px){
@@ -44,13 +41,9 @@
     padding: 2rem 2rem 0;
 }
 
-.document-listing-table-header-container{
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
+.document-listing-table-header-container {
     /*border-bottom: 1px solid var(--color-border);*/
     padding: 2rem 0 1rem;
-    position: sticky;
     top: 0;
     z-index: 200000;
     /*background: var(--color-bg);*/
@@ -62,10 +55,7 @@
     min-height: 400px;
 }
 
-.document-listing-table-row-container{
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
+.document-listing-table-row-container {
     padding: 1rem 0;
     border-bottom: 1px solid var(--color-border);
     transition: background-color 0.2s ease;
@@ -79,16 +69,11 @@
     border-bottom: none;
 }
 
-.document-listing-cell{
-    flex: 1;
-    color: var(--color-text-primary);
+.document-listing-cell {
     min-width: 120px;
     text-decoration: none;
     text-overflow: ellipsis;
     white-space: nowrap;
-    overflow: hidden;
-    display: flex;
-    align-items: center;
 }
 
 .document-listing-cell.header-cell{
@@ -329,7 +314,6 @@
 
 /* Empty State Overlay for Document Listing - Similar to Raster View */
 .document-listing-overlay-blur {
-    position: absolute;
     top: 0;
     left: 0;    
     height: calc(100vh - 320px);
@@ -343,14 +327,10 @@
 
 /* Infinite skeleton loader background */
 .document-listing-infinite-skeleton-loader {
-    position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
     opacity: 0.8;
     animation: pulse-infinite 3s ease-in-out infinite;
 }
@@ -367,7 +347,6 @@
 }
 
 .document-listing-empty-content {
-    position: absolute;
     top: 0;
     left: 0;
     right: 0;

@@ -237,10 +237,10 @@ const GroupManagementModal = () => {
         switch (activeSection) {
             case 'general':
                 return (
-                    <div className='group-management-content'>
+                    <div className='group-management-content h-max'>
                         <div className='group-management-section'>
                             <div className='d-flex items-center content-between gap-1 sm:column sm:items-start group-management-section-header'>
-                                <Title className='font-size-3 group-management-section-title'>Group Information</Title>
+                                <Title className='font-size-3 group-management-section-title color-primary'>Group Information</Title>
                             </div>
                             <div className='d-flex column gap-1 group-management-form'>
                                 <div>
@@ -268,9 +268,9 @@ const GroupManagementModal = () => {
                             </div>
                         </div>
 
-                        <div className='group-management-section group-management-danger-zone'>
+                        <div className='group-management-section group-management-danger-zone mt-1 p-relative overflow-hidden'>
                             <div className='d-flex items-center content-between gap-1 group-management-section-header'>
-                                <Title className='font-size-3 group-management-section-title'>Danger Zone</Title>
+                                <Title className='font-size-3 group-management-section-title color-primary'>Danger Zone</Title>
                             </div>
                             <Button
                                 variant='soft'
@@ -288,11 +288,11 @@ const GroupManagementModal = () => {
 
             case 'members':
                 return (
-                    <div className='group-management-content'>
+                    <div className='group-management-content h-max'>
                         <div className='group-management-section'>
                             {!showAddMembers && (
                                 <div className='d-flex items-center content-between gap-1 sm:column sm:items-start group-management-section-header'>
-                                    <Title className='font-size-3 group-management-section-title'>Group Members</Title>
+                                    <Title className='font-size-3 group-management-section-title color-primary'>Group Members</Title>
                                     {(isAdmin || isOwner) && (
                                         <Button
                                             variant='solid'
@@ -314,7 +314,7 @@ const GroupManagementModal = () => {
                                         const isMemberOwner = currentChat.createdBy?._id === member._id;
 
                                         return (
-                                            <div key={member._id} className='d-flex items-center gap-0875 group-management-member'>
+                                            <div key={member._id} className='d-flex items-center gap-0875 group-management-member p-relative overflow-hidden cursor-pointer'>
                                                 <div className='d-flex flex-center group-management-member-avatar'>
                                                     {getInitials(member.firstName, member.lastName)}
                                                 </div>
@@ -337,9 +337,9 @@ const GroupManagementModal = () => {
                                 </div>
                             ) : (
                                 <div className='d-flex column gap-125 group-management-add-members'>
-                                    <div className='d-flex items-center group-management-add-members-header'>
+                                    <div className='d-flex items-center group-management-add-members-header p-relative overflow-hidden'>
                                         <div
-                                            className='d-flex items-center gap-075 group-management-back-button'
+                                            className='d-flex items-center gap-075 group-management-back-button p-relative cursor-pointer'
                                             onClick={() => {
                                                 setShowAddMembers(false);
                                                 setSelectedMembers([]);
@@ -351,20 +351,20 @@ const GroupManagementModal = () => {
                                         </div>
                                     </div>
 
-                                    <div className='group-management-add-members-search'>
+                                    <div className='group-management-add-members-search p-relative'>
                                         <div className='d-flex items-center group-management-search-container'>
-                                            <IoSearchOutline className='group-management-search-icon' />
+                                            <IoSearchOutline className='group-management-search-icon p-absolute' />
                                             <input
                                                 type='text'
                                                 placeholder='Search team members...'
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                                className='group-management-search-input'
+                                                className='group-management-search-input w-max font-size-2 font-weight-5'
                                             />
                                         </div>
                                     </div>
 
-                                    <div className='group-management-available-members'>
+                                    <div className='group-management-available-members p-relative y-auto'>
                                         {(() => {
                                             const availableMembers = teamMembers.filter(member =>
                                                 !currentChat?.participants.some(participant => participant._id === member._id) &&
@@ -384,7 +384,7 @@ const GroupManagementModal = () => {
                                                         return (
                                                             <div
                                                                 key={member._id}
-                                                                className={`d-flex items-center gap-0875 group-management-member ${isSelected ? 'selected' : ''}`}
+                                                                className={`d-flex items-center gap-0875 group-management-member ${isSelected ? 'selected' : ''} p-relative overflow-hidden cursor-pointer`}
                                                                 onClick={() => toggleMemberSelection(member._id)}
                                                             >
                                                                 <div className='d-flex flex-center group-management-member-avatar'>
@@ -399,7 +399,7 @@ const GroupManagementModal = () => {
                                                                     </span>
                                                                 </div>
                                                                 {isSelected && (
-                                                                    <div className='d-flex flex-center group-management-member-check'>
+                                                                    <div className='d-flex flex-center group-management-member-check font-size-2'>
                                                                         <IoCheckmarkCircleOutline />
                                                                     </div>
                                                                 )}
@@ -412,7 +412,7 @@ const GroupManagementModal = () => {
                                     </div>
 
                                     {selectedMembers.length > 0 && (
-                                        <div className='group-management-selected-summary'>
+                                        <div className='group-management-selected-summary text-center'>
                                             <Paragraph>
                                                 <IoCheckmarkCircleOutline className='d-flex flex-center gap-05 check-icon' />
                                                 {selectedMembers.length} member{selectedMembers.length !== 1 ? 's' : ''} selected
@@ -440,11 +440,11 @@ const GroupManagementModal = () => {
 
             case 'administrators':
                 return (
-                    <div className='group-management-content'>
+                    <div className='group-management-content h-max'>
                         <div className='group-management-section'>
                             {!showManageAdmins && (
                                 <div className='d-flex items-center content-between gap-1 sm:column sm:items-start group-management-section-header'>
-                                    <Title className='font-size-3 group-management-section-title'>Group Administrators</Title>
+                                    <Title className='font-size-3 group-management-section-title color-primary'>Group Administrators</Title>
                                     {isOwner && (
                                         <Button
                                             variant='solid'
@@ -462,7 +462,7 @@ const GroupManagementModal = () => {
                             {!showManageAdmins ? (
                                 <div className='d-flex column gap-05 group-management-admins-list'>
                                     {/* Owner */}
-                                    <div className='d-flex items-center gap-0875 group-management-admin owner'>
+                                    <div className='d-flex items-center gap-0875 group-management-admin owner p-relative overflow-hidden cursor-pointer'>
                                         <div className='d-flex flex-center group-management-admin-avatar'>
                                             {getInitials(
                                                 currentChat.createdBy?.firstName || '',
@@ -482,7 +482,7 @@ const GroupManagementModal = () => {
 
                                     {/* Admins */}
                                     {currentChat.admins?.filter(admin => admin._id !== currentChat.createdBy?._id).map((admin) => (
-                                        <div key={admin._id} className='d-flex items-center gap-0875 group-management-admin'>
+                                        <div key={admin._id} className='d-flex items-center gap-0875 group-management-admin p-relative overflow-hidden cursor-pointer'>
                                             <div className='d-flex flex-center group-management-admin-avatar'>
                                                 {getInitials(admin.firstName, admin.lastName)}
                                             </div>
@@ -500,9 +500,9 @@ const GroupManagementModal = () => {
                                 </div>
                             ) : (
                                 <div className='d-flex column gap-025 group-management-manage-admins'>
-                                    <div className='d-flex items-center group-management-manage-admins-header'>
+                                    <div className='d-flex items-center group-management-manage-admins-header p-relative overflow-hidden'>
                                         <div
-                                            className='d-flex items-center gap-075 group-management-back-button'
+                                            className='d-flex items-center gap-075 group-management-back-button p-relative cursor-pointer'
                                             onClick={() => {
                                                 setShowManageAdmins(false);
                                                 setSelectedAdmins([]);
@@ -513,10 +513,10 @@ const GroupManagementModal = () => {
                                         </div>
                                     </div>
 
-                                    <div className='group-management-available-admins'>
+                                    <div className='group-management-available-admins p-relative y-auto'>
                                         <div className='group-management-admins-list'>
                                             {/* Owner - cannot be changed */}
-                                            <div className='d-flex items-center gap-0875 group-management-admin owner disabled'>
+                                            <div className='d-flex items-center gap-0875 group-management-admin owner disabled p-relative overflow-hidden cursor-pointer'>
                                                 <div className='d-flex flex-center group-management-admin-avatar'>
                                                     {getInitials(
                                                         currentChat.createdBy?.firstName || '',
@@ -545,7 +545,7 @@ const GroupManagementModal = () => {
                                                     return (
                                                         <div
                                                             key={member._id}
-                                                            className={`d-flex items-center gap-0875 group-management-admin ${isSelected ? 'selected' : ''} ${isCurrentAdmin ? 'current-admin' : ''}`}
+                                                            className={`d-flex items-center gap-0875 group-management-admin ${isSelected ? 'selected' : ''} ${isCurrentAdmin ? 'current-admin' : ''} p-relative overflow-hidden cursor-pointer`}
                                                             onClick={() => toggleAdminSelection(member._id)}
                                                         >
                                                             <div className='d-flex flex-center group-management-admin-avatar'>
@@ -560,7 +560,7 @@ const GroupManagementModal = () => {
                                                                 </span>
                                                             </div>
                                                             {isSelected && (
-                                                                <div className='group-management-admin-check'>
+                                                                <div className='group-management-admin-check font-size-2'>
                                                                     <IoCheckmarkCircleOutline />
                                                                 </div>
                                                             )}
@@ -574,7 +574,7 @@ const GroupManagementModal = () => {
                                     </div>
 
                                     {selectedAdmins.length > 0 && (
-                                        <div className='group-management-selected-summary'>
+                                        <div className='group-management-selected-summary text-center'>
                                             <Paragraph>
                                                 <IoCheckmarkCircleOutline className='d-flex flex-center gap-05 check-icon' />
                                                 {selectedAdmins.length} admin{selectedAdmins.length !== 1 ? 's' : ''} selected
@@ -612,23 +612,23 @@ const GroupManagementModal = () => {
             width='1050px'
             className='group-management-modal'
         >
-            <div className='d-flex group-management-container-inner'>
-                <div className='d-flex column content-between group-management-left-container'>
+            <div className='d-flex group-management-container-inner w-max overflow-hidden'>
+                <div className='d-flex column content-between group-management-left-container p-relative'>
                     <div className='d-flex column gap-2 group-management-left-top-container'>
                         <div className='d-flex column gap-05 group-management-nav-container'>
                             <div className='d-flex column gap-05 group-management-nav'>
-                                <Title className='font-size-3 group-management-nav-title'>Settings</Title>
+                                <Title className='font-size-3 group-management-nav-title font-weight-5 color-primary'>Settings</Title>
                                 <div className='d-flex column gap-02 group-management-nav-items'>
                                     {navigationItems.map((item) => (
                                         <div
                                             key={item.id}
-                                            className={`d-flex items-center gap-075 group-management-nav-item ${activeSection === item.id ? 'active' : ''}`}
+                                            className={`d-flex items-center gap-075 group-management-nav-item ${activeSection === item.id ? 'active' : ''} p-relative overflow-hidden cursor-pointer`}
                                             onClick={() => setActiveSection(item.id as any)}
                                         >
                                             <i className='d-flex flex-center group-management-nav-item-icon'>
                                                 <item.icon size={16} />
                                             </i>
-                                            <span className='group-management-nav-item-title'>{item.title}</span>
+                                            <span className='group-management-nav-item-title font-weight-4'>{item.title}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -637,13 +637,13 @@ const GroupManagementModal = () => {
                     </div>
 
                     <div className='group-management-left-bottom-container'>
-                        <div className='d-flex items-center gap-075 group-management-group-info'>
-                            <div className='d-flex flex-center group-management-group-avatar'>
+                        <div className='d-flex items-center gap-075 group-management-group-info p-relative overflow-hidden'>
+                            <div className='d-flex flex-center group-management-group-avatar p-relative font-size-4'>
                                 <IoPeopleOutline />
                             </div>
-                            <div className='group-management-group-details'>
-                                <Title className='font-size-2-5 group-management-group-name'>{currentChat.groupName}</Title>
-                                <Paragraph className='group-management-group-members-count'>
+                            <div className='group-management-group-details p-relative flex-1'>
+                                <Title className='font-size-2-5 group-management-group-name overflow-hidden font-weight-6 color-primary'>{currentChat.groupName}</Title>
+                                <Paragraph className='group-management-group-members-count color-secondary'>
                                     {currentChat.participants.length} members
                                 </Paragraph>
                             </div>
@@ -651,7 +651,7 @@ const GroupManagementModal = () => {
                     </div>
                 </div>
 
-                <div className='d-flex column gap-1 group-management-right-container'>
+                <div className='d-flex column gap-1 group-management-right-container h-max y-auto'>
                     {renderContent()}
                 </div>
             </div>

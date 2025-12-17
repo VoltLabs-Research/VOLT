@@ -203,7 +203,7 @@ const DocumentListing = ({
     const isSorting = sortStatus === WorkerStatus.RUNNING
 
     return (
-        <Container className='d-flex column h-max document-listing-container'>
+        <Container className='d-flex column h-max document-listing-container color-primary'>
             <Container className='d-flex column gap-3'>
                 <Container className='d-flex column gap-1-5 document-listing-header-top-container'>
                     <Container className='d-flex gap-05'>
@@ -242,7 +242,7 @@ const DocumentListing = ({
                 </Container>
             </Container>
 
-            <Container className='document-listing-body-container' ref={bodyRef}>
+            <Container className='document-listing-body-container overflow-auto flex-1' ref={bodyRef}>
                 <DocumentListingTable
                     columns={columns}
                     data={sortedData}

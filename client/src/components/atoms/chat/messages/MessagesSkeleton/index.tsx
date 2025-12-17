@@ -1,8 +1,8 @@
 import { Skeleton } from '@mui/material';
 
 const MessageSkeleton = ({ isSent }: { isSent: boolean }) => (
-    <div className={`chat-message ${isSent ? 'sent' : 'received'}`}>
-        <div className='chat-message-content'>
+    <div className={`chat-message ${isSent ? 'sent' : 'received'} p-relative`}>
+        <div className='chat-message-content p-relative'>
             <Skeleton
                 variant="rectangular"
                 width={Math.random() * 200 + 100}

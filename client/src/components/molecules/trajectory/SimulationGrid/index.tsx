@@ -49,7 +49,7 @@ const SimulationGrid = memo(() => {
     }
 
     return(
-        <div className='trajectories-container' ref={parent as React.MutableRefObject<HTMLDivElement | null>}>
+        <div className='trajectories-container gap-1-5 w-max y-auto' ref={parent as React.MutableRefObject<HTMLDivElement | null>}>
             {(isLoading || uploadingFileCount > 0) && (
                 <SimulationSkeletonCard n={uploadingFileCount > 0 ? uploadingFileCount : 8} />
             )}

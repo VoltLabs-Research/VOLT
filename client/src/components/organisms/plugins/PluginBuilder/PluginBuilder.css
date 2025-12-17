@@ -10,7 +10,6 @@
     border: 1px solid var(--gray-300);
     border-radius: 6px;
     color: var(--gray-700);
-    cursor: pointer;
     transition: all 0.2s ease;
 }
 

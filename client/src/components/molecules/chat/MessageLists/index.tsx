@@ -14,13 +14,13 @@ export type MessageListProps = {
 
 const MessageList = ({ messages, isLoading, endRef, renderItem, selfId }: MessageListProps) => {
     return (
-        <div className='d-flex column gap-05 chat-box-messages-container'>
+        <div className='d-flex column gap-05 chat-box-messages-container p-relative y-auto flex-1'>
             {isLoading ? (
                 Array.from({ length: 5 }).map((_, index) => (
                     <MessageSkeleton key={`message-skeleton-${index}`} isSent={index % 3 === 0} />
                 ))
             ) : messages.length === 0 ? (
-                <div className='d-flex column flex-center chat-empty-messages'>
+                <div className='d-flex column flex-center chat-empty-messages h-max text-center color-secondary'>
                     <Paragraph>No messages yet</Paragraph>
                     <Paragraph>Start the conversation!</Paragraph>
                 </div>

@@ -55,22 +55,22 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
   }
 
   return (
-    <div className="d-flex items-center content-center server-details-overlay" onClick={onClose}>
-      <div className="d-flex column server-details-panel" onClick={(e) => e.stopPropagation()}>
+    <div className="d-flex items-center content-center server-details-overlay p-fixed" onClick={onClose}>
+      <div className="d-flex column server-details-panel overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="d-flex content-between items-center server-details-header">
           <div className="d-flex items-center gap-1 server-details-header-left">
             <Server className="server-details-header-icon" />
             <div>
-              <Title className='font-size-4 server-details-title'>{server.id}</Title>
-              <Paragraph className='server-details-subtitle'>
+              <Title className='font-size-4 server-details-title font-weight-6'>{server.id}</Title>
+              <Paragraph className='server-details-subtitle font-weight-4'>
                 {osInfo.platform} {osInfo.arch}
               </Paragraph>
             </div>
           </div>
           <div className="d-flex items-center gap-1 server-details-header-right">
             <div className="d-flex gap-05 server-details-badges">
-              <span className="server-details-badge">{server.region}</span>
-              <span className="server-details-badge" style={{
+              <span className="server-details-badge font-size-1 font-weight-5">{server.region}</span>
+              <span className="server-details-badge font-size-1 font-weight-5" style={{
                 background: getStatusColor(server.status) + '20',
                 borderColor: getStatusColor(server.status) + '40',
                 color: getStatusColor(server.status)
@@ -88,45 +88,45 @@ export function ServerDetails({ server, onClose }: ServerDetailsProps) {
           <Button variant='solid' intent='brand' size='sm'>Server Info</Button>
         </div>
 
-        <div className="server-details-content">
+        <div className="server-details-content y-auto flex-1">
           <div className="server-details-section">
-            <Title className='d-flex items-center content-between font-size-3 server-details-section-title'>Summary</Title>
-            <div className="server-details-grid-3">
+            <Title className='d-flex items-center content-between font-size-3 server-details-section-title font-weight-6'>Summary</Title>
+            <div className="server-details-grid-3 gap-1">
               <div className="d-flex column server-details-info-card">
-                <span className="server-details-info-label">Name</span>
-                <span className="server-details-info-value">{server.id}</span>
+                <span className="server-details-info-label font-weight-5">Name</span>
+                <span className="server-details-info-value font-weight-5">{server.id}</span>
               </div>
               <div className="server-details-info-card">
-                <span className="server-details-info-label">Platform</span>
-                <span className="server-details-info-value">{osInfo.platform}</span>
+                <span className="server-details-info-label font-weight-5">Platform</span>
+                <span className="server-details-info-value font-weight-5">{osInfo.platform}</span>
               </div>
               <div className="server-details-info-card">
-                <span className="server-details-info-label">Architecture</span>
-                <span className="server-details-info-value">{osInfo.arch}</span>
+                <span className="server-details-info-label font-weight-5">Architecture</span>
+                <span className="server-details-info-value font-weight-5">{osInfo.arch}</span>
               </div>
               <div className="server-details-info-card">
-                <span className="server-details-info-label">CPU Cores</span>
-                <span className="server-details-info-value">{osInfo.cpuCores} Cores</span>
+                <span className="server-details-info-label font-weight-5">CPU Cores</span>
+                <span className="server-details-info-value font-weight-5">{osInfo.cpuCores} Cores</span>
               </div>
               <div className="server-details-info-card">
-                <span className="server-details-info-label">CPU Usage</span>
-                <span className="server-details-info-value">{server.cpu}%</span>
+                <span className="server-details-info-label font-weight-5">CPU Usage</span>
+                <span className="server-details-info-value font-weight-5">{server.cpu}%</span>
               </div>
               <div className="server-details-info-card">
-                <span className="server-details-info-label">Memory</span>
-                <span className="server-details-info-value">{osInfo.usedMemory}GB / {osInfo.totalMemory}GB({server.memory}%)</span>
+                <span className="server-details-info-label font-weight-5">Memory</span>
+                <span className="server-details-info-value font-weight-5">{osInfo.usedMemory}GB / {osInfo.totalMemory}GB({server.memory}%)</span>
               </div>
               <div className="server-details-info-card">
-                <span className="server-details-info-label">Disk</span>
-                <span className="server-details-info-value">{osInfo.freeDisk}GB Available</span>
+                <span className="server-details-info-label font-weight-5">Disk</span>
+                <span className="server-details-info-value font-weight-5">{osInfo.freeDisk}GB Available</span>
               </div>
               <div className="server-details-info-card">
-                <span className="server-details-info-label">Network</span>
-                <span className="server-details-info-value">{server.network}</span>
+                <span className="server-details-info-label font-weight-5">Network</span>
+                <span className="server-details-info-value font-weight-5">{server.network}</span>
               </div>
               <div className="server-details-info-card">
-                <span className="server-details-info-label">Uptime</span>
-                <span className="server-details-info-value">{server.uptime}</span>
+                <span className="server-details-info-label font-weight-5">Uptime</span>
+                <span className="server-details-info-value font-weight-5">{server.uptime}</span>
               </div>
             </div>
           </div>

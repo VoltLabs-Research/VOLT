@@ -39,7 +39,7 @@ const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>((
             scaleWhileDragging={0.95}
             bounds="parent"
             grid={undefined}
-            className={`d-flex gap-1 editor-floating-container ${isSceneInteracting ? 'dimmed' : ''} ${className}`}
+            className={`d-flex gap-1 editor-floating-container ${isSceneInteracting ? 'dimmed' : ''} ${className} p-absolute`}
             style={style}
         >
             {children}

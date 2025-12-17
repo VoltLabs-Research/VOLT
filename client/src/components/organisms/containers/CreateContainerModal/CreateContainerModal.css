@@ -1,5 +1,4 @@
 .modal-overlay {
-    position: fixed;
     top: 0;
     left: 0;
     right: 0;
@@ -12,7 +11,6 @@
 .create-container-modal {
     background: var(--bg-secondary);
     border-radius: 16px;
-    width: 100%;
     max-width: 600px;
     max-height: 90vh;
     border: 1px solid var(--border-color);
@@ -34,7 +32,6 @@
     background: none;
     border: none;
     color: var(--text-secondary);
-    cursor: pointer;
     padding: 4px;
     border-radius: 4px;
 }
@@ -46,7 +43,6 @@
 
 .modal-body {
     padding: 24px;
-    overflow-y: auto;
 }
 
 .form-group label {
@@ -85,7 +81,6 @@
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 12px;
-    cursor: pointer;
 }
 
 .add-btn-small:hover {
@@ -108,7 +103,6 @@
 }
 
 .port-input {
-    flex: 1;
 }
 
 .port-input span {
@@ -135,7 +129,6 @@
     background: none;
     border: none;
     color: #f44336;
-    cursor: pointer;
     padding: 8px;
     border-radius: 4px;
 }
@@ -155,7 +148,6 @@
     border: 1px solid var(--border-color);
     background: transparent;
     color: var(--text-primary);
-    cursor: pointer;
 }
 
 .cancel-btn:hover {
@@ -168,8 +160,6 @@
     border: none;
     background: var(--primary-color);
     color: white;
-    font-weight: 500;
-    cursor: pointer;
 }
 
 .submit-btn:disabled {

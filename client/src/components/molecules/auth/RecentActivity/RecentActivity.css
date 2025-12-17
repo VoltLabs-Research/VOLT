@@ -14,15 +14,11 @@
 }
 
 .recent-activity-header {
-    margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--color-border-soft);
 }
 
 .recent-activity-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
     margin: 0;
     margin: 0;
 }
@@ -33,23 +29,18 @@
     color: var(--accent-blue);
 }
 
-
 .recent-activity-stat-value {
     font-size: 1.125rem;
     font-weight: 700;
-    color: var(--color-text-primary);
 }
 
 .recent-activity-stat-label {
-    font-size: 0.75rem;
-    color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
 .recent-activity-list {
     max-height: 400px;
-    overflow-y: auto;
 }
 
 .recent-activity-item {
@@ -58,7 +49,6 @@
     border: 1px solid var(--color-border-soft);
     border-radius: 0.75rem;
     transition: all 0.2s ease;
-    cursor: pointer;
 }
 
 .recent-activity-item:hover {
@@ -68,19 +58,15 @@
 }
 
 .recent-activity-item-content {
-    flex: 1;
 
 }
 
 .recent-activity-method-badge {
     padding: 0.25rem 0.5rem;
     border-radius: 0.375rem;
-    font-size: 0.75rem;
-    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.025em;
     min-width: 3rem;
-    text-align: center;
 }
 
 .recent-activity-method-badge.get {
@@ -110,21 +96,15 @@
 
 .recent-activity-url {
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-    font-size: 0.875rem;
-    color: var(--color-text-primary);
-    font-weight: 500;
     word-break: break-all;
 }
 
 .recent-activity-item-meta {
-    font-size: 0.75rem;
-    color: var(--color-text-secondary);
 }
 
 .recent-activity-status-code {
     padding: 0.25rem 0.5rem;
     border-radius: 0.375rem;
-    font-weight: 600;
 }
 
 .recent-activity-status-code.success {
@@ -142,9 +122,7 @@
     color: var(--accent-red);
 }
 
-
 .recent-activity-time {
-    gap: 0.25rem;
 }
 
 .recent-activity-item-actions {
@@ -162,10 +140,7 @@
     background: var(--color-surface-1);
     border: 1px solid var(--color-border);
     border-radius: 0.375rem;
-    color: var(--color-text-secondary);
-    cursor: pointer;
     transition: all 0.2s ease;
-    cursor: pointer;
     transition: all 0.2s ease;
 }
 
@@ -177,8 +152,6 @@
 
 .recent-activity-empty {
     padding: 3rem 1rem;
-    text-align: center;
-    color: var(--color-text-muted);
 }
 
 .recent-activity-empty-icon {
@@ -190,16 +163,11 @@
 
 .recent-activity-empty-title {
     font-size: 1.125rem;
-    font-weight: 600;
     margin-bottom: 0.5rem;
-    color: var(--color-text-secondary);
 }
 
 .recent-activity-empty-description {
-    font-size: 0.875rem;
-    line-height: 1.5;
 }
-
 
 .recent-activity-skeleton {
 
@@ -217,7 +185,6 @@
 }
 
 .recent-activity-skeleton-content {
-    flex: 1;
 
 }
 
@@ -235,22 +202,16 @@
     width: 80%;
 }
 
-
-
 /* Responsive Design */
 @media screen and (max-width: 768px) {
     .recent-activity-container {
         padding: 1rem;
     }
 
-
-
     .recent-activity-stats {
         width: 100%;
         justify-content: space-between;
     }
-
-
 
     .recent-activity-item-meta {
         width: 100%;

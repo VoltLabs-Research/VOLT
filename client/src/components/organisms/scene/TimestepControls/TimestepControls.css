@@ -1,5 +1,4 @@
 .editor-timestep-controls {
-    position: absolute;
     bottom: 2rem;
     left: 50%;
     width: auto;
@@ -18,5 +17,4 @@
 .editor-timestep-controls-play-pause-button {
     order: 0;
     margin-bottom: 0;
-    font-size: 1rem;
 }

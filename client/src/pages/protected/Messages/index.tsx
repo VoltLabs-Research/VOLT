@@ -34,7 +34,7 @@ const MessagesPage = () => {
     } = useChatStore();
 
     return (
-        <DashboardContainer pageName='Messages' className='chat-main-container d-flex h-100'>
+        <DashboardContainer pageName='Messages' className='chat-main-container d-flex h-100 p-relative overflow-hidden'>
             <ChatSidebar />
             <ChatArea />
 

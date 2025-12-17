@@ -1,6 +1,5 @@
 .volt-popover {
     border-radius: 0.5rem;
-    color: var(--color-text-primary);
     min-width: 180px;
     max-width: 320px;
     z-index: 9999;

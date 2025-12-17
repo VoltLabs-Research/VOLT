@@ -50,7 +50,7 @@ const MessageControls = ({
                     </Button>
 
                     {isOptionsOpen && (
-                        <Container className='chat-message-options-menu'>
+                        <Container className='chat-message-options-menu p-absolute overflow-hidden'>
                             <Button
                                 variant='ghost'
                                 intent='neutral'

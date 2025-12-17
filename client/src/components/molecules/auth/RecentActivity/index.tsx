@@ -85,8 +85,8 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
     if (loading && !data) {
         return (
             <div className={`recent-activity-container ${className}`}>
-                <div className="recent-activity-header">
-                    <Title className="font-size-3 recent-activity-title">
+                <div className="recent-activity-header mb-1-5">
+                    <Title className="font-size-3 recent-activity-title font-size-4 font-weight-6 color-primary">
                         <HiChartBar className="recent-activity-icon" />
                         Recent Activity
                     </Title>
@@ -109,16 +109,16 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
     if (error) {
         return (
             <div className={`recent-activity-container ${className}`}>
-                <div className="recent-activity-header">
-                    <Title className="font-size-3 recent-activity-title">
+                <div className="recent-activity-header mb-1-5">
+                    <Title className="font-size-3 recent-activity-title font-size-4 font-weight-6 color-primary">
                         <HiChartBar className="recent-activity-icon" />
                         Recent Activity
                     </Title>
                 </div>
-                <div className="d-flex column flex-center recent-activity-empty">
+                <div className="d-flex column flex-center recent-activity-empty text-center color-muted">
                     <HiGlobeAlt className="recent-activity-empty-icon" />
-                    <Title className="font-size-2-5 recent-activity-empty-title">Unable to load activity</Title>
-                    <Paragraph className="recent-activity-empty-description">
+                    <Title className="font-size-2-5 recent-activity-empty-title font-weight-6 color-secondary">Unable to load activity</Title>
+                    <Paragraph className="recent-activity-empty-description font-size-2 line-height-5">
                         {error}
                     </Paragraph>
                 </div>
@@ -133,16 +133,16 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
     if (requests.length === 0) {
         return (
             <div className={`recent-activity-container ${className}`}>
-                <div className="recent-activity-header">
-                    <Title className="font-size-3 recent-activity-title">
+                <div className="recent-activity-header mb-1-5">
+                    <Title className="font-size-3 recent-activity-title font-size-4 font-weight-6 color-primary">
                         <HiChartBar className="recent-activity-icon" />
                         Recent Activity
                     </Title>
                 </div>
-                <div className="d-flex column flex-center recent-activity-empty">
+                <div className="d-flex column flex-center recent-activity-empty text-center color-muted">
                     <HiChartBar className="recent-activity-empty-icon" />
-                    <Title className="font-size-2-5 recent-activity-empty-title">No activity yet</Title>
-                    <Paragraph className="recent-activity-empty-description">
+                    <Title className="font-size-2-5 recent-activity-empty-title font-weight-6 color-secondary">No activity yet</Title>
+                    <Paragraph className="recent-activity-empty-description font-size-2 line-height-5">
                         Your API requests will appear here once you start using the platform.
                     </Paragraph>
                 </div>
@@ -152,8 +152,8 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
 
     return (
         <div className={`recent-activity-container ${className}`}>
-            <div className="d-flex items-center content-between sm:column sm:item-start sm:gap-1 recent-activity-header">
-                <Title className="d-flex items-center gap-05 font-size-3 recent-activity-title">
+            <div className="d-flex items-center content-between sm:column sm:item-start sm:gap-1 recent-activity-header mb-1-5">
+                <Title className="d-flex items-center gap-05 font-size-3 recent-activity-title font-size-4 font-weight-6 color-primary">
                     <HiChartBar className="recent-activity-icon" />
                     Recent Activity
                 </Title>
@@ -161,34 +161,34 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                 {showStats && summary && (
                     <div className="d-flex items-center gap-1 recent-activity-stats">
                         <div className="d-flex column items-center gap-025 recent-activity-stat">
-                            <span className="recent-activity-stat-value">
+                            <span className="recent-activity-stat-value color-primary">
                                 {summary.totalRequests}
                             </span>
-                            <span className="recent-activity-stat-label">Requests</span>
+                            <span className="recent-activity-stat-label font-size-1 color-secondary">Requests</span>
                         </div>
                         <div className="d-flex column items-center gap-025 recent-activity-stat">
-                            <span className="recent-activity-stat-value">
+                            <span className="recent-activity-stat-value color-primary">
                                 {formatResponseTime(summary.averageResponseTime)}
                             </span>
-                            <span className="recent-activity-stat-label">Avg Time</span>
+                            <span className="recent-activity-stat-label font-size-1 color-secondary">Avg Time</span>
                         </div>
                         <div className="d-flex column items-center gap-025 recent-activity-stat">
-                            <span className="recent-activity-stat-value">
+                            <span className="recent-activity-stat-value color-primary">
                                 {summary.uniqueIPsCount}
                             </span>
-                            <span className="recent-activity-stat-label">IPs</span>
+                            <span className="recent-activity-stat-label font-size-1 color-secondary">IPs</span>
                         </div>
                     </div>
                 )}
             </div>
 
-            <div className="d-flex column gap-075 recent-activity-list">
+            <div className="d-flex column gap-075 recent-activity-list y-auto">
                 {requests.map((request) => (
-                    <div key={request._id} className="d-flex items-center gap-1 sm:column sm:item-start sm:gap-075 recent-activity-item">
+                    <div key={request._id} className="d-flex items-center gap-1 sm:column sm:item-start sm:gap-075 recent-activity-item cursor-pointer">
                         <div className="flex-1 d-flex column gap-05 recent-activity-item-content">
                             <div className="d-flex items-center gap-075 recent-activity-item-header">
                                 <span
-                                    className="recent-activity-method-badge"
+                                    className="recent-activity-method-badge text-center font-size-1 font-weight-6"
                                     style={{
                                         backgroundColor: getMethodColor(request.method),
                                         color: 'white'
@@ -196,13 +196,13 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                                 >
                                     {request.method}
                                 </span>
-                                <span className="recent-activity-url">
+                                <span className="recent-activity-url font-size-2 font-weight-5 color-primary">
                                     {request.url}
                                 </span>
                             </div>
 
-                            <div className="d-flex items-center gap-1 recent-activity-item-meta">
-                                <div className={`d-flex items-center gap-025 recent-activity-status-code ${getStatusCodeClass(request.statusCode)}`}>
+                            <div className="d-flex items-center gap-1 recent-activity-item-meta font-size-1 color-secondary">
+                                <div className={`d-flex items-center gap-025 recent-activity-status-code ${getStatusCodeClass(request.statusCode)} font-weight-6`}>
                                     <HiLightningBolt />
                                     {request.statusCode}
                                 </div>

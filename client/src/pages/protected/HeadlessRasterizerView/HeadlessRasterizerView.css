@@ -5,7 +5,6 @@
 }
 
 .type-legend-text {
-  color: var(--color-text-primary);
 }
 
 .connected-user-container {
@@ -23,8 +22,6 @@
 /* Progress Indicator Styles */
 
 .raster-view-container {
-  height: 100%;
-  overflow: hidden;
   padding: .5rem 2rem;
   background-color: var(--color-bg);
 }
@@ -77,16 +74,12 @@
 
 /* Botón Sign in */
 .btn-signin {
-  position: relative;
-  overflow: hidden;
   background: radial-gradient(120% 160% at 50% 0%, var(--color-surface-2) 0%, var(--color-surface-1) 60%);
-  color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   border-radius: 9999px;
   padding: .55rem 1rem;
   font-weight: 700;
   letter-spacing: .1px;
-  cursor: pointer;
   transition: transform .16s ease, box-shadow .25s ease, border-color .25s ease, background .25s ease;
   box-shadow: var(--shadow-elevated);
   backdrop-filter: blur(4px);
@@ -151,8 +144,6 @@
 
 /* Botón View in 3D */
 .btn-3d {
-  position: relative;
-  overflow: hidden;
   background: radial-gradient(130% 180% at 50% 0%, #062a2f 0%, #071c1e 65%);
   color: #d2faff;
   border: 1px solid #0e3c44;
@@ -160,7 +151,6 @@
   padding: .55rem 1rem;
   font-weight: 800;
   letter-spacing: .12px;
-  cursor: pointer;
   transition: transform .16s ease, box-shadow .25s ease, border-color .25s ease, background .25s ease, color .25s ease;
   box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
 }
@@ -225,7 +215,6 @@
 
 /* ====== Header y layout ====== */
 .raster-scene-header-container {
-  color: var(--color-text-primary);
   height: 80px;
 }
 
@@ -243,11 +232,9 @@
 }
 
 .raster-scene-header-go-back-icon-container {
-  color: var(--color-text-primary);
   font-size: 1.3rem;
   width: 70px;
   transition: .2s;
-  cursor: pointer;
 }
 
 .raster-scene-header-go-back-icon-container:hover {
@@ -255,21 +242,14 @@
 }
 
 .raster-scenes-container {
-  height: 100%;
-  width: 100%;
-  position: relative;
   border-radius: 1rem;
 }
 
 .raster-scenes-top-container {
-  width: 100%;
   height: calc(100% - 80px - 170px - 66px);
 }
 
 .raster-scene-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
   border: 1px solid var(--color-border);
   border-radius: 1rem;
   background: var(--color-surface-1);
@@ -293,10 +273,8 @@
 .raster-scene-topbar {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items: center;
   gap: .75rem;
   padding: .5rem .75rem;
-  width: 100%;
 }
 
 .raster-scene-topbar-center {
@@ -316,14 +294,12 @@
 }
 
 .raster-scene-main {
-  flex: 1;
   padding: .25rem .5rem;
 }
 
 .raster-scene-bottombar {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
-  align-items: center;
   gap: .75rem;
   padding: .5rem .75rem .75rem;
 }
@@ -332,16 +308,12 @@
   grid-column: 2;
   justify-self: center;
   color: #dadada;
-  font-size: 1.5rem;
   border-radius: 5rem;
   padding: .3rem .75rem;
   gap: .5rem;
 }
 
 .raster-view-trajectory-play-icon {
-  font-size: 1.8rem;
-  color: var(--color-text-primary);
-  cursor: pointer;
   line-height: 1;
 }
 
@@ -350,21 +322,16 @@
   height: 170px;
   overflow-x: auto;
   overflow-y: hidden;
-  width: 100%;
 }
 
 .raster-thumbnail-container {
-  height: 100%;
   border: 1px solid var(--color-border);
   border-radius: 1rem;
   background-color: var(--color-surface-1);
   width: 280px;
-  position: relative;
-  cursor: pointer;
   perspective: 1000px;
   transform-style: preserve-3d;
   transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-  flex-shrink: 0;
 }
 
 .raster-thumbnail-container.active {
@@ -393,7 +360,6 @@
 }
 
 .raster-thumbnail-timestep-container {
-  position: absolute;
   top: .5rem;
   right: .5rem;
   background-color: var(--color-surface-2);
@@ -402,20 +368,17 @@
 }
 
 .raster-thumbnail-timestep {
-  color: var(--color-text-primary);
   font-size: .8rem;
 }
 
 /* Rail */
 .raster-rail-container {
-  position: absolute;
   right: .5rem;
   bottom: 0;
   background: transparent;
   border-radius: 1rem;
   padding: .5rem;
   max-height: 75%;
-  overflow-y: auto;
   overflow-x: hidden;
   z-index: 1;
 }
@@ -423,7 +386,6 @@
 /* Varios */
 
 .raster-frames-container {
-  width: 100%;
   overflow-x: scroll;
 }
 
@@ -480,7 +442,6 @@
 
 /* ====== SKELETON OVERLAYS ====== */
 .raster-skel {
-  position: absolute;
   z-index: 3;
   pointer-events: none;
 }
@@ -510,7 +471,6 @@
   bottom: 1rem;
   right: 1rem;
   max-height: 75%;
-  overflow-y: auto;
   overflow-x: hidden;
 }
 
@@ -539,7 +499,6 @@
 
 /* ====== METRICS BOTTOM BAR ====== */
 .raster-metrics-bar {
-  width: 100%;
   height: 40px;
   border-top: 1px solid var(--color-border);
 }
@@ -549,16 +508,13 @@
 }
 
 .raster-metrics-list {
-  height: 100%;
   margin-left: .25rem;
 }
 
 .raster-metric-item {
   padding: .55rem 1.5rem;
-  height: 100%;
   border-right: 1px solid var(--color-border);
   background-color: transparent;
-  color: var(--color-text-primary);
   font-size: .9rem;
 }
 
@@ -598,7 +554,6 @@
 }
 
 .raster-scene-header-views-container {
-  gap: 1rem;
 }
 
 /* Asegura que el contenido quede arriba de la aurora */
@@ -618,7 +573,6 @@
 .raster-metric-value {
   font-weight: 800;
   margin-left: .15rem;
-  color: var(--color-text-primary);
 }
 
 @media (max-width: 768px) {
@@ -635,16 +589,13 @@
 }
 
 .preloading-container {
-  position: absolute;
   top: 1rem;
   right: 1rem;
   z-index: 10;
   background: var(--glass-bg);
-  color: var(--color-text-primary);
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-size: 0.8rem;
-  gap: 0.5rem;
   border: 1px solid var(--color-border-soft);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);

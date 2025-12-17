@@ -9,7 +9,7 @@ interface SectionProps {
 
 const Section: React.FC<SectionProps> = ({ children, className = '' }) => {
     return(
-        <Container className={`settings-section ${className}`}>
+        <Container className={`settings-section ${className} p-relative`}>
             {children}
         </Container>
     );

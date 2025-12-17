@@ -1,5 +1,4 @@
 .editor-floating-container {
-    position: absolute;
     background-color: rgba(30, 30, 30, 0.3);
     border: 1px solid #212121;
     backdrop-filter: blur(15px);

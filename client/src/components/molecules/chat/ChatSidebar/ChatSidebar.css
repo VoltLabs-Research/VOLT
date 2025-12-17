@@ -4,7 +4,6 @@
     background: var(--glass-bg);
     backdrop-filter: blur(25px) saturate(180%);
     border-right: 1px solid var(--color-border-soft);
-    position: relative;
     z-index: 1;
     box-shadow:
         inset -1px 0 0 rgba(255, 255, 255, 0.1),
@@ -32,20 +31,15 @@
     border-bottom: 1px solid var(--color-border-soft);
     background: var(--color-surface-1);
     backdrop-filter: blur(10px);
-    position: relative;
     z-index: 1;
 }
 
 .chat-sidebar-header-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
     margin: 0 0 1rem 0;
     letter-spacing: -0.025em;
 }
 
 .chat-sidebar-search-container {
-    position: relative;
     background: var(--color-surface-2);
     backdrop-filter: blur(10px);
     border: 1px solid var(--color-border-soft);
@@ -53,7 +47,6 @@
     padding: 0.75rem 1rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 200px;
-    overflow: hidden;
 
     box-shadow:
         var(--shadow-glass),
@@ -70,7 +63,6 @@
 }
 
 .chat-sidebar-search-icon-container {
-    color: var(--color-text-secondary);
     font-size: 1.1rem;
     margin-right: 0.75rem;
 }
@@ -79,8 +71,6 @@
 
     background: transparent;
     border: none;
-    color: var(--color-text-primary);
-    font-size: 0.95rem;
     outline: none;
 }
 
@@ -91,16 +81,13 @@
 /* Conversation List */
 .chat-conversations-container {
 
-    overflow-y: auto;
     padding: 0.5rem 0;
 }
 
 .chat-conversation-item {
     padding: 1rem 1.5rem;
-    cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-bottom: 1px solid var(--color-border-soft);
-    position: relative;
     transform: translateX(0);
     background: var(--color-surface-1);
     backdrop-filter: blur(5px);
@@ -138,10 +125,8 @@
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
     color: white;
-    font-weight: 600;
     font-size: 1.1rem;
     margin-right: 1rem;
-    flex-shrink: 0;
 }
 
 .chat-conversation-avatar.group-avatar {
@@ -160,23 +145,16 @@
 }
 
 .chat-conversation-name {
-    font-weight: 600;
-    color: var(--color-text-primary);
-    font-size: 0.95rem;
     margin: 0;
 }
 
 .chat-conversation-time {
     font-size: 0.8rem;
-    color: var(--color-text-muted);
-    font-weight: 500;
 }
 
 .chat-conversation-preview {
     font-size: 0.9rem;
-    color: var(--color-text-secondary);
     line-height: 1.4;
-    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     margin: 0;
@@ -192,9 +170,6 @@
 }
 
 .chat-group-members-count {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
-    font-weight: 500;
 }
 
 /* New Chat Button */
@@ -205,11 +180,9 @@
     background: var(--accent-blue);
     border: none;
     color: white;
-    cursor: pointer;
     transition: all 0.2s ease;
     font-size: 1.1rem;
     margin-left: 0.75rem;
-    flex-shrink: 0;
 }
 
 .chat-new-chat-button:hover {
@@ -225,10 +198,8 @@
     background: var(--accent-purple);
     border: none;
     color: white;
-    cursor: pointer;
     transition: all 0.2s ease;
     font-size: 1.1rem;
-    flex-shrink: 0;
 }
 
 .chat-new-group-button:hover {
@@ -241,13 +212,10 @@
     background: var(--color-surface-2);
     border-bottom: 1px solid var(--color-border-soft);
     max-height: 200px;
-    overflow-y: auto;
 }
 
 .chat-team-members-title {
     font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin: 0;
@@ -256,7 +224,6 @@
 
 .chat-team-member-item {
     padding: 0.75rem 1.5rem;
-    cursor: pointer;
     transition: all 0.2s ease;
     border-bottom: 1px solid var(--color-border-soft);
 }
@@ -275,10 +242,8 @@
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent-green), var(--accent-teal));
     color: white;
-    font-weight: 600;
     font-size: 0.9rem;
     margin-right: 0.75rem;
-    flex-shrink: 0;
 }
 
 .chat-team-member-info {
@@ -287,27 +252,20 @@
 }
 
 .chat-team-member-name {
-    font-weight: 600;
-    color: var(--color-text-primary);
     font-size: 0.9rem;
     margin: 0 0 0.25rem 0;
 }
 
 .chat-team-member-email {
     font-size: 0.8rem;
-    color: var(--color-text-muted);
     margin: 0;
-    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 /* Empty State */
 .chat-empty-state {
-    height: 100%;
-    text-align: center;
     padding: 2rem;
-    color: var(--color-text-secondary);
 }
 
 /* Dark Mode */

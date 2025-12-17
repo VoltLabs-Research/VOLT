@@ -43,14 +43,14 @@ const IntegrationsSettings: React.FC = () => {
                 description="Connect your account with external services and platforms"
             />
 
-            <Container className="integrations-grid">
+            <Container className="integrations-grid gap-1">
                 {integrations.map((item) => (
                     <SettingsRow
                         key={item.key}
                         title={item.title}
                         description={item.description}
                         left={
-                            <Container className="d-flex flex-center integration-icon">
+                            <Container className="d-flex flex-center integration-icon color-primary">
                                 <item.icon size={24} />
                             </Container>
                         }
@@ -67,7 +67,7 @@ const IntegrationsSettings: React.FC = () => {
                 ))}
             </Container>
 
-            <Container className="integration-help">
+            <Container className="integration-help mt-1">
                 <Title className='font-size-2-5'>Need help with integrations?</Title>
                 <Paragraph>Check our documentation or contact support for assistance with setting up third-party connections.</Paragraph>
                 <Container className="d-flex gap-1 flex-wrap">

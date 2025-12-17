@@ -51,7 +51,7 @@ const ChatArea = () => {
     return (
         <div className='chat-messages-container d-flex flex-1 relative sm:column'>
             {currentChat ? (
-                <div className='chat-box-container d-flex column flex-1'>
+                <div className='chat-box-container d-flex column flex-1 p-relative'>
                     <ChatHeader
                         chat={currentChat as Chat}
                         currentParticipant={currentParticipant as Participant | null}

@@ -126,7 +126,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
                     >
                         <div className="d-flex items-center gap-05 file-explorer-list-name-container">
                             <TbServer className="file-explorer-icon" />
-                            <span className="file-explorer-nav-item-title">{conn.name}</span>
+                            <span className="file-explorer-nav-item-title font-weight-4">{conn.name}</span>
                         </div>
                         <div className="d-flex gap-025 ssh-connection-actions" style={{ opacity: 0.5 }}>
                             <LuSettings
@@ -244,7 +244,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
                 entries.map((entry) => (
                     <div
                         key={entry.name}
-                        className={`file-explorer-list-row ${selected === entry.relPath ? 'selected' : ''}`}
+                        className={`file-explorer-list-row ${selected === entry.relPath ? 'selected' : ''} items-center`}
                         onClick={() => select(entry.relPath)}
                         onDoubleClick={() => entry.type === 'dir' ? enter(entry.name) : null}
                     >

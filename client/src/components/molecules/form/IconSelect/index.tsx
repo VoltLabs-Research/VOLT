@@ -65,14 +65,14 @@ const VirtualizedRow = (props: any) => {
     return (
         <div
             style={style}
-            className={`d-flex items-center gap-05 icon-select-option ${isActive ? 'is-active' : ''} ${isSelected ? 'is-selected' : ''}`}
+            className={`d-flex items-center gap-05 icon-select-option ${isActive ? 'is-active' : ''} ${isSelected ? 'is-selected' : ''} color-primary u-select-none cursor-pointer`}
             onClick={() => onSelect(iconName)}
             onMouseEnter={() => onHighlight(index)}
         >
-            <div className="d-flex flex-center icon-select-option-icon">
+            <div className="d-flex flex-center icon-select-option-icon f-shrink-0">
                 <DynamicIcon iconName={iconName} size={18} />
             </div>
-            <span className="flex-1 icon-select-option-name">{iconName}</span>
+            <span className="flex-1 icon-select-option-name overflow-hidden">{iconName}</span>
         </div>
     );
 };
@@ -226,14 +226,14 @@ const IconSelect: React.FC<IconSelectProps> = ({
     const dropdownContent = (
         <div
             ref={dropdownRef}
-            className="d-flex column icon-select-dropdown"
+            className="d-flex column icon-select-dropdown p-absolute w-max overflow-hidden"
             style={renderInPortal && portalStyle ? portalStyle : undefined}
         >
             <div className="icon-select-search">
                 <input
                     ref={searchInputRef}
                     type="text"
-                    className="icon-select-search-input"
+                    className="icon-select-search-input w-max color-primary"
                     placeholder="Search icons..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -241,13 +241,13 @@ const IconSelect: React.FC<IconSelectProps> = ({
                 />
             </div>
 
-            <div className="flex-1 icon-select-list" ref={listContainerRef}>
+            <div className="flex-1 icon-select-list y-auto" ref={listContainerRef}>
                 {loading ? (
-                    <div className="d-flex flex-center gap-05 icon-select-loading">Loading all icons...</div>
+                    <div className="d-flex flex-center gap-05 icon-select-loading color-muted">Loading all icons...</div>
                 ) : isFiltering ? (
-                    <div className="d-flex flex-center gap-05 icon-select-loading">Filtering...</div>
+                    <div className="d-flex flex-center gap-05 icon-select-loading color-muted">Filtering...</div>
                 ) : filteredIcons.length === 0 ? (
-                    <div className="d-flex flex-center icon-select-empty">No icons found</div>
+                    <div className="d-flex flex-center icon-select-empty color-muted">No icons found</div>
                 ) : (
                     <div style={{ height: LIST_HEIGHT, overflow: 'auto' }}>
                         <List
@@ -267,7 +267,7 @@ const IconSelect: React.FC<IconSelectProps> = ({
             </div>
 
             {!loading && !isFiltering && filteredIcons.length > 0 && (
-                <div className="icon-select-count">
+                <div className="icon-select-count color-muted">
                     {filteredIcons.length.toLocaleString()} icons
                 </div>
             )}
@@ -277,24 +277,24 @@ const IconSelect: React.FC<IconSelectProps> = ({
     return (
         <div
             ref={rootRef}
-            className={`icon-select ${open ? 'is-open' : ''}`}
+            className={`icon-select ${open ? 'is-open' : ''} p-relative w-max`}
         >
             <button
                 ref={triggerRef}
                 type="button"
-                className="d-flex items-center gap-05 icon-select-trigger"
+                className="d-flex items-center gap-05 icon-select-trigger w-max color-primary cursor-pointer"
                 onClick={() => setOpen(!open)}
             >
                 {value && (
-                    <div className="d-flex flex-center icon-select-trigger-preview">
+                    <div className="d-flex flex-center icon-select-trigger-preview f-shrink-0">
                         <DynamicIcon iconName={value} size={18} />
                     </div>
                 )}
-                <span className={`flex-1 icon-select-trigger-value ${!value ? 'is-placeholder' : ''}`}>
+                <span className={`flex-1 icon-select-trigger-value ${!value ? 'is-placeholder' : ''} overflow-hidden`}>
                     {value || placeholder}
                 </span>
                 <svg
-                    className="icon-select-chevron"
+                    className="icon-select-chevron f-shrink-0"
                     width="18"
                     height="18"
                     viewBox="0 0 24 24"

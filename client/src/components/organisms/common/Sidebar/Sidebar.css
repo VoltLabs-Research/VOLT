@@ -1,5 +1,4 @@
 .editor-sidebar-wrapper {
-    position: absolute;
     left: .5rem;
     top: 50%;
     transform: translateY(-50%);
@@ -12,8 +11,6 @@
     background-color: rgba(29, 29, 29, 0.1) !important;
     border-radius: 1rem;
     padding: 0;
-    height: 100%;
-    width: 100%;
     gap: 0;
 
 }
@@ -84,12 +81,9 @@
 }
 
 .editor-sidebar-toggle-btn {
-    position: relative;
     z-index: 5;
-    align-items: center;
     border-radius: 9999px;
     background: transparent;
-    cursor: pointer;
     color: #dadada;
     transition: background 120ms ease, border-color 120ms ease;
 }

@@ -3,8 +3,8 @@ import { Skeleton } from '@mui/material';
 
 const MetricsBarSkeleton: React.FC<{ count?: number }> = ({ count = 4 }) => {
     return(
-        <div className='raster-metrics-bar'>
-            <div className='raster-metrics-list' style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+        <div className='raster-metrics-bar w-max'>
+            <div className='raster-metrics-list h-max' style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
                 {Array.from({ length: count }, (_, i) => (
                     <Skeleton
                         key={`metric-skel-${i}`}

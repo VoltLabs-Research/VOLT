@@ -4,7 +4,6 @@
     background: var(--glass-bg);
     backdrop-filter: blur(25px) saturate(180%);
     border-left: 1px solid var(--color-border-soft);
-    position: relative;
     z-index: 1;
     box-shadow:
         inset 1px 0 0 rgba(255, 255, 255, 0.1),
@@ -18,15 +17,10 @@
 }
 
 .chat-details-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
     margin: 0;
 }
 
 .chat-details-content {
-    flex: 1;
-    overflow-y: auto;
     padding: 1.5rem;
 }
 
@@ -36,8 +30,6 @@
 
 .chat-details-section-title {
     font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin: 0 0 1rem 0;
@@ -45,7 +37,6 @@
 
 /* User Info */
 .chat-details-user-info {
-    text-align: center;
     padding: 1.5rem;
 }
 
@@ -55,22 +46,16 @@
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
     color: white;
-    font-weight: 600;
-    font-size: 2rem;
     margin-bottom: 1rem;
 }
 
 .chat-details-name {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
     margin: 0 0 0.5rem 0;
 }
 
 .chat-details-status {
     font-size: 0.9rem;
     color: var(--accent-green);
-    font-weight: 500;
 }
 
 .chat-details-status::before {
@@ -87,7 +72,6 @@
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
     border-radius: 0.5rem;
-    cursor: pointer;
     transition: all 0.2s ease;
 }
 
@@ -101,21 +85,15 @@
     height: 36px;
     border-radius: 50%;
     background: var(--color-surface-3);
-    color: var(--color-text-secondary);
-    font-size: 1rem;
 }
 
 .chat-details-action-text {
-    font-weight: 500;
-    color: var(--color-text-primary);
     font-size: 0.9rem;
 }
 
 /* No Selection State */
 .chat-no-selection {
     padding: 3rem 2rem;
-    text-align: center;
-    height: 100%;
     min-height: 300px;
 }
 
@@ -124,28 +102,19 @@
     height: 4rem;
     background: var(--color-surface-2);
     border-radius: 50%;
-    color: var(--color-text-secondary);
-    font-size: 1.5rem;
     margin-bottom: 1rem;
 }
 
 .chat-no-selection-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
     margin: 0 0 0.5rem 0;
 }
 
 .chat-no-selection-description {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
     margin: 0;
-    line-height: 1.5;
 }
 
 /* Group Info */
 .chat-group-info {
-    text-align: center;
     padding: 1.5rem;
 }
 
@@ -155,28 +124,21 @@
     border-radius: 50%;
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
-    font-size: 2rem;
     margin-bottom: 1rem;
 }
 
 .chat-group-name {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
     margin: 0 0 0.5rem 0;
 }
 
 .chat-group-description {
     font-size: 0.9rem;
-    color: var(--color-text-secondary);
     margin: 0 0 0.5rem 0;
     line-height: 1.4;
 }
 
 .chat-group-members-count {
     font-size: 0.8rem;
-    color: var(--color-text-muted);
-    font-weight: 500;
 }
 
 /* Dark Mode */

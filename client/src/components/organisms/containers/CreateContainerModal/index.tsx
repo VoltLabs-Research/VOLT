@@ -101,9 +101,9 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
             id='create-container-modal'
             title='Create Container'
             width='600px'
-            className='create-container-modal'
+            className='create-container-modal w-max'
         >
-            <form onSubmit={handleSubmit} className='d-flex column gap-1-25 modal-body'>
+            <form onSubmit={handleSubmit} className='d-flex column gap-1-25 modal-body y-auto'>
                 <div className='d-flex column gap-05 form-group'>
                     <label>Container Name</label>
                     <input
@@ -141,7 +141,7 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                     </select>
                 </div>
 
-                <div className='d-flex column gap-075 form-section'>
+                <div className='d-flex column gap-075 form-section p-relative gap-1 vh-max'>
                     <div className='d-flex content-between items-center section-header'>
                         <label>Environment Variables</label>
                         <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddEnv}>
@@ -167,7 +167,7 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                     ))}
                 </div>
 
-                <div className='form-section'>
+                <div className='form-section p-relative gap-1 vh-max'>
                     <div className='d-flex content-between items-center section-header'>
                         <label>Port Mapping</label>
                         <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddPort}>
@@ -176,7 +176,7 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                     </div>
                     {ports.map((port, i) => (
                         <div key={i} className='d-flex items-center gap-075 port-row'>
-                            <div className='d-flex column gap-025 port-input'>
+                            <div className='d-flex column gap-025 port-input flex-1'>
                                 <span>Container</span>
                                 <input
                                     type='number'
@@ -185,7 +185,7 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                                 />
                             </div>
                             <div className='port-arrow'>→</div>
-                            <div className='d-flex column gap-025 port-input'>
+                            <div className='d-flex column gap-025 port-input flex-1'>
                                 <span>Host</span>
                                 <input
                                     type='number'

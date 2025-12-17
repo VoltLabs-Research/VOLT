@@ -314,26 +314,26 @@ const DashboardLayout = () => {
 
             <Container className='d-flex items-center content-between dashboard-layout-header-container'>
                 <Container ref={mobileMenuWrapperRef} className='p-relative d-none sm:d-block'>
-                    <Container className='d-flex content-center items-center mobile-menu-trigger badge-container as-icon-container over-light-bg' onClick={() => setMobileMenuOpen((v) => !v)}>
+                    <Container className='d-flex content-center items-center mobile-menu-trigger badge-container as-icon-container over-light-bg p-relative p-absolute' onClick={() => setMobileMenuOpen((v) => !v)}>
                         <IoMenuOutline />
                     </Container>
                     {mobileMenuOpen && (
-                        <Container className='mobile-dropdown' onMouseDown={(e) => e.stopPropagation()}>
+                        <Container className='mobile-dropdown p-absolute overflow-hidden' onMouseDown={(e) => e.stopPropagation()}>
                             <Container className='mobile-dropdown-section'>
-                                <Container className='d-flex gap-1 search-container'>
+                                <Container className='d-flex gap-1 search-container color-primary'>
                                     <i className='search-icon-container'>
                                         <IoSearchOutline />
                                     </i>
                                     <input
                                         placeholder='Search'
-                                        className='search-input '
+                                        className='search-input  h-max'
                                         value={localQuery}
                                         onChange={(e) => setLocalQuery(e.target.value)}
                                     />
                                 </Container>
                             </Container>
                             <Container className='mobile-dropdown-section'>
-                                <nav className='d-flex column gap-05 mobile-nav-list'>
+                                <nav className='d-flex column gap-05 mobile-nav-list w-max'>
                                     {navItems.map(([name, Icon, to], index) => (
                                         <Button
                                             key={`mdrop-${index}`}
@@ -342,8 +342,8 @@ const DashboardLayout = () => {
                                             size='sm'
                                             block
                                             align='start'
-                                            className={`mobile-nav-item ${(index === 0) ? 'is-selected' : ''}`}
-                                            leftIcon={<i className='mobile-nav-icon'><Icon /></i>}
+                                            className={`mobile-nav-item ${(index === 0) ? 'is-selected' : ''} color-primary`}
+                                            leftIcon={<i className='mobile-nav-icon color-primary'><Icon /></i>}
                                             onClick={() => { navigate(to); setMobileMenuOpen(false); }}
                                         >
                                             <span className='mobile-nav-name'>{name}</span>
@@ -365,7 +365,7 @@ const DashboardLayout = () => {
                                     />
                                 </Container>
                                 <button
-                                    className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
+                                    className='d-flex content-center items-center badge-container as-icon-container over-light-bg p-absolute'
                                     onClick={() => {
                                         setMobileMenuOpen(false);
                                         const modal = document.getElementById('team-creator-modal') as HTMLDialogElement;
@@ -397,13 +397,13 @@ const DashboardLayout = () => {
                 </Container>
 
                 <Container className='d-flex gap-05 items-center dashboard-search-container'>
-                    <Container className='d-flex gap-1 search-container'>
+                    <Container className='d-flex gap-1 search-container color-primary'>
                         <i className='search-icon-container'>
                             <IoSearchOutline />
                         </i>
                         <input
                             placeholder='Search'
-                            className='search-input '
+                            className='search-input  h-max'
                             value={localQuery}
                             onChange={(e) => setLocalQuery(e.target.value)}
                         />
@@ -428,14 +428,14 @@ const DashboardLayout = () => {
                         id="team-invite-popover"
                         trigger={
                             <button
-                                className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
+                                className='d-flex content-center items-center badge-container as-icon-container over-light-bg p-absolute'
                                 title='Invite members or share team'
                                 aria-label='Invite members or share team'
                             >
                                 <GoPersonAdd size={20} />
                             </button>
                         }
-                        className="team-invite-panel glass-bg d-flex column"
+                        className="team-invite-panel glass-bg d-flex column overflow-hidden"
                         noPadding
                     >
                         {selectedTeam && (
@@ -448,7 +448,7 @@ const DashboardLayout = () => {
                     </Popover>
 
                     <button
-                        className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
+                        className='d-flex content-center items-center badge-container as-icon-container over-light-bg p-absolute'
                         onClick={() => {
                             const modal = document.getElementById('team-creator-modal') as HTMLDialogElement;
                             if (modal && !modal.open) {
@@ -461,7 +461,7 @@ const DashboardLayout = () => {
                 </Container>
 
                 <Container className='d-flex gap-1-5 sm:d-flex sm:gap-05 dashboard-user-container'>
-                    <Container className='d-flex content-center items-center badge-container as-icon-container over-light-bg'>
+                    <Container className='d-flex content-center items-center badge-container as-icon-container over-light-bg p-absolute'>
                         <IoSettingsOutline />
                     </Container>
 
@@ -470,22 +470,22 @@ const DashboardLayout = () => {
                             id="notifications-popover"
                             trigger={
                                 <button
-                                    className='d-flex content-center items-center badge-container as-icon-container over-light-bg dashboard-bell-trigger cursor-pointer'
+                                    className='d-flex content-center items-center badge-container as-icon-container over-light-bg dashboard-bell-trigger cursor-pointer p-relative p-absolute'
                                     type="button"
                                 >
                                     <IoNotificationsOutline size={18} />
                                     {unreadCount > 0 && (
-                                        <span className='d-flex items-center content-center notification-badge'>{unreadCount > 99 ? '99+' : unreadCount}</span>
+                                        <span className='d-flex items-center content-center notification-badge p-absolute'>{unreadCount > 99 ? '99+' : unreadCount}</span>
                                     )}
                                 </button>
                             }
-                            className="dashboard-notifications-dropdown glass-bg p-0"
+                            className="dashboard-notifications-dropdown glass-bg p-0 overflow-auto"
                             noPadding
                         >
                             <Container className='d-flex items-center content-between color-primary font-weight-6 dashboard-notifications-header'>
                                 <span>Notifications</span>
                                 <button
-                                    className='dashboard-notifications-close'
+                                    className='dashboard-notifications-close color-secondary cursor-pointer'
                                     popoverTarget="notifications-popover"
                                     popoverTargetAction="hide"
                                     onClick={(e) => e.stopPropagation()}
@@ -494,7 +494,7 @@ const DashboardLayout = () => {
                             <Container ref={notificationBodyRef} className='dashboard-notifications-body'>
                                 {loading ? (
                                     Array.from({ length: 5 }).map((_, i) => (
-                                        <div key={`notif-skel-${i}`} className='dashboard-notification-item'>
+                                        <div key={`notif-skel-${i}`} className='dashboard-notification-item cursor-pointer'>
                                             <Skeleton variant='text' width='60%' height={20} />
                                             <Skeleton variant='text' width='90%' height={16} />
                                         </div>
@@ -502,12 +502,12 @@ const DashboardLayout = () => {
                                 ) : (
                                     <>
                                         {notificationList.length === 0 && (
-                                            <div className='dashboard-notifications-empty'>No notifications</div>
+                                            <div className='dashboard-notifications-empty text-center color-secondary'>No notifications</div>
                                         )}
                                         {notificationList.map((n) => (
                                             <div
                                                 key={n._id}
-                                                className={`dashboard-notification-item ${n.read ? 'is-read' : ''}`}
+                                                className={`dashboard-notification-item ${n.read ? 'is-read' : ''} cursor-pointer`}
                                                 data-notification-id={n._id}
                                                 data-notification-read={n.read}
                                                 onClick={() => {
@@ -516,8 +516,8 @@ const DashboardLayout = () => {
                                                     document.getElementById('notifications-popover')?.hidePopover();
                                                 }}
                                             >
-                                                <div className='dashboard-notification-title'>{n.title}</div>
-                                                <div className='dashboard-notification-content'>{n.content}</div>
+                                                <div className='dashboard-notification-title font-weight-6 color-primary'>{n.title}</div>
+                                                <div className='dashboard-notification-content color-secondary'>{n.content}</div>
                                             </div>
                                         ))}
                                     </>

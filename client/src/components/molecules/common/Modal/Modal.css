@@ -64,14 +64,9 @@ dialog.volt-modal[open]::backdrop {
 .volt-modal-close-btn {
     background: transparent;
     border: none;
-    cursor: pointer;
-    color: var(--color-text-secondary);
     padding: 4px;
     border-radius: 4px;
     transition: color 0.15s, background 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .volt-modal-close-btn:hover {

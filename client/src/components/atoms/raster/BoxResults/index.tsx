@@ -39,16 +39,16 @@ const formatValue = (value: any, format?: string, decimals: number = 2): string 
 
 const BoxResults = ({ data, config, onItemSelect }: BoxResultsProps) => {
     return (
-        <EditorWidget draggable={false} className='d-flex column gap-1 box-results-container'>
+        <EditorWidget draggable={false} className='d-flex column gap-1 box-results-container p-absolute'>
             <div className='d-flex column gap-075 box-results-header-container'>
-                <Title className='font-size-3 box-results-header-title'>{config.title}</Title>
+                <Title className='font-size-3 box-results-header-title font-weight-6'>{config.title}</Title>
             </div>
 
-            <div className='d-flex column gap-075 box-results-body-container'>
+            <div className='d-flex column gap-075 box-results-body-container y-auto'>
                 {data.map((item: any, index: number) => (
                     <div
                         key={index}
-                        className='box-result-item'
+                        className='box-result-item cursor-pointer'
                         onClick={() => onItemSelect?.(item)}
                     >
                         <div className='box-result-data-container'>
@@ -58,8 +58,8 @@ const BoxResults = ({ data, config, onItemSelect }: BoxResultsProps) => {
                                 return (
                                     <div key={metric.key} className={`box-result-data ${metric.as_record_title ? 'as-record-title d-flex items-center gap-1' : ''}`}>
                                         <div className='d-flex content-between items-center box-result-data-content'>
-                                            <span className='data-label'>{metric.label}</span>
-                                            <span className='data-value'>
+                                            <span className='data-label font-weight-5'>{metric.label}</span>
+                                            <span className='data-value font-size-2'>
                                                 {formattedValue}
                                                 {metric.unit && ` ${metric.unit}`}
                                             </span>

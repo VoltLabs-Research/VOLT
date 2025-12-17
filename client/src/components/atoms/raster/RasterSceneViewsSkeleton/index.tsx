@@ -3,7 +3,7 @@ import { Skeleton } from '@mui/material';
 
 const RasterSceneViewsSkeleton: React.FC = () => {
     return(
-        <div className='raster-scene-header-views-container'>
+        <div className='raster-scene-header-views-container gap-1'>
             <i className='raster-scene-header-views-icon-container'>
                 <Skeleton
                     variant='circular'

@@ -8,7 +8,6 @@
 }
 
 .editor-top-centered-options-container {
-    position: absolute;
     top: 2rem;
     left: 50%;
     transform: translate(-50%, 0) !important;
@@ -20,7 +19,6 @@
 }
 
 .editor-scene-zoom-selector-wrapper {
-    position: relative;
     z-index: 100;
 }
 

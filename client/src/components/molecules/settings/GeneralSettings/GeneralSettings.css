@@ -12,22 +12,16 @@
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
     color: white;
-    font-size: 1.5rem;
-    font-weight: 600;
     letter-spacing: 0.05em;
 }
 
 .profile-name {
     font-size: 1.75rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
     margin: 0 0 0.5rem 0;
     letter-spacing: -0.025em;
 }
 
 .profile-email {
-    font-size: 1rem;
-    color: var(--color-text-secondary);
     margin: 0 0 1rem 0;
 }
 
@@ -35,21 +29,15 @@
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    overflow: hidden;
-    cursor: pointer;
 }
 
 .profile-avatar-img {
-    width: 100%;
-    height: 100%;
     object-fit: cover;
 }
 
 .profile-avatar-overlay {
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     opacity: 0;
     transition: opacity 0.2s ease;

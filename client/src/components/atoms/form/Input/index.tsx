@@ -283,7 +283,7 @@ const Input: React.FC<InputProps> = ({
                 }}
             >
                 <Container className="d-flex content-between items-center expression-dropdown-header">
-                    <span className="expression-dropdown-title">Available Data</span>
+                    <span className="expression-dropdown-title font-weight-6">Available Data</span>
                     <span className="expression-dropdown-hint">↑↓ Navigate • Enter Select • Esc Close</span>
                 </Container>
                 <Container className="y-auto p-05">
@@ -300,8 +300,8 @@ const Input: React.FC<InputProps> = ({
                             return(
                                 <Container key={nodeName} className="expression-group">
                                     <Container className="d-flex items-center gap-05 expression-group-header">
-                                        <span className="expression-group-icon">{config?.icon?.replace('Tb', '') || '📦'}</span>
-                                        <span className="expression-group-name">{nodeName}</span>
+                                        <span className="expression-group-icon font-size-1">{config?.icon?.replace('Tb', '') || '📦'}</span>
+                                        <span className="expression-group-name flex-1 font-size-1 font-weight-6">{nodeName}</span>
                                         <span className="expression-group-type">{config?.label || nodeType}</span>
                                     </Container>
                                     {expressions.map((expr) => {
@@ -309,13 +309,13 @@ const Input: React.FC<InputProps> = ({
                                         return(
                                             <Container
                                                 key={`${expr.nodeId}-${expr.path}`}
-                                                className={`expression-item ${globalIndex === selectedIndex ? 'expression-item--selected' : ''}`}
+                                                className={`expression-item ${globalIndex === selectedIndex ? 'expression-item--selected' : ''} cursor-pointer`}
                                                 onClick={() => insertExpression(expr)}
                                                 onMouseEnter={() => setSelectedIndex(globalIndex)}
                                             >
                                                 <Container className="d-flex items-center gap-05">
-                                                    <span className="expression-item-path">{expr.path}</span>
-                                                    <span className={`expression-item-type expression-item-type--${expr.type}`}>
+                                                    <span className="expression-item-path font-weight-5">{expr.path}</span>
+                                                    <span className={`expression-item-type expression-item-type--${expr.type} font-weight-5`}>
                                                         {expr.type}
                                                     </span>
                                                 </Container>
@@ -337,7 +337,7 @@ const Input: React.FC<InputProps> = ({
 
     if(multiline){
         return(
-            <Container className="p-relative w-max input-wrapper">
+            <Container className="p-relative w-max input-wrapper flex-1">
                 <textarea
                     ref={inputRef as React.RefObject<HTMLTextAreaElement>}
                     value={String(value)}
@@ -353,7 +353,7 @@ const Input: React.FC<InputProps> = ({
                     rows={rows}
                 />
                 {hasExpression && (
-                    <Container className="expression-badge" title="Contains dynamic expression">
+                    <Container className="expression-badge p-absolute font-weight-6" title="Contains dynamic expression">
                         <span>{'{ }'}</span>
                     </Container>
                 )}
@@ -365,7 +365,7 @@ const Input: React.FC<InputProps> = ({
     // If expression autocomplete is enabled, wrap in container
     if(isExpressionEnabled){
         return(
-            <Container className="p-relative w-max input-wrapper">
+            <Container className="p-relative w-max input-wrapper flex-1">
                 <input
                     ref={inputRef as React.RefObject<HTMLInputElement>}
                     type={type}
@@ -384,7 +384,7 @@ const Input: React.FC<InputProps> = ({
                     required={required}
                 />
                 {hasExpression && (
-                    <div className="expression-badge" title="Contains dynamic expression">
+                    <div className="expression-badge p-absolute font-weight-6" title="Contains dynamic expression">
                         <span>{'{ }'}</span>
                     </div>
                 )}

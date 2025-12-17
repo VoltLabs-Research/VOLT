@@ -42,13 +42,13 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
     return (
         <Container className="d-flex column gap-05">
             {description && (
-                <Paragraph className="kv-editor-description">{description}</Paragraph>
+                <Paragraph className="kv-editor-description font-size-1">{description}</Paragraph>
             )}
 
             {entries.map(([key, value], index) => (
                 <Container key={index} className="d-flex gap-05 items-start">
                     <Container className="flex-1 d-flex column">
-                        {index === 0 && <label className="kv-editor-label">{keyLabel}</label>}
+                        {index === 0 && <label className="kv-editor-label font-weight-5">{keyLabel}</label>}
                         <FormField
                             label=""
                             fieldKey="key"
@@ -61,7 +61,7 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
                         />
                     </Container>
                     <Container className="flex-1 d-flex column">
-                        {index === 0 && <label className="kv-editor-label">{valueLabel}</label>}
+                        {index === 0 && <label className="kv-editor-label font-weight-5">{valueLabel}</label>}
                         <FormField
                             label=""
                             fieldKey="value"

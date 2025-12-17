@@ -98,13 +98,13 @@ const RasterScene: React.FC<RasterSceneProps> = ({
 
   if (!scene?.data) {
     return (
-      <figure className="d-flex column raster-scene-container" style={{ flex: 1, minWidth: 0 }}>
-        <div className="raster-scene-topbar sm:d-flex sm:column sm:gap-05">
+      <figure className="d-flex column raster-scene-container p-relative w-max h-max" style={{ flex: 1, minWidth: 0 }}>
+        <div className="raster-scene-topbar sm:d-flex sm:column sm:gap-05 p-relative w-max items-center">
           <div className="raster-scene-topbar-center">
             <AnalysisSelect {...analysisSelect} />
           </div>
         </div>
-        <div className="d-flex flex-center items-center raster-scene-main">
+        <div className="d-flex flex-center items-center raster-scene-main flex-1">
           <Skeleton
             variant="rectangular"
             animation="wave"
@@ -113,7 +113,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             sx={{ borderRadius: '0.75rem', bgcolor: 'rgba(255,255,255,0.06)' }}
           />
         </div>
-        <div className="raster-scene-bottombar">
+        <div className="raster-scene-bottombar items-center">
           <PlaybackControls {...playbackControls} />
         </div>
         <ModelRail {...modelRail} />
@@ -125,12 +125,12 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   const modelName = scene.model ? scene.model[0].toUpperCase() + scene.model.slice(1) : 'Unknown';
 
   return (
-    <figure className="d-flex column raster-scene-container" style={{ flex: 1, minWidth: 0, position: 'relative' }}>
-      <div className="raster-scene-topbar sm:d-flex sm:column sm:gap-05">
+    <figure className="d-flex column raster-scene-container p-relative w-max h-max" style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+      <div className="raster-scene-topbar sm:d-flex sm:column sm:gap-05 p-relative w-max items-center">
         <div className="raster-scene-topbar-center">
           <AnalysisSelect {...analysisSelect} />
         </div>
-        <div className="d-flex items-center gap-05 raster-scene-topbar-right">
+        <div className="d-flex items-center gap-05 raster-scene-topbar-right p-relative">
           <Button
             variant='ghost'
             intent='neutral'
@@ -145,7 +145,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
             <LuDownload size={18} />
           </Button>
           {isMenuOpen && (
-            <div className="d-flex column raster-scene-download-menu">
+            <div className="d-flex column raster-scene-download-menu p-absolute">
               <Button variant='ghost' intent='neutral' size='sm' align='start' block onClick={handleDownloadDislocations} disabled={!scene?.analysisId}>
                 Dislocations data (JSON)
               </Button>
@@ -160,7 +160,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
         </div>
       </div>
 
-      <div className="d-flex flex-center items-center raster-scene-main">
+      <div className="d-flex flex-center items-center raster-scene-main flex-1">
         {/*scene.data && !showModel3D && (
           <div
             style={{
@@ -225,7 +225,7 @@ const RasterScene: React.FC<RasterSceneProps> = ({
         </AnimatePresence>
       </div>
 
-      <div className="raster-scene-bottombar">
+      <div className="raster-scene-bottombar items-center">
         <PlaybackControls {...playbackControls} />
       </div>
 

@@ -193,7 +193,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
     );
 
     const FileRowSkeleton = () => (
-        <div className='file-explorer-list-row'>
+        <div className='file-explorer-list-row items-center'>
             <div className='d-flex items-center gap-05 file-explorer-list-column file-explorer-list-name-container'>
                 <Skeleton variant="circular" width={18} height={18} />
                 <Skeleton variant="text" width="60%" height={18} />
@@ -226,7 +226,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                 ))
             ) : trajectories.length === 0 ? (
                 <div className='file-explorer-nav-item'>
-                    <Title className='font-size-3 file-explorer-nav-item-title' style={{ opacity: 0.5 }}>No trajectories available</Title>
+                    <Title className='font-size-3 file-explorer-nav-item-title font-weight-4' style={{ opacity: 0.5 }}>No trajectories available</Title>
                 </div>
             ) : (
                 trajectories.map((traj) => (
@@ -236,7 +236,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                         onClick={() => navigateToTrajectory(traj.id)}
                         style={{ cursor: 'pointer' }}
                     >
-                        <Title className='font-size-3 file-explorer-nav-item-title'>{traj.name}</Title>
+                        <Title className='font-size-3 file-explorer-nav-item-title font-weight-4'>{traj.name}</Title>
                     </div>
                 ))
             )}
@@ -291,7 +291,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
     ) : entries.map((e) => (
         <div
             key={e.relPath}
-            className={`file-explorer-list-row ${selected === e.relPath ? 'selected' : ''}`}
+            className={`file-explorer-list-row ${selected === e.relPath ? 'selected' : ''} items-center`}
             onDoubleClick={() => handleDoubleClick(e)}
             onClick={() => select(e.relPath)}
         >

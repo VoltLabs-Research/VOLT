@@ -130,7 +130,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
         iconOnly ? 'icon-only' : '',
         premium ? 'premium' : '',
         className
-    ].filter(Boolean).join(' ');
+        , 'p-relative', 'items-center', 'content-center', 'font-weight-5', 'u-select-none', 'cursor-pointer'].filter(Boolean).join(' ');
 
     return (
         <button
@@ -142,12 +142,12 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
             {...props}
         >
             {isLoading && (
-                <div className="button-loader">
+                <div className="button-loader p-absolute d-flex items-center content-center">
                     <Loader2 className="animate-spin" size={size === 'sm' ? 14 : size === 'lg' ? 20 : 18} />
                 </div>
             )}
 
-            {leftIcon && <span className="button-icon-left">{leftIcon}</span>}
+            {leftIcon && <span className="button-icon-left font-size-4">{leftIcon}</span>}
             {children}
             {rightIcon && <span className="button-icon-right">{rightIcon}</span>}
         </button>

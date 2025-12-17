@@ -102,7 +102,7 @@ const PluginsListing = () => {
             key: 'modifier.name',
             render: (_value, row) => (
                 <span
-                    className='plugin-name-link'
+                    className='plugin-name-link font-weight-5 cursor-pointer'
                     onClick={() => handleRowClick(row)}
                 >
                     {row?.modifier?.name ?? row?.slug ?? '—'}
@@ -136,7 +136,7 @@ const PluginsListing = () => {
             sortable: true,
             key: 'validated',
             render: (value) => (
-                <span className={`d-flex items-center validation-badge ${value ? 'validated' : 'not-validated'}`}>
+                <span className={`d-flex items-center validation-badge ${value ? 'validated' : 'not-validated'} font-size-1 font-weight-5`}>
                     {value ? 'Yes' : 'No'}
                 </span>
             ),
@@ -148,7 +148,7 @@ const PluginsListing = () => {
             key: 'exposures',
             render: (_value, row) => {
                 const count = row?.exposures?.length ?? 0;
-                return <span className='d-flex flex-center exposure-count'>{count}</span>;
+                return <span className='d-flex flex-center exposure-count font-size-1 font-weight-6'>{count}</span>;
             },
             skeleton: { variant: 'text', width: 60 }
         },

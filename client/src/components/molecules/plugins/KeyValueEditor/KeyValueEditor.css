@@ -1,14 +1,11 @@
 .kv-editor-description {
-    font-size: 0.75rem;
     color: var(--gray-500);
     margin: 0 0 0.5rem 0;
     line-height: 1.4;
 }
 
-
 .kv-editor-label {
     font-size: 0.7rem;
-    font-weight: 500;
     color: var(--gray-600);
     margin-bottom: 0.35rem;
 }
@@ -19,9 +16,7 @@
     border: 1px solid var(--red-200);
     border-radius: 4px;
     color: var(--red-600);
-    cursor: pointer;
     transition: all 0.15s ease;
-    flex-shrink: 0;
 }
 
 .kv-editor-remove:hover {
@@ -29,14 +24,11 @@
 }
 
 .kv-editor-add {
-    width: 100%;
     padding: 0.5rem;
     background: var(--gray-100);
     border: 1px solid var(--gray-300);
     border-radius: 4px;
     color: var(--gray-700);
-    font-size: 0.75rem;
-    cursor: pointer;
     margin-top: 0.25rem;
     transition: all 0.15s ease;
 }

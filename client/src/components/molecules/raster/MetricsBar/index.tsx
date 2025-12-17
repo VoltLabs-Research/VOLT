@@ -27,8 +27,8 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
     if (isLoading) return <MetricsBarSkeleton count={4} />;
 
     return (
-        <div className='d-flex items-center gap-075 raster-metrics-bar'>
-            <div className='d-flex flex-wrap items-center h-100 ml-025 raster-metrics-list'>
+        <div className='d-flex items-center gap-075 raster-metrics-bar w-max'>
+            <div className='d-flex flex-wrap items-center h-100 ml-025 raster-metrics-list h-max'>
                 {items.map((item) => (
                     <MetricItem key={item.key} label={item.label} value={item.value} icon={item.icon} />
                 ))}
@@ -40,7 +40,7 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                         <ToggleOption
                             key={exposure.exposureId}
                             isVisible={!!activeExposures[exposure.exposureId]}
-                            className={`d-flex items-center gap-05 raster-metric-item modifier-result ${activeExposures[exposure.exposureId] ? "active" : ""}`}
+                            className={`d-flex items-center gap-05 raster-metric-item modifier-result ${activeExposures[exposure.exposureId] ? "active" : ""} h-max color-primary`}
                             onToggle={() => onToggleExposure(exposure.exposureId)}
                             label={exposure.displayName}
                             // @ts-ignore
@@ -56,7 +56,7 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                         <ToggleOption
                             key={tool.id}
                             isVisible={tool.isActive}
-                            className={`d-flex items-center gap-05 raster-metric-item modifier-result ${tool.isActive ? "active" : ""}`}
+                            className={`d-flex items-center gap-05 raster-metric-item modifier-result ${tool.isActive ? "active" : ""} h-max color-primary`}
                             onToggle={() => onToggleTool(tool.id)}
                             label={tool.label}
                             // @ts-ignore

@@ -4,16 +4,10 @@
     border: none;
 }
 
-
-
 .summary-label {
-    font-size: 0.875rem;
     color: var(--text-secondary);
-    font-weight: 500;
 }
 
 .summary-value {
-    font-size: 1rem;
     color: var(--accent-color);
-    font-weight: 600;
 }

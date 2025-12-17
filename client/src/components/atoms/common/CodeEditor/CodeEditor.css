@@ -1,6 +1,4 @@
 .code-editor-label {
-    font-size: 0.75rem;
-    font-weight: 500;
     color: var(--text-primary, #fff);
     margin: 0;
 }

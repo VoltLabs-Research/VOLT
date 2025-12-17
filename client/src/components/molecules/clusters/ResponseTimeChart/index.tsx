@@ -101,21 +101,21 @@ export function ResponseTimeChart() {
 
   const chartContent = (
     <>
-      <div className="d-flex items-center response-chart-legend">
+      <div className="d-flex items-center response-chart-legend gap-1-5 flex-wrap">
         {regions.map((region) => (
           <div key={region.name} className="d-flex items-center gap-05 response-chart-legend-item">
             <div className="response-chart-legend-dot" style={{ backgroundColor: region.color }} />
-            <span className="response-chart-legend-label">{region.name}</span>
-            <span className="response-chart-legend-value">{region.value}ms</span>
+            <span className="response-chart-legend-label font-size-2 color-muted-foreground">{region.name}</span>
+            <span className="response-chart-legend-value font-size-2 font-weight-5">{region.value}ms</span>
           </div>
         ))}
       </div>
 
-      <div className="response-chart-container">
+      <div className="response-chart-container p-relative flex-1">
         <svg
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           preserveAspectRatio="none"
-          className="response-chart-svg"
+          className="response-chart-svg w-max h-max"
         >
           {/* Grid horizontal lines */}
           {[0, 25, 50, 75, 100].map((y) => (
@@ -150,10 +150,10 @@ export function ResponseTimeChart() {
         </svg>
 
         {/* Y-axis labels */}
-        <div className="d-flex column content-between response-chart-y-labels">
+        <div className="d-flex column content-between response-chart-y-labels p-absolute">
           {Array.from({ length: 6 }, (_, i) => {
             const value = Math.round(maxValue - (maxValue / 5) * i)
-            return <span key={i} className="response-chart-y-label">{value}ms</span>
+            return <span key={i} className="response-chart-y-label font-size-1 color-muted-foreground">{value}ms</span>
           })}
         </div>
       </div>

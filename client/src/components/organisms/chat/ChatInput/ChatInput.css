@@ -4,7 +4,6 @@
     background: var(--glass-bg);
     backdrop-filter: blur(25px) saturate(180%);
     border-top: 1px solid var(--color-border-soft);
-    position: relative;
     z-index: 2;
     box-shadow:
         var(--shadow-glass),
@@ -18,8 +17,6 @@
     border-radius: 1.5rem;
     padding: 0.75rem 1rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
     box-shadow:
         var(--shadow-elevated),
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -59,21 +56,15 @@
 }
 
 .chat-input {
-    flex: 1;
     background: transparent;
     border: none;
-    color: var(--color-text-primary);
-    font-size: 1rem;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-    font-weight: 400;
     outline: none;
     resize: none;
     min-height: 24px;
     max-height: 120px;
-    line-height: 1.5;
     letter-spacing: 0.01em;
     transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--color-border-soft) transparent;
 }
@@ -123,15 +114,10 @@
     backdrop-filter: blur(10px);
     color: white;
     border: 1px solid var(--accent-blue);
-    cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    font-size: 1rem;
-    flex-shrink: 0;
     box-shadow:
         var(--shadow-elevated),
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    position: relative;
-    overflow: hidden;
 }
 
 .chat-send-button::before {
@@ -196,8 +182,6 @@
 .chat-file-previews-header {
     margin-bottom: 0.75rem;
     font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
 }
 
 .chat-clear-files {
@@ -205,8 +189,6 @@
     border: 1px solid var(--color-border-soft);
     border-radius: 0.4rem;
     padding: 0.25rem;
-    color: var(--color-text-secondary);
-    cursor: pointer;
     transition: all 0.2s ease;
 }
 
@@ -219,11 +201,9 @@
 .chat-file-previews-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 0.75rem;
 }
 
 .chat-file-preview-item {
-    position: relative;
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-soft);
     border-radius: 0.6rem;
@@ -237,7 +217,6 @@
 }
 
 .chat-file-preview-image {
-    width: 100%;
     height: 80px;
     object-fit: cover;
     border-radius: 0.4rem;
@@ -245,21 +224,15 @@
 }
 
 .chat-file-preview-name {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .chat-file-preview-size {
     font-size: 0.7rem;
-    color: var(--color-text-muted);
 }
 
 .chat-file-preview-remove {
-    position: absolute;
     top: 0.25rem;
     right: 0.25rem;
     background: var(--color-error);
@@ -268,7 +241,6 @@
     border-radius: 50%;
     width: 20px;
     height: 20px;
-    cursor: pointer;
     transition: all 0.2s ease;
     font-size: 0.8rem;
 }

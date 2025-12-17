@@ -1,8 +1,6 @@
 /* Group Management Modal Styles - Enhanced Modern Design */
 .group-management-container-inner {
     height: 600px;
-    width: 100%;
-    overflow: hidden;
     border-radius: 1rem;
     background: transparent;
 }
@@ -13,7 +11,6 @@
     min-width: 220px;
     background: linear-gradient(180deg, var(--background-primary) 0%, var(--background-secondary) 100%);
     border-right: 1px solid rgba(255, 255, 255, 0.1);
-    position: relative;
 }
 
 .group-management-left-container::before {
@@ -38,36 +35,24 @@
 }
 
 .group-management-right-container {
-    height: 100%;
     width: 75%;
     padding: 1rem;
 
-    overflow-y: auto;
 }
 
 /* Navigation Styles */
 
-
-
-
 .group-management-nav-title {
     font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-text-primary);
     margin: 0;
 }
-
-
 
 .group-management-nav-item {
 
     padding: 0.875rem;
     border-radius: 0.75rem;
-    cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background: transparent;
-    position: relative;
-    overflow: hidden;
     border: 1px solid transparent;
 }
 
@@ -109,7 +94,6 @@
 
 .group-management-nav-item-title {
     font-size: 0.85rem;
-    font-weight: 400;
 }
 
 /* Group Info in Bottom Left */
@@ -120,8 +104,6 @@
     border-radius: 0.75rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    position: relative;
-    overflow: hidden;
 }
 
 .group-management-group-info::before {
@@ -142,9 +124,7 @@
     background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
 
     color: white;
-    font-size: 1.25rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    position: relative;
     z-index: 1;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -155,32 +135,25 @@
 }
 
 .group-management-group-details {
-    flex: 1;
     min-width: 0;
-    position: relative;
     z-index: 1;
 }
 
 .group-management-group-name {
     margin: 0 0 0.25rem 0;
     font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
     white-space: nowrap;
-    overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .group-management-group-members-count {
     margin: 0;
     font-size: 0.8rem;
-    color: var(--color-text-secondary);
 }
 
 /* Content Styles */
 .group-management-content {
 
-    height: 100%;
     padding: 0.5rem;
     animation: fadeInUp 0.4s ease-out;
 }
@@ -197,27 +170,17 @@
     }
 }
 
-
-
-
-
 .group-management-section-title {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--color-text-primary);
     background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--accent-blue) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
-
-
 /* Actions */
-
-
-
 
 /* Members List */
 .group-management-members-list,
@@ -338,9 +301,6 @@
     background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%);
     border-radius: 0.75rem;
     padding: 1.5rem;
-    margin-top: 1rem;
-    position: relative;
-    overflow: hidden;
 }
 
 .group-management-danger-zone::before {
@@ -419,8 +379,6 @@
     background: linear-gradient(135deg, var(--primary-color-light) 0%, var(--primary-color) 100%);
     border-radius: 0.75rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    position: relative;
-    overflow: hidden;
 }
 
 .group-management-add-members-header::before {
@@ -446,9 +404,7 @@
 
 .group-management-back-button {
 
-    cursor: pointer;
     transition: all 0.3s ease;
-    position: relative;
     z-index: 1;
     padding: 0.5rem;
     border-radius: 0.5rem;
@@ -479,7 +435,6 @@
 
 .group-management-add-members-search {
     margin-bottom: 0.75rem;
-    position: relative;
 }
 
 .group-management-search-container {
@@ -496,7 +451,6 @@
 }
 
 .group-management-search-icon {
-    position: absolute;
     left: 1rem;
     color: var(--primary-color);
     font-size: 1.125rem;
@@ -522,14 +476,11 @@
 }
 
 .group-management-search-input {
-    width: 100%;
     padding: 0.875rem 1rem 0.875rem 3rem;
     border: 2px solid transparent;
     border-radius: 0.75rem;
     background: var(--background-primary);
     color: var(--text-primary);
-    font-size: 0.875rem;
-    font-weight: 500;
     transition: all 0.3s ease;
 }
 
@@ -546,12 +497,10 @@
 
 .group-management-available-members {
     max-height: 320px;
-    overflow-y: auto;
     border: 2px solid var(--border-color);
     border-radius: 0.75rem;
     background: var(--background-primary);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    position: relative;
 }
 
 .group-management-available-members::-webkit-scrollbar {
@@ -574,9 +523,6 @@
 
 .group-management-member {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
 }
 
 .group-management-member::before {
@@ -622,7 +568,6 @@
     background: linear-gradient(135deg, var(--success-color) 0%, var(--success-color-dark) 100%);
     color: white;
     border-radius: 50%;
-    font-size: 0.875rem;
     font-weight: bold;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     animation: checkmarkPop 0.3s ease-out;
@@ -648,7 +593,6 @@
     padding: 1rem 1.25rem;
     background: linear-gradient(135deg, var(--success-color-light) 0%, var(--success-color) 100%);
     border-radius: 0.75rem;
-    text-align: center;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     animation: slideInFromBottom 0.3s ease-out;
 }
@@ -704,8 +648,6 @@
     background: linear-gradient(135deg, var(--warning-color-light) 0%, var(--warning-color) 100%);
     border-radius: 0.75rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    position: relative;
-    overflow: hidden;
 }
 
 .group-management-manage-admins-header::before {
@@ -721,12 +663,10 @@
 
 .group-management-available-admins {
     max-height: 320px;
-    overflow-y: auto;
     border: 2px solid var(--border-color);
     border-radius: 0.75rem;
     background: var(--background-primary);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    position: relative;
 }
 
 .group-management-available-admins::-webkit-scrollbar {
@@ -749,9 +689,6 @@
 
 .group-management-admin {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
 }
 
 .group-management-admin::before {
@@ -883,7 +820,6 @@
     background: linear-gradient(135deg, var(--success-color) 0%, var(--success-color-dark) 100%);
     color: white;
     border-radius: 50%;
-    font-size: 0.875rem;
     font-weight: bold;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     animation: checkmarkPop 0.3s ease-out;
@@ -938,9 +874,7 @@
 /* Back Button Styles */
 .group-management-back-button {
 
-    cursor: pointer;
     transition: all 0.3s ease;
-    position: relative;
     z-index: 1;
     padding: 0.5rem;
     border-radius: 0.5rem;

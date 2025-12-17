@@ -10,10 +10,7 @@
 
 .storage-usage-header {
 
-  margin-bottom: 1.5rem;
-  flex-shrink: 0;
 }
-
 
 .storage-usage-icon {
   width: 20px;
@@ -22,15 +19,12 @@
 }
 
 .storage-usage-title {
-  font-size: 1rem;
-  font-weight: 600;
   color: rgba(255, 255, 255, 0.95);
   margin: 0;
 }
 
 .storage-total-value {
   font-size: 0.9rem;
-  font-weight: 600;
   color: rgba(255, 255, 255, 0.95);
   line-height: 1;
 }
@@ -51,14 +45,10 @@
 }
 
 .storage-tooltip-label {
-  font-size: 0.875rem;
-  font-weight: 600;
   margin-bottom: 0.5rem;
   color: var(--foreground);
 }
 
 .storage-tooltip-item {
-  font-size: 0.75rem;
   margin: 0.25rem 0;
-  color: var(--muted-foreground);
 }

@@ -175,7 +175,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
         <>
             <CollapsibleSection title='Schema Definition' defaultExpanded>
                 <div className="d-flex column gap-075 schema-editor">
-                    <Paragraph className="schema-editor-description">
+                    <Paragraph className="schema-editor-description font-size-1 line-height-5">
                         Define the JSON structure of your output data. This schema describes the shape of results
                         from your analysis and enables downstream nodes to reference specific fields.
                     </Paragraph>
@@ -239,7 +239,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
                     />
 
                     {isValidJson && !error && (
-                        <div className="d-flex items-center gap-05 schema-editor-status">
+                        <div className="d-flex items-center gap-05 schema-editor-status font-size-1">
                             <TbCheck size={14} />
                             <span>Valid JSON Schema</span>
                         </div>

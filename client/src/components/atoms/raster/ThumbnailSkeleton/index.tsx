@@ -3,7 +3,7 @@ import { Skeleton } from '@mui/material';
 
 const ThumbnailSkeleton: React.FC = () => {
     return(
-        <div className='raster-thumbnail-container' style={{ position: 'relative' }}>
+        <div className='raster-thumbnail-container p-relative h-max f-shrink-0 cursor-pointer' style={{ position: 'relative' }}>
             <Skeleton
                 variant='rectangular'
                 animation='wave'

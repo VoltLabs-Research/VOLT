@@ -112,7 +112,7 @@ const Popover = ({
             <div
                 id={id}
                 popover={type}
-                className={`volt-popover d-flex column glass-bg p-fixed ${noPadding ? '' : 'p-05'} ${className}`}
+                className={`volt-popover d-flex column glass-bg p-fixed ${noPadding ? '' : 'p-05'} ${className} color-primary`}
             >
                 {children}
             </div>

@@ -164,10 +164,10 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                 className={containerClasses}
                 onClick={(e) => handleClick(e, trajectory._id)}
             >
-                <Container className='container-content'>
+                <Container className='container-content p-relative w-max h-max'>
                     <Container className='d-flex flex-center overflow-hidden p-relative w-max simulation-cover-container'>
                         {shouldShowPlaceholder && (
-                            <i className='d-flex flex-center w-max h-max color-muted simulation-cover-icon-container'>
+                            <i className='d-flex flex-center w-max h-max color-muted simulation-cover-icon-container font-size-5-5'>
                                 <PiAtomThin />
                             </i>
                         )}
@@ -188,7 +188,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                 </Container>
 
                 <motion.figcaption
-                    className='d-flex column gap-075 simulation-caption-container'
+                    className='d-flex column gap-075 simulation-caption-container p-absolute'
                     initial={false}
                     whileHover="hover"
                     animate="normal"
@@ -204,7 +204,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                 >
                     {trajectory?.createdBy?.firstName && (
                         <motion.div
-                            className='d-flex items-center simulation-caption-header'
+                            className='d-flex items-center simulation-caption-header p-relative'
                             variants={{
                                 normal: {
                                     padding: 0
@@ -216,7 +216,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                         >
                             <motion.div
-                                className='d-flex items-center content-center simulation-user-avatar'
+                                className='d-flex items-center content-center simulation-user-avatar overflow-hidden f-shrink-0'
                                 variants={{
                                     normal: {
                                         scale: 0.8,
@@ -229,12 +229,12 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                                 }}
                                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                             >
-                                <span className='avatar-initials'>
+                                <span className='avatar-initials font-size-1 font-weight-6 color-secondary'>
                                     {trajectory.createdBy ? getInitialsFromUser(trajectory.createdBy) : '?'}
                                 </span>
                             </motion.div>
                             <motion.div
-                                className='d-flex column content-center simulation-user-info'
+                                className='d-flex column content-center simulation-user-info overflow-hidden'
                                 variants={{
                                     normal: {
                                         width: 0,
@@ -251,8 +251,8 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                                 }}
                                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                             >
-                                <span className='simulation-created-by'>Created by</span>
-                                <span className='simulation-user-name'>
+                                <span className='simulation-created-by font-weight-5 color-secondary'>Created by</span>
+                                <span className='simulation-user-name overflow-hidden font-weight-5 color-secondary'>
                                     {getUserDisplayName(trajectory.createdBy)}
                                 </span>
                             </motion.div>
@@ -260,14 +260,14 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                     )}
                 </motion.figcaption>
 
-                <div className='d-flex items-start gap-05 simulation-info-footer'>
-                    <div className='d-flex column gap-05 simulation-caption-left-container'>
+                <div className='d-flex items-start gap-05 simulation-info-footer p-absolute'>
+                    <div className='d-flex column gap-05 simulation-caption-left-container w-max flex-1'>
                         <EditableTrajectoryName
                             trajectory={trajectory}
-                            className='simulation-caption-title'
+                            className='simulation-caption-title font-size-3 color-primary'
                         />
 
-                        <div className='d-flex items-center gap-05 simulation-caption-left-bottom-container'>
+                        <div className='d-flex items-center gap-05 simulation-caption-left-bottom-container color-secondary'>
                             {showProcessingLoader ? (
                                 <ProcessingLoader
                                     message={processingStatus.message}
@@ -275,7 +275,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                                     isVisible={true}
                                 />
                             ) : (
-                                <Paragraph className='simulation-last-edited'>
+                                <Paragraph className='simulation-last-edited overflow-hidden'>
                                     Edited {formatTimeAgo(trajectory.updatedAt)}
                                 </Paragraph>
                             )}
@@ -286,7 +286,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                         id={`simulation-card-menu-${trajectory._id}`}
                         className='gap-1'
                         trigger={
-                            <i className='simulation-options-icon-container'>
+                            <i className='simulation-options-icon-container color-primary'>
                                 <PiDotsThreeVerticalBold />
                             </i>
                         }

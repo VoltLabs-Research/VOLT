@@ -12,13 +12,13 @@ import Button from '@/components/primitives/Button';
 const getIcon = (type: ToastType) => {
   switch (type) {
     case 'error':
-      return <MdError className='toast-icon f-shrink-0' />;
+      return <MdError className='toast-icon f-shrink-0 font-size-4' />;
     case 'success':
-      return <MdCheckCircle className='toast-icon f-shrink-0' />;
+      return <MdCheckCircle className='toast-icon f-shrink-0 font-size-4' />;
     case 'warning':
-      return <MdWarning className='toast-icon f-shrink-0' />;
+      return <MdWarning className='toast-icon f-shrink-0 font-size-4' />;
     case 'info':
-      return <MdInfo className='toast-icon f-shrink-0' />;
+      return <MdInfo className='toast-icon f-shrink-0 font-size-4' />;
     default:
       return null;
   }
@@ -31,7 +31,7 @@ const Toast: React.FC<{ toast: Toast }> = ({ toast }) => {
     <div className={`d-flex items-center content-between gap-1 toast toast-${toast.type}`}>
       <div className='d-flex items-center gap-075 flex-1 toast-content'>
         {getIcon(toast.type)}
-        <Paragraph className='toast-message'>{toast.message}</Paragraph>
+        <Paragraph className='toast-message font-size-2-5 color-primary'>{toast.message}</Paragraph>
       </div>
       <Button
         variant='ghost'

@@ -48,8 +48,8 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
       onClick={() => onClick(index)}
       style={{ flexShrink: 0, cursor: 'pointer' }}
     >
-      <div className="raster-thumbnail-timestep-container">
-        <Paragraph className="raster-thumbnail-timestep">{timestep}</Paragraph>
+      <div className="raster-thumbnail-timestep-container p-absolute">
+        <Paragraph className="raster-thumbnail-timestep color-primary">{timestep}</Paragraph>
       </div>
 
       {hasData ? (

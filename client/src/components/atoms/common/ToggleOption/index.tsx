@@ -43,7 +43,7 @@ const ToggleOption: React.FC<any> = ({ className, label, isVisible, onToggle }) 
             />
             <span className='raster-metric-label'>{label}</span>
 
-            <b className='raster-metric-value'>
+            <b className='raster-metric-value color-primary'>
                 <i className='raster-metric-icon'>
                     {isVisible ? <IoCloseOutline size={18} /> : <GoPlus size={18} />}
                 </i>

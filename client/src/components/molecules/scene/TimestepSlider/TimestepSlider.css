@@ -1,3 +1,17 @@
+.timestep-display {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-secondary);
+    min-width: max-content;
+}
+
+.editor-timesteps-controls-slider {
+    width: 100%;
+}
+
+.editor-timestep-controls-slider {
+    flex-grow: 1;
+}
 
 @media screen and (max-width: 768px) {
     .editor-timesteps-controls-slider {

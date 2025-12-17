@@ -26,42 +26,42 @@ const DetailsPanel = ({
     currentParticipant
 }: DetailsPanelProps) => {
     return (
-        <div className='d-flex column chat-details-container'>
+        <div className='d-flex column chat-details-container p-relative'>
             <div className='chat-details-header'>
-                <Title className='chat-details-title'>{chat?.isGroup ? 'Group Info' : 'Contact Info'}</Title>
+                <Title className='chat-details-title font-size-4 font-weight-6 color-primary'>{chat?.isGroup ? 'Group Info' : 'Contact Info'}</Title>
             </div>
-            <div className='chat-details-content'>
+            <div className='chat-details-content y-auto flex-1'>
                 {!chat ? (
-                    <div className='d-flex column flex-center chat-no-selection'>
-                        <div className='d-flex flex-center chat-no-selection-icon'>
+                    <div className='d-flex column flex-center chat-no-selection h-max text-center'>
+                        <div className='d-flex flex-center chat-no-selection-icon font-size-5 color-secondary'>
                             <IoChatbubblesOutline />
                         </div>
-                        <Title className='font-size-3 chat-no-selection-title'>No chat selected</Title>
-                        <Paragraph className='chat-no-selection-description'>Select a conversation to view details</Paragraph>
+                        <Title className='font-size-3 chat-no-selection-title font-size-4 font-weight-6 color-primary'>No chat selected</Title>
+                        <Paragraph className='chat-no-selection-description font-size-2 color-secondary line-height-5'>Select a conversation to view details</Paragraph>
                     </div>
                 ) : isLoading ? (
                     <MessageSkeleton variant='contact' />
                 ) : chat.isGroup ? (
                     <div className='chat-details-section'>
-                        <div className='d-flex column items-center chat-group-info'>
-                            <div className='d-flex flex-center chat-group-avatar'>
+                        <div className='d-flex column items-center chat-group-info text-center'>
+                            <div className='d-flex flex-center chat-group-avatar font-size-6'>
                                 <IoPeopleOutline />
                             </div>
-                            <Title className='font-size-3 chat-group-name'>{chat.groupName}</Title>
-                            {chat.groupDescription && <Paragraph className='chat-group-description'>{chat.groupDescription}</Paragraph>}
-                            <Paragraph className='chat-group-members-count'>{chat.participants.length} members</Paragraph>
+                            <Title className='font-size-3 chat-group-name font-size-4 font-weight-6 color-primary'>{chat.groupName}</Title>
+                            {chat.groupDescription && <Paragraph className='chat-group-description color-secondary'>{chat.groupDescription}</Paragraph>}
+                            <Paragraph className='chat-group-members-count font-size-1 font-weight-5 color-muted'>{chat.participants.length} members</Paragraph>
                         </div>
                     </div>
                 ) : (
                     <div className='chat-details-section'>
-                        <div className='d-flex column items-center chat-details-user-info'>
-                            <div className='d-flex flex-center chat-details-avatar'>
+                        <div className='d-flex column items-center chat-details-user-info text-center'>
+                            <div className='d-flex flex-center chat-details-avatar font-size-6 font-weight-6'>
                                 {currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
                             </div>
-                            <Title className='font-size-2-5 chat-details-name'>
+                            <Title className='font-size-2-5 chat-details-name font-size-4 font-weight-6 color-primary'>
                                 {currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
                             </Title>
-                            <div className='d-flex items-center gap-05 content-center chat-details-status'>
+                            <div className='d-flex items-center gap-05 content-center chat-details-status font-weight-5'>
                                 {presence === 'online' ? 'Online' : presence === 'offline' ? 'Offline' : 'Connecting...'}
                             </div>
                         </div>
@@ -70,7 +70,7 @@ const DetailsPanel = ({
 
                 {chat && !isLoading && (
                     <div className='chat-details-section'>
-                        <Title className='font-size-2-5 chat-details-section-title'>Actions</Title>
+                        <Title className='font-size-2-5 chat-details-section-title font-weight-6 color-secondary'>Actions</Title>
                         <div className='d-flex column gap-075 chat-details-actions'>
                             <Button variant='ghost' intent='neutral' leftIcon={<IoCallOutline />} block className='content-start'>
                                 Voice Call
@@ -101,7 +101,7 @@ const DetailsPanel = ({
 
                 {chat && !isLoading && (
                     <div className='chat-details-section'>
-                        <Title className='font-size-2-5 chat-details-section-title'>Shared Files</Title>
+                        <Title className='font-size-2-5 chat-details-section-title font-weight-6 color-secondary'>Shared Files</Title>
                         {chat && <SharedFilesList currentChatId={chat._id} messages={messages} />}
                     </div>
                 )}

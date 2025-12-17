@@ -24,14 +24,11 @@
     background-color: var(--color-black);
     color: var(--color-white);
     min-height: 100vh;
-    width: 100%;
-    overflow: hidden;
 }
 
 .auth-layout {
     display: grid;
     min-height: 100vh;
-    width: 100%;
 }
 
 @media (min-width: 1024px) {
@@ -45,11 +42,7 @@
     display: none;
     background: var(--hero-base-gradient);
     padding: 4rem;
-    position: relative;
-    overflow: hidden;
     color: var(--color-white);
-    flex-direction: column;
-    justify-content: space-between;
 }
 
 @media (min-width: 1024px) {
@@ -62,27 +55,20 @@
 }
 
 .hero-background {
-    position: absolute;
-    inset: 0;
     z-index: 0;
 }
 
 .hero-overlay {
-    position: absolute;
-    inset: 0;
     background: var(--bg-gradient-hero-overlay);
     z-index: 1;
     pointer-events: none;
 }
 
 .hero-content-wrapper {
-    position: relative;
     z-index: 10;
-    height: 100%;
 }
 
 .hero-brand {
-    font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: -0.02em;
 }
@@ -96,7 +82,6 @@
 
 .hero-text-container {
     max-width: 36rem;
-    margin-bottom: 3rem;
 }
 
 .hero-headline {
@@ -111,11 +96,9 @@
 }
 
 .hero-description {
-    font-size: 1.25rem;
     color: var(--color-zinc-400);
     line-height: 1.6;
     max-width: 32rem;
-    font-weight: 400;
 }
 
 /* --- FORM SECTION --- */
@@ -123,7 +106,6 @@
     background-color: var(--color-black);
     color: var(--color-white);
     padding: 1.5rem;
-    position: relative;
     min-height: 100vh;
 }
 
@@ -134,7 +116,6 @@
 }
 
 .form-bg-glow {
-    position: absolute;
     top: -20%;
     right: -20%;
     width: 600px;
@@ -147,13 +128,10 @@
 .form-container {
     max-width: 26rem;
     margin: 0 auto;
-    width: 100%;
-    position: relative;
     z-index: 10;
 }
 
 .form-title {
-    font-size: 2rem;
     font-weight: 700;
     letter-spacing: -0.03em;
     margin-bottom: 0.5rem;
@@ -161,11 +139,9 @@
 
 .form-subtitle {
     color: var(--color-zinc-500);
-    font-size: 1rem;
 }
 
 .form-input {
-    width: 100%;
     height: 3.25rem;
     background-color: transparent;
     border: 1px solid var(--color-zinc-800);
@@ -173,7 +149,6 @@
     color: var(--color-white);
     padding-left: 2.75rem;
     padding-right: 1rem;
-    font-size: 0.95rem;
     transition: all 0.2s;
     outline: none;
 }
@@ -189,11 +164,9 @@
 }
 
 .input-group {
-    position: relative;
 }
 
 .input-icon {
-    position: absolute;
     left: 1rem;
     top: 50%;
     transform: translateY(-50%);
@@ -208,13 +181,9 @@
 
 .btn {
     border-radius: var(--radius-md);
-    font-size: 0.95rem;
-    font-weight: 600;
     height: 3.25rem;
     padding: 0 1rem;
     transition: var(--transition-base);
-    cursor: pointer;
-    width: 100%;
     border: none;
     outline: none;
 }
@@ -256,7 +225,6 @@
 
 .divider {
     color: var(--color-zinc-600);
-    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin: 2rem 0;
@@ -281,11 +249,8 @@
     border: 1px solid var(--color-zinc-800);
 }
 
-
-
 .footer-text {
     margin-top: 2rem;
-    text-align: center;
     font-size: 0.8rem;
     color: var(--color-zinc-600);
 }

@@ -39,7 +39,7 @@ const PlayControls: React.FC<PlayControlsProps> = ({
     return(
         <CanvasButton
             onClick={onPlayPause}
-            className='editor-timestep-controls-play-pause-button'
+            className='editor-timestep-controls-play-pause-button font-size-3 font-size-5 cursor-pointer'
             disabled={disabled}
             icon={isPlaying ? CiPause1 : CiPlay1}
         />

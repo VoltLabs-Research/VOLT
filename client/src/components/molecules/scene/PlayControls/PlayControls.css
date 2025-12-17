@@ -1,8 +1,6 @@
-.editor-timestep-controls-play-pause-button{
+.editor-timestep-controls-play-pause-button {
     background-color: transparent;
     color: #DADADA;
-    font-size: 1.5rem;
-    cursor: pointer;
     transition: all 0.2s;
 }
 

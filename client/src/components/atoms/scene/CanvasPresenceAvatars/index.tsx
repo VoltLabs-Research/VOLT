@@ -62,30 +62,30 @@ const CanvasPresenceAvatars: React.FC<CanvasPresenceAvatarsProps> = ({ users }) 
     const extraCount = Math.max(0, users.length - 5);
 
     return (
-        <div className='canvas-presence-container'>
-            <div className='d-flex items-center canvas-presence-avatars'>
+        <div className='canvas-presence-container p-fixed'>
+            <div className='d-flex items-center canvas-presence-avatars row-reverse'>
                 <AnimatePresence mode='popLayout'>
                     {displayUsers.map((user) => (
                         <motion.div
                             key={user.id}
-                            className='canvas-presence-avatar-wrapper'
+                            className='canvas-presence-avatar-wrapper p-relative f-shrink-0'
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0, opacity: 0 }}
                             transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                             title={getDisplayName(user)}
                         >
-                            <div className='d-flex items-center content-center canvas-presence-avatar'>
-                                <span className='avatar-initials'>
+                            <div className='d-flex items-center content-center canvas-presence-avatar p-relative overflow-hidden cursor-pointer'>
+                                <span className='avatar-initials font-size-1 font-weight-6 color-secondary'>
                                     {getInitialsFromUser(user)}
                                 </span>
                                 {user.isAnonymous && (
-                                    <div className='d-flex items-center content-center avatar-anonymous-badge' title='Anonymous'>
+                                    <div className='d-flex items-center content-center avatar-anonymous-badge p-absolute' title='Anonymous'>
                                         ?
                                     </div>
                                 )}
                             </div>
-                            <div className='avatar-tooltip'>
+                            <div className='avatar-tooltip p-absolute'>
                                 {getDisplayName(user)}
                                 {user.isAnonymous && ' (Anonymous)'}
                             </div>
@@ -95,16 +95,16 @@ const CanvasPresenceAvatars: React.FC<CanvasPresenceAvatarsProps> = ({ users }) 
 
                 {extraCount > 0 && (
                     <motion.div
-                        className='canvas-presence-avatar-wrapper'
+                        className='canvas-presence-avatar-wrapper p-relative f-shrink-0'
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         title={`${extraCount} more users`}
                     >
-                        <div className='d-flex items-center content-center canvas-presence-avatar canvas-presence-avatar-extra'>
-                            <span className='avatar-initials'>+{extraCount}</span>
+                        <div className='d-flex items-center content-center canvas-presence-avatar canvas-presence-avatar-extra p-relative overflow-hidden cursor-pointer'>
+                            <span className='avatar-initials font-size-1 font-weight-6 color-secondary'>+{extraCount}</span>
                         </div>
-                        <div className='avatar-tooltip'>
+                        <div className='avatar-tooltip p-absolute'>
                             {extraCount} more {extraCount === 1 ? 'user' : 'users'}
                         </div>
                     </motion.div>

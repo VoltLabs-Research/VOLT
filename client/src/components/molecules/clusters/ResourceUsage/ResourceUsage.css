@@ -5,27 +5,20 @@
   backdrop-filter: blur(80px);
   border-radius: 20px;
   padding: 1.5rem;
-  height: 100%;
 }
 
 .resource-usage-header {
-  margin-bottom: 1.5rem;
-  flex-shrink: 0;
 }
 
 .resource-usage-title {
-  font-size: 1rem;
-  font-weight: 600;
   color: var(--foreground);
   margin: 0;
 }
 
 .resource-usage-menu {
-  color: var(--muted-foreground);
   transition: color 0.2s;
   background: none;
   border: none;
-  cursor: pointer;
   padding: 0;
 }
 
@@ -39,7 +32,6 @@
 }
 
 .resource-usage-list {
-  flex: 1;
   justify-content: space-around;
 }
 
@@ -48,13 +40,10 @@
 }
 
 .resource-usage-item-label {
-  font-size: 0.875rem;
   color: var(--foreground);
 }
 
 .resource-usage-item-value {
-  font-size: 0.875rem;
-  font-weight: 600;
   color: var(--foreground);
 }
 
@@ -67,8 +56,6 @@
 }
 
 .resource-usage-bar-segment {
-  height: 100%;
-  flex: 1;
   border-radius: 2px;
   transform-origin: center;
   animation: segmentPulse 2s ease-in-out infinite;

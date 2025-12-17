@@ -19,18 +19,18 @@ export type ChatHeaderProps = {
 
 const ChatHeader = ({ chat, currentParticipant, presence }: ChatHeaderProps) => {
     return (
-        <div className='d-flex items-center content-between chat-box-header-container'>
+        <div className='d-flex items-center content-between chat-box-header-container p-relative'>
             <div className='d-flex items-center gap-1 chat-header-user'>
-                <div className={`d-flex flex-center chat-header-avatar ${chat.isGroup ? 'group-avatar' : ''}`}>
+                <div className={`d-flex flex-center chat-header-avatar ${chat.isGroup ? 'group-avatar' : ''} font-size-3 font-weight-6`}>
                     {chat.isGroup
                         ? <IoPeopleOutline />
                         : currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
                 </div>
                 <div className='d-flex column chat-header-info'>
-                    <Title className='font-size-3 chat-header-name'>
+                    <Title className='font-size-3 chat-header-name font-weight-6 color-primary'>
                         {chat.isGroup ? chat.groupName : currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName} ` : 'Unknown'}
                     </Title>
-                    <div className='d-flex items-center gap-05 chat-header-status'>
+                    <div className='d-flex items-center gap-05 chat-header-status font-weight-5'>
                         {chat.isGroup ? `${chat.participants.length} members` : presence === 'online' ? 'Online' : presence === 'offline' ? 'Offline' : 'Connecting...'}
                     </div>
                 </div>

@@ -17,7 +17,7 @@ const ModelRail: React.FC<ModelRailProps> = ({ modelsForCurrentFrame, selectedMo
 
   return(
     <motion.div
-      className="raster-rail-container"
+      className="raster-rail-container p-absolute y-auto"
       style={{ width: 132 }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}

@@ -1,16 +1,11 @@
 .icon-select {
-    position: relative;
-    width: 100%;
 }
 
 .icon-select-trigger {
-    width: 100%;
     padding: .6rem .75rem;
     padding: .6rem .75rem;
     border-radius: .6rem;
     background: color-mix(in oklab, var(--color-text-primary) 6%, transparent);
-    color: var(--color-text-primary);
-    cursor: pointer;
     line-height: 1.2;
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
@@ -29,13 +24,11 @@
 
     width: 20px;
     height: 20px;
-    flex-shrink: 0;
     color: var(--accent-indigo);
 }
 
 .icon-select-trigger-value {
 
-    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: .85rem;
@@ -47,7 +40,6 @@
 
 .icon-select-chevron {
     margin-left: auto;
-    flex-shrink: 0;
     transition: transform .15s ease;
 }
 
@@ -56,12 +48,10 @@
 }
 
 .icon-select-dropdown {
-    position: absolute;
     z-index: 999999999;
     top: calc(100% + 6px);
     left: 0;
     right: 0;
-    width: 100%;
     min-width: 240px;
     max-height: 280px;
     background: var(--color-surface-1);
@@ -69,7 +59,6 @@
     border-radius: .6rem;
     box-shadow: var(--shadow-elevated);
 
-    overflow: hidden;
 }
 
 .icon-select-search {
@@ -78,12 +67,10 @@
 }
 
 .icon-select-search-input {
-    width: 100%;
     padding: .5rem .6rem;
     border: 1px solid var(--color-border);
     border-radius: .5rem;
     background: var(--color-surface-2);
-    color: var(--color-text-primary);
     font-size: .85rem;
     outline: none;
     transition: border-color .15s ease;
@@ -99,7 +86,6 @@
 
 .icon-select-list {
 
-    overflow-y: auto;
     padding: .35rem;
 }
 
@@ -107,9 +93,6 @@
     padding: .5rem .6rem;
     padding: .5rem .6rem;
     border-radius: .5rem;
-    cursor: pointer;
-    user-select: none;
-    color: var(--color-text-primary);
     transition: background .12s ease;
 }
 
@@ -127,14 +110,12 @@
 
     width: 24px;
     height: 24px;
-    flex-shrink: 0;
     color: var(--accent-indigo);
 }
 
 .icon-select-option-name {
 
     font-size: .85rem;
-    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -142,21 +123,18 @@
 .icon-select-empty {
     padding: 1.5rem;
     padding: 1.5rem;
-    color: var(--color-text-muted);
     font-size: .85rem;
 }
 
 .icon-select-loading {
     padding: 1rem;
     padding: 1rem;
-    color: var(--color-text-muted);
     font-size: .85rem;
 }
 
 .icon-select-count {
     padding: .5rem .75rem;
     text-align: right;
-    color: var(--color-text-muted);
     font-size: .75rem;
     border-top: 1px solid var(--color-border);
     background: var(--color-surface-2);

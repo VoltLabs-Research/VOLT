@@ -9,7 +9,6 @@
 }
 
 .server-table-header {
-  margin-bottom: 1.5rem;
 }
 
 .server-table-title-bar {
@@ -21,7 +20,6 @@
 
 .server-table-title {
   font-size: 1.125rem;
-  font-weight: 600;
   margin: 0;
   color: var(--foreground);
   letter-spacing: -0.01em;
@@ -33,10 +31,7 @@
   background: transparent;
   color: var(--foreground);
   border-radius: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 500;
   transition: background-color 0.2s;
-  cursor: pointer;
 }
 
 .server-table-btn:hover {
@@ -51,7 +46,6 @@
   background: none;
   border: none;
   color: var(--foreground);
-  cursor: pointer;
 }
 
 .server-table-icon-btn:hover {
@@ -73,7 +67,6 @@
 }
 
 .server-table {
-  width: 100%;
   border-collapse: collapse;
 }
 
@@ -112,12 +105,10 @@
 }
 
 .server-table-id {
-  font-size: 0.875rem;
   font-family: monospace;
 }
 
 .server-table-region-badge {
-  font-size: 0.75rem;
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   background-color: var(--secondary);
@@ -125,8 +116,6 @@
 }
 
 .server-table-status {
-  font-size: 0.875rem;
-  font-weight: 500;
 }
 
 .server-table-status-healthy {
@@ -153,15 +142,10 @@
 }
 
 .server-table-metric-value {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
 }
 
 .server-table-network {
-  font-size: 0.875rem;
 }
 
 .server-table-uptime {
-  font-size: 0.875rem;
-  font-weight: 500;
 }

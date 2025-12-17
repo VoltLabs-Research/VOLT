@@ -8,14 +8,11 @@
     min-height: calc(100vh - 2rem);
     max-width: 1600px;
     margin: 0 auto;
-    width: 100%;
 }
 
 /* Main Content */
 .settings-main {
-    flex: 1;
     background: var(--color-bg);
-    overflow-y: auto;
     height: fit-content;
 }
 
@@ -30,7 +27,6 @@
     padding: 0.5rem 1rem;
     border-radius: 1rem;
     font-size: 0.8rem;
-    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
@@ -51,7 +47,6 @@
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
 }
 
 .settings-form .form-input-wrapper-container {
@@ -203,9 +198,6 @@
     padding: 0.5rem 0.75rem;
     border: none;
     border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
     transition: all 0.2s ease;
 }
 
@@ -222,7 +214,6 @@
 
 /* Password Form */
 .password-form {
-    margin-top: 1rem;
     padding: 1.5rem;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
@@ -239,7 +230,6 @@
 }
 
 .form-actions {
-    justify-content: flex-end;
 }
 
 .action-button.primary {
@@ -296,20 +286,15 @@
 }
 
 .form-field-container {
-    position: relative;
-    width: 100%;
 }
 
 .update-indicator {
-    position: absolute;
     top: -0.5rem;
     right: 0.5rem;
     background: var(--color-surface-1);
     border: 1px solid var(--color-border);
     border-radius: 0.5rem;
     padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    color: var(--color-text-secondary);
     z-index: 10;
     animation: pulse 1.5s infinite;
 }

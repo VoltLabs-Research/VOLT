@@ -140,12 +140,12 @@ const Containers: React.FC = () => {
             sortable: true,
             render: (value, row) => (
                 <div className='d-flex items-center gap-075 sm:column sm:items-start sm:gap-05 container-name-cell'>
-                    <div className='d-flex flex-center container-icon-small'>
+                    <div className='d-flex flex-center container-icon-small color-primary'>
                         <Box size={16} />
                     </div>
-                    <div className='d-flex column gap-0125 container-name-content'>
-                        <span className='container-name-text'>{value}</span>
-                        <span className='container-id-text'>{row.containerId?.substring(0, 12)}</span>
+                    <div className='d-flex column gap-0125 container-name-content overflow-hidden'>
+                        <span className='container-name-text font-weight-6 color-primary'>{value}</span>
+                        <span className='container-id-text font-size-1 color-muted'>{row.containerId?.substring(0, 12)}</span>
                     </div>
                 </div>
             ),
@@ -162,17 +162,17 @@ const Containers: React.FC = () => {
             title: 'Image',
             key: 'image',
             sortable: true,
-            render: (value) => <span className='container-image-text'>{value}</span>,
+            render: (value) => <span className='container-image-text font-size-2 color-secondary'>{value}</span>,
             skeleton: { variant: 'text', width: 150 }
         },
         {
             title: 'Ports',
             key: 'ports',
             render: (value) => {
-                if (!value || value.length === 0) return <span className='text-muted'>-</span>;
+                if (!value || value.length === 0) return <span className='text-muted font-size-2 color-muted'>-</span>;
                 const port = value[0];
                 return (
-                    <span className='container-port-text'>
+                    <span className='container-port-text font-size-2 font-weight-5'>
                         {port.private} → {port.public}
                     </span>
                 );
@@ -184,7 +184,7 @@ const Containers: React.FC = () => {
             key: 'createdAt',
             sortable: true,
             render: (value) => (
-                <span className='text-muted' title={new Date(value).toLocaleString()}>
+                <span className='text-muted font-size-2 color-muted' title={new Date(value).toLocaleString()}>
                     {formatTimeAgo(value)}
                 </span>
             ),
@@ -194,7 +194,7 @@ const Containers: React.FC = () => {
 
     return (
         <DashboardContainer pageName='Containers' className='d-flex column h-100 containers-page-wrapper'>
-            <div className='containers-listing-header'>
+            <div className='containers-listing-header p-absolute'>
                 <Button
                     variant='solid'
                     intent='brand'

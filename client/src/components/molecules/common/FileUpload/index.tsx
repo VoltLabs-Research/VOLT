@@ -114,7 +114,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     }, [handleWindowDragEnter]);
 
     const containerClasses = useMemo(() => {
-        const classes = ['file-upload-container'];
+        const classes = ['file-upload-container', 'p-absolute', 'w-max', 'h-max'];
 
         if(isDraggingOver) classes.push('is-dragging-over');
 

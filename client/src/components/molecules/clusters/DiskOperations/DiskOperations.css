@@ -12,14 +12,11 @@
 .disk-ops-legend {
 
   padding-top: 1rem;
-  flex-shrink: 0;
 }
 
 .disk-ops-legend-item {
 
   gap: 0.375rem;
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
 }
 
 .disk-ops-legend-dot {

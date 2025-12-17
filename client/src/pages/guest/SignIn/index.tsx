@@ -178,37 +178,37 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="auth-page-wrapper">
-      <div className="auth-layout">
-        <div className="hero-section">
-          <div className="hero-background">
+    <div className="auth-page-wrapper w-max vh-max overflow-hidden">
+      <div className="auth-layout w-max vh-max">
+        <div className="hero-section p-relative overflow-hidden content-between column">
+          <div className="hero-background p-absolute inset-0">
             <WireframeBackground />
-            <div className="hero-overlay" />
+            <div className="hero-overlay p-absolute inset-0" />
           </div>
 
-          <div className="d-flex column content-between h-100 hero-content-wrapper">
-            <div className="d-flex items-center gap-075 hero-brand">
+          <div className="d-flex column content-between h-100 hero-content-wrapper p-relative h-max">
+            <div className="d-flex items-center gap-075 hero-brand font-size-5">
               <div className="brand-icon d-flex flex-center">
                 <LayoutGrid size={24} color="white" />
               </div>
               <span>Volterra</span>
             </div>
 
-            <div className="d-flex column gap-1-5 hero-text-container">
+            <div className="d-flex column gap-1-5 hero-text-container mb-3">
               <Title className="hero-headline">
                 Connect with<br />your VoltID
               </Title>
-              <Paragraph className="hero-description">
+              <Paragraph className="hero-description font-size-4 font-weight-4">
                 Everything your research needs, in one place. Collaborate seamlessly and connect your scientific stack.
               </Paragraph>
             </div>
           </div>
         </div>
 
-        <div className="d-flex column form-section">
-          <div className="form-bg-glow" />
+        <div className="d-flex column form-section p-relative gap-1 vh-max">
+          <div className="form-bg-glow p-absolute" />
 
-          <div className="d-flex column content-center gap-2 flex-1 form-container">
+          <div className="d-flex column content-center gap-2 flex-1 form-container p-relative w-max">
             <div className="form-header">
               <AnimatePresence mode="wait">
                 <motion.div
@@ -217,10 +217,10 @@ export default function AuthPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Title className="form-title">
+                  <Title className="form-title font-size-6">
                     {step === "email" ? "Sign In or Join Now!" : step === "register" ? "Create Account" : "Welcome back"}
                   </Title>
-                  <Paragraph className="form-subtitle">
+                  <Paragraph className="form-subtitle font-size-3">
                     {step === "email" ? "Login or create your account." : step === "register" ? "Enter your details to get started." : "Enter your password to continue."}
                   </Paragraph>
                 </motion.div>
@@ -284,14 +284,14 @@ export default function AuthPage() {
                     </Button>
                   </div>
 
-                  <div className="d-flex items-center divider">
+                  <div className="d-flex items-center divider font-size-1">
                     <span>Or continue with email</span>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <div className="input-group">
-                        <div className="input-icon d-flex flex-center">
+                      <div className="input-group p-relative">
+                        <div className="input-icon d-flex flex-center p-absolute">
                           <Mail size={18} />
                         </div>
                         <FormInput
@@ -391,8 +391,8 @@ export default function AuthPage() {
 
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <div className="input-group">
-                        <div className="input-icon d-flex flex-center"><Lock size={18} /></div>
+                      <div className="input-group p-relative">
+                        <div className="input-icon d-flex flex-center p-absolute"><Lock size={18} /></div>
                         <FormInput
                           variant="auth"
                           value={password}
@@ -415,7 +415,7 @@ export default function AuthPage() {
               )}
             </AnimatePresence>
 
-            <Paragraph className="footer-text">
+            <Paragraph className="footer-text text-center">
               By clicking continue, you agree to our <a href="#" className="footer-link">Terms</a> and <a href="#" className="footer-link">Privacy Policy</a>.
             </Paragraph>
           </div>

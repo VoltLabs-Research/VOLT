@@ -1,5 +1,4 @@
 .ssh-connection-modal-overlay {
-    position: fixed;
     top: 0;
     left: 0;
     right: 0;
@@ -26,7 +25,6 @@
     width: 90%;
     max-width: 500px;
     max-height: 90vh;
-    overflow: hidden;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     animation: slideUp 0.3s ease;
 
@@ -52,15 +50,12 @@
 
 .ssh-connection-modal-title {
 
-    font-size: 1.25rem;
-    font-weight: 600;
 }
 
 .ssh-connection-modal-close {
     background: none;
     border: none;
     color: inherit;
-    cursor: pointer;
     padding: 0.5rem;
     border-radius: 6px;
 
@@ -72,12 +67,10 @@
 }
 
 .ssh-connection-modal-form {
-    overflow: hidden;
 }
 
 .ssh-connection-modal-body {
     padding: 1.5rem;
-    overflow-y: auto;
 
 }
 
@@ -123,12 +116,10 @@
     border: 1px solid rgba(239, 68, 68, 0.3);
     border-radius: 6px;
     color: #ef4444;
-    font-size: 0.875rem;
     margin-bottom: 1rem;
 }
 
 .ssh-connection-test-result {
-    font-size: 0.875rem;
 
 }
 

@@ -49,7 +49,7 @@ const AnalysisConfigSelection = () => {
     if(isLoading) return null;
 
     return(
-        <EditorWidget className="analysis-config-selection-container">
+        <EditorWidget className="analysis-config-selection-container p-absolute">
             <Select
                 onDark={true}
                 value={selectedId}

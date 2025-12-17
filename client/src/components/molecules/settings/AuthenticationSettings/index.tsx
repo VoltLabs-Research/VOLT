@@ -106,7 +106,7 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
                 </Button>
             ),
             after: showPasswordForm ? (
-                <div className="password-form">
+                <div className="password-form mt-1">
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
                             <FormInput
@@ -138,7 +138,7 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
                                 error={errors.confirmPassword}
                             />
                         </div>
-                        <div className="form-actions">
+                        <div className="form-actions content-end">
                             <Button
                                 variant='outline'
                                 intent='neutral'

@@ -83,7 +83,7 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
                 </Button>
             </Container>
             <Container className="flex-1 overflow-auto">
-                <table className="processes-table">
+                <table className="processes-table w-max font-size-2">
                     <thead>
                         <tr>
                             <th>PID</th>
@@ -99,8 +99,8 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
                         {processes.map((proc, i) => (
                             <tr key={i}>
                                 <td className="monospace">{proc.PID}</td>
-                                <td className="program-cell">{proc.Program}</td>
-                                <td className="monospace command-cell" title={proc.Command}>{proc.Command}</td>
+                                <td className="program-cell font-weight-5">{proc.Program}</td>
+                                <td className="monospace command-cell overflow-hidden color-muted-foreground" title={proc.Command}>{proc.Command}</td>
                                 <td className="monospace">{proc.Threads}</td>
                                 <td>{proc.User}</td>
                                 <td className="monospace">{proc.MemB}</td>

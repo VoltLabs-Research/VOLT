@@ -51,13 +51,13 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
 
     return (
         <motion.aside
-            className={`editor-sidebar-wrapper d-flex ${className}`}
+            className={`editor-sidebar-wrapper d-flex ${className} p-absolute`}
             data-collapsed={collapsed}
             initial={false}
             animate={{ width: collapsed ? 64 : 380 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
-            <EditorWidget className='editor-sidebar-container d-flex column content-between overflow-hidden' draggable={false}>
+            <EditorWidget className='editor-sidebar-container d-flex column content-between overflow-hidden w-max h-max' draggable={false}>
                 <Container className='editor-sidebar-top-container'>
                     {headerElement}
 

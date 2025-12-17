@@ -56,7 +56,7 @@ const Select = ({
     return (
         <select
             id={uid}
-            className={`volt-select ${onDark ? 'on-dark' : ''} ${className}`}
+            className={`volt-select ${onDark ? 'on-dark' : ''} ${className} w-max cursor-pointer`}
             value={value ?? ''}
             onChange={handleChange}
             disabled={disabled}
@@ -64,7 +64,7 @@ const Select = ({
         >
             <button
                 type='button'
-                className='volt-select-trigger d-flex items-center gap-05 w-100'
+                className='volt-select-trigger d-flex items-center gap-05 w-100 w-max color-primary cursor-pointer'
             >
                 <option
                     value=''
@@ -78,7 +78,7 @@ const Select = ({
                     </Container>
                 </option>
 
-                <selectedcontent className='volt-select-value d-flex items-center gap-05' />
+                <selectedcontent className='volt-select-value d-flex items-center gap-05 overflow-hidden' />
 
                 <svg
                     className='volt-select-chevron'
@@ -136,7 +136,7 @@ const Select = ({
 
                         {onLeaveTeam && (
                             <Container
-                                className='select-option-leave-wrapper'
+                                className='select-option-leave-wrapper color-muted'
                                 title='Leave'
                                 onClick={(e: React.MouseEvent<HTMLDivElement>) => handleLeaveTeam(e, opt.value)}
                             >

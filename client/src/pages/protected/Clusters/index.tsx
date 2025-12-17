@@ -11,8 +11,8 @@ import './Clusters.css'
 
 export default function DashboardPage() {
   return (
-    <Container className="clusters-page">
-      <Container className="clusters-main d-flex column gap-2">
+    <Container className="clusters-page vh-max">
+      <Container className="clusters-main d-flex column gap-2 w-max">
         <MetricsCards />
 
         <Container className="clusters-grid">

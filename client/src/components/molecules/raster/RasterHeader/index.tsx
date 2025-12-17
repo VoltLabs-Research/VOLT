@@ -12,9 +12,9 @@ import Paragraph from '@/components/primitives/Paragraph';
 
 const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView3D, onSignIn, connectedUsers }) => {
     return (
-        <div className='d-flex content-between items-center raster-scene-header-container'>
+        <div className='d-flex content-between items-center raster-scene-header-container color-primary'>
             <div className='d-flex items-center gap-2 raster-scene-header-left-container'>
-                <i className='d-flex flex-center raster-scene-header-go-back-icon-container' onClick={onGoBack}>
+                <i className='d-flex flex-center raster-scene-header-go-back-icon-container color-primary cursor-pointer' onClick={onGoBack}>
                     <BsArrowLeft />
                 </i>
 
@@ -81,14 +81,14 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                 </div>
 
                 <div className='dashboard-search-container'>
-                    <div className='d-flex gap-1 search-container'>
+                    <div className='d-flex gap-1 search-container color-primary'>
                         <i className='search-icon-container'>
                             <IoSearchOutline />
                         </i>
 
                         <input
                             placeholder='Search uploaded team trajectories'
-                            className='search-input' />
+                            className='search-input h-max' />
                     </div>
                 </div>
 
@@ -107,7 +107,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
 
             <div className='d-flex content-end items-center gap-075 raster-scene-header-nav-container'>
                 <motion.button
-                    className='d-flex items-center gap-05 btn-3d'
+                    className='d-flex items-center gap-05 btn-3d p-relative overflow-hidden cursor-pointer'
                     aria-label='View in 3D'
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
@@ -121,7 +121,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                 {/* Mostrar botón de inicio de sesión solo si no hay usuario autenticado */}
                 {onSignIn && (
                     <motion.button
-                        className='d-flex items-center gap-05 btn-signin'
+                        className='d-flex items-center gap-05 btn-signin p-relative overflow-hidden color-primary cursor-pointer'
                         aria-label='Sign in'
                         whileHover={{ scale: 1.03 }}
                         whileTap={{ scale: 0.97 }}

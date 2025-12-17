@@ -44,13 +44,13 @@ const ProcessingLoader: React.FC<ProcessingLoaderProps> = ({
 
     return (
         <Container className={`d-flex items-center gap-075 processing-loader-container ${className}`}>
-            <Container className="processing-loader-spinner" />
+            <Container className="processing-loader-spinner f-shrink-0" />
             <Container className="d-flex column gap-035 flex-1 column">
-                <Paragraph className="processing-loader-text">{message}</Paragraph>
+                <Paragraph className="processing-loader-text overflow-hidden color-secondary">{message}</Paragraph>
                 {showProgress && completionRate > 0 && (
                     <Container className="w-max overflow-hidden processing-loader-progress-bar">
                         <Container
-                            className="processing-loader-progress-fill"
+                            className="processing-loader-progress-fill h-max"
                             style={{ width: `${Math.min(completionRate * 100, 100)}%` }}
                         />
                     </Container>

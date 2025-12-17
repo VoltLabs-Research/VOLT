@@ -2,12 +2,9 @@
     min-height: 100vh;
     background-color: #09090b;
     /* zinc-950 */
-    position: relative;
-    overflow: hidden;
 }
 
 .oauth-background-blob {
-    position: absolute;
     border-radius: 9999px;
     filter: blur(120px);
     opacity: 0.5;
@@ -16,7 +13,6 @@
 .blob-blue {
     top: -20%;
     left: -10%;
-    width: 50%;
     height: 50%;
     background-color: rgba(59, 130, 246, 0.1);
     /* blue-500/10 */
@@ -32,9 +28,7 @@
 }
 
 .oauth-card {
-    position: relative;
     z-index: 10;
-    width: 100%;
     max-width: 28rem;
     /* max-w-md */
     padding: 2rem;
@@ -46,11 +40,9 @@
     border-radius: 1rem;
     /* rounded-2xl */
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    text-align: center;
 }
 
 .oauth-title {
-    font-size: 1.5rem;
     /* text-2xl */
     font-weight: 700;
     color: white;

@@ -2,7 +2,6 @@
 .chat-message {
     margin-bottom: 1rem;
     animation: messageSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
     padding: 0.5rem 1rem;
     transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     max-width: 70%;
@@ -54,23 +53,17 @@
     height: 36px;
     border-radius: 50%;
     margin: 0 0.75rem;
-    flex-shrink: 0;
 }
 
 .chat-avatar-img {
-    width: 100%;
-    height: 100%;
     border-radius: 50%;
     object-fit: cover;
 }
 
 .chat-avatar-initial {
-    width: 100%;
-    height: 100%;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
     color: white;
-    font-weight: 600;
     font-size: 0.9rem;
 }
 
@@ -80,8 +73,6 @@
 
 .chat-message-sender-name {
     font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
     margin-bottom: 0.25rem;
     padding-left: 0.5rem;
 }
@@ -92,7 +83,6 @@
     border: 1px solid var(--color-border-soft);
     border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
     padding: 0.875rem 1.25rem;
-    position: relative;
     transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     box-shadow:
         var(--shadow-elevated),
@@ -120,27 +110,21 @@
 .chat-message-text {
     margin: 0;
     word-wrap: break-word;
-    color: var(--color-text-primary);
-    font-size: 0.95rem;
     line-height: 1.6;
     letter-spacing: 0.01em;
 }
 
 .deleted-message {
-    color: var(--color-text-secondary);
     font-style: italic;
     opacity: 0.7;
 }
 
 .chat-message-time {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
     margin-top: 0.5rem;
 }
 
 /* Reactions Menu */
 .chat-message-reactions-menu {
-    position: absolute;
     bottom: -2.5rem;
     left: 0;
     background: var(--color-surface-1);
@@ -170,7 +154,6 @@
     border: none;
     border-radius: 50%;
     background: var(--color-surface-2);
-    cursor: pointer;
     transition: all 0.2s ease;
     font-size: 1.2rem;
 }

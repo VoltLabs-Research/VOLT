@@ -1,23 +1,18 @@
-.trajectory-share-status-icon-container{
+.trajectory-share-status-icon-container {
     font-size: 1.6rem;
     background: transparent;
     border: none;
     padding: 0;
     line-height: 1;
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
     color: inherit;
-    cursor: pointer;
 }
 
-.trajectory-share-status-container{
-    position: absolute;
+.trajectory-share-status-container {
     right: 2rem;
     width: auto;
     padding: 1rem;
     border-radius: 5rem;
-    overflow: hidden;
     top: 2rem;
     z-index: 200;
 }

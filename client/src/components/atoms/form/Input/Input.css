@@ -21,7 +21,6 @@
     cursor: not-allowed;
 }
 
-
 .input-wrapper .labeled-input {
     width: 100%;
 }
@@ -32,7 +31,6 @@
 }
 
 .expression-badge {
-    position: absolute;
     top: 50%;
     right: 0.5rem;
     transform: translateY(-50%);
@@ -40,7 +38,6 @@
     background: var(--primary-500);
     color: white;
     font-size: 0.6rem;
-    font-weight: 600;
     border-radius: 4px;
     font-family: 'JetBrains Mono', monospace;
     pointer-events: none;
@@ -65,7 +62,6 @@
 
 .expression-dropdown-title {
     font-size: 0.7rem;
-    font-weight: 600;
     color: var(--gray-300);
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -92,15 +88,11 @@
 }
 
 .expression-group-icon {
-    font-size: 0.75rem;
     opacity: 0.7;
 }
 
 .expression-group-name {
-    font-size: 0.75rem;
-    font-weight: 600;
     color: var(--gray-200);
-    flex: 1;
 }
 
 .expression-group-type {
@@ -114,7 +106,6 @@
 .expression-item {
     padding: 0.5rem 0.75rem;
     border-radius: 4px;
-    cursor: pointer;
     transition: background 0.1s ease;
 }
 
@@ -130,7 +121,6 @@
 
 .expression-item-path {
     font-size: 0.8rem;
-    font-weight: 500;
     color: var(--primary-300);
     font-family: 'JetBrains Mono', monospace;
 }
@@ -139,7 +129,6 @@
     font-size: 0.65rem;
     padding: 0.1rem 0.35rem;
     border-radius: 3px;
-    font-weight: 500;
     text-transform: lowercase;
 }
 

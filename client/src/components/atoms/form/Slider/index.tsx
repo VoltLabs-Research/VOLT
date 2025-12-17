@@ -16,7 +16,7 @@ export interface SliderProps {
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 const getStepDecimals = (step: number) => {
     const s = step.toString();
-    if(s.includes("e-")) return parseInt(s.split("e-")[1], 10);
+    if (s.includes("e-")) return parseInt(s.split("e-")[1], 10);
     const i = s.indexOf(".");
     return i === -1 ? 0 : s.length - i - 1;
 };
@@ -50,17 +50,17 @@ const Slider: React.FC<SliderProps> = ({
     const ratioFromValue = useCallback((v: number) => (max === min ? 0 : clamp((v - min) / (max - min), 0, 1)), [min, max]);
 
     useLayoutEffect(() => {
-        if(progressRef.current){
-            setScaleXRef.current = gsap.quickSetter(progressRef.current, "scaleX") as(n: number) => void;
+        if (progressRef.current) {
+            setScaleXRef.current = gsap.quickSetter(progressRef.current, "scaleX") as (n: number) => void;
             gsap.set(progressRef.current, { transformOrigin: "0% 50%" });
             qToScaleRef.current = gsap.quickTo(progressRef.current, "scaleX", { duration: 0.14, ease: "power3.out" });
         }
-        if(sheenRef.current){
-            setSheenXRef.current = gsap.quickSetter(sheenRef.current, "xPercent") as(n: number) => void;
+        if (sheenRef.current) {
+            setSheenXRef.current = gsap.quickSetter(sheenRef.current, "xPercent") as (n: number) => void;
             gsap.set(sheenRef.current, { yPercent: -50 });
             qToSheenRef.current = gsap.quickTo(sheenRef.current, "xPercent", { duration: 0.14, ease: "power3.out" });
         }
-        if(auraRef.current){
+        if (auraRef.current) {
             setAuraVarRef.current = (n: number) => gsap.set(auraRef.current, { "--aura": n });
         }
         const r0 = ratioFromValue(value);
@@ -71,7 +71,7 @@ const Slider: React.FC<SliderProps> = ({
 
     useEffect(() => {
         const r = ratioFromValue(value);
-        if(!isDragging){
+        if (!isDragging) {
             // Kill any existing animations first
             gsap.killTweensOf([progressRef.current, sheenRef.current]);
 
@@ -86,19 +86,19 @@ const Slider: React.FC<SliderProps> = ({
                 duration: 0.1,
                 ease: "power2.out"
             });
-        }else{
+        } else {
             // Direct update during drag for 60fps
-            if(progressRef.current){
+            if (progressRef.current) {
                 gsap.set(progressRef.current, { scaleX: r });
             }
-            if(sheenRef.current){
+            if (sheenRef.current) {
                 gsap.set(sheenRef.current, { xPercent: r * 100 });
             }
         }
     }, [value, ratioFromValue, isDragging]);
 
     const pressOn = useCallback(() => {
-        if(!trackRef.current) return;
+        if (!trackRef.current) return;
         gsap.to(trackRef.current, {
             scale: 1.05,
             duration: 0.15,
@@ -127,7 +127,7 @@ const Slider: React.FC<SliderProps> = ({
         });
     }, []);
     const pressOff = useCallback(() => {
-        if(!trackRef.current) return;
+        if (!trackRef.current) return;
         gsap.to(trackRef.current, {
             scale: 1,
             duration: 0.2,
@@ -157,7 +157,7 @@ const Slider: React.FC<SliderProps> = ({
     }, []);
 
     const startSheen = useCallback(() => {
-        if(!sheenRef.current) return;
+        if (!sheenRef.current) return;
         gsap.to(sheenRef.current, {
             keyframes: [
                 { xPercent: "-40", opacity: 0, scale: 0.8 },
@@ -169,7 +169,7 @@ const Slider: React.FC<SliderProps> = ({
         });
     }, []);
     const stopSheen = useCallback(() => {
-        if(!sheenRef.current) return;
+        if (!sheenRef.current) return;
         gsap.killTweensOf(sheenRef.current);
         gsap.to(sheenRef.current, {
             opacity: 0,
@@ -180,7 +180,7 @@ const Slider: React.FC<SliderProps> = ({
     }, []);
 
     const updateFromClientX = useCallback((clientX: number) => {
-        if(!trackRef.current || disabled) return;
+        if (!trackRef.current || disabled) return;
         const rect = trackRef.current.getBoundingClientRect();
         const ratio = clamp((clientX - rect.left) / rect.width, 0, 1);
         const raw = min + ratio * (max - min);
@@ -191,11 +191,11 @@ const Slider: React.FC<SliderProps> = ({
         gsap.killTweensOf([progressRef.current, sheenRef.current]);
 
         // Direct property updates for 60fps - no GSAP during drag
-        if(progressRef.current){
+        if (progressRef.current) {
             gsap.set(progressRef.current, { scaleX: r });
         }
 
-        if(sheenRef.current){
+        if (sheenRef.current) {
             gsap.set(sheenRef.current, { xPercent: r * 100 });
         }
 
@@ -207,7 +207,7 @@ const Slider: React.FC<SliderProps> = ({
     }, [disabled, min, max, step, decimals, ratioFromValue, onChange]);
 
     const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-        if(disabled) return;
+        if (disabled) return;
         e.currentTarget.setPointerCapture?.(e.pointerId);
         setIsDragging(true);
         pressOn();
@@ -216,7 +216,7 @@ const Slider: React.FC<SliderProps> = ({
     }, [disabled, pressOn, startSheen, updateFromClientX]);
 
     const onPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-        if(!isDragging || disabled) return;
+        if (!isDragging || disabled) return;
         updateFromClientX(e.clientX);
     }, [isDragging, disabled, updateFromClientX]);
 
@@ -232,17 +232,17 @@ const Slider: React.FC<SliderProps> = ({
     }, [pressOff, stopSheen, ratioFromValue, value]);
 
     const onPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-        if(!isDragging) return;
+        if (!isDragging) return;
         finishDrag(e.currentTarget, e.pointerId);
     }, [isDragging, finishDrag]);
 
     const onPointerCancel = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-        if(!isDragging) return;
+        if (!isDragging) return;
         finishDrag(e.currentTarget, e.pointerId);
     }, [isDragging, finishDrag]);
 
     const onLostCapture = useCallback(() => {
-        if(isDragging) setIsDragging(false);
+        if (isDragging) setIsDragging(false);
         pressOff();
         stopSheen();
         const r = ratioFromValue(value);
@@ -252,7 +252,7 @@ const Slider: React.FC<SliderProps> = ({
     }, [isDragging, pressOff, stopSheen, ratioFromValue, value]);
 
     const onMouseEnter = useCallback(() => {
-        if(disabled || isDragging) return;
+        if (disabled || isDragging) return;
         gsap.killTweensOf(trackRef.current);
         gsap.to(trackRef.current, {
             scale: 1.02,
@@ -267,7 +267,7 @@ const Slider: React.FC<SliderProps> = ({
     }, [disabled, isDragging]);
 
     const onMouseLeave = useCallback(() => {
-        if(disabled || isDragging) return;
+        if (disabled || isDragging) return;
         gsap.killTweensOf(trackRef.current);
         gsap.to(trackRef.current, {
             scale: 1,
@@ -282,10 +282,10 @@ const Slider: React.FC<SliderProps> = ({
     }, [disabled, isDragging]);
 
     const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-        if(disabled) return;
+        if (disabled) return;
         let next = value;
         const coarse = step * 10;
-        switch(e.key){
+        switch (e.key) {
             case "ArrowLeft":
             case "ArrowDown":
                 e.preventDefault();
@@ -348,11 +348,11 @@ const Slider: React.FC<SliderProps> = ({
         onChange(next);
     }, [disabled, value, step, min, max, decimals, ratioFromValue, onChange]);
 
-    return(
-        <div className={`slider slider--ios ${disabled ? "slider--disabled" : ""} ${className || ""}`} style={style} aria-disabled={disabled || undefined} data-disabled={disabled || undefined}>
+    return (
+        <div className={`slider slider--ios ${disabled ? "slider--disabled" : ""} ${className || ""} u-select-none`} style={style} aria-disabled={disabled || undefined} data-disabled={disabled || undefined}>
             <div
                 ref={trackRef}
-                className="slider__track"
+                className="slider__track p-relative w-max overflow-hidden cursor-pointer"
                 role="slider"
                 aria-valuemin={min}
                 aria-valuemax={max}
@@ -368,11 +368,11 @@ const Slider: React.FC<SliderProps> = ({
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
             >
-                <div ref={progressRef} className="slider__progress">
-                    <div className="slider__gloss" />
-                    <div ref={sheenRef} className="slider__sheen" />
-                    <div ref={auraRef} className="slider__aura" />
-                    <div className="slider__sparkles">
+                <div ref={progressRef} className="slider__progress p-absolute inset-0">
+                    <div className="slider__gloss p-absolute" />
+                    <div ref={sheenRef} className="slider__sheen p-absolute" />
+                    <div ref={auraRef} className="slider__aura p-absolute" />
+                    <div className="slider__sparkles p-absolute overflow-hidden inset-0">
                         <span />
                         <span />
                         <span />
@@ -382,7 +382,7 @@ const Slider: React.FC<SliderProps> = ({
                         <span />
                         <span />
                     </div>
-                    <div className="slider__noise" />
+                    <div className="slider__noise p-absolute inset-0" />
                 </div>
             </div>
         </div>

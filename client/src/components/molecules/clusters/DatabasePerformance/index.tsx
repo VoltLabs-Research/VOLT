@@ -19,14 +19,14 @@ const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length >= 3) {
     return (
       <div className="db-tooltip">
-        <Paragraph className="db-tooltip-label">{payload[0].payload.time}</Paragraph>
-        <Paragraph className="db-tooltip-item" style={{ color: '#3b82f6' }}>
+        <Paragraph className="db-tooltip-label font-size-2 font-weight-6">{payload[0].payload.time}</Paragraph>
+        <Paragraph className="db-tooltip-item font-size-1" style={{ color: '#3b82f6' }}>
           Queries: {payload[0].value}
         </Paragraph>
-        <Paragraph className="db-tooltip-item" style={{ color: '#8b5cf6' }}>
+        <Paragraph className="db-tooltip-item font-size-1" style={{ color: '#8b5cf6' }}>
           Connections: {payload[1].value}
         </Paragraph>
-        <Paragraph className="db-tooltip-item" style={{ color: '#06b6d4' }}>
+        <Paragraph className="db-tooltip-item font-size-1" style={{ color: '#06b6d4' }}>
           Latency: {payload[2].value}ms
         </Paragraph>
       </div>

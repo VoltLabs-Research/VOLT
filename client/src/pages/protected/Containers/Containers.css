@@ -1,7 +1,6 @@
 /* Containers Page Wrapper */
 
 .containers-listing-header {
-    position: absolute;
     top: 2rem;
     right: 2rem;
     z-index: 10;
@@ -13,9 +12,6 @@
     color: var(--color-bg);
     border: none;
     border-radius: 8px;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -36,41 +32,29 @@
     border-radius: 8px;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border);
-    color: var(--color-text-primary);
 }
 
 .container-name-content {
-    overflow: hidden;
 }
 
 .container-name-text {
-    font-weight: 600;
-    color: var(--color-text-primary);
     font-size: 0.9375rem;
 }
 
 .container-id-text {
-    font-size: 0.75rem;
-    color: var(--color-text-muted);
     font-family: 'JetBrains Mono', 'Courier New', monospace;
 }
 
 .container-image-text {
     font-family: 'JetBrains Mono', 'Courier New', monospace;
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
 }
 
 .container-port-text {
     font-family: 'JetBrains Mono', 'Courier New', monospace;
-    font-size: 0.875rem;
     color: var(--accent-indigo);
-    font-weight: 500;
 }
 
 .text-muted {
-    color: var(--color-text-muted);
-    font-size: 0.875rem;
 }
 
 /* Responsive adjustments */
@@ -86,8 +70,6 @@
         width: 100%;
         justify-content: center;
     }
-
-
 
     .container-icon-small {
         width: 32px;

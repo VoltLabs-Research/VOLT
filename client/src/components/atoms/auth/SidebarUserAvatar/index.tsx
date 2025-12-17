@@ -45,11 +45,11 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
             trigger={
                 <Container className='sidebar-user-container d-flex items-center gap-1 cursor-pointer' onClick={onClick}>
                     <Container
-                        className='d-flex flex-center sidebar-user-avatar-container'
+                        className='d-flex flex-center sidebar-user-avatar-container font-weight-5'
                         data-avatarrounded={avatarrounded}
                     >
                         {user.avatar ? (
-                            <img src={user.avatar} alt="User Avatar" className='sidebar-user-avatar-img' />
+                            <img src={user.avatar} alt="User Avatar" className='sidebar-user-avatar-img w-max h-max' />
                         ) : (
                             <span className='sidebar-user-avatar'>{user.firstName?.[0] || '?'}</span>
                         )}
@@ -57,7 +57,7 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
 
                     <Container className='d-flex column gap-01'>
                         {!hideUsername && (
-                            <span className='sidebar-user-fullname'>{user.firstName || ''} {user.lastName || ''}</span>
+                            <span className='sidebar-user-fullname color-primary'>{user.firstName || ''} {user.lastName || ''}</span>
                         )}
                     </Container>
                 </Container>

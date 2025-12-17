@@ -4,7 +4,6 @@
     border-bottom: 1px solid var(--color-border-soft);
     background: var(--glass-bg);
     backdrop-filter: blur(25px) saturate(180%);
-    position: relative;
     z-index: 2;
     box-shadow:
         var(--shadow-glass),
@@ -17,8 +16,6 @@
     border-radius: 50%;
     background: linear-gradient(135deg, var(--accent-green), var(--accent-teal));
     color: white;
-    font-weight: 600;
-    font-size: 1rem;
 }
 
 .chat-header-avatar.group-avatar {
@@ -28,16 +25,12 @@
 }
 
 .chat-header-name {
-    font-weight: 600;
-    color: var(--color-text-primary);
-    font-size: 1rem;
     margin: 0;
 }
 
 .chat-header-status {
     font-size: 0.85rem;
     color: var(--accent-green);
-    font-weight: 500;
 }
 
 .chat-header-status::before {
@@ -54,12 +47,7 @@
     border-radius: 50%;
     background: var(--color-surface-2);
     border: 1px solid transparent;
-    color: var(--color-text-secondary);
-    cursor: pointer;
     transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    font-size: 1rem;
-    position: relative;
-    overflow: hidden;
     backdrop-filter: blur(20px);
 }
 

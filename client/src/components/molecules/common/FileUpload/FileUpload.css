@@ -1,9 +1,6 @@
-.file-upload-container{
-    position: absolute;
+.file-upload-container {
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
     z-index: 100;
     opacity: 0;
     pointer-events: none;

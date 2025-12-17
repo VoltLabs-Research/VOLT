@@ -44,9 +44,9 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = () => {
             id='login-activity-modal'
             title='Login Activity'
             width='600px'
-            className='login-activity-modal'
+            className='login-activity-modal w-max overflow-hidden'
         >
-            <div className="d-flex column flex-1 login-activity-modal-content">
+            <div className="d-flex column flex-1 login-activity-modal-content y-auto">
                 <div className="d-flex items-center content-end gap-075 login-activity-modal-actions mb-1">
                     <Button
                         variant='ghost'
@@ -100,17 +100,17 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = () => {
                     <div className="d-flex column gap-1 activity-list">
                         {activities.map((activity) => (
                             <div key={activity._id} className={`d-flex items-start gap-1 activity-item ${activity.success ? 'success' : 'failed'}`}>
-                                <div className="d-flex flex-center activity-icon">
+                                <div className="d-flex flex-center activity-icon f-shrink-0">
                                     {activity.success ? <TbCheck size={20} /> : <TbX size={20} />}
                                 </div>
                                 <div className="d-flex column gap-075 flex-1 activity-content">
                                     <div className="d-flex items-center content-between gap-1 sm:column sm:item-start sm:gap-05 activity-header">
-                                        <span className="activity-title">
+                                        <span className="activity-title font-size-3 font-weight-6 color-primary">
                                             {activity.action === 'login' ? 'Successful Login' :
                                                 activity.action === 'failed_login' ? 'Failed Login Attempt' :
                                                     'Logout'}
                                         </span>
-                                        <span className="activity-time">
+                                        <span className="activity-time font-size-2 color-secondary">
                                             {(() => {
                                                 try {
                                                     const date = new Date(activity.createdAt);
@@ -124,14 +124,14 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = () => {
                                         </span>
                                     </div>
                                     <div className="d-flex column gap-05 activity-details">
-                                        <Paragraph className="activity-description">
+                                        <Paragraph className="activity-description font-size-2 color-secondary">
                                             <strong>Device:</strong> {activity.userAgent}
                                         </Paragraph>
-                                        <Paragraph className="activity-description">
+                                        <Paragraph className="activity-description font-size-2 color-secondary">
                                             <strong>IP Address:</strong> {activity.ip}
                                         </Paragraph>
                                         {activity.failureReason && (
-                                            <Paragraph className="activity-description">
+                                            <Paragraph className="activity-description font-size-2 color-secondary">
                                                 <strong>Reason:</strong> {activity.failureReason}
                                             </Paragraph>
                                         )}

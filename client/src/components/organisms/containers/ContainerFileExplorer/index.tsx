@@ -84,7 +84,7 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
                     </Button>
                     <span>{viewingFile}</span>
                 </Container>
-                <pre className="file-content">{fileContent}</pre>
+                <pre className="file-content overflow-auto flex-1">{fileContent}</pre>
             </Container>
         );
     }
@@ -112,13 +112,13 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
                         {files.map((file, index) => (
                             <Container
                                 key={index}
-                                className="file-item"
+                                className="file-item items-center cursor-pointer"
                                 onClick={() => file.isDirectory ? handleNavigate(file.name) : handleFileClick(file.name)}
                             >
                                 <span className="d-flex items-center content-center file-icon">
                                     {file.isDirectory ? <IoFolder className="folder-icon" /> : <IoDocument className="doc-icon" />}
                                 </span>
-                                <span className="file-name">{file.name}</span>
+                                <span className="file-name font-weight-5">{file.name}</span>
                                 <span className="file-size">{file.size}</span>
                                 <span className="file-date">{file.updatedAt}</span>
                             </Container>

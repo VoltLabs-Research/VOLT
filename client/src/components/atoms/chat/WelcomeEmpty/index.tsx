@@ -14,7 +14,7 @@ const WelcomeEmpty = ({ isConnected }: WelcomeEmptyProps) => {
                 <Title className="font-size-5 font-weight-6 color-primary">Welcome to Chat</Title>
                 <Paragraph className='font-size-3 color-secondary'>Select a conversation or start a new chat with a team member</Paragraph>
                 {!isConnected && (
-                    <Container className='chat-connection-status'>
+                    <Container className='chat-connection-status mt-1'>
                         <Paragraph className='font-size-2-5 color-muted'>Connecting to chat service...</Paragraph>
                     </Container>
                 )}

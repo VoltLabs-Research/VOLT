@@ -26,8 +26,8 @@ const RasterSceneSkeleton: React.FC = () => {
     const playbackWidth = isMobile ? 'min(32vw, 60vw)' : 'min(8vw, 60vw)';
 
     return(
-        <figure className='raster-scene-container' style={{ flex: 1, minWidth: 0 }}>
-            <div className='raster-scene-main'>
+        <figure className='raster-scene-container p-relative w-max h-max' style={{ flex: 1, minWidth: 0 }}>
+            <div className='raster-scene-main flex-1'>
                 <Skeleton
                     variant='rectangular'
                     animation='wave'
@@ -40,7 +40,7 @@ const RasterSceneSkeleton: React.FC = () => {
                 />
             </div>
 
-            <div className='raster-skel raster-skel-select'>
+            <div className='raster-skel raster-skel-select p-absolute'>
                 <Skeleton
                     variant='rounded'
                     animation='wave'
@@ -53,7 +53,7 @@ const RasterSceneSkeleton: React.FC = () => {
             </div>
 
             {/* Frame index skeleton(responsive) */}
-            <div className='raster-skel raster-skel-frame'>
+            <div className='raster-skel raster-skel-frame p-absolute'>
                 <Skeleton
                     variant='rounded'
                     animation='wave'
@@ -67,7 +67,7 @@ const RasterSceneSkeleton: React.FC = () => {
             </div>
 
             {/* Playback controls skeleton(responsive) */}
-            <div className='raster-skel raster-skel-playback'>
+            <div className='raster-skel raster-skel-playback p-absolute'>
                 <Skeleton
                     variant='rounded'
                     animation='wave'
@@ -80,7 +80,7 @@ const RasterSceneSkeleton: React.FC = () => {
                 />
             </div>
 
-            <div className='raster-skel raster-skel-rail' style={{ width: 'min(132px, 24vw)' }}>
+            <div className='raster-skel raster-skel-rail p-absolute y-auto' style={{ width: 'min(132px, 24vw)' }}>
                 {Array.from({ length: 4 }, (_, i) => (
                     <Skeleton
                         key={`rail-skel-${i}`}

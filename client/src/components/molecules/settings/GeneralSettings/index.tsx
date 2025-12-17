@@ -108,19 +108,19 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                 <Container className="d-flex items-center gap-1-5 sm:column sm:text-center">
                     <Container className="f-shrink-0">
                         <Container
-                            className="profile-avatar-container p-relative"
+                            className="profile-avatar-container p-relative overflow-hidden cursor-pointer"
                             onClick={() => document.getElementById("avatar-upload")?.click()}
                         >
                             {user?.avatar ? (
-                                <img src={user.avatar} alt="Profile" className="profile-avatar-img" />
+                                <img src={user.avatar} alt="Profile" className="profile-avatar-img w-max h-max" />
                             ) : (
-                                <Container className="d-flex flex-center avatar-circle">
+                                <Container className="d-flex flex-center avatar-circle font-size-5 font-weight-6">
                                     {user?.firstName?.[0]}
                                     {user?.lastName?.[0]}
                                 </Container>
                             )}
 
-                            <Container className="p-absolute flex-center d-flex profile-avatar-overlay">
+                            <Container className="p-absolute flex-center d-flex profile-avatar-overlay w-max h-max">
                                 {isUploadingAvatar ? (
                                     <TbActivity className="animate-spin" size={24} />
                                 ) : (
@@ -140,10 +140,10 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                     </Container>
 
                     <Container className="flex-1">
-                        <Title className='font-size-4 profile-name'>
+                        <Title className='font-size-4 profile-name font-weight-6 color-primary'>
                             {user?.firstName} {user?.lastName}
                         </Title>
-                        <Paragraph className='profile-email'>{user?.email}</Paragraph>
+                        <Paragraph className='profile-email font-size-3 color-secondary'>{user?.email}</Paragraph>
                         <Container className="d-flex items-center gap-05">
                             <StatusBadge variant="active">
                                 <TbCheck size={14} />
@@ -165,9 +165,9 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                         </div>
                     )}
 
-                    <div className="form-row">
+                    <div className="form-row gap-1-5">
                         {fields.map((f) => (
-                            <div key={f.key} className="form-field-container">
+                            <div key={f.key} className="form-field-container p-relative w-max">
                                 <FormInput
                                     value={f.value}
                                     label={f.label}
@@ -176,7 +176,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                                     error={(errors as any)[f.key]}
                                 />
                                 {isUpdating && (
-                                    <div className="update-indicator">
+                                    <div className="update-indicator p-absolute font-size-1 color-secondary">
                                         <TbActivity size={16} />
                                         Updating...
                                     </div>
@@ -185,7 +185,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                         ))}
                     </div>
 
-                    <div className="form-field-container">
+                    <div className="form-field-container p-relative w-max">
                         <FormInput
                             value={userData.email}
                             label="Email address"
@@ -194,7 +194,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                             error={errors.email}
                         />
                         {isUpdating && (
-                            <div className="update-indicator">
+                            <div className="update-indicator p-absolute font-size-1 color-secondary">
                                 <TbActivity size={16} />
                                 Updating...
                             </div>

@@ -49,10 +49,10 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
                                     <TbDeviceDesktop size={20} />
                                 </Container>
                                 <Container className='d-flex column gap-025'>
-                                    <span className='session-device'>
+                                    <span className='session-device font-weight-5 color-primary'>
                                         {index === 0 ? 'Current Session' : 'Active Session'}
                                     </span>
-                                    <span className='session-location'>
+                                    <span className='session-location color-secondary'>
                                         {session.userAgent} • {session.ip}
                                     </span>
                                 </Container>
@@ -73,7 +73,7 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
                     ))}
 
                     {sessions.length > 1 && (
-                        <Container className='d-flex content-center session-actions-bulk'>
+                        <Container className='d-flex content-center session-actions-bulk mt-1'>
                             <Button variant='soft' intent='danger' size='sm' leftIcon={<TbX size={16} />} onClick={revokeAllOtherSessions}>
                                 Revoke All Other Sessions
                             </Button>

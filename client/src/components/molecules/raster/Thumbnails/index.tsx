@@ -47,7 +47,7 @@ const Thumbnails: React.FC<ThumbnailsProps> = ({
   const showSkeletons = isLoading && !timeline.length;
 
   return (
-    <div className="d-flex gap-1 overflow-x-auto raster-thumbnails" ref={thumbnailsRef} style={{ paddingBlock: '.25rem' }}>
+    <div className="d-flex gap-1 overflow-x-auto raster-thumbnails w-max" ref={thumbnailsRef} style={{ paddingBlock: '.25rem' }}>
       {showSkeletons
         ? Array.from({ length: 8 }, (_, i) => <ThumbnailSkeleton key={`thumb-skel-${i}`} />)
         : timeline.map((ts, idx) => {

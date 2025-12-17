@@ -6,7 +6,6 @@
     border: 1px solid var(--color-border);
     background-color: var(--color-surface-2);
     height: 2.7rem;
-    color: var(--color-text-primary);
     padding: 0 1.5rem;
     border-radius: 5rem;
     width: 500px;
@@ -14,7 +13,6 @@
 }
 
 .search-input {
-    height: 100%;
     font-size: .95rem;
     background-color: transparent;
 }

@@ -90,12 +90,12 @@ const DashboardPage: React.FC = memo(() => {
     return (
         <FileUpload>
             <DashboardContainer pageName='Dashboard' className='d-flex h-max sm:column w-max gap-2'>
-                <Container className='d-flex column dashboard-body-left-container'>
+                <Container className='d-flex column dashboard-body-left-container gap-2 h-max'>
                     <Container>
                         <Title className='font-size-6 color-primary font-weight-5-5'>{getGreeting()}, {capitalize(user?.firstName)}</Title>
                     </Container>
 
-                    <Container className='scene-preview-container'>
+                    <Container className='scene-preview-container p-relative w-max vh-max overflow-hidden'>
                         {isProcessing ? (
                             <Container style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 20, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <ProcessingLoader
@@ -107,17 +107,17 @@ const DashboardPage: React.FC = memo(() => {
                             </Container>
                         ) : (trajectory?._id && currentTimestep !== undefined) && (
                             <>
-                                <Container className='badge-container scene-preview-name-badge primary-surface'>
+                                <Container className='badge-container scene-preview-name-badge primary-surface p-absolute'>
                                     <Paragraph className='font-size-2 font-weight-5'>{trajectory.name}</Paragraph>
                                 </Container>
 
-                                <Container className='badge-container scene-preview-natoms-badge primary-surface'>
+                                <Container className='badge-container scene-preview-natoms-badge primary-surface p-absolute'>
                                     <Paragraph className='font-size-2 font-weight-5'>
                                         {formatNumber((trajectory.frames || []).find((f: any) => f.timestep === currentTimestep)?.natoms ?? 0)} atoms
                                     </Paragraph>
                                 </Container>
 
-                                <Container className='badge-container scene-preview-navigate-icon primary-surface'>
+                                <Container className='badge-container scene-preview-navigate-icon primary-surface p-absolute font-size-5'>
                                     <GoArrowRight />
                                 </Container>
                             </>
@@ -157,7 +157,7 @@ const DashboardPage: React.FC = memo(() => {
                         </Container>
 
                         {hasNoTrajectories && (
-                            <Container className='d-flex flex-center dashboard-canvas-overlay'>
+                            <Container className='d-flex flex-center dashboard-canvas-overlay p-absolute inset-0'>
                                 <Container className='d-flex column gap-05 text-center'>
                                     <Title className='font-size-5 color-primary font-weight-6'>Preview</Title>
                                     <Paragraph className='color-secondary font-size-3 line-height-5 dashboard-overlay-description'>Real-time visualization of atomic structures from your trajectory data will appear here once loaded.</Paragraph>
@@ -167,8 +167,8 @@ const DashboardPage: React.FC = memo(() => {
                     </Container>
                 </Container>
 
-                <Container className='d-flex column dashboard-body-right-container'>
-                    <Container className='dashboard-stats-wrapper'>
+                <Container className='d-flex column dashboard-body-right-container gap-2'>
+                    <Container className='dashboard-stats-wrapper p-relative w-max'>
                         <DashboardStats teamId={selectedTeam?._id} trajectoryId={displayTrajectory?._id} />
                     </Container>
 

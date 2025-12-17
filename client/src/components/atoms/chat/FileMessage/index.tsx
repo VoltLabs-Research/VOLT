@@ -52,21 +52,21 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
         return (
             <div className='d-flex column gap-05'>
                 {preview ? (
-                    <img src={preview} alt={meta.fileName} className='chat-image-preview' />
+                    <img src={preview} alt={meta.fileName} className='chat-image-preview cursor-pointer' />
                 ) : (
-                    <div className='d-flex flex-center chat-image-loading'>
+                    <div className='d-flex flex-center chat-image-loading w-max font-size-6 color-secondary'>
                         <IoImageOutline />
                     </div>
                 )}
                 <div className='d-flex items-center gap-075 chat-file-info'>
-                    <div className='d-flex flex-center chat-file-icon'>
+                    <div className='d-flex flex-center chat-file-icon color-secondary'>
                         <IoImageOutline />
                     </div>
-                    <div className='chat-file-details'>
-                        <Paragraph className='chat-file-name'>{meta.fileName}</Paragraph>
-                        <Paragraph className='chat-file-size'>{formatSize(meta.fileSize ?? 0)}</Paragraph>
+                    <div className='chat-file-details flex-1'>
+                        <Paragraph className='chat-file-name overflow-hidden font-weight-6 color-primary'>{meta.fileName}</Paragraph>
+                        <Paragraph className='chat-file-size color-muted'>{formatSize(meta.fileSize ?? 0)}</Paragraph>
                     </div>
-                    <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download'><IoDownloadOutline /></a>
+                    <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download font-size-3 color-muted'><IoDownloadOutline /></a>
                 </div>
             </div>
         );
@@ -74,12 +74,12 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
 
     return (
         <div className='d-flex items-center gap-075 chat-file-info'>
-            <div className='d-flex flex-center chat-file-icon'><IoDocumentOutline /></div>
-            <div className='chat-file-details'>
-                <Paragraph className='chat-file-name'>{meta.fileName}</Paragraph>
-                <Paragraph className='chat-file-size'>{formatSize(meta.fileSize ?? 0)}</Paragraph>
+            <div className='d-flex flex-center chat-file-icon color-secondary'><IoDocumentOutline /></div>
+            <div className='chat-file-details flex-1'>
+                <Paragraph className='chat-file-name overflow-hidden font-weight-6 color-primary'>{meta.fileName}</Paragraph>
+                <Paragraph className='chat-file-size color-muted'>{formatSize(meta.fileSize ?? 0)}</Paragraph>
             </div>
-            <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download'><IoDownloadOutline /></a>
+            <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download font-size-3 color-muted'><IoDownloadOutline /></a>
         </div>
     );
 };

@@ -1,6 +1,5 @@
 .color-coding-container {
     bottom: 2rem;
-    overflow: hidden;
     right: 2rem;
     /* display: flex handled by EditorWidget */
 }

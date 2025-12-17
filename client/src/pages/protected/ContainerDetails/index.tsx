@@ -139,12 +139,12 @@ const ContainerDetails: React.FC = () => {
                         </div>
                         <div className="identity-text">
                             <Title className="font-size-4 font-weight-6">{container.name}</Title>
-                            <span className={`d-flex items-center gap-035 status-badge ${container.status}`}>{container.status}</span>
+                            <span className={`d-flex items-center gap-035 status-badge ${container.status} font-size-1 font-weight-5 font-weight-6`}>{container.status}</span>
                         </div>
                     </div>
                 </div>
 
-                <nav className="sidebar-nav d-flex column gap-025">
+                <nav className="sidebar-nav d-flex column gap-025 flex-1">
                     <Button
                         variant={activeTab === 'overview' ? 'soft' : 'ghost'}
                         intent={activeTab === 'overview' ? 'brand' : 'neutral'}
@@ -202,30 +202,30 @@ const ContainerDetails: React.FC = () => {
                         </>
                     )}
                     {container.ports?.[0] && (
-                        <a href={`http://localhost:${container.ports[0].public}`} target="_blank" rel="noopener noreferrer" className="d-flex items-center content-center gap-05 visit-btn">
+                        <a href={`http://localhost:${container.ports[0].public}`} target="_blank" rel="noopener noreferrer" className="d-flex items-center content-center gap-05 visit-btn font-size-2 font-weight-6">
                             Visit App <ExternalLink size={14} />
                         </a>
                     )}
                 </div>
             </div>
 
-            <div className="details-content-area">
+            <div className="details-content-area y-auto flex-1">
                 {activeTab === 'overview' && (
-                    <div className="content-pane d-flex column gap-2">
+                    <div className="content-pane d-flex column gap-2 h-max">
                         <div className="d-flex content-between pane-header">
                             <Title className="font-size-4 font-weight-6">Overview</Title>
                             <div className="d-flex gap-075 meta-tags">
-                                <span className="d-flex items-center gap-05 tag monospace">ID: {container.containerId.substring(0, 12)}</span>
-                                <span className="d-flex items-center gap-05 tag">Image: {container.image}</span>
-                                <span className="d-flex items-center gap-05 tag">Created: {new Date(container.createdAt).toLocaleDateString()}</span>
+                                <span className="d-flex items-center gap-05 tag monospace font-size-1 font-weight-5 color-muted-foreground">ID: {container.containerId.substring(0, 12)}</span>
+                                <span className="d-flex items-center gap-05 tag font-size-1 font-weight-5 color-muted-foreground">Image: {container.image}</span>
+                                <span className="d-flex items-center gap-05 tag font-size-1 font-weight-5 color-muted-foreground">Created: {new Date(container.createdAt).toLocaleDateString()}</span>
                             </div>
                         </div>
 
-                        <div className="stats-grid">
+                        <div className="stats-grid gap-2">
                             <div className="stat-card">
-                                <div className="d-flex content-between items-center card-header-row">
+                                <div className="d-flex content-between items-center card-header-row mb-1-5">
                                     <Title className="font-size-3 font-weight-6">CPU Usage</Title>
-                                    <span className="limit-badge">Limit: {container.cpus || 1} vCPU</span>
+                                    <span className="limit-badge font-size-1 font-weight-6">Limit: {container.cpus || 1} vCPU</span>
                                 </div>
                                 <div className="chart-wrapper">
                                     <ResponsiveContainer width="100%" height={250}>
@@ -283,9 +283,9 @@ const ContainerDetails: React.FC = () => {
                                 </div>
                             </div>
                             <div className="stat-card">
-                                <div className="d-flex content-between items-center card-header-row">
+                                <div className="d-flex content-between items-center card-header-row mb-1-5">
                                     <Title className="font-size-3 font-weight-6">Memory Usage</Title>
-                                    <span className="limit-badge">Limit: {container.memory || 512} MB</span>
+                                    <span className="limit-badge font-size-1 font-weight-6">Limit: {container.memory || 512} MB</span>
                                 </div>
                                 <div className="chart-wrapper">
                                     <ResponsiveContainer width="100%" height={250}>
@@ -343,15 +343,15 @@ const ContainerDetails: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="config-grid">
+                        <div className="config-grid gap-2">
                             <div className="config-card">
                                 <Title className="d-flex items-center gap-05 font-size-3 font-weight-6">Environment Variables</Title>
                                 <div className="env-list d-flex column gap-075">
                                     {container.env && container.env.length > 0 ? (
                                         container.env.map((e: any, i: number) => (
                                             <div key={i} className="d-flex content-between env-row">
-                                                <span className="env-key">{e.key}</span>
-                                                <span className="env-val">{e.value}</span>
+                                                <span className="env-key font-weight-6">{e.key}</span>
+                                                <span className="env-val color-muted-foreground">{e.value}</span>
                                             </div>
                                         ))
                                     ) : (
@@ -365,8 +365,8 @@ const ContainerDetails: React.FC = () => {
                                     {container.ports && container.ports.length > 0 ? (
                                         container.ports.map((p: any, i: number) => (
                                             <div key={i} className="d-flex content-between port-row">
-                                                <span className="port-private">{p.private}/tcp</span>
-                                                <span className="arrow">→</span>
+                                                <span className="port-private font-weight-6">{p.private}/tcp</span>
+                                                <span className="arrow color-muted-foreground">→</span>
                                                 <span className="port-public">localhost:{p.public}</span>
                                             </div>
                                         ))
@@ -380,11 +380,11 @@ const ContainerDetails: React.FC = () => {
                 )}
 
                 {activeTab === 'processes' && (
-                    <div className="content-pane full-height">
+                    <div className="content-pane full-height h-max">
                         {container.status === 'running' ? (
                             <ContainerProcesses containerId={container._id} />
                         ) : (
-                            <div className="placeholder-state d-flex column items-center content-center gap-1-5">
+                            <div className="placeholder-state d-flex column items-center content-center gap-1-5 h-max color-muted-foreground">
                                 <Activity size={48} />
                                 <Paragraph className="color-muted">Container must be running to view processes</Paragraph>
                             </div>
@@ -393,7 +393,7 @@ const ContainerDetails: React.FC = () => {
                 )}
 
                 {activeTab === 'logs' && (
-                    <div className="content-pane full-height">
+                    <div className="content-pane full-height h-max">
                         {container.status === 'running' ? (
                             <ContainerTerminal
                                 container={container}
@@ -401,7 +401,7 @@ const ContainerDetails: React.FC = () => {
                                 embedded={true}
                             />
                         ) : (
-                            <div className="placeholder-state d-flex column items-center content-center gap-1-5">
+                            <div className="placeholder-state d-flex column items-center content-center gap-1-5 h-max color-muted-foreground">
                                 <Terminal size={48} />
                                 <Paragraph className="color-muted">Container must be running to view logs</Paragraph>
                             </div>
@@ -410,11 +410,11 @@ const ContainerDetails: React.FC = () => {
                 )}
 
                 {activeTab === 'storage' && (
-                    <div className="content-pane full-height">
+                    <div className="content-pane full-height h-max">
                         {container.status === 'running' ? (
                             <ContainerFileExplorer containerId={container._id} />
                         ) : (
-                            <div className="placeholder-state d-flex column items-center content-center gap-1-5">
+                            <div className="placeholder-state d-flex column items-center content-center gap-1-5 h-max color-muted-foreground">
                                 <Folder size={48} />
                                 <Paragraph className="color-muted">Container must be running to browse files</Paragraph>
                             </div>
@@ -423,9 +423,9 @@ const ContainerDetails: React.FC = () => {
                 )}
 
                 {activeTab === 'settings' && (
-                    <div className="content-pane settings-pane">
+                    <div className="content-pane settings-pane h-max">
                         <Title className="font-size-4 font-weight-6">Settings</Title>
-                        <div className="settings-card">
+                        <div className="settings-card overflow-hidden">
                             <div className="card-header">
                                 <Title className="font-size-3 font-weight-6">Configuration & Resources</Title>
                                 <Paragraph className="color-muted">Update environment variables, ports, and resource limits(CPU/RAM).</Paragraph>
@@ -442,7 +442,7 @@ const ContainerDetails: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="settings-card danger">
+                        <div className="settings-card danger overflow-hidden">
                             <div className="card-header">
                                 <Title className="font-size-3 font-weight-6">Delete Container</Title>
                                 <Paragraph className="color-muted">Permanently remove this container and all its data.</Paragraph>

@@ -36,7 +36,7 @@ const SlicePlane = () => {
     };
 
     return(
-        <EditorWidget className='slice-plane-container' draggable={false}>
+        <EditorWidget className='slice-plane-container overflow-hidden' draggable={false}>
             <Container className='d-flex content-between items-center'>
                 <Title className='font-weight-5-5'>Slice Modifier</Title>
             </Container>

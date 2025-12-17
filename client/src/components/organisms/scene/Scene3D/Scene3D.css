@@ -1,6 +1,4 @@
 .file-upload-container {
-    height: 100%;
-    width: 100%;
 }
 
 /* Ensure Canvas from react-three-fiber occupies 100% of parent */

@@ -3,12 +3,12 @@ import { Skeleton } from '@mui/material';
 
 const DashboardStatsSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => {
     return(
-        <div className='d-flex dashboard-stats-container'>
+        <div className='d-flex dashboard-stats-container w-max overflow-hidden'>
             {Array.from({ length: count }).map((_, i) => (
-                <div className='dashboard-stat-container' key={i}>
-                    <div className='d-flex column gap-2 dashboard-stat-left-container'>
-                        <div className='dashboard-stat-header-container'>
-                            <i className='dashboard-stat-icon-container'>
+                <div className='dashboard-stat-container p-relative cursor-pointer' key={i}>
+                    <div className='d-flex column gap-2 dashboard-stat-left-container w-max'>
+                        <div className='dashboard-stat-header-container gap-1'>
+                            <i className='dashboard-stat-icon-container color-muted'>
                                 <Skeleton variant='circular' width={28} height={28} />
                             </i>
                             <div style={{ width: 120 }}>
@@ -30,7 +30,7 @@ const DashboardStatsSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => 
                             </div>
                         </div>
                     </div>
-                    <div className='dashboard-stat-analytic-container'>
+                    <div className='dashboard-stat-analytic-container p-absolute'>
                         <Skeleton variant='rounded' width={150} height='100%' />
                     </div>
                 </div>

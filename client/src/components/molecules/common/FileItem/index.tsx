@@ -41,7 +41,7 @@ const FileItem: React.FC<FileItemProps> = ({
 }) => {
     return(
         <Container
-            className={`file-item cursor-pointer ${isSelected ? 'selected' : ''}`}
+            className={`file-item cursor-pointer ${isSelected ? 'selected' : ''} items-center`}
             onClick={onSelect}
         >
             <Container className='d-flex content-between items-center'>
@@ -49,7 +49,7 @@ const FileItem: React.FC<FileItemProps> = ({
                 <i className='file-delete-icon-container'>
                     <BsThreeDots
                         onClick={onDelete}
-                        className='file-delete-icon'
+                        className='file-delete-icon font-size-3 color-secondary cursor-pointer'
                     />
                 </i>
             </Container>

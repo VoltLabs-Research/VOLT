@@ -7,22 +7,18 @@
 .chart-viewer-container {
     width: 500px;
     height: 500px;
-    position: absolute;
     z-index: 500;
-    overflow: hidden;
     background-color: rgba(10, 10, 10, 0.55);
     border-radius: 10px;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .chart-viewer-drag-container {
-    position: absolute;
     z-index: 500;
     top: 0;
 }
 
 .raster-frames-container {
-    position: absolute;
     right: 2rem;
     top: 7rem;
     max-height: 800px;
@@ -85,9 +81,6 @@
 }
 
 .editor-model-loading-wrapper {
-    position: absolute;
-    width: 100%;
-    height: 100%;
     z-index: 999999;
     backdrop-filter: blur(1px);
     color: #dadada;
@@ -124,7 +117,6 @@
 }
 
 @media screen and (max-width: 768px) {
-
 
     .editor-scene-zoom {
         font-size: .6rem;

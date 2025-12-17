@@ -51,10 +51,10 @@ export function ServerTable() {
         <ServerDetails server={selectedServer} onClose={() => setSelectedServer(null)} />
       )}
       <Container className="server-table-container">
-        <Container className="d-flex items-center content-between server-table-header">
+        <Container className="d-flex items-center content-between server-table-header mb-1-5">
           <Container className="d-flex items-center gap-075">
             <Container className="server-table-title-bar" />
-            <Title className='font-size-3 server-table-title'>Server Summary</Title>
+            <Title className='font-size-3 server-table-title font-weight-6'>Server Summary</Title>
           </Container>
           <Container className="d-flex items-center gap-05">
             <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown className="server-table-icon-sm" />}>
@@ -76,7 +76,7 @@ export function ServerTable() {
         </Container>
 
         <Container className="server-table-wrapper">
-          <table className="server-table">
+          <table className="server-table w-max">
             <thead>
               <tr>
                 <th>Server ID</th>
@@ -114,14 +114,14 @@ export function ServerTable() {
                   <td>
                     <Container className="d-flex items-center gap-05">
                       <Container className="server-table-status-dot" />
-                      <span className="server-table-id">{server.id}</span>
+                      <span className="server-table-id font-size-2">{server.id}</span>
                     </Container>
                   </td>
                   <td>
-                    <span className="server-table-region-badge">{server.region}</span>
+                    <span className="server-table-region-badge font-size-1">{server.region}</span>
                   </td>
                   <td>
-                    <span className={`server-table-status ${server.statusColor === 'text-emerald-500' ? 'server-table-status-healthy' : server.statusColor === 'text-red-500' ? 'server-table-status-critical' : 'server-table-status-warning'}`}>{server.status}</span>
+                    <span className={`server-table-status ${server.statusColor === 'text-emerald-500' ? 'server-table-status-healthy' : server.statusColor === 'text-red-500' ? 'server-table-status-critical' : 'server-table-status-warning'} font-size-2 font-weight-5`}>{server.status}</span>
                   </td>
                   <td>
                     <Container className="d-flex items-center gap-05">
@@ -133,7 +133,7 @@ export function ServerTable() {
                           />
                         ))}
                       </Container>
-                      <span className="server-table-metric-value">{server.cpu}%</span>
+                      <span className="server-table-metric-value font-size-1 color-muted-foreground">{server.cpu}%</span>
                     </Container>
                   </td>
                   <td>
@@ -146,7 +146,7 @@ export function ServerTable() {
                           />
                         ))}
                       </Container>
-                      <span className="server-table-metric-value">{server.memory}%</span>
+                      <span className="server-table-metric-value font-size-1 color-muted-foreground">{server.memory}%</span>
                     </Container>
                   </td>
                   <td>
@@ -159,14 +159,14 @@ export function ServerTable() {
                           />
                         ))}
                       </Container>
-                      <span className="server-table-metric-value">{server.disk.toFixed(1)}GB Available</span>
+                      <span className="server-table-metric-value font-size-1 color-muted-foreground">{server.disk.toFixed(1)}GB Available</span>
                     </Container>
                   </td>
                   <td>
-                    <span className="server-table-network">{server.network}</span>
+                    <span className="server-table-network font-size-2">{server.network}</span>
                   </td>
                   <td>
-                    <span className="server-table-uptime">{server.uptime}</span>
+                    <span className="server-table-uptime font-size-2 font-weight-5">{server.uptime}</span>
                   </td>
                 </tr>
               )}

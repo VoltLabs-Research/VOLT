@@ -74,7 +74,7 @@ const FileExplorerWindow: React.FC<FileExplorerWindowProps> = ({
 
                         <Container>
                             <Container className='d-flex column gap-05'>
-                                <Title className='font-size-3 file-explorer-nav-title'>{title}</Title>
+                                <Title className='font-size-3 file-explorer-nav-title font-weight-5 u-select-none'>{title}</Title>
                                 <Container className='d-flex column gap-025'>
                                     {navItems}
                                 </Container>

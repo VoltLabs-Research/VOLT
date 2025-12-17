@@ -38,7 +38,7 @@ const TrajectoryVisibilityStatusFloatIcon = () => {
 
     return (
         <EditorWidget
-            className={`trajectory-share-status-container ${isUpdating ? 'is-disabled' : ''}`}
+            className={`trajectory-share-status-container ${isUpdating ? 'is-disabled' : ''} p-absolute overflow-hidden`}
         >
             <Button
                 variant='ghost'

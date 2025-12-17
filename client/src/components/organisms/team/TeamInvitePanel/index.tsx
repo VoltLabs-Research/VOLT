@@ -167,7 +167,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 </Button>
             </Container>
 
-            <Container className='team-invite-content d-flex column flex-1'>
+            <Container className='team-invite-content d-flex column flex-1 y-auto'>
                 <Container className='team-invite-input-section d-flex items-center gap-05'>
                     <input
                         autoFocus
@@ -177,7 +177,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         onKeyPress={handleAddMember}
-                        className='team-invite-search-input'
+                        className='team-invite-search-input flex-1'
                         disabled={loading}
                     />
                     <Button
@@ -192,7 +192,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     </Button>
                 </Container>
 
-                <Container className='team-invite-members-section'>
+                <Container className='team-invite-members-section y-auto f-shrink-0'>
                     {loadingMembers ? (
                         <>
                             {[1, 2, 3].map((i) => (
@@ -215,9 +215,9 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     ) : (
                         members.map((member) => (
                             <Container key={member.email} className='d-flex items-center content-between gap-075 team-invite-member-item'>
-                                <Container className='d-flex items-center gap-075 team-invite-member-info'>
+                                <Container className='d-flex items-center gap-075 team-invite-member-info flex-1'>
                                     <Container
-                                        className='d-flex items-center content-center team-invite-avatar'
+                                        className='d-flex items-center content-center team-invite-avatar f-shrink-0 font-weight-5'
                                         style={{ backgroundColor: member.avatar ? 'transparent' : getAvatarColor(member.email) }}
                                     >
                                         {member.avatar ? (
@@ -230,9 +230,9 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                                             getInitials(member.email)
                                         )}
                                     </Container>
-                                    <Container className='team-invite-member-details'>
-                                        <Paragraph className='team-invite-member-name'>{member.name || member.email}</Paragraph>
-                                        {member.name && member.name !== member.email && <Paragraph className='team-invite-member-email'>{member.email}</Paragraph>}
+                                    <Container className='team-invite-member-details flex-1'>
+                                        <Paragraph className='team-invite-member-name overflow-hidden font-weight-5'>{member.name || member.email}</Paragraph>
+                                        {member.name && member.name !== member.email && <Paragraph className='team-invite-member-email overflow-hidden'>{member.email}</Paragraph>}
                                     </Container>
                                 </Container>
                                 <Container className='d-flex items-center gap-05 team-invite-member-role'>
@@ -245,7 +245,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                                         ]}
                                         value={member.role}
                                         onChange={(value) => handleRoleChange(member.email, value as 'Can view' | 'Full access' | 'Can edit' | 'Remove')}
-                                        className='team-invite-role-select'
+                                        className='team-invite-role-select cursor-pointer'
                                         maxListWidth={150}
                                         renderInPortal={true}
                                     />
@@ -255,16 +255,16 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     )}
                 </Container>
 
-                <Container className='team-invite-general-access'>
+                <Container className='team-invite-general-access f-shrink-0'>
                     <Container className='team-invite-general-header'>
-                        <Title className='font-size-1 team-invite-general-title'>General Access</Title>
+                        <Title className='font-size-1 team-invite-general-title font-weight-6'>General Access</Title>
                     </Container>
                     <Container className='d-flex items-center gap-075 team-invite-general-item'>
-                        <Container className='d-flex items-center content-center team-invite-general-icon'>
+                        <Container className='d-flex items-center content-center team-invite-general-icon f-shrink-0'>
                             <MdPublic size={18} />
                         </Container>
-                        <Container className='team-invite-general-info'>
-                            <Paragraph className='team-invite-general-name'>Anyone with the link</Paragraph>
+                        <Container className='team-invite-general-info flex-1'>
+                            <Paragraph className='team-invite-general-name font-weight-5'>Anyone with the link</Paragraph>
                         </Container>
                         <Select
                             options={[
@@ -275,7 +275,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                             value={generalAccess}
                             style={{ width: 150 }}
                             onChange={(value) => setGeneralAccess(value as 'Can edit' | 'Can view' | 'Restricted')}
-                            className='team-invite-general-select'
+                            className='team-invite-general-select cursor-pointer'
                             renderInPortal={true}
                         />
                     </Container>

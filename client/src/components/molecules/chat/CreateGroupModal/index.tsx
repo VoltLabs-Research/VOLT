@@ -98,9 +98,9 @@ const CreateGroupModal = () => {
                 </div>
             </div>
 
-            <div className='d-flex column gap-1 create-group-members-section mt-1'>
+            <div className='d-flex column gap-1 create-group-members-section mt-1 w-max'>
                 <Title className='font-size-2-5'>Select Members</Title>
-                <div className='d-flex column gap-05 create-group-members-list'>
+                <div className='d-flex column gap-05 create-group-members-list y-auto'>
                     {teamMembers
                         .filter((member, index, self) =>
                             member._id !== user?._id &&
@@ -109,14 +109,14 @@ const CreateGroupModal = () => {
                         .map((member) => (
                             <div
                                 key={member._id}
-                                className={`d-flex items-center gap-075 create-group-member ${selectedMembers.includes(member._id) ? 'selected' : ''}`}
+                                className={`d-flex items-center gap-075 create-group-member ${selectedMembers.includes(member._id) ? 'selected' : ''} cursor-pointer`}
                                 onClick={() => toggleMemberSelection(member._id)}
                             >
-                                <div className='d-flex flex-center create-group-member-avatar'>
+                                <div className='d-flex flex-center create-group-member-avatar font-weight-6'>
                                     {getInitials(member.firstName, member.lastName)}
                                 </div>
-                                <div className='create-group-member-info'>
-                                    <span className='create-group-member-name'>
+                                <div className='create-group-member-info flex-1'>
+                                    <span className='create-group-member-name font-weight-5 color-primary'>
                                         {member.firstName} {member.lastName}
                                     </span>
                                 </div>

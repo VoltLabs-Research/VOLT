@@ -80,7 +80,7 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
     }, [scene3DRef]);
 
     return (
-        <EditorWidget className='d-flex items-center gap-1 row editor-top-centered-options-container' draggable={false}>
+        <EditorWidget className='d-flex items-center gap-1 row editor-top-centered-options-container p-absolute' draggable={false}>
             {[
                 [GrHomeRounded, () => navigate('/dashboard')],
                 [MdOutlineLightMode, () => { }],
@@ -98,7 +98,7 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
                 );
             })}
 
-            <div className='editor-scene-zoom-selector-wrapper'>
+            <div className='editor-scene-zoom-selector-wrapper p-relative'>
                 <Select
                     options={zoomOptions}
                     value={currentZoom}

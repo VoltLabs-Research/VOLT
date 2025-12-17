@@ -43,7 +43,7 @@ const TimestepControls: React.FC = () => {
     if (currentTimestep === undefined) return null;
 
     return (
-        <EditorWidget className='editor-timestep-controls row items-center content-between' draggable={false}>
+        <EditorWidget className='editor-timestep-controls row items-center content-between p-absolute' draggable={false}>
             <PlayControls
                 isPlaying={isPlaying}
                 onPlayPause={togglePlay}

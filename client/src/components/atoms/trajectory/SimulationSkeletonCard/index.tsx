@@ -29,10 +29,10 @@ type Props = { n?: number };
 const SimulationSkeletonCard: React.FC<Props> = ({ n = 8 }) => {
 
     return(new Array(n).fill(0)).map((_, index) => (
-        <Container className='simulation-container' key={index}>
+        <Container className='simulation-container p-relative w-max overflow-hidden cursor-pointer' key={index}>
             <Skeleton variant='rounded' width='100%' height={200} />
-            <Container className='simulation-caption-container'>
-                <Container className='simulation-caption-left-container'>
+            <Container className='simulation-caption-container p-absolute'>
+                <Container className='simulation-caption-left-container w-max flex-1'>
                     <Skeleton variant='text' sx={{ fontSize: '1rem' }} width='60%' />
                     <Skeleton variant='text' sx={{ fontSize: '1rem' }} width='40%' />
                 </Container>

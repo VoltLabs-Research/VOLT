@@ -28,13 +28,10 @@
 
 .session-device {
     font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-text-primary);
 }
 
 .session-location {
     font-size: 0.8rem;
-    color: var(--color-text-secondary);
 }
 
 .session-skeleton {
@@ -64,7 +61,6 @@
 }
 
 .session-actions-bulk {
-    margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid var(--color-border-soft);
 }

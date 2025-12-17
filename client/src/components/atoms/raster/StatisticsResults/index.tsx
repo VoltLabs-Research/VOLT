@@ -123,7 +123,7 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
                                 style={{ backgroundColor: getColor(name) }}
                                 className='type-legend-color'
                             />
-                            <span className='type-legend-text'>
+                            <span className='type-legend-text font-size-1 color-primary'>
                                 {name}
                                 {value !== undefined && ` (${formatNumber(value)})`}
                                 {percentage !== undefined && ` - ${formatNumber(percentage, 'percentage')}`}
@@ -136,8 +136,8 @@ const StatisticsResults: React.FC<StatisticsResultsProps> = ({ data, config }) =
             {config.showSummary && data?.total && (
                 <div className='d-flex gap-1 statistics-summary'>
                     <div className='d-flex items-center gap-05 summary-item'>
-                        <span className='summary-label'>Total:</span>
-                        <span className='summary-value'>{formatNumber(data.total)}</span>
+                        <span className='summary-label font-size-2 font-weight-5'>Total:</span>
+                        <span className='summary-value font-size-3 font-weight-6'>{formatNumber(data.total)}</span>
                     </div>
                 </div>
             )}

@@ -16,7 +16,7 @@ const TextMessage = ({ msg, onSave }: TextMessageProps) => {
     const [draft, setDraft] = useState(msg.content);
 
     if (!isEditing) {
-        return <Paragraph className='chat-message-text'>{msg.content}</Paragraph>;
+        return <Paragraph className='chat-message-text font-size-2-5 color-primary'>{msg.content}</Paragraph>;
     }
 
     const handleEditSave = () => {
@@ -34,7 +34,7 @@ const TextMessage = ({ msg, onSave }: TextMessageProps) => {
 
     return (
         <Container className='d-flex column gap-05'>
-            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} className='chat-message-edit-input' autoFocus />
+            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} className='chat-message-edit-input w-max color-primary' autoFocus />
             <Container className='d-flex gap-05 content-end'>
                 <Button
                     variant='solid'

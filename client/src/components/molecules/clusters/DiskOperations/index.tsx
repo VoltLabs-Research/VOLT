@@ -125,16 +125,16 @@ export function DiskOperations() {
         )}
       </svg>
 
-      <div className="d-flex content-center gap-1 disk-ops-legend">
-        <div className="d-flex items-center gap-0375 disk-ops-legend-item">
+      <div className="d-flex content-center gap-1 disk-ops-legend f-shrink-0">
+        <div className="d-flex items-center gap-0375 disk-ops-legend-item font-size-1 color-muted-foreground">
           <span className="disk-ops-legend-dot" style={{ backgroundColor: '#0A84FF' }}></span>
           <span className="disk-ops-legend-label">Read(MB/s)</span>
         </div>
-        <div className="d-flex items-center gap-0375 disk-ops-legend-item">
+        <div className="d-flex items-center gap-0375 disk-ops-legend-item font-size-1 color-muted-foreground">
           <span className="disk-ops-legend-dot" style={{ backgroundColor: '#30D158' }}></span>
           <span className="disk-ops-legend-label">Write(MB/s)</span>
         </div>
-        <div className="d-flex items-center gap-0375 disk-ops-legend-item">
+        <div className="d-flex items-center gap-0375 disk-ops-legend-item font-size-1 color-muted-foreground">
           <span className="disk-ops-legend-dot" style={{ backgroundColor: '#FF9F0A' }}></span>
           <span className="disk-ops-legend-label">IOPS(x10)</span>
         </div>

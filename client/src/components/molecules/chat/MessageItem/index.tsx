@@ -42,27 +42,27 @@ const MessageItem: React.FC<MessageItemProps> = ({
     const sender = msg.sender;
 
     return (
-        <div className={`d-flex chat-message ${isOwn ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''} ${showAvatar ? 'with-avatar' : ''}`}>
+        <div className={`d-flex chat-message ${isOwn ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''} ${showAvatar ? 'with-avatar' : ''} p-relative`}>
             {showAvatar && (
-                <div className='d-flex flex-center chat-message-avatar'>
+                <div className='d-flex flex-center chat-message-avatar f-shrink-0'>
                     {sender?.avatar ? (
-                        <img src={sender.avatar} alt="Sender Avatar" className='chat-avatar-img' />
+                        <img src={sender.avatar} alt="Sender Avatar" className='chat-avatar-img w-max h-max' />
                     ) : (
-                        <span className='d-flex flex-center chat-avatar-initial'>
+                        <span className='d-flex flex-center chat-avatar-initial w-max h-max font-weight-6'>
                             {sender?.firstName?.[0]?.toUpperCase() || '?'}
                         </span>
                     )}
                 </div>
             )}
-            <div className='d-flex column chat-message-wrapper'>
+            <div className='d-flex column chat-message-wrapper w-max'>
                 {showAvatar && (
-                    <div className='chat-message-sender-name'>
+                    <div className='chat-message-sender-name font-weight-6 color-secondary'>
                         {sender?.firstName} {sender?.lastName}
                     </div>
                 )}
-                <div className='chat-message-content'>
+                <div className='chat-message-content p-relative'>
                     {isDeleted ? (
-                        <Paragraph className='chat-message-text deleted-message'>This message was deleted</Paragraph>
+                        <Paragraph className='chat-message-text deleted-message font-size-2-5 color-primary color-secondary'>This message was deleted</Paragraph>
                     ) : isFile ? (
                         <FileMessage currentChatId={currentChatId} msg={msg} />
                     ) : (
@@ -80,7 +80,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                                 onDelete={() => onDelete(msg._id)}
                             />
                             {isReactionsOpen && (
-                                <div className='d-flex gap-025 chat-message-reactions-menu'>
+                                <div className='d-flex gap-025 chat-message-reactions-menu p-absolute'>
                                     {['👍', '❤️', '😂', '😮', '😢', '😡'].map(e =>
                                         <Button key={e} variant='ghost' intent='neutral' iconOnly size='sm' onClick={() => {
                                             onToggleReaction(msg._id, e);
@@ -96,7 +96,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                         </>
                     )}
 
-                    <div className='d-flex items-center gap-05 chat-message-time'>{formatTimeAgo(msg.createdAt)}</div>
+                    <div className='d-flex items-center gap-05 chat-message-time font-size-1 color-muted'>{formatTimeAgo(msg.createdAt)}</div>
                 </div>
             </div>
         </div>

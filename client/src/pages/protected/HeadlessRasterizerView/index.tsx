@@ -585,7 +585,7 @@ const HeadlessRasterizerView: React.FC = () => {
     }, [availableExposures, activeTools]);
 
     return (
-        <CursorShareLayer roomName={trajectoryId} user={cursorUser} className='raster-view-container' style={{ position: 'relative' }}>
+        <CursorShareLayer roomName={trajectoryId} user={cursorUser} className='raster-view-container h-max overflow-hidden' style={{ position: 'relative' }}>
             <RasterHeader
                 trajectory={trajectory}
                 isLoading={isLoading}
@@ -608,10 +608,10 @@ const HeadlessRasterizerView: React.FC = () => {
                 />
             )}
 
-            <div className='d-flex column gap-1 raster-scenes-container' style={{ position: 'relative' }}>
+            <div className='d-flex column gap-1 raster-scenes-container p-relative w-max h-max' style={{ position: 'relative' }}>
                 {isPreloading && (
                     <div
-                        className='d-flex items-center gap-05 preloading-container'
+                        className='d-flex items-center gap-05 preloading-container p-absolute color-primary'
                     >
                         <div
                             className='preloading-anim'
@@ -622,7 +622,7 @@ const HeadlessRasterizerView: React.FC = () => {
                 )}
 
                 {hasNoRasterData && !isLoading && (
-                    <div className="d-flex flex-center raster-empty-state-overlay">
+                    <div className="d-flex flex-center raster-empty-state-overlay p-absolute">
                         <EmptyState
                             title="No Rasterized Data"
                             description="This trajectory hasn't been rasterized yet. Rasterize it first to view the visualization and analysis results."
@@ -633,7 +633,7 @@ const HeadlessRasterizerView: React.FC = () => {
                     </div>
                 )}
 
-                <div className='d-flex gap-1 raster-scenes-top-container' style={{ alignItems: 'stretch', gap: '0.75rem' }}>
+                <div className='d-flex gap-1 raster-scenes-top-container w-max' style={{ alignItems: 'stretch', gap: '0.75rem' }}>
                     <SceneColumn
                         trajectoryId={trajectory?._id}
                         scene={canRender ? leftScene.scene ?? null : null}

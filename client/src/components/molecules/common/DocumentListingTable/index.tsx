@@ -14,9 +14,9 @@ const ROW_HEIGHT = 48;
 
 const SkeletonRow = ({ columns }: { columns: ColumnConfig[] }) => {
     return (
-        <div className='document-listing-table-row-container skeleton-row'>
+        <div className='document-listing-table-row-container skeleton-row gap-1 d-flex content-between'>
             {columns.map((col) => (
-                <div className='document-listing-cell' data-label={col.title} key={col.key}>
+                <div className='document-listing-cell overflow-hidden d-flex flex-1 items-center color-primary' data-label={col.title} key={col.key}>
                     <span className='document-listing-cell-value'>
                         <Skeleton
                             {...(col.skeleton ?? { variant: 'text', width: 100 })}
@@ -40,10 +40,10 @@ const VirtualizedRow = (props: any) => {
     const menuOptions = getMenuOptions ? getMenuOptions(item) : [];
 
     return (
-        <div style={style} className='document-listing-table-row-container'>
+        <div style={style} className='document-listing-table-row-container gap-1 d-flex content-between'>
             {columns.map((col: any, colIdx: number) => (
                 <div
-                    className='document-listing-cell'
+                    className='document-listing-cell overflow-hidden d-flex flex-1 items-center color-primary'
                     data-label={col.title}
                     key={`cell-${col.title}-${colIdx}`}
                     title={String(item?.[col.key] ?? '')}
@@ -173,16 +173,21 @@ const DocumentListingTable = ({
     return (
         <Container className='d-flex column'>
             {columns.length > 0 && (
-                <div className='document-listing-table-header-container'>
+                <div className='document-listing-table-header-container p-sticky gap-1 d-flex content-between'>
                     {columns.map((col: any, colIdx: number) => (
                         <div
-                            className={`document-listing-cell header-cell ${col.sortable ? 'sortable' : ''}`}
+                            className={`document-listing-cell header-cell ${col.sortable ? 'sortable' : ''} overflow-hidden d-flex flex-1 items-center color-primary`}
                             key={`header-${col.title}-${colIdx}`}
                             onClick={() => onCellClick(col)}
                         >
                             <Title className='font-size-2-5 font-weight-5 text-secondary'>{getCellTitle(col)}</Title>
                         </div>
                     ))}
+                    {getMenuOptions && (
+                        <div style={{ opacity: 0, pointerEvents: 'none' }}>
+                            <Button variant='ghost' intent='neutral' iconOnly size='sm'>⋮</Button>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -210,10 +215,10 @@ const DocumentListingTable = ({
                             const menuOptions = getMenuOptions ? getMenuOptions(item) : [];
 
                             return (
-                                <div key={rowKey} className='document-listing-table-row-container'>
+                                <div key={rowKey} className='document-listing-table-row-container gap-1 d-flex content-between'>
                                     {columns.map((col: any, colIdx: number) => (
                                         <div
-                                            className='document-listing-cell'
+                                            className='document-listing-cell overflow-hidden d-flex flex-1 items-center color-primary'
                                             data-label={col.title}
                                             key={`cell-${col.title}-${colIdx}`}
                                             title={String(item?.[col.key] ?? '')}
@@ -271,8 +276,8 @@ const DocumentListingTable = ({
                 {enableInfinite && !useVirtualization && <div ref={sentinelRef} style={{ height: 1 }} />}
 
                 {shouldShowEmptyState && (
-                    <div className='document-listing-overlay-blur'>
-                        <div className='document-listing-empty-content'>
+                    <div className='document-listing-overlay-blur p-absolute'>
+                        <div className='document-listing-empty-content p-absolute'>
                             <EmptyState
                                 title="No Documents"
                                 description={emptyMessage}
@@ -285,9 +290,9 @@ const DocumentListingTable = ({
                 )}
 
                 {isInitialLoading && (
-                    <div className='document-listing-overlay-blur'>
+                    <div className='document-listing-overlay-blur p-absolute'>
                         {/* Show loading skeleton rows during initial load */}
-                        <div className='document-listing-infinite-skeleton-loader'>
+                        <div className='document-listing-infinite-skeleton-loader p-absolute overflow-hidden d-flex column'>
                             {Array.from({ length: 20 }).map((_, index) => (
                                 <SkeletonRow key={`loading-skeleton-${index}`} columns={columns} />
                             ))}

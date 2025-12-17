@@ -10,26 +10,19 @@
 .chart-icon {
   width: 20px;
   height: 20px;
-  color: var(--muted-foreground);
 }
 
 .chart-title {
-  font-size: 1rem;
-  font-weight: 600;
   color: var(--foreground);
   margin: 0;
 }
 
-
 .chart-stat-label {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .chart-stat-value {
-  font-size: 1rem;
   font-weight: 700;
   color: var(--foreground);
 }

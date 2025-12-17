@@ -40,16 +40,16 @@ const FormInput: React.FC<FormInputProps> = ({ label, error, showError = true, v
         <Container className={`d-flex w-max column gap-05 form-input-wrapper-container ${variantClass}`}>
             {label && (
                 <label>
-                    <Title className='font-weight-4 text-secondary form-input-label'>{label}</Title>
+                    <Title className='font-weight-4 text-secondary form-input-label color-secondary'>{label}</Title>
                 </label>
             )}
 
-            <Container className={`form-input-container ${error ? 'form-input-error' : ''} ${variantClass}`}>
-                <input className={`form-input ${className}`} {...props} />
+            <Container className={`form-input-container ${error ? 'form-input-error' : ''} ${variantClass} w-max`}>
+                <input className={`form-input ${className} w-max h-max font-size-2-5`} {...props} />
             </Container>
 
             {error && showError && (
-                <Container className="d-flex items-center gap-025 form-error-message">
+                <Container className="d-flex items-center gap-025 form-error-message font-size-1">
                     <AlertCircle size={12} />
                     <span>{error}</span>
                 </Container>

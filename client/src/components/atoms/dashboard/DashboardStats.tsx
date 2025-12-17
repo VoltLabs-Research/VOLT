@@ -27,14 +27,14 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
 
     if (error) {
         return (
-            <div className='dashboard-stats-container'>
+            <div className='dashboard-stats-container w-max overflow-hidden'>
                 <div className='dashboard-error'>{error}</div>
             </div>
         );
     }
 
     return (
-        <div className='d-flex dashboard-stats-container'>
+        <div className='d-flex dashboard-stats-container w-max overflow-hidden'>
             {cards.map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain }, index) => {
                 const iconKey = name.replace(/\s+/g, '');
                 const Icon = icons[iconKey] || HiOutlineServerStack;
@@ -43,16 +43,16 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
                 return (
                     <div
                         onClick={() => isClickable && listingUrl && navigate(listingUrl)}
-                        className='dashboard-stat-container'
+                        className='dashboard-stat-container p-relative cursor-pointer'
                         style={{ cursor: isClickable ? 'pointer' : 'default' }}
                         key={index}
                     >
-                        <div className='d-flex column gap-2 dashboard-stat-left-container'>
-                            <div className='d-flex items-center dashboard-stat-header-container'>
-                                <i className='d-flex flex-center dashboard-stat-icon-container'>
+                        <div className='d-flex column gap-2 dashboard-stat-left-container w-max'>
+                            <div className='d-flex items-center dashboard-stat-header-container gap-1'>
+                                <i className='d-flex flex-center dashboard-stat-icon-container color-muted'>
                                     <Icon />
                                 </i>
-                                <Title className='font-size-3 dashboard-stat-title'>{name}</Title>
+                                <Title className='font-size-3 dashboard-stat-title color-primary'>{name}</Title>
                             </div>
                             <div className='d-flex column gap-1'>
                                 <Title className='font-size-5 color-primary'>{count}</Title>
@@ -61,20 +61,20 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
                                         <i className={`dashboard-stat-last-month-icon ${up ? 'up' : 'down'}`}>
                                             {up ? <FaArrowUpLong /> : <FaArrowDownLong />}
                                         </i>
-                                        <span className='dashboard-stat-last-month-helper-text'>
+                                        <span className='dashboard-stat-last-month-helper-text font-weight-6'>
                                             {Math.abs(lastMonthStatus ?? 0)}%
                                         </span>
                                     </div>
-                                    <span className='dashboard-stat-last-month-title'>Last Month</span>
+                                    <span className='dashboard-stat-last-month-title color-primary'>Last Month</span>
                                 </div>
                             </div>
                         </div>
 
-                        <i className='dashboard-stat-arrow-icon-container'>
+                        <i className='dashboard-stat-arrow-icon-container p-absolute font-size-5'>
                             <GoArrowRight />
                         </i>
 
-                        <div className='dashboard-stat-analytic-container'>
+                        <div className='dashboard-stat-analytic-container p-absolute'>
                             <TinyLineChart
                                 lineColor={up ? '#28b85d' : '#e35151'}
                                 pData={series}

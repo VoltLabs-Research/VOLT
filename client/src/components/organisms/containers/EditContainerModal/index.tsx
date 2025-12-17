@@ -78,9 +78,9 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
             width='600px'
             className='edit-container-modal'
         >
-            <form onSubmit={handleSubmit} className="d-flex column modal-form">
-                <div className="d-flex column form-section">
-                    <div className="section-header">
+            <form onSubmit={handleSubmit} className="d-flex column modal-form gap-1-5 y-auto">
+                <div className="d-flex column form-section p-relative gap-1 vh-max">
+                    <div className="section-header d-flex items-center content-between">
                         <label>Environment Variables</label>
                         <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddEnv}>Add</Button>
                     </div>
@@ -101,8 +101,8 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                     ))}
                 </div>
 
-                <div className="d-flex column form-section">
-                    <div className="section-header">
+                <div className="d-flex column form-section p-relative gap-1 vh-max">
+                    <div className="section-header d-flex items-center content-between">
                         <label>Port Bindings</label>
                         <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddPort}>Add</Button>
                     </div>

@@ -115,10 +115,10 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
                     handle='.chart-viewer-drag-area'
                     scaleWhileDragging={0.98}
                     minWidth={400}
-                    className='chart-viewer-drag-container'
+                    className='chart-viewer-drag-container p-absolute'
                     minHeight={300}
                 >
-                    <div className='chart-viewer-container primary-surface'>
+                    <div className='chart-viewer-container primary-surface p-absolute overflow-hidden'>
                         <ChartViewer
                             trajectoryId={trajectory?._id || ''}
                             analysisId={(activeScene as any).analysisId}

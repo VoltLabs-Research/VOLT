@@ -47,17 +47,17 @@ export default function OAuthCallback() {
     }, [navigate, initializeAuth]);
 
     return (
-        <div className="d-flex flex-center items-center oauth-callback-container">
+        <div className="d-flex flex-center items-center oauth-callback-container p-relative vh-max overflow-hidden">
             {/* Background Elements */}
             <div className="absolute inset-0 overflow-hidden">
-                <div className="oauth-background-blob blob-blue" />
-                <div className="oauth-background-blob blob-purple" />
+                <div className="oauth-background-blob blob-blue p-absolute w-50" />
+                <div className="oauth-background-blob blob-purple p-absolute" />
             </div>
 
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="oauth-card"
+                className="oauth-card p-relative w-max text-center"
             >
                 <div className="d-flex flex-center mb-1-5 oauth-status-icon">
                     {status === 'loading' && (
@@ -94,7 +94,7 @@ export default function OAuthCallback() {
                     key={status}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="oauth-title"
+                    className="oauth-title font-size-5"
                 >
                     {status === 'loading' && 'Authenticating...'}
                     {status === 'success' && 'Successfully Authenticated!'}

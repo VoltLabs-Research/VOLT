@@ -99,7 +99,7 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
                         <div className='d-flex items-center content-between binary-uploaded'>
                             <div className='d-flex items-center gap-05 binary-file-info'>
                                 <TbFile size={20} />
-                                <span className='binary-filename'>{entrypoint.binaryFileName || entrypoint.binary}</span>
+                                <span className='binary-filename overflow-hidden font-size-2 font-weight-5'>{entrypoint.binaryFileName || entrypoint.binary}</span>
                                 <TbCheck size={16} className='binary-check-icon' />
                             </div>
                             <Button
@@ -107,7 +107,7 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
                                 intent='danger'
                                 iconOnly
                                 size='sm'
-                                className='binary-remove-btn'
+                                className='binary-remove-btn cursor-pointer'
                                 onClick={handleRemoveBinary}
                                 title='Remove binary'
                             >
@@ -119,7 +119,7 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
                             variant='outline'
                             intent='neutral'
                             size='sm'
-                            className='binary-upload-btn'
+                            className='binary-upload-btn font-size-2 font-weight-5 cursor-pointer'
                             onClick={triggerFileSelect}
                             disabled={isUploading || !currentPlugin?._id}
                             leftIcon={<TbUpload size={18} />}
@@ -129,19 +129,19 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
                     )}
 
                     {!currentPlugin?._id && (
-                        <Paragraph className='binary-upload-hint'>
+                        <Paragraph className='binary-upload-hint font-size-1'>
                             Save the plugin first(Ctrl+S) to enable binary upload
                         </Paragraph>
                     )}
 
                     {uploadError && (
-                        <Paragraph className='binary-upload-error'>{uploadError}</Paragraph>
+                        <Paragraph className='binary-upload-error font-size-1'>{uploadError}</Paragraph>
                     )}
 
                     {isUploading && (
-                        <div className='binary-upload-progress'>
+                        <div className='binary-upload-progress w-max overflow-hidden'>
                             <div
-                                className='binary-upload-progress-bar'
+                                className='binary-upload-progress-bar h-max'
                                 style={{ width: `${uploadProgress}% ` }}
                             />
                         </div>

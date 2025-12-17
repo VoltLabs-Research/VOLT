@@ -28,7 +28,7 @@ import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 
 const RenderConfig = () => (
-    <Container className='d-flex column editor-render-options-container'>
+    <Container className='d-flex column editor-render-options-container y-auto'>
         <LightsControls />
         <EffectsControls />
         <PerformanceSettingsControls />

@@ -63,7 +63,7 @@ const RendererSettingsControls: React.FC = () => {
 				<div>
 					{/** TODO: DUPLICATED CODE */}
 					<div className='d-flex items-center content-between'>
-						<label className='labeled-input-label'>Exposure</label>
+						<label className='labeled-input-label font-weight-4'>Exposure</label>
 						<div className='form-control-row-slider-container'>
 							<input
 								type="range"

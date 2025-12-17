@@ -2,13 +2,11 @@
     background: var(--bg-secondary);
     border-radius: 8px;
     max-height: 400px;
-    position: absolute;
     bottom: 0;
 }
 
 .box-results-header-title {
     font-size: 1.125rem;
-    font-weight: 600;
     color: var(--text-primary);
     margin: 0;
 }
@@ -20,13 +18,11 @@
 }
 
 .type-legend-text {
-    font-size: 0.75rem;
     color: var(--text-secondary);
 }
 
 .box-results-body-container {
     max-height: 500px;
-    overflow-y: auto;
 }
 
 .box-result-item {
@@ -34,7 +30,6 @@
     border: 1px solid var(--border-color);
     border-radius: 6px;
     padding: 0.75rem;
-    cursor: pointer;
     transition: all 0.2s;
 }
 
@@ -55,11 +50,9 @@
 .data-label {
     font-size: 0.8125rem;
     color: var(--text-secondary);
-    font-weight: 500;
 }
 
 .data-value {
-    font-size: 0.875rem;
     color: var(--text-primary);
     font-family: 'Courier New', monospace;
 }

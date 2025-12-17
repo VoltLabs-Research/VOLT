@@ -54,7 +54,7 @@ const SimulationCardUsers: React.FC<SimulationCardUsersProps> = memo(({ trajecto
     }
 
     return (
-        <Container className="simulation-card-users">
+        <Container className="simulation-card-users p-absolute">
             <Container className="d-flex items-center row-reverse">
                 <AnimatePresence mode="popLayout">
                     {displayUsers.map((user, index) => (
@@ -67,8 +67,8 @@ const SimulationCardUsers: React.FC<SimulationCardUsersProps> = memo(({ trajecto
                             transition={{ delay: index * 0.05 }}
                         >
                             <Container className="d-flex flex-center overflow-hidden p-relative card-user-avatar">
-                                <Container className="avatar-initials">{getInitialsFromUser(user)}</Container>
-                                {user.isAnonymous && <div className="d-flex items-center content-center avatar-anonymous-badge">?</div>}
+                                <Container className="avatar-initials font-size-1 font-weight-6 color-secondary">{getInitialsFromUser(user)}</Container>
+                                {user.isAnonymous && <div className="d-flex items-center content-center avatar-anonymous-badge p-absolute">?</div>}
                             </Container>
                         </motion.div>
                     ))}
@@ -81,7 +81,7 @@ const SimulationCardUsers: React.FC<SimulationCardUsersProps> = memo(({ trajecto
                             exit={{ scale: 0, opacity: 0 }}
                         >
                             <Container className="d-flex flex-center overflow-hidden p-relative card-user-avatar card-user-avatar-extra">
-                                <Container className="avatar-initials">+{extraCount}</Container>
+                                <Container className="avatar-initials font-size-1 font-weight-6 color-secondary">+{extraCount}</Container>
                             </Container>
                         </motion.div>
                     )}

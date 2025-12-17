@@ -16,7 +16,7 @@ const CanvasSidebarTab: React.FC<CanvasSidebarTabProps> = ({ option }) => {
             className={'d-flex content-center items-center editor-sidebar-option-container '.concat((option === activeSidebarTab) ? 'selected' : '')}
             onClick={() => setActiveSidebarTag(option)}
         >
-            <Title className='font-size-3 editor-sidebar-option-title'>{option}</Title>
+            <Title className='font-size-3 editor-sidebar-option-title font-weight-5'>{option}</Title>
         </div>
     );
 };

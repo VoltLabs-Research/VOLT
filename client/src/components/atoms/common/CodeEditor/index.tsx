@@ -66,7 +66,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 
     return (
         <Container className={`d-flex column gap-05 ${className} ${error ? 'has-error' : ''}`}>
-            {label && <label className="code-editor-label">{label}</label>}
+            {label && <label className="code-editor-label font-size-1 font-weight-5">{label}</label>}
             {description && <Paragraph className="code-editor-description">{description}</Paragraph>}
 
             <Container className="p-relative overflow-hidden code-editor-container" style={{ height: editorHeight }}>

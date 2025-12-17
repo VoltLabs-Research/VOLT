@@ -1,5 +1,4 @@
 .editor-sidebar-scene-option-select-container {
-    position: relative;
 }
 
 .editor-sidebar-scene-option-select-container .editor-sidebar-scene-option-title {
@@ -36,7 +35,6 @@
 
 .editor-sidebar-scene-option-container {
     padding: .5rem;
-    cursor: pointer;
     border-radius: .5rem;
     will-change: transform;
 }

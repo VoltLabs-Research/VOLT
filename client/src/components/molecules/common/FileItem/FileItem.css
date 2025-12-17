@@ -14,7 +14,4 @@
 }
 
 .file-delete-icon {
-    cursor: pointer;
-    color: var(--color-text-secondary);
-    font-size: 1rem;
 }

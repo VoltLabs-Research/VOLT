@@ -1,5 +1,4 @@
 .simulation-card-users {
-    position: absolute;
     bottom: 1.5rem;
     right: 1.5rem;
     z-index: 5;
@@ -20,15 +19,11 @@
 }
 
 .avatar-image {
-    width: 100%;
-    height: 100%;
     object-fit: cover;
 }
 
 .avatar-initials {
     font-size: 0.65rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
 }
 
 .card-user-avatar.card-user-avatar-extra {
@@ -42,7 +37,6 @@
 }
 
 .avatar-anonymous-badge {
-    position: absolute;
     bottom: -3px;
     right: -3px;
     width: 0.8rem;

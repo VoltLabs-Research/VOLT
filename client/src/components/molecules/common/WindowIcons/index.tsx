@@ -38,7 +38,7 @@ const IconCircle = ({ variant, title, onClick }: IconDef) => {
 
     return(
         <motion.div
-            className={`window-icon-circle ${variant}`}
+            className={`window-icon-circle ${variant} p-relative cursor-pointer`}
             title={title}
             role="button"
             onClick={handleClick}

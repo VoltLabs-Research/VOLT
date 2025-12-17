@@ -196,7 +196,7 @@ const ModifierConfiguration = ({
                 {icon}
             </Container>
 
-            <Container className='d-flex column gap-1 modifier-configuration-body-container'>
+            <Container className='d-flex column gap-1 modifier-configuration-body-container y-scroll'>
                 {configFields.length === 0 ? (
                     <Paragraph className='color-muted font-size-2 text-center no-fields-text'>
                         This modifier has no configurable parameters.

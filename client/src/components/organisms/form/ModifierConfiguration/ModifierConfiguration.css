@@ -6,7 +6,6 @@
 .modifier-configuration-body-container {
     max-height: 500px;
     padding-right: 1rem;
-    overflow-y: scroll;
 }
 
 .no-fields-text{

@@ -9,13 +9,10 @@
 }
 
 .db-tooltip-label {
-  font-size: 0.875rem;
-  font-weight: 600;
   margin-bottom: 0.5rem;
   color: var(--foreground);
 }
 
 .db-tooltip-item {
-  font-size: 0.75rem;
   margin: 0.25rem 0;
 }

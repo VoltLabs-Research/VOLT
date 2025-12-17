@@ -49,16 +49,16 @@ export function ResourceUsage() {
   ]
 
   return (
-    <div className="d-flex column resource-usage">
-      <div className="d-flex items-start content-between resource-usage-header">
-        <Title className='font-size-3 resource-usage-title'>Resource Usage(Real-time)</Title>
+    <div className="d-flex column resource-usage h-max">
+      <div className="d-flex items-start content-between resource-usage-header mb-1-5 f-shrink-0">
+        <Title className='font-size-3 resource-usage-title font-weight-6'>Resource Usage(Real-time)</Title>
         <Button variant='ghost' intent='neutral' iconOnly size='sm'>
           <MoreVertical className="resource-usage-icon" />
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="d-flex column gap-1-5 resource-usage-list">
+        <div className="d-flex column gap-1-5 resource-usage-list flex-1">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="resource-usage-item">
               <div className="d-flex items-center content-between resource-usage-item-header">
@@ -70,7 +70,7 @@ export function ResourceUsage() {
           ))}
         </div>
       ) : (
-        <div className="d-flex column gap-1-5 resource-usage-list">
+        <div className="d-flex column gap-1-5 resource-usage-list flex-1">
           {resources.map((resource) => {
             const color = getLoadColor(resource.value)
             const glow = getLoadGlow(resource.value)
@@ -79,9 +79,9 @@ export function ResourceUsage() {
             return (
               <div key={resource.name} className="d-flex column resource-usage-item">
                 <div className="d-flex items-center content-between resource-usage-item-header">
-                  <span className="resource-usage-item-label">{resource.name}</span>
+                  <span className="resource-usage-item-label font-size-2">{resource.name}</span>
                   <span
-                    className="resource-usage-item-value"
+                    className="resource-usage-item-value font-size-2 font-weight-6"
                     style={{ color }}
                   >
                     {resource.value}%
@@ -91,7 +91,7 @@ export function ResourceUsage() {
                   {Array.from({ length: 40 }).map((_, i) => (
                     <div
                       key={i}
-                      className="resource-usage-bar-segment"
+                      className="resource-usage-bar-segment h-max flex-1"
                       style={{
                         backgroundColor: i < filledSegments ? color : 'transparent',
                         boxShadow: i < filledSegments && i === filledSegments - 1 ? glow : 'none',

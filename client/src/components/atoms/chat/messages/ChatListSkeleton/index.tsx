@@ -14,7 +14,7 @@ const ChatListSkeleton = () => (
                 }
             }}
         />
-        <div className='d-flex column gap-025 chat-skeleton-list-info'>
+        <div className='d-flex column gap-025 chat-skeleton-list-info flex-1'>
             <Skeleton
                 variant="text"
                 width={120}

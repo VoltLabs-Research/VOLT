@@ -29,11 +29,11 @@ const CustomTooltip = ({ active, payload }: any) => {
     const data = payload[0].payload
     return (
       <div className="storage-tooltip">
-        <Paragraph className="storage-tooltip-label">{data.name}</Paragraph>
-        <Paragraph className="storage-tooltip-item">
+        <Paragraph className="storage-tooltip-label font-size-2 font-weight-6">{data.name}</Paragraph>
+        <Paragraph className="storage-tooltip-item font-size-1 color-muted-foreground">
           Used: <strong>{data.used} GB</strong> / {data.total} GB
         </Paragraph>
-        <Paragraph className="storage-tooltip-item" style={{ color: getSolidColor(data.percentage) }}>
+        <Paragraph className="storage-tooltip-item font-size-1 color-muted-foreground" style={{ color: getSolidColor(data.percentage) }}>
           {data.percentage}% Full
         </Paragraph>
       </div>
@@ -49,13 +49,13 @@ export function StorageUsage() {
 
   return (
     <div className="d-flex column storage-usage-container">
-      <div className="d-flex content-between items-center storage-usage-header">
+      <div className="d-flex content-between items-center storage-usage-header mb-1-5 f-shrink-0">
         <div className="d-flex items-center gap-05 storage-usage-title-group">
           <HardDrive className="storage-usage-icon" />
-          <Title className='font-size-3 storage-usage-title'>Storage Distribution</Title>
+          <Title className='font-size-3 storage-usage-title font-weight-6'>Storage Distribution</Title>
         </div>
         <div className="d-flex column items-end gap-025 storage-total-badge">
-          <span className="storage-total-value">{totalPercentage}%</span>
+          <span className="storage-total-value font-weight-6">{totalPercentage}%</span>
           <span className="storage-total-label">
             {(totalUsed / 1000).toFixed(1)}TB / {(totalCapacity / 1000).toFixed(1)}TB
           </span>

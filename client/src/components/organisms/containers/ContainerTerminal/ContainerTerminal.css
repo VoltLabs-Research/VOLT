@@ -37,12 +37,8 @@
     background: none;
     border: none;
     color: #9ca3af;
-    cursor: pointer;
     padding: 4px;
     border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     transition: all 0.2s;
 }
 

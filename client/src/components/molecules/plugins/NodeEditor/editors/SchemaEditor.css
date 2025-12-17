@@ -1,11 +1,7 @@
 .schema-editor-description {
-    font-size: 0.75rem;
     color: var(--gray-500);
-    line-height: 1.5;
     margin: 0;
 }
-
-
 
 .schema-editor-btn {
     padding: 0.4rem 0.65rem;
@@ -13,9 +9,7 @@
     border: 1px solid var(--gray-200);
     border-radius: 4px;
     font-size: 0.7rem;
-    font-weight: 500;
     color: var(--gray-700);
-    cursor: pointer;
     transition: all 0.15s ease;
 }
 
@@ -41,9 +35,7 @@
     border: 1px solid var(--primary-200);
     border-radius: 4px;
     font-size: 0.7rem;
-    font-weight: 500;
     color: var(--primary-700);
-    cursor: pointer;
     transition: all 0.15s ease;
 }
 
@@ -56,6 +48,5 @@
     background: var(--green-50);
     border: 1px solid var(--green-200);
     border-radius: 6px;
-    font-size: 0.75rem;
     color: var(--green-600);
 }

@@ -1,7 +1,5 @@
 .plugin-name-link {
     color: var(--color-primary, #3b82f6);
-    cursor: pointer;
-    font-weight: 500;
     transition: color 0.2s ease;
 }
 
@@ -22,8 +20,6 @@
 .validation-badge {
     padding: 2px 8px;
     border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 500;
 }
 
 .validation-badge.validated {
@@ -43,8 +39,6 @@
     background: rgba(99, 102, 241, 0.15);
     color: #818cf8;
     border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
 }
 
 .plugins-listing-create-btn {
@@ -53,9 +47,6 @@
     color: white;
     border: none;
     border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
     transition: all 0.2s ease;
 }
 

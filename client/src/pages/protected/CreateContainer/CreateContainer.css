@@ -1,7 +1,5 @@
 .create-container-page {
-    height: 100%;
     background: var(--background);
-    overflow: hidden;
     font-family: 'Inter', sans-serif;
 }
 
@@ -9,7 +7,6 @@
     padding: 1.5rem 2rem;
     border-bottom: 1px solid var(--border);
     background: var(--background);
-    flex-shrink: 0;
 }
 
 .back-btn-icon {
@@ -42,8 +39,6 @@
 }
 
 .create-layout {
-    flex: 1;
-    overflow: hidden;
 }
 
 /* Sidebar Steps */
@@ -57,7 +52,6 @@
 .step-item {
     padding: 0.75rem;
     border-radius: 8px;
-    cursor: pointer;
     transition: all 0.2s;
     opacity: 0.6;
 }
@@ -72,9 +66,7 @@
     width: 28px;
     height: 28px;
     background: var(--border);
-    color: var(--muted-foreground);
     border-radius: 50%;
-    font-weight: 600;
     font-size: 0.85rem;
     transition: all 0.2s;
 }
@@ -108,8 +100,6 @@
 
 /* Content Area */
 .step-content {
-    flex: 1;
-    overflow-y: auto;
     padding: 3rem 4rem;
     max-width: 1000px;
 }
@@ -125,13 +115,10 @@
     animation: fadeIn 0.3s ease-out;
 }
 
-
-
 /* Templates Grid */
 .templates-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 1.5rem;
     margin-bottom: 2rem;
 }
 
@@ -140,10 +127,7 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 1.5rem;
-    cursor: pointer;
     transition: all 0.2s ease;
-    position: relative;
-    text-align: center;
 }
 
 .template-card:hover {
@@ -163,7 +147,6 @@
     height: 64px;
     background: var(--background-secondary);
     border-radius: 16px;
-    flex-shrink: 0;
 }
 
 .template-info h3 {
@@ -180,7 +163,6 @@
 }
 
 .selected-check {
-    position: absolute;
     top: 10px;
     right: 10px;
     width: 24px;
@@ -201,7 +183,6 @@
 }
 
 .full-width-input {
-    width: 100%;
     height: 42px;
     background: var(--background) !important;
     border: 1px solid var(--border) !important;
@@ -270,21 +251,17 @@
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
     font-size: 0.85rem;
-    font-weight: 600;
     font-family: 'JetBrains Mono', monospace;
 }
 
 .slider-limits {
     margin-top: 0.5rem;
-    font-size: 0.75rem;
-    color: var(--muted-foreground);
 }
 
 /* Advanced Config */
 .advanced-config {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 2rem;
 }
 
 .config-group {
@@ -309,11 +286,6 @@
     border: none;
     color: var(--primary);
     font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
 }
 
 .port-row,
@@ -323,7 +295,6 @@
 }
 
 .input-wrapper {
-    flex: 1;
 }
 
 .input-wrapper label {
@@ -346,8 +317,6 @@
 .remove-btn {
     background: none;
     border: none;
-    color: var(--muted-foreground);
-    cursor: pointer;
     padding: 0.5rem;
     height: 36px;
     width: 36px;
@@ -365,14 +334,11 @@
     background: var(--background-secondary);
     border-radius: 8px;
     border: 1px dashed var(--border);
-    color: var(--muted-foreground);
     font-size: 0.85rem;
-    justify-content: center;
 }
 
 /* Step Actions */
 .step-actions {
-    margin-top: 3rem;
     padding-top: 1.5rem;
     border-top: 1px solid var(--border);
 }
@@ -383,8 +349,6 @@
     border: 1px solid var(--border) !important;
     color: var(--foreground) !important;
     border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
     transition: all 0.2s;
 }
 
@@ -398,8 +362,6 @@
     border: none !important;
     color: white !important;
     border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
     transition: all 0.2s;
     box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3) !important;
 }

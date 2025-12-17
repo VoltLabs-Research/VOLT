@@ -16,7 +16,6 @@
 .editor-render-options-container {
     height: 79vh;
     padding: 1.5rem;
-    overflow-y: auto;
 }
 
 .editor-sidebar-user-avatar-wrapper {
