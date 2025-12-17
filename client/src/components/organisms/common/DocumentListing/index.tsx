@@ -136,7 +136,6 @@ export const StatusBadge = ({ status }: { status: string }) => {
 
 type DocumentListingProps = {
     title: string
-    breadcrumbs?: (string | React.ReactNode)[]
     columns: ColumnConfig[]
     data: any[]
     isLoading?: boolean
@@ -156,7 +155,6 @@ type DocumentListingProps = {
 
 const DocumentListing = ({
     title,
-    breadcrumbs = ['Dashboard'],
     columns = [],
     data = [],
     isLoading = false,
@@ -213,17 +211,6 @@ const DocumentListing = ({
         <Container className='d-flex column h-max document-listing-container color-primary'>
             <Container className='d-flex column gap-3'>
                 <Container className='d-flex column gap-1-5 document-listing-header-top-container'>
-                    <Container className='d-flex gap-05'>
-                        {breadcrumbs.map((name, index) => (
-                            <Container className='d-flex gap-05 breadcrumb-item-container' key={index}>
-                                {typeof name === 'string' ? (
-                                    <Paragraph className='breadcrumb-item-name'>{name}</Paragraph>
-                                ) : (
-                                    name
-                                )}
-                            </Container>
-                        ))}
-                    </Container>
                     <Container className='d-flex content-between items-center'>
                         <Container className='d-flex gap-1-5 items-center'>
                             {isLoading && !data.length ? (

@@ -116,7 +116,7 @@ export const routesConfig: RouteGroup = {
             requiresLayout: true,
         },
         {
-            path: '/account/settings',
+            path: '/dashboard/settings',
             component: AccountSettings,
             requiresLayout: true,
         },

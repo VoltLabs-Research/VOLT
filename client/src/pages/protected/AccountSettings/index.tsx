@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { TbUser, TbShield, TbPalette, TbBell, TbDeviceDesktop, TbDownload, TbSettings, TbPlug } from 'react-icons/tb';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import useAuthStore from '@/stores/authentication';
 import authApi from '@/services/api/auth';
 import LoginActivityModal from '@/components/molecules/auth/LoginActivityModal';
-import SettingsSidebar from '@/components/molecules/settings/SettingsSidebar';
 import GeneralSettings from '@/components/molecules/settings/GeneralSettings';
 import AuthenticationSettings from '@/components/molecules/settings/AuthenticationSettings';
 import SessionsSettings from '@/components/molecules/settings/SessionsSettings';
@@ -20,6 +19,7 @@ import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 
 const AccountSettings: React.FC = () => {
+    const [searchParams] = useSearchParams();
     const {
         user,
         passwordInfo,
@@ -29,8 +29,22 @@ const AccountSettings: React.FC = () => {
         getPasswordInfo
     } = useAuthStore();
 
+    // Map tab param to section name
+    const tabToSection: Record<string, string> = {
+        'general': 'General',
+        'authentication': 'Authentication',
+        'theme': 'Theme',
+        'notifications': 'Notifications',
+        'sessions': 'Sessions',
+        'integrations': 'Integrations',
+        'data-export': 'Data & Export',
+        'advanced': 'Advanced'
+    };
 
-    const [activeSection, setActiveSection] = useState('General');
+    const activeSection = useMemo(() => {
+        const tab = searchParams.get('tab') || 'general';
+        return tabToSection[tab] || 'General';
+    }, [searchParams]);
     const [userData, setUserData] = useState({
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
@@ -153,16 +167,7 @@ const AccountSettings: React.FC = () => {
         }
     };
 
-    const navOptions = [
-        { title: 'General', icon: TbUser },
-        { title: 'Authentication', icon: TbShield },
-        { title: 'Theme', icon: TbPalette },
-        { title: 'Notifications', icon: TbBell },
-        { title: 'Sessions', icon: TbDeviceDesktop },
-        { title: 'Integrations', icon: TbPlug },
-        { title: 'Data & Export', icon: TbDownload },
-        { title: 'Advanced', icon: TbSettings }
-    ];
+
 
     const renderContent = () => {
         switch (activeSection) {
@@ -236,21 +241,13 @@ const AccountSettings: React.FC = () => {
 
     return (
         <>
-            <Container className='d-flex column account-settings-container vh-max'>
-                <div className='d-flex gap-2 account-settings-layout w-max'>
-                    <SettingsSidebar
-                        activeSection={activeSection}
-                        navOptions={navOptions}
-                        onChange={setActiveSection}
-                    />
-
-                    {/* Main Content */}
-                    <main className='settings-main y-auto flex-1'>
-                        <div className='settings-content-wrapper'>
-                            {renderContent()}
-                        </div>
-                    </main>
-                </div>
+            <Container className='account-settings-container vh-max w-max'>
+                {/* Main Content - Sidebar is now in DashboardLayout */}
+                <main className='settings-main y-auto flex-1'>
+                    <div className='settings-content-wrapper'>
+                        {renderContent()}
+                    </div>
+                </main>
             </Container>
 
             <LoginActivityModal />

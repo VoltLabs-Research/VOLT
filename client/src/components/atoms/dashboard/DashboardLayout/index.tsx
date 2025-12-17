@@ -22,13 +22,13 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Outlet, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { IoSettingsOutline, IoCubeOutline, IoSearchOutline, IoCloseOutline, IoMenuOutline } from 'react-icons/io5';
+import { IoSettingsOutline, IoCubeOutline, IoSearchOutline, IoCloseOutline, IoMenuOutline, IoChevronDown, IoAnalytics } from 'react-icons/io5';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { IoNotificationsOutline } from "react-icons/io5";
 import { CiChat1 } from 'react-icons/ci';
-import { GoPersonAdd } from "react-icons/go";
+import { GoPersonAdd, GoWorkflow } from "react-icons/go";
 import { HiOutlineDotsVertical } from "react-icons/hi";
-import { TbBook, TbHelp } from 'react-icons/tb';
+import { TbBook, TbHelp, TbCube3dSphere } from 'react-icons/tb';
 import useTeamStore from '@/stores/team/team';
 import useTrajectoryStore from '@/stores/trajectories';
 import useRasterStore from '@/stores/raster';
@@ -57,6 +57,8 @@ import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import { IoChevronForward } from 'react-icons/io5';
 import './DashboardLayout.css';
+import { HiOutlineServer } from 'react-icons/hi2';
+import { MdImportExport } from 'react-icons/md';
 
 // Greeting helper functions
 const getGreeting = (): string => {
@@ -108,10 +110,29 @@ const DashboardLayout = () => {
     const navItems: Array<[string, IconType, string]> = useMemo(() => ([
         ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
         ['Containers', IoCubeOutline, '/dashboard/containers'],
+        ['Trajectories', TbCube3dSphere, '/dashboard/trajectories/list'],
+        ['Analyses', IoAnalytics, '/dashboard/analysis-configs/list'],
+        ['Plugins', GoWorkflow, '/dashboard/plugins/list'],
         ['Messages', CiChat1, '/dashboard/messages'],
-        ['Clusters', TbBook, '/dashboard/clusters']
+        ['Clusters', HiOutlineServer, '/dashboard/clusters'],
+        ['Import', MdImportExport, '/dashboard/clusters']
     ]), []);
+
+    // Settings sub-items for collapsible section
+    const settingsItems = useMemo(() => ([
+        { id: 'general', label: 'General', icon: IoSettingsOutline },
+        { id: 'authentication', label: 'Authentication', icon: IoSettingsOutline },
+        { id: 'theme', label: 'Theme', icon: IoSettingsOutline },
+        { id: 'notifications', label: 'Notifications', icon: IoSettingsOutline },
+        { id: 'sessions', label: 'Sessions', icon: IoSettingsOutline },
+        { id: 'integrations', label: 'Integrations', icon: IoSettingsOutline },
+        { id: 'data-export', label: 'Data & Export', icon: IoSettingsOutline },
+        { id: 'advanced', label: 'Advanced', icon: IoSettingsOutline }
+    ]), []);
+
     const searchQuery = useDashboardSearchStore((s) => s.query);
+    const [settingsExpanded, setSettingsExpanded] = useState(() => pathname.startsWith('/dashboard/settings'));
+    const activeSettingsTab = searchParams.get('tab') || 'general';
 
     const [teamsInitialized, setTeamsInitialized] = useState(false);
 
@@ -353,9 +374,7 @@ const DashboardLayout = () => {
                             value={selectedTeam?._id || null}
                             onChange={handleTeamChange}
                             onLeaveTeam={handleLeaveTeam}
-                            placeholder="Select team"
                             className="team-select"
-                            maxListWidth={240}
                         />
                     </Container>
 
@@ -374,15 +393,35 @@ const DashboardLayout = () => {
                 {/* Footer */}
                 <Container className='sidebar-footer'>
                     <Container className='sidebar-footer-nav'>
+                        {/* Collapsible Settings Section */}
                         <button
-                            className='sidebar-nav-item'
-                            onClick={() => navigate('/account/settings')}
+                            className={`sidebar-nav-item sidebar-section-header ${pathname.startsWith('/dashboard/settings') ? 'is-selected' : ''}`}
+                            onClick={() => setSettingsExpanded(!settingsExpanded)}
                         >
                             <span className='sidebar-nav-icon'>
                                 <IoSettingsOutline />
                             </span>
                             <span className='sidebar-nav-label'>Settings</span>
+                            <IoChevronDown
+                                className={`sidebar-section-chevron ${settingsExpanded ? 'is-expanded' : ''}`}
+                                size={14}
+                            />
                         </button>
+
+                        {settingsExpanded && (
+                            <Container className='sidebar-sub-items'>
+                                {settingsItems.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        className={`sidebar-sub-item ${pathname.startsWith('/dashboard/settings') && activeSettingsTab === item.id ? 'is-selected' : ''}`}
+                                        onClick={() => navigate(`/dashboard/settings?tab=${item.id}`)}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </Container>
+                        )}
+
                         <button className='sidebar-nav-item'>
                             <span className='sidebar-nav-icon'>
                                 <TbHelp />
@@ -394,7 +433,7 @@ const DashboardLayout = () => {
                     {/* User Profile */}
                     <Container
                         className='sidebar-user-section'
-                        onClick={() => navigate('/account/settings')}
+                        onClick={() => navigate('/dashboard/settings?tab=general')}
                     >
                         <div className='sidebar-user-avatar'>
                             {user?.avatar ? (
