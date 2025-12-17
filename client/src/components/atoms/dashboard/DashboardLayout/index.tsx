@@ -367,13 +367,9 @@ const DashboardLayout = () => {
                                 </Container>
                                 <button
                                     className='d-flex content-center items-center badge-container as-icon-container over-light-bg p-absolute'
-                                    onClick={() => {
-                                        setMobileMenuOpen(false);
-                                        const modal = document.getElementById('team-creator-modal') as HTMLDialogElement;
-                                        if (modal && !modal.open) {
-                                            modal.showModal();
-                                        }
-                                    }}
+                                    commandfor="team-creator-modal"
+                                    command="show-modal"
+                                    onClick={() => setMobileMenuOpen(false)}
                                 >
                                     <IoIosAdd size={25} />
                                 </button>

@@ -43,7 +43,11 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
             id="user-menu-popover"
             className='gap-1'
             trigger={
-                <Container className='sidebar-user-container d-flex items-center gap-1 cursor-pointer' onClick={onClick}>
+                <button
+                    className='sidebar-user-container d-flex items-center gap-1 cursor-pointer button-reset'
+                    onClick={onClick}
+                    style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', width: '100%' }}
+                >
                     <Container
                         className='d-flex flex-center sidebar-user-avatar-container font-weight-5'
                         data-avatarrounded={avatarrounded}
@@ -60,7 +64,7 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
                             <span className='sidebar-user-fullname color-primary'>{user.firstName || ''} {user.lastName || ''}</span>
                         )}
                     </Container>
-                </Container>
+                </button>
             }
         >
             <PopoverMenuItem icon={<CiSettings />} onClick={() => navigate('/account/settings/')}>
@@ -69,7 +73,7 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
             <PopoverMenuItem icon={<CiLogout />} onClick={signOut}>
                 Sign Out
             </PopoverMenuItem>
-        </Popover>
+        </Popover >
     );
 };
 

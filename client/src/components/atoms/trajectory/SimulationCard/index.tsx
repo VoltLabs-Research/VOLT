@@ -286,9 +286,9 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                         id={`simulation-card-menu-${trajectory._id}`}
                         className='gap-1'
                         trigger={
-                            <i className='simulation-options-icon-container color-primary'>
+                            <button className='simulation-options-icon-container color-primary cursor-pointer' style={{ background: 'transparent', border: 'none', padding: 0 }}>
                                 <PiDotsThreeVerticalBold />
-                            </i>
+                            </button>
                         }
                     >
                         <PopoverMenuItem icon={<HiOutlineViewfinderCircle />} onClick={handleViewScene}>

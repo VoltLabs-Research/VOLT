@@ -39,7 +39,7 @@ const Modal = ({
         <>
             {trigger && React.isValidElement(trigger) ? (
                 React.cloneElement(trigger as React.ReactElement<any>, {
-                    command: "showModal",
+                    command: "show-modal",
                     commandfor: id,
                     type: "button"
                 })

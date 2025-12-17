@@ -60,7 +60,7 @@ const ChatSidebar: React.FC = () => {
                         iconOnly
                         size='sm'
                         commandfor='create-group-modal'
-                        command='showModal'
+                        command='show-modal'
                         title='Create group'
                     >
                         <IoPeopleOutline />
