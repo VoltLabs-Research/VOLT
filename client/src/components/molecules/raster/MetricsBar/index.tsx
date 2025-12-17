@@ -28,7 +28,7 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
 
     return (
         <div className='d-flex items-center gap-075 raster-metrics-bar w-max'>
-            <div className='d-flex flex-wrap items-center h-100 ml-025 raster-metrics-list h-max'>
+            <div className='d-flex flex-wrap items-center h-max ml-025 raster-metrics-list h-max'>
                 {items.map((item) => (
                     <MetricItem key={item.key} label={item.label} value={item.value} icon={item.icon} />
                 ))}

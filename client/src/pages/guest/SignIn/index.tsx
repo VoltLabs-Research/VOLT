@@ -186,7 +186,7 @@ export default function AuthPage() {
             <div className="hero-overlay p-absolute inset-0" />
           </div>
 
-          <div className="d-flex column content-between h-100 hero-content-wrapper p-relative h-max">
+          <div className="d-flex column content-between h-max hero-content-wrapper p-relative h-max">
             <div className="d-flex items-center gap-075 hero-brand font-size-5">
               <div className="brand-icon d-flex flex-center">
                 <LayoutGrid size={24} color="white" />

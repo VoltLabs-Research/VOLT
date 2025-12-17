@@ -193,7 +193,7 @@ const Containers: React.FC = () => {
     ], []);
 
     return (
-        <DashboardContainer pageName='Containers' className='d-flex column h-100 containers-page-wrapper'>
+        <DashboardContainer pageName='Containers' className='d-flex column h-max containers-page-wrapper'>
             <div className='containers-listing-header p-absolute'>
                 <Button
                     variant='solid'

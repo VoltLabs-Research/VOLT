@@ -71,7 +71,7 @@ const ChatSidebar: React.FC = () => {
             {/* Team Members for New Chat */}
             {showTeamMembers && (
                 <div className='chat-team-members-container y-auto'>
-                    <Title className='font-size-3 chat-team-members-title font-weight-6 color-secondary'>Team Members</Title>
+                    <Title className='font-size-1 chat-team-members-title font-weight-6 color-secondary'>Team Members</Title>
                     {teamMembers
                         .filter((member, index, self) =>
                             self.findIndex(m => m._id === member._id) === index

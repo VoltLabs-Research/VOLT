@@ -21,11 +21,11 @@
  */
 
 import { useChatStore } from '@/stores/chat';
-import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
 import ChatSidebar from '@/components/molecules/chat/ChatSidebar';
 import CreateGroupModal from '@/components/molecules/chat/CreateGroupModal';
 import GroupManagementModal from '@/components/molecules/chat/GroupManagementModal';
 import ChatArea from '@/components/organisms/chat/ChatArea';
+import Container from '@/components/primitives/Container';
 import './Messages.css';
 
 const MessagesPage = () => {
@@ -34,17 +34,17 @@ const MessagesPage = () => {
     } = useChatStore();
 
     return (
-        <DashboardContainer pageName='Messages' className='chat-main-container d-flex h-100 p-relative overflow-hidden'>
-            <ChatSidebar />
-            <ChatArea />
+        <Container className='chat-main-container d-flex column h-max w-max flex-1 p-relative overflow-hidden'>
+            <Container className='d-flex h-max w-max flex-1'>
+                <ChatSidebar />
+                <ChatArea />
+            </Container>
 
             <CreateGroupModal />
 
             <GroupManagementModal />
 
-
-
-        </DashboardContainer>
+        </Container>
     )
 };
 
