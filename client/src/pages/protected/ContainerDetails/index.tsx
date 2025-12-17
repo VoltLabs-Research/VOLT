@@ -425,7 +425,7 @@ const ContainerDetails: React.FC = () => {
                 {activeTab === 'settings' && (
                     <div className="content-pane settings-pane h-max">
                         <Title className="font-size-4 font-weight-6">Settings</Title>
-                        <div className="settings-card overflow-hidden">
+                        <div className="container-settings-card overflow-hidden">
                             <div className="card-header">
                                 <Title className="font-size-3 font-weight-6">Configuration & Resources</Title>
                                 <Paragraph className="color-muted">Update environment variables, ports, and resource limits(CPU/RAM).</Paragraph>
@@ -442,7 +442,7 @@ const ContainerDetails: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="settings-card danger overflow-hidden">
+                        <div className="container-settings-card danger overflow-hidden">
                             <div className="card-header">
                                 <Title className="font-size-3 font-weight-6">Delete Container</Title>
                                 <Paragraph className="color-muted">Permanently remove this container and all its data.</Paragraph>

@@ -13,7 +13,7 @@ interface SectionHeaderProps {
 const SectionHeader: React.FC<SectionHeaderProps> = ({ title, description, children }) => {
     return(
         <Container className='d-flex content-between'>
-            <Container className='d-flex column gap-05'>
+            <Container className='d-flex column'>
                 <Title className='font-size-4 font-weight-6 text-primary section-title'>{title}</Title>
                 {description && <Paragraph className='font-size-2-5 text-secondary line-height-5'>{description}</Paragraph>}
             </Container>

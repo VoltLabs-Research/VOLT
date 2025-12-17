@@ -41,7 +41,7 @@ const IntegrationsSettings: React.FC = () => {
             <SectionHeader
                 title="Third-party Integrations"
                 description="Connect your account with external services and platforms"
-            />
+            />.settings-sidebar
 
             <Container className="integrations-grid gap-1">
                 {integrations.map((item) => (
@@ -67,9 +67,11 @@ const IntegrationsSettings: React.FC = () => {
                 ))}
             </Container>
 
-            <Container className="integration-help mt-1">
-                <Title className='font-size-2-5'>Need help with integrations?</Title>
-                <Paragraph>Check our documentation or contact support for assistance with setting up third-party connections.</Paragraph>
+            <Container className="integration-help b-soft b-radius-08 p-1-5 d-flex gap-1-5 column">
+                <Container className="d-flex column gap-05">
+                    <Title className='font-size-2-5'>Need help with integrations?</Title>
+                    <Paragraph>Check our documentation or contact support for assistance with setting up third-party connections.</Paragraph>
+                </Container>
                 <Container className="d-flex gap-1 flex-wrap">
                     <Button variant='ghost' intent='neutral' size='sm' leftIcon={<TbFileText size={16} />}>
                         Documentation

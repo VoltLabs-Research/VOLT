@@ -3,6 +3,10 @@
     margin-top: 1rem;
 }
 
+.mt-05{
+    margin-top: 0.5rem;
+}
+
 .mt-3 {
     margin-top: 3rem;
 }
@@ -95,6 +99,10 @@
 }
 
 /** Container **/
+.max-h-500{
+    max-height: 500px;
+}
+
 .w-max {
     width: 100%;
 }
@@ -271,6 +279,15 @@
 
 .line-height-5 {
     line-height: 1.5;
+}
+
+/** Border **/
+.b-soft{
+    border: 1px solid var(--color-border-soft);
+}
+
+.b-radius-08{
+    border-radius: 0.8rem;
 }
 
 /** Other **/

@@ -71,23 +71,6 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
 
     const items = [
         {
-            key: "2fa",
-            left: (
-                <Container className="d-flex flex-center security-icon">
-                    <TbShield size={24} />
-                </Container>
-            ),
-            title: "Two-Factor Authentication",
-            description: "Add an extra layer of security to your account",
-            right: (
-                <StatusBadge variant="inactive">
-                    <TbX size={14} />
-                    Disabled
-                </StatusBadge>
-            ),
-            after: null
-        },
-        {
             key: "password",
             left: (
                 <Container className="d-flex flex-center security-icon">

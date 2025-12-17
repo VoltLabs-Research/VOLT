@@ -40,7 +40,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection, navOpt
 							key={option.title}
 							variant='ghost'
 							intent='neutral'
-							size='sm'
+							size='lg	'
 							block
 							align='start'
 							className={`nav-item ${isActive ? 'active' : ''} p-relative overflow-hidden font-size-2 font-size-2-5 font-weight-5 color-muted-foreground color-secondary cursor-pointer`}

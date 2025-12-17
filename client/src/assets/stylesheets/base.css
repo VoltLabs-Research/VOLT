@@ -77,9 +77,6 @@ input:-webkit-autofill:hover{
     box-shadow: var(--shadow-glass);
 }
 
-.u-select-none {
-}
-
 .glass-bg{
     background: var(--glass-bg);
     box-shadow: var(--shadow-elevated);

@@ -57,12 +57,11 @@
 
 .danger-section {
     border: 1px solid rgba(239, 68, 68, 0.2);
-    background: rgba(239, 68, 68, 0.05);
 }
 
 .danger-item {
     padding: 1rem;
-    background: var(--color-surface-1);
+    background: rgba(239, 68, 68, 0.05);
     border: 1px solid rgba(239, 68, 68, 0.2);
     border-radius: 0.8rem;
     transition: all 0.2s ease;

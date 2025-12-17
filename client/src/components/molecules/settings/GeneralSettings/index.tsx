@@ -154,10 +154,10 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                 </Container>
             </Section>
 
-            <Section>
+            <Section className="d-flex column gap-3">
                 <SectionHeader title="Personal Information" description="Update your personal details and contact information" />
 
-                <div className="settings-form">
+                <div className="settings-form d-flex column gap-2">
                     {updateError && (
                         <div className="update-error">
                             <TbX size={16} />
@@ -203,25 +203,24 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                 </div>
             </Section>
 
-            <Section>
-                <SectionHeader title="Account Activity" description="Recent activity and account statistics" />
+            <RecentActivity 
+                limit={15} 
+                showStats={true} 
+                className="account-activity-section" />
 
-                <RecentActivity limit={15} showStats={true} className="account-activity-section" />
-            </Section>
+            <Section className="danger-section d-flex column gap-1-5">
+                <SectionHeader 
+                    title="Danger Zone" 
+                    description="Irreversible and destructive actions" />
 
-            <Section className="danger-section">
-                <SectionHeader title="Danger Zone" description="Irreversible and destructive actions" />
-
-                <Container className="d-flex column gap-1">
-                    <Container className="danger-item d-flex items-center content-between">
-                        <Container className="danger-info">
-                            <Title className='font-size-2-5'>Delete Account</Title>
-                            <Paragraph>Permanently delete your account and all associated data. This action cannot be undone.</Paragraph>
-                        </Container>
-                        <Button variant='soft' intent='danger' leftIcon={<TbTrash size={16} />} onClick={onDeleteAccount}>
-                            Delete Account
-                        </Button>
+                <Container className="danger-item d-flex items-center content-between">
+                    <Container className="danger-info">
+                        <Title className='font-size-2-5'>Delete Account</Title>
+                        <Paragraph>Permanently delete your account and all associated data. This action cannot be undone.</Paragraph>
                     </Container>
+                    <Button variant='soft' intent='danger' leftIcon={<TbTrash size={16} />} onClick={onDeleteAccount}>
+                        Delete Account
+                    </Button>
                 </Container>
             </Section>
         </Container>

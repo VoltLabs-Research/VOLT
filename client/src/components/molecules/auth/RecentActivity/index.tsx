@@ -153,7 +153,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
     return (
         <div className={`recent-activity-container ${className}`}>
             <div className="d-flex items-center content-between sm:column sm:item-start sm:gap-1 recent-activity-header mb-1-5">
-                <Title className="d-flex items-center gap-05 font-size-3 recent-activity-title font-size-4 font-weight-6 color-primary">
+                <Title className="d-flex items-center gap-1 font-size-3 recent-activity-title font-size-4 font-weight-6 color-primary">
                     <HiChartBar className="recent-activity-icon" />
                     Recent Activity
                 </Title>

@@ -388,7 +388,7 @@
     max-width: 800px;
 }
 
-.settings-card {
+.container-settings-card {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 16px;
@@ -396,35 +396,35 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.settings-card.danger {
+.container-settings-card.danger {
     border-color: rgba(239, 68, 68, 0.3);
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.05);
 }
 
-.settings-card .card-header {
+.container-settings-card .card-header {
     padding: 2rem;
     border-bottom: 1px solid var(--border);
     background: var(--background-secondary);
 }
 
-.settings-card.danger .card-header {
+.container-settings-card.danger .card-header {
     background: linear-gradient(to right, rgba(239, 68, 68, 0.05), transparent);
 }
 
-.settings-card .card-header h3 {
+.container-settings-card .card-header h3 {
     margin: 0 0 0.5rem 0;
     font-size: 1.125rem;
     font-weight: 600;
 }
 
-.settings-card .card-header p {
+.container-settings-card .card-header p {
     margin: 0;
     font-size: 0.9375rem;
     color: var(--muted-foreground);
     line-height: 1.5;
 }
 
-.settings-card .card-body {
+.container-settings-card .card-body {
     padding: 2rem;
 
 }
