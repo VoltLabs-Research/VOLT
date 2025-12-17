@@ -33,7 +33,7 @@ type DashboardContainerProps = {
 const DashboardContainer = ({ children, className = '' }: DashboardContainerProps) => {
 
     return (
-        <Container className={'p-2 w-max flex-1 y-auto sm:p-1 dashboard-container '.concat(className + '-wrapper')}>
+        <Container className={'w-max flex-1 y-auto dashboard-container '.concat(className + '-wrapper')}>
             <Container className={className}>
                 {children}
             </Container>

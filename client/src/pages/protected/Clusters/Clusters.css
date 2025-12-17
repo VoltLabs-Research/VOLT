@@ -193,12 +193,11 @@
 .clusters-main {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
 }
 
 @media (min-width: 768px) {
   .clusters-main {
-    padding: 3rem 2rem;
+    padding: 1rem 2rem;
   }
 
   .clusters-grid,
@@ -221,7 +220,7 @@
 
 @media (min-width: 1440px) {
   .clusters-main {
-    padding: 4rem 3rem;
+    padding: 1rem 3rem;
   }
 
   .clusters-grid,

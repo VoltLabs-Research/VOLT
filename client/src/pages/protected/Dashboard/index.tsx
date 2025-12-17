@@ -89,7 +89,7 @@ const DashboardPage: React.FC = memo(() => {
 
     return (
         <FileUpload>
-            <DashboardContainer pageName='Dashboard' className='d-flex h-max sm:column w-max gap-2'>
+            <DashboardContainer className='d-flex h-max sm:column w-max gap-2 p-1   '>
                 <Container className='d-flex column dashboard-body-left-container gap-2 h-max'>
                     <Container className='scene-preview-container p-relative w-max vh-max overflow-hidden'>
                         {isProcessing ? (

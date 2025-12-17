@@ -151,14 +151,27 @@
 }
 
 /* Intent: Brand (Accent Blue) */
+/* Dark Mode (Default) - White button */
 .button.intent-brand.variant-solid {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+}
+
+.button.intent-brand.variant-solid:hover:not(:disabled) {
+    background-color: #e5e5e5;
+}
+
+/* Light Mode - Accent Blue */
+:root[data-theme='light'] .button.intent-brand.variant-solid {
     background-color: var(--accent-blue, #3b82f6);
     color: white;
     border-color: var(--accent-blue, #3b82f6);
 }
 
-.button.intent-brand.variant-solid:hover:not(:disabled) {
+:root[data-theme='light'] .button.intent-brand.variant-solid:hover:not(:disabled) {
     filter: brightness(1.1);
+    background-color: var(--accent-blue, #3b82f6);
 }
 
 .button.intent-brand.variant-soft {

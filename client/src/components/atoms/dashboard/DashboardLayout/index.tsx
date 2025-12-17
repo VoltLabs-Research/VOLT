@@ -59,6 +59,9 @@ import { IoChevronForward } from 'react-icons/io5';
 import './DashboardLayout.css';
 import { HiOutlineServer } from 'react-icons/hi2';
 import { MdImportExport } from 'react-icons/md';
+import usePluginStore from '@/stores/plugins/plugin';
+import { NodeType } from '@/types/plugin';
+
 
 // Greeting helper functions
 const getGreeting = (): string => {
@@ -106,16 +109,44 @@ const DashboardLayout = () => {
     const notificationBodyRef = useRef<HTMLDivElement | null>(null);
     const observedNotificationsRef = useRef<Set<string>>(new Set());
 
+    const fetchPlugins = usePluginStore(state => state.fetchPlugins);
+    const plugins = usePluginStore(state => state.plugins);
+    const [analysesExpanded, setAnalysesExpanded] = useState(() => pathname.includes('/analysis-configs'));
+
+    useEffect(() => {
+        fetchPlugins();
+    }, []);
+
+    const analysisPlugins = useMemo(() => {
+        return plugins.filter(p => {
+            if (!p.workflow?.nodes) return false;
+            return p.workflow.nodes.some(node =>
+                node.type === NodeType.VISUALIZERS &&
+                node.data?.visualizers?.listing &&
+                Object.keys(node.data.visualizers.listing).length > 0
+            );
+        }).map(p => {
+            const visualizerNode = p.workflow.nodes.find(n => n.type === NodeType.VISUALIZERS);
+            return {
+                ...p,
+                displayName: visualizerNode?.data?.visualizers?.listingTitle || p.slug
+            };
+        });
+    }, [plugins]);
+
     const notificationList = useMemo(() => notifications, [notifications]);
-    const navItems: Array<[string, IconType, string]> = useMemo(() => ([
+
+    const mainNavItems: Array<[string, IconType, string]> = useMemo(() => ([
         ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
         ['Containers', IoCubeOutline, '/dashboard/containers'],
         ['Trajectories', TbCube3dSphere, '/dashboard/trajectories/list'],
-        ['Analyses', IoAnalytics, '/dashboard/analysis-configs/list'],
+    ]), []);
+
+    const secondaryNavItems: Array<[string, IconType, string]> = useMemo(() => ([
         ['Plugins', GoWorkflow, '/dashboard/plugins/list'],
         ['Messages', CiChat1, '/dashboard/messages'],
         ['Clusters', HiOutlineServer, '/dashboard/clusters'],
-        ['Import', MdImportExport, '/dashboard/clusters']
+        ['Import', MdImportExport, '/dashboard/import']
     ]), []);
 
     // Settings sub-items for collapsible section
@@ -138,29 +169,23 @@ const DashboardLayout = () => {
 
     useEffect(() => {
         if (selectedTeam === null || trajectories.length) return;
-        getTrajectories(selectedTeam._id);
-    }, [selectedTeam]);
+        setTeamsInitialized(true);
+    }, [selectedTeam, trajectories]);
 
     useEffect(() => {
-        if (teams.length) return;
-        getUserTeams().finally(() => setTeamsInitialized(true));
-    }, []);
-
-    useEffect(() => {
-        if (!teamsInitialized) return;
-        if (isLoadingTeams) return;
-
-        if (teams.length === 0) {
-            const modal = document.getElementById('team-creator-modal') as HTMLDialogElement;
-            if (modal) modal.showModal();
+        // Only load if we have a team and haven't loaded yet
+        if (selectedTeam?._id && !teamsInitialized) {
+            getTrajectories(selectedTeam._id);
         }
-    }, [teamsInitialized, isLoadingTeams, teams.length]);
+    }, [selectedTeam, getTrajectories, teamsInitialized]);
 
     useEffect(() => {
-        const unsubscribe = initializeSocket();
-        fetch();
-        return unsubscribe;
-    }, []);
+        getUserTeams();
+    }, [getUserTeams]);
+
+    useEffect(() => {
+        initializeSocket();
+    }, [initializeSocket]);
 
     useEffect(() => {
         if (!teams.length) return;
@@ -352,11 +377,76 @@ const DashboardLayout = () => {
 
                 {/* Navigation */}
                 <nav className='sidebar-nav'>
-                    {navItems.map(([name, Icon, to], index) => (
+                    {mainNavItems.map(([name, Icon, to], index) => (
                         <button
                             key={index}
                             className={`sidebar-nav-item ${(to === '/dashboard' ? pathname === to : pathname.startsWith(to)) ? 'is-selected' : ''}`}
-                            onClick={() => navigate(to)}
+                            onClick={() => {
+                                navigate(to);
+                                setSidebarOpen(false);
+                                setSettingsExpanded(false);
+                            }}
+                        >
+                            <span className='sidebar-nav-icon'>
+                                <Icon />
+                            </span>
+                            <span className='sidebar-nav-label'>{name}</span>
+                        </button>
+                    ))}
+
+                    {/* Analysis Configs Dropdown */}
+                    <button
+                        className={`sidebar-nav-item sidebar-section-header ${pathname.includes('/analysis-configs') ? 'is-selected' : ''}`}
+                        onClick={() => setAnalysesExpanded(!analysesExpanded)}
+                    >
+                        <span className="sidebar-nav-icon">
+                            <IoAnalytics />
+                        </span>
+                        <span className="sidebar-nav-label">Analysis</span>
+                        <IoChevronDown
+                            className={`sidebar-section-chevron ${analysesExpanded ? 'is-expanded' : ''}`}
+                            size={14}
+                        />
+                    </button>
+
+                    {analysesExpanded && (
+                        <div className="sidebar-sub-items">
+                            <button
+                                className={`sidebar-sub-item ${pathname === '/dashboard/analysis-configs/list' && !searchParams.get('plugin') ? 'is-selected' : ''}`}
+                                onClick={() => {
+                                    navigate('/dashboard/analysis-configs/list');
+                                    setSidebarOpen(false);
+                                }}
+                            >
+                                View all
+                            </button>
+                            {analysisPlugins.map((plugin) => (
+                                <button
+                                    key={plugin._id}
+                                    className={`sidebar-sub-item ${searchParams.get('plugin') === plugin.slug ? 'is-selected' : ''}`}
+                                    onClick={() => {
+                                        navigate(`/dashboard/analysis-configs/list?plugin=${plugin.slug}`);
+                                        setSidebarOpen(false);
+                                    }}
+                                    title={plugin.displayName}
+                                >
+                                    <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {plugin.displayName}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {secondaryNavItems.map(([name, Icon, to], index) => (
+                        <button
+                            key={index}
+                            className={`sidebar-nav-item ${(to === '/dashboard' ? pathname === to : pathname.startsWith(to)) ? 'is-selected' : ''}`}
+                            onClick={() => {
+                                navigate(to);
+                                setSidebarOpen(false);
+                                setSettingsExpanded(false);
+                            }}
                         >
                             <span className='sidebar-nav-icon'>
                                 <Icon />
@@ -592,7 +682,9 @@ const DashboardLayout = () => {
                     </Container>
                 </header>
 
-                <Outlet />
+                <Container className='dashboard-content-main'>
+                    <Outlet />
+                </Container>
             </Container>
 
             {showSSHFileExplorer && (

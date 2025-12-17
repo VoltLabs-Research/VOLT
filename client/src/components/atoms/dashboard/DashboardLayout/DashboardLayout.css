@@ -8,13 +8,14 @@
 .dashboard-sidebar {
     width: 280px;
     height: 100vh;
-    border-right: 1px solid var(--color-border-soft);
     position: fixed;
     left: 0;
     top: 0;
     z-index: 100;
     display: flex;
     flex-direction: column;
+    background: var(--color-bg);
+    border-right: 1px solid var(--color-border-soft);
 }
 
 .sidebar-brand {
@@ -27,12 +28,12 @@
 .sidebar-brand-logo {
     width: 32px;
     height: 32px;
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    background: #FFF;
     border-radius: 0.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: #000;
     font-weight: 700;
     font-size: 1rem;
 }
@@ -197,6 +198,7 @@
     padding: 0.5rem 0.75rem;
     width: 100%;
     transition: all 0.15s ease;
+    color: var(--color-text-primary);
 }
 
 .sidebar-team-section .rh-select-trigger:hover {
@@ -276,6 +278,8 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+
+    background: var(--color-bg);
 }
 
 .dashboard-top-header {
@@ -335,6 +339,16 @@
     gap: 0.5rem;
     flex: 1;
     justify-content: flex-end;
+}
+
+/* Main Content Area - Uses theme colors */
+.dashboard-content-main {
+    flex: 1;
+    background: var(--color-bg);
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    overflow: hidden;
+    min-height: 0;
 }
 
 /* Search Container */

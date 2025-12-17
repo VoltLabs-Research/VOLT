@@ -193,7 +193,7 @@ const Containers: React.FC = () => {
     ], []);
 
     return (
-        <DashboardContainer pageName='Containers' className='d-flex column h-max containers-page-wrapper'>
+        <DashboardContainer pageName='Containers' className='d-flex column h-max'>
             <DocumentListing
                 title={`Containers(${containers.length})`}
                 breadcrumbs={['Dashboard', 'Containers']}
