@@ -21,7 +21,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Outlet, useNavigate, useSearchParams } from 'react-router-dom';
+import { Outlet, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { IoSettingsOutline, IoCubeOutline, IoMenuOutline, IoSearchOutline } from 'react-icons/io5';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';
@@ -64,6 +64,7 @@ const DashboardLayout = () => {
     const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
     const leaveTeam = useTeamStore((state) => state.leaveTeam);
     const navigate = useNavigate();
+    const { pathname } = useLocation();
     const { showError, showSuccess } = useToast();
     const toggleSSHFileExplorer = useWindowsStore((state) => state.toggleSSHFileExplorer);
     const showSSHFileExplorer = useWindowsStore((state) => state.showSSHFileExplorer);
@@ -342,7 +343,7 @@ const DashboardLayout = () => {
                                             size='sm'
                                             block
                                             align='start'
-                                            className={`mobile-nav-item ${(index === 0) ? 'is-selected' : ''} color-primary`}
+                                            className={`mobile-nav-item ${(to === '/dashboard' ? pathname === to : pathname.startsWith(to)) ? 'is-selected' : ''} color-primary`}
                                             leftIcon={<i className='mobile-nav-icon color-primary'><Icon /></i>}
                                             onClick={() => { navigate(to); setMobileMenuOpen(false); }}
                                         >
@@ -384,7 +385,7 @@ const DashboardLayout = () => {
                 <Container className='d-flex items-center gap-05 navigation-container sm:d-none'>
                     {navItems.map(([name, Icon, to], index) => (
                         <Container
-                            className={`d-flex cursor-pointer items-center gap-05 navigation-item-container ${(index === 0) ? 'is-selected' : ''}`}
+                            className={`d-flex cursor-pointer items-center gap-05 navigation-item-container ${(to === '/dashboard' ? pathname === to : pathname.startsWith(to)) ? 'is-selected' : ''}`}
                             key={index}
                             onClick={() => navigate(to)}
                         >
