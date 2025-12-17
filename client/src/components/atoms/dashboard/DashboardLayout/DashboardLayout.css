@@ -330,7 +330,6 @@
 }
 
 .mobile-nav-item:hover {
-    transform: translateY(-1px);
     background: color-mix(in srgb, var(--color-surface-1) 96%, transparent);
 }
 
@@ -380,18 +379,10 @@
     transition: transform .12s ease, background .2s ease;
 }
 
-.mobile-dropdown .badge-container.as-icon-container:hover {
-    transform: translateY(-1px);
-}
-
 /* Fancy trigger */
 .mobile-menu-trigger {
     border-radius: 12px;
     transition: transform .12s ease, background .2s ease;
-}
-
-.mobile-menu-trigger:hover {
-    transform: translateY(-1px);
 }
 
 /* Animations */

@@ -173,7 +173,6 @@
 
 .team-invite-invite-btn:hover:not(:disabled) {
     background: var(--invite-accent-hover);
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
@@ -431,7 +430,6 @@
 .team-invite-footer-link:hover {
     color: var(--invite-accent);
     background: var(--invite-surface-hover);
-    transform: translateY(-1px);
 }
 
 .team-invite-footer-link:active {

@@ -73,7 +73,6 @@
 
 .group-management-nav-item:hover {
     background: var(--color-surface-2);
-    transform: translateX(4px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-color: rgba(255, 255, 255, 0.1);
 }
@@ -81,7 +80,6 @@
 .group-management-nav-item.active {
     background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-indigo) 100%);
     color: white;
-    transform: translateX(4px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
     border-color: rgba(255, 255, 255, 0.2);
 }
@@ -222,7 +220,6 @@
 .group-management-member:hover,
 .group-management-admin:hover {
     background: linear-gradient(135deg, var(--color-surface-3) 0%, var(--color-surface-4) 100%);
-    transform: translateX(4px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-color: rgba(255, 255, 255, 0.1);
 }
@@ -413,17 +410,12 @@
 
 .group-management-back-button:hover {
     background: rgba(255, 255, 255, 0.1);
-    transform: translateX(-2px);
 }
 
 .group-management-back-button svg {
     font-size: 1.25rem;
     color: white;
     transition: all 0.3s ease;
-}
-
-.group-management-back-button:hover svg {
-    transform: translateX(-2px);
 }
 
 .group-management-back-button h4 {
@@ -447,7 +439,6 @@
 
 .group-management-search-container:focus-within {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    transform: translateY(-1px);
 }
 
 .group-management-search-icon {
@@ -541,14 +532,12 @@
 }
 
 .group-management-member:hover {
-    transform: translateX(4px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .group-management-member.selected {
     background: linear-gradient(135deg, var(--primary-color-light) 0%, var(--primary-color) 100%);
     border-color: var(--primary-color);
-    transform: translateX(4px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
@@ -707,7 +696,6 @@
 }
 
 .group-management-admin:hover {
-    transform: translateX(4px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -751,7 +739,6 @@
 .group-management-admin.selected {
     background: linear-gradient(135deg, var(--primary-color-light) 0%, var(--primary-color) 100%);
     border-color: var(--primary-color);
-    transform: translateX(4px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
@@ -883,17 +870,12 @@
 
 .group-management-back-button:hover {
     background: rgba(255, 255, 255, 0.1);
-    transform: translateX(-2px);
 }
 
 .group-management-back-button svg {
     font-size: 1.25rem;
     color: white;
     transition: all 0.3s ease;
-}
-
-.group-management-back-button:hover svg {
-    transform: translateX(-2px);
 }
 
 .group-management-back-button h4 {
@@ -1047,7 +1029,6 @@
     background: #f8fafc;
     border-color: #d1d5db;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
 }
 
 :root[data-theme='light'] .group-management-member-name,
@@ -1146,7 +1127,6 @@
     background: #f9fafb;
     border-color: #9ca3af;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
 }
 
 :root[data-theme='light'] .group-management-container .button.red-on-light {
@@ -1160,7 +1140,6 @@
 :root[data-theme='light'] .group-management-container .button.red-on-light:hover {
     background: #dc2626;
     box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
-    transform: translateY(-1px);
 }
 
 /* Light Mode Navigation Hover States */

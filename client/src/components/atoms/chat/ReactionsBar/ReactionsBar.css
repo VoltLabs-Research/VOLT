@@ -28,7 +28,6 @@
     background: var(--accent-indigo);
     border-color: var(--accent-indigo);
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
-    transform: translateY(-1px);
 }
 
 :root[data-theme='light']{

@@ -65,14 +65,12 @@
 
 .settings-form .form-input-container:hover {
     border-color: var(--color-border);
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .settings-form .form-input-container:has(.form-input:focus) {
     border-color: var(--accent-blue);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-1px);
 }
 
 .settings-form .form-input {

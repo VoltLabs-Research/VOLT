@@ -47,12 +47,6 @@
     border-radius: 1rem;
 }
 
-.dashboard-body-left-header-title {
-}
-
-.dashboard-stat-title {
-}
-
 .dashboard-stat-arrow-icon-container {
     bottom: 1rem;
     right: 1rem;
@@ -63,7 +57,6 @@
 
 .dashboard-stat-container:hover .dashboard-stat-arrow-icon-container {
     opacity: 1;
-    transform: translateX(4px);
 }
 
 .dashboard-stat-container {
@@ -81,21 +74,12 @@
     border-right: 1px solid var(--color-border);
 }
 
-.raster-frame {
-}
-
 .dashboard-stat-analytic-container {
     right: 2rem;
 }
 
 .dashboard-stat-analytic-container:has(.MuiChartsGrid-root) {
     top: 3rem;
-}
-
-.dashboard-stat-left-container {
-}
-
-.dashboard-stat-header-container {
 }
 
 .dashboard-stat-last-month-icon-container {

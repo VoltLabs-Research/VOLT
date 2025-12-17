@@ -77,7 +77,6 @@
 
 .chat-details-action:hover {
     background: var(--color-surface-3);
-    transform: translateX(4px);
 }
 
 .chat-details-action-icon {

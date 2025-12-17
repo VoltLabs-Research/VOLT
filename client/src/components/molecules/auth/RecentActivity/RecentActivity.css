@@ -54,11 +54,6 @@
 .recent-activity-item:hover {
     background: var(--color-surface-3);
     border-color: var(--color-border);
-    transform: translateX(4px);
-}
-
-.recent-activity-item-content {
-
 }
 
 .recent-activity-method-badge {

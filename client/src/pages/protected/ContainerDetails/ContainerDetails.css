@@ -30,7 +30,6 @@
 
 .back-link:hover {
     color: var(--foreground);
-    transform: translateX(-4px);
 }
 
 .container-icon-large {
@@ -128,7 +127,6 @@
 .nav-item:hover {
     background: var(--hover);
     color: var(--foreground);
-    transform: translateX(2px);
 }
 
 .nav-item.active {
@@ -156,7 +154,6 @@
 }
 
 .action-btn:hover {
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 

@@ -22,7 +22,6 @@
 
 .back-btn-icon:hover {
     background: var(--hover) !important;
-    transform: translateX(-2px);
 }
 
 .header-text h1 {
@@ -36,9 +35,6 @@
     margin: 0;
     color: var(--muted-foreground);
     font-size: 0.9rem;
-}
-
-.create-layout {
 }
 
 /* Sidebar Steps */
@@ -368,7 +364,6 @@
 
 .primary-btn:hover {
     opacity: 0.9;
-    transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.4) !important;
 }
 

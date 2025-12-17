@@ -59,7 +59,6 @@
         0 0 0 3px rgba(59, 130, 246, 0.15),
         var(--shadow-elevated),
         inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
 }
 
 .chat-sidebar-search-icon-container {
@@ -88,7 +87,6 @@
     padding: 1rem 1.5rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border-bottom: 1px solid var(--color-border-soft);
-    transform: translateX(0);
     background: var(--color-surface-1);
     backdrop-filter: blur(5px);
     margin: 0.25rem 0.5rem;
@@ -99,7 +97,6 @@
 .chat-conversation-item:hover {
     background: var(--color-surface-2);
     backdrop-filter: blur(10px);
-    transform: translateX(4px) translateY(-1px);
     box-shadow:
         var(--shadow-elevated),
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -116,7 +113,6 @@
     box-shadow:
         var(--shadow-elevated),
         inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    transform: translateX(2px);
 }
 
 .chat-conversation-avatar {
@@ -187,7 +183,6 @@
 
 .chat-new-chat-button:hover {
     background: var(--accent-indigo);
-    transform: translateY(-1px);
 }
 
 /* New Group Button */
@@ -204,7 +199,6 @@
 
 .chat-new-group-button:hover {
     background: var(--accent-indigo);
-    transform: translateY(-1px);
 }
 
 /* Team Members Container */

@@ -14,7 +14,6 @@
 .chat-shared-file-item:hover {
     background: var(--color-surface-3);
     border-color: var(--color-border-soft);
-    transform: translateY(-1px);
 }
 
 .chat-shared-file-icon {

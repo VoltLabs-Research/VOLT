@@ -69,7 +69,6 @@
 
 .danger-item:hover {
     border-color: var(--accent-red);
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
 }
 

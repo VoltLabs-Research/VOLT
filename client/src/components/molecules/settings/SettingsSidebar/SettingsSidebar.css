@@ -25,7 +25,6 @@
     background: var(--color-surface-3);
     border-color: var(--color-border);
     color: var(--color-text-primary);
-    transform: translateY(-1px);
 }
 
 .sidebar-title {
@@ -50,7 +49,6 @@
 .nav-item:hover {
     background: var(--color-surface-2);
     color: var(--color-text-primary);
-    transform: translateX(4px);
 }
 
 .nav-item.active {

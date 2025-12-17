@@ -52,7 +52,6 @@
 
 .plugins-listing-create-btn:hover {
     background: var(--color-primary-hover, #2563eb);
-    transform: translateY(-1px);
 }
 
 .plugins-listing-create-btn:active {

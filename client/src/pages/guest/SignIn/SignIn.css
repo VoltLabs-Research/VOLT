@@ -195,7 +195,6 @@
 
 .btn-primary:hover {
     background-color: var(--color-zinc-200);
-    transform: translateY(-1px);
 }
 
 .btn-outline {
