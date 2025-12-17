@@ -91,10 +91,6 @@ const DashboardPage: React.FC = memo(() => {
         <FileUpload>
             <DashboardContainer pageName='Dashboard' className='d-flex h-max sm:column w-max gap-2'>
                 <Container className='d-flex column dashboard-body-left-container gap-2 h-max'>
-                    <Container>
-                        <Title className='font-size-6 color-primary font-weight-5-5'>{getGreeting()}, {capitalize(user?.firstName)}</Title>
-                    </Container>
-
                     <Container className='scene-preview-container p-relative w-max vh-max overflow-hidden'>
                         {isProcessing ? (
                             <Container style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 20, display: 'flex', alignItems: 'center', gap: '8px' }}>

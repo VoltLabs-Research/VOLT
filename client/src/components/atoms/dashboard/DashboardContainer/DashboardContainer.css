@@ -2,6 +2,10 @@
     padding: .5rem;
 }
 
+.dashboard-container{
+    padding-top: unset !important;
+}
+
 .search-container {
     border: 1px solid var(--color-border);
     background-color: var(--color-surface-2);
