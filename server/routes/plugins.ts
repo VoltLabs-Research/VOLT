@@ -31,10 +31,10 @@ const router = Router();
 const controller = new PluginsController();
 
 // Middleware to load plugin into res.locals
-const loadPlugin = async(req: Request, res: Response, next: NextFunction) => {
+const loadPlugin = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const plugin = await Plugin.findOne({ $or: [{ _id: id }, { slug: id }] });
-    if(!plugin){
+    if (!plugin) {
         return next(new RuntimeError('Plugin::NotFound', 404));
     }
     res.locals.plugin = plugin;
@@ -73,6 +73,13 @@ router.get(
     controller.getPluginExposureFile
 );
 
+// Listing without specific trajectory (all trajectories for team)
+router.get(
+    '/listing/:pluginSlug/:listingSlug',
+    controller.getPluginListingDocuments
+);
+
+// Listing for specific trajectory
 router.get(
     '/listing/:pluginSlug/:listingSlug/:id',
     trajMiddleware.checkTeamMembershipForTrajectory,

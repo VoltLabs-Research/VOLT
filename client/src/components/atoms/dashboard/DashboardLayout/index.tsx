@@ -117,21 +117,53 @@ const DashboardLayout = () => {
         fetchPlugins();
     }, []);
 
-    const analysisPlugins = useMemo(() => {
-        return plugins.filter(p => {
-            if (!p.workflow?.nodes) return false;
-            return p.workflow.nodes.some(node =>
+    const analysisListings = useMemo(() => {
+        const listings: Array<{
+            id: string;
+            pluginSlug: string;
+            listingSlug: string;
+            displayName: string;
+        }> = [];
+
+        plugins.forEach(plugin => {
+            if (!plugin.workflow?.nodes || !plugin.workflow?.edges || !plugin.slug) return;
+            const { nodes, edges } = plugin.workflow;
+
+            // Find visualizer nodes with listings
+            const visualizerNodes = nodes.filter(node =>
                 node.type === NodeType.VISUALIZERS &&
                 node.data?.visualizers?.listing &&
                 Object.keys(node.data.visualizers.listing).length > 0
             );
-        }).map(p => {
-            const visualizerNode = p.workflow.nodes.find(n => n.type === NodeType.VISUALIZERS);
-            return {
-                ...p,
-                displayName: visualizerNode?.data?.visualizers?.listingTitle || p.slug
-            };
+
+            visualizerNodes.forEach(vizNode => {
+                // Trace backward to find connected exposure: Visualizer <- Schema <- Exposure
+                const findConnectedExposure = (nodeId: string, depth = 0): string | null => {
+                    if (depth > 5) return null; // Prevent infinite loops
+                    const incomingEdge = edges.find(e => e.target === nodeId);
+                    if (!incomingEdge) return null;
+
+                    const sourceNode = nodes.find(n => n.id === incomingEdge.source);
+                    if (!sourceNode) return null;
+
+                    if (sourceNode.type === NodeType.EXPOSURE) {
+                        return sourceNode.data?.exposure?.name || null;
+                    }
+                    return findConnectedExposure(sourceNode.id, depth + 1);
+                };
+
+                const exposureName = findConnectedExposure(vizNode.id);
+                if (exposureName) {
+                    listings.push({
+                        id: `${plugin.slug}-${vizNode.id}`,
+                        pluginSlug: plugin.slug,
+                        listingSlug: exposureName,
+                        displayName: exposureName
+                    });
+                }
+            });
         });
+        return listings;
     }, [plugins]);
 
     const notificationList = useMemo(() => notifications, [notifications]);
@@ -420,18 +452,18 @@ const DashboardLayout = () => {
                             >
                                 View all
                             </button>
-                            {analysisPlugins.map((plugin) => (
+                            {analysisListings.map((listing) => (
                                 <button
-                                    key={plugin._id}
-                                    className={`sidebar-sub-item ${searchParams.get('plugin') === plugin.slug ? 'is-selected' : ''}`}
+                                    key={listing.id}
+                                    className={`sidebar-sub-item ${pathname.includes(`/plugins/${listing.pluginSlug}/listing/${listing.listingSlug}`) ? 'is-selected' : ''}`}
                                     onClick={() => {
-                                        navigate(`/dashboard/analysis-configs/list?plugin=${plugin.slug}`);
+                                        navigate(`/dashboard/plugins/${listing.pluginSlug}/listing/${listing.listingSlug}`);
                                         setSidebarOpen(false);
                                     }}
-                                    title={plugin.displayName}
+                                    title={listing.displayName}
                                 >
                                     <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {plugin.displayName}
+                                        {listing.displayName}
                                     </span>
                                 </button>
                             ))}

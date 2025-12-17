@@ -106,6 +106,11 @@ export const routesConfig: RouteGroup = {
             requiresLayout: false
         },
         {
+            path: '/dashboard/plugins/:pluginSlug/listing/:listingSlug',
+            component: PluginListing,
+            requiresLayout: true,
+        },
+        {
             path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginSlug/listing/:listingSlug',
             component: PluginListing,
             requiresLayout: true,

@@ -34,32 +34,35 @@ const binaryUpload = multer({
 
 // TODO: dupicated code
 const getValueByPath = (obj: any, path: string) => {
-    if(!obj || !path) return undefined;
-    if(!path.includes('.')) {
+    if (!obj || !path) return undefined;
+    if (!path.includes('.')) {
         return obj?.[path];
     }
     return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj);
 };
 
 export default class PluginsController extends BaseController<IPlugin> {
-    constructor(){
+    constructor() {
         super(Plugin, {
-            fields: ['slug', 'workflow', 'status'],
-            resourceName: 'Plugin'
+            fields: ['slug', 'workflow', 'status', 'team'],
+            resourceName: 'Plugin',
+            populate: [
+                { path: 'team', select: 'name description' }
+            ]
         });
     }
 
-    protected async onBeforeCreate(data: Partial<IPlugin>, req: Request): Promise<Partial<IPlugin>>{
+    protected async onBeforeCreate(data: Partial<IPlugin>, req: Request): Promise<Partial<IPlugin>> {
         // auto-generate slug from modifier name if not provided
-        if(!data.slug && data.workflow?.nodes){
+        if (!data.slug && data.workflow?.nodes) {
             const modifierNode = data.workflow.nodes.find((node: IWorkflowNode) => node.type === NodeType.MODIFIER);
-            if(modifierNode?.data?.modifier?.name){
+            if (modifierNode?.data?.modifier?.name) {
                 data.slug = slugify(modifierNode.data.modifier.name);
             }
         }
 
         // Validate workflow
-        if(data.workflow){
+        if (data.workflow) {
             const { valid, errors } = workflowValidator.validateStructure(data.workflow);
             data.validated = valid;
             data.validationErrors = errors;
@@ -71,7 +74,7 @@ export default class PluginsController extends BaseController<IPlugin> {
     protected async onBeforeUpdate(data: Partial<IPlugin>) {
         console.log(data);
         // Revalidate workflow on update
-        if(data.workflow){
+        if (data.workflow) {
             logger.info(`[PluginsController] onBeforeUpdate: Received ${data.workflow.nodes?.length} nodes, ${data.workflow.edges?.length} edges`);
             const { valid, errors } = workflowValidator.validateStructure(data.workflow);
             logger.info(`[PluginsController] onBeforeUpdate: Validation result - valid: ${valid}, errors: ${JSON.stringify(errors)}`);
@@ -84,9 +87,9 @@ export default class PluginsController extends BaseController<IPlugin> {
     /**
      * Validate a workflow without saving
      */
-    public validateWorkflow = catchAsync(async(req: Request, res: Response) => {
+    public validateWorkflow = catchAsync(async (req: Request, res: Response) => {
         const { workflow } = req.body;
-        if(!workflow){
+        if (!workflow) {
             throw new RuntimeError('Plugin::Workflow::Required', 400);
         }
 
@@ -101,15 +104,15 @@ export default class PluginsController extends BaseController<IPlugin> {
     /**
      * Publish a plugin(change status from draft to published)
      */
-    public publishPlugin = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public publishPlugin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { id } = req.params;
         const plugin = await Plugin.findOne({ $or: [{ _id: id }, { slug: id }] });
 
-        if(!plugin){
+        if (!plugin) {
             return next(new RuntimeError('Plugin::NotFound', 404));
         }
 
-        if(!plugin.validated){
+        if (!plugin.validated) {
             return next(new RuntimeError('Plugin::NotValid::CannotPublish', 400));
         }
 
@@ -125,7 +128,7 @@ export default class PluginsController extends BaseController<IPlugin> {
     /**
      * Get all published plugins
      */
-    public getPublishedPlugins = catchAsync(async(req: Request, res: Response) => {
+    public getPublishedPlugins = catchAsync(async (req: Request, res: Response) => {
         const plugins = await Plugin.find({ status: PluginStatus.PUBLISHED }).lean();
 
         res.status(200).json({
@@ -137,7 +140,7 @@ export default class PluginsController extends BaseController<IPlugin> {
     /**
      * Get all node output schemas for template autocomplete
      */
-    public getNodeSchemas = catchAsync(async(req: Request, res: Response) => {
+    public getNodeSchemas = catchAsync(async (req: Request, res: Response) => {
         const schemas = nodeRegistry.getSchemas();
 
         res.status(200).json({
@@ -149,7 +152,7 @@ export default class PluginsController extends BaseController<IPlugin> {
     /**
      * Execute a plugin on a trajectory
      */
-    public evaluatePlugin = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public evaluatePlugin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { pluginSlug, id: trajectoryId } = req.params;
         const { config, timestep } = req.body;
         const { trajectory } = res.locals;
@@ -159,11 +162,11 @@ export default class PluginsController extends BaseController<IPlugin> {
             status: PluginStatus.PUBLISHED
         });
 
-        if(!plugin){
+        if (!plugin) {
             return next(new RuntimeError('Plugin::NotFound', 404));
         }
 
-        if(!plugin.validated){
+        if (!plugin.validated) {
             return next(new RuntimeError('Plugin::NotValid::CannotExecute', 400));
         }
 
@@ -178,9 +181,9 @@ export default class PluginsController extends BaseController<IPlugin> {
 
         const argumentsNode = plugin.workflow.nodes.find((node: IWorkflowNode) => node.type === NodeType.ARGUMENTS);
         const jobs: AnalysisJob[] = [];
-        const promises = framesToProcess.map(async({ timestep }: any) => {
+        const promises = framesToProcess.map(async ({ timestep }: any) => {
             const inputFile = await DumpStorage.getDump(trajectoryId, timestep);
-            if(!inputFile){
+            if (!inputFile) {
                 return new RuntimeError('Trajectory::Dump::NotFound', 404);
             }
 
@@ -217,13 +220,13 @@ export default class PluginsController extends BaseController<IPlugin> {
     /**
      * Get GLB model for an exposure
      */
-    public getPluginExposureGLB = catchAsync(async(req: Request, res: Response) => {
+    public getPluginExposureGLB = catchAsync(async (req: Request, res: Response) => {
         const { timestep, analysisId, exposureId } = req.params;
         const { trajectory } = res.locals;
         const trajectoryId = trajectory._id.toString();
         const exposureKey = slugify(exposureId);
 
-        try{
+        try {
             const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/${exposureKey}.glb`;
             const stat = await storage.getStat(SYS_BUCKETS.MODELS, objectName);
             const stream = await storage.getStream(SYS_BUCKETS.MODELS, objectName);
@@ -232,7 +235,7 @@ export default class PluginsController extends BaseController<IPlugin> {
             res.setHeader('Content-Disposition', `inline; filename="${exposureId}_${timestep}.glb"`);
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
             stream.pipe(res);
-        }catch(err){
+        } catch (err) {
             logger.error(`[getPluginExposureGLB] Error: ${err}`);
             return res.status(404).json({
                 status: 'error',
@@ -241,13 +244,13 @@ export default class PluginsController extends BaseController<IPlugin> {
         }
     });
 
-    public getPluginExposureFile = catchAsync(async(req: Request, res: Response) => {
+    public getPluginExposureFile = catchAsync(async (req: Request, res: Response) => {
         const { timestep, analysisId, exposureId } = req.params;
         const filename = req.params.filename || 'file.msgpack';
         const { trajectory } = res.locals;
         const trajectoryId = trajectory._id.toString();
 
-        try{
+        try {
             const objectName = [
                 'plugins',
                 `trajectory-${trajectoryId}`,
@@ -263,16 +266,16 @@ export default class PluginsController extends BaseController<IPlugin> {
             res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
             res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
 
-            if(filename.endsWith('.msgpack')) {
+            if (filename.endsWith('.msgpack')) {
                 res.setHeader('Content-Type', 'application/x-msgpack');
-            }else if(filename.endsWith('.json')) {
+            } else if (filename.endsWith('.json')) {
                 res.setHeader('Content-Type', 'application/json');
-            }else{
+            } else {
                 res.setHeader('Content-Type', 'application/octet-stream');
             }
 
             stream.pipe(res);
-        }catch(err: any){
+        } catch (err: any) {
             logger.error(`[getPluginExposureFile] Error: ${err}`);
             return res.status(404).json({
                 status: 'error',
@@ -283,62 +286,130 @@ export default class PluginsController extends BaseController<IPlugin> {
 
     /**
      * Get listing documents for a plugin
+     * Supports both single trajectory (via :id param) and all trajectories (via teamId query)
      */
-    public getPluginListingDocuments = catchAsync(async(req: Request, res: Response) => {
+    public getPluginListingDocuments = catchAsync(async (req: Request, res: Response) => {
         const { pluginSlug, listingSlug } = req.params;
-        const trajectory = res.locals.trajectory;
-        if(!trajectory) throw new RuntimeError('Trajectory::NotFound', 404);
+        const trajectory = res.locals.trajectory; // May be undefined if no :id param
+        const teamId = req.query.teamId as string;
 
-        const trajectoryId = trajectory._id.toString();
         const pageNum = Math.max(1, +(req.query.page ?? 1) || 1);
         const limitNum = Math.min(200, Math.max(1, +(req.query.limit ?? 50) || 50));
         const sortAsc = String(req.query.sort ?? 'desc').toLowerCase() === 'asc';
 
-        const [plugin, analyses] = await Promise.all([
-            Plugin.findOne({ slug: pluginSlug }).lean(),
-            Analysis.find({ trajectory: trajectoryId, plugin: pluginSlug })
-                .select('_id config createdAt').lean()
-        ]);
-
-        if(!plugin) throw new RuntimeError('Plugin::NotFound', 404);
+        // Load plugin
+        const plugin = await Plugin.findOne({ slug: pluginSlug }).lean();
+        if (!plugin) throw new RuntimeError('Plugin::NotFound', 404);
 
         const { nodes, edges } = plugin.workflow;
-        const visualizersNode = nodes.find((node: IWorkflowNode) => node.type === NodeType.VISUALIZERS);
+
+        // Find visualizer connected to exposure matching listingSlug
+        // Traverse: Exposure -> Schema -> Visualizers (by edges)
+        const findVisualizerForExposure = (exposureName: string): IWorkflowNode | null => {
+            // Find exposure node
+            const exposureNode = nodes.find((n: IWorkflowNode) =>
+                n.type === NodeType.EXPOSURE && n.data?.exposure?.name === exposureName
+            );
+            if (!exposureNode) return null;
+
+            // BFS to find connected visualizer
+            const visited = new Set<string>();
+            const queue = [exposureNode.id];
+
+            while (queue.length) {
+                const currentId = queue.shift()!;
+                if (visited.has(currentId)) continue;
+                visited.add(currentId);
+
+                // Find downstream nodes
+                const outEdges = edges.filter((e: any) => e.source === currentId);
+                for (const edge of outEdges) {
+                    const targetNode = nodes.find((n: IWorkflowNode) => n.id === edge.target);
+                    if (!targetNode) continue;
+                    if (targetNode.type === NodeType.VISUALIZERS &&
+                        targetNode.data?.visualizers?.listing &&
+                        Object.keys(targetNode.data.visualizers.listing).length > 0) {
+                        return targetNode;
+                    }
+                    queue.push(edge.target);
+                }
+            }
+            return null;
+        };
+
+        const visualizersNode = findVisualizerForExposure(listingSlug);
         const exposureNodes = nodes.filter((node: IWorkflowNode) => node.type === NodeType.EXPOSURE);
 
         const visualizersData = visualizersNode?.data?.visualizers || {};
-        const displayName = visualizersData.listingTitle || pluginSlug;
+        const displayName = listingSlug;
 
         const listingDef = visualizersData.listing || {};
         const columns = Object.entries(listingDef).map(([path, label]) => ({ path, label: String(label) }));
         const exposureIds = exposureNodes.map((node: IWorkflowNode) => node.id);
 
+        // Determine trajectories to query
+        let trajectoryIds: string[] = [];
+        let trajectoryMap = new Map<string, any>();
+
+        if (trajectory) {
+            // Single trajectory mode
+            trajectoryIds = [trajectory._id.toString()];
+            trajectoryMap.set(trajectory._id.toString(), trajectory);
+        } else if (teamId) {
+            // All trajectories for team
+            const Trajectory = require('@/models/trajectory').default;
+            const teamTrajectories = await Trajectory.find({ team: teamId }).select('_id name').lean();
+            trajectoryIds = teamTrajectories.map((t: any) => t._id.toString());
+            teamTrajectories.forEach((t: any) => trajectoryMap.set(t._id.toString(), t));
+        } else {
+            throw new RuntimeError('TeamID::Required', 400);
+        }
+
         const meta = {
             displayName,
             listingSlug,
             pluginSlug,
-            trajectoryName: trajectory.name || trajectoryId,
+            trajectoryName: trajectory?.name || 'All Trajectories',
             columns
         };
 
-        if(!analyses.length){
+        if (!trajectoryIds.length) {
             return res.status(200).json({
                 status: 'success',
                 data: { meta, rows: [], page: pageNum, limit: limitNum, total: 0, hasMore: false }
             });
         }
 
-        const analysisMap = new Map(analyses.map((a: any) => [a._id.toString(), { ...a, trajectory }]));
+        // Find analyses across all selected trajectories
+        const analyses = await Analysis.find({
+            trajectory: { $in: trajectoryIds },
+            plugin: pluginSlug
+        }).select('_id config createdAt trajectory').lean();
 
-        const timestepPromises = analyses.map(async(analysis: any) => {
-            const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysis._id}/`;
+        if (!analyses.length) {
+            return res.status(200).json({
+                status: 'success',
+                data: { meta, rows: [], page: pageNum, limit: limitNum, total: 0, hasMore: false }
+            });
+        }
+
+        const analysisMap = new Map(analyses.map((a: any) => {
+            const trajId = a.trajectory.toString();
+            return [a._id.toString(), { ...a, trajectory: trajectoryMap.get(trajId) || { _id: trajId, name: trajId } }];
+        }));
+
+        // Collect timesteps from all analyses
+        const timestepPromises = analyses.map(async (analysis: any) => {
+            const trajId = analysis.trajectory.toString();
+            const prefix = `plugins/trajectory-${trajId}/analysis-${analysis._id}/`;
             const seen = new Set<number>();
             for await (const key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, prefix)) {
                 const match = key.match(/timestep-(\d+)\.msgpack$/);
-                if(match) seen.add(+match[1]);
+                if (match) seen.add(+match[1]);
             }
             return Array.from(seen).map((timestep) => ({
                 analysisId: analysis._id.toString(),
+                trajectoryId: trajId,
                 timestep
             }));
         });
@@ -350,7 +421,7 @@ export default class PluginsController extends BaseController<IPlugin> {
         const offset = (pageNum - 1) * limitNum;
         const pagedEntries = allTimesteps.slice(offset, offset + limitNum);
 
-        if(!pagedEntries){
+        if (!pagedEntries.length) {
             return res.status(200).json({
                 status: 'success',
                 data: { meta, rows: [], page: pageNum, limit: limitNum, total, hasMore: false }
@@ -363,27 +434,32 @@ export default class PluginsController extends BaseController<IPlugin> {
         const BATCH_SIZE = 10;
         const rows: any[] = [];
 
-        for(let i = 0; i < pagedEntries.length; i += BATCH_SIZE){
+        for (let i = 0; i < pagedEntries.length; i += BATCH_SIZE) {
             const batch = pagedEntries.slice(i, i + BATCH_SIZE);
 
-            const batchRows = await Promise.all(batch.map(async(entry) => {
+            const batchRows = await Promise.all(batch.map(async (entry) => {
                 const exposureData = await loadExposuresParallel(
-                    exposureIds, trajectoryId, entry.analysisId, entry.timestep);
+                    exposureIds, entry.trajectoryId, entry.analysisId, entry.timestep);
 
+                const analysis = analysisMap.get(entry.analysisId);
                 const context = {
                     nodeMap,
                     parentMap,
                     exposureData,
-                    trajectory,
-                    analysis: analysisMap.get(entry.analysisId),
+                    trajectory: analysis?.trajectory,
+                    analysis,
                     timestep: entry.timestep
                 };
+
+                console.log('[PluginListing] Context trajectory:', JSON.stringify(analysis?.trajectory));
 
                 return {
                     _id: `${entry.analysisId}-${entry.timestep}`,
                     timestep: entry.timestep,
                     analysisId: entry.analysisId,
-                        ...resolveRow(columns, context)
+                    trajectoryId: entry.trajectoryId,
+                    trajectoryName: analysis?.trajectory?.name || entry.trajectoryId,
+                    ...resolveRow(columns, context)
                 };
             }));
 
@@ -406,7 +482,7 @@ export default class PluginsController extends BaseController<IPlugin> {
     /**
      * Get per-frame listing data
      */
-    public getPerFrameListing = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public getPerFrameListing = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { id: trajectoryId, analysisId, exposureId, timestep } = req.params;
         const page = Math.max(1, parseInt(req.query.page as string) || 1);
         const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit as string) || 50));
@@ -419,14 +495,14 @@ export default class PluginsController extends BaseController<IPlugin> {
             `timestep-${timestep}.msgpack`
         ].join('/');
 
-        try{
+        try {
             const analysis = await Analysis.findById(analysisId);
-            if(!analysis){
+            if (!analysis) {
                 return next(new RuntimeError('Analysis::NotFound', 404));
             }
 
             const plugin = await Plugin.findOne({ slug: analysis.plugin });
-            if(!plugin){
+            if (!plugin) {
                 return next(new RuntimeError('Plugin::NotFound', 404));
             }
 
@@ -436,16 +512,16 @@ export default class PluginsController extends BaseController<IPlugin> {
             const payload = decodeMsgpack(buffer) as any;
 
             let items: any[] = [];
-            if(Array.isArray(payload)) {
+            if (Array.isArray(payload)) {
                 items = payload;
-            }else if(payload[iterableKey] && Array.isArray(payload[iterableKey])) {
+            } else if (payload[iterableKey] && Array.isArray(payload[iterableKey])) {
                 items = payload[iterableKey];
-            }else if(payload.data && Array.isArray(payload.data)) {
+            } else if (payload.data && Array.isArray(payload.data)) {
                 items = payload.data;
-            }else{
+            } else {
                 // auto-detect
-                for(const key in payload){
-                    if(Array.isArray(payload[key])) {
+                for (const key in payload) {
+                    if (Array.isArray(payload[key])) {
                         items = payload[key];
                         break;
                     }
@@ -466,7 +542,7 @@ export default class PluginsController extends BaseController<IPlugin> {
                     hasMore: offset + pagedItems.length < total
                 }
             });
-        }catch(err: any){
+        } catch (err: any) {
             logger.error(`[getPerFrameListing] Error: ${err}`);
             return res.status(404).json({
                 status: 'error',
@@ -481,11 +557,11 @@ export default class PluginsController extends BaseController<IPlugin> {
      */
     public uploadBinaryMiddleware = binaryUpload.single('binary');
 
-    public uploadBinary = catchAsync(async(req: Request, res: Response) => {
+    public uploadBinary = catchAsync(async (req: Request, res: Response) => {
         const plugin = res.locals.plugin;
-        if(!plugin) throw new RuntimeError('Plugin::NotLoaded', 500);
+        if (!plugin) throw new RuntimeError('Plugin::NotLoaded', 500);
 
-        if(!req.file){
+        if (!req.file) {
             throw new RuntimeError('Plugin::Binary::Required', 400);
         }
 
@@ -514,14 +590,14 @@ export default class PluginsController extends BaseController<IPlugin> {
     /**
      * Delete a plugin's uploaded binary from MinIO
      */
-    public deleteBinary = catchAsync(async(req: Request, res: Response) => {
+    public deleteBinary = catchAsync(async (req: Request, res: Response) => {
         const plugin = res.locals.plugin;
         const { objectPath } = req.body;
 
-        if(!plugin) throw new RuntimeError('Plugin::NotLoaded', 500);
-        if(!objectPath) throw new RuntimeError('Plugin::Binary::PathRequired', 400);
+        if (!plugin) throw new RuntimeError('Plugin::NotLoaded', 500);
+        if (!objectPath) throw new RuntimeError('Plugin::Binary::PathRequired', 400);
 
-        if(!objectPath.startsWith(`plugin-binaries/${plugin._id}/`)) {
+        if (!objectPath.startsWith(`plugin-binaries/${plugin._id}/`)) {
             throw new RuntimeError('Plugin::Binary::InvalidPath', 403);
         }
 

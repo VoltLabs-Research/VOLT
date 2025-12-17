@@ -3,7 +3,7 @@ import { SYS_BUCKETS } from '@/config/minio';
 import { decode as decodeMsgpack } from '@msgpack/msgpack';
 import storage from '@/services/storage';
 
-export interface ResolveContext{
+export interface ResolveContext {
     nodeMap: Map<string, any>;
     parentMap: Map<string, string[]>;
     exposureData: Map<string, any>;
@@ -12,7 +12,7 @@ export interface ResolveContext{
     timestep: number;
 };
 
-export interface Column{
+export interface Column {
     path: string;
     label: string;
 };
@@ -21,7 +21,7 @@ const templateCache = new Map<string, { nodeId: string, propPath: string } | nul
 
 const parseTemplate = (path: string): { nodeId: string, propPath: string } | null => {
     let cached = templateCache.get(path);
-    if(cached !== undefined) return cached;
+    if (cached !== undefined) return cached;
 
     const match = path.match(/^\{\{\s*([^.}]+)\.([^}]+)\s*\}\}$/);
     cached = match ? { nodeId: match[1], propPath: match[2].trim() } : null;
@@ -30,10 +30,10 @@ const parseTemplate = (path: string): { nodeId: string, propPath: string } | nul
 };
 
 const getPath = (obj: any, path: string): any => {
-    if(!obj) return undefined;
+    if (!obj) return undefined;
     const keys = path.split('.');
     let result = obj;
-    for(let i = 0; i < keys.length && result != null; i++){
+    for (let i = 0; i < keys.length && result != null; i++) {
         result = result[keys[i]];
     }
 
@@ -43,14 +43,14 @@ const getPath = (obj: any, path: string): any => {
 // node lookup map once per plugin
 export const buildNodeMap = (nodes: any): Map<string, any> => {
     const map = new Map();
-    for(const node of nodes) map.set(node.id, node);
+    for (const node of nodes) map.set(node.id, node);
     return map;
 };
 
 // edge lookup for finding connected exposures
 export const buildParentMap = (edges: any[]): Map<string, string[]> => {
     const map = new Map<string, string[]>();
-    for(const edge of edges){
+    for (const edge of edges) {
         const parents = map.get(edge.target) || [];
         parents.push(edge.source);
         map.set(edge.target, parents);
@@ -63,33 +63,33 @@ const findExposure = (nodeId: string, parentMap: Map<string, string[]>, nodeMap:
     const queue = [nodeId];
     const visited = new Set<string>();
 
-    while(queue.length){
+    while (queue.length) {
         const id = queue.shift()!;
-        if(visited.has(id)) continue;
+        if (visited.has(id)) continue;
         visited.add(id);
 
         const node = nodeMap.get(id);
-        if(node?.type === NodeType.EXPOSURE) return id;
+        if (node?.type === NodeType.EXPOSURE) return id;
 
         const parents = parentMap.get(id);
-        if(parents) queue.push(...parents);
+        if (parents) queue.push(...parents);
     }
     return null;
 };
 
 export const resolve = (path: string, ctx: ResolveContext): any => {
     const ref = parseTemplate(path);
-    if(!ref) return path;
+    if (!ref) return path;
 
     const node = ctx.nodeMap.get(ref.nodeId);
-    if(!node) return undefined;
+    if (!node) return undefined;
 
     const { propPath } = ref;
 
-    switch(node.type){
+    switch (node.type) {
         case NodeType.MODIFIER:
-            if(propPath.startsWith('trajectory.')) return getPath(ctx.trajectory, propPath.slice(11));
-            if(propPath.startsWith('analysis.')) return getPath(ctx.analysis, propPath.slice(9));
+            if (propPath.startsWith('trajectory.')) return getPath(ctx.trajectory, propPath.slice(11));
+            if (propPath.startsWith('analysis.')) return getPath(ctx.analysis, propPath.slice(9));
             return getPath(node.data?.modifier, propPath);
 
         case NodeType.ARGUMENTS:
@@ -101,11 +101,11 @@ export const resolve = (path: string, ctx: ResolveContext): any => {
                 : getPath(ctx.trajectory, propPath);
 
         case NodeType.FOREACH:
-            return(propPath === 'currentValue.frame' || propPath === 'currentIndex') ? ctx.timestep : undefined;
+            return (propPath === 'currentValue.frame' || propPath === 'currentIndex') ? ctx.timestep : undefined;
 
         case NodeType.SCHEMA:
             const exposureId = findExposure(ref.nodeId, ctx.parentMap, ctx.nodeMap);
-            if(!exposureId) return undefined;
+            if (!exposureId) return undefined;
             const data = ctx.exposureData.get(exposureId);
             return data ? getPath(data, propPath.replace(/^definition\./, '')) : undefined;
 
@@ -118,32 +118,32 @@ export const resolve = (path: string, ctx: ResolveContext): any => {
 };
 
 // load single exposure, returns [id, data] or null
-const loadExposure = async(
+const loadExposure = async (
     exposureId: string,
     trajectoryId: string,
     analysisId: string,
     timestep: number
-): Promise<[string, any] | null> =>{
+): Promise<[string, any] | null> => {
     const key = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
-    try{
+    try {
         const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, key);
         return [exposureId, decodeMsgpack(buffer)];
-    }catch{
+    } catch {
         return null;
     }
 };
 
 // load all exposures in parallel
-export const loadExposuresParallel = async(
+export const loadExposuresParallel = async (
     exposureIds: string[],
     trajectoryId: string,
     analysisId: string,
     timestep: number
-): Promise<Map<string, any>> =>{
+): Promise<Map<string, any>> => {
     const results = await Promise.all(exposureIds.map((id) => loadExposure(id, trajectoryId, analysisId, timestep)));
     const map = new Map<string, any>();
-    for(const result of results){
-        if(result){
+    for (const result of results) {
+        if (result) {
             map.set(result[0], result[1]);
         }
     }
@@ -152,7 +152,7 @@ export const loadExposuresParallel = async(
 
 export const resolveRow = (columns: Column[], ctx: ResolveContext): Record<string, any> => {
     const row: Record<string, any> = {};
-    for(const col of columns){
+    for (const col of columns) {
         row[col.label] = resolve(col.path, ctx);
     }
     return row;

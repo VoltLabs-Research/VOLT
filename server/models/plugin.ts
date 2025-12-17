@@ -2,6 +2,8 @@ import { ValidationCodes } from '@/constants/validation-codes';
 import { IPlugin, IPluginModel, IWorkflow, IWorkflowNode } from '@/types/models/modifier';
 import { ArgumentType, NodeType, ModifierContext, Exporter, ExportType, PluginStatus } from '@/types/models/plugin';
 import mongoose, { Schema } from 'mongoose';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
+import useInverseRelations from '@/utilities/mongo/inverse-relations';
 
 const ArgumentOptionSchema = new Schema({
     key: {
@@ -274,6 +276,13 @@ const WorkflowSchema = new Schema({
 }, { _id: false });
 
 const PluginSchema = new Schema({
+    team: {
+        type: Schema.Types.ObjectId,
+        ref: 'Team',
+        required: true,
+        cascade: 'delete',
+        inverse: { path: 'plugins', behavior: 'addToSet' }
+    },
     slug: {
         type: String,
         required: [true, ValidationCodes.PLUGIN_SLUG_REQUIRED],
@@ -302,6 +311,9 @@ const PluginSchema = new Schema({
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
 });
+
+PluginSchema.plugin(useInverseRelations);
+PluginSchema.plugin(useCascadeDelete);
 
 PluginSchema.index({ slug: 1 }, { unique: true });
 PluginSchema.index({ status: 1 });
@@ -333,28 +345,28 @@ PluginSchema.virtual('modifier').get(function () {
 
 // Helper to find a descendant node by type
 const findDescendantByType = (workflow: IWorkflow, nodeId: string, type: NodeType): IWorkflowNode | null => {
-    if(!workflow.edges || !workflow.nodes) return null;
+    if (!workflow.edges || !workflow.nodes) return null;
 
     const visited = new Set<string>();
     const queue = [nodeId];
 
-    while(queue.length > 0){
+    while (queue.length > 0) {
         const currentId = queue.shift()!;
-        if(visited.has(currentId)) continue;
+        if (visited.has(currentId)) continue;
         visited.add(currentId);
 
         const childEdges = workflow.edges.filter((edge) => edge.source === currentId);
-        for(const edge of childEdges){
+        for (const edge of childEdges) {
             const childNode = workflow.nodes.find((node) => node.id === edge.target);
-            if(childNode?.type === type) return childNode;
-            if(childNode) queue.push(edge.target);
+            if (childNode?.type === type) return childNode;
+            if (childNode) queue.push(edge.target);
         }
     }
     return null;
 };
 
 PluginSchema.virtual('exposures').get(function () {
-    if(!this.workflow?.nodes) return [];
+    if (!this.workflow?.nodes) return [];
 
     return this.workflow.nodes
         .filter((node) => node.type === NodeType.EXPOSURE)
@@ -364,7 +376,7 @@ PluginSchema.virtual('exposures').get(function () {
 
             return {
                 nodeId: node.id,
-                    ...node.data?.exposure,
+                ...node.data?.exposure,
                 visualizers: visualizersNode?.data?.visualizers,
                 export: exportNode?.data?.export
             };

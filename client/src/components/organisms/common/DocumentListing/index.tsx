@@ -151,6 +151,7 @@ type DocumentListingProps = {
         buttonTitle: string
         onCreate: () => void
     }
+    headerActions?: React.ReactNode
 }
 
 const DocumentListing = ({
@@ -166,7 +167,8 @@ const DocumentListing = ({
     hasMore,
     isFetchingMore,
     onLoadMore,
-    createNew
+    createNew,
+    headerActions
 }: DocumentListingProps) => {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
     const [sortedData, setSortedData] = useState<any[]>(data)
@@ -222,16 +224,19 @@ const DocumentListing = ({
                                 <RxDotsHorizontal />
                             </i>
                         </Container>
-                        {createNew && (
-                            <Button
-                                variant='solid'
-                                intent='brand'
-                                onClick={createNew.onCreate}
-                                leftIcon={<Plus size={18} />}
-                            >
-                                {createNew.buttonTitle}
-                            </Button>
-                        )}
+                        <Container className='d-flex gap-2 items-center'>
+                            {headerActions}
+                            {createNew && (
+                                <Button
+                                    variant='solid'
+                                    intent='brand'
+                                    onClick={createNew.onCreate}
+                                    leftIcon={<Plus size={18} />}
+                                >
+                                    {createNew.buttonTitle}
+                                </Button>
+                            )}
+                        </Container>
                     </Container>
                 </Container>
 

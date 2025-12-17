@@ -66,6 +66,12 @@ const TeamSchema = new Schema({
         ref: 'Trajectory',
         cascade: 'pull',
         inverse: { path: 'team', behavior: 'set' }
+    }],
+    plugins: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Plugin',
+        cascade: 'pull',
+        inverse: { path: 'team', behavior: 'set' }
     }]
 }, {
     timestamps: true

@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
 import pluginApi from '@/services/api/plugin';
+import trajectoryApi from '@/services/api/trajectory';
 import analysisConfigApi from '@/services/api/analysis-config';
 import { Skeleton } from '@mui/material';
 import usePluginStore from '@/stores/plugins/plugin';
+import useTeamStore from '@/stores/team/team';
 import { RiDeleteBin6Line } from 'react-icons/ri';
 import PerFrameListingModal from '@/components/organisms/common/PerFrameListingModal';
 import { formatCellValue, normalizeRows, type ColumnDef } from '@/utilities/plugins/expression-utils';
-import { getValueByPath } from '@/utilities/getValueByPath';
+import Select from '@/components/atoms/form/Select';
 
 type ListingResponse = {
     meta: {
@@ -25,42 +27,43 @@ type ListingResponse = {
     hasMore: boolean;
 };
 
-// TODO: FIX MANIFEST USAGE
-const buildColumns = (columnDefs: ColumnDef[], pluginId?: string, manifests?: any): ColumnConfig[] => {
-    return columnDefs.map(({ path, label }) => {
-        let isSelectField = false;
-        if (path.startsWith('analysis.config.') && pluginId && manifest?.[pluginId]) {
-            const argName = path.replace('analysis.config.', '');
-            const manifest = manifests[pluginId];
-            const argument = manifest?.entrypoint?.argument?.[argName];
-            if (argument?.type === 'select') {
-                isSelectField = true;
-            }
-        }
+const buildColumns = (columnDefs: ColumnDef[], showTrajectory = false): ColumnConfig[] => {
+    const cols: ColumnConfig[] = columnDefs.map(({ path, label }) => ({
+        key: label, // Backend keys by label
+        title: label,
+        sortable: true,
+        render: (_value: any, row: any) => {
+            // Backend returns data keyed by label
+            const value = row[label];
+            return formatCellValue(value, path);
+        },
+        skeleton: { variant: 'text' as const, width: 120 }
+    }));
 
-        return {
-            key: path,
-            title: label,
-            sortable: true,
-            render: (_value: any, row: any) => {
-                const value = getValueByPath(row, path);
-                if (isSelectField && value != null) {
-                    return <StatusBadge status={String(value)} />;
-                }
-                return formatCellValue(value, path);
-            },
-            skeleton: isSelectField
-                ? { variant: 'rounded', width: 90, height: 24 }
-                : { variant: 'text', width: 120 }
-        };
-    });
+    if (showTrajectory) {
+        cols.unshift({
+            key: 'trajectoryName',
+            title: 'Trajectory',
+            sortable: false,
+            render: (_value: any, row: any) => row.trajectoryName || '-',
+            skeleton: { variant: 'text' as const, width: 120 }
+        });
+    }
+
+    return cols;
 };
 
 const PluginListing = () => {
-    const { pluginId, listingKey, trajectoryId } = useParams();
+    const { pluginSlug, listingSlug, trajectoryId: paramTrajectoryId } = useParams();
+    const navigate = useNavigate();
+    const team = useTeamStore((s) => s.selectedTeam);
+
+    const [trajectoryId, setTrajectoryId] = useState<string | undefined>(paramTrajectoryId);
+    const [trajectories, setTrajectories] = useState<any[]>([]);
+
     const [columns, setColumns] = useState<ColumnConfig[]>([]);
     const [rows, setRows] = useState<any[]>([]);
-    const [meta, setMeta] = useState<{ displayName?: string; trajectoryName?: string; pluginId?: string } | null>(null);
+    const [meta, setMeta] = useState<{ displayName?: string; trajectoryName?: string } | null>(null);
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -74,9 +77,28 @@ const PluginListing = () => {
     const pluginsBySlug = usePluginStore((s) => s.pluginsBySlug);
     const fetchPlugins = usePluginStore((s) => s.fetchPlugins);
 
+    // Update trajectoryId when URL param changes
+    useEffect(() => {
+        setTrajectoryId(paramTrajectoryId);
+    }, [paramTrajectoryId]);
+
+    // Fetch trajectories for filter
+    useEffect(() => {
+        if (!team?._id) return;
+        trajectoryApi.getAll({ teamId: team._id })
+            .then(data => setTrajectories(data))
+            .catch(err => console.error('Failed to load trajectories', err));
+    }, [team?._id]);
+
     const fetchPage = useCallback(async (nextPage: number) => {
-        if (!pluginId || !listingKey || !trajectoryId) {
+        if (!pluginSlug || !listingSlug) {
             setError('Invalid listing parameters.');
+            return;
+        }
+
+        // Need teamId if no trajectoryId
+        if (!trajectoryId && !team?._id) {
+            setError('Please select a team first.');
             return;
         }
 
@@ -89,16 +111,15 @@ const PluginListing = () => {
 
         try {
             const payload = await pluginApi.getListing(
-                pluginId,
-                listingKey,
+                pluginSlug,
+                listingSlug,
                 trajectoryId,
-                { page: nextPage, limit: pageSize }
+                { page: nextPage, limit: pageSize, teamId: team?._id }
             ) as ListingResponse;
-            const listingMeta = { ...payload.meta, pluginId: payload.meta?.pluginId };
-            setMeta(listingMeta ?? null);
 
+            setMeta(payload.meta ?? null);
             const normalizedRows = normalizeRows(payload.rows ?? [], payload.meta?.columns ?? []);
-            setColumns(buildColumns(payload.meta?.columns ?? [], payload.meta?.pluginId, undefined));
+            setColumns(buildColumns(payload.meta?.columns ?? [], !trajectoryId));
 
             setRows((prev) => (nextPage === 1 ? normalizedRows : [...prev, ...normalizedRows]));
             setPage(nextPage);
@@ -110,7 +131,7 @@ const PluginListing = () => {
             setLoading(false);
             setIsFetchingMore(false);
         }
-    }, [listingKey, pluginId, trajectoryId]);
+    }, [listingSlug, pluginSlug, trajectoryId, team?._id]);
 
     useEffect(() => {
         if (Object.keys(pluginsBySlug).length === 0) {
@@ -125,14 +146,14 @@ const PluginListing = () => {
         setPage(1);
         setHasMore(false);
 
-        if (pluginId && listingKey && trajectoryId) {
+        if (pluginSlug && listingSlug && (trajectoryId || team?._id)) {
             fetchPage(1);
         }
-    }, [pluginId, listingKey, trajectoryId, fetchPage]);
+    }, [pluginSlug, listingSlug, trajectoryId, fetchPage, team?._id]);
 
     const handleMenuAction = useCallback(async (action: string, item: any) => {
         if (action === 'delete') {
-            const analysisId = item?.analysis?._id;
+            const analysisId = item?.analysisId;
             if (!analysisId) {
                 console.error('No analysis ID found for deletion');
                 return;
@@ -140,7 +161,7 @@ const PluginListing = () => {
 
             if (!window.confirm('Delete this analysis? This cannot be undone.')) return;
 
-            setRows((prev) => prev.filter((row) => row?.analysis?._id !== analysisId));
+            setRows((prev) => prev.filter((row) => row?.analysisId !== analysisId));
 
             try {
                 await analysisConfigApi.delete(analysisId);
@@ -153,28 +174,27 @@ const PluginListing = () => {
 
     const getMenuOptions = useCallback((item: any) => {
         const options: any[] = [];
-
-        if (item?.analysis?._id) {
+        if (item?.analysisId) {
             options.push([
                 'Delete Analysis',
                 RiDeleteBin6Line,
                 () => handleMenuAction('delete', item)
             ]);
         }
-
         return options;
     }, [handleMenuAction]);
 
-    const title = meta?.displayName ?? listingKey ?? 'Listing';
+    const handleTrajectoryChange = (newTrajId: string) => {
+        if (newTrajId) {
+            navigate(`/dashboard/trajectory/${newTrajId}/plugins/${pluginSlug}/listing/${listingSlug}`);
+        } else {
+            navigate(`/dashboard/plugins/${pluginSlug}/listing/${listingSlug}`);
+        }
+    };
+
+    const title = meta?.displayName ?? listingSlug ?? 'Listing';
     const breadcrumbs = useMemo(() => {
-        const trail: (string | React.ReactNode)[] = ['Dashboard', 'Trajectories'];
-        trail.push(
-            meta?.trajectoryName ? (
-                meta.trajectoryName
-            ) : (
-                <Skeleton variant='text' width={160} sx={{ display: 'inline-block' }} />
-            )
-        );
+        const trail: (string | React.ReactNode)[] = ['Dashboard', 'Analysis'];
         trail.push(
             meta?.displayName ? (
                 meta.displayName
@@ -183,13 +203,12 @@ const PluginListing = () => {
             )
         );
         return trail;
-    }, [meta, trajectoryId, listingKey]);
+    }, [meta]);
 
     return (
         <>
             <DocumentListing
                 title={title}
-                breadcrumbs={breadcrumbs}
                 columns={columns}
                 data={rows}
                 isLoading={loading}
@@ -204,6 +223,18 @@ const PluginListing = () => {
                 }}
                 onMenuAction={handleMenuAction}
                 getMenuOptions={getMenuOptions}
+                headerActions={
+                    <Select
+                        options={[
+                            { value: '', title: 'All Trajectories' },
+                            ...trajectories.map(t => ({ value: t._id, title: t.name }))
+                        ]}
+                        value={trajectoryId || ''}
+                        onChange={handleTrajectoryChange}
+                        placeholder='Select Trajectory'
+                        showSelectionIcon={false}
+                    />
+                }
             />
             {selectedItem && perFrameConfig && (
                 <PerFrameListingModal
@@ -220,3 +251,4 @@ const PluginListing = () => {
 };
 
 export default PluginListing;
+
