@@ -194,17 +194,6 @@ const Containers: React.FC = () => {
 
     return (
         <DashboardContainer pageName='Containers' className='d-flex column h-max containers-page-wrapper'>
-            <div className='containers-listing-header p-absolute'>
-                <Button
-                    variant='solid'
-                    intent='brand'
-                    leftIcon={<Plus size={18} />}
-                    onClick={() => navigate('/dashboard/containers/new')}
-                >
-                    New Container
-                </Button>
-            </div>
-
             <DocumentListing
                 title={`Containers(${containers.length})`}
                 breadcrumbs={['Dashboard', 'Containers']}
@@ -215,6 +204,10 @@ const Containers: React.FC = () => {
                 getMenuOptions={getMenuOptions}
                 emptyMessage='No containers found. Create one to get started.'
                 keyExtractor={(item) => item._id}
+                createNew={{
+                    buttonTitle: 'New Container',
+                    onCreate: () => navigate('/dashboard/containers/new')
+                }}
             />
 
             {terminalContainer && (

@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { RxDotsHorizontal } from 'react-icons/rx'
+import { Plus } from 'lucide-react'
 import DocumentListingTable from '@/components/molecules/common/DocumentListingTable'
 import { Skeleton } from '@mui/material'
 import useWorker from '@/hooks/core/use-worker'
 import { WorkerStatus } from '@/utilities/worker-utils'
 import './DocumentListing.css'
 import Container from '@/components/primitives/Container'
+import Button from '@/components/primitives/Button'
 import DynamicIcon from '@/components/atoms/common/DynamicIcon'
 import Title from '@/components/primitives/Title'
 import Paragraph from '@/components/primitives/Paragraph'
@@ -15,8 +17,8 @@ const sortDataWorker = (
     sortConfig: { key: string; direction: 'asc' | 'desc' } | null
 ): any[] => {
     const getValueByPath = (obj: any, path: string) => {
-        if(!obj || !path) return undefined
-        if(path.indexOf('.') === -1) return obj?.[path]
+        if (!obj || !path) return undefined
+        if (path.indexOf('.') === -1) return obj?.[path]
         return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj)
     }
 
@@ -146,6 +148,10 @@ type DocumentListingProps = {
     hasMore?: boolean
     isFetchingMore?: boolean
     onLoadMore?: () => void
+    createNew?: {
+        buttonTitle: string
+        onCreate: () => void
+    }
 }
 
 const DocumentListing = ({
@@ -161,7 +167,8 @@ const DocumentListing = ({
     enableInfinite,
     hasMore,
     isFetchingMore,
-    onLoadMore
+    onLoadMore,
+    createNew
 }: DocumentListingProps) => {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
     const [sortedData, setSortedData] = useState<any[]>(data)
@@ -217,15 +224,27 @@ const DocumentListing = ({
                             </Container>
                         ))}
                     </Container>
-                    <Container className='d-flex gap-1-5'>
-                        {isLoading && !data.length ? (
-                            <Skeleton variant='text' width={220} height={32} />
-                        ) : (
-                            <Title className='font-size-6 font-weight-5 sm:font-size-4'>{title}</Title>
+                    <Container className='d-flex content-between items-center'>
+                        <Container className='d-flex gap-1-5 items-center'>
+                            {isLoading && !data.length ? (
+                                <Skeleton variant='text' width={220} height={32} />
+                            ) : (
+                                <Title className='font-size-6 font-weight-5 sm:font-size-4'>{title}</Title>
+                            )}
+                            <i>
+                                <RxDotsHorizontal />
+                            </i>
+                        </Container>
+                        {createNew && (
+                            <Button
+                                variant='solid'
+                                intent='brand'
+                                onClick={createNew.onCreate}
+                                leftIcon={<Plus size={18} />}
+                            >
+                                {createNew.buttonTitle}
+                            </Button>
                         )}
-                        <i>
-                            <RxDotsHorizontal />
-                        </i>
                     </Container>
                 </Container>
 

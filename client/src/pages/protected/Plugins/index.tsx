@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RiDeleteBin6Line, RiEditLine, RiAddLine } from 'react-icons/ri';
+import { RiDeleteBin6Line, RiEditLine } from 'react-icons/ri';
 import { TbRocket } from 'react-icons/tb';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
-import Button from '@/components/primitives/Button';
 import pluginApi, { type IPluginRecord } from '@/services/api/plugin';
 import { PluginStatus } from '@/types/plugin';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
@@ -168,25 +167,12 @@ const PluginsListing = () => {
         }
     ], [handleRowClick]);
 
-    const breadcrumbsWithAction = useMemo(() => [
-        'Dashboard',
-        'Plugins',
-        <Button
-            key='create-btn'
-            variant='solid'
-            intent='brand'
-            size='sm'
-            leftIcon={<RiAddLine size={16} />}
-            onClick={handleCreateNew}
-        >
-            New Plugin
-        </Button>
-    ], [handleCreateNew]);
+    const breadcrumbs = ['Dashboard', 'Plugins'];
 
     return (
         <DocumentListing
             title='Plugins'
-            breadcrumbs={breadcrumbsWithAction}
+            breadcrumbs={breadcrumbs}
             columns={columns}
             data={data}
             isLoading={isLoading}
@@ -196,6 +182,10 @@ const PluginsListing = () => {
             hasMore={data.length < total}
             isFetchingMore={isLoading && page > 1}
             onLoadMore={() => fetchPlugins(page + 1, true)}
+            createNew={{
+                buttonTitle: 'New Plugin',
+                onCreate: handleCreateNew
+            }}
         />
     );
 };
