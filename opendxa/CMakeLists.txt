@@ -88,16 +88,12 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build all libs static" FORCE)
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # External packages
-find_package(pybind11 REQUIRED)
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 find_package(Threads REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(TBB REQUIRED)
 find_package(spdlog REQUIRED)
 
 message(STATUS "nlohmann_json: ${nlohmann_json_SOURCE_DIR}")
-
-set(BINDINGS_ROOT ${CMAKE_SOURCE_DIR}/../bindings/python/opendxa_py)
 
 set(LIBRARY_SOURCES
     src/core/property_base.cpp
@@ -147,7 +143,6 @@ target_include_directories(opendxa_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/dependencies/geogram
     ${CMAKE_SOURCE_DIR}/dependencies/ptm
-    ${CMAKE_SOURCE_DIR}/dependencies/pybind11_json/include
     ${CMAKE_SOURCE_DIR}/dependencies/boost
 )
 
@@ -161,74 +156,84 @@ target_link_libraries(opendxa_lib PUBLIC
     spdlog::spdlog
 )
 
-# CLI executable
-add_executable(opendxa src/core/main.cpp)
-set_target_properties(opendxa PROPERTIES LINK_FLAGS_RELEASE "${LINKER_FAST}")
-target_compile_options(opendxa PRIVATE
-    $<$<CONFIG:Release>:${RELEASE_CXX_OPTS}>
-)
-target_compile_definitions(opendxa PRIVATE
-    $<$<CONFIG:Release>:NDEBUG>
-)
-target_link_libraries(opendxa PRIVATE
-    opendxa_lib
-    spdlog::spdlog
-    OpenMP::OpenMP_CXX
-)
+# Function to add analysis tools (avoids code duplication)
+function(add_opendxa_tool TOOL_NAME SOURCE_FILE)
+    add_executable(${TOOL_NAME} ${SOURCE_FILE})
+    set_target_properties(${TOOL_NAME} PROPERTIES LINK_FLAGS_RELEASE "${LINKER_FAST}")
+    target_compile_options(${TOOL_NAME} PRIVATE
+        $<$<CONFIG:Release>:${RELEASE_CXX_OPTS}>
+    )
+    target_compile_definitions(${TOOL_NAME} PRIVATE
+        $<$<CONFIG:Release>:NDEBUG>
+    )
+    target_link_libraries(${TOOL_NAME} PRIVATE
+        opendxa_lib
+        spdlog::spdlog
+        OpenMP::OpenMP_CXX
+    )
+endfunction()
 
-set(DEBUG_CXX_OPTS
-    -O0 -g -fno-inline -fno-strict-aliasing
-)
+# Debug options for individual tools (compile specific tool with debug flags in Release)
+set(DEBUG_CXX_OPTS -O0 -g -fno-inline -fno-strict-aliasing)
 
-# Python extension (pybind11)
-pybind11_add_module(opendxa._core
-    ${BINDINGS_ROOT}/src/main.cpp
-    ${BINDINGS_ROOT}/src/bindings/module.cpp
-    ${BINDINGS_ROOT}/src/bindings/python_sink.cpp
-    ${BINDINGS_ROOT}/src/bindings/dislocation_analysis.cpp
-    ${BINDINGS_ROOT}/src/wrappers/dislocation_analysis.cpp
-)
+option(DEBUG_OPENDXA "Compile opendxa with debug symbols" OFF)
+option(DEBUG_STRUCTURE_IDENTIFICATION "Compile structure-identification with debug symbols" OFF)
+option(DEBUG_ATOMIC_STRAIN "Compile atomic-strain with debug symbols" OFF)
+option(DEBUG_ELASTIC_STRAIN "Compile elastic-strain with debug symbols" OFF)
+option(DEBUG_COORDINATION_ANALYSIS "Compile coordination-analysis with debug symbols" OFF)
+option(DEBUG_GRAIN_SEGMENTATION "Compile grain-segmentation with debug symbols" OFF)
 
-set_target_properties(opendxa._core PROPERTIES
-    PREFIX ""
-    OUTPUT_NAME "_core"
-    LINK_FLAGS_RELEASE "${LINKER_FAST}"
-)
+# Individual analysis tools
+add_opendxa_tool(opendxa src/functions/dxa.cpp)
+add_opendxa_tool(structure-identification src/functions/structure.cpp)
+add_opendxa_tool(atomic-strain src/functions/atomic_strain.cpp)
+add_opendxa_tool(elastic-strain src/functions/elastic_strain.cpp)
+add_opendxa_tool(coordination-analysis src/functions/coordination.cpp)
+add_opendxa_tool(grain-segmentation src/functions/grains.cpp)
 
-target_link_libraries(opendxa._core PRIVATE opendxa_lib spdlog::spdlog)
-target_compile_options(opendxa._core PRIVATE
-    $<$<CONFIG:Release>:${RELEASE_CXX_OPTS}>
-)
-target_compile_definitions(opendxa._core PRIVATE
-    $<$<CONFIG:Release>:NDEBUG>
-)
-target_include_directories(opendxa._core PRIVATE
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/dependencies/geogram
-    ${CMAKE_SOURCE_DIR}/dependencies/ptm
-    ${CMAKE_SOURCE_DIR}/dependencies/pybind11_json/include
-    ${BINDINGS_ROOT}/include
-)
+# Apply debug flags to specific tools if requested
+if(DEBUG_OPENDXA)
+    target_compile_options(opendxa PRIVATE ${DEBUG_CXX_OPTS})
+    target_compile_definitions(opendxa PRIVATE DEBUG)
+    message(STATUS "opendxa: DEBUG mode enabled")
+endif()
+if(DEBUG_STRUCTURE_IDENTIFICATION)
+    target_compile_options(structure-identification PRIVATE ${DEBUG_CXX_OPTS})
+    target_compile_definitions(structure-identification PRIVATE DEBUG)
+    message(STATUS "structure-identification: DEBUG mode enabled")
+endif()
+if(DEBUG_ATOMIC_STRAIN)
+    target_compile_options(atomic-strain PRIVATE ${DEBUG_CXX_OPTS})
+    target_compile_definitions(atomic-strain PRIVATE DEBUG)
+    message(STATUS "atomic-strain: DEBUG mode enabled")
+endif()
+if(DEBUG_ELASTIC_STRAIN)
+    target_compile_options(elastic-strain PRIVATE ${DEBUG_CXX_OPTS})
+    target_compile_definitions(elastic-strain PRIVATE DEBUG)
+    message(STATUS "elastic-strain: DEBUG mode enabled")
+endif()
+if(DEBUG_COORDINATION_ANALYSIS)
+    target_compile_options(coordination-analysis PRIVATE ${DEBUG_CXX_OPTS})
+    target_compile_definitions(coordination-analysis PRIVATE DEBUG)
+    message(STATUS "coordination-analysis: DEBUG mode enabled")
+endif()
+if(DEBUG_GRAIN_SEGMENTATION)
+    target_compile_options(grain-segmentation PRIVATE ${DEBUG_CXX_OPTS})
+    target_compile_definitions(grain-segmentation PRIVATE DEBUG)
+    message(STATUS "grain-segmentation: DEBUG mode enabled")
+endif()
 
-# Python extension (.so) into platform‐arch directory
-install(TARGETS opendxa._core
-    LIBRARY DESTINATION ${Python3_SITEARCH}/opendxa
+install(TARGETS 
+    opendxa 
+    structure-identification 
+    atomic-strain 
+    elastic-strain 
+    coordination-analysis 
+    grain-segmentation
+    DESTINATION bin
 )
-
-install(FILES
-    ${BINDINGS_ROOT}/opendxa/__init__.py
-    DESTINATION ${Python3_SITELIB}/opendxa
-)
-
-install(DIRECTORY
-    ${BINDINGS_ROOT}/opendxa/
-    DESTINATION ${Python3_SITELIB}/opendxa
-    FILES_MATCHING PATTERN "*.py"
-)
-
-# CLI and core library
-install(TARGETS opendxa DESTINATION bin)
 install(TARGETS opendxa_lib DESTINATION lib)
 
 # Public headers
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/ DESTINATION include)
+
