@@ -170,10 +170,69 @@ const DocumentListing = ({
     headerActions
 }: DocumentListingProps) => {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+    const [optimisticallyDeletedIds, setOptimisticallyDeletedIds] = useState(new Set<string>());
+
+    const wrappedGetMenuOptions = useCallback((item: any) => {
+        if (!getMenuOptions) return [];
+        const options = getMenuOptions(item);
+
+        return options.map((opt: any) => {
+            let label, Icon, onClick, destructive;
+            let isArray = false;
+
+            if (Array.isArray(opt)) {
+                [label, Icon, onClick] = opt;
+                isArray = true;
+            } else {
+                ({ label, icon: Icon, onClick, destructive } = opt);
+                isArray = false;
+            }
+
+            // Check for delete intent via label or destructive flag + standard naming
+            if (label === 'Delete' || label === 'Remove' || (destructive && /delete|remove/i.test(String(label)))) {
+                const originalOnClick = onClick;
+                const wrappedOnClick = async (e: any) => {
+                    // Get ID using keyExtractor
+                    // We pass index 0 but it might rely on index. Hopefully _id is present.
+                    const id = String(_keyExtractor(item, 0));
+
+                    // Optimistic hide
+                    setOptimisticallyDeletedIds(prev => {
+                        const next = new Set(prev);
+                        next.add(id);
+                        return next;
+                    });
+
+                    try {
+                        await originalOnClick(e);
+                    } catch (err) {
+                        // Revert on failure
+                        setOptimisticallyDeletedIds(prev => {
+                            const next = new Set(prev);
+                            next.delete(id);
+                            return next;
+                        });
+                        console.error('Optimistic delete failed, reverting UI', err);
+                        // Re-throw so original handler can show error toast
+                        throw err;
+                    }
+                };
+
+                if (isArray) return [label, Icon, wrappedOnClick];
+                return { ...opt, onClick: wrappedOnClick };
+            }
+
+            return opt;
+        });
+    }, [getMenuOptions, _keyExtractor]);
+
+    const visibleData = useMemo(() => {
+        return data.filter((item, index) => !optimisticallyDeletedIds.has(String(_keyExtractor(item, index))));
+    }, [data, optimisticallyDeletedIds, _keyExtractor]);
 
     const sortedData = useMemo(() => {
-        return sortDataWorker(data, sortConfig);
-    }, [data, sortConfig]);
+        return sortDataWorker(visibleData, sortConfig);
+    }, [visibleData, sortConfig]);
 
     const handleSort = useCallback((col: ColumnConfig) => {
         if (!col.sortable) return
@@ -248,7 +307,7 @@ const DocumentListing = ({
                     onCellClick={handleSort}
                     getCellTitle={(col: any) => <>{col.title} {getSortIndicator(col)}</>}
                     isLoading={isLoading}
-                    getMenuOptions={getMenuOptions}
+                    getMenuOptions={wrappedGetMenuOptions}
                     emptyMessage={emptyMessage}
                     enableInfinite={enableInfinite}
                     hasMore={hasMore}
