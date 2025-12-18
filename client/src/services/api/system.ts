@@ -19,9 +19,9 @@ interface SystemStats {
 }
 
 const systemApi = {
-    async getStats(): Promise<SystemStats>{
-        const response = await api.get<{ status: string; data: SystemStats }>('/system/stats');
-        return response.data.data;
+    async getStats(): Promise<SystemStats> {
+        const response = await api.get<{ status: string; data: { stats: SystemStats } }>('/system/stats');
+        return response.data.data.stats;
     }
 };
 

@@ -131,24 +131,24 @@ const ContainerDetails: React.FC = () => {
     return (
         <div className="details-page-layout d-flex overflow-hidden">
             <div className="details-sidebar d-flex column f-shrink-0">
-                <div className="sidebar-header-details">
+                <div className="sidebar-header-details d-flex column gap-1 items-start">
                     <Button variant='ghost' intent='neutral' size='sm' leftIcon={<ArrowLeft size={16} />} onClick={() => navigate('/dashboard/containers')}>Back</Button>
                     <div className="d-flex items-center gap-1 container-identity">
                         <div className="d-flex items-center content-center container-icon-large">
                             <Box size={24} />
                         </div>
-                        <div className="identity-text">
+                        <div className="identity-text d-flex column gap-05">
                             <Title className="font-size-4 font-weight-6">{container.name}</Title>
                             <span className={`d-flex items-center gap-035 status-badge ${container.status} font-size-1 font-weight-5 font-weight-6`}>{container.status}</span>
                         </div>
                     </div>
                 </div>
 
-                <nav className="sidebar-nav d-flex column gap-025 flex-1">
+                <nav className="sidebar-nav d-flex column gap-1 flex-1">
                     <Button
                         variant={activeTab === 'overview' ? 'soft' : 'ghost'}
                         intent={activeTab === 'overview' ? 'brand' : 'neutral'}
-                        size='sm'
+                        size='md'
                         block
                         align='start'
                         leftIcon={<Layers size={18} />}
@@ -157,7 +157,7 @@ const ContainerDetails: React.FC = () => {
                     <Button
                         variant={activeTab === 'processes' ? 'soft' : 'ghost'}
                         intent={activeTab === 'processes' ? 'brand' : 'neutral'}
-                        size='sm'
+                        size='md'
                         block
                         align='start'
                         leftIcon={<Activity size={18} />}
@@ -166,7 +166,7 @@ const ContainerDetails: React.FC = () => {
                     <Button
                         variant={activeTab === 'logs' ? 'soft' : 'ghost'}
                         intent={activeTab === 'logs' ? 'brand' : 'neutral'}
-                        size='sm'
+                        size='md'
                         block
                         align='start'
                         leftIcon={<Terminal size={18} />}
@@ -175,7 +175,7 @@ const ContainerDetails: React.FC = () => {
                     <Button
                         variant={activeTab === 'storage' ? 'soft' : 'ghost'}
                         intent={activeTab === 'storage' ? 'brand' : 'neutral'}
-                        size='sm'
+                        size='md'
                         block
                         align='start'
                         leftIcon={<Folder size={18} />}
@@ -184,7 +184,7 @@ const ContainerDetails: React.FC = () => {
                     <Button
                         variant={activeTab === 'settings' ? 'soft' : 'ghost'}
                         intent={activeTab === 'settings' ? 'brand' : 'neutral'}
-                        size='sm'
+                        size='md'
                         block
                         align='start'
                         leftIcon={<Settings size={18} />}

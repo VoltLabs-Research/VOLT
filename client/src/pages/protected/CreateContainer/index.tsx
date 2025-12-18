@@ -276,7 +276,7 @@ const CreateContainer: React.FC = () => {
                 >
                     <ArrowLeft size={20} />
                 </Button>
-                <div className="header-text">
+                <div className="header-text d-flex column gap-02">
                     <Title className="font-size-5 font-weight-6">Create New Container</Title>
                     <Paragraph className="color-muted">Deploy a new containerized application in seconds.</Paragraph>
                 </div>
@@ -286,7 +286,7 @@ const CreateContainer: React.FC = () => {
                 <div className="d-flex column gap-05 steps-sidebar">
                     <div className={`d-flex items-center gap-1 step-item ${step >= 1 ? 'active' : ''} cursor-pointer`} onClick={() => setStep(1)}>
                         <div className="d-flex flex-center step-number font-weight-6 color-muted-foreground">1</div>
-                        <div className="d-flex column step-label">
+                        <div className="d-flex column gap-025 step-label">
                             <span>Image</span>
                             <small>Select template</small>
                         </div>
@@ -294,7 +294,7 @@ const CreateContainer: React.FC = () => {
                     <div className={`step-line ${step >= 2 ? 'active' : ''}`}></div>
                     <div className={`d-flex items-center gap-1 step-item ${step >= 2 ? 'active' : ''} cursor-pointer`} onClick={() => (selectedTemplate || customImage) && setStep(2)}>
                         <div className="d-flex flex-center step-number font-weight-6 color-muted-foreground">2</div>
-                        <div className="d-flex column step-label">
+                        <div className="d-flex column gap-025 step-label">
                             <span>Configuration</span>
                             <small>Resources & Network</small>
                         </div>
@@ -302,7 +302,7 @@ const CreateContainer: React.FC = () => {
                     <div className={`step-line ${step >= 3 ? 'active' : ''}`}></div>
                     <div className={`d-flex items-center gap-1 step-item ${step >= 3 ? 'active' : ''} cursor-pointer`} onClick={() => (selectedTemplate || customImage) && setStep(3)}>
                         <div className="d-flex flex-center step-number font-weight-6 color-muted-foreground">3</div>
-                        <div className="d-flex column step-label">
+                        <div className="d-flex column gap-025 step-label">
                             <span>Review</span>
                             <small>Deploy container</small>
                         </div>
@@ -311,7 +311,7 @@ const CreateContainer: React.FC = () => {
 
                 <div className="step-content y-auto flex-1">
                     {step === 1 && (
-                        <div className="fade-in">
+                        <div className="fade-in d-flex column gap-2">
                             <Title className="font-size-5 font-weight-6">Select a Template</Title>
                             <div className="templates-grid gap-1-5">
                                 {TEMPLATES.map(template => (

@@ -46,12 +46,15 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
         socketService.connect();
 
         if (terminalRef.current && !xtermRef.current) {
+            // Read CSS variable at runtime
+            const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#1e1e1e';
+
             const term = new Terminal({
                 cursorBlink: true,
                 fontSize: 14,
                 fontFamily: 'Menlo, Monaco, "Courier New", monospace',
                 theme: {
-                    background: '#1e1e1e',
+                    background: bgColor,
                     foreground: '#f0f0f0',
                     cursor: '#ffffff',
                     selectionBackground: 'rgba(255, 255, 255, 0.3)'

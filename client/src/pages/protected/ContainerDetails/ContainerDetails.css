@@ -1,9 +1,6 @@
 .details-page-layout {
     background: var(--background);
-    font-family: 'Inter',
-        -apple-system,
-        BlinkMacSystemFont,
-        sans-serif;
+    height: 92vh;
 }
 
 /* Sidebar */
@@ -54,6 +51,7 @@
 .status-badge {
 
     padding: 0.25rem 0.625rem;
+    width: fit-content;
     border-radius: 9999px;
     text-transform: capitalize;
     line-height: 1;

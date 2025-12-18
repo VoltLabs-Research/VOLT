@@ -22,7 +22,8 @@
 }
 
 .terminal-header {
-    background: #2d2d2d;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-soft);
     padding: 0.75rem 1rem;
     border-bottom: 1px solid #333;
 }
@@ -49,7 +50,8 @@
 
 .terminal-body {
     padding: 1rem;
-    background: #1e1e1e;
+    background-color: var(--color-bg);
+    border: 1px solid var(--color-border-soft);
 }
 
 /* xterm.js customization */
