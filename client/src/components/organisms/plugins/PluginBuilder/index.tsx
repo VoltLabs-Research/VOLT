@@ -113,11 +113,10 @@ const PluginBuilder = () => {
     const onDrop = useCallback((event: React.DragEvent) => {
         event.preventDefault();
         const type = event.dataTransfer.getData('application/reactflow') as NodeType;
-        if (!type || !reactFlowInstance || !reactFlowWrapper.current) return;
-        const bounds = reactFlowWrapper.current.getBoundingClientRect();
+        if (!type || !reactFlowInstance) return;
         const position = reactFlowInstance.screenToFlowPosition({
-            x: event.clientX - bounds.left,
-            y: event.clientY - bounds.top
+            x: event.clientX,
+            y: event.clientY
         });
         addNode(type, position);
     }, [reactFlowInstance, addNode]);
