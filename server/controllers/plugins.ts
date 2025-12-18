@@ -600,16 +600,36 @@ export default class PluginsController extends BaseController<IPlugin> {
      */
     public deleteBinary = catchAsync(async (req: Request, res: Response) => {
         const plugin = res.locals.plugin;
-        const { objectPath } = req.body;
+
+        // Try to find path in the stored plugin first
+        const entrypointNode = plugin.workflow.nodes.find((n: IWorkflowNode) => n.type === NodeType.ENTRYPOINT);
+        let objectPath = entrypointNode?.data?.entrypoint?.binaryObjectPath;
+
+        // If not in DB (e.g. unsaved draft), check request
+        if (!objectPath) {
+            objectPath = req.body?.objectPath || req.query?.objectPath;
+        }
 
         if (!plugin) throw new RuntimeError('Plugin::NotLoaded', 500);
         if (!objectPath) throw new RuntimeError('Plugin::Binary::PathRequired', 400);
 
-        if (!objectPath.startsWith(`plugin-binaries/${plugin._id}/`)) {
+        if (!objectPath.toString().startsWith(`plugin-binaries/${plugin._id}/`)) {
             throw new RuntimeError('Plugin::Binary::InvalidPath', 403);
         }
 
-        await storage.delete(SYS_BUCKETS.PLUGINS, objectPath);
+        await storage.delete(SYS_BUCKETS.PLUGINS, objectPath.toString());
+
+        // If we found it in the DB, we should clear it to keep DB consistent
+        if (entrypointNode?.data?.entrypoint?.binaryObjectPath) {
+            entrypointNode.data.entrypoint.binaryObjectPath = undefined;
+            if (entrypointNode.data.entrypoint.binaryFileName) entrypointNode.data.entrypoint.binaryFileName = undefined;
+            if (entrypointNode.data.entrypoint.binary) entrypointNode.data.entrypoint.binary = undefined;
+
+            // Mark modified and save
+            plugin.markModified('workflow');
+            await plugin.save();
+        }
+
         logger.info(`[PluginsController] Binary deleted: ${objectPath}`);
 
         res.status(200).json({

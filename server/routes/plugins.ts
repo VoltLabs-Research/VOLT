@@ -33,7 +33,14 @@ const controller = new PluginsController();
 // Middleware to load plugin into res.locals
 const loadPlugin = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const plugin = await Plugin.findOne({ $or: [{ _id: id }, { slug: id }] });
+    const mongoose = require('mongoose');
+
+    const query: any = { $or: [{ slug: id }] };
+    if (mongoose.Types.ObjectId.isValid(id)) {
+        query.$or.push({ _id: id });
+    }
+
+    const plugin = await Plugin.findOne(query);
     if (!plugin) {
         return next(new RuntimeError('Plugin::NotFound', 404));
     }

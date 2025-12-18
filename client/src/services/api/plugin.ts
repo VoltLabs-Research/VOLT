@@ -197,8 +197,11 @@ const pluginApi = {
     /**
      * Delete a binary file from plugin
      */
-    deleteBinary: async (pluginId: string, objectPath: string): Promise<void> => {
-        await api.delete(`/plugins/${pluginId}/binary`, { data: { objectPath } });
+    /**
+     * Delete a binary file from plugin
+     */
+    deleteBinary: async (pluginId: string): Promise<void> => {
+        await api.delete(`/plugins/${pluginId}/binary`);
     },
 
     /**

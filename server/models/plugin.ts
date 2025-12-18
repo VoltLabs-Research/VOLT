@@ -97,8 +97,7 @@ const ForEachDataSchema = new Schema({
 
 const EntrypointDataSchema = new Schema({
     binary: {
-        type: String,
-        required: [true, ValidationCodes.PLUGIN_ENTRYPOINT_BINARY_REQUIRED]
+        type: String
     },
     // MinIO object path for the uploaded binary
     binaryObjectPath: {
@@ -113,8 +112,7 @@ const EntrypointDataSchema = new Schema({
         type: String
     },
     arguments: {
-        type: String,
-        required: [true, ValidationCodes.PLUGIN_ENTRYPOINT_ARGUMENTS_REQUIRED]
+        type: String
     },
     timeout: {
         type: Number,

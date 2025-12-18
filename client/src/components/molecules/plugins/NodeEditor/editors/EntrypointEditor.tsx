@@ -68,7 +68,7 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
         if (!currentPlugin?._id || !entrypoint.binaryObjectPath) return;
 
         try {
-            await pluginApi.deleteBinary(currentPlugin._id, entrypoint.binaryObjectPath);
+            await pluginApi.deleteBinary(currentPlugin._id);
             // Clear all binary fields at once
             updateData({
                 binary: '',
