@@ -58,6 +58,13 @@
 .document-listing-table-row-container {
     padding: 1rem 2rem;
     border-bottom: 1px solid var(--color-border);
+    background: none;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    text-align: left;
+    font: inherit;
+    color: inherit;
 }
 
 .document-listing-table-row-container:hover {

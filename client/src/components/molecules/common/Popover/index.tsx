@@ -33,34 +33,52 @@ const Popover = ({
 
 
 
-    // Position the popover near the trigger when it opens
+    // Store click position for positioning
+    const clickPosRef = React.useRef<{ x: number; y: number } | null>(null);
+
+    // Capture click position when trigger is clicked
+    React.useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const triggerElement = target.closest(`[commandfor="${id}"]`);
+            if (triggerElement) {
+                clickPosRef.current = { x: e.clientX, y: e.clientY };
+            }
+        };
+        document.addEventListener('click', handleClick, true);
+        return () => document.removeEventListener('click', handleClick, true);
+    }, [id]);
+
+    // Position the popover near the click position when it opens
     React.useEffect(() => {
         const popover = document.getElementById(id);
         if (!popover) return;
 
         const positionPopover = () => {
-            // Find trigger by commandfor attribute also
-            const triggerElement = document.querySelector(`[popovertarget="${id}"], [commandfor="${id}"]`);
-            if (!triggerElement || !popover) return;
+            if (!clickPosRef.current) return;
 
-            const triggerRect = triggerElement.getBoundingClientRect();
             const popoverRect = popover.getBoundingClientRect();
+            const { x, y } = clickPosRef.current;
 
-            // Position below the trigger by default
-            let top = triggerRect.bottom + 8; // 8px gap
-            let left = triggerRect.left;
+            // Position below and to the right of click
+            let top = y + 8;
+            let left = x;
 
-            // Adjust if popover would go off-screen
+            // Adjust if popover would go off-screen (right)
             if (left + popoverRect.width > window.innerWidth) {
                 left = window.innerWidth - popoverRect.width - 16;
             }
 
+            // Adjust if popover would go off-screen (bottom)
             if (top + popoverRect.height > window.innerHeight) {
-                // Show above instead
-                top = triggerRect.top - popoverRect.height - 8;
+                // Show above the click instead
+                top = y - popoverRect.height - 8;
             }
 
-            popover.style.top = `${top}px`;
+            // Ensure left doesn't go negative
+            if (left < 8) left = 8;
+
+            popover.style.top = `${top + 16}px`;
             popover.style.left = `${left}px`;
             popover.style.margin = '0';
         };

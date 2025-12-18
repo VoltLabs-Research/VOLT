@@ -6,7 +6,6 @@ import { Skeleton } from '@mui/material';
 import { useEffect, useRef } from 'react';
 import { List, type ListImperativeAPI } from 'react-window';
 import Container from '@/components/primitives/Container';
-import Button from '@/components/primitives/Button';
 import Title from '@/components/primitives/Title';
 
 const ROW_HEIGHT = 64;
@@ -38,8 +37,12 @@ const VirtualizedRow = (props: any) => {
     const rowKey = keyExtractor ? keyExtractor(item, index) : `item-${index}`;
     const menuOptions = getMenuOptions ? getMenuOptions(item) : [];
 
-    return (
-        <div style={style} className='document-listing-table-row-container gap-1 d-flex content-between'>
+    const rowContent = (
+        <button
+            type="button"
+            style={style}
+            className='document-listing-table-row-container gap-1 d-flex content-between cursor-pointer w-full'
+        >
             {columns.map((col: any, colIdx: number) => (
                 <div
                     className='document-listing-cell overflow-hidden d-flex flex-1 items-center color-primary'
@@ -54,38 +57,37 @@ const VirtualizedRow = (props: any) => {
                     </span>
                 </div>
             ))}
+        </button>
+    );
 
-            {menuOptions.length > 0 && (
-                <Popover
-                    id={`row-menu-${rowKey}`}
-                    trigger={
-                        <Button variant='ghost' intent='neutral' iconOnly size='sm'>⋮</Button>
-                    }
-                >
-                    {menuOptions.map((option: any, idx: number) => {
-                        if (Array.isArray(option)) {
-                            const [label, Icon, onClick] = option;
-                            return (
-                                <PopoverMenuItem key={idx} icon={<Icon />} onClick={onClick}>
-                                    {label}
-                                </PopoverMenuItem>
-                            );
-                        }
+    if (menuOptions.length > 0) {
+        return (
+            <Popover id={`row-menu-${rowKey}`} trigger={rowContent}>
+                {menuOptions.map((option: any, idx: number) => {
+                    if (Array.isArray(option)) {
+                        const [label, Icon, onClick] = option;
                         return (
-                            <PopoverMenuItem
-                                key={idx}
-                                icon={option.icon ? <option.icon /> : undefined}
-                                onClick={option.onClick}
-                                variant={option.destructive ? 'danger' : 'default'}
-                            >
-                                {option.label}
+                            <PopoverMenuItem key={idx} icon={<Icon />} onClick={onClick}>
+                                {label}
                             </PopoverMenuItem>
                         );
-                    })}
-                </Popover>
-            )}
-        </div>
-    );
+                    }
+                    return (
+                        <PopoverMenuItem
+                            key={idx}
+                            icon={option.icon ? <option.icon /> : undefined}
+                            onClick={option.onClick}
+                            variant={option.destructive ? 'danger' : 'default'}
+                        >
+                            {option.label}
+                        </PopoverMenuItem>
+                    );
+                })}
+            </Popover>
+        );
+    }
+
+    return rowContent;
 };
 
 type InfiniteProps = {
@@ -182,11 +184,6 @@ const DocumentListingTable = ({
                             <Title className='font-size-2-5 font-weight-5 text-secondary'>{getCellTitle(col)}</Title>
                         </div>
                     ))}
-                    {getMenuOptions && (
-                        <div style={{ opacity: 0, pointerEvents: 'none' }}>
-                            <Button variant='ghost' intent='neutral' iconOnly size='sm'>⋮</Button>
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -213,8 +210,8 @@ const DocumentListingTable = ({
                             const rowKey = keyExtractor ? keyExtractor(item, idx) : `item-${idx}`;
                             const menuOptions = getMenuOptions ? getMenuOptions(item) : [];
 
-                            return (
-                                <div style key={rowKey} className='document-listing-table-row-container gap-1 d-flex content-between'>
+                            const rowContent = (
+                                <button type="button" key={rowKey} className='document-listing-table-row-container gap-1 d-flex content-between cursor-pointer w-full'>
                                     {columns.map((col: any, colIdx: number) => (
                                         <div
                                             className='document-listing-cell overflow-hidden d-flex flex-1 items-center color-primary'
@@ -229,38 +226,37 @@ const DocumentListingTable = ({
                                             </span>
                                         </div>
                                     ))}
+                                </button>
+                            );
 
-                                    {menuOptions.length > 0 && (
-                                        <Popover
-                                            id={`row-menu-fallback-${rowKey}`}
-                                            trigger={
-                                                <Button variant='ghost' intent='neutral' iconOnly size='sm'>⋮</Button>
-                                            }
-                                        >
-                                            {menuOptions.map((option: any, optIdx: number) => {
-                                                if (Array.isArray(option)) {
-                                                    const [label, Icon, onClick] = option;
-                                                    return (
-                                                        <PopoverMenuItem key={optIdx} icon={<Icon />} onClick={onClick}>
-                                                            {label}
-                                                        </PopoverMenuItem>
-                                                    );
-                                                }
+                            if (menuOptions.length > 0) {
+                                return (
+                                    <Popover key={rowKey} id={`row-menu-fallback-${rowKey}`} trigger={rowContent}>
+                                        {menuOptions.map((option: any, optIdx: number) => {
+                                            if (Array.isArray(option)) {
+                                                const [label, Icon, onClick] = option;
                                                 return (
-                                                    <PopoverMenuItem
-                                                        key={optIdx}
-                                                        icon={option.icon ? <option.icon /> : undefined}
-                                                        onClick={option.onClick}
-                                                        variant={option.destructive ? 'danger' : 'default'}
-                                                    >
-                                                        {option.label}
+                                                    <PopoverMenuItem key={optIdx} icon={<Icon />} onClick={onClick}>
+                                                        {label}
                                                     </PopoverMenuItem>
                                                 );
-                                            })}
-                                        </Popover>
-                                    )}
-                                </div>
-                            );
+                                            }
+                                            return (
+                                                <PopoverMenuItem
+                                                    key={optIdx}
+                                                    icon={option.icon ? <option.icon /> : undefined}
+                                                    onClick={option.onClick}
+                                                    variant={option.destructive ? 'danger' : 'default'}
+                                                >
+                                                    {option.label}
+                                                </PopoverMenuItem>
+                                            );
+                                        })}
+                                    </Popover>
+                                );
+                            }
+
+                            return rowContent;
                         })}
                     </>
                 ) : null}
