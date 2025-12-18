@@ -90,13 +90,6 @@ const AnalysisConfigsListing = () => {
             skeleton: { variant: 'text', width: 110 }
         },
         {
-            title: 'Modifier',
-            sortable: true,
-            key: 'modifier',
-            render: (value) => (value ? String(value) : '-'),
-            skeleton: { variant: 'text', width: 130 }
-        },
-        {
             title: 'Total Frames',
             sortable: true,
             key: 'totalFrames',
@@ -111,6 +104,20 @@ const AnalysisConfigsListing = () => {
             render: (value) =>
                 typeof value === 'number' ? value.toLocaleString() : '-',
             skeleton: { variant: 'text', width: 110 }
+        },
+        {
+            title: 'Started At',
+            sortable: true,
+            key: 'startedAt',
+            render: (value) => formatTimeAgo(value),
+            skeleton: { variant: 'text', width: 100 }
+        },
+        {
+            title: 'Finished At',
+            sortable: true,
+            key: 'finishedAt',
+            render: (value) => formatTimeAgo(value),
+            skeleton: { variant: 'text', width: 100 }
         },
         {
             title: 'Created',

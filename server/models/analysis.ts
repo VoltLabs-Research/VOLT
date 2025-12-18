@@ -29,7 +29,6 @@ import logger from '@/logger';
 
 export interface IAnalysis extends Document {
     plugin: string;
-    modifier: string;
     config: any;
     trajectory: mongoose.Types.ObjectId;
     totalFrames?: number;
