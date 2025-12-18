@@ -14,7 +14,6 @@ import {
     Plus,
     Trash2,
     Check,
-    AlertCircle,
     X
 } from 'lucide-react';
 import useToast from '@/hooks/ui/use-toast';
@@ -323,7 +322,7 @@ const CreateContainer: React.FC = () => {
                                         <div className="d-flex flex-center template-icon f-shrink-0">
                                             {template.icon}
                                         </div>
-                                        <div className="template-info">
+                                        <div className="template-info d-flex column gap-05">
                                             <Title className="font-size-3 font-weight-6">{template.name}</Title>
                                             <Paragraph className="color-muted font-size-2">{template.description}</Paragraph>
                                         </div>
@@ -338,10 +337,10 @@ const CreateContainer: React.FC = () => {
                                     className={`d-flex column items-center gap-1 template-card custom ${!selectedTemplate && customImage ? 'selected' : ''} p-relative text-center cursor-pointer`}
                                     onClick={handleCustomImageClick}
                                 >
-                                    <div className="template-icon f-shrink-0">
+                                    <div className="template-icon d-flex flex-center f-shrink-0">
                                         <Server size={32} color="#666" />
                                     </div>
-                                    <div className="template-info">
+                                    <div className="template-info d-flex column gap-05">
                                         <Title className="font-size-3 font-weight-6">Custom Image</Title>
                                         <Paragraph className="color-muted font-size-2">Pull any image from Docker Hub.</Paragraph>
                                     </div>
@@ -359,38 +358,55 @@ const CreateContainer: React.FC = () => {
                     {step === 2 && (
                         <div className="fade-in">
                             <Title className="font-size-5 font-weight-6">Configure Container</Title>
-                            <div className="d-flex column gap-2 config-form">
-                                <div className="form-group">
-                                    <label>Container Name</label>
-                                    <Input
-                                        type="text"
-                                        placeholder="my-container-app"
-                                        value={config.name}
-                                        onChange={(val) => setConfig(prev => ({ ...prev, name: val as string }))}
-                                        className="full-width-input w-max"
-                                    />
+
+                            <div className="config-grid">
+                                {/* Basic Info */}
+                                <div className="config-section">
+                                    <div className="config-section-header">
+                                        <h3>Basic Information</h3>
+                                    </div>
+                                    <div className="field">
+                                        <label>Container Name</label>
+                                        <Input
+                                            type="text"
+                                            placeholder="my-container-app"
+                                            value={config.name}
+                                            onChange={(val) => setConfig(prev => ({ ...prev, name: val as string }))}
+                                            className="field-input w-max"
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="form-group">
-                                    <label>Team</label>
-                                    <Select
-                                        options={teams.map(team => ({
-                                            value: team._id,
-                                            title: team.name
-                                        }))}
-                                        value={selectedTeamId}
-                                        onChange={(val) => setSelectedTeamId(val)}
-                                        placeholder="Select a team"
-                                        className="full-width-input w-max"
-                                    />
+                                {/* Team Selection */}
+                                <div className="config-section select">
+                                    <div className="config-section-header">
+                                        <h3>Team</h3>
+                                    </div>
+                                    <div className="field d-flex items-center content-between">
+                                        <label>Assign to Team</label>
+                                        <Select
+                                            options={teams.map(team => ({
+                                                value: team._id,
+                                                title: team.name
+                                            }))}
+                                            style={{ width: '200px' }}
+                                            value={selectedTeamId}
+                                            onChange={(val) => setSelectedTeamId(val)}
+                                            placeholder="Select a team"
+                                            className="w-max"
+                                        />
+                                    </div>
                                 </div>
 
-                                <div className="resources-section">
-                                    <Title className="font-size-4 font-weight-6">Resources</Title>
-                                    <div className="resource-slider-wrapper">
-                                        <div className="d-flex content-between slider-header">
-                                            <label><Cpu size={16} /> CPU Cores</label>
-                                            <span className="value-badge font-weight-6">{config.cpus} vCPU</span>
+                                {/* Resources */}
+                                <div className="config-section full-width">
+                                    <div className="config-section-header">
+                                        <h3>Resources</h3>
+                                    </div>
+                                    <div className="resource-row">
+                                        <div className="resource-header">
+                                            <span className="resource-label"><Cpu size={16} /> CPU Cores</span>
+                                            <span className="resource-value">{config.cpus} vCPU</span>
                                         </div>
                                         <Slider
                                             min={0.5}
@@ -399,16 +415,15 @@ const CreateContainer: React.FC = () => {
                                             value={config.cpus}
                                             onChange={(val) => setConfig(prev => ({ ...prev, cpus: val }))}
                                         />
-                                        <div className="d-flex content-between slider-limits font-size-1 color-muted-foreground">
+                                        <div className="resource-limits">
                                             <span>0.5 vCPU</span>
-                                            <span>{maxCpus} vCPU(Max)</span>
+                                            <span>{maxCpus} vCPU (Max)</span>
                                         </div>
                                     </div>
-
-                                    <div className="resource-slider-wrapper">
-                                        <div className="d-flex content-between slider-header">
-                                            <label><HardDrive size={16} /> Memory</label>
-                                            <span className="value-badge font-weight-6">{config.memory} MB</span>
+                                    <div className="resource-row">
+                                        <div className="resource-header">
+                                            <span className="resource-label"><HardDrive size={16} /> Memory</span>
+                                            <span className="resource-value">{config.memory} MB</span>
                                         </div>
                                         <Slider
                                             min={128}
@@ -417,89 +432,92 @@ const CreateContainer: React.FC = () => {
                                             value={config.memory}
                                             onChange={(val) => setConfig(prev => ({ ...prev, memory: val }))}
                                         />
-                                        <div className="d-flex content-between slider-limits font-size-1 color-muted-foreground">
+                                        <div className="resource-limits">
                                             <span>128 MB</span>
-                                            <span>{maxMemory} MB(Max)</span>
+                                            <span>{maxMemory} MB (Max)</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="advanced-config gap-2">
-                                    <div className="d-flex column config-group">
-                                        <div className="d-flex content-between items-center group-header">
-                                            <Title className="font-size-3 font-weight-6">Port Mapping</Title>
-                                            <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Plus size={14} />} onClick={addPort}>Add Port</Button>
-                                        </div>
-                                        {config.ports.map((port, i) => (
-                                            <div key={i} className="d-flex gap-05 port-row">
-                                                <div className="input-wrapper flex-1">
+                                {/* Port Mapping */}
+                                <div className="config-section">
+                                    <div className="d-flex content-between items-center config-section-header">
+                                        <h3>Port Mapping</h3>
+                                        <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Plus size={14} />} onClick={addPort}>Add</Button>
+                                    </div>
+                                    {config.ports.length > 0 ? (
+                                        config.ports.map((port, i) => (
+                                            <div key={i} className="mapping-row">
+                                                <div className="mapping-input">
                                                     <label>Private</label>
                                                     <Input
                                                         type="number"
                                                         value={port.private}
                                                         onChange={(val) => updatePort(i, 'private', val as string)}
-                                                        className="port-input flex-1"
+                                                        className="field-input"
                                                     />
                                                 </div>
-                                                <div className="input-wrapper flex-1">
+                                                <div className="mapping-input">
                                                     <label>Public</label>
                                                     <Input
                                                         type="number"
                                                         placeholder="Auto"
                                                         value={port.public || ''}
                                                         onChange={(val) => updatePort(i, 'public', val as string)}
-                                                        className="port-input flex-1"
+                                                        className="field-input"
                                                     />
                                                 </div>
                                                 <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => removePort(i)}>
                                                     <Trash2 size={16} />
                                                 </Button>
                                             </div>
-                                        ))}
-                                        {config.ports.length === 0 && (
-                                            <div className="d-flex items-center gap-075 empty-state-small content-center color-muted-foreground">
-                                                <AlertCircle size={16} />
-                                                <span>No ports exposed. Add a port to access your container.</span>
-                                            </div>
-                                        )}
-                                    </div>
+                                        ))
+                                    ) : (
+                                        <div className="empty-state">No ports exposed</div>
+                                    )}
+                                </div>
 
-                                    <div className="d-flex column config-group">
-                                        <div className="d-flex content-between items-center group-header">
-                                            <Title className="font-size-3 font-weight-6">Environment Variables</Title>
-                                            <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Plus size={14} />} onClick={addEnv}>Add Variable</Button>
-                                        </div>
-                                        {config.env.map((env, i) => (
-                                            <div key={i} className="d-flex gap-05 env-row">
-                                                <Input
-                                                    type="text"
-                                                    placeholder="KEY"
-                                                    value={env.key}
-                                                    onChange={(val) => updateEnv(i, 'key', val as string)}
-                                                    className="env-input"
-                                                />
-                                                <Input
-                                                    type="text"
-                                                    placeholder="VALUE"
-                                                    value={env.value}
-                                                    onChange={(val) => updateEnv(i, 'value', val as string)}
-                                                    className="env-input"
-                                                />
+                                {/* Environment Variables */}
+                                <div className="config-section">
+                                    <div className="d-flex content-between items-center config-section-header">
+                                        <h3>Environment Variables</h3>
+                                        <Button variant='ghost' intent='neutral' size='sm' leftIcon={<Plus size={14} />} onClick={addEnv}>Add</Button>
+                                    </div>
+                                    {config.env.length > 0 ? (
+                                        config.env.map((env, i) => (
+                                            <div key={i} className="mapping-row">
+                                                <div className="mapping-input">
+                                                    <label>Key</label>
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="KEY"
+                                                        value={env.key}
+                                                        onChange={(val) => updateEnv(i, 'key', val as string)}
+                                                        className="field-input"
+                                                    />
+                                                </div>
+                                                <div className="mapping-input">
+                                                    <label>Value</label>
+                                                    <Input
+                                                        type="text"
+                                                        placeholder="VALUE"
+                                                        value={env.value}
+                                                        onChange={(val) => updateEnv(i, 'value', val as string)}
+                                                        className="field-input"
+                                                    />
+                                                </div>
                                                 <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => removeEnv(i)}>
                                                     <Trash2 size={16} />
                                                 </Button>
                                             </div>
-                                        ))}
-                                        {config.env.length === 0 && (
-                                            <div className="d-flex items-center gap-075 empty-state-small content-center color-muted-foreground">
-                                                <AlertCircle size={16} />
-                                                <span>No environment variables configured.</span>
-                                            </div>
-                                        )}
-                                    </div>
+                                        ))
+                                    ) : (
+                                        <div className="empty-state">No environment variables</div>
+                                    )}
                                 </div>
                             </div>
-                            <div className="d-flex content-end gap-1 step-actions mt-3">
+
+                            <div className="d-flex content-end gap-1 step-actions">
                                 <Button variant='outline' intent='neutral' onClick={() => setStep(1)}>Back</Button>
                                 <Button variant='solid' intent='brand' onClick={() => setStep(3)}>Next: Review</Button>
                             </div>

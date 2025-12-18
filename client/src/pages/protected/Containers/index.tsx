@@ -143,7 +143,7 @@ const Containers: React.FC = () => {
                     <div className='d-flex flex-center container-icon-small color-primary'>
                         <Box size={16} />
                     </div>
-                    <div className='d-flex column gap-0125 container-name-content overflow-hidden'>
+                    <div className='d-flex column gap-025 container-name-content overflow-hidden'>
                         <span className='container-name-text font-weight-6 color-primary'>{value}</span>
                         <span className='container-id-text font-size-1 color-muted'>{row.containerId?.substring(0, 12)}</span>
                     </div>
