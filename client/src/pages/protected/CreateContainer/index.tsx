@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import FormField from '@/components/molecules/form/FormField';
 import {
     ArrowLeft,
     Box,
     Cpu,
     HardDrive,
-    Layers,
     Server,
-    Terminal,
-    Globe,
-    Database,
-    Code,
     Plus,
     Trash2,
     Check,
@@ -32,62 +28,119 @@ interface Template {
     id: string;
     name: string;
     image: string;
-    icon: React.ReactNode;
+    logo: string;
     description: string;
     category: 'runtime' | 'database' | 'system';
     defaultPort?: number;
+    defaultEnv?: { key: string; value: string }[];
+    defaultCmd?: string[];
+    useImageCmd?: boolean;
 }
 
 const TEMPLATES: Template[] = [
     {
+        id: 'code-server',
+        name: 'Code Server',
+        image: 'codercom/code-server:latest',
+        logo: 'https://raw.githubusercontent.com/coder/code-server/main/src/browser/media/favicon.svg',
+        description: 'VS Code in the browser. Code anywhere on any device.',
+        category: 'runtime',
+        defaultPort: 8080,
+        defaultEnv: [
+            { key: 'PASSWORD', value: 'changeme' }
+        ],
+        defaultCmd: ['code-server', '--bind-addr', '0.0.0.0:8080', '--user-data-dir', '/home/coder', '/home/coder']
+    },
+    {
+        id: 'coder',
+        name: 'Coder',
+        image: 'ghcr.io/coder/coder:latest',
+        logo: 'https://avatars.githubusercontent.com/u/95932066?s=200&v=4',
+        description: 'Self-hosted remote development platform for teams.',
+        category: 'runtime',
+        defaultPort: 7080,
+        defaultEnv: [
+            { key: 'CODER_ACCESS_URL', value: 'http://localhost:7080' },
+            { key: 'CODER_HTTP_ADDRESS', value: '0.0.0.0:7080' }
+        ],
+        useImageCmd: true
+    },
+    {
+        id: 'lammps',
+        name: 'LAMMPS',
+        image: 'lammps/lammps:stable_29Sep2021_ubuntu20.04_openmpi_py3',
+        logo: 'https://avatars.githubusercontent.com/u/5199009?s=200&v=4',
+        description: 'Classical molecular dynamics simulation software.',
+        category: 'runtime',
+        defaultEnv: [
+            { key: 'OMP_NUM_THREADS', value: '1' }
+        ]
+    },
+    {
         id: 'node',
         name: 'Node.js',
         image: 'node:18-alpine',
-        icon: <Globe size={32} color="#68a063" />,
+        logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg',
         description: 'JavaScript runtime built on Chrome\'s V8 engine.',
         category: 'runtime',
-        defaultPort: 3000
+        defaultPort: 3000,
+        defaultEnv: [
+            { key: 'NODE_ENV', value: 'production' }
+        ]
     },
     {
         id: 'python',
         name: 'Python',
         image: 'python:3.11-slim',
-        icon: <Code size={32} color="#3776ab" />,
+        logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
         description: 'High-level programming language for general-purpose programming.',
         category: 'runtime',
-        defaultPort: 8000
+        defaultPort: 8000,
+        defaultEnv: [
+            { key: 'PYTHONUNBUFFERED', value: '1' }
+        ]
     },
     {
         id: 'mongo',
         name: 'MongoDB',
         image: 'mongo:latest',
-        icon: <Database size={32} color="#47a248" />,
+        logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg',
         description: 'The most popular database for modern apps.',
         category: 'database',
-        defaultPort: 27017
+        defaultPort: 27017,
+        defaultEnv: [
+            { key: 'MONGO_INITDB_ROOT_USERNAME', value: 'admin' },
+            { key: 'MONGO_INITDB_ROOT_PASSWORD', value: 'changeme' }
+        ]
     },
     {
         id: 'redis',
         name: 'Redis',
         image: 'redis:alpine',
-        icon: <Layers size={32} color="#dc382d" />,
+        logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/redis/redis-original.svg',
         description: 'In-memory data structure store, used as a database, cache and broker.',
         category: 'database',
-        defaultPort: 6379
+        defaultPort: 6379,
+        defaultEnv: [
+            { key: 'REDIS_PASSWORD', value: 'changeme' }
+        ]
     },
     {
         id: 'ubuntu',
         name: 'Ubuntu',
         image: 'ubuntu:latest',
-        icon: <Terminal size={32} color="#e95420" />,
+        logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/ubuntu/ubuntu-plain.svg',
         description: 'The modern, open source operating system on Linux.',
-        category: 'system'
+        category: 'system',
+        defaultEnv: [
+            { key: 'DEBIAN_FRONTEND', value: 'noninteractive' }
+        ]
     },
     {
         id: 'alpine',
         name: 'Alpine',
         image: 'alpine:latest',
-        icon: <Box size={32} color="#0d597f" />,
+        logo: 'https://hub.docker.com/api/media/repos_logo/v1/library%2Falpine?type=logo',
         description: 'A security-oriented, lightweight Linux distribution.',
         category: 'system'
     }
@@ -117,7 +170,8 @@ const CreateContainer: React.FC = () => {
         memory: 512,
         cpus: 1,
         ports: [] as { private: number; public: number }[],
-        env: [] as { key: string; value: string }[]
+        env: [] as { key: string; value: string }[],
+        mountDockerSocket: false
     });
 
     useEffect(() => {
@@ -154,7 +208,9 @@ const CreateContainer: React.FC = () => {
             setConfig(prev => ({
                 ...prev,
                 name: `${template.id}-${Math.floor(Math.random() * 1000)}`,
-                ports: template.defaultPort ? [{ private: template.defaultPort, public: 0 }] : []
+                ports: template.defaultPort ? [{ private: template.defaultPort, public: 0 }] : [],
+                env: template.defaultEnv ? [...template.defaultEnv] : [],
+                mountDockerSocket: template.id === 'coder'
             }));
             setStep(2);
         }
@@ -198,15 +254,24 @@ const CreateContainer: React.FC = () => {
                 return;
             }
 
-            const payload = {
+            const template = selectedTemplate ? TEMPLATES.find(t => t.id === selectedTemplate) : null;
+
+            const payload: any = {
                 name: config.name,
                 image,
                 teamId: selectedTeamId,
                 memory: config.memory,
                 cpus: config.cpus,
                 ports: config.ports.filter(p => p.private > 0),
-                env: config.env.filter(e => e.key && e.value)
+                env: config.env.filter(e => e.key && e.value),
+                mountDockerSocket: config.mountDockerSocket,
+                useImageCmd: template?.useImageCmd
             };
+
+            // Add custom command if template specifies one
+            if (template?.defaultCmd) {
+                payload.cmd = template.defaultCmd;
+            }
 
             await containerApi.create(payload);
             showSuccess('Container created successfully');
@@ -320,7 +385,7 @@ const CreateContainer: React.FC = () => {
                                         onClick={() => handleTemplateSelect(template.id)}
                                     >
                                         <div className="d-flex flex-center template-icon f-shrink-0">
-                                            {template.icon}
+                                            <img src={template.logo} alt={template.name} className="template-logo" />
                                         </div>
                                         <div className="template-info d-flex column gap-05">
                                             <Title className="font-size-3 font-weight-6">{template.name}</Title>
@@ -515,6 +580,20 @@ const CreateContainer: React.FC = () => {
                                         <div className="empty-state">No environment variables</div>
                                     )}
                                 </div>
+
+
+                                <div className="config-card d-flex column gap-05">
+                                    <FormField
+                                        label="Enable Docker Access"
+                                        fieldKey="mountDockerSocket"
+                                        fieldType="checkbox"
+                                        fieldValue={config.mountDockerSocket}
+                                        onFieldChange={(_, next) => setConfig(prev => ({ ...prev, mountDockerSocket: next }))}
+                                    />
+                                    <div className="font-size-2 color-muted">Mounts /var/run/docker.sock to allow container management</div>
+                                </div>
+
+
                             </div>
 
                             <div className="d-flex content-end gap-1 step-actions">
@@ -563,6 +642,7 @@ const CreateContainer: React.FC = () => {
                     )}
                 </div>
             </div>
+
 
             {
                 showCustomImageModal && (

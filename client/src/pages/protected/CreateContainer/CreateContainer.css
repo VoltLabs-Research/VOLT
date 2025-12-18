@@ -118,6 +118,12 @@
     border-radius: 12px;
 }
 
+.template-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
 .selected-check {
     top: 8px;
     right: 8px;

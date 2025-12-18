@@ -10,6 +10,7 @@ import DynamicIcon from '@/components/atoms/common/DynamicIcon'
 import Title from '@/components/primitives/Title'
 import Paragraph from '@/components/primitives/Paragraph'
 
+// TODO: REFACTOR
 const sortDataWorker = (
     data: any[],
     sortConfig: { key: string; direction: 'asc' | 'desc' } | null
