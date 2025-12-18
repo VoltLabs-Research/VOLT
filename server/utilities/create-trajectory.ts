@@ -59,7 +59,11 @@ const createTrajectory = async ({
     };
 
     // Process files. Validate -> Upload to MinIO -> Prepare Job Data.
-    const filePromises = files.map(async (file: any, i: number) => {
+    // Use batch processing to prevent overwhelming MinIO with too many concurrent uploads
+    const BATCH_SIZE = 5;
+    const allResults: any[] = [];
+
+    const processFile = async (file: any, i: number) => {
         let tempPath = file.path;
 
         // Handle Buffer vs Path(Multer vs SSH).
@@ -70,7 +74,7 @@ const createTrajectory = async ({
             // Update size if it was missing 
             if (!file.size) {
                 file.size = file.buffer.length;
-                totalSize += file.size; // This is risky if race condition, but usually we have size.
+                totalSize += file.size;
             }
         }
 
@@ -93,10 +97,6 @@ const createTrajectory = async ({
         });
 
         // Cleanup local temp.
-        // Note: If files came from multer diskStorage, they are cleaned up in the controller finally block.
-        // But if we created a temp file manually from a buffer (legacy/ssh path), we should clean it up here.
-        // However, the controller cleanup iterates over req.files.
-        // Let's just catch cleanup errors to be safe.
         if (!file.path) await fs.rm(tempPath).catch(() => { });
 
         return {
@@ -105,11 +105,19 @@ const createTrajectory = async ({
             originalSize: fileSize,
             originalName: file.originalname || file.name || `frame_${frameInfo.timestep}`
         };
-    });
+    };
 
-    // Wait for all uploads to complete
-    const results = await Promise.all(filePromises);
-    const validFiles = (results.filter(Boolean) as any[]);
+    // Process files in batches to prevent S3 multipart upload errors
+    for (let i = 0; i < files.length; i += BATCH_SIZE) {
+        const batch = files.slice(i, i + BATCH_SIZE);
+        const batchPromises = batch.map((file, batchIndex) =>
+            processFile(file, i + batchIndex)
+        );
+        const batchResults = await Promise.all(batchPromises);
+        allResults.push(...batchResults);
+    }
+
+    const validFiles = (allResults.filter(Boolean) as any[]);
 
     if (validFiles.length === 0) {
         throw new RuntimeError(ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES, 400);

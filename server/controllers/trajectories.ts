@@ -13,7 +13,7 @@ import { catchAsync } from '@/utilities/runtime/runtime';
 import { getMetricsByTeamId } from '@/utilities/metrics/team';
 import { Trajectory, Team } from '@/models';
 import { SYS_BUCKETS } from '@/config/minio';
-import { getTimestepPreview, sendImage } from '@/utilities/export/raster';
+import { getAnyTrajectoryPreview, sendImage } from '@/utilities/export/raster';
 
 export default class TrajectoryController extends BaseController<any> {
     constructor() {
@@ -93,9 +93,13 @@ export default class TrajectoryController extends BaseController<any> {
 
     public getPreview = catchAsync(async (req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
-        const timestep = Math.min(...trajectory.frames.map(({ timestep }: any) => timestep));
-        const { buffer, etag } = await getTimestepPreview(trajectory._id.toString(), timestep);
-        return sendImage(res, etag, buffer);
+        const result = await getAnyTrajectoryPreview(trajectory._id.toString());
+
+        if (!result) {
+            throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
+        }
+
+        return sendImage(res, result.etag, result.buffer);
     });
 
     public getAtoms = catchAsync(async (req: Request, res: Response) => {
