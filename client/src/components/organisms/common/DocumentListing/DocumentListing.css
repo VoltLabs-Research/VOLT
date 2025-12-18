@@ -58,7 +58,6 @@
 .document-listing-table-row-container {
     padding: 1rem 0;
     border-bottom: 1px solid var(--color-border);
-    transition: background-color 0.2s ease;
 }
 
 .document-listing-table-row-container:hover{
@@ -224,6 +223,7 @@
 .status-badge{
     display: inline-flex;
     align-items: center;
+    gap: .5rem;
     padding: 0.4rem 0.8rem;
     border-radius: 1rem;
     font-size: 0.8rem;

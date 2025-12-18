@@ -8,9 +8,8 @@ import { List, type ListImperativeAPI } from 'react-window';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import Title from '@/components/primitives/Title';
-import Paragraph from '@/components/primitives/Paragraph';
 
-const ROW_HEIGHT = 48;
+const ROW_HEIGHT = 64;
 
 const SkeletonRow = ({ columns }: { columns: ColumnConfig[] }) => {
     return (
@@ -215,7 +214,7 @@ const DocumentListingTable = ({
                             const menuOptions = getMenuOptions ? getMenuOptions(item) : [];
 
                             return (
-                                <div key={rowKey} className='document-listing-table-row-container gap-1 d-flex content-between'>
+                                <div style key={rowKey} className='document-listing-table-row-container gap-1 d-flex content-between'>
                                     {columns.map((col: any, colIdx: number) => (
                                         <div
                                             className='document-listing-cell overflow-hidden d-flex flex-1 items-center color-primary'
