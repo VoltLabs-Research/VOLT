@@ -94,7 +94,6 @@ configureApp({
         'auth',
         'api-tracker',
         'sessions',
-        'password',
         'chat',
         'ssh-connections',
         'ssh-file-explorer',

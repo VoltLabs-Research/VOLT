@@ -35,9 +35,9 @@ const upload = multer({
         fileSize: 5 * 1024 * 1024 // 5MB limit
     },
     fileFilter: (req, file, cb) => {
-        if(file.mimetype.startsWith('image/')) {
+        if (file.mimetype.startsWith('image/')) {
             cb(null, true);
-        }else{
+        } else {
             cb(null, false);
         }
     }
@@ -60,11 +60,15 @@ router.get('/microsoft/callback', passport.authenticate('microsoft', { session: 
 router.use(middleware.protect);
 router.patch('/me/update/password/', controller.updatePassword);
 
+// Password management routes
+router.get('/password/info', controller.getPasswordInfo);
+router.put('/password/change', controller.changePassword);
+
 router.get('/me', controller.getMyAccount); // Changed from chained route to direct GET
 router.get('/guest-identity', controller.getGuestIdentity); // Added new route
 
 router.route('/me') // The chained route for /me now only handles PATCH and DELETE
-    .patch(controller.updateMyAccount)
+    .patch(upload.single('avatar'), controller.updateMyAccount)
     .delete(controller.deleteMyAccount);
 
 export default router;
