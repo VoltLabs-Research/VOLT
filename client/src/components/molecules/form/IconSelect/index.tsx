@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { List } from 'react-window';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import { ICON_LIB_LOADERS } from '@/components/atoms/common/DynamicIcon/loaders';
-import useWorker, { WorkerStatus } from '@/hooks/core/use-worker';
 import './IconSelect.css';
 
 type IconLib = keyof typeof ICON_LIB_LOADERS;
@@ -86,7 +85,6 @@ const IconSelect: React.FC<IconSelectProps> = ({
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState('');
     const [allIcons, setAllIcons] = useState<string[]>(allIconsCache || []);
-    const [filteredIcons, setFilteredIcons] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(0);
     const [portalStyle, setPortalStyle] = useState<React.CSSProperties | null>(null);
@@ -97,25 +95,11 @@ const IconSelect: React.FC<IconSelectProps> = ({
     const searchInputRef = useRef<HTMLInputElement>(null);
     const listContainerRef = useRef<HTMLDivElement>(null);
 
-    const [filterWorker, { status: filterStatus }] = useWorker(filterIconsWorker);
-
-    useEffect(() => {
-        if (allIcons.length === 0) {
-            setFilteredIcons([]);
-            return;
-        }
-
-        if (!search) {
-            setFilteredIcons(allIcons);
-            return;
-        }
-
-        // Use worker for filtering
-        filterWorker(allIcons, search)
-            .then(result => {
-                setFilteredIcons(result);
-            });
-    }, [allIcons, search, filterWorker]);
+    const filteredIcons = useMemo(() => {
+        if (allIcons.length === 0) return [];
+        if (!search) return allIcons;
+        return filterIconsWorker(allIcons, search);
+    }, [allIcons, search]);
 
     // Load all icons when dropdown opens
     useEffect(() => {
@@ -221,7 +205,7 @@ const IconSelect: React.FC<IconSelectProps> = ({
         setOpen(false);
     }, [onChange]);
 
-    const isFiltering = filterStatus === WorkerStatus.RUNNING;
+
 
     const dropdownContent = (
         <div
@@ -244,8 +228,6 @@ const IconSelect: React.FC<IconSelectProps> = ({
             <div className="flex-1 icon-select-list y-auto" ref={listContainerRef}>
                 {loading ? (
                     <div className="d-flex flex-center gap-05 icon-select-loading color-muted">Loading all icons...</div>
-                ) : isFiltering ? (
-                    <div className="d-flex flex-center gap-05 icon-select-loading color-muted">Filtering...</div>
                 ) : filteredIcons.length === 0 ? (
                     <div className="d-flex flex-center icon-select-empty color-muted">No icons found</div>
                 ) : (
@@ -266,7 +248,7 @@ const IconSelect: React.FC<IconSelectProps> = ({
                 )}
             </div>
 
-            {!loading && !isFiltering && filteredIcons.length > 0 && (
+            {!loading && filteredIcons.length > 0 && (
                 <div className="icon-select-count color-muted">
                     {filteredIcons.length.toLocaleString()} icons
                 </div>

@@ -33,7 +33,7 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSel
                     <i className='editor-sidebar-scene-option-icon-container'>
                         <option.Icon />
                     </i>
-                    <Title className='font-size-3 editor-sidebar-scene-option-title'>{option.title}</Title>
+                    <Title className='font-size-3-5 editor-sidebar-scene-option-title'>{option.title}</Title>
                 </div>
 
                 {option.options && (

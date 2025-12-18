@@ -1,10 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { RxDotsHorizontal } from 'react-icons/rx'
 import { Plus } from 'lucide-react'
 import DocumentListingTable from '@/components/molecules/common/DocumentListingTable'
 import { Skeleton } from '@mui/material'
-import useWorker from '@/hooks/core/use-worker'
-import { WorkerStatus } from '@/utilities/worker-utils'
 import './DocumentListing.css'
 import Container from '@/components/primitives/Container'
 import Button from '@/components/primitives/Button'
@@ -171,20 +169,10 @@ const DocumentListing = ({
     headerActions
 }: DocumentListingProps) => {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
-    const [sortedData, setSortedData] = useState<any[]>(data)
-    const [sortWorker, { status: sortStatus }] = useWorker(sortDataWorker)
 
-    useEffect(() => {
-        if (!sortConfig) {
-            setSortedData(data)
-            return
-        }
-
-        sortWorker(data, sortConfig)
-            .then(result => {
-                setSortedData(result)
-            });
-    }, [data, sortConfig, sortWorker])
+    const sortedData = useMemo(() => {
+        return sortDataWorker(data, sortConfig);
+    }, [data, sortConfig]);
 
     const handleSort = useCallback((col: ColumnConfig) => {
         if (!col.sortable) return
@@ -207,7 +195,6 @@ const DocumentListing = ({
     }, [sortConfig])
 
     const bodyRef = useRef<HTMLDivElement | null>(null)
-    const isSorting = sortStatus === WorkerStatus.RUNNING
 
     return (
         <Container className='d-flex column h-max document-listing-container color-primary'>
@@ -259,7 +246,7 @@ const DocumentListing = ({
                     data={sortedData}
                     onCellClick={handleSort}
                     getCellTitle={(col: any) => <>{col.title} {getSortIndicator(col)}</>}
-                    isLoading={isLoading || isSorting}
+                    isLoading={isLoading}
                     getMenuOptions={getMenuOptions}
                     emptyMessage={emptyMessage}
                     enableInfinite={enableInfinite}

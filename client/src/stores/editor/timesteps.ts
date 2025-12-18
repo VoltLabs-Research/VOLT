@@ -4,7 +4,7 @@ import useAnalysisConfigStore from '@/stores/analysis-config';
 import useModelStore from '@/stores/editor/model';
 import useTrajectoryStore from '@/stores/trajectories';
 import { createTrajectoryGLBs, fetchModels, type TimelineGLBMap } from '@/utilities/glb/modelUtils';
-import { runInWorkerWithFallback } from '@/utilities/worker-utils';
+
 import type { TimestepData, TimestepState, TimestepStore } from '@/types/stores/editor/timesteps';
 
 const initialTimestepData: TimestepData = {
@@ -72,8 +72,8 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
             return;
         }
 
-        // Extract timesteps in worker for large trajectories
-        const timesteps = await runInWorkerWithFallback(extractTimestepsWorker, trajectory.frames);
+        // Extract timesteps directly
+        const timesteps = extractTimestepsWorker(trajectory.frames);
         const timestepData = createTimestepData(timesteps);
 
         // Only load GLB if trajectory processing is completed
