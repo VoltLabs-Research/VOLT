@@ -111,18 +111,19 @@ const DashboardLayout = () => {
 
     const fetchPlugins = usePluginStore(state => state.fetchPlugins);
     const plugins = usePluginStore(state => state.plugins);
-    const [analysesExpanded, setAnalysesExpanded] = useState(() => pathname.includes('/analysis-configs'));
+    const [analysesExpanded, setAnalysesExpanded] = useState(() => pathname.includes('/analysis-configs') || pathname.includes('/plugins/'));
+    const [expandedPlugins, setExpandedPlugins] = useState<Set<string>>(() => new Set());
 
     useEffect(() => {
         fetchPlugins();
     }, []);
 
-    const analysisListings = useMemo(() => {
-        const listings: Array<{
-            id: string;
+    // Group plugins with their exposures that have listings
+    const pluginsWithExposures = useMemo(() => {
+        const result: Array<{
+            pluginName: string;
             pluginSlug: string;
-            listingSlug: string;
-            displayName: string;
+            exposures: Array<{ name: string; slug: string }>;
         }> = [];
 
         plugins.forEach(plugin => {
@@ -136,34 +137,46 @@ const DashboardLayout = () => {
                 Object.keys(node.data.visualizers.listing).length > 0
             );
 
+            if (visualizerNodes.length === 0) return;
+
+            // Trace backward from visualizers to find connected exposures
+            const findConnectedExposure = (nodeId: string, depth = 0): string | null => {
+                if (depth > 5) return null;
+                const incomingEdge = edges.find(e => e.target === nodeId);
+                if (!incomingEdge) return null;
+                const sourceNode = nodes.find(n => n.id === incomingEdge.source);
+                if (!sourceNode) return null;
+                if (sourceNode.type === NodeType.EXPOSURE) {
+                    return sourceNode.data?.exposure?.name || null;
+                }
+                return findConnectedExposure(sourceNode.id, depth + 1);
+            };
+
+            const exposures: Array<{ name: string; slug: string }> = [];
+            const seenExposures = new Set<string>();
+
             visualizerNodes.forEach(vizNode => {
-                // Trace backward to find connected exposure: Visualizer <- Schema <- Exposure
-                const findConnectedExposure = (nodeId: string, depth = 0): string | null => {
-                    if (depth > 5) return null; // Prevent infinite loops
-                    const incomingEdge = edges.find(e => e.target === nodeId);
-                    if (!incomingEdge) return null;
-
-                    const sourceNode = nodes.find(n => n.id === incomingEdge.source);
-                    if (!sourceNode) return null;
-
-                    if (sourceNode.type === NodeType.EXPOSURE) {
-                        return sourceNode.data?.exposure?.name || null;
-                    }
-                    return findConnectedExposure(sourceNode.id, depth + 1);
-                };
-
                 const exposureName = findConnectedExposure(vizNode.id);
-                if (exposureName) {
-                    listings.push({
-                        id: `${plugin.slug}-${vizNode.id}`,
-                        pluginSlug: plugin.slug,
-                        listingSlug: exposureName,
-                        displayName: exposureName
-                    });
+                if (exposureName && !seenExposures.has(exposureName)) {
+                    seenExposures.add(exposureName);
+                    exposures.push({ name: exposureName, slug: exposureName });
                 }
             });
+
+            if (exposures.length === 0) return;
+
+            // Get modifier name for plugin display name
+            const modifierNode = nodes.find(n => n.type === NodeType.MODIFIER);
+            const pluginName = modifierNode?.data?.modifier?.name || plugin.slug;
+
+            result.push({
+                pluginName,
+                pluginSlug: plugin.slug,
+                exposures
+            });
         });
-        return listings;
+
+        return result;
     }, [plugins]);
 
     const notificationList = useMemo(() => notifications, [notifications]);
@@ -452,20 +465,51 @@ const DashboardLayout = () => {
                             >
                                 View all
                             </button>
-                            {analysisListings.map((listing) => (
-                                <button
-                                    key={listing.id}
-                                    className={`sidebar-sub-item ${pathname.includes(`/plugins/${listing.pluginSlug}/listing/${listing.listingSlug}`) ? 'is-selected' : ''}`}
-                                    onClick={() => {
-                                        navigate(`/dashboard/plugins/${listing.pluginSlug}/listing/${listing.listingSlug}`);
-                                        setSidebarOpen(false);
-                                    }}
-                                    title={listing.displayName}
-                                >
-                                    <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {listing.displayName}
-                                    </span>
-                                </button>
+                            {pluginsWithExposures.map((plugin) => (
+                                <div key={plugin.pluginSlug} className="sidebar-nested-section">
+                                    <button
+                                        className={`sidebar-sub-item sidebar-nested-header ${pathname.includes(`/plugins/${plugin.pluginSlug}/listing/`) ? 'is-selected' : ''}`}
+                                        onClick={() => {
+                                            setExpandedPlugins(prev => {
+                                                const next = new Set(prev);
+                                                if (next.has(plugin.pluginSlug)) {
+                                                    next.delete(plugin.pluginSlug);
+                                                } else {
+                                                    next.add(plugin.pluginSlug);
+                                                }
+                                                return next;
+                                            });
+                                        }}
+                                        title={plugin.pluginName}
+                                    >
+                                        <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                            {plugin.pluginName}
+                                        </span>
+                                        <IoChevronDown
+                                            className={`sidebar-nested-chevron ${expandedPlugins.has(plugin.pluginSlug) ? 'is-expanded' : ''}`}
+                                            size={12}
+                                        />
+                                    </button>
+                                    {expandedPlugins.has(plugin.pluginSlug) && (
+                                        <div className="sidebar-nested-items">
+                                            {plugin.exposures.map((exposure) => (
+                                                <button
+                                                    key={exposure.slug}
+                                                    className={`sidebar-nested-item ${pathname.includes(`/plugins/${plugin.pluginSlug}/listing/${encodeURIComponent(exposure.slug)}`) ? 'is-selected' : ''}`}
+                                                    onClick={() => {
+                                                        navigate(`/dashboard/plugins/${plugin.pluginSlug}/listing/${encodeURIComponent(exposure.slug)}`);
+                                                        setSidebarOpen(false);
+                                                    }}
+                                                    title={exposure.name}
+                                                >
+                                                    <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        {exposure.name}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     )}
