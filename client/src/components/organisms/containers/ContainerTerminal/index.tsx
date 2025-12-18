@@ -91,22 +91,18 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
     useEffect(() => {
         const id = container._id;
         const state = connectionState[id];
+        let isAttached = false;
 
         const attach = () => {
+            // Prevent double attach
+            if (isAttached) return;
+
             if (socketService.isConnected()) {
                 socketService.emit('container:terminal:attach', { containerId: id });
                 state.isAttached = true;
+                isAttached = true;
             }
         };
-
-        const unsubscribe = socketService.onConnectionChange((connected) => {
-            if (connected) {
-                attach();
-            }
-        });
-
-        // Try initial attach
-        attach();
 
         const handleData = (data: string) => {
             xtermRef.current?.write(data);
@@ -118,6 +114,18 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
 
         socketService.on('container:terminal:data', handleData);
         socketService.on('container:error', handleError);
+
+        // Subscribe to connection changes for reconnection scenarios
+        const unsubscribe = socketService.onConnectionChange((connected) => {
+            if (connected && !isAttached) {
+                attach();
+            }
+        });
+
+        // Try initial attach only if already connected
+        if (socketService.isConnected()) {
+            attach();
+        }
 
         return () => {
             unsubscribe();
