@@ -30,9 +30,6 @@ const Popover = ({
     className = '',
     noPadding = false
 }: PopoverProps) => {
-
-
-
     // Store click position for positioning
     const clickPosRef = React.useRef<{ x: number; y: number } | null>(null);
 

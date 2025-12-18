@@ -73,6 +73,12 @@ public:
 
     void setStructureIdentificationOnly(bool structureIdentificationOnly);
     void setGrainSegmentationOnly(bool grainSegmentationOnly);
+    void setGrainSegmentationParameters(
+        bool adoptOrphanAtoms,
+        int minGrainAtomCount,
+        bool handleCoherentInterfaces,
+        bool outputBonds
+    );
     void setInputCrystalStructure(LatticeStructureType structure);
     void setMaxTrialCircuitSize(double size);
     void setCircuitStretchability(double stretch);
@@ -114,6 +120,11 @@ private:
     bool _coordinationAnalysisOnly;
     double _coordinationCutoff;
     int _coordinationRdfBins;
+
+    bool _grainAdoptOrphanAtoms = true;
+    int _grainMinAtomCount = 100;
+    bool _grainHandleCoherentInterfaces = true;
+    bool _grainOutputBonds = false;
 
     bool  _atomicStrainEnabled;
     double _atomicStrainCutoff;

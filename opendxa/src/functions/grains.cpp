@@ -6,7 +6,11 @@ using namespace OpenDXA::CLI;
 void showUsage(const std::string& name) {
     printUsageHeader(name, "OpenDXA - Grain Segmentation");
     std::cerr
-        << "  --rmsd <float>    RMSD threshold for PTM. [default: 0.1]\n";
+        << "  --rmsd <float>                        RMSD threshold for PTM. [default: 0.1]\n"
+        << "  --minGrainAtomCount <int>             Minimum atoms per grain. [default: 100]\n"
+        << "  --adoptOrphanAtoms <true|false>       Adopt orphan atoms. [default: true]\n"
+        << "  --handleCoherentInterfaces <true|false> Handle coherent interfaces. [default: true]\n"
+        << "  --outputBonds                         Output neighbor bonds. [default: false]\n";
     printHelpOption();
 }
 
@@ -32,10 +36,28 @@ int main(int argc, char* argv[]) {
     outputBase = deriveOutputBase(filename, outputBase);
     spdlog::info("Output base: {}", outputBase);
     
+    // Parse grain segmentation options
+    bool adoptOrphanAtoms = getString(opts, "--adoptOrphanAtoms", "true") == "true";
+    int minGrainAtomCount = getInt(opts, "--minGrainAtomCount", 100);
+    bool handleCoherentInterfaces = getString(opts, "--handleCoherentInterfaces", "true") == "true";
+    bool outputBonds = hasOption(opts, "--outputBonds");
+    
+    spdlog::info("Grain segmentation parameters:");
+    spdlog::info("  - adoptOrphanAtoms: {}", adoptOrphanAtoms);
+    spdlog::info("  - minGrainAtomCount: {}", minGrainAtomCount);
+    spdlog::info("  - handleCoherentInterfaces: {}", handleCoherentInterfaces);
+    spdlog::info("  - outputBonds: {}", outputBonds);
+    
     DislocationAnalysis analyzer;
     analyzer.setGrainSegmentationOnly(true);
     analyzer.setIdentificationMode(StructureAnalysis::Mode::PTM);
     analyzer.setRmsd(getDouble(opts, "--rmsd", 0.1f));
+    analyzer.setGrainSegmentationParameters(
+        adoptOrphanAtoms,
+        minGrainAtomCount,
+        handleCoherentInterfaces,
+        outputBonds
+    );
     
     spdlog::info("Starting grain segmentation...");
     json result = analyzer.compute(frame, outputBase);
@@ -44,8 +66,6 @@ int main(int argc, char* argv[]) {
         spdlog::error("Analysis failed: {}", result.value("error", "Unknown error"));
         return 1;
     }
-    
-    spdlog::info("Grain segmentation completed.");
     return 0;
 }
 

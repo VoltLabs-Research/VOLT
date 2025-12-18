@@ -7,6 +7,7 @@
 #include <opendxa/utilities/concurrence/parallel_system.h>
 #include <opendxa/analysis/analysis_context.h>
 #include <opendxa/analysis/cluster_connector.h>
+#include <opendxa/analysis/grain_segmentation.h>
 
 namespace OpenDXA{
 
@@ -29,6 +30,18 @@ void DislocationAnalysis::setStructureIdentificationOnly(bool structureIdentific
 // Output grain segmentation only
 void DislocationAnalysis::setGrainSegmentationOnly(bool grainSegmentationOnly){
     _grainSegmentationOnly = grainSegmentationOnly;
+}
+
+void DislocationAnalysis::setGrainSegmentationParameters(
+    bool adoptOrphanAtoms,
+    int minGrainAtomCount,
+    bool handleCoherentInterfaces,
+    bool outputBonds
+){
+    _grainAdoptOrphanAtoms = adoptOrphanAtoms;
+    _grainMinAtomCount = minGrainAtomCount;
+    _grainHandleCoherentInterfaces = handleCoherentInterfaces;
+    _grainOutputBonds = outputBonds;
 }
 
 // Define the maximum number of edges that a Burgers circuit may have.
@@ -798,66 +811,126 @@ json DislocationAnalysis::exportResultsToJson(const std::string& filename) const
     return _lastJsonData;
 }
 
-json DislocationAnalysis::performGrainSegmentation(const LammpsParser::Frame &frame, const StructureAnalysis& structureAnalysis, 
-                                                   const std::vector<int>& structureTypes, const std::string& outputFile) {
+json DislocationAnalysis::performGrainSegmentation(
+    const LammpsParser::Frame &frame, 
+    const StructureAnalysis& structureAnalysis, 
+    const std::vector<int>& structureTypes, 
+    const std::string& outputFile
+){
     spdlog::info("Starting grain segmentation analysis...");
     
     json result;
     
     try {
-        // For now, create a simplified grain segmentation based on structure types
-        // This is a placeholder implementation that groups atoms by structure type
+        const auto& ctx = structureAnalysis.context();
         
-        std::map<int, std::vector<size_t>> grainGroups;
-        
-        // Group atoms by structure type as a simple grain approximation
-        for (size_t i = 0; i < structureTypes.size(); ++i) {
-            int structType = structureTypes[i];
-            grainGroups[structType].push_back(i);
+        if (!ctx.ptmOrientation || !ctx.correspondencesCode) {
+            spdlog::error("PTM orientation data not available. Grain segmentation requires PTM mode.");
+            result["is_failed"] = true;
+            result["error"] = "Grain segmentation requires PTM mode with orientation output enabled.";
+            return result;
         }
 
-        json grainData;
-        grainData["grain_count"] = grainGroups.size();
-        grainData["grains"] = json::array();
+        // Create shared pointers for the engine
+        auto positions = std::make_shared<ParticleProperty>(
+            frame.natoms, ParticleProperty::PositionProperty, 0, true);
+        for (size_t i = 0; i < frame.positions.size() && i < static_cast<size_t>(frame.natoms); ++i) {
+            positions->setPoint3(i, frame.positions[i]);
+        }
         
-        std::vector<int> grainIds(frame.natoms, 0);
-        int grainId = 1;
+        auto structures = std::make_shared<ParticleProperty>(
+            frame.natoms, DataType::Int, 1, 0, false);
+        for (size_t i = 0; i < structureTypes.size(); ++i) {
+            structures->setInt(i, structureTypes[i]);
+        }
         
-        for (const auto& [structType, atomIndices] : grainGroups) {
-            if (atomIndices.size() >= 50) { // Minimum grain size
-                json grainInfo;
-                grainInfo["id"] = grainId;
-                grainInfo["size"] = atomIndices.size();
-                grainInfo["structure_type"] = structType;
-                // Default orientation (identity quaternion)
-                grainInfo["orientation"] = {0.0, 0.0, 0.0, 1.0};
-                grainData["grains"].push_back(grainInfo);
-                
-                // Assign grain IDs to atoms
-                for (size_t atomIdx : atomIndices) {
-                    if (atomIdx < grainIds.size()) {
-                        grainIds[atomIdx] = grainId;
-                    }
-                }
-                grainId++;
+        // Copy PTM orientation property (quaternions: x,y,z,w)
+        auto orientations = std::make_shared<ParticleProperty>(
+            frame.natoms, DataType::Double, 4, 0, false);
+        for (size_t i = 0; i < static_cast<size_t>(frame.natoms); ++i) {
+            for (int c = 0; c < 4; ++c) {
+                orientations->setDoubleComponent(i, c, ctx.ptmOrientation->getDoubleComponent(i, c));
             }
         }
+        
+        // Copy correspondence codes
+        auto correspondences = std::make_shared<ParticleProperty>(
+            frame.natoms, DataType::Int64, 1, 0, false);
+        {
+            auto* src = reinterpret_cast<const uint64_t*>(ctx.correspondencesCode->data());
+            auto* dst = reinterpret_cast<uint64_t*>(correspondences->data());
+            std::copy(src, src + frame.natoms, dst);
+        }
 
-        // Export grain visualization as simplified JSON
-        std::string jsonPath = outputFile + "_grains.glb.json";
-        exportGrainModelAsGLB(frame, grainIds, jsonPath);
-        grainData["glb_path"] = jsonPath;
+        spdlog::info("Running GrainSegmentationEngine1 (building neighbor graph and dendrogram)...");
+        
+        // Engine1: Build neighbor graph, compute disorientations, create dendrogram
+        auto engine1 = std::make_shared<GrainSegmentationEngine1>(
+            positions,
+            structures,
+            orientations,
+            correspondences,
+            &frame.simulationCell,
+            _grainHandleCoherentInterfaces,
+            _grainOutputBonds
+        );
+        
+        engine1->perform();
+        
+        spdlog::info("GrainSegmentationEngine1 complete. Dendrogram size: {}", engine1->dendrogram().size());
+        spdlog::info("Suggested merging threshold: {:.4f}", engine1->suggestedMergingThreshold());
 
-        // Export msgpack data
+        // Engine2: Cluster atoms using the dendrogram threshold
+        spdlog::info("Running GrainSegmentationEngine2 (clustering atoms into grains)...");
+        
+        GrainSegmentationEngine2 engine2(
+            engine1,
+            _grainAdoptOrphanAtoms,
+            static_cast<size_t>(_grainMinAtomCount),
+            true  // colorParticlesByGrain
+        );
+        
+        engine2.perform();
+        
+        spdlog::info("Found {} grains", engine2.grainCount());
+
+        // Extract grain IDs for each atom
+        auto atomClusters = engine2.atomClusters();
+        std::vector<int> grainIds(frame.natoms, 0);
+        for (size_t i = 0; i < static_cast<size_t>(frame.natoms); ++i) {
+            grainIds[i] = atomClusters->getInt(i);
+        }
+
+        // Build result JSON
+        json grainData;
+        grainData["grain_count"] = static_cast<int>(engine2.grainCount());
+        grainData["merging_threshold"] = engine1->suggestedMergingThreshold();
+        grainData["grains"] = json::array();
+        
+        for (const auto& grain : engine2.grains()) {
+            json grainInfo;
+            grainInfo["id"] = grain.id;
+            grainInfo["size"] = grain.size;
+            grainInfo["orientation"] = {
+                grain.orientation.x(), 
+                grain.orientation.y(), 
+                grain.orientation.z(), 
+                grain.orientation.w()
+            };
+            grainData["grains"].push_back(grainInfo);
+        }
+
+        // Export msgpack data (binary format)
         std::string msgpackPath = outputFile + "_grains.msgpack";
-        std::ofstream grainFile(msgpackPath);
-        grainFile << grainData.dump();
+        std::vector<uint8_t> msgpackData = json::to_msgpack(grainData);
+        std::ofstream grainFile(msgpackPath, std::ios::binary);
+        grainFile.write(reinterpret_cast<const char*>(msgpackData.data()), msgpackData.size());
         grainFile.close();
 
         result = grainData;
         result["is_failed"] = false;
         
-        spdlog::info("Simplified grain segmentation export completed. Found {} grains.", grainData["grain_count"]);
+        spdlog::info("Grain segmentation completed. Found {} grains.", engine2.grainCount());
 
     } catch (const std::exception& e) {
         result["is_failed"] = true;
@@ -866,70 +939,6 @@ json DislocationAnalysis::performGrainSegmentation(const LammpsParser::Frame &fr
     }
 
     return result;
-}
-
-void DislocationAnalysis::exportGrainModelAsGLB(const LammpsParser::Frame &frame, const std::vector<int>& grainIds, 
-                                                const std::string& outputPath) {
-    spdlog::info("Exporting grain model as GLB to: {}", outputPath);
-    
-    try {
-        // Create a simple point cloud with color-coded grains
-        json atomsData;
-        atomsData["atoms"] = json::array();
-        
-        // Color palette for different grains
-        std::vector<std::array<float, 3>> colors = {
-            {1.0f, 0.0f, 0.0f},  // Red
-            {0.0f, 1.0f, 0.0f},  // Green
-            {0.0f, 0.0f, 1.0f},  // Blue
-            {1.0f, 1.0f, 0.0f},  // Yellow
-            {1.0f, 0.0f, 1.0f},  // Magenta
-            {0.0f, 1.0f, 1.0f},  // Cyan
-            {1.0f, 0.5f, 0.0f},  // Orange
-            {0.5f, 0.0f, 1.0f},  // Purple
-            {0.0f, 0.5f, 0.0f},  // Dark Green
-            {0.5f, 0.5f, 0.5f}   // Gray
-        };
-
-        for (size_t i = 0; i < frame.natoms && i < frame.positions.size(); ++i) {
-            json atom;
-            const auto& pos = frame.positions[i];
-            
-            atom["position"] = {pos.x(), pos.y(), pos.z()};
-            atom["grain_id"] = grainIds[i];
-            
-            // Assign color based on grain ID
-            int grainId = grainIds[i];
-            if (grainId > 0 && grainId <= static_cast<int>(colors.size())) {
-                const auto& color = colors[(grainId - 1) % colors.size()];
-                atom["color"] = {color[0], color[1], color[2]};
-            } else {
-                // Default color for unassigned atoms
-                atom["color"] = {0.8f, 0.8f, 0.8f};
-            }
-            
-            atomsData["atoms"].push_back(atom);
-        }
-
-        atomsData["metadata"] = {
-            {"generator", "OpenDXA Grain Segmentation"},
-            {"timestamp", std::chrono::duration_cast<std::chrono::seconds>(
-                std::chrono::system_clock::now().time_since_epoch()).count()},
-            {"atom_count", frame.natoms},
-            {"unique_grains", *std::max_element(grainIds.begin(), grainIds.end())}
-        };
-
-        // Export as JSON for now (GLB export would require more complex implementation)
-        std::string jsonPath = outputPath + ".json";
-        std::ofstream glbFile(jsonPath);
-        glbFile << atomsData.dump(2);
-        glbFile.close();
-        
-        spdlog::info("Grain model exported as JSON to: {}", jsonPath);
-        
-    } catch (const std::exception& e) {
-        spdlog::error("Failed to export grain model as GLB: {}", e.what());
-    }
 }
 
 }
