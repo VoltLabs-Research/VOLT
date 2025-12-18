@@ -2,11 +2,10 @@ import { Exporter, ModifierContext, NodeType } from '@/types/plugin';
 import type { Node } from '@xyflow/react';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 
-let nodeIdCounter = 0;
+import { v4 as uuidv4 } from 'uuid';
 
 export const generateNodeId = (type: NodeType): string => {
-    nodeIdCounter++;
-    return `${type}-${nodeIdCounter}-${Date.now()}`;
+    return uuidv4();
 };
 
 export const createNode = (type: NodeType, position: { x: number; y: number }): Node => {
@@ -18,14 +17,13 @@ export const createNode = (type: NodeType, position: { x: number; y: number }): 
         type,
         position,
         data: {
-            name: `${config.label}_${nodeIdCounter}`,
-                ...getDefaultDataForType(type)
+            ...getDefaultDataForType(type)
         }
     };
 };
 
 export const getDefaultDataForType = (type: NodeType): Record<string, any> => {
-    switch(type){
+    switch (type) {
         case NodeType.MODIFIER:
             return {
                 modifier: {
@@ -108,6 +106,4 @@ export const getDefaultDataForType = (type: NodeType): Record<string, any> => {
     }
 };
 
-export const resetNodeIdCounter = (): void => {
-    nodeIdCounter = 0;
-};
+

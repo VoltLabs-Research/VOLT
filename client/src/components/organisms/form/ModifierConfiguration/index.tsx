@@ -74,62 +74,78 @@ const ModifierConfiguration = ({
         };
     }, [plugins, modifierId]);
 
-    const configFields = useMemo(() => {
-        return availableArguments.map((argDef: any) => {
+    useEffect(() => {
+        const newConfig = { ...config };
+        let hasChanges = false;
+
+        availableArguments.forEach((argDef: any) => {
             const key = argDef.argument;
-            const field: any = {
-                key,
-                label: argDef.label || key,
-                fieldKey: key
-            };
+            const defaultValue = argDef.value ?? argDef.default;
 
-            switch (argDef.type) {
-                case 'select':
-                    field.type = 'select';
-                    field.options = (argDef.options || []).map((opt: any) => ({
-                        value: opt.key,
-                        title: opt.label
-                    }));
-                    field.selectProps = { renderInPortal: true };
-                    break;
-
-                case 'frame':
-                    field.options = (trajectory?.frames || []).map((frame: any, index: number) => ({
-                        value: String(frame.timestep),
-                        title: `Frame ${index + 1} (Time ${frame.timestep})`
-                    }));
-                    if (field.options.length === 0) {
-                        field.options = [{ value: '0', title: 'Default(First Frame)' }];
-                    }
-                    field.selectProps = { renderInPortal: true };
-                    break;
-
-                case 'number':
-                    field.type = 'number';
-                    field.inputProps = {
-                        type: 'number',
-                        step: argDef.step || 0.1,
-                        min: argDef.min,
-                        max: argDef.max
-                    };
-                    break;
-
-                case 'boolean':
-                    field.type = 'checkbox';
-                    break;
-
-                default:
-                    field.type = 'input';
-                    field.inputProps = { type: 'text' };
+            if (defaultValue !== undefined && newConfig[key] === undefined) {
+                newConfig[key] = defaultValue;
+                hasChanges = true;
             }
-
-            const defaultValue = argDef.default ?? argDef.value;
-            if (defaultValue !== undefined && config[key] === undefined) {
-                setConfig((prev) => ({ ...prev, [key]: defaultValue }));
-            }
-
-            return field;
         });
+
+        if (hasChanges) {
+            setConfig(newConfig);
+        }
+    }, [availableArguments]);
+
+    const configFields = useMemo(() => {
+        return availableArguments
+            .filter((argDef: any) => argDef.value === undefined)
+            .map((argDef: any) => {
+                const key = argDef.argument;
+                const field: any = {
+                    key,
+                    label: argDef.label || key,
+                    fieldKey: key
+                };
+
+                switch (argDef.type) {
+                    case 'select':
+                        field.type = 'select';
+                        field.options = (argDef.options || []).map((opt: any) => ({
+                            value: opt.key,
+                            title: opt.label
+                        }));
+                        field.selectProps = { renderInPortal: true };
+                        break;
+
+                    case 'frame':
+                        field.options = (trajectory?.frames || []).map((frame: any, index: number) => ({
+                            value: String(frame.timestep),
+                            title: `Frame ${index + 1} (Time ${frame.timestep})`
+                        }));
+                        if (field.options.length === 0) {
+                            field.options = [{ value: '0', title: 'Default(First Frame)' }];
+                        }
+                        field.selectProps = { renderInPortal: true };
+                        break;
+
+                    case 'number':
+                        field.type = 'number';
+                        field.inputProps = {
+                            type: 'number',
+                            step: argDef.step || 0.1,
+                            min: argDef.min,
+                            max: argDef.max
+                        };
+                        break;
+
+                    case 'boolean':
+                        field.type = 'checkbox';
+                        break;
+
+                    default:
+                        field.type = 'input';
+                        field.inputProps = { type: 'text' };
+                }
+
+                return field;
+            });
     }, [availableArguments, config, trajectory]);
 
     const handleFieldChange = (key: string, value: any) => {

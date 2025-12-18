@@ -116,7 +116,7 @@ export function getAvailableExpressions(
 
     for (const ancestor of ancestors) {
         const nodeType = ancestor.type as NodeType;
-        const nodeName = (ancestor.data.name as string) || ancestor.id;
+        const nodeName = ancestor.id;
         const schema = NODE_OUTPUT_SCHEMAS[nodeType];
 
         if (!schema) continue;
