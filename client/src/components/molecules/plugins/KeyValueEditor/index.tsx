@@ -16,7 +16,6 @@ interface KeyValueEditorProps {
     valueLabel?: string;
     keyPlaceholder?: string;
     valuePlaceholder?: string;
-    addButtonText?: string;
     description?: string;
     // Expression support
     expressionEnabled?: boolean;
@@ -34,20 +33,19 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
     valueLabel = 'Value',
     keyPlaceholder = 'key',
     valuePlaceholder = 'value',
-    addButtonText = 'Add Item',
     description,
     expressionEnabled = false,
     expressionNodeId
 }) => {
     return (
-        <Container className="d-flex column gap-05">
+        <Container className="d-flex column gap-05 items-start">
             {description && (
                 <Paragraph className="kv-editor-description font-size-1">{description}</Paragraph>
             )}
 
             {entries.map(([key, value], index) => (
-                <Container key={index} className="d-flex gap-05 items-start">
-                    <Container className="flex-1 d-flex column">
+                <Container key={index} className="d-flex gap-05 w-max content-between items-center">
+                    <Container className="d-flex column">
                         {index === 0 && <label className="kv-editor-label font-weight-5">{keyLabel}</label>}
                         <FormField
                             label=""
@@ -60,7 +58,7 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
                             expressionNodeId={expressionNodeId}
                         />
                     </Container>
-                    <Container className="flex-1 d-flex column">
+                    <Container className="d-flex column">
                         {index === 0 && <label className="kv-editor-label font-weight-5">{valueLabel}</label>}
                         <FormField
                             label=""
@@ -85,10 +83,6 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
                     </Button>
                 </Container>
             ))}
-
-            <Button variant='ghost' intent='neutral' size='sm' leftIcon={<TbPlus size={12} />} onClick={onAdd}>
-                {addButtonText}
-            </Button>
         </Container>
     );
 };

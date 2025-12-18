@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { gsap } from 'gsap';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Trash2 } from 'lucide-react';
 import './CollapsibleSection.css';
 import Title from '@/components/primitives/Title';
 import Container from '@/components/primitives/Container';
@@ -10,15 +10,18 @@ interface CollapsibleSectionProps {
   children: React.ReactNode;
   defaultExpanded?: boolean;
   className?: string;
+  onDelete?: () => void;
 }
 
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   title,
   children,
   defaultExpanded = false,
-  className = ''
+  className = '',
+  onDelete
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [isHovered, setIsHovered] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const arrowRef = useRef<HTMLDivElement>(null);
 
@@ -78,24 +81,55 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
     setIsExpanded(!isExpanded);
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.();
+  };
+
   return (
     <Container className={`d-flex column mb-1-5 ${className}`}>
       <Container
         className="d-flex content-between items-center cursor-pointer editor-sidebar-item-header-container"
         onClick={handleToggle}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{ cursor: 'pointer' }}
       >
         <Title className="font-size-3 font-weight-6 color-primary u-select-none">{title}</Title>
-        <Container
-          ref={arrowRef}
-          className="d-flex flex-center editor-sidebar-item-arrow"
-        >
-          <ChevronDown size={20} />
+        <Container className="d-flex items-center gap-025">
+          {onDelete && isHovered && (
+            <Container
+              onClick={handleDelete}
+              style={{
+                padding: '0.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'var(--color-text-muted)',
+                transition: 'color 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--accent-red, #ff6b6b)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--color-text-muted)';
+              }}
+            >
+              <Trash2 size={16} />
+            </Container>
+          )}
+          <Container
+            ref={arrowRef}
+            className="d-flex flex-center editor-sidebar-item-arrow"
+          >
+            <ChevronDown size={20} />
+          </Container>
         </Container>
       </Container>
       <Container
         ref={bodyRef}
-        className="editor-sidebar-item-body-container"
+        className="editor-sidebar-item-body-container d-flex column gap-1"
         style={{ overflow: 'hidden' }}
       >
         {children}

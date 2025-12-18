@@ -6,6 +6,10 @@
     outline: none;
 }
 
+.volt-select.labeled-input {
+    width: 160px !important;
+}
+
 .volt-select-trigger {
     padding: .6rem .8rem;
     border-radius: 5rem;
@@ -13,6 +17,10 @@
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
     border: 1px solid var(--color-border);
     text-align: left;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .volt-select:focus-visible .volt-select-trigger {
@@ -29,6 +37,9 @@
 .volt-select-value {
     flex: 1 1 auto;
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .volt-select-chevron {

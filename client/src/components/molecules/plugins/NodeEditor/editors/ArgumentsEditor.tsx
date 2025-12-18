@@ -5,6 +5,7 @@ import FormField from '@/components/molecules/form/FormField';
 import KeyValueEditor from '@/components/molecules/plugins/KeyValueEditor';
 import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import Button from '@/components/primitives/Button';
+import Container from '@/components/primitives/Container';
 import { ARGUMENT_TYPE_OPTIONS } from '@/utilities/plugins/node-types';
 import type { IArgumentsData, IArgumentDefinition, ArgumentType } from '@/types/plugin';
 import { TbPlus, TbTrash } from 'react-icons/tb';
@@ -92,6 +93,7 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                     key={index}
                     title={arg.label || arg.argument || `Argument ${index + 1} `}
                     defaultExpanded={index === 0}
+                    onDelete={() => removeArgument(index)}
                 >
                     <FormField
                         label='Argument Key'
@@ -212,10 +214,22 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                         </>
                     )}
 
+
                     {/* Select-specific fields - options */}
                     {arg.type === 'select' && (
-                        <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: 'var(--gray-50)', borderRadius: '6px' }}>
-                            <Title className='font-size-3' style={{ fontWeight: 600, color: 'var(--gray-700)', marginBottom: '0.5rem' }}>Options</Title>
+                        <div>
+                            <Container className='d-flex w-max content-between items-center' style={{ marginBottom: '0.5rem' }}>
+                                <Title className='font-size-3' style={{ fontWeight: 600, color: 'var(--gray-700)' }}>Options</Title>
+                                <Button
+                                    variant='ghost'
+                                    intent='neutral'
+                                    iconOnly
+                                    size='sm'
+                                    onClick={handleAddOption(index, arg.options || [])}
+                                >
+                                    <TbPlus size={16} />
+                                </Button>
+                            </Container>
                             <KeyValueEditor
                                 entries={optionsToEntries(arg.options || [])}
                                 onAdd={handleAddOption(index, arg.options || [])}
@@ -226,22 +240,9 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                                 valueLabel="Label"
                                 keyPlaceholder="option_key"
                                 valuePlaceholder="Option Label"
-                                addButtonText="Add Option"
                             />
                         </div>
                     )}
-
-                    <Button
-                        variant='ghost'
-                        intent='danger'
-                        size='sm'
-                        align='start'
-                        leftIcon={<TbTrash size={14} />}
-                        onClick={() => removeArgument(index)}
-                        style={{ marginTop: '0.5rem' }}
-                    >
-                        Remove Argument
-                    </Button>
                 </CollapsibleSection>
             ))}
 

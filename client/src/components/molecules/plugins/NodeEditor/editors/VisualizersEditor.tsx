@@ -28,7 +28,7 @@ const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
     const { entries, handleAdd, handleRemove, handleKeyChange, handleValueChange } =
         useKeyValueHandlers(updateListing, listing, 'column', 'Column Title');
 
-    return(
+    return (
         <>
             <CollapsibleSection title='Visualization Options' defaultExpanded>
                 <FormField
@@ -58,7 +58,6 @@ const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
                     valueLabel="Column Label"
                     keyPlaceholder="{{ Schema.definition.field }}"
                     valuePlaceholder="Display Name"
-                    addButtonText="Add Column"
                     description="Map data fields to table columns. Use {{ }} expressions to reference upstream node data. Type {{ in the Field Key to see available data."
                     expressionEnabled
                     expressionNodeId={node.id}
