@@ -93,7 +93,7 @@ const DashboardPage: React.FC = memo(() => {
                 <Container className='d-flex column dashboard-body-left-container gap-2 h-max'>
                     <Container className='scene-preview-container p-relative w-max vh-max overflow-hidden'>
                         {isProcessing ? (
-                            <Container style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 20, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Container className='d-flex items-center gap-05 top-1 left-1 z-20 p-absolute'>
                                 <ProcessingLoader
                                     className='scene-preview-processing'
                                     message="Your trajectory is being processed"

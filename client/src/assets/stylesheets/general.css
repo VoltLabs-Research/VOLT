@@ -139,8 +139,30 @@
     overflow: hidden;
 }
 
+/** Inset-related **/
 .inset-0 {
     inset: 0;
+}
+
+.top-1{
+    top: 1rem;
+}
+
+.left-1{
+    left: 1rem;
+}
+
+.bottom-1{
+    bottom: 1rem;
+}
+
+.right-1{
+    right: 1rem;
+}
+
+/** Z-index **/
+.z-20{
+    z-index: 20;
 }
 
 /** Flexbox **/

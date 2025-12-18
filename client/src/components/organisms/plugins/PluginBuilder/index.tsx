@@ -17,6 +17,7 @@ import Paragraph from '@/components/primitives/Paragraph';
 import '@xyflow/react/dist/style.css';
 import './PluginBuilder.css';
 import Title from '@/components/primitives/Title';
+import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';
 
 const nodeTypesList = Object.values(NODE_CONFIGS);
 
@@ -189,6 +190,16 @@ const PluginBuilder = () => {
                 className='h-max w-max'
                 ref={reactFlowWrapper}
             >
+                {saveStatus === 'saving' && (
+                    <Container className='d-flex items-center gap-05 bottom-1 right-1 z-20 p-absolute'>
+                        <ProcessingLoader
+                            message='Saving workflow...'
+                            completionRate={0}
+                            isVisible={true}
+                        />
+                    </Container>
+                )}
+
                 <ReactFlow
                     nodes={nodes}
                     edges={edges}
