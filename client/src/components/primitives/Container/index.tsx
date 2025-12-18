@@ -1,15 +1,17 @@
 import React, { forwardRef } from 'react';
 
-interface ContainerProps extends React.HTMLAttributes<HTMLDivElement>{
+interface ContainerProps extends React.HTMLAttributes<HTMLDivElement> {
     children?: React.ReactNode;
 };
 
-const Container = ({ children, className, ...props }: ContainerProps) => {
+const Container = forwardRef<HTMLDivElement, ContainerProps>(({ children, className = '', ...props }, ref) => {
     return (
-        <div className={`volt-container ${className}`} {...props}>
+        <div ref={ref} className={`volt-container ${className}`} {...props}>
             {children}
         </div>
     );
-};
+});
 
-export default forwardRef(Container);
+Container.displayName = 'Container';
+
+export default Container;
