@@ -4,43 +4,30 @@ import DocumentListing, { type ColumnConfig } from '@/components/organisms/commo
 import useTeamStore from '@/stores/team/team';
 import analysisConfigApi from '@/services/api/analysis-config';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
+import useAnalysisConfigStore from '@/stores/analysis-config';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';
 
 const AnalysisConfigsListing = () => {
     const team = useTeamStore((state) => state.selectedTeam);
-    const [data, setData] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [page, setPage] = useState<number>(1);
-    const [total, setTotal] = useState<number>(0);
-    const [limit] = useState<number>(20);
+    const analysisConfigs = useAnalysisConfigStore((state) => state.analysisConfigs);
+    const getAnalysisConfigs = useAnalysisConfigStore((state) => state.getAnalysisConfigs);
+    // Use store loading states
+    const isListingLoading = useAnalysisConfigStore((state) => state.isListingLoading);
+    const isFetchingMore = useAnalysisConfigStore((state) => state.isFetchingMore);
+    const listingMeta = useAnalysisConfigStore((state) => state.listingMeta);
 
     const searchQuery = useDashboardSearchStore((s) => s.query);
 
+    // Initial fetch handled by DashboardLayout or here if missing
     useEffect(() => {
         if (!team?._id) return;
-
-        const controller = new AbortController();
-        setIsLoading(true);
-
-        (async () => {
-            try {
-                const res = await analysisConfigApi.getByTeamId(
-                    team._id,
-                    { page: 1, limit, q: searchQuery }
-                ) as any;
-
-                setData(res?.configs ?? []);
-                setTotal(res?.total ?? 0);
-                setPage(1);
-            } catch (_e) {
-                /* noop */
-            } finally {
-                setIsLoading(false);
-            }
-        })();
-
-        return () => controller.abort();
-    }, [team?._id, limit, searchQuery]);
+        // Only fetch if empty to avoid double fetch with DashboardLayout, 
+        // OR rely on DashboardLayout and just do nothing here?
+        // To be safe against direct navigation, check if data exists.
+        if (analysisConfigs.length === 0) {
+            getAnalysisConfigs(team._id, { page: 1, limit: 20 });
+        }
+    }, [team?._id, getAnalysisConfigs, analysisConfigs.length]);
 
     const handleMenuAction = useCallback(async (action: string, item: any) => {
         switch (action) {
@@ -52,19 +39,17 @@ const AnalysisConfigsListing = () => {
                     return;
                 }
 
-                setData((prev) => prev.filter((x) => x._id !== item._id));
-
                 try {
                     await analysisConfigApi.delete(item._id);
-                } catch (_e) {
-                    setData((prev) => {
-                        const exists = prev.find((x) => x._id === item._id);
-                        return exists ? prev : [item, ...prev];
-                    });
+                    // Refresh current list (re-fetch page 1 or current set?)
+                    // Safest is to reset to page 1
+                    if (team?._id) getAnalysisConfigs(team._id, { page: 1, force: true });
+                } catch (e) {
+                    console.error('Failed to delete analysis config', e);
                 }
                 break;
         }
-    }, []);
+    }, [team?._id, getAnalysisConfigs]);
 
     const getMenuOptions = useCallback(
         (item: any) => ([
@@ -128,43 +113,28 @@ const AnalysisConfigsListing = () => {
         }
     ], []);
 
+    const handleLoadMore = useCallback(async () => {
+        if (!team?._id || !listingMeta.hasMore || isFetchingMore) return;
+        await getAnalysisConfigs(team._id, {
+            page: listingMeta.page + 1,
+            limit: listingMeta.limit,
+            append: true
+        });
+    }, [team?._id, listingMeta, isFetchingMore, getAnalysisConfigs]);
+
     return (
         <DocumentListing
             title="Analysis Configs"
-            breadcrumbs={['Dashboard', 'Analysis Configs']}
             columns={columns}
-            data={data}
-            isLoading={isLoading}
+            data={analysisConfigs}
+            isLoading={isListingLoading}
             onMenuAction={handleMenuAction}
             getMenuOptions={getMenuOptions}
             emptyMessage="No analysis configs found"
             enableInfinite
-            hasMore={data.length < total}
-            isFetchingMore={isLoading && data.length > 0}
-            onLoadMore={useCallback(async () => {
-                if (!team?._id) return;
-                if (data.length >= total) return;
-
-                const next = page + 1;
-                setIsLoading(true);
-
-                try {
-                    const res = await analysisConfigApi.getByTeamId(
-                        team._id,
-                        { page: next, limit, q: searchQuery }
-                    ) as any;
-
-                    const nextRows = res?.configs ?? [];
-
-                    setData((prev) => [...prev, ...nextRows]);
-                    setTotal(res?.total ?? total);
-                    setPage(next);
-                } catch (_e) {
-                    /* noop */
-                } finally {
-                    setIsLoading(false);
-                }
-            }, [team?._id, data.length, total, page, limit, searchQuery])}
+            hasMore={listingMeta.hasMore}
+            isFetchingMore={isFetchingMore}
+            onLoadMore={handleLoadMore}
         />
     );
 };

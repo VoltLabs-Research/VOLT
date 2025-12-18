@@ -25,10 +25,15 @@ import type { Analysis } from '@/types/models';
 import type { AnalysisConfigStore } from '@/types/stores/analysis-config';
 import analysisConfigApi from '@/services/api/analysis-config';
 import { createAsyncAction } from '@/utilities/asyncAction';
+import { calculatePaginationState, initialListingMeta } from '@/utilities/pagination-utils';
 
 const initialState = {
   analysisConfig: null as Analysis | null,
+  analysisConfigs: [] as Analysis[],
+  listingMeta: initialListingMeta,
   isLoading: true,
+  isFetchingMore: false,
+  isListingLoading: false,
   error: null as string | null,
   dislocationsLoading: false,
   analysisDislocationsById: {} as Record<string, any[]>,
@@ -43,13 +48,42 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
   const asyncAction = createAsyncAction(set, get);
 
   return {
-      ...initialState,
+    ...initialState,
+
+    getAnalysisConfigs: (teamId: string, opts = {}) => {
+      const { page = 1, limit = 20, search = '', append = false } = opts;
+      if (!teamId) return Promise.reject("No team ID provided");
+
+      return asyncAction(() => analysisConfigApi.getByTeamId(teamId, { page, limit, q: search }), {
+        loadingKey: 'isListingLoading',
+        onSuccess: (data, state) => {
+          const { data: analysisConfigs, listingMeta } = calculatePaginationState({
+            newData: (data.configs || []) as unknown as Analysis[],
+            currentData: state.analysisConfigs,
+            page,
+            limit,
+            append,
+            totalFromApi: data.total,
+            previousTotal: state.listingMeta.total
+          });
+
+          return {
+            analysisConfigs,
+            listingMeta,
+            error: null
+          };
+        },
+        onError: (error) => ({
+          error: error?.message || 'Failed to load analysis configs'
+        })
+      });
+    },
 
     async getDislocationsByAnalysisId(analysisId: string) {
       const req = analysisConfigApi.getDislocations(analysisId);
       set((state) => ({
         dislocationsLoadingById: {
-            ...state.dislocationsLoadingById,
+          ...state.dislocationsLoadingById,
           [analysisId]: true
         }
       }));
@@ -61,11 +95,11 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
           const currentLoading = state.dislocationsLoadingById || {};
           return {
             analysisDislocationsById: {
-                ...current,
+              ...current,
               [analysisId]: res ?? []
             },
             dislocationsLoadingById: {
-                ...currentLoading,
+              ...currentLoading,
               [analysisId]: false
             }
           };
@@ -75,11 +109,11 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
           const currentLoading = state.dislocationsLoadingById || {};
           return {
             analysisDislocationsById: {
-                ...current,
+              ...current,
               [analysisId]: []
             },
             dislocationsLoadingById: {
-                ...currentLoading,
+              ...currentLoading,
               [analysisId]: false
             }
           };

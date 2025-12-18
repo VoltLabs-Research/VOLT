@@ -3,8 +3,17 @@ import type { RasterQuery, RasterPage } from '@/types/raster';
 
 export interface TrajectoryState {
     trajectories: Trajectory[];
+    dashboardTrajectories: Trajectory[];
+    listingMeta: {
+        page: number;
+        limit: number;
+        total: number;
+        hasMore: boolean;
+    };
     trajectory: Trajectory | null;
     isLoading: boolean;
+    isFetchingMore: boolean;
+    isDashboardTrajectoriesLoading: boolean;
     isSavingPreview: boolean;
     uploadingFileCount: number;
     activeUploads: Record<string, { id: string; uploadProgress: number; processingProgress: number; status: 'uploading' | 'processing' }>;
@@ -30,7 +39,8 @@ export interface TrajectoryState {
 }
 
 export interface TrajectoryActions {
-    getTrajectories: (teamId?: string, opts?: { force?: boolean }) => Promise<void>;
+    getTrajectories: (teamId?: string, opts?: { force?: boolean; page?: number; limit?: number; search?: string; append?: boolean }) => Promise<void>;
+    getDashboardTrajectories: (teamId?: string, opts?: { force?: boolean }) => Promise<void>;
     getTrajectoryById: (id: string) => Promise<void>;
     createTrajectory: (formData: FormData, teamId?: string, onProgress?: (progress: number) => void, existingUploadId?: string) => Promise<void>;
     updateTrajectoryById: (id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => Promise<void>;

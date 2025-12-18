@@ -7,40 +7,26 @@ import pluginApi, { type IPluginRecord } from '@/services/api/plugin';
 import { PluginStatus } from '@/types/plugin';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';
+import usePluginStore from '@/stores/plugins/plugin';
 import useTeamStore from '@/stores/team/team';
 import './Plugins.css';
 
 const PluginsListing = () => {
     const navigate = useNavigate();
-    const [data, setData] = useState<IPluginRecord[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [page, setPage] = useState<number>(1);
-    const [total, setTotal] = useState<number>(0);
-    const [limit] = useState<number>(20);
-
+    const plugins = usePluginStore((s) => s.plugins);
+    const fetchPlugins = usePluginStore((s) => s.fetchPlugins);
+    const isLoading = usePluginStore((s) => s.loading);
+    const isFetchingMore = usePluginStore((s) => s.isFetchingMore);
+    const listingMeta = usePluginStore((s) => s.listingMeta);
     const searchQuery = useDashboardSearchStore((s) => s.query);
     const selectedTeam = useTeamStore((s) => s.selectedTeam);
 
-    const fetchPlugins = useCallback(async (pageNum: number, append: boolean = false) => {
-        setIsLoading(true);
-        try {
-            const res = await pluginApi.getPlugins({ page: pageNum, limit, search: searchQuery });
-            const plugins = res.data ?? [];
-            const totalCount = res.results?.total ?? plugins.length;
-
-            setData((prev) => (append ? [...prev, ...plugins] : plugins));
-            setTotal(totalCount);
-            setPage(pageNum);
-        } catch (e) {
-            console.error('Failed to fetch plugins:', e);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [limit, searchQuery]);
-
+    // Initial fetch handled by DashboardLayout mostly, but ensure here
     useEffect(() => {
-        fetchPlugins(1, false);
-    }, [fetchPlugins]);
+        if (plugins.length === 0) {
+            fetchPlugins({ page: 1, limit: 20 });
+        }
+    }, [fetchPlugins, plugins.length]);
 
     const handleMenuAction = useCallback(async (action: string, item: IPluginRecord) => {
         switch (action) {
@@ -83,29 +69,22 @@ const PluginsListing = () => {
             case 'publish':
                 try {
                     await pluginApi.publishPlugin(item._id);
-                    setData((prev) =>
-                        prev.map((p) =>
-                            p._id === item._id ? { ...p, status: PluginStatus.PUBLISHED } : p
-                        )
-                    );
+                    fetchPlugins({ page: 1, force: true });
                 } catch (e) {
                     console.error('Failed to publish plugin:', e);
                 }
                 break;
             case 'delete':
                 if (!window.confirm('Delete this plugin? This cannot be undone.')) return;
-                setData((prev) => prev.filter((x) => x._id !== item._id));
                 try {
                     await pluginApi.deletePlugin(item._id);
+                    fetchPlugins({ page: 1, force: true });
                 } catch (e) {
-                    setData((prev) => {
-                        const exists = prev.find((x) => x._id === item._id);
-                        return exists ? prev : [item, ...prev];
-                    });
+                    console.error('Failed to delete plugin:', e);
                 }
                 break;
         }
-    }, [navigate, selectedTeam?._id]);
+    }, [navigate, selectedTeam?._id, fetchPlugins]);
 
     const getMenuOptions = useCallback((item: IPluginRecord) => {
         const options: Array<[string, React.ElementType, () => void]> = [
@@ -196,21 +175,27 @@ const PluginsListing = () => {
         }
     ], [handleRowClick]);
 
-    const breadcrumbs = ['Dashboard', 'Plugins'];
+    const handleLoadMore = useCallback(async () => {
+        if (!listingMeta.hasMore || isFetchingMore) return;
+        await fetchPlugins({
+            page: listingMeta.page + 1,
+            limit: listingMeta.limit,
+            append: true
+        });
+    }, [listingMeta, isFetchingMore, fetchPlugins]);
 
     return (
         <DocumentListing
             title='Plugins'
-            breadcrumbs={breadcrumbs}
             columns={columns}
-            data={data}
+            data={plugins}
             isLoading={isLoading}
             getMenuOptions={getMenuOptions}
             emptyMessage='No plugins found. Create your first plugin!'
             enableInfinite
-            hasMore={data.length < total}
-            isFetchingMore={isLoading && page > 1}
-            onLoadMore={() => fetchPlugins(page + 1, true)}
+            hasMore={listingMeta.hasMore}
+            isFetchingMore={isFetchingMore}
+            onLoadMore={handleLoadMore}
             createNew={{
                 buttonTitle: 'New Plugin',
                 onCreate: handleCreateNew

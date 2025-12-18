@@ -13,43 +13,29 @@ const TrajectoriesListing = () => {
     const deleteTrajectoryById = useTrajectoryStore((s) => s.deleteTrajectoryById)
     const team = useTeamStore((s) => s.selectedTeam)
     const isLoading = useTrajectoryStore((s) => s.isLoading)
+    const isFetchingMore = useTrajectoryStore((s) => s.isFetchingMore)
     const trajectories = useTrajectoryStore((s) => s.trajectories)
-    const [data, setData] = useState<any[]>([])
-    const [page, setPage] = useState<number>(1)
-    const [total, setTotal] = useState<number>(0)
-    const [limit] = useState<number>(50)
+    const listingMeta = useTrajectoryStore((s) => s.listingMeta)
 
     const searchQuery = useDashboardSearchStore((s) => s.query);
 
     useEffect(() => {
-        if(!team?._id) return;
-        // Keep store fetch for cache/other UI only when not searching
-        if(!searchQuery.trim()) {
-            getTrajectories(team._id);
+        if (!team?._id) return;
+        // Fetch handled by DashboardLayout prefetch, but ensure consistent state if missing
+        if (trajectories.length === 0) {
+            getTrajectories(team._id, { page: 1, limit: 20, search: searchQuery });
+        } else if (searchQuery) {
+            // If searching, we must fetch (store might cache non-search results)
+            getTrajectories(team._id, { page: 1, limit: 20, search: searchQuery, force: true });
         }
-        let canceled = false;
-        (async() => {
-            try{
-                const res = await trajectoryApi.getAllPaginated({
-                    teamId: team._id, page: 1, limit, sort: '-createdAt', populate: 'analysis,createdBy', q: searchQuery
-                });
-                if(canceled) return;
-                const rows = res?.data || [];
-                const totalResults = res?.total ?? rows.length;
-                setData(rows);
-                setTotal(totalResults);
-                setPage(1);
-            }catch(_e){ /* noop */ }
-        })();
-        return() => { canceled = true; };
-    }, [team?._id, limit, searchQuery])
+    }, [team?._id, searchQuery, getTrajectories, trajectories.length])
 
-    useEffect(() => {
-        if(!isLoading && !searchQuery.trim()) setData(trajectories || [])
-    }, [isLoading, trajectories, searchQuery])
-
-    const handleMenuAction = useCallback(async(action: string, item: any) => {
-        if(action === 'delete') await deleteTrajectoryById(item._id)
+    const handleMenuAction = useCallback(async (action: string, item: any) => {
+        if (action === 'delete') {
+            if (window.confirm('Delete this trajectory?')) {
+                await deleteTrajectoryById(item._id)
+            }
+        }
     }, [deleteTrajectoryById]);
 
     const getMenuOptions = useCallback((item: any) => ([
@@ -114,33 +100,29 @@ const TrajectoriesListing = () => {
         }
     ], [])
 
-    return(
+    const handleLoadMore = useCallback(async () => {
+        if (!team?._id || !listingMeta.hasMore || isFetchingMore) return;
+        await getTrajectories(team._id, {
+            page: listingMeta.page + 1,
+            limit: listingMeta.limit,
+            search: searchQuery,
+            append: true
+        });
+    }, [team?._id, listingMeta, isFetchingMore, getTrajectories, searchQuery]);
+
+    return (
         <DocumentListing
             title='Trajectories'
-            breadcrumbs={['Dashboard', 'Trajectories']}
             columns={columns}
-            data={data}
+            data={trajectories}
             isLoading={isLoading}
             onMenuAction={handleMenuAction}
             getMenuOptions={getMenuOptions}
             emptyMessage='No trajectories found'
             enableInfinite
-            hasMore={data.length < total}
-            isFetchingMore={isLoading && data.length > 0}
-            onLoadMore={useCallback(async() => {
-                if(!team?._id) return;
-                if(data.length >= total) return;
-                const next = page + 1;
-                try{
-                    const res = await trajectoryApi.getAllPaginated({
-                        teamId: team._id, page: next, limit, sort: '-createdAt', populate: 'analysis,createdBy', q: searchQuery
-                    });
-                    const rows = res?.data || [];
-                    setData((prev) => [...prev, ...rows]);
-                    setTotal(res?.total ?? total);
-                    setPage(next);
-                }catch(_e){ /* noop */ }
-            }, [team?._id, data.length, total, page, limit, searchQuery])}
+            hasMore={listingMeta.hasMore}
+            isFetchingMore={isFetchingMore}
+            onLoadMore={handleLoadMore}
         />
     )
 }

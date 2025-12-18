@@ -22,6 +22,7 @@
 
 import { create } from 'zustand';
 import { createAsyncAction } from '@/utilities/asyncAction';
+import { calculatePaginationState } from '@/utilities/pagination-utils';
 import { extractErrorMessage } from '@/utilities/error-extractor';
 import type { Trajectory } from '@/types/models';
 import { v4 as uuidv4 } from 'uuid';
@@ -33,9 +34,18 @@ import trajectoryApi from '@/services/api/trajectory';
 
 const initialState: TrajectoryState = {
     trajectories: [],
+    dashboardTrajectories: [],
+    listingMeta: {
+        page: 1,
+        limit: 20,
+        total: 0,
+        hasMore: false
+    },
     isAnalysisLoading: true,
     trajectory: null,
     isLoading: true,
+    isFetchingMore: false,
+    isDashboardTrajectoriesLoading: true,
     isSavingPreview: false,
     uploadingFileCount: 0,
     activeUploads: {},
@@ -89,9 +99,13 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
 
     const updateTrajectoryInList = (id: string, updates: Partial<Trajectory>) => {
         const currentTrajectories = get().trajectories;
+        const currentDashboardTrajectories = get().dashboardTrajectories;
         const currentTrajectory = get().trajectory;
         return {
             trajectories: currentTrajectories.map(trajectory =>
+                trajectory._id === id ? { ...trajectory, ...updates } : trajectory
+            ),
+            dashboardTrajectories: currentDashboardTrajectories.map(trajectory =>
                 trajectory._id === id ? { ...trajectory, ...updates } : trajectory
             ),
             trajectory: currentTrajectory?._id === id
@@ -102,9 +116,11 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
 
     const removeTrajectoryFromList = (id: string) => {
         const currentTrajectories = get().trajectories;
+        const currentDashboardTrajectories = get().dashboardTrajectories;
         const currentTrajectory = get().trajectory;
         return {
             trajectories: currentTrajectories.filter(t => t._id !== id),
+            dashboardTrajectories: currentDashboardTrajectories.filter(t => t._id !== id),
             trajectory: currentTrajectory?._id === id ? null : currentTrajectory
         };
     };
@@ -114,27 +130,76 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
     return {
         ...initialState,
 
-        getTrajectories: (teamId?: string, opts?: { force?: boolean }) => {
+        getTrajectories: (teamId?: string, opts = {}) => {
+            const { force = false, page = 1, limit = 20, search = '', append = false } = opts;
             const key = keyForTeam(teamId);
-            const force = !!opts?.force;
             const cached = get().cache[key];
-            if (cached && !force) {
+
+            // If using cache and not forcing refresh/append
+            if (cached && !force && !append && page === 1 && !search) {
                 set({ trajectories: cached, isLoading: false, error: null });
                 return Promise.resolve();
             }
 
-            return asyncAction(() => trajectoryApi.getAll({ teamId, populate: 'analysis,createdBy' }), {
-                loadingKey: 'isLoadingTrajectories',
-                onSuccess: (list) => {
-                    const nextCache = { ...get().cache, [key]: list };
+            if (append) {
+                if (get().isFetchingMore) return Promise.resolve();
+                set({ isFetchingMore: true });
+            } else {
+                set({ isLoading: true });
+            }
+
+            return asyncAction(() => trajectoryApi.getAllPaginated({
+                teamId,
+                populate: 'analysis,createdBy',
+                page,
+                limit,
+                q: search
+            }), {
+                loadingKey: append ? 'isFetchingMore' : 'isLoadingTrajectories',
+                onSuccess: (response) => {
+                    const { data: nextList, listingMeta } = calculatePaginationState({
+                        newData: response.data || [],
+                        currentData: get().trajectories,
+                        page,
+                        limit,
+                        append,
+                        totalFromApi: response.total,
+                        previousTotal: get().listingMeta.total
+                    });
+
+                    const nextCache = { ...get().cache, [key]: nextList };
+
                     return {
-                        trajectories: list,
+                        trajectories: nextList,
+                        listingMeta,
                         cache: nextCache,
-                        error: null
+                        error: null,
+                        isFetchingMore: false,
+                        isLoading: false
                     };
                 },
                 onError: (error) => {
                     const errorMessage = extractErrorMessage(error, 'Failed to load trajectories');
+                    return {
+                        error: errorMessage,
+                        isFetchingMore: false,
+                        isLoading: false
+                    };
+                }
+            });
+        },
+
+        getDashboardTrajectories: (teamId?: string, opts?: { force?: boolean }) => {
+            return asyncAction(() => trajectoryApi.getAll({ teamId, populate: 'analysis,createdBy', limit: 5 }), {
+                loadingKey: 'isDashboardTrajectoriesLoading',
+                onSuccess: (list) => {
+                    return {
+                        dashboardTrajectories: list,
+                        error: null
+                    };
+                },
+                onError: (error) => {
+                    const errorMessage = extractErrorMessage(error, 'Failed to load dashboard trajectories');
                     return {
                         error: errorMessage
                     };
@@ -212,9 +277,12 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 const currentList = get().cache[key] || get().trajectories;
                 const updated = [newTrajectory, ...currentList];
                 const updatedCache = { ...get().cache, [key]: updated };
+                const currentDashboardList = get().dashboardTrajectories;
+                const updatedDashboardList = [newTrajectory, ...currentDashboardList];
 
                 set(state => ({
                     trajectories: updated,
+                    dashboardTrajectories: updatedDashboardList,
                     cache: updatedCache,
                     error: null
                 }));
@@ -281,6 +349,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         deleteTrajectoryById: async (id: string, teamId?: string) => {
             const originalState = {
                 trajectories: get().trajectories,
+                dashboardTrajectories: get().dashboardTrajectories,
                 trajectory: get().trajectory,
                 cache: get().cache
             };

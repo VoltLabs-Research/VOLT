@@ -10,52 +10,34 @@ import Button from '@/components/primitives/Button';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import containerApi from '@/services/api/container';
+import useContainerStore, { type Container } from '@/stores/container';
 import './Containers.css';
 
-interface Container {
-    _id: string;
-    name: string;
-    image: string;
-    status: string;
-    containerId: string;
-    team: {
-        _id: string;
-        name: string;
-    };
-    createdAt: string;
-    ports?: Array<{ public: number; private: number }>;
-}
-
 const Containers: React.FC = () => {
-    const [containers, setContainers] = useState<Container[]>([]);
-    const [loading, setLoading] = useState(true);
+    const containers = useContainerStore((state) => state.containers);
+    const fetchContainers = useContainerStore((state) => state.fetchContainers);
+    // Align loading naming or use store directly
+    const loading = useContainerStore((state) => state.isLoading);
+    const isFetchingMore = useContainerStore((state) => state.isFetchingMore);
+    const listingMeta = useContainerStore((state) => state.listingMeta);
+
     const [terminalContainer, setTerminalContainer] = useState<Container | null>(null);
     const { showSuccess, showError } = useToast();
     const navigate = useNavigate();
     const searchQuery = useDashboardSearchStore((s) => s.query);
 
-    const fetchContainers = useCallback(async () => {
-        try {
-            const containers = await containerApi.getAll({ q: searchQuery });
-            setContainers(containers);
-        } catch (error) {
-            console.error('Failed to fetch containers:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [searchQuery]);
-
+    // Initial fetch handled by DashboardLayout, but good ensure logic
     useEffect(() => {
-        fetchContainers();
-        const interval = setInterval(fetchContainers, 5000);
-        return () => clearInterval(interval);
-    }, [fetchContainers]);
+        if (containers.length === 0) {
+            fetchContainers({ page: 1, limit: 20 });
+        }
+    }, [fetchContainers, containers.length]);
 
     const handleControl = async (container: Container, action: 'start' | 'stop') => {
         try {
             await containerApi.control(container._id, action);
             showSuccess(`Container ${action}ed successfully`);
-            fetchContainers();
+            fetchContainers({ page: 1, force: true });
         } catch (error: any) {
             showError(error.response?.data?.message || `Failed to ${action} container`);
         }
@@ -68,57 +50,60 @@ const Containers: React.FC = () => {
         try {
             await containerApi.delete(container._id);
             showSuccess('Container deleted successfully');
-            fetchContainers();
+            fetchContainers({ page: 1, force: true });
         } catch (error: any) {
             showError(error.response?.data?.message || 'Failed to delete container');
         }
     };
 
-    const handleMenuAction = useCallback(async (action: string, item: Container) => {
+    const handleMenuAction = useCallback(async (action: string, item: any) => {
+        // Cast item to Container
+        const container = item as Container;
         switch (action) {
             case 'view':
-                navigate(`/dashboard/containers/${item._id}`);
+                navigate(`/dashboard/containers/${container._id}`);
                 break;
             case 'terminal':
-                if (item.status === 'running') {
-                    setTerminalContainer(item);
+                if (container.status === 'running') {
+                    setTerminalContainer(container);
                 } else {
                     showError('Container must be running to open terminal');
                 }
                 break;
             case 'start':
-                await handleControl(item, 'start');
+                await handleControl(container, 'start');
                 break;
             case 'stop':
-                await handleControl(item, 'stop');
+                await handleControl(container, 'stop');
                 break;
             case 'delete':
-                await handleDelete(item);
+                await handleDelete(container);
                 break;
         }
-    }, [navigate, showError]);
+    }, [navigate, showError, fetchContainers]);
 
-    const getMenuOptions = useCallback((item: Container) => {
+    const getMenuOptions = useCallback((item: any) => {
+        const container = item as Container;
         const options: any[] = [
-            ['View Details', RiEyeLine, () => handleMenuAction('view', item)]
+            ['View Details', RiEyeLine, () => handleMenuAction('view', container)]
         ];
 
-        if (item.status === 'running') {
+        if (container.status === 'running') {
             options.push(
-                ['Open Terminal', RiTerminalLine, () => handleMenuAction('terminal', item)],
-                ['Stop', Square, () => handleMenuAction('stop', item)]
+                ['Open Terminal', RiTerminalLine, () => handleMenuAction('terminal', container)],
+                ['Stop', Square, () => handleMenuAction('stop', container)]
             );
         } else {
-            options.push(['Start', Play, () => handleMenuAction('start', item)]);
+            options.push(['Start', Play, () => handleMenuAction('start', container)]);
         }
 
-        options.push(['Delete', RiDeleteBin6Line, () => handleMenuAction('delete', item)]);
+        options.push(['Delete', RiDeleteBin6Line, () => handleMenuAction('delete', container)]);
 
         return options;
     }, [handleMenuAction]);
 
     const StatusBadgeContainer = ({ status }: { status: string }) => {
-        const statusLower = status.toLowerCase();
+        const statusLower = status?.toLowerCase() || 'unknown';
         // Map Docker container states to our badge system
         const statusMap: Record<string, string> = {
             running: 'ready',
@@ -192,11 +177,19 @@ const Containers: React.FC = () => {
         }
     ], []);
 
+    const handleLoadMore = useCallback(async () => {
+        if (!listingMeta.hasMore || isFetchingMore) return;
+        await fetchContainers({
+            page: listingMeta.page + 1,
+            limit: listingMeta.limit,
+            append: true
+        });
+    }, [listingMeta, isFetchingMore, fetchContainers]);
+
     return (
         <DashboardContainer pageName='Containers' className='d-flex column h-max'>
             <DocumentListing
-                title={`Containers(${containers.length})`}
-                breadcrumbs={['Dashboard', 'Containers']}
+                title={`Containers (${listingMeta.total || containers.length})`}
                 columns={columns}
                 data={containers}
                 isLoading={loading}
@@ -204,6 +197,10 @@ const Containers: React.FC = () => {
                 getMenuOptions={getMenuOptions}
                 emptyMessage='No containers found. Create one to get started.'
                 keyExtractor={(item) => item._id}
+                enableInfinite
+                hasMore={listingMeta.hasMore}
+                isFetchingMore={isFetchingMore}
+                onLoadMore={handleLoadMore}
                 createNew={{
                     buttonTitle: 'New Container',
                     onCreate: () => navigate('/dashboard/containers/new')

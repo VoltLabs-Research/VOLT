@@ -48,7 +48,7 @@ const pluginApi = {
         page?: number;
         limit?: number;
         search?: string
-    }): Promise<GetPluginResponse> => {
+    }): Promise<GetPluginsResponse> => {
         const response = await api.get<GetPluginResponse>('/plugins', { params });
         return response.data;
     },

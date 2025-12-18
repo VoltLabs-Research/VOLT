@@ -51,6 +51,7 @@ import { IoIosAdd } from 'react-icons/io';
 import TeamCreator from '@/components/organisms/team/TeamCreator';
 import TeamInvitePanel from '@/components/organisms/team/TeamInvitePanel';
 import SSHFileExplorer from '@/components/organisms/ssh/SSHFileExplorer';
+import useContainerStore from '@/stores/container';
 import Container from '@/components/primitives/Container';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
@@ -105,12 +106,15 @@ const DashboardLayout = () => {
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
+    const getDashboardTrajectories = useTrajectoryStore((state) => state.getDashboardTrajectories);
     const { notifications, loading, fetch, markAsRead, unreadCount, initializeSocket } = useNotificationStore();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const notificationBodyRef = useRef<HTMLDivElement | null>(null);
     const observedNotificationsRef = useRef<Set<string>>(new Set());
 
     const fetchPlugins = usePluginStore(state => state.fetchPlugins);
+    const fetchContainers = useContainerStore(state => state.fetchContainers);
+    const getAnalysisConfigs = useAnalysisConfigStore((state) => state.getAnalysisConfigs);
     const plugins = usePluginStore(state => state.plugins);
     const [analysesExpanded, setAnalysesExpanded] = useState(() => pathname.includes('/analysis-configs') || pathname.includes('/plugins/'));
     const [expandedPlugins, setExpandedPlugins] = useState<Set<string>>(() => new Set());
@@ -221,9 +225,13 @@ const DashboardLayout = () => {
     useEffect(() => {
         // Only load if we have a team and haven't loaded yet
         if (selectedTeam?._id && !teamsInitialized) {
-            getTrajectories(selectedTeam._id);
+            getTrajectories(selectedTeam._id, { page: 1, limit: 20 });
+            getDashboardTrajectories(selectedTeam._id);
+            fetchPlugins({ page: 1, limit: 100 });
+            getAnalysisConfigs(selectedTeam._id, { page: 1, limit: 20 });
+            fetchContainers({ page: 1, limit: 20 });
         }
-    }, [selectedTeam, getTrajectories, teamsInitialized]);
+    }, [selectedTeam, getTrajectories, getDashboardTrajectories, fetchPlugins, getAnalysisConfigs, fetchContainers, teamsInitialized]);
 
     useEffect(() => {
         getUserTeams();
@@ -783,6 +791,7 @@ const DashboardLayout = () => {
                     onImportSuccess={() => {
                         if (selectedTeam) {
                             getTrajectories(selectedTeam._id);
+                            getDashboardTrajectories(selectedTeam._id);
                         }
                     }}
                 />
