@@ -80,7 +80,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
         icon: 'TbEye',
         description: 'Results exposure',
         inputs: 1,
-        outputs: 1,
+        outputs: 2,
         allowedConnections: {
             from: [NodeType.ENTRYPOINT],
             to: [NodeType.SCHEMA, NodeType.EXPORT, NodeType.VISUALIZERS]

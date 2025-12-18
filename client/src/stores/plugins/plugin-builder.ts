@@ -5,6 +5,7 @@ import { NodeType, type IWorkflow } from '@/types/plugin';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import { createNode } from '@/utilities/plugins/node-factory';
 import pluginApi, { type IPluginRecord } from '@/services/api/plugin';
+import useTeamStore from '@/stores/team/team';
 
 type ValidationResult = {
     valid: boolean;
@@ -103,7 +104,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
     validationResult: null,
 
     setNodes(nodesOrUpdater: NodesUpdater) {
-        if(typeof nodesOrUpdater === 'function'){
+        if (typeof nodesOrUpdater === 'function') {
             set((state) => ({ nodes: nodesOrUpdater(state.nodes) }));
             return;
         }
@@ -112,7 +113,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
     },
 
     setEdges(edgesOrUpdater: EdgesUpdater) {
-        if(typeof edgesOrUpdater === 'function'){
+        if (typeof edgesOrUpdater === 'function') {
             set((state) => ({ edges: edgesOrUpdater(state.edges) }));
             return;
         }
@@ -131,48 +132,48 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
     validateConnection(connection: Connection) {
         const { nodes, edges } = get();
         const { source, target } = connection;
-        if((!source || !target) || (source === target)) return false;
+        if ((!source || !target) || (source === target)) return false;
 
         const sourceNode = nodes.find((node: Node) => node.id === source);
         const targetNode = nodes.find((node: Node) => node.id === target);
-        if(!sourceNode || !targetNode) return false;
+        if (!sourceNode || !targetNode) return false;
 
-        if(!sourceNode?.type || !targetNode?.type) return false;
+        if (!sourceNode?.type || !targetNode?.type) return false;
 
         const sourceConfig = NODE_CONFIGS[sourceNode.type as NodeType];
         const targetConfig = NODE_CONFIGS[targetNode.type as NodeType];
-        if(!sourceConfig || !targetConfig) return false;
+        if (!sourceConfig || !targetConfig) return false;
 
         const canConnectByType = sourceConfig.allowedConnections.to.includes(targetNode.type as NodeType);
-        if(!canConnectByType) return false;
+        if (!canConnectByType) return false;
 
         const alreadyConnected = edges.some((edge: Edge) => edge.source === source && edge.target === target);
-        if(alreadyConnected) return false;
+        if (alreadyConnected) return false;
 
         const targetInputLimit = typeof targetConfig.inputs === 'number' ? targetConfig.inputs : 1;
-        if(targetInputLimit !== -1){
+        if (targetInputLimit !== -1) {
             const targetInputCount = edges.filter((edge: Edge) => edge.target === target).length;
-            if(targetInputCount >= targetInputLimit) return false;
+            if (targetInputCount >= targetInputLimit) return false;
         }
 
         const sourceOutputLimit = sourceConfig.outputs;
-        if(sourceOutputLimit !== -1){
+        if (sourceOutputLimit !== -1) {
             const sourceOutputCount = edges.filter((edge: Edge) => edge.source === source).length;
-            if(sourceOutputCount >= sourceOutputLimit) return false;
+            if (sourceOutputCount >= sourceOutputLimit) return false;
         }
         return true;
     },
 
     onConnect(connection: Connection) {
         const { validateConnection } = get();
-        if(!validateConnection(connection)) return;
+        if (!validateConnection(connection)) return;
         const edge: Edge = {
             id: `e-${connection.source}-${connection.target}-${connection.sourceHandle ?? 's'}-${connection.targetHandle ?? 't'}`,
             source: connection.source!,
             target: connection.target!,
             sourceHandle: connection.sourceHandle ?? undefined,
             targetHandle: connection.targetHandle ?? undefined,
-                ...DEFAULT_EDGE_STYLE,
+            ...DEFAULT_EDGE_STYLE,
         };
         set((state) => ({ edges: addEdge(edge, state.edges) }));
     },
@@ -267,7 +268,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
                 target: edge.target,
                 sourceHandle: edge.sourceHandle ?? undefined,
                 targetHandle: edge.targetHandle ?? undefined,
-                    ...DEFAULT_EDGE_STYLE,
+                ...DEFAULT_EDGE_STYLE,
             })),
 
             selectedNode: null,
@@ -300,16 +301,17 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
         const { getWorkflow, currentPlugin } = get();
         set({ isSaving: true, saveError: null });
 
-        try{
+        try {
             const workflow = getWorkflow();
-            const saved = await pluginApi.saveWorkflow(workflow, currentPlugin?._id);
+            const teamId = useTeamStore.getState().selectedTeam?._id;
+            const saved = await pluginApi.saveWorkflow(workflow, currentPlugin?._id, teamId);
             set({
                 currentPlugin: saved,
                 isSaving: false,
                 saveError: null
             });
             return saved;
-        }catch(err){
+        } catch (err) {
             const msg = getErrorMessage(err, 'Failed to save workflow');
             set({ isSaving: false, saveError: msg });
             return null;
@@ -319,7 +321,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
     async loadPluginById(idOrSlug: string) {
         set({ isLoading: true, loadError: null });
 
-        try{
+        try {
             const plugin = await pluginApi.getPlugin(idOrSlug);
             get().loadWorkflow(plugin.workflow);
             set({
@@ -327,17 +329,17 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
                 isLoading: false,
                 loadError: null
             });
-        }catch(err){
+        } catch (err) {
             const msg = getErrorMessage(err, 'Failed to load plugin');
             set({ isLoading: false, loadError: msg });
         }
     },
 
-    async validateCurrentWorkflow(): Promise<any>{
+    async validateCurrentWorkflow(): Promise<any> {
         const { getWorkflow } = get();
         set({ isValidating: true });
 
-        try{
+        try {
             const workflow = getWorkflow();
             const result = await pluginApi.validateWorkflow(workflow);
             set({
@@ -345,7 +347,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
                 isValidating: false
             });
             return result;
-        }catch(err){
+        } catch (err) {
             const result: ValidationResult = {
                 valid: false,
                 errors: [getErrorMessage(err, 'Validation failed')],
@@ -357,20 +359,20 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
 
     async publishPlugin() {
         const { currentPlugin, validateCurrentWorkflow } = get();
-        if(!currentPlugin?._id){
+        if (!currentPlugin?._id) {
             set({ saveError: 'Plugin must be saved before publishing' });
             return null;
         }
 
         const validation = await validateCurrentWorkflow();
-        if(!validation.valid){
+        if (!validation.valid) {
             set({ saveError: `Cannot publish: ${validation.errors.join(', ')}` });
             return null;
         }
 
         set({ isSaving: true, saveError: null });
 
-        try{
+        try {
             const published = await pluginApi.publishPlugin(currentPlugin._id);
             set({
                 currentPlugin: published,
@@ -378,7 +380,7 @@ const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
                 saveError: null
             });
             return published;
-        }catch(err){
+        } catch (err) {
             const msg = getErrorMessage(err, 'Failed to publish plugin');
             set({ isSaving: false, saveError: msg });
             return null;

@@ -97,7 +97,8 @@ const pluginApi = {
     createPlugin: async (data: {
         slug?: string,
         workflow: IWorkflow,
-        status?: PluginStatus
+        status?: PluginStatus,
+        team?: string
     }): Promise<IPluginRecord> => {
         const response = await api.post<GetPluginResponse>('/plugins', data);
         return response.data.data;
@@ -158,12 +159,13 @@ const pluginApi = {
      */
     saveWorkflow: async (
         workflow: IWorkflow,
-        existingId?: string
+        existingId?: string,
+        teamId?: string
     ): Promise<IPluginRecord> => {
         if (existingId) {
             return pluginApi.updatePlugin(existingId, { workflow });
         }
-        return pluginApi.createPlugin({ workflow });
+        return pluginApi.createPlugin({ workflow, team: teamId });
     },
 
     /**

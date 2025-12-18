@@ -73,6 +73,14 @@ export default class PluginsController extends BaseController<IPlugin> {
 
     protected async onBeforeUpdate(data: Partial<IPlugin>) {
         console.log(data);
+        // Auto-generate slug from modifier name on update
+        if (data.workflow?.nodes) {
+            const modifierNode = data.workflow.nodes.find((node: IWorkflowNode) => node.type === NodeType.MODIFIER);
+            if (modifierNode?.data?.modifier?.name) {
+                data.slug = slugify(modifierNode.data.modifier.name);
+            }
+        }
+
         // Revalidate workflow on update
         if (data.workflow) {
             logger.info(`[PluginsController] onBeforeUpdate: Received ${data.workflow.nodes?.length} nodes, ${data.workflow.edges?.length} edges`);

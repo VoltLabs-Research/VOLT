@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RiDeleteBin6Line, RiEditLine } from 'react-icons/ri';
+import { RiDeleteBin6Line, RiEditLine, RiFileCopyLine } from 'react-icons/ri';
 import { TbRocket } from 'react-icons/tb';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
 import pluginApi, { type IPluginRecord } from '@/services/api/plugin';
 import { PluginStatus } from '@/types/plugin';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import useDashboardSearchStore from '@/stores/ui/dashboard-search';
+import useTeamStore from '@/stores/team/team';
 import './Plugins.css';
 
 const PluginsListing = () => {
@@ -18,6 +19,7 @@ const PluginsListing = () => {
     const [limit] = useState<number>(20);
 
     const searchQuery = useDashboardSearchStore((s) => s.query);
+    const selectedTeam = useTeamStore((s) => s.selectedTeam);
 
     const fetchPlugins = useCallback(async (pageNum: number, append: boolean = false) => {
         setIsLoading(true);
@@ -45,6 +47,39 @@ const PluginsListing = () => {
             case 'edit':
                 navigate(`/dashboard/plugins/builder?id=${item._id}`);
                 break;
+            case 'clone':
+                try {
+                    const originalPlugin = await pluginApi.getPlugin(item._id);
+                    const clonedNodes = originalPlugin.workflow.nodes.map(node => {
+                        if (node.type === 'modifier' && node.data.modifier) {
+                            return {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    modifier: {
+                                        ...node.data.modifier,
+                                        name: `${node.data.modifier.name || 'Plugin'} (Copy)`
+                                    }
+                                }
+                            };
+                        }
+                        return node;
+                    });
+                    const clonedWorkflow = {
+                        ...originalPlugin.workflow,
+                        nodes: clonedNodes
+                    };
+                    const clonedPlugin = await pluginApi.createPlugin({
+                        slug: `${item.slug}-copy-${Date.now()}`,
+                        workflow: clonedWorkflow,
+                        status: PluginStatus.DRAFT,
+                        team: selectedTeam?._id
+                    });
+                    navigate(`/dashboard/plugins/builder?id=${clonedPlugin._id}`);
+                } catch (e) {
+                    console.error('Failed to clone plugin:', e);
+                }
+                break;
             case 'publish':
                 try {
                     await pluginApi.publishPlugin(item._id);
@@ -70,11 +105,12 @@ const PluginsListing = () => {
                 }
                 break;
         }
-    }, [navigate]);
+    }, [navigate, selectedTeam?._id]);
 
     const getMenuOptions = useCallback((item: IPluginRecord) => {
         const options: Array<[string, React.ElementType, () => void]> = [
-            ['Edit', RiEditLine, () => handleMenuAction('edit', item)]
+            ['Edit', RiEditLine, () => handleMenuAction('edit', item)],
+            ['Clone', RiFileCopyLine, () => handleMenuAction('clone', item)]
         ];
 
         if (item.status !== 'published') {
