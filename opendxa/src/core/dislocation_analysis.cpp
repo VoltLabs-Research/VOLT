@@ -8,6 +8,7 @@
 #include <opendxa/analysis/analysis_context.h>
 #include <opendxa/analysis/cluster_connector.h>
 #include <opendxa/analysis/grain_segmentation.h>
+#include <opendxa/utilities/msgpack_writer.h>
 
 namespace OpenDXA{
 
@@ -920,12 +921,75 @@ json DislocationAnalysis::performGrainSegmentation(
             grainData["grains"].push_back(grainInfo);
         }
 
-        // Export msgpack data (binary format)
+        // Export atoms msgpack in AtomisticExporter-compatible format
+        // Format: map<"Grain_X", array<{id, pos[3]}>>
         std::string msgpackPath = outputFile + "_grains.msgpack";
-        std::vector<uint8_t> msgpackData = json::to_msgpack(grainData);
-        std::ofstream grainFile(msgpackPath, std::ios::binary);
-        grainFile.write(reinterpret_cast<const char*>(msgpackData.data()), msgpackData.size());
-        grainFile.close();
+        {
+            std::ofstream of(msgpackPath, std::ios::binary);
+            MsgpackWriter w(of);
+            
+            // Count atoms per grain
+            std::map<int, uint32_t> grainCounts;
+            for (int gid : grainIds) {
+                grainCounts[gid]++;
+            }
+            
+            // Write map header (number of grains + 1 for "Unassigned")
+            uint32_t numGroups = static_cast<uint32_t>(grainCounts.size());
+            w.write_map_header(numGroups);
+            
+            // Get sorted grain IDs for deterministic output
+            std::vector<int> sortedGrainIds;
+            for (const auto& kv : grainCounts) {
+                sortedGrainIds.push_back(kv.first);
+            }
+            std::sort(sortedGrainIds.begin(), sortedGrainIds.end());
+            
+            // Write each grain group
+            for (int gid : sortedGrainIds) {
+                // Key: "Grain_X" or "Unassigned" for gid=0
+                std::string key = (gid == 0) ? "Unassigned" : ("Grain_" + std::to_string(gid));
+                w.write_key(key);
+                
+                // Array of atoms
+                w.write_array_header(grainCounts[gid]);
+                
+                // Write atoms belonging to this grain
+                for (size_t i = 0; i < static_cast<size_t>(frame.natoms); ++i) {
+                    if (grainIds[i] != gid) continue;
+                    
+                    // atom object: {id, pos}
+                    w.write_map_header(2);
+                    w.write_key("id");
+                    w.write_uint(static_cast<uint64_t>(i));
+                    w.write_key("pos");
+                    w.write_array_header(3);
+                    if (i < frame.positions.size()) {
+                        const auto& p = frame.positions[i];
+                        w.write_double(p.x());
+                        w.write_double(p.y()); 
+                        w.write_double(p.z());
+                    } else {
+                        w.write_double(0.0);
+                        w.write_double(0.0);
+                        w.write_double(0.0);
+                    }
+                }
+            }
+            
+            of.flush();
+        }
+        
+        spdlog::info("Exported atoms msgpack to: {}", msgpackPath);
+
+        // Export grain metadata msgpack
+        std::string metaPath = outputFile + "_grains_meta.msgpack";
+        std::vector<uint8_t> metaMsgpack = json::to_msgpack(grainData);
+        std::ofstream metaFile(metaPath, std::ios::binary);
+        metaFile.write(reinterpret_cast<const char*>(metaMsgpack.data()), metaMsgpack.size());
+        metaFile.close();
+        
+        spdlog::info("Exported grain metadata msgpack to: {}", metaPath);
 
         result = grainData;
         result["is_failed"] = false;
