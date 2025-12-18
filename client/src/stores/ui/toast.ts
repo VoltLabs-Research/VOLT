@@ -12,8 +12,9 @@ export interface Toast {
 
 interface ToastState {
   toasts: Toast[];
-  addToast: (message: string, type: ToastType, duration?: number) => void;
+  addToast: (message: string, type: ToastType, duration?: number) => string;
   removeToast: (id: string) => void;
+  updateToast: (id: string, updates: Partial<Toast>) => void;
   clearAll: () => void;
 }
 
@@ -26,11 +27,17 @@ export const useToastStore = create<ToastState>((set, get) => ({
     set((state) => ({ toasts: [...state.toasts, toast] }));
 
     // Auto-remove after duration(if duration > 0)
-    if(duration > 0){
+    if (duration > 0) {
       setTimeout(() => {
         get().removeToast(id);
       }, duration);
     }
+    return id;
+  },
+  updateToast: (id: string, updates: Partial<Toast>) => {
+    set((state) => ({
+      toasts: state.toasts.map((t) => (t.id === id ? { ...t, ...updates } : t))
+    }));
   },
   removeToast: (id: string) => {
     set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));

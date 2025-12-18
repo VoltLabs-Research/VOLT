@@ -16,7 +16,7 @@ import { SYS_BUCKETS } from '@/config/minio';
 import { getTimestepPreview, sendImage } from '@/utilities/export/raster';
 
 export default class TrajectoryController extends BaseController<any> {
-    constructor(){
+    constructor() {
         super(Trajectory, {
             resourceName: 'Trajectory',
             fields: ['name', 'preview', 'isPublic', 'createdBy'],
@@ -31,20 +31,20 @@ export default class TrajectoryController extends BaseController<any> {
     /**
      * Users can only see trajectories in teams they belong to.
      */
-    protected async getFilter(req: Request): Promise<any>{
+    protected async getFilter(req: Request): Promise<any> {
         const userId = (req as any).user.id;
         const { teamId } = req.query;
 
         let teamQuery: any = { members: userId };
-        if(teamId && typeof teamId === 'string'){
-            if(!isValidObjectId(teamId)) throw new RuntimeError(ErrorCodes.VALIDATION_INVALID_TEAM_ID, 400);
+        if (teamId && typeof teamId === 'string') {
+            if (!isValidObjectId(teamId)) throw new RuntimeError(ErrorCodes.VALIDATION_INVALID_TEAM_ID, 400);
             teamQuery._id = teamId;
         }
 
         const userTeams = await Team.find(teamQuery).select('_id');
 
         // If filtering by specific team ID and user isn't in it, return impossible query
-        if(teamId && userTeams.length === 0) return { _id: { $in: [] } };
+        if (teamId && userTeams.length === 0) return { _id: { $in: [] } };
 
         const teamIds = userTeams.map((team) => team._id);
         return { team: { $in: teamIds } };
@@ -53,21 +53,21 @@ export default class TrajectoryController extends BaseController<any> {
     /**
      * Cleanup resources(Dump, Temp Files) before deleting the DB record
      */
-    protected async onBeforeDelete(doc: any, req: Request): Promise<void>{
+    protected async onBeforeDelete(doc: any, req: Request): Promise<void> {
         const trajectoryId = doc._id.toString();
         await DumpStorage.deleteDumps(trajectoryId);
     }
 
-    public getTeamMetrics = catchAsync(async(req: Request, res: Response) => {
+    public getTeamMetrics = catchAsync(async (req: Request, res: Response) => {
         const { teamId } = req.query;
-        if(!teamId || typeof teamId !== 'string'){
+        if (!teamId || typeof teamId !== 'string') {
             throw new RuntimeError(ErrorCodes.TRAJECTORY_TEAM_ID_REQUIRED, 400);
         }
         const metrics = await getMetricsByTeamId(teamId);
         res.status(200).json({ status: 'success', data: metrics });
     });
 
-    public getSingleMetrics = catchAsync(async(req: Request, res: Response) => {
+    public getSingleMetrics = catchAsync(async (req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
         const vfs = new TrajectoryVFS(trajectoryId);
@@ -91,14 +91,14 @@ export default class TrajectoryController extends BaseController<any> {
         });
     });
 
-    public getPreview = catchAsync(async(req: Request, res: Response) => {
+    public getPreview = catchAsync(async (req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
         const timestep = Math.min(...trajectory.frames.map(({ timestep }: any) => timestep));
         const { buffer, etag } = await getTimestepPreview(trajectory._id.toString(), timestep);
         return sendImage(res, etag, buffer);
     });
 
-    public getAtoms = catchAsync(async(req: Request, res: Response) => {
+    public getAtoms = catchAsync(async (req: Request, res: Response) => {
         const { timestep } = req.params as any;
         const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
         const pageSize = Math.max(1, Math.min(200000, parseInt((req.query.pageSize as string) || '100000', 10)));
@@ -107,7 +107,7 @@ export default class TrajectoryController extends BaseController<any> {
         const trajectoryId = (res as any).locals.trajectory._id.toString();
 
         const dumpPath = await DumpStorage.getDump(trajectoryId, timestep);
-        if(!dumpPath) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
+        if (!dumpPath) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath);
         const total = parsed.metadata.natoms;
@@ -116,14 +116,14 @@ export default class TrajectoryController extends BaseController<any> {
         const positionsPage: number[][] = [];
         const typesPage: number[] = [];
 
-        for(let i = startIndex; i < limit; i++){
+        for (let i = startIndex; i < limit; i++) {
             const base = i * 3;
             positionsPage.push([
                 parsed.positions[base],
                 parsed.positions[base + 1],
                 parsed.positions[base + 2]]
             );
-            if(parsed.types) typesPage.push(parsed.types[i]);
+            if (parsed.types) typesPage.push(parsed.types[i]);
         }
 
         res.status(200).json({
@@ -137,19 +137,19 @@ export default class TrajectoryController extends BaseController<any> {
         });
     });
 
-    public getGLB = catchAsync(async(req: Request, res: Response) => {
+    public getGLB = catchAsync(async (req: Request, res: Response) => {
         const { timestep, analysisId } = req.params;
         const { type } = req.query as { type?: string };
         const trajectoryId = res.locals.trajectory._id.toString();
         const vfs = new TrajectoryVFS(trajectoryId);
 
         let virtualPath = '';
-        if(analysisId === 'default' || !type){
+        if (analysisId === 'default' || !type) {
             virtualPath = `trajectory-${trajectoryId}/previews/timestep-${timestep}.glb`;
-        }else{
+        } else {
             const glbFiles = await vfs.list(`trajectory-${trajectoryId}/analysis-${analysisId}/glb`);
             const match = glbFiles.find(f => f.name.includes(type) && f.name.includes(timestep));
-            if(!match) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
+            if (!match) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
             virtualPath = match.relPath;
         }
 
@@ -157,11 +157,11 @@ export default class TrajectoryController extends BaseController<any> {
         res.setHeader('Content-Type', 'model/gltf-binary');
         res.setHeader('Content-Length', size);
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-        if(analysisId === 'default') res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        if (analysisId === 'default') res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         stream.pipe(res);
     });
 
-    public downloadGLBArchive = catchAsync(async(req: Request, res: Response) => {
+    public downloadGLBArchive = catchAsync(async (req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
         const { analysisId } = req.params;
@@ -170,13 +170,13 @@ export default class TrajectoryController extends BaseController<any> {
         const entries = await vfs.list(`trajectory-${trajectoryId}/analysis-${analysisId}/glb`);
         const frameFilter = req.query.frame ? String(req.query.frame) : null;
 
-        const filesToZip = entries.filter((entry) =>{
-            if(entry.type !== 'file') return false;
-            if(frameFilter && !entry.name.includes(frameFilter)) return false;
+        const filesToZip = entries.filter((entry) => {
+            if (entry.type !== 'file') return false;
+            if (frameFilter && !entry.name.includes(frameFilter)) return false;
             return true;
         });
 
-        if(!filesToZip.length) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILES_NOT_FOUND, 404);
+        if (!filesToZip.length) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILES_NOT_FOUND, 404);
 
         const filename = String(trajectory.name || trajectoryId).replace(/[^a-z0-9_\-]+/gi, '_');
         res.setHeader('Content-Type', 'application/zip');
@@ -185,12 +185,12 @@ export default class TrajectoryController extends BaseController<any> {
         const archive = archiver('zip', { zlib: { level: 0 } });
 
         archive.on('error', () => {
-            if(!res.headersSent) res.status(500).end();
+            if (!res.headersSent) res.status(500).end();
         });
 
         archive.pipe(res);
 
-        for(const file of filesToZip){
+        for (const file of filesToZip) {
             const { stream } = await vfs.getReadStream(file.relPath);
             archive.append(stream, { name: `glb/${file.name}` });
         }
@@ -198,15 +198,65 @@ export default class TrajectoryController extends BaseController<any> {
         await archive.finalize();
     });
 
-    public create = catchAsync(async(req: Request, res: Response) => {
-        const { files, teamId } = (res as any).locals.data;
+    public create = catchAsync(async (req: Request, res: Response) => {
+        const { files } = (res as any).locals.data;
         const userId = (req as any).user._id;
-        const trajectoryName = (req.body.originalFolderName || 'Untitled Trajectory') as string;
+        const { teamId, originalFolderName, uploadId } = req.body;
 
-        const newTrajectory = await processAndCreateTrajectory(files, teamId, userId.toString(), trajectoryName);
-        res.status(201).json({
-            status: 'success',
-            data: newTrajectory
-        });
+        let trajectoryName = req.body.name;
+        if (!trajectoryName && originalFolderName && originalFolderName.length >= 4) {
+            trajectoryName = originalFolderName;
+        }
+        if (!trajectoryName) trajectoryName = 'Untitled Trajectory';
+
+        let trajectory;
+        try {
+            trajectory = await processAndCreateTrajectory({
+                files: req.files as any[],
+                teamId,
+                userId: (req as any).user._id,
+                trajectoryName,
+                originalFolderName: req.body.originalFolderName,
+                uploadId,
+                onProgress: (progress) => {
+                    if (uploadId) {
+                        // We use the active socket gateway instance to emit
+                        const io = req.app.get('io');
+                        // Or if io is not in app, we might need to import the singleton if available.
+                        // Assuming io is attached to app or we have a way to access it.
+                        // Based on server.ts usually: app.set('io', io);
+                        if (io) {
+                            io.to(`upload:${uploadId}`).emit('trajectory:upload-progress', {
+                                uploadId,
+                                progress
+                            });
+                            // Also emit to user room if needed, but uploadId room is specific.
+                            // Client needs to join this room? 
+                            // Or just emit to the user's socket if we can target it.
+                            // Easier: Emit to all connected sockets of this user?
+                            // Or simpler: Emit global 'trajectory:upload-progress' to the user's private room.
+                            // User room is usually `user:${userId}`.
+                            io.to(`user:${userId}`).emit('trajectory:upload-progress', {
+                                uploadId,
+                                progress
+                            });
+                        } else {
+                            console.error('[TrajectoryController] IO instance not found on app!');
+                        }
+                    }
+                }
+            });
+            res.status(201).json({
+                status: 'success',
+                data: trajectory
+            });
+        } finally {
+            // Cleanup temp files uploaded by multer
+            if (req.files && Array.isArray(req.files)) {
+                await Promise.all((req.files as any[]).map(f =>
+                    require('fs').promises.unlink(f.path).catch(() => { })
+                ));
+            }
+        }
     });
 };

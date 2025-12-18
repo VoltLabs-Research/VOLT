@@ -30,13 +30,21 @@ const router = Router();
 const controller = new TrajectoryController();
 
 const upload = multer({
-    storage: multer.memoryStorage(),
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, require('os').tmpdir());
+        },
+        filename: (req, file, cb) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, file.fieldname + '-' + uniqueSuffix);
+        }
+    }),
     limits: {
         // TODO: from env?
         fileSize: process.env.MAX_FILE_SIZE ? Number(process.env.MAX_FILE_SIZE) : undefined,
         files: process.env.MAX_FILES ? Number(process.env.MAX_FILES) : undefined
     },
-    fileFilter: (req, file, cb: FileFilterCallback) =>{
+    fileFilter: (req, file, cb: FileFilterCallback) => {
         cb(null, true);
     }
 });
@@ -46,7 +54,7 @@ router.route('/')
         authMiddleware.protect,
         controller.getAll
     )
-        .post(
+    .post(
         authMiddleware.protect,
         upload.array('trajectoryFiles'),
         middleware.processAndValidateUpload,
@@ -98,12 +106,12 @@ router.route('/:id')
         middleware.checkTeamMembershipForTrajectory,
         controller.getOne
     )
-        .patch(
+    .patch(
         authMiddleware.protect,
         middleware.requireTeamMembershipForTrajectory,
         controller.updateOne
     )
-        .delete(
+    .delete(
         authMiddleware.protect,
         middleware.requireTeamMembershipForTrajectory,
         controller.deleteOne

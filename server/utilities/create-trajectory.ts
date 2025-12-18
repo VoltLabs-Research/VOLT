@@ -10,16 +10,28 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
 
+interface CreateTrajectoryOptions {
+    files: any[];
+    teamId: string;
+    userId: string;
+    trajectoryName: string;
+    originalFolderName?: string;
+    onProgress?: (progress: number) => void;
+    uploadId?: string;
+}
+
 /**
  * Processes incoming raw files, uploads them to Object Storge(MinIO),
  * and dispatches jobs to the processing queue.
- *
- * @param files - Array of file objects(Multer or SSH stream buffers).
- * @param teamId - The ID of the team owning the trajectory.
- * @param userId - the ID of the user creating the trajectory.
- * @param trajectoryName - The human-readable name of the trajectory.
  */
-const createTrajectory = async(files: any[], teamId: string, userId: string, trajectoryName: string) => {
+const createTrajectory = async ({
+    files,
+    teamId,
+    userId,
+    trajectoryName,
+    onProgress,
+    uploadId
+}: CreateTrajectoryOptions): Promise<InstanceType<typeof Trajectory>> => {
     const trajectoryId = new Types.ObjectId();
     const trajectoryIdStr = trajectoryId.toString();
 
@@ -29,44 +41,68 @@ const createTrajectory = async(files: any[], teamId: string, userId: string, tra
 
     await fs.mkdir(workingDir, { recursive: true });
 
+    // Pre-calculate total size for progress if possible
+    let totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
+    // If we only have paths (e.g. from multer diskStorage), we trust multer's size.
+    // If we don't have size, we might need to stat. 
+    // But let's rely on what we have. 
+
+    // Track bytes processed per file index
+    const processedBytesMap: Record<number, number> = {};
+
+    const updateProgress = (index: number, bytes: number) => {
+        processedBytesMap[index] = bytes;
+        if (totalSize > 0 && onProgress) {
+            const totallyProcessed = Object.values(processedBytesMap).reduce((a, b) => a + b, 0);
+            onProgress(Math.min(1, totallyProcessed / totalSize));
+        }
+    };
+
     // Process files. Validate -> Upload to MinIO -> Prepare Job Data.
-    const filePromises = files.map(async(file: any, i: number) => {
+    const filePromises = files.map(async (file: any, i: number) => {
         let tempPath = file.path;
 
         // Handle Buffer vs Path(Multer vs SSH).
         // If we only have a buffer, write to disk briefly to let the parser read it.
-        if(!tempPath && file.buffer){
+        if (!tempPath && file.buffer) {
             tempPath = path.join(workingDir, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
             await fs.writeFile(tempPath, file.buffer);
+            // Update size if it was missing 
+            if (!file.size) {
+                file.size = file.buffer.length;
+                totalSize += file.size; // This is risky if race condition, but usually we have size.
+            }
         }
 
         // Parse and validate using the centralized factory
         let frameInfo;
-        try{
+        try {
             const parsed = await TrajectoryParserFactory.parse(tempPath);
             frameInfo = parsed.metadata;
-        }catch(err){
-            if(!file.path) await fs.rm(tempPath).catch(() => { });
+        } catch (err) {
+            if (!file.path) await fs.rm(tempPath).catch(() => { });
             return null;
         }
 
-        // Prepare data for MinIO. We need the buffer to upload to Object Storage.
-        let buffer = file.buffer;
-        if(!buffer){
-            // If it came from a file path(e.g. multipart), read it into buffer now
-            buffer = await fs.readFile(tempPath);
-        }
+        const fileSize = file.size || (await fs.stat(tempPath)).size;
 
-        // Upload to storage.
-        await DumpStorage.saveDump(trajectoryIdStr, frameInfo.timestep, buffer);
+        // Upload to storage using the file path directly (streaming).
+        // This prevents loading the entire file into RAM.
+        await DumpStorage.saveDump(trajectoryIdStr, frameInfo.timestep, tempPath, (fileProgress) => {
+            updateProgress(i, fileProgress * fileSize);
+        });
 
         // Cleanup local temp.
-        if(!file.path) await fs.rm(tempPath).catch(() => { });
+        // Note: If files came from multer diskStorage, they are cleaned up in the controller finally block.
+        // But if we created a temp file manually from a buffer (legacy/ssh path), we should clean it up here.
+        // However, the controller cleanup iterates over req.files.
+        // Let's just catch cleanup errors to be safe.
+        if (!file.path) await fs.rm(tempPath).catch(() => { });
 
         return {
             frameInfo,
             srcPath: `minio://${trajectoryIdStr}/${frameInfo.timestep}`,
-            originalSize: file.size || buffer.length,
+            originalSize: fileSize,
             originalName: file.originalname || file.name || `frame_${frameInfo.timestep}`
         };
     });
@@ -75,11 +111,14 @@ const createTrajectory = async(files: any[], teamId: string, userId: string, tra
     const results = await Promise.all(filePromises);
     const validFiles = (results.filter(Boolean) as any[]);
 
-    if(validFiles.length === 0){
+    if (validFiles.length === 0) {
         throw new RuntimeError(ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES, 400);
     }
 
-    const totalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
+    // Ensure 100% progress
+    if (onProgress) onProgress(1);
+
+    const validTotalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
     const frames = validFiles.map((f) => f.frameInfo);
 
     const newTrajectory = await Trajectory.create({
@@ -91,7 +130,7 @@ const createTrajectory = async(files: any[], teamId: string, userId: string, tra
         status: 'processing',
         stats: {
             totalFiles: validFiles.length,
-            totalSize
+            totalSize: validTotalSize
         }
     });
 
@@ -101,7 +140,7 @@ const createTrajectory = async(files: any[], teamId: string, userId: string, tra
     const jobs: any[] = [];
     const sessionId = v4();
 
-    for(let i = 0; i < validFiles.length; i += chunkSize){
+    for (let i = 0; i < validFiles.length; i += chunkSize) {
         const chunk = validFiles.slice(i, i + chunkSize);
         jobs.push({
             jobId: v4(),

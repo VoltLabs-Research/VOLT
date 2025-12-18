@@ -18,18 +18,19 @@ const SimulationGrid = memo(() => {
         toggleTrajectorySelectionStore(id);
     }, [toggleTrajectorySelectionStore]);
     const isLoading = useTrajectoryStore((state) => state.isLoadingTrajectories);
-    const uploadingFileCount = useTrajectoryStore((state) => state.uploadingFileCount);
+    const activeUploads = useTrajectoryStore((state) => state.activeUploads);
+    const hasActiveUploads = Object.keys(activeUploads).length > 0;
 
-    const hasEmptyState = !isLoading && trajectories.length === 0 && uploadingFileCount === 0;
+    const hasEmptyState = !isLoading && trajectories.length === 0 && !hasActiveUploads;
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if(selectedTrajectories.length === 0){
+            if (selectedTrajectories.length === 0) {
                 return;
             }
 
             const isDeleteShortcut = (event.ctrlKey || event.metaKey) && (event.key === 'Backspace' || event.key === 'Delete');
-            if(isDeleteShortcut){
+            if (isDeleteShortcut) {
                 event.preventDefault();
                 deleteSelectedTrajectories();
             }
@@ -37,31 +38,46 @@ const SimulationGrid = memo(() => {
 
         window.addEventListener('keydown', handleKeyDown);
 
-        return() => {
+        return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [selectedTrajectories.length, deleteSelectedTrajectories]);
 
-    if(hasEmptyState){
+    if (hasEmptyState) {
         return <EmptyState
             title='No Trajectories Yet'
             description='Get started by uploading your first simulation trajectory file to visualize and analyze atomic structures.' />
     }
 
-    return(
+    return (
         <div className='trajectories-container gap-1-5 w-max y-auto' ref={parent as React.MutableRefObject<HTMLDivElement | null>}>
-            {(isLoading || uploadingFileCount > 0) && (
-                <SimulationSkeletonCard n={uploadingFileCount > 0 ? uploadingFileCount : 8} />
-            )}
+            {isLoading && <SimulationSkeletonCard n={8} />}
 
-            {trajectories.map((trajectory) => (
-                <SimulationCard
-                    key={trajectory._id}
-                    trajectory={trajectory}
-                    isSelected={selectedTrajectories.includes(trajectory._id)}
-                    onSelect={toggleTrajectorySelection}
+            {Object.values(activeUploads).map((upload) => (
+                <SimulationSkeletonCard
+                    key={upload.id}
+                    progress={upload.status === 'processing' ? upload.processingProgress : upload.uploadProgress}
+                    status={upload.status}
                 />
             ))}
+
+            {trajectories.map((trajectory) => {
+                // If this trajectory corresponds to an active upload, don't show it yet
+                // to avoid "double loaders" (one skeleton, one processing card)
+                // We show the skeleton until the upload processing is fully done and acknowledged by the store logic
+                if ((trajectory as any).uploadId && activeUploads[(trajectory as any).uploadId]) {
+                    return null;
+                }
+
+                return (
+                    <SimulationCard
+                        key={trajectory._id}
+                        trajectory={trajectory}
+                        isSelected={selectedTrajectories.includes(trajectory._id)}
+                        onSelect={toggleTrajectorySelection}
+                    />
+                );
+            })}
         </div>
     );
 });

@@ -18,21 +18,7 @@ import './SimulationCard.css';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
 
-// TODO: refactor
-interface Trajectory {
-    _id: string;
-    name?: string;
-    updatedAt: string;
-    createdAt: string;
-    preview?: string | null;
-    status?: 'queued' | 'processing' | 'rendering' | 'completed' | 'failed';
-    createdBy?: {
-        _id?: string;
-        email?: string;
-        firstName?: string;
-        lastName?: string;
-    };
-}
+import type { Trajectory } from '@/types/models';
 
 interface SimulationCardProps {
     trajectory: Trajectory;
@@ -62,7 +48,7 @@ const getMessageForStage = (stage: ProcessingStage): string => {
 };
 
 const getInitialsFromUser = (user: Trajectory['createdBy']): string => {
-    if (!user) return '?';
+    if (!user || typeof user === 'string') return '?';
     if (user.firstName && user.lastName) {
         return (user.firstName[0] + user.lastName[0]).toUpperCase();
     }
@@ -77,7 +63,7 @@ const getInitialsFromUser = (user: Trajectory['createdBy']): string => {
 };
 
 const getUserDisplayName = (user: Trajectory['createdBy']): string => {
-    if (!user) return 'Unknown';
+    if (!user || typeof user === 'string') return 'Unknown';
     if (user.firstName && user.lastName) {
         return `${user.firstName} ${user.lastName}`;
     }

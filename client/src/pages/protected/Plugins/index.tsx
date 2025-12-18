@@ -137,20 +137,13 @@ const PluginsListing = () => {
             key: 'modifier.name',
             render: (_value, row) => (
                 <span
-                    className='plugin-name-link font-weight-5 cursor-pointer'
+                    className='plugin-name-link font-size-2 font-weight-5 cursor-pointer'
                     onClick={() => handleRowClick(row)}
                 >
                     {row?.modifier?.name ?? row?.slug ?? '—'}
                 </span>
             ),
             skeleton: { variant: 'text', width: 160 }
-        },
-        {
-            title: 'Slug',
-            sortable: true,
-            key: 'slug',
-            render: (value) => <code className='plugin-slug'>{value ?? '—'}</code>,
-            skeleton: { variant: 'text', width: 120 }
         },
         {
             title: 'Version',

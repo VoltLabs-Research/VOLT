@@ -28,7 +28,7 @@ import { IAnalysis } from '@/models/analysis';
 import { Document } from 'mongoose';
 
 // Defines the limits of the simulation box on the three axes.
-export interface IBoxBounds{
+export interface IBoxBounds {
     xlo: number;
     xhi: number;
     ylo: number;
@@ -37,7 +37,7 @@ export interface IBoxBounds{
     zhi: number;
 }
 
-export interface ITimestepInfo{
+export interface ITimestepInfo {
     timestep: number;
     natoms: number;
     boxBounds: IBoxBounds;
@@ -57,6 +57,7 @@ export interface ITrajectory extends Document {
         totalFiles: number;
         totalSize: number;
     };
-    createdAt?: Date;
-    updatedAt?: Date;
+    uploadId?: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
