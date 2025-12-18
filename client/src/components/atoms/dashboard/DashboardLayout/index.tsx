@@ -53,6 +53,7 @@ import TeamInvitePanel from '@/components/organisms/team/TeamInvitePanel';
 import SSHFileExplorer from '@/components/organisms/ssh/SSHFileExplorer';
 import Container from '@/components/primitives/Container';
 import Popover from '@/components/molecules/common/Popover';
+import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import { IoChevronForward } from 'react-icons/io5';
@@ -579,8 +580,8 @@ const DashboardLayout = () => {
                                 {settingsItems.map((item) => (
                                     <button
                                         key={item.id}
-                                        className={`sidebar-sub-item ${pathname.startsWith('/dashboard/settings') && activeSettingsTab === item.id ? 'is-selected' : ''}`}
-                                        onClick={() => navigate(`/dashboard/settings?tab=${item.id}`)}
+                                        className={`sidebar-sub-item ${pathname === `/dashboard/settings/${item.id}` ? 'is-selected' : ''}`}
+                                        onClick={() => navigate(`/dashboard/settings/${item.id}`)}
                                     >
                                         {item.label}
                                     </button>
@@ -597,29 +598,42 @@ const DashboardLayout = () => {
                     </Container>
 
                     {/* User Profile */}
-                    <Container
-                        className='sidebar-user-section'
-                        onClick={() => navigate('/dashboard/settings?tab=general')}
+                    <Popover
+                        id="sidebar-user-menu-popover"
+                        className='gap-1'
+                        trigger={
+                            <button
+                                className='sidebar-user-section'
+                                style={{ background: 'none', border: 'none', textAlign: 'left', width: '100%' }}
+                            >
+                                <div className='sidebar-user-avatar'>
+                                    {user?.avatar ? (
+                                        <img src={user.avatar} alt={user.firstName} />
+                                    ) : (
+                                        getUserInitials()
+                                    )}
+                                </div>
+                                <div className='sidebar-user-info'>
+                                    <Paragraph className='sidebar-user-name'>
+                                        {user?.firstName} {user?.lastName}
+                                    </Paragraph>
+                                    <Paragraph className='sidebar-user-email'>
+                                        {user?.email}
+                                    </Paragraph>
+                                </div>
+                                <div className='sidebar-user-menu'>
+                                    <HiOutlineDotsVertical size={16} />
+                                </div>
+                            </button>
+                        }
                     >
-                        <div className='sidebar-user-avatar'>
-                            {user?.avatar ? (
-                                <img src={user.avatar} alt={user.firstName} />
-                            ) : (
-                                getUserInitials()
-                            )}
-                        </div>
-                        <div className='sidebar-user-info'>
-                            <Paragraph className='sidebar-user-name'>
-                                {user?.firstName} {user?.lastName}
-                            </Paragraph>
-                            <Paragraph className='sidebar-user-email'>
-                                {user?.email}
-                            </Paragraph>
-                        </div>
-                        <div className='sidebar-user-menu'>
-                            <HiOutlineDotsVertical size={16} />
-                        </div>
-                    </Container>
+                        <PopoverMenuItem icon={<IoSettingsOutline />} onClick={() => navigate('/dashboard/settings/general')}>
+                            Account Settings
+                        </PopoverMenuItem>
+                        <PopoverMenuItem icon={<IoCloseOutline />} onClick={() => useAuthStore.getState().signOut()}>
+                            Sign Out
+                        </PopoverMenuItem>
+                    </Popover>
                 </Container>
             </aside>
 

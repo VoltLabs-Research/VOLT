@@ -59,13 +59,13 @@ const JobQueue = ({ job }: { job: Job }) => {
     const IconComponent = statusConfig[job.status].icon;
 
     return (
-        <Container className={'d-flex w-max content-between items-center p-1 job-container '.concat(job.status)}>
-            <Container className='d-flex items-center gap-1'>
+        <Container className={'d-flex w-max content-between gap-05 items-center p-05 job-container '.concat(job.status)}>
+            <Container className='d-flex items-center gap-05'>
                 <i className='job-icon-container'>
                     {IconComponent}
                 </i>
                 <Container className='d-flex column gap-025'>
-                    <Title className='font-size-3 job-name font-weight-6 color-primary'>
+                    <Title className='font-size-1 job-name font-weight-6 color-primary'>
                         {job.name}
                         {(job?.chunkIndex !== undefined && job?.totalChunks !== undefined) && (
                             <span> - Chunk {job.chunkIndex + 1}/{job.totalChunks}</span>
@@ -83,7 +83,7 @@ const JobQueue = ({ job }: { job: Job }) => {
                         {job.progress}%
                     </span>
                 )}
-                <span className='job-status-badge text-center font-weight-6'>
+                <span className='job-status-badge font-size-05 text-center font-weight-6'>
                     {job.status}
                 </span>
                 {/*<p className='job-timestamp'>{formatTimeAgo(job.timestamp)}</p>*/}

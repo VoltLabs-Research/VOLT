@@ -29,7 +29,16 @@ import PluginListing from '@/pages/protected/PluginListing';
 import Plugins from '@/pages/protected/Plugins';
 import AnalysisConfigsListing from '@/pages/protected/AnalysisConfigsListing';
 import TrajectoriesListing from '@/pages/protected/TrajectoriesListing';
-import AccountSettings from '@/pages/protected/AccountSettings';
+import {
+    GeneralPage,
+    AuthenticationPage,
+    ThemePage,
+    NotificationsPage,
+    SessionsPage,
+    IntegrationsPage,
+    DataExportPage,
+    AdvancedPage
+} from '@/pages/protected/settings';
 import Clusters from '@/pages/protected/Clusters';
 import SignIn from '@/pages/guest/SignIn';
 import TeamInvitationPage from '@/pages/guest/TeamInvitationPage';
@@ -120,10 +129,54 @@ export const routesConfig: RouteGroup = {
             component: Messages,
             requiresLayout: true,
         },
+        // Settings routes with nested layout
         {
-            path: '/dashboard/settings',
-            component: AccountSettings,
+            path: '/dashboard/settings/general',
+            component: GeneralPage,
             requiresLayout: true,
+            requiresSettingsLayout: true,
+        },
+        {
+            path: '/dashboard/settings/authentication',
+            component: AuthenticationPage,
+            requiresLayout: true,
+            requiresSettingsLayout: true,
+        },
+        {
+            path: '/dashboard/settings/theme',
+            component: ThemePage,
+            requiresLayout: true,
+            requiresSettingsLayout: true,
+        },
+        {
+            path: '/dashboard/settings/notifications',
+            component: NotificationsPage,
+            requiresLayout: true,
+            requiresSettingsLayout: true,
+        },
+        {
+            path: '/dashboard/settings/sessions',
+            component: SessionsPage,
+            requiresLayout: true,
+            requiresSettingsLayout: true,
+        },
+        {
+            path: '/dashboard/settings/integrations',
+            component: IntegrationsPage,
+            requiresLayout: true,
+            requiresSettingsLayout: true,
+        },
+        {
+            path: '/dashboard/settings/data-export',
+            component: DataExportPage,
+            requiresLayout: true,
+            requiresSettingsLayout: true,
+        },
+        {
+            path: '/dashboard/settings/advanced',
+            component: AdvancedPage,
+            requiresLayout: true,
+            requiresSettingsLayout: true,
         },
     ],
 

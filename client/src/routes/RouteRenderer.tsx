@@ -23,6 +23,7 @@
 import { Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/atoms/auth/ProtectedRoute';
 import DashboardLayout from '@/components/atoms/dashboard/DashboardLayout';
+import SettingsLayout from '@/components/organisms/settings/SettingsLayout';
 import PageWrapper from '@/components/atoms/animations/PageWrapper';
 import { routesConfig } from './config';
 import type { RouteConfig } from './types';
@@ -44,10 +45,11 @@ export const renderPublicRoutes = () => {
 };
 
 export const renderProtectedRoutes = () => {
-    const routesWithLayout = routesConfig.protected.filter(r => r.requiresLayout);
+    const routesWithLayout = routesConfig.protected.filter(r => r.requiresLayout && !r.requiresSettingsLayout);
+    const routesWithSettingsLayout = routesConfig.protected.filter(r => r.requiresSettingsLayout);
     const routesWithoutLayout = routesConfig.protected.filter(r => !r.requiresLayout);
 
-    return(
+    return (
         <Route element={<ProtectedRoute mode='protect' />}>
             {routesWithoutLayout.map((route: RouteConfig) => (
                 <Route
@@ -66,6 +68,19 @@ export const renderProtectedRoutes = () => {
                             element={wrapWithPageWrapper(route.component)}
                         />
                     ))}
+
+                    {/* Settings routes nested within DashboardLayout and SettingsLayout */}
+                    {routesWithSettingsLayout.length > 0 && (
+                        <Route element={<SettingsLayout />}>
+                            {routesWithSettingsLayout.map((route: RouteConfig) => (
+                                <Route
+                                    key={route.path}
+                                    path={route.path}
+                                    element={wrapWithPageWrapper(route.component)}
+                                />
+                            ))}
+                        </Route>
+                    )}
                 </Route>
             )}
         </Route>
@@ -76,7 +91,7 @@ export const renderProtectedRoutes = () => {
  * Renderiza rutas de invitado(solo accesibles sin autenticación)
  */
 export const renderGuestRoutes = () => {
-    return(
+    return (
         <Route element={<ProtectedRoute mode='guest' />}>
             {routesConfig.guest.map((route: RouteConfig) => (
                 <Route

@@ -67,7 +67,7 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
                 </button>
             }
         >
-            <PopoverMenuItem icon={<CiSettings />} onClick={() => navigate('/account/settings/')}>
+            <PopoverMenuItem icon={<CiSettings />} onClick={() => navigate('/dashboard/settings/general')}>
                 Account Settings
             </PopoverMenuItem>
             <PopoverMenuItem icon={<CiLogout />} onClick={signOut}>

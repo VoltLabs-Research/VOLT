@@ -14,8 +14,8 @@ const JobsHistoryViewer: React.FC = memo(() => {
                     className='jobs-history-viewer-header-enhanced f-shrink-0'
                     style={{ touchAction: 'none' }}
                 >
-                    <Container className='header-content flex-1'>
-                        <Title className='font-size-3 font-weight-6 color-primary sm:font-size-2'>Recent Team Activity</Title>
+                    <Container className='header-content column gap-02 d-flex flex-1'>
+                        <Title className='font-size-2-5 font-weight-6 color-primary'>Recent Team Activity</Title>
                         <Paragraph className='font-size-2 color-secondary jobs-history-subtitle overflow-hidden'>The listed processes are queued and executed given the cluster load.</Paragraph>
                     </Container>
                 </Container>

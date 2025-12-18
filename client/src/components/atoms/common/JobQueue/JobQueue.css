@@ -16,7 +16,6 @@
     padding: .45rem .9rem;
     border-radius: 999px;
     font-size: 12px;
-    min-width: 92px;
     text-transform: capitalize;
     background: color-mix(in srgb, var(--color-text-primary) 4%, transparent);
     border: 1px solid var(--color-border-soft);

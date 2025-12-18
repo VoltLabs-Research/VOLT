@@ -235,6 +235,10 @@
 }
 
 /** TODO: Use tokens for this: md, lg, sm... **/
+.font-size-05{
+    font-size: .7rem;
+}
+
 .font-size-1 {
     font-size: 0.75rem;
 }
