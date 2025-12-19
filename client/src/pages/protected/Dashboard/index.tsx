@@ -128,7 +128,10 @@ const DashboardPage: React.FC = memo(() => {
                                 enableZoom: false
                             }}
                         >
-                            <TimestepViewer />
+                            <TimestepViewer
+                                trajectoryId={trajectory?._id || ''}
+                                currentTimestep={currentTimestep}
+                            />
                         </Scene3D>
 
                         {isProcessing && (

@@ -2,8 +2,27 @@ import React, { useMemo, forwardRef, useImperativeHandle } from 'react';
 import CameraManager from '@/components/atoms/scene/CameraManager';
 import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
 import useGlbScene from '@/hooks/canvas/use-glb-scene';
+import { createTrajectoryGLBs } from '@/utilities/glb/modelUtils';
+import useModelStore from '@/stores/editor/model';
 
 interface TimestepViewerProps {
+    /** Trajectory ID - required for computing GLB URL */
+    trajectoryId: string;
+    /** Current timestep - required for computing GLB URL */
+    currentTimestep: number | undefined;
+    /** Analysis config ID - defaults to 'default' */
+    analysisId?: string;
+    /** Active scene configuration from store */
+    activeScene?: {
+        sceneType: string;
+        source: string;
+        analysisId?: string;
+        exposureId?: string;
+        property?: string;
+        startValue?: number;
+        endValue?: number;
+        gradient?: string;
+    };
     rotation?: { x?: number; y?: number; z?: number };
     position?: { x?: number; y?: number; z?: number };
     scale?: number;
@@ -11,16 +30,49 @@ interface TimestepViewerProps {
     orbitControlsRef?: React.RefObject<any>;
     enableSlice?: boolean;
     enableInstancing?: boolean;
-    instanceCount?: number;
     updateThrottle?: number;
-    centerModelToCamera?: boolean;
 }
 
 export interface TimestepViewerRef {
     loadModel: () => void;
 }
 
+/**
+ * Compute the GLB URL based on scene configuration.
+ * This is the SINGLE SOURCE OF TRUTH for URL - no global store involved.
+ */
+const computeGlbUrl = (
+    trajectoryId: string,
+    currentTimestep: number | undefined,
+    analysisId: string,
+    activeScene?: TimestepViewerProps['activeScene']
+): string | null => {
+    if (!trajectoryId || currentTimestep === undefined) return null;
+
+    // Handle different scene sources
+    if (activeScene?.source === 'plugin') {
+        const { analysisId: sceneAnalysisId, exposureId } = activeScene;
+        if (!sceneAnalysisId || !exposureId) return null;
+        return `/plugins/glb/${trajectoryId}/${sceneAnalysisId}/${exposureId}/${currentTimestep}`;
+    }
+
+    if (activeScene?.source === 'color-coding') {
+        const { property, startValue, endValue, gradient, analysisId: sceneAnalysisId, exposureId } = activeScene;
+        let url = `/color-coding/${trajectoryId}/${sceneAnalysisId}/?property=${property}&startValue=${startValue}&endValue=${endValue}&gradient=${gradient}&timestep=${currentTimestep}`;
+        if (exposureId) url += `&exposureId=${exposureId}`;
+        return url;
+    }
+
+    // Default: use trajectory GLB
+    const glbs = createTrajectoryGLBs(trajectoryId, currentTimestep, analysisId || 'default');
+    return glbs[activeScene?.sceneType as keyof typeof glbs] || glbs.trajectory;
+};
+
 const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
+    trajectoryId,
+    currentTimestep,
+    analysisId = 'default',
+    activeScene,
     rotation = {},
     position = { x: 0, y: 0, z: 0 },
     scale = 1,
@@ -32,7 +84,16 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
 }, ref) => {
     const sliceClippingPlanes = useSlicingPlanes(enableSlice);
 
-    const sceneProps = useMemo(() => ({
+    // Compute URL LOCALLY - this is the key change!
+    // URL is derived from props, NOT from global stores
+    const url = useMemo(() =>
+        computeGlbUrl(trajectoryId, currentTimestep, analysisId, activeScene),
+        [trajectoryId, currentTimestep, analysisId, activeScene]
+    );
+
+    // Use useGlbScene with the computed URL
+    const { modelBounds, resetModel } = useGlbScene({
+        url,  // Pass URL directly - overrides store-derived URL
         sliceClippingPlanes,
         position: {
             x: position.x || 0,
@@ -47,9 +108,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         scale,
         enableInstancing,
         updateThrottle,
-    }), [sliceClippingPlanes, position, rotation, scale, enableInstancing, updateThrottle]);
-
-    const { modelBounds, resetModel } = useGlbScene(sceneProps);
+    });
 
     useImperativeHandle(ref, () => ({
         loadModel: () => {
@@ -62,9 +121,9 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         [autoFit, modelBounds]
     );
 
-    if(!shouldRenderCamera) return null;
+    if (!shouldRenderCamera) return null;
 
-    return(
+    return (
         <CameraManager
             modelBounds={modelBounds || undefined}
             orbitControlsRef={orbitControlsRef}

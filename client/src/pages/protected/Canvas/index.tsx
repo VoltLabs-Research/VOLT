@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/scene/Scene3D';
 import { useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
@@ -11,6 +11,7 @@ import PreloadingOverlay from '@/components/atoms/common/PreloadingOverlay';
 import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
 import usePlaybackStore from '@/stores/editor/playback';
+import useAnalysisConfigStore from '@/stores/analysis-config';
 import Loader from '@/components/atoms/common/Loader';
 import Container from '@/components/primitives/Container';
 import './Canvas.css';
@@ -28,29 +29,42 @@ const EditorPage: React.FC = () => {
     const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
     const scene3DRef = useRef<Scene3DRef>(null);
     const trajectoryId = rawTrajectoryId ?? '';
+
+    // Get trajectory data and current timestep from coordinator
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId });
     const { canvasUsers } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
-    const isModelLoading = useModelStore((state) => state.isModelLoading);
-    const didPreload = usePlaybackStore((state) => state.didPreload ?? false);
-    const isPlaying = usePlaybackStore((state) => state.isPlaying);
-    const showCanvasGrid = useEditorUIStore((state) => state.showCanvasGrid);
-    const reset = useModelStore((state) => state.reset);
 
+    // Simple individual store subscriptions
+    const isModelLoading = useModelStore((s) => s.isModelLoading);
+    const activeScene = useModelStore((s) => s.activeScene);
+    const reset = useModelStore((s) => s.reset);
+    const didPreload = usePlaybackStore((s) => s.didPreload ?? false);
+    const isPlaying = usePlaybackStore((s) => s.isPlaying);
+    const showCanvasGrid = useEditorUIStore((s) => s.showCanvasGrid);
+    const analysisConfigId = useAnalysisConfigStore((s) => s.analysisConfig?._id);
+
+    // Cleanup on unmount
     useEffect(() => {
-        return() => {
+        return () => {
             reset();
             usePlaybackStore.getState().reset();
             useModelStore.getState().reset();
         };
     }, [reset]);
 
-    return(
+    // Memoize loading state calculation
+    const showLoading = useMemo(() =>
+        (isModelLoading && !(didPreload && isPlaying)) || !trajectory || currentTimestep === undefined,
+        [isModelLoading, didPreload, isPlaying, trajectory, currentTimestep]
+    );
+
+    return (
         <Container className='w-max vh-max p-relative u-select-none editor-container'>
             <AnimatePresence>
-                <PreloadingOverlay />
+                <PreloadingOverlay key="preloading-overlay" />
 
-                {((isModelLoading && !(didPreload && isPlaying)) || (!trajectory || currentTimestep === undefined)) && (
-                    <Container className='d-flex flex-center w-max h-max p-absolute model-loading-container'>
+                {showLoading && (
+                    <Container key="model-loading" className='d-flex flex-center w-max h-max p-absolute model-loading-container'>
                         <Loader scale={0.7} />
                     </Container>
                 )}
@@ -60,7 +74,12 @@ const EditorPage: React.FC = () => {
             <CanvasPresenceAvatars users={canvasUsers} />
 
             <Scene3D ref={scene3DRef} showCanvasGrid={showCanvasGrid}>
+                {/* Pass ALL required props to TimestepViewer - URL is computed inside */}
                 <TimestepViewer
+                    trajectoryId={trajectory?._id || ''}
+                    currentTimestep={currentTimestep}
+                    analysisId={analysisConfigId || 'default'}
+                    activeScene={activeScene as any}
                     scale={CANVAS_CONFIG.timestepViewerDefaults.scale}
                     rotation={CANVAS_CONFIG.timestepViewerDefaults.rotation}
                     position={CANVAS_CONFIG.timestepViewerDefaults.position}

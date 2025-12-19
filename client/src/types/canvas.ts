@@ -1,7 +1,7 @@
 import type { SceneState } from '@/types/scene';
-import { Vector3, Euler } from 'three';
+import { Vector3, Euler, Plane } from 'three';
 
-export interface TrajectoryData{
+export interface TrajectoryData {
     _id: string;
     name: string;
     dislocations?: DislocationData[];
@@ -27,6 +27,8 @@ export interface Scene3DContainerProps {
 }
 
 export type UseGlbSceneParams = {
+    /** Optional URL to load - if provided, overrides store-derived URL */
+    url?: string | null;
     sliceClippingPlanes: Plane[];
     position: { x: number; y: number; z: number };
     rotation: { x: number; y: number; z: number };
@@ -39,7 +41,7 @@ export type UseGlbSceneParams = {
     preserveInitialTransform?: boolean;
 };
 
-export interface ExtendedSceneState extends SceneState{
+export interface ExtendedSceneState extends SceneState {
     referenceScaleFactor?: number;
     fixedReferencePoint?: Vector3 | null;
     useFixedReference?: boolean;

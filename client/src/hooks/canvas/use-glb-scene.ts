@@ -40,7 +40,7 @@ import useTrajectoryStore from '@/stores/trajectories';
 import usePlaybackStore from '@/stores/editor/playback';
 import usePluginStore from '@/stores/plugins/plugin';
 
-export default function useGlbScene(params: UseGlbSceneParams){
+export default function useGlbScene(params: UseGlbSceneParams) {
     const { scene, camera, gl, invalidate } = useThree();
     const logger = useLogger('use-glb-scene');
 
@@ -146,40 +146,41 @@ export default function useGlbScene(params: UseGlbSceneParams){
         )
     ).current;
 
-    // Interaction setup
     useEffect(() => {
         interactionController.attach();
-        return() => interactionController.detach();
+        return () => interactionController.detach();
     }, [interactionController]);
 
-    // Animation loop
     useFrame(() => {
         animationController.update();
     });
 
-    // Clipping planes setup
     useEffect(() => {
-        if(!gl) return;
+        if (!gl) return;
         clippingManager.setLocalClippingEnabled((params.sliceClippingPlanes?.length ?? 0) > 0);
     }, [gl, params.sliceClippingPlanes, clippingManager]);
 
     useEffect(() => {
-        if(!stateRef.current.isSetup || !stateRef.current.model) return;
+        if (!stateRef.current.isSetup || !stateRef.current.model) return;
         clippingManager.applyToModel(stateRef.current.model, params.sliceClippingPlanes);
         invalidate();
     }, [params.sliceClippingPlanes, invalidate, clippingManager]);
 
-    // Model loading
-    const getTargetUrl = useCallback((): string | null =>{
-        if(!activeModel || !activeScene) return null;
+    const getTargetUrl = useCallback((): string | null => {
+        if (params.url !== undefined) {
+            return params.url;
+        }
 
-        if(activeScene.source === 'plugin'){
+        // Otherwise, derive URL from stores (legacy behavior)
+        if (!activeModel || !activeScene) return null;
+
+        if (activeScene.source === 'plugin') {
             const { analysisId, exposureId } = activeScene;
             const timestep = currentTimestep;
-            if(!trajectory?._id || timestep === undefined) return null;
+            if (!trajectory?._id || timestep === undefined) return null;
 
             // Check if this exposure is a chart using workflow nodes
-            for(const plugin of plugins){
+            for (const plugin of plugins) {
                 const exportNode = plugin.workflow.nodes.find((n: any) =>
                     n.type === 'export' &&
                     plugin.workflow.edges.some((e: any) =>
@@ -187,7 +188,7 @@ export default function useGlbScene(params: UseGlbSceneParams){
                         plugin.workflow.edges.some((e2: any) => e2.source === exposureId && e2.target === e.source)
                     )
                 );
-                if((exportNode?.data?.export?.type as string) === 'line-chart') {
+                if ((exportNode?.data?.export?.type as string) === 'line-chart') {
                     return null;
                 }
             }
@@ -195,23 +196,23 @@ export default function useGlbScene(params: UseGlbSceneParams){
             return `/plugins/glb/${trajectory._id}/${analysisId}/${exposureId}/${timestep}`;
         }
 
-        if(activeScene.source === 'color-coding'){
+        if (activeScene.source === 'color-coding') {
             const { property, startValue, endValue, gradient, analysisId, exposureId } = activeScene;
             let url = `/color-coding/${trajectory?._id}/${analysisId}/?property=${property}&startValue=${startValue}&endValue=${endValue}&gradient=${gradient}&timestep=${currentTimestep}`;
-            if(exposureId) url += `&exposureId=${exposureId}`;
+            if (exposureId) url += `&exposureId=${exposureId}`;
             return url;
         }
 
-        if(activeScene.source === 'default'){
-            if(!activeModel.glbs) return null;
+        if (activeScene.source === 'default') {
+            if (!activeModel.glbs) return null;
             return activeModel.glbs[activeScene.sceneType];
         }
         return null
-    }, [activeModel, activeScene, currentTimestep, trajectory, plugins]);
+    }, [params.url, activeModel, activeScene, currentTimestep, trajectory, plugins]);
 
     const updateScene = useCallback(() => {
         const targetUrl = getTargetUrl();
-        if(targetUrl &&
+        if (targetUrl &&
             targetUrl !== stateRef.current.lastLoadedUrl &&
             !modelLoader.isLoading()) {
             modelLoader.load(targetUrl);

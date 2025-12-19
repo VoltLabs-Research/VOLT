@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import type { Trajectory } from '@/types/models';
 import useAnalysisConfigStore from '@/stores/analysis-config';
-import useModelStore from '@/stores/editor/model';
 import useTrajectoryStore from '@/stores/trajectories';
-import { createTrajectoryGLBs, fetchModels, type TimelineGLBMap } from '@/utilities/glb/modelUtils';
+import { fetchModels, type TimelineGLBMap } from '@/utilities/glb/modelUtils';
 
 import type { TimestepData, TimestepState, TimestepStore } from '@/types/stores/editor/timesteps';
 
@@ -76,21 +75,9 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
         const timesteps = extractTimestepsWorker(trajectory.frames);
         const timestepData = createTimestepData(timesteps);
 
-        // Only load GLB if trajectory processing is completed
-        if (trajectory._id && currentTimestep !== undefined && timesteps.length > 0 && trajectory.status === 'completed') {
-            const currentAnalysis = useAnalysisConfigStore.getState().analysisConfig;
-            const analysisId = currentAnalysis?._id || '';
-            const finalAnalysisId = analysisId || 'default';
-
-            const glbs = createTrajectoryGLBs(
-                trajectory._id,
-                currentTimestep,
-                finalAnalysisId,
-                cacheBuster
-            );
-
-            useModelStore.getState().selectModel(glbs);
-        }
+        // NOTE: We no longer call selectModel() here!
+        // The GLB URL is now computed locally in TimestepViewer component.
+        // This prevents race conditions when navigating between trajectories.
 
         set({ timestepData });
     },

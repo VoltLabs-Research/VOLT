@@ -20,8 +20,9 @@
  * SOFTWARE.
  **/
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { socketService } from '@/services/socketio';
+import { useSyncExternalStore } from 'react';
 
 export interface CanvasPresenceUser {
     id: string;
@@ -36,106 +37,109 @@ interface UseCanvasPresenceProps {
     enabled?: boolean;
 }
 
+const presenceState = {
+    canvasUsers: [] as CanvasPresenceUser[],
+    rasterUsers: [] as CanvasPresenceUser[],
+    listeners: new Set<() => void>(),
+};
+
+const notifyListeners = () => {
+    presenceState.listeners.forEach(l => l());
+};
+
+const setCanvasUsers = (users: CanvasPresenceUser[]) => {
+    presenceState.canvasUsers = users;
+    notifyListeners();
+};
+
+const setRasterUsers = (users: CanvasPresenceUser[]) => {
+    presenceState.rasterUsers = users;
+    notifyListeners();
+};
+
+const subscribe = (listener: () => void) => {
+    presenceState.listeners.add(listener);
+    return () => presenceState.listeners.delete(listener);
+};
+
+const getSnapshot = () => presenceState;
+
 const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresenceProps) => {
-    const [canvasUsers, setCanvasUsers] = useState<CanvasPresenceUser[]>([]);
-    const [rasterUsers, setRasterUsers] = useState<CanvasPresenceUser[]>([]);
-    const [isConnected, setIsConnected] = useState(() => socketService.isConnected());
+    // Use refs to avoid re-renders from connection status changes
+    const isConnectedRef = useRef(socketService.isConnected());
+    const subscribedRef = useRef(false);
 
-    // Monitor connection status
+    // Use sync external store for minimal re-renders
+    const state = useSyncExternalStore(subscribe, getSnapshot);
+
+    // Subscribe to socket connection changes WITHOUT causing re-renders
     useEffect(() => {
-        // Set initial state
-        setIsConnected(socketService.isConnected());
-
         const unsubscribe = socketService.onConnectionChange((connected) => {
-            console.log(`[use-canvas-presence] Connection status changed: ${connected}`);
-            setIsConnected(connected);
+            isConnectedRef.current = connected;
+            // Only try to subscribe when connection established
+            if (connected && enabled && trajectoryId && !subscribedRef.current) {
+                subscribeToPresence();
+            }
         });
-
         return unsubscribe;
-    }, []);
+    }, [enabled, trajectoryId]);
 
-    useEffect(() => {
-        if(!enabled || !trajectoryId || !isConnected){
-            console.log(`[use-canvas-presence] Skipping canvas subscription - enabled: ${enabled}, trajectoryId: ${trajectoryId}, isConnected: ${isConnected}`);
+    const subscribeToPresence = useCallback(() => {
+        if (!enabled || !trajectoryId || !isConnectedRef.current || subscribedRef.current) {
             return;
         }
 
-        console.log(`[use-canvas-presence] Subscribing to canvas for trajectory: ${trajectoryId}`);
+        subscribedRef.current = true;
 
-        // Subscribe to canvas presence with previousTrajectoryId for proper cleanup
+        // Subscribe to canvas
         socketService.emit('subscribe_to_canvas', {
             trajectoryId,
-            previousTrajectoryId: undefined // This will be handled by socket.data on backend
-        }).then(() => {
-            console.log(`[use-canvas-presence] Successfully subscribed to canvas: ${trajectoryId}`);
-        }).catch((error) => {
-            console.error('[use-canvas-presence] Failed to subscribe to canvas:', error);
-        });
+            previousTrajectoryId: undefined
+        }).catch(() => { });
 
-        // Listen for canvas users updates
-        const unsubscribeCanvas = socketService.on('canvas_users_update', (users: CanvasPresenceUser[]) => {
-            console.log(`[use-canvas-presence] Received canvas_users_update for ${trajectoryId}:`, users);
-            setCanvasUsers(users);
-        });
+        // Subscribe to raster
+        socketService.emit('subscribe_to_raster', {
+            trajectoryId
+        }).catch(() => { });
+    }, [enabled, trajectoryId]);
 
-        return() => {
-            console.log(`[use-canvas-presence] Cleanup: Unsubscribing from canvas: ${trajectoryId}`);
-            unsubscribeCanvas();
-
-            // Emit unsubscribe event to backend
-            socketService.emit('unsubscribe_from_canvas', {
-                trajectoryId
-            }).then(() => {
-                console.log(`[use-canvas-presence] Successfully unsubscribed from canvas: ${trajectoryId}`);
-            }).catch((error) => {
-                console.error('[use-canvas-presence] Failed to unsubscribe from canvas:', error);
-            });
-        };
-    }, [trajectoryId, enabled, isConnected]);
-
+    // Main subscription effect - runs once when conditions are met
     useEffect(() => {
-        if(!enabled || !trajectoryId || !isConnected){
-            console.log(`[use-canvas-presence] Skipping raster subscription - enabled: ${enabled}, trajectoryId: ${trajectoryId}, isConnected: ${isConnected}`);
+        if (!enabled || !trajectoryId) {
             return;
         }
 
-        console.log(`[use-canvas-presence] Subscribing to raster for trajectory: ${trajectoryId}`);
+        // Try to subscribe if already connected
+        if (isConnectedRef.current) {
+            subscribeToPresence();
+        }
 
-        // Subscribe to raster presence
-        socketService.emit('subscribe_to_raster', {
-            trajectoryId
-        }).then(() => {
-            console.log(`[use-canvas-presence] Successfully subscribed to raster: ${trajectoryId}`);
-        }).catch((error) => {
-            console.error('[use-canvas-presence] Failed to subscribe to raster:', error);
-        });
+        // Listen for updates
+        const unsubscribeCanvas = socketService.on('canvas_users_update', setCanvasUsers);
+        const unsubscribeRaster = socketService.on('raster_users_update', setRasterUsers);
 
-        // Listen for raster users updates
-        const unsubscribeRaster = socketService.on('raster_users_update', (users: CanvasPresenceUser[]) => {
-            console.log(`[use-canvas-presence] Received raster_users_update for ${trajectoryId}:`, users);
-            setRasterUsers(users);
-        });
-
-        return() => {
-            console.log(`[use-canvas-presence] Cleanup: Unsubscribing from raster: ${trajectoryId}`);
+        return () => {
+            subscribedRef.current = false;
+            unsubscribeCanvas();
             unsubscribeRaster();
 
-            // Emit unsubscribe event to backend
-            socketService.emit('unsubscribe_from_raster', {
-                trajectoryId
-            }).then(() => {
-                console.log(`[use-canvas-presence] Successfully unsubscribed from raster: ${trajectoryId}`);
-            }).catch((error) => {
-                console.error('[use-canvas-presence] Failed to unsubscribe from raster:', error);
-            });
-        };
-    }, [trajectoryId, enabled, isConnected]);
+            // Cleanup subscriptions
+            if (isConnectedRef.current) {
+                socketService.emit('unsubscribe_from_canvas', { trajectoryId }).catch(() => { });
+                socketService.emit('unsubscribe_from_raster', { trajectoryId }).catch(() => { });
+            }
 
-    return {
-        canvasUsers,
-        rasterUsers,
-        allUsers: [...canvasUsers, ...rasterUsers]
-    };
+            // Clear state
+            setCanvasUsers([]);
+            setRasterUsers([]);
+        };
+    }, [trajectoryId, enabled, subscribeToPresence]);
+
+    return useMemo(() => ({
+        canvasUsers: state.canvasUsers,
+        rasterUsers: state.rasterUsers,
+        allUsers: [...state.canvasUsers, ...state.rasterUsers]
+    }), [state.canvasUsers, state.rasterUsers]);
 };
 
 export default useCanvasPresence;

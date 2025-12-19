@@ -83,14 +83,6 @@ const AnalysisConfigsListing = () => {
             skeleton: { variant: 'text', width: 90 }
         },
         {
-            title: 'Completed Frames',
-            sortable: true,
-            key: 'completedFrames',
-            render: (value) =>
-                typeof value === 'number' ? value.toLocaleString() : '-',
-            skeleton: { variant: 'text', width: 110 }
-        },
-        {
             title: 'Started At',
             sortable: true,
             key: 'startedAt',
