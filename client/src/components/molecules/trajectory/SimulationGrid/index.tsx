@@ -4,8 +4,9 @@ import SimulationSkeletonCard from '@/components/atoms/trajectory/SimulationSkel
 import useTrajectoryStore from '@/stores/trajectories';
 import useAnimationPresence from '@/hooks/ui/animation/use-animation-presence';
 import EmptyState from '@/components/atoms/common/EmptyState';
+import Container from '@/components/primitives/Container';
 import './SimulationGrid.css';
-
+    
 const SimulationGrid = memo(() => {
     const [parent] = useAnimationPresence();
 
@@ -20,7 +21,6 @@ const SimulationGrid = memo(() => {
     const isLoading = useTrajectoryStore((state) => state.isLoadingTrajectories);
     const activeUploads = useTrajectoryStore((state) => state.activeUploads);
     const hasActiveUploads = Object.keys(activeUploads).length > 0;
-
     const hasEmptyState = !isLoading && trajectories.length === 0 && !hasActiveUploads;
 
     useEffect(() => {
@@ -49,10 +49,15 @@ const SimulationGrid = memo(() => {
             description='Get started by uploading your first simulation trajectory file to visualize and analyze atomic structures.' />
     }
 
+    if(isLoading){
+        return (
+            <Container className='trajectories-container gap-1-5 w-max y-auto'>
+                <SimulationSkeletonCard n={8} />
+            </Container>
+        )
+    }
     return (
-        <div className='trajectories-container gap-1-5 w-max y-auto' ref={parent as React.MutableRefObject<HTMLDivElement | null>}>
-            {isLoading && <SimulationSkeletonCard n={8} />}
-
+        <Container className='trajectories-container gap-1-5 w-max y-auto' ref={parent as React.RefObject<HTMLDivElement | null>}>
             {Object.values(activeUploads).map((upload) => (
                 <SimulationSkeletonCard
                     key={upload.id}
@@ -61,24 +66,15 @@ const SimulationGrid = memo(() => {
                 />
             ))}
 
-            {trajectories.map((trajectory) => {
-                // If this trajectory corresponds to an active upload, don't show it yet
-                // to avoid "double loaders" (one skeleton, one processing card)
-                // We show the skeleton until the upload processing is fully done and acknowledged by the store logic
-                if((trajectory as any).uploadId && activeUploads[(trajectory as any).uploadId]) {
-                    return null;
-                }
-
-                return (
-                    <SimulationCard
-                        key={trajectory._id}
-                        trajectory={trajectory}
-                        isSelected={selectedTrajectories.includes(trajectory._id)}
-                        onSelect={toggleTrajectorySelection}
-                    />
-                );
-            })}
-        </div>
+            {trajectories.map((trajectory) => (
+                <SimulationCard
+                    key={trajectory._id}
+                    trajectory={trajectory}
+                    isSelected={selectedTrajectories.includes(trajectory._id)}
+                    onSelect={toggleTrajectorySelection}
+                />
+            ))}
+        </Container>
     );
 });
 

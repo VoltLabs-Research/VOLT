@@ -35,12 +35,6 @@ const SimulationSkeletonCard: React.FC<Props> = ({ n = 8, progress, status }) =>
         return (
             <Container className='simulation-container loading p-relative w-max overflow-hidden cursor-pointer'>
                 <Skeleton variant='rounded' width='100%' height={200} />
-                <Container className='simulation-caption-container p-absolute'>
-                    <Container className='simulation-caption-left-container w-max flex-1'>
-                        <Skeleton variant='text' sx={{ fontSize: '1rem' }} width='60%' />
-                        <Skeleton variant='text' sx={{ fontSize: '1rem' }} width='40%' />
-                    </Container>
-                </Container>
 
                 <div className="p-absolute" style={{ bottom: '1.5rem', left: '1.5rem', zIndex: 10 }}>
                     <div className="d-flex items-center gap-05">

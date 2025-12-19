@@ -14,11 +14,10 @@ import useTrajectoryStore from '@/stores/trajectories';
 import useCardInteractions from '@/hooks/ui/interaction/use-card-interaction';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
 import useRasterStore from '@/stores/raster';
-import './SimulationCard.css';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
-
 import type { Trajectory } from '@/types/models';
+import './SimulationCard.css';
 
 interface SimulationCardProps {
     trajectory: Trajectory;
@@ -92,6 +91,12 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
     const navigate = useNavigate();
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const rasterize = useRasterStore((state) => state.rasterize);
+    const activeUploads = useTrajectoryStore((state) => state.activeUploads);
+
+    // If this trajectory corresponds to an active upload, don't show it yet
+    // to avoid "double loaders" (one skeleton, one processing card)
+    // We show the skeleton until the upload processing is fully done and acknowledged by the store logic
+    if(trajectory.uploadId && activeUploads[trajectory.uploadId]) return null;
 
     const {
         previewBlobUrl,
