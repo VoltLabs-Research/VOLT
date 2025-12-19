@@ -141,7 +141,7 @@ const FormField: React.FC<FormFieldProps> = ({
     return (
         <Container className={`d-flex content-between items-center ${fieldType === 'checkbox' ? 'checkbox-container' : ''} ${isLoading ? 'form-field-loading' : ''}`}>
             <Title className='font-size-2-5 labeled-input-label font-weight-4'>{label}</Title>
-            <Container className='d-flex items-center'>
+            <Container className='d-flex items-center render-input-container'>
                 {renderInput()}
             </Container>
         </Container>

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { gsap } from 'gsap';
-import { ChevronDown, Trash2 } from 'lucide-react';
+import { ChevronDown, Trash2, Plus } from 'lucide-react';
 import './CollapsibleSection.css';
 import Title from '@/components/primitives/Title';
 import Container from '@/components/primitives/Container';
@@ -11,6 +11,7 @@ interface CollapsibleSectionProps {
   defaultExpanded?: boolean;
   className?: string;
   onDelete?: () => void;
+  onAdd?: () => void;
 }
 
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
@@ -18,7 +19,8 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   children,
   defaultExpanded = false,
   className = '',
-  onDelete
+  onDelete,
+  onAdd
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isHovered, setIsHovered] = useState(false);
@@ -86,6 +88,11 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
     onDelete?.();
   };
 
+  const handleAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAdd?.();
+  };
+
   return (
     <Container className={`d-flex column mb-1-5 ${className}`}>
       <Container
@@ -97,6 +104,28 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
       >
         <Title className="font-size-3 font-weight-6 color-primary u-select-none">{title}</Title>
         <Container className="d-flex items-center gap-025">
+          {onAdd && (
+            <Container
+              onClick={handleAdd}
+              style={{
+                padding: '0.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'var(--color-text-muted)',
+                transition: 'color 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--accent-green, #4ade80)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--color-text-muted)';
+              }}
+            >
+              <Plus size={16} />
+            </Container>
+          )}
           {onDelete && isHovered && (
             <Container
               onClick={handleDelete}

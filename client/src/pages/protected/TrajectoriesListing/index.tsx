@@ -81,12 +81,6 @@ const TrajectoriesListing = () => {
             skeleton: { variant: 'text', width: 50 }
         },
         {
-            title: 'Created By',
-            key: 'createdBy',
-            render: (v) => v ? `${v.firstName} ${v.lastName}` : 'Unknown',
-            skeleton: { variant: 'text', width: 110 }
-        },
-        {
             title: 'Created At',
             key: 'createdAt',
             render: (v) => formatTimeAgo(v),

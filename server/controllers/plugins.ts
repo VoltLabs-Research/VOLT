@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { NextFunction, Request, Response } from 'express';
 import { catchAsync, slugify } from '@/utilities/runtime/runtime';
 import { getAnalysisQueue } from '@/queues';
@@ -178,14 +179,17 @@ export default class PluginsController extends BaseController<IPlugin> {
             return next(new RuntimeError('Plugin::NotValid::CannotExecute', 400));
         }
 
+        const analysisId = new mongoose.Types.ObjectId();
+        let framesToProcess = trajectory!.frames;
+
         const analysis = await Analysis.create({
+            _id: analysisId,
             plugin: plugin.slug,
             config,
-            trajectory: trajectoryId
+            trajectory: trajectoryId,
+            startedAt: new Date(),
+            totalFrames: framesToProcess.length
         });
-
-        const analysisId = analysis._id.toString();
-        let framesToProcess = trajectory!.frames;
 
         const argumentsNode = plugin.workflow.nodes.find((node: IWorkflowNode) => node.type === NodeType.ARGUMENTS);
         const jobs: AnalysisJob[] = [];
@@ -199,14 +203,14 @@ export default class PluginsController extends BaseController<IPlugin> {
                 ? trajectory.team.toString()
                 : String(trajectory.team);
 
-            const jobId = `${analysisId}-${timestep}`;
+            const jobId = `${analysisId.toString()}-${timestep}`;
             jobs.push({
                 jobId,
                 teamId,
                 trajectoryId,
                 config,
                 inputFile,
-                analysisId,
+                analysisId: analysisId.toString(),
                 modifierId: plugin.slug,
                 plugin: plugin.slug,
                 name: plugin.modifier?.name || plugin.slug,
@@ -221,7 +225,7 @@ export default class PluginsController extends BaseController<IPlugin> {
 
         res.status(200).json({
             status: 'success',
-            data: { analysisId }
+            data: { analysisId: analysisId.toString() }
         });
     });
 

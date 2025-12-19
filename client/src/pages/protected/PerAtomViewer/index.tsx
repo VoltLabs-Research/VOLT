@@ -26,7 +26,7 @@ const PerAtomViewer = () => {
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [total, setTotal] = useState(0);
-    const pageSize = 1000;
+    const pageSize = 50_000;
 
     const fetchPage = useCallback(async (nextPage: number) => {
         if (!trajectoryId || !analysisId || !exposureId) {

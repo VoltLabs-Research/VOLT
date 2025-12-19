@@ -4,6 +4,7 @@ import { TbPlus, TbTrash } from 'react-icons/tb';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import Paragraph from '@/components/primitives/Paragraph';
+import './ListEditor.css';
 
 interface ListEditorProps {
     items: string[];
@@ -14,6 +15,7 @@ interface ListEditorProps {
     placeholder?: string;
     description?: string;
     addButtonText?: string;
+    hideAddButton?: boolean;
 }
 
 const ListEditor: React.FC<ListEditorProps> = ({
@@ -21,10 +23,11 @@ const ListEditor: React.FC<ListEditorProps> = ({
     onAdd,
     onRemove,
     onChange,
-    label = 'Item',
+    label = undefined,
     placeholder = 'Enter value',
     description,
-    addButtonText = 'Add Item'
+    addButtonText = 'Add Item',
+    hideAddButton = false
 }) => {
     return (
         <Container className="d-flex column gap-1 items-start">
@@ -34,8 +37,8 @@ const ListEditor: React.FC<ListEditorProps> = ({
 
             {items.map((item, index) => (
                 <Container key={index} className="d-flex gap-05 w-max content-between items-center">
-                    <Container className="d-flex column flex-1">
-                        {index === 0 && <label className="kv-editor-label font-weight-5">{label}</label>}
+                    <Container className="d-flex column input-container">
+                        {index === 0 && label && <label className="kv-editor-label font-weight-5">{label}</label>}
                         <FormField
                             label=""
                             fieldKey={`item-${index}`}
@@ -51,22 +54,23 @@ const ListEditor: React.FC<ListEditorProps> = ({
                         iconOnly
                         size='sm'
                         onClick={() => onRemove(index)}
-                        style={{ marginTop: index === 0 ? '1.25rem' : 0 }}
                     >
                         <TbTrash size={14} />
                     </Button>
                 </Container>
             ))}
 
-            <Button
-                variant='ghost'
-                intent='secondary'
-                size='sm'
-                onClick={onAdd}
-                leftIcon={<TbPlus size={14} />}
-            >
-                {addButtonText}
-            </Button>
+            {!hideAddButton && (
+                <Button
+                    variant='ghost'
+                    intent='neutral'
+                    size='sm'
+                    onClick={onAdd}
+                    leftIcon={<TbPlus size={14} />}
+                >
+                    {addButtonText}
+                </Button>
+            )}
         </Container>
     );
 };

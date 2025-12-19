@@ -64,20 +64,19 @@ const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
                 />
             </CollapsibleSection>
 
-            <CollapsibleSection title='Per-Atom Properties' defaultExpanded>
+            <CollapsibleSection title='Per-Atom Properties' defaultExpanded onAdd={handleAddProperty}>
                 <ListEditor
                     items={perAtomProperties}
                     onAdd={handleAddProperty}
                     onRemove={handleRemoveProperty}
                     onChange={handleChangeProperty}
-                    label="Property Name"
                     placeholder="e.g. shear_strain"
                     description="Add per-atom properties that will be available in the atom viewer."
-                    addButtonText="Add Property"
+                    hideAddButton
                 />
             </CollapsibleSection>
 
-            <CollapsibleSection title='Listing Columns' defaultExpanded>
+            <CollapsibleSection title='Listing Columns' defaultExpanded onAdd={handleAdd}>
                 <KeyValueEditor
                     entries={entries}
                     onAdd={handleAdd}

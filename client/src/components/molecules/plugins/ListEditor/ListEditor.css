@@ -1,0 +1,8 @@
+.input-container{
+    width: 100%;
+}
+
+.input-container .render-input-container,
+.input-container .labeled-input{
+    width: 100%;
+}

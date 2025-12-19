@@ -160,13 +160,6 @@ const PluginsListing = () => {
             skeleton: { variant: 'text', width: 60 }
         },
         {
-            title: 'Author',
-            sortable: true,
-            key: 'modifier.author',
-            render: (_value, row) => row?.modifier?.author ?? '—',
-            skeleton: { variant: 'text', width: 100 }
-        },
-        {
             title: 'Created',
             sortable: true,
             key: 'createdAt',

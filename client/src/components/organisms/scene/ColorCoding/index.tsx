@@ -108,7 +108,7 @@ const ColorCoding = () => {
     }, [symmetricRange]);
 
     return (
-        <EditorWidget className='color-coding-container overflow-hidden' draggable={false}>
+        <EditorWidget className='color-coding-container overflow-hidden d-flex column gap-1' draggable={false}>
             <Container className='d-flex content-between items-center'>
                 <Title className='font-weight-5-5'>Color Coding</Title>
             </Container>
