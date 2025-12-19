@@ -9,6 +9,7 @@ import { getTrajectoryProcessingQueue } from '@/queues';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import { ITrajectory } from '@/types/models/trajectory';
 
 interface CreateTrajectoryOptions {
     files: any[];
@@ -17,8 +18,82 @@ interface CreateTrajectoryOptions {
     trajectoryName: string;
     originalFolderName?: string;
     onProgress?: (progress: number) => void;
-    uploadId?: string;
-}
+};
+
+const processTrajectoryFile = async (
+    trajectoryId: string, 
+    updateProgress: any,
+    workingDir: string, 
+    file: any, 
+    i: number
+) => {
+    let tempPath = file.path;
+
+    // If we only have a buffer, write to disk briefly to let the parser read it.
+    if(!tempPath && file.buffer){
+        tempPath = path.join(workingDir, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+        await fs.writeFile(tempPath, file.buffer);
+    }
+
+    // Parse and validate
+    let frameInfo;
+    try{
+        const parsed = await TrajectoryParserFactory.parse(tempPath);
+        frameInfo = parsed.metadata;
+    }catch(err){
+        if(!file.path) await fs.rm(tempPath).catch(() => {});
+        return null;
+    }
+
+    const fileSize = file.size || (await fs.stat(tempPath)).size;
+
+    // Upload to storage using the file path directly (streaming).
+    await DumpStorage.saveDump(trajectoryId, frameInfo.timestep, tempPath, (progress) => {
+        updateProgress(i, progress * fileSize);
+    });
+
+    if(!file.path) await fs.rm(tempPath).catch(() => {});
+
+    return {
+        frameInfo,
+        srcPath: `minio://${trajectoryId}/${frameInfo.timestep}`,
+        originalSize: fileSize,
+        originalName: file.originalname || file.name || `frame_${frameInfo.timestep}`
+    };
+};
+
+const dispatchTrajectoryJobs = async (validFiles: any[], trajectory: ITrajectory, teamId: string) => {
+    const queue = getTrajectoryProcessingQueue();
+    const CHUNK_SIZE = 20;
+    const jobs: any[] = [];
+    const sessionId = v4();
+
+    const totalChunks = Math.ceil(validFiles.length / CHUNK_SIZE);
+    for(let i = 0; i < validFiles.length; i += CHUNK_SIZE){
+        const jobId = v4();
+        const chunk = validFiles.slice(i, i + CHUNK_SIZE);
+        const chunkIndex = Math.floor(i / CHUNK_SIZE);
+        const files = chunk.map(({ frameInfo, srcPath }) => ({
+            frameInfo,
+            frameFilePath: srcPath
+        }));
+
+        jobs.push({
+            jobId,
+            trajectoryId: trajectory._id.toString(),
+            chunkIndex,
+            totalChunks,
+            files,
+            teamId,
+            name: 'Upload Trajectory',
+            message: trajectory.name,
+            sessionId,
+            sessionStartTime: new Date().toISOString()
+        });
+    }
+
+    await queue.addJobs(jobs);
+};
 
 /**
  * Processes incoming raw files, uploads them to Object Storge(MinIO),
@@ -29,8 +104,7 @@ const createTrajectory = async ({
     teamId,
     userId,
     trajectoryName,
-    onProgress,
-    uploadId
+    onProgress
 }: CreateTrajectoryOptions): Promise<InstanceType<typeof Trajectory>> => {
     const trajectoryId = new Types.ObjectId();
     const trajectoryIdStr = trajectoryId.toString();
@@ -43,88 +117,34 @@ const createTrajectory = async ({
 
     // Pre-calculate total size for progress if possible
     let totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
-    // If we only have paths (e.g. from multer diskStorage), we trust multer's size.
-    // If we don't have size, we might need to stat. 
-    // But let's rely on what we have. 
 
     // Track bytes processed per file index
     const processedBytesMap: Record<number, number> = {};
 
     const updateProgress = (index: number, bytes: number) => {
         processedBytesMap[index] = bytes;
-        if (totalSize > 0 && onProgress) {
+        if(totalSize > 0 && onProgress){
             const totallyProcessed = Object.values(processedBytesMap).reduce((a, b) => a + b, 0);
             onProgress(Math.min(1, totallyProcessed / totalSize));
         }
     };
 
     // Process files. Validate -> Upload to MinIO -> Prepare Job Data.
-    // Use batch processing to prevent overwhelming MinIO with too many concurrent uploads
-    const BATCH_SIZE = 5;
+    const BATCH_SIZE = 8;
     const allResults: any[] = [];
 
-    const processFile = async (file: any, i: number) => {
-        let tempPath = file.path;
-
-        // Handle Buffer vs Path(Multer vs SSH).
-        // If we only have a buffer, write to disk briefly to let the parser read it.
-        if (!tempPath && file.buffer) {
-            tempPath = path.join(workingDir, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
-            await fs.writeFile(tempPath, file.buffer);
-            // Update size if it was missing 
-            if (!file.size) {
-                file.size = file.buffer.length;
-                totalSize += file.size;
-            }
-        }
-
-        // Parse and validate using the centralized factory
-        let frameInfo;
-        try {
-            const parsed = await TrajectoryParserFactory.parse(tempPath);
-            frameInfo = parsed.metadata;
-        } catch (err) {
-            if (!file.path) await fs.rm(tempPath).catch(() => { });
-            return null;
-        }
-
-        const fileSize = file.size || (await fs.stat(tempPath)).size;
-
-        // Upload to storage using the file path directly (streaming).
-        // This prevents loading the entire file into RAM.
-        await DumpStorage.saveDump(trajectoryIdStr, frameInfo.timestep, tempPath, (fileProgress) => {
-            updateProgress(i, fileProgress * fileSize);
-        });
-
-        // Cleanup local temp.
-        if (!file.path) await fs.rm(tempPath).catch(() => { });
-
-        return {
-            frameInfo,
-            srcPath: `minio://${trajectoryIdStr}/${frameInfo.timestep}`,
-            originalSize: fileSize,
-            originalName: file.originalname || file.name || `frame_${frameInfo.timestep}`
-        };
-    };
-
-    // Process files in batches to prevent S3 multipart upload errors
-    for (let i = 0; i < files.length; i += BATCH_SIZE) {
+    for(let i = 0; i < files.length; i += BATCH_SIZE){
         const batch = files.slice(i, i + BATCH_SIZE);
-        const batchPromises = batch.map((file, batchIndex) =>
-            processFile(file, i + batchIndex)
-        );
+        const batchPromises = batch.map((file, batchIndex) => 
+            processTrajectoryFile(trajectoryIdStr, updateProgress, workingDir, file, i + batchIndex));
         const batchResults = await Promise.all(batchPromises);
         allResults.push(...batchResults);
     }
 
-    const validFiles = (allResults.filter(Boolean) as any[]);
-
-    if (validFiles.length === 0) {
+    const validFiles = allResults.filter(Boolean);
+    if(validFiles.length === 0){
         throw new RuntimeError(ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES, 400);
     }
-
-    // Ensure 100% progress
-    if (onProgress) onProgress(1);
 
     const validTotalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
     const frames = validFiles.map((f) => f.frameInfo);
@@ -142,32 +162,13 @@ const createTrajectory = async ({
         }
     });
 
-    // Dispatch jobs to queue
-    const queue = getTrajectoryProcessingQueue();
-    const chunkSize = 20;
-    const jobs: any[] = [];
-    const sessionId = v4();
+    await dispatchTrajectoryJobs(validFiles, newTrajectory, teamId);
 
-    for (let i = 0; i < validFiles.length; i += chunkSize) {
-        const chunk = validFiles.slice(i, i + chunkSize);
-        jobs.push({
-            jobId: v4(),
-            trajectoryId: newTrajectory._id.toString(),
-            chunkIndex: Math.floor(i / chunkSize),
-            totalChunks: Math.ceil(validFiles.length / chunkSize),
-            files: chunk.map(({ frameInfo, srcPath }) => ({
-                frameInfo,
-                frameFilePath: srcPath
-            })),
-            teamId,
-            name: 'Upload Trajectory',
-            message: trajectoryName,
-            sessionId,
-            sessionStartTime: new Date().toISOString()
-        });
-    }
+    // The file upload was completed in previous steps; however, we'll wait
+    // until the jobs are queued before marking it as complete. 
+    // Otherwise, the path card will briefly appear and disappear from the front end.
+    if(onProgress) onProgress(1);
 
-    await queue.addJobs(jobs);
     await fs.rm(workingDir, { recursive: true, force: true }).catch(() => { });
 
     return newTrajectory;

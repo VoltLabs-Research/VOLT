@@ -43,6 +43,7 @@ const SimulationGrid = memo(() => {
         };
     }, [selectedTrajectories.length, deleteSelectedTrajectories]);
 
+
     if (hasEmptyState) {
         return <EmptyState
             title='No Trajectories Yet'

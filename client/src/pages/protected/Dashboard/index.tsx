@@ -14,59 +14,49 @@ import useTeamStore from '@/stores/team/team';
 import Container from '@/components/primitives/Container';
 import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
 import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';
-import useAuthStore from '@/stores/authentication';
 import useEnvironmentConfigStore from '@/stores/editor/environment-config';
 import DashboardStats from '@/components/atoms/dashboard/DashboardStats';
-import './Dashboard.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
-
-const getGreeting = (): string => {
-    const hour = new Date().getHours();
-
-    if (hour >= 5 && hour < 12) {
-        return 'Good Morning';
-    } else if (hour >= 12 && hour < 17) {
-        return 'Good Afternoon';
-    } else if (hour >= 17 && hour < 21) {
-        return 'Good Evening';
-    } else {
-        return 'Good Night';
-    }
-};
-
-const capitalize = (name?: string) => {
-    if (!name) return '';
-    const trimmed = String(name).trim();
-    if (!trimmed) return '';
-    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
-};
+import './Dashboard.css';
 
 const DashboardPage: React.FC = memo(() => {
-    const user = useAuthStore((state) => state.user);
     useTeamJobs();
     useTrajectoryUpdates();
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoadingTrajectories = useTrajectoryStore((state) => state.isLoadingTrajectories);
+    const setBackgroundColor = useEnvironmentConfigStore((state) => state.setBackgroundColor);
 
-    // Memoize the first trajectory ID to prevent unnecessary hook reruns
-    const firstTrajectoryId = useMemo(() => trajectories?.[0]?._id ?? undefined, [trajectories?.[0]?._id]);
+    const firstTrajectoryId = useMemo(() => {
+        if(!trajectories.length) return;
+        return trajectories[0]._id;
+    }, [trajectories?.[0]?._id]);
 
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId: firstTrajectoryId });
     const scene3DRef = useRef<Scene3DRef>(null)
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
 
-    // Check if there are any trajectories being processed(not completed)
-    const isProcessing = useMemo(() => trajectories.some(t => t.status !== 'completed'), [trajectories]);
-    const completedTrajectories = useMemo(() => trajectories.filter(t => t.status === 'completed'), [trajectories]);
-    const lastCompletedTrajectory = completedTrajectories[0]; // Get most recent completed
+    // Check if there are any trajectories being processed (not completed)
+    const isProcessing = useMemo(() => {
+        return trajectories.some((trajectory) => trajectory.status !== 'completed');
+    }, [trajectories]);
+
+    const completedTrajectories = useMemo(() => {
+        return trajectories.filter((trajectory) => trajectory.status === 'completed');
+    }, [trajectories]);
+
+    const lastCompletedTrajectory = completedTrajectories[0];
 
     // When processing, show last completed trajectory. Otherwise show first trajectory
-    const displayTrajectory = useMemo(() => isProcessing && lastCompletedTrajectory ? lastCompletedTrajectory : trajectories[0], [isProcessing, lastCompletedTrajectory, trajectories]);
+    const displayTrajectory = useMemo(() => {
+        if(isProcessing && lastCompletedTrajectory){
+            return lastCompletedTrajectory;
+        }
+
+        return trajectories[0];
+    }, [isProcessing, lastCompletedTrajectory, trajectories]);
 
     const hasNoTrajectories = !isLoadingTrajectories && trajectories.length === 0;
-
-    const setBackgroundColor = useEnvironmentConfigStore((state) => state.setBackgroundColor);
 
     const [isLight, setIsLight] = useState(() =>
         typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light'
@@ -128,10 +118,12 @@ const DashboardPage: React.FC = memo(() => {
                                 enableZoom: false
                             }}
                         >
-                            <TimestepViewer
-                                trajectoryId={trajectory?._id || ''}
-                                currentTimestep={currentTimestep}
-                            />
+                            {!isProcessing && (
+                                <TimestepViewer
+                                    trajectoryId={trajectory?._id || ''}
+                                    currentTimestep={currentTimestep}
+                                />
+                            )}
                         </Scene3D>
 
                         {isProcessing && (

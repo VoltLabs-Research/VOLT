@@ -36,7 +36,7 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
         const options: QueueOptions = {
             queueName: 'trajectory-processing-queue',
             workerPath: path.resolve(__dirname, '../workers/trajectory-processing.ts'),
-            maxConcurrentJobs: 20,
+            maxConcurrentJobs: 5,
             cpuLoadThreshold: 60,
             ramLoadThreshold: 70,
             useStreamingAdd: true

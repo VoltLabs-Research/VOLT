@@ -203,7 +203,6 @@ export default class TrajectoryController extends BaseController<any> {
     });
 
     public create = catchAsync(async (req: Request, res: Response) => {
-        const { files } = (res as any).locals.data;
         const userId = (req as any).user._id;
         const { teamId, originalFolderName, uploadId } = req.body;
 
@@ -221,32 +220,17 @@ export default class TrajectoryController extends BaseController<any> {
                 userId: (req as any).user._id,
                 trajectoryName,
                 originalFolderName: req.body.originalFolderName,
-                uploadId,
                 onProgress: (progress) => {
                     if (uploadId) {
-                        // We use the active socket gateway instance to emit
                         const io = req.app.get('io');
-                        // Or if io is not in app, we might need to import the singleton if available.
-                        // Assuming io is attached to app or we have a way to access it.
-                        // Based on server.ts usually: app.set('io', io);
-                        if (io) {
-                            io.to(`upload:${uploadId}`).emit('trajectory:upload-progress', {
-                                uploadId,
-                                progress
-                            });
-                            // Also emit to user room if needed, but uploadId room is specific.
-                            // Client needs to join this room? 
-                            // Or just emit to the user's socket if we can target it.
-                            // Easier: Emit to all connected sockets of this user?
-                            // Or simpler: Emit global 'trajectory:upload-progress' to the user's private room.
-                            // User room is usually `user:${userId}`.
-                            io.to(`user:${userId}`).emit('trajectory:upload-progress', {
-                                uploadId,
-                                progress
-                            });
-                        } else {
-                            console.error('[TrajectoryController] IO instance not found on app!');
-                        }
+                        io.to(`upload:${uploadId}`).emit('trajectory:upload-progress', {
+                            uploadId,
+                            progress
+                        });
+                        io.to(`user:${userId}`).emit('trajectory:upload-progress', {
+                            uploadId,
+                            progress
+                        });
                     }
                 }
             });
@@ -255,7 +239,6 @@ export default class TrajectoryController extends BaseController<any> {
                 data: trajectory
             });
         } finally {
-            // Cleanup temp files uploaded by multer
             if (req.files && Array.isArray(req.files)) {
                 await Promise.all((req.files as any[]).map(f =>
                     require('fs').promises.unlink(f.path).catch(() => { })

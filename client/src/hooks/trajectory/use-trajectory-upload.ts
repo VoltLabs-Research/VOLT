@@ -24,19 +24,14 @@ import useTrajectoryStore from '@/stores/trajectories';
 import { v4 as uuidv4 } from 'uuid';
 import { socketService } from '@/services/socketio';
 
-
 export interface FileWithPath {
     file: File;
     path: string;
 }
 
 const useTrajectoryUpload = () => {
-    // We don't need updateUploadProgress from store because we update state directly via setState in handleProgress
-    // or we could add an action to the store if we wanted to be purist.
-    // For now, direct setState is fine as we are inside a hook/component context (mostly).
-    // Actually, setState on the store instance update global state.
     const { createTrajectory: createTrajectoryInStore } = useTrajectoryStore.getState();
-
+    const uploadId = uuidv4();
 
     const uploadAndProcessTrajectory = async (
         filesWithPaths: FileWithPath[],
@@ -48,18 +43,9 @@ const useTrajectoryUpload = () => {
             formData.append('trajectoryFiles', file, path);
         });
 
-        const uploadId = uuidv4();
-
         formData.append('originalFolderName', originalFolderName);
         formData.append('teamId', teamId);
         formData.append('uploadId', uploadId);
-
-        // Optimistic UI update handled by store's createTrajectory?
-        // No, createTrajectory is async. We want immediate feedback.
-        // But we can call the store action if we want.
-        // Actually, createTrajectory in store sets the initial state synchronously before the async work?
-        // Let's check the store. "set(state => ({ activeUploads ... }))" happens before "try".
-        // So we DONT need it here if we call createTrajectory immediately.
 
         const handleProgress = (data: any) => {
             if (data.uploadId === uploadId) {
@@ -76,21 +62,12 @@ const useTrajectoryUpload = () => {
         const unsubscribe = socketService.on('trajectory:upload-progress', handleProgress);
 
         try {
-            // We pass the callback, but the store handles the state update internally too.
-            // The store calls the callback AND updates state.
-            // So we don't need to update state here.
             await createTrajectoryInStore(formData, teamId, undefined, uploadId);
 
         } finally {
             if (unsubscribe) {
                 unsubscribe();
             }
-            // Remove from active uploads on success/fail is handled in store usually, 
-            // but here we manually added optimistic update. 
-            // The store's createTrajectory also does state updates. 
-            // We duplicated logic a bit. 
-            // Store's createTrajectory generates its OWN uploadId currently!
-            // We need to sync them.
         }
     };
 
