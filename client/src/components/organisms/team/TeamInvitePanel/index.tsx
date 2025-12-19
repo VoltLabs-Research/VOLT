@@ -41,11 +41,11 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     const { showError, showSuccess } = useToast();
 
     useEffect(() => {
-        const fetchMembers = async () => {
-            if (!teamId) return;
+        const fetchMembers = async() => {
+            if(!teamId) return;
 
             setLoadingMembers(true);
-            try {
+            try{
                 const membersData = await teamApi.members.getAll(teamId);
                 const formattedMembers: TeamMember[] = (membersData as any[])?.map((member: any) => ({
                     email: member.email || member._id,
@@ -55,9 +55,9 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 })) || [];
 
                 setMembers(formattedMembers);
-            } catch (err) {
+            }catch(err){
                 console.error('Error fetching team members:', err);
-            } finally {
+            }finally{
                 setLoadingMembers(false);
             }
         };
@@ -65,16 +65,16 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         fetchMembers();
     }, [teamId]);
 
-    const handleAddMember = async (e: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>) => {
-        if ('key' in e && e.key !== 'Enter') return;
-        if ('key' in e) e.preventDefault();
+    const handleAddMember = async(e: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>) => {
+        if('key' in e && e.key !== 'Enter') return;
+        if('key' in e) e.preventDefault();
 
-        if (!email.trim()) return;
+        if(!email.trim()) return;
 
         setButtonState('idle');
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.trim())) {
+        if(!emailRegex.test(email.trim())) {
             const errorMsg = 'Invalid email format';
             showError(errorMsg);
             setButtonState('error');
@@ -82,7 +82,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             return;
         }
 
-        if (members.find(m => m.email === email.trim())) {
+        if(members.find(m => m.email === email.trim())) {
             const errorMsg = 'This email is already invited';
             showError(errorMsg);
             setButtonState('error');
@@ -92,7 +92,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
         setLoading(true);
         setButtonState('loading');
-        try {
+        try{
             await teamApi.invitations.send(teamId, email.trim(), 'Can view' as any);
 
             setMembers([...members, { email: email.trim(), role: 'Can view' }]);
@@ -104,30 +104,30 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             setTimeout(() => {
                 setButtonState('idle');
             }, 2500);
-        } catch (err) {
+        }catch(err){
             const errorMessage = err instanceof Error ? err.message : 'An error occurred';
             showError(errorMessage);
             setButtonState('error');
             setTimeout(() => setButtonState('idle'), 2000);
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
-    const handleRemoveMember = async (emailToRemove: string) => {
-        try {
+    const handleRemoveMember = async(emailToRemove: string) => {
+        try{
             await teamApi.members.remove(teamId, { email: emailToRemove });
 
             setMembers(members.filter(m => m.email !== emailToRemove));
             showSuccess(`Member ${emailToRemove} removed successfully`);
-        } catch (err) {
+        }catch(err){
             const errorMessage = err instanceof Error ? err.message : 'Failed to remove member';
             showError(errorMessage);
         }
     };
 
-    const handleRoleChange = async (email: string, newRole: 'Can view' | 'Full access' | 'Can edit' | 'Remove') => {
-        if (newRole === 'Remove') {
+    const handleRoleChange = async(email: string, newRole: 'Can view' | 'Full access' | 'Can edit' | 'Remove') => {
+        if(newRole === 'Remove'){
             handleRemoveMember(email);
             return;
         }

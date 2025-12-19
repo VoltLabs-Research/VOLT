@@ -40,7 +40,7 @@ const buildColumns = (columnDefs: ColumnDef[], showTrajectory = false): ColumnCo
         skeleton: { variant: 'text' as const, width: 120 }
     }));
 
-    if (showTrajectory) {
+    if(showTrajectory){
         cols.unshift({
             key: 'trajectoryName',
             title: 'Trajectory',
@@ -84,32 +84,32 @@ const PluginListing = () => {
 
     // Fetch trajectories for filter
     useEffect(() => {
-        if (!team?._id) return;
+        if(!team?._id) return;
         trajectoryApi.getAll({ teamId: team._id })
             .then(data => setTrajectories(data))
             .catch(err => console.error('Failed to load trajectories', err));
     }, [team?._id]);
 
-    const fetchPage = useCallback(async (nextPage: number) => {
-        if (!pluginSlug || !listingSlug) {
+    const fetchPage = useCallback(async(nextPage: number) => {
+        if(!pluginSlug || !listingSlug){
             setError('Invalid listing parameters.');
             return;
         }
 
         // Need teamId if no trajectoryId
-        if (!trajectoryId && !team?._id) {
+        if(!trajectoryId && !team?._id){
             setError('Please select a team first.');
             return;
         }
 
         setError(null);
-        if (nextPage === 1) {
+        if(nextPage === 1){
             setLoading(true);
-        } else {
+        }else{
             setIsFetchingMore(true);
         }
 
-        try {
+        try{
             const payload = await pluginApi.getListing(
                 pluginSlug,
                 listingSlug,
@@ -124,17 +124,17 @@ const PluginListing = () => {
             setRows((prev) => (nextPage === 1 ? normalizedRows : [...prev, ...normalizedRows]));
             setPage(nextPage);
             setHasMore(payload.hasMore ?? ((payload.page * payload.limit) < payload.total));
-        } catch (err: any) {
+        }catch(err: any){
             const message = err?.response?.data?.message || err?.message || 'Failed to load listing.';
             setError(message);
-        } finally {
+        }finally{
             setLoading(false);
             setIsFetchingMore(false);
         }
     }, [listingSlug, pluginSlug, trajectoryId, team?._id]);
 
     useEffect(() => {
-        if (Object.keys(pluginsBySlug).length === 0) {
+        if(Object.keys(pluginsBySlug).length === 0) {
             fetchPlugins();
         }
     }, [pluginsBySlug, fetchPlugins]);
@@ -146,26 +146,26 @@ const PluginListing = () => {
         setPage(1);
         setHasMore(false);
 
-        if (pluginSlug && listingSlug && (trajectoryId || team?._id)) {
+        if(pluginSlug && listingSlug && (trajectoryId || team?._id)) {
             fetchPage(1);
         }
     }, [pluginSlug, listingSlug, trajectoryId, fetchPage, team?._id]);
 
-    const handleMenuAction = useCallback(async (action: string, item: any) => {
-        if (action === 'delete') {
+    const handleMenuAction = useCallback(async(action: string, item: any) => {
+        if(action === 'delete'){
             const analysisId = item?.analysisId;
-            if (!analysisId) {
+            if(!analysisId){
                 console.error('No analysis ID found for deletion');
                 return;
             }
 
-            if (!window.confirm('Delete this analysis? This cannot be undone.')) return;
+            if(!window.confirm('Delete this analysis? This cannot be undone.')) return;
 
             setRows((prev) => prev.filter((row) => row?.analysisId !== analysisId));
 
-            try {
+            try{
                 await analysisConfigApi.delete(analysisId);
-            } catch (e) {
+            }catch(e){
                 console.error('Failed to delete analysis:', e);
                 fetchPage(1);
             }
@@ -176,7 +176,7 @@ const PluginListing = () => {
         const options: any[] = [];
 
         // View atoms - for items with per-atom data
-        if (item?.trajectoryId && item?.analysisId && item?.exposureId && item?.timestep !== undefined) {
+        if(item?.trajectoryId && item?.analysisId && item?.exposureId && item?.timestep !== undefined){
             options.push([
                 'View Atoms',
                 RiEyeLine,
@@ -186,7 +186,7 @@ const PluginListing = () => {
             ]);
         }
 
-        if (item?.analysisId) {
+        if(item?.analysisId){
             options.push([
                 'Delete Analysis',
                 RiDeleteBin6Line,
@@ -197,9 +197,9 @@ const PluginListing = () => {
     }, [handleMenuAction, navigate]);
 
     const handleTrajectoryChange = (newTrajId: string) => {
-        if (newTrajId) {
+        if(newTrajId){
             navigate(`/dashboard/trajectory/${newTrajId}/plugins/${pluginSlug}/listing/${listingSlug}`);
-        } else {
+        }else{
             navigate(`/dashboard/plugins/${pluginSlug}/listing/${listingSlug}`);
         }
     };
@@ -229,7 +229,7 @@ const PluginListing = () => {
                 hasMore={hasMore}
                 isFetchingMore={isFetchingMore}
                 onLoadMore={() => {
-                    if (!loading && !isFetchingMore && hasMore) {
+                    if(!loading && !isFetchingMore && hasMore){
                         fetchPage(page + 1);
                     }
                 }}
@@ -239,7 +239,7 @@ const PluginListing = () => {
                     <Select
                         options={[
                             { value: '', title: 'All Trajectories' },
-                            ...trajectories.map(t => ({ value: t._id, title: t.name }))
+                                ...trajectories.map(t => ({ value: t._id, title: t.name }))
                         ]}
                         value={trajectoryId || ''}
                         onChange={handleTrajectoryChange}
@@ -263,4 +263,3 @@ const PluginListing = () => {
 };
 
 export default PluginListing;
-

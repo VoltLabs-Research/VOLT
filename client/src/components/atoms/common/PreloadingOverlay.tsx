@@ -12,7 +12,7 @@ const PreloadingOverlay: React.FC = () => {
     const isPreloading = usePlaybackStore((state) => state.isPreloading ?? false);
     const preloadProgress = usePlaybackStore((state) => state.preloadProgress ?? 0);
 
-    if (!isPreloading) return null;
+    if(!isPreloading) return null;
 
     const ringVars = {
         ['--p' as any]: preloadProgress,

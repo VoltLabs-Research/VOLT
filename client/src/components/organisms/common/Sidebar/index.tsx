@@ -32,7 +32,7 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
     const bottom = React.Children.toArray(children).find((child) => child.type === SidebarBottom);
 
     useEffect(() => {
-        if (window.innerWidth <= MOBILE_BREAKPOINT) {
+        if(window.innerWidth <= MOBILE_BREAKPOINT){
             setCollapsed(true);
         }
     }, []);

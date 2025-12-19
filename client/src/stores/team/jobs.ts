@@ -69,7 +69,6 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
                 logger.log(`Session ${updatedJob.sessionId} expired for trajectory ${updatedJob.trajectoryId}`);
                 const newExpiredSessions = new Set(expiredSessions);
                 newExpiredSessions.add(updatedJob.sessionId);
-
                 set({ expiredSessions: newExpiredSessions });
                 return;
             }

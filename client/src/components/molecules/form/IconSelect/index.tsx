@@ -17,11 +17,11 @@ interface IconSelectProps {
 let allIconsCache: string[] | null = null;
 let loadingPromise: Promise<string[]> | null = null;
 
-const loadAllIcons = async (): Promise<string[]> => {
-    if (allIconsCache) return allIconsCache;
-    if (loadingPromise) return loadingPromise;
+const loadAllIcons = async(): Promise<string[]> =>{
+    if(allIconsCache) return allIconsCache;
+    if(loadingPromise) return loadingPromise;
 
-    loadingPromise = (async () => {
+    loadingPromise = (async() => {
         const libs = Object.keys(ICON_LIB_LOADERS) as IconLib[];
         const results: string[] = [];
 
@@ -29,8 +29,8 @@ const loadAllIcons = async (): Promise<string[]> => {
             libs.map(lib => ICON_LIB_LOADERS[lib]().catch(() => null))
         );
 
-        for (const mod of modules) {
-            if (!mod) continue;
+        for(const mod of modules){
+            if(!mod) continue;
             const names = Object.keys(mod).filter(key =>
                 typeof (mod as Record<string, unknown>)[key] === 'function' &&
                 /^[A-Z]/.test(key)
@@ -47,7 +47,7 @@ const loadAllIcons = async (): Promise<string[]> => {
 
 // Pure function for worker - filters icons by search term
 const filterIconsWorker = (icons: string[], searchTerm: string): string[] => {
-    if (!searchTerm) return icons;
+    if(!searchTerm) return icons;
     const lower = searchTerm.toLowerCase();
     return icons.filter(name => name.toLowerCase().includes(lower));
 };
@@ -96,16 +96,16 @@ const IconSelect: React.FC<IconSelectProps> = ({
     const listContainerRef = useRef<HTMLDivElement>(null);
 
     const filteredIcons = useMemo(() => {
-        if (allIcons.length === 0) return [];
-        if (!search) return allIcons;
+        if(allIcons.length === 0) return [];
+        if(!search) return allIcons;
         return filterIconsWorker(allIcons, search);
     }, [allIcons, search]);
 
     // Load all icons when dropdown opens
     useEffect(() => {
-        if (!open) return;
+        if(!open) return;
 
-        if (allIconsCache) {
+        if(allIconsCache){
             setAllIcons(allIconsCache);
             return;
         }
@@ -119,13 +119,13 @@ const IconSelect: React.FC<IconSelectProps> = ({
 
     // Close dropdown when clicking outside
     useEffect(() => {
-        if (!open) return;
+        if(!open) return;
 
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as Node;
             const insideRoot = rootRef.current?.contains(target);
             const insideDropdown = dropdownRef.current?.contains(target);
-            if (!(insideRoot || insideDropdown)) setOpen(false);
+            if(!(insideRoot || insideDropdown)) setOpen(false);
         };
 
         document.addEventListener('mousedown', handleClickOutside);
@@ -134,11 +134,11 @@ const IconSelect: React.FC<IconSelectProps> = ({
 
     // Update portal position
     useEffect(() => {
-        if (!open || !renderInPortal) return;
+        if(!open || !renderInPortal) return;
 
         const updatePosition = () => {
             const trigger = triggerRef.current;
-            if (!trigger) return;
+            if(!trigger) return;
             const rect = trigger.getBoundingClientRect();
             setPortalStyle({
                 position: 'fixed',
@@ -160,7 +160,7 @@ const IconSelect: React.FC<IconSelectProps> = ({
 
     // Focus search input when dropdown opens
     useEffect(() => {
-        if (open) {
+        if(open){
             setTimeout(() => searchInputRef.current?.focus(), 0);
         }
     }, [open]);
@@ -168,9 +168,9 @@ const IconSelect: React.FC<IconSelectProps> = ({
     // Reset highlighted index and scroll to top when filter changes
     useEffect(() => {
         setHighlightedIndex(0);
-        if (listContainerRef.current) {
+        if(listContainerRef.current){
             const scrollContainer = listContainerRef.current.querySelector('[style*="overflow"]');
-            if (scrollContainer) scrollContainer.scrollTop = 0;
+            if(scrollContainer) scrollContainer.scrollTop = 0;
         }
     }, [filteredIcons]);
 
@@ -178,7 +178,7 @@ const IconSelect: React.FC<IconSelectProps> = ({
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         const maxIndex = filteredIcons.length - 1;
 
-        switch (e.key) {
+        switch(e.key){
             case 'ArrowDown':
                 e.preventDefault();
                 setHighlightedIndex(i => Math.min(maxIndex, i + 1));
@@ -189,7 +189,7 @@ const IconSelect: React.FC<IconSelectProps> = ({
                 break;
             case 'Enter':
                 e.preventDefault();
-                if (filteredIcons[highlightedIndex]) {
+                if(filteredIcons[highlightedIndex]){
                     onChange(filteredIcons[highlightedIndex]);
                     setOpen(false);
                 }
@@ -204,8 +204,6 @@ const IconSelect: React.FC<IconSelectProps> = ({
         onChange(name);
         setOpen(false);
     }, [onChange]);
-
-
 
     const dropdownContent = (
         <div

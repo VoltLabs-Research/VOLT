@@ -47,7 +47,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
     isLoading?: boolean;
 
     /**
-     * Navigation target (uses useNavigate)
+     * Navigation target(uses useNavigate)
      */
     to?: string;
 
@@ -74,7 +74,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
     iconSize?: number;
 
     /**
-     * Premium gradient style (for CTA buttons like empty-state)
+     * Premium gradient style(for CTA buttons like empty-state)
      * @default false
      */
     premium?: boolean;
@@ -99,21 +99,21 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     children,
     onClick,
     type = 'button',
-    ...props
+        ...props
 }, ref) => {
     const navigate = useNavigate();
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-        if (isLoading || disabled) {
+        if(isLoading || disabled){
             e.preventDefault();
             return;
         }
 
-        if (onClick) {
+        if(onClick){
             onClick(e);
         }
 
-        if (to) {
+        if(to){
             navigate(to);
         }
     };

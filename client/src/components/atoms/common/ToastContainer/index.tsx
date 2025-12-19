@@ -10,7 +10,7 @@ import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 
 const getIcon = (type: ToastType) => {
-  switch (type) {
+  switch(type){
     case 'error':
       return <MdError className='toast-icon f-shrink-0 font-size-4' />;
     case 'success':
@@ -51,7 +51,7 @@ const ToastContainer: React.FC = () => {
   const toasts = useToastStore((s) => s.toasts);
   const rootElement = document.getElementById('root');
 
-  if (!rootElement || toasts.length === 0) {
+  if(!rootElement || toasts.length === 0){
     return null;
   }
 

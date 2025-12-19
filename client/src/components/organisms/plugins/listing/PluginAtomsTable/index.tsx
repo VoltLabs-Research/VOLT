@@ -53,9 +53,9 @@ const PluginAtomsTable = ({
     ], []);
 
     const typeToColor = (t?: number): string => {
-        if (t === undefined || t === null) return '#888888';
+        if(t === undefined || t === null) return '#888888';
         const type = Math.max(1, Math.floor(t as number));
-        if (type <= typePalette.length) return typePalette[type - 1];
+        if(type <= typePalette.length) return typePalette[type - 1];
         const hue = ((type - 1) * 47) % 360;
         return `hsl(${hue}deg 60% 55%)`;
     };
@@ -80,7 +80,7 @@ const PluginAtomsTable = ({
         ];
 
         // Add plugin columns
-        if (data?.properties) {
+        if(data?.properties){
             data.properties.forEach(prop => {
                 baseCols.push({
                     key: prop,
@@ -94,19 +94,19 @@ const PluginAtomsTable = ({
     }, [decimals, typePalette, data?.properties]);
 
     useEffect(() => {
-        if (!data?.data) return;
+        if(!data?.data) return;
         const currPage = data.page ?? page;
 
         // Use data.data directly as it already contains merged rows
         const newRows = data.data;
 
-        if (currPage <= 1 || lastAppendedPage === 0) {
+        if(currPage <= 1 || lastAppendedPage === 0){
             setAccRows(newRows);
             setLastAppendedPage(currPage);
             return;
         }
 
-        if (currPage > lastAppendedPage) {
+        if(currPage > lastAppendedPage){
             setAccRows(prev => [...prev, ...newRows]);
             setLastAppendedPage(currPage);
         }
@@ -115,19 +115,19 @@ const PluginAtomsTable = ({
     const rows = accRows;
     const total = data?.total ?? data?.natoms ?? 0;
     const effectivePageSize = data?.pageSize ?? pageSize;
-    // const hasMore = rows.length < total; 
+    // const hasMore = rows.length < total;
     // Or if rows length is exactly page size, likely more.
     const hasMore = (data?.data?.length ?? 0) === effectivePageSize && rows.length < total;
 
     const handleLoadMore = () => {
-        if (hasMore && !loading) {
+        if(hasMore && !loading){
             setPage((p) => p + 1);
         }
     };
 
     const isInitialLoading = loading && rows.length === 0;
 
-    if (isMinimized) return null;
+    if(isMinimized) return null;
 
     return (
         <Draggable

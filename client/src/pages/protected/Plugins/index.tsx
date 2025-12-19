@@ -23,21 +23,21 @@ const PluginsListing = () => {
 
     // Initial fetch handled by DashboardLayout mostly, but ensure here
     useEffect(() => {
-        if (plugins.length === 0) {
+        if(plugins.length === 0){
             fetchPlugins({ page: 1, limit: 20 });
         }
     }, [fetchPlugins, plugins.length]);
 
-    const handleMenuAction = useCallback(async (action: string, item: IPluginRecord) => {
-        switch (action) {
+    const handleMenuAction = useCallback(async(action: string, item: IPluginRecord) => {
+        switch(action){
             case 'edit':
                 navigate(`/dashboard/plugins/builder?id=${item._id}`);
                 break;
             case 'clone':
-                try {
+                try{
                     const originalPlugin = await pluginApi.getPlugin(item._id);
                     const clonedNodes = originalPlugin.workflow.nodes.map(node => {
-                        if (node.type === 'modifier' && node.data.modifier) {
+                        if(node.type === 'modifier' && node.data.modifier){
                             return {
                                 ...node,
                                 data: {
@@ -62,24 +62,24 @@ const PluginsListing = () => {
                         team: selectedTeam?._id
                     });
                     navigate(`/dashboard/plugins/builder?id=${clonedPlugin._id}`);
-                } catch (e) {
+                }catch(e){
                     console.error('Failed to clone plugin:', e);
                 }
                 break;
             case 'publish':
-                try {
+                try{
                     await pluginApi.publishPlugin(item._id);
                     fetchPlugins({ page: 1, force: true });
-                } catch (e) {
+                }catch(e){
                     console.error('Failed to publish plugin:', e);
                 }
                 break;
             case 'delete':
-                if (!window.confirm('Delete this plugin? This cannot be undone.')) return;
-                try {
+                if(!window.confirm('Delete this plugin? This cannot be undone.')) return;
+                try{
                     await pluginApi.deletePlugin(item._id);
                     fetchPlugins({ page: 1, force: true });
-                } catch (e) {
+                }catch(e){
                     console.error('Failed to delete plugin:', e);
                 }
                 break;
@@ -92,7 +92,7 @@ const PluginsListing = () => {
             ['Clone', RiFileCopyLine, () => handleMenuAction('clone', item)]
         ];
 
-        if (item.status !== 'published') {
+        if(item.status !== 'published'){
             options.push(['Publish', TbRocket, () => handleMenuAction('publish', item)]);
         }
 
@@ -168,8 +168,8 @@ const PluginsListing = () => {
         }
     ], [handleRowClick]);
 
-    const handleLoadMore = useCallback(async () => {
-        if (!listingMeta.hasMore || isFetchingMore) return;
+    const handleLoadMore = useCallback(async() => {
+        if(!listingMeta.hasMore || isFetchingMore) return;
         await fetchPlugins({
             page: listingMeta.page + 1,
             limit: listingMeta.limit,

@@ -19,11 +19,11 @@ interface ServerDetailsProps {
   onClose: () => void
 }
 
-export function ServerDetails({ server, onClose }: ServerDetailsProps) {
-  if (!server) return null
+export function ServerDetails({ server, onClose }: ServerDetailsProps){
+  if(!server) return null
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch(status){
       case 'Healthy': return '#30D158'
       case 'Warning': return '#FF9F0A'
       case 'Critical': return '#FF453A'

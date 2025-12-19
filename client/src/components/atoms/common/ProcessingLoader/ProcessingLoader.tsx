@@ -40,7 +40,7 @@ const ProcessingLoader: React.FC<ProcessingLoaderProps> = ({
     className = '',
     showProgress = false
 }) => {
-    if (!isVisible) return null;
+    if(!isVisible) return null;
 
     return (
         <Container className={`d-flex items-center gap-075 processing-loader-container ${className}`}>

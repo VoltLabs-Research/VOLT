@@ -48,11 +48,11 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
   const asyncAction = createAsyncAction(set, get);
 
   return {
-    ...initialState,
+      ...initialState,
 
     getAnalysisConfigs: (teamId: string, opts = {}) => {
       const { page = 1, limit = 20, search = '', append = false } = opts;
-      if (!teamId) return Promise.reject("No team ID provided");
+      if(!teamId) return Promise.reject("No team ID provided");
 
       return asyncAction(() => analysisConfigApi.getByTeamId(teamId, { page, limit, q: search }), {
         loadingKey: 'isListingLoading',
@@ -83,7 +83,7 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
       const req = analysisConfigApi.getDislocations(analysisId);
       set((state) => ({
         dislocationsLoadingById: {
-          ...state.dislocationsLoadingById,
+            ...state.dislocationsLoadingById,
           [analysisId]: true
         }
       }));
@@ -95,11 +95,11 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
           const currentLoading = state.dislocationsLoadingById || {};
           return {
             analysisDislocationsById: {
-              ...current,
+                ...current,
               [analysisId]: res ?? []
             },
             dislocationsLoadingById: {
-              ...currentLoading,
+                ...currentLoading,
               [analysisId]: false
             }
           };
@@ -109,11 +109,11 @@ const useAnalysisConfigStore = create<AnalysisConfigStore & {
           const currentLoading = state.dislocationsLoadingById || {};
           return {
             analysisDislocationsById: {
-              ...current,
+                ...current,
               [analysisId]: []
             },
             dislocationsLoadingById: {
-              ...currentLoading,
+                ...currentLoading,
               [analysisId]: false
             }
           };

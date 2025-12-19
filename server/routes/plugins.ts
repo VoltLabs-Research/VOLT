@@ -31,17 +31,17 @@ const router = Router();
 const controller = new PluginsController();
 
 // Middleware to load plugin into res.locals
-const loadPlugin = async (req: Request, res: Response, next: NextFunction) => {
+const loadPlugin = async(req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const mongoose = require('mongoose');
 
     const query: any = { $or: [{ slug: id }] };
-    if (mongoose.Types.ObjectId.isValid(id)) {
+    if(mongoose.Types.ObjectId.isValid(id)) {
         query.$or.push({ _id: id });
     }
 
     const plugin = await Plugin.findOne(query);
-    if (!plugin) {
+    if(!plugin){
         return next(new RuntimeError('Plugin::NotFound', 404));
     }
     res.locals.plugin = plugin;
@@ -80,7 +80,7 @@ router.get(
     controller.getPluginExposureFile
 );
 
-// Listing without specific trajectory (all trajectories for team)
+// Listing without specific trajectory(all trajectories for team)
 router.get(
     '/listing/:pluginSlug/:listingSlug',
     controller.getPluginListingDocuments

@@ -10,7 +10,7 @@ import * as SiIcons from 'react-icons/si';
 
 // Helper to resolve icon string to component
 const resolveIcon = (iconName?: string) => {
-    if (!iconName) return undefined;
+    if(!iconName) return undefined;
     // @ts-ignore
     return Icons[iconName] || HiIcons[iconName] || RiIcons[iconName] || SiIcons[iconName];
 };
@@ -24,7 +24,7 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
     tools,
     onToggleTool
 }) => {
-    if (isLoading) return <MetricsBarSkeleton count={4} />;
+    if(isLoading) return <MetricsBarSkeleton count={4} />;
 
     return (
         <div className='d-flex items-center gap-075 raster-metrics-bar w-max'>

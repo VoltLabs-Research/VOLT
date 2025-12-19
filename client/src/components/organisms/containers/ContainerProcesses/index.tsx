@@ -16,10 +16,10 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchProcesses = async () => {
+    const fetchProcesses = async() => {
         setLoading(true);
         setError(null);
-        try {
+        try{
             const data = await containerApi.getProcesses(containerId) as any;
             const mapped = (data?.Processes || []).map((p: string[]) => {
                 // p indices correspond to: 0:PID, 1:COMM, 2:ARGS, 3:NLWP, 4:USER, 5:RSS, 6:PCPU
@@ -35,18 +35,18 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
             });
 
             setProcesses(mapped);
-        } catch (err: any) {
+        }catch(err: any){
             setError('Failed to load processes. Container might be stopped.');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
 
     const formatMemory = (kbStr: string) => {
         const kb = parseInt(kbStr, 10);
-        if (isNaN(kb)) return kbStr;
-        if (kb > 1024 * 1024) return `${(kb / 1024 / 1024).toFixed(1)}G`;
-        if (kb > 1024) return `${(kb / 1024).toFixed(0)}M`;
+        if(isNaN(kb)) return kbStr;
+        if(kb > 1024 * 1024) return `${(kb / 1024 / 1024).toFixed(1)}G`;
+        if(kb > 1024) return `${(kb / 1024).toFixed(0)}M`;
         return `${kb}K`;
     };
 
@@ -56,7 +56,7 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
         return () => clearInterval(interval);
     }, [containerId]);
 
-    if (loading && processes.length === 0) {
+    if(loading && processes.length === 0){
         return (
             <Container className='d-flex column flex-center h-max color-muted-foreground gap-1 p-2 text-center'>
                 Loading processes...
@@ -64,7 +64,7 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
         );
     }
 
-    if (error) {
+    if(error){
         return (
             <Container className="d-flex column flex-center h-max gap-1 p-2 text-center color-muted-foreground">
                 <Activity size={48} />

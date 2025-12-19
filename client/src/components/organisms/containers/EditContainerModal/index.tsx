@@ -21,7 +21,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
     const { showSuccess, showError } = useToast();
 
     useEffect(() => {
-        if (container) {
+        if(container){
             setEnv(container.env || []);
             setPorts(container.ports || []);
             setMemory(container.memory || 512);
@@ -29,7 +29,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
         }
     }, [container]);
 
-    if (!container) return null;
+    if(!container) return null;
 
     const handleAddEnv = () => setEnv([...env, { key: '', value: '' }]);
     const handleRemoveEnv = (index: number) => setEnv(env.filter((_, i) => i !== index));
@@ -51,10 +51,10 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
         (document.getElementById('edit-container-modal') as HTMLDialogElement)?.close();
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async(e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        try {
+        try{
             await containerApi.update(container._id, {
                 environment: Object.fromEntries(env.filter(e => e.key).map(e => [e.key, e.value])),
                 ports: Object.fromEntries(ports.map(p => [p.private.toString(), p.public])),
@@ -64,9 +64,9 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
             showSuccess('Container updated successfully');
             onSuccess();
             closeModal();
-        } catch (error: any) {
+        }catch(error: any){
             showError(error.response?.data?.message || 'Failed to update container');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
@@ -135,7 +135,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                         Cancel
                     </Button>
                     <Button variant='solid' intent='brand' type="submit" disabled={loading} isLoading={loading}>
-                        Save Changes (Recreate)
+                        Save Changes(Recreate)
                     </Button>
                 </div>
             </form>

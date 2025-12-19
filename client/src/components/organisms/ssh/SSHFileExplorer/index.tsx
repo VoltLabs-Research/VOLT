@@ -70,42 +70,41 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
         return () => reset();
     }, []);
 
-    const handleConnectionSelect = async (conn: SSHConnection) => {
+    const handleConnectionSelect = async(conn: SSHConnection) => {
         setConnection(conn._id);
-        try {
+        try{
             await open('.');
-        } catch (err: any) {
+        }catch(err: any){
             showError(err.message || 'Failed to connect to SSH server');
         }
     };
 
-    const handleImport = async () => {
-        if (!selected || !selectedTeam) return;
+    const handleImport = async() => {
+        if(!selected || !selectedTeam) return;
 
-        try {
+        try{
             await importTrajectory(selectedTeam._id);
             showSuccess('Trajectory import started successfully');
-            if (onImportSuccess) onImportSuccess();
-            if (onClose) onClose();
-        } catch (err: any) {
+            if(onImportSuccess) onImportSuccess();
+            if(onClose) onClose();
+        }catch(err: any){
             showError(err.message || 'Failed to import trajectory');
         }
     };
 
-    const handleDeleteConnection = async (conn: SSHConnection) => {
-        if (!confirm(`Delete connection "${conn.name}"?`)) return;
+    const handleDeleteConnection = async(conn: SSHConnection) => {
+        if(!confirm(`Delete connection "${conn.name}"?`)) return;
 
-        try {
+        try{
             await deleteConnection(conn._id);
-            if (connectionId === conn._id) {
+            if(connectionId === conn._id){
                 reset();
             }
             showSuccess('Connection deleted successfully');
-        } catch (err: any) {
+        }catch(err: any){
             showError(err.message || 'Failed to delete connection');
         }
     };
-
 
     const openConnectionModal = (connection: SSHConnection | null = null) => {
         setEditingConnection(connection);
@@ -157,14 +156,13 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
         </>
     );
 
-    // ... existing content (headerLeftIcons, breadcrumbsContent, headerRightIcons, fileListHeader, fileListContent, return statement) ...
-    // Note: I will only replace the parts that need changing. 
+    // ... existing content(headerLeftIcons, breadcrumbsContent, headerRightIcons, fileListHeader, fileListContent, return statement) ...
+    // Note: I will only replace the parts that need changing.
     // Wait, replace_file_content replaces a block usually.
     // I should target the navItems block and the return statement separately? Or the whole file is too big.
     // I will do separate edits.
 
     // This replacement handles the navItems definition update.
-
 
     const headerLeftIcons = (
         <>

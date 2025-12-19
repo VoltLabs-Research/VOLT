@@ -21,11 +21,11 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
         Dislocations: PiLineSegments
     };
 
-    if (loading) {
+    if(loading){
         return <DashboardStatsSkeleton count={3} />;
     }
 
-    if (error) {
+    if(error){
         return (
             <div className='dashboard-stats-container w-max overflow-hidden'>
                 <div className='dashboard-error'>{error}</div>

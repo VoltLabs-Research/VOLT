@@ -10,12 +10,12 @@ import DumpStorage from '@/services/dump-storage';
 import TrajectoryParserFactory from '@/parsers/factory';
 import storage from '@/services/storage';
 
-export default class MergedAtomsController {
-    public getAtoms = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+export default class MergedAtomsController{
+    public getAtoms = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
         const { id: trajectoryId, analysisId } = req.params;
         const { timestep, exposureId, page: pageStr, pageSize: pageSizeStr } = req.query;
 
-        if (!timestep || !exposureId) {
+        if(!timestep || !exposureId){
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
         }
 
@@ -25,17 +25,17 @@ export default class MergedAtomsController {
         const endIndex = startIndex + pageSize;
 
         const trajectory = res.locals.trajectory;
-        if (!trajectory) {
+        if(!trajectory){
             return next(new RuntimeError(ErrorCodes.TRAJECTORY_NOT_FOUND, 404));
         }
 
         const analysis = await Analysis.findById(analysisId);
-        if (!analysis) {
+        if(!analysis){
             return next(new RuntimeError(ErrorCodes.ANALYSIS_NOT_FOUND, 404));
         }
 
         const plugin = await Plugin.findOne({ slug: analysis.plugin });
-        if (!plugin) {
+        if(!plugin){
             return next(new RuntimeError(ErrorCodes.PLUGIN_NOT_FOUND, 404));
         }
 
@@ -45,7 +45,7 @@ export default class MergedAtomsController {
         const iterableKey = exposureNode?.data?.exposure?.iterable;
 
         const schemaNode = plugin.workflow.nodes.find((n: any) => n.type === NodeType.SCHEMA);
-        if (!schemaNode) {
+        if(!schemaNode){
             return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
         }
 
@@ -55,7 +55,7 @@ export default class MergedAtomsController {
         const perAtomProperties: string[] = visualizerNode?.data?.visualizers?.perAtomProperties || [];
 
         const dumpPath = await DumpStorage.getDump(trajectoryId, String(timestep));
-        if (!dumpPath) {
+        if(!dumpPath){
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));
         }
 
@@ -65,10 +65,10 @@ export default class MergedAtomsController {
 
         const schemaKeysCache: Map<string, string[]> = new Map();
         const schemaDefinition = schemaNode?.data?.schema?.definition?.data?.items;
-        if (schemaDefinition) {
-            for (const prop of perAtomProperties) {
+        if(schemaDefinition){
+            for(const prop of perAtomProperties){
                 const propDef = schemaDefinition[prop];
-                if (propDef?.keys) {
+                if(propDef?.keys){
                     schemaKeysCache.set(prop, propDef.keys);
                 }
             }
@@ -76,27 +76,27 @@ export default class MergedAtomsController {
 
         let pluginDataByAtomId: Map<number, any> | null = null;
 
-        if (perAtomProperties.length > 0) {
-            try {
+        if(perAtomProperties.length > 0){
+            try{
                 const key = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
                 const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, key);
                 let pluginData = decode(buffer) as any;
 
-                if (iterableKey && pluginData[iterableKey]) {
+                if(iterableKey && pluginData[iterableKey]){
                     pluginData = pluginData[iterableKey];
                 }
 
-                if (Array.isArray(pluginData)) {
+                if(Array.isArray(pluginData)) {
                     pluginDataByAtomId = new Map();
                     const len = pluginData.length;
-                    for (let i = 0; i < len; i++) {
+                    for(let i = 0; i < len; i++){
                         const item = pluginData[i];
-                        if (item.id !== undefined) {
+                        if(item.id !== undefined){
                             pluginDataByAtomId.set(item.id, item);
                         }
                     }
                 }
-            } catch (err) {
+            }catch(err){
                 console.warn(`[MergedAtoms] Could not load plugin data: ${err}`);
             }
         }
@@ -115,7 +115,7 @@ export default class MergedAtomsController {
         const hasPluginData = pluginDataByAtomId !== null;
         const propsLen = perAtomProperties.length;
 
-        for (let idx = 0; idx < rowCount; idx++) {
+        for(let idx = 0; idx < rowCount; idx++){
             const i = startIndex + idx;
             const base = i * 3;
             const atomId = hasIds ? ids![i] : i + 1;
@@ -128,29 +128,29 @@ export default class MergedAtomsController {
                 z: positions[base + 2]
             };
 
-            if (hasPluginData) {
+            if(hasPluginData){
                 const pluginItem = pluginDataByAtomId!.get(atomId);
-                if (pluginItem) {
-                    for (let p = 0; p < propsLen; p++) {
+                if(pluginItem){
+                    for(let p = 0; p < propsLen; p++){
                         const prop = perAtomProperties[p];
                         const value = pluginItem[prop];
 
-                        if (Array.isArray(value)) {
+                        if(Array.isArray(value)) {
                             const keys = schemaKeysCache.get(prop);
-                            if (keys) {
+                            if(keys){
                                 const keysLen = keys.length;
-                                for (let k = 0; k < keysLen; k++) {
+                                for(let k = 0; k < keysLen; k++){
                                     const columnName = `${prop} ${keys[k]}`;
                                     row[columnName] = value[k];
-                                    if (!propertySet.has(columnName)) {
+                                    if(!propertySet.has(columnName)) {
                                         propertySet.add(columnName);
                                         finalPerAtomProperties.push(columnName);
                                     }
                                 }
                             }
-                        } else if (value !== undefined) {
+                        }else if(value !== undefined){
                             row[prop] = value;
-                            if (!propertySet.has(prop)) {
+                            if(!propertySet.has(prop)) {
                                 propertySet.add(prop);
                                 finalPerAtomProperties.push(prop);
                             }
@@ -173,4 +173,3 @@ export default class MergedAtomsController {
         });
     });
 }
-

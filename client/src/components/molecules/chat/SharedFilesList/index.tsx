@@ -18,14 +18,14 @@ const SharedFilesList = ({ messages, currentChatId }: SharedFilesListProps) => {
     useEffect(() => {
         let cancelled = false;
 
-        const run = async () => {
-            for (const m of fileMessages) {
+        const run = async() => {
+            for(const m of fileMessages){
                 const isImg = m.metadata?.fileType?.startsWith('image/');
-                if (!isImg || previews[m._id]) continue;
-                try {
+                if(!isImg || previews[m._id]) continue;
+                try{
                     const p = await chatApi.getFilePreview(currentChatId, m._id);
-                    if (!cancelled) setPreviews(prev => ({ ...prev, [m._id]: p.dataUrl }));
-                } catch (error: any) {
+                    if(!cancelled) setPreviews(prev => ({ ...prev, [m._id]: p.dataUrl }));
+                }catch(error: any){
                     console.error('Failed to load file preview:', error);
                 }
             }
@@ -34,7 +34,7 @@ const SharedFilesList = ({ messages, currentChatId }: SharedFilesListProps) => {
         run();
         return () => { cancelled = true; };
     }, [fileMessages.map(f => f._id).join(','), currentChatId]);
-    if (!fileMessages.length)
+    if(!fileMessages.length)
         return (
             <div className='chat-empty-state h-max text-center color-secondary'>
                 <div className='chat-empty-description font-size-2-5 line-height-5'>No shared files yet</div>

@@ -165,7 +165,7 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                             onFieldChange={(_, value) => updateArgument(index, 'value', value)}
                             options={[
                                 { value: '', title: '-- No value --' },
-                                ...arg.options.map(opt => ({ value: opt.key, title: opt.label }))
+                                    ...arg.options.map(opt => ({ value: opt.key, title: opt.label }))
                             ]}
                         />
                     ) : (
@@ -213,7 +213,6 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                             />
                         </>
                     )}
-
 
                     {/* Select-specific fields - options */}
                     {arg.type === 'select' && (

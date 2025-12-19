@@ -33,7 +33,6 @@ import useTeamStore from '@/stores/team/team';
 import useTrajectoryStore from '@/stores/trajectories';
 import useRasterStore from '@/stores/raster';
 import useAnalysisConfigStore from '@/stores/analysis-config';
-import { useStructureAnalysisStore } from '@/stores/structure-analysis';
 import useModelStore from '@/stores/editor/model';
 import useTimestepStore from '@/stores/editor/timesteps';
 import usePlaybackStore from '@/stores/editor/playback';
@@ -64,18 +63,17 @@ import { MdImportExport } from 'react-icons/md';
 import usePluginStore from '@/stores/plugins/plugin';
 import { NodeType } from '@/types/plugin';
 
-
 // Greeting helper functions
 const getGreeting = (): string => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return 'Good Morning';
-    if (hour >= 12 && hour < 17) return 'Good Afternoon';
-    if (hour >= 17 && hour < 21) return 'Good Evening';
+    if(hour >= 5 && hour < 12) return 'Good Morning';
+    if(hour >= 12 && hour < 17) return 'Good Afternoon';
+    if(hour >= 17 && hour < 21) return 'Good Evening';
     return 'Good Night';
 };
 
 const capitalize = (name?: string) => {
-    if (!name) return '';
+    if(!name) return '';
     const trimmed = String(name).trim();
     return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 };
@@ -132,7 +130,7 @@ const DashboardLayout = () => {
         }> = [];
 
         plugins.forEach(plugin => {
-            if (!plugin.workflow?.nodes || !plugin.workflow?.edges || !plugin.slug) return;
+            if(!plugin.workflow?.nodes || !plugin.workflow?.edges || !plugin.slug) return;
             const { nodes, edges } = plugin.workflow;
 
             // Find visualizer nodes with listings OR perAtomProperties
@@ -143,16 +141,16 @@ const DashboardLayout = () => {
                 )
             );
 
-            if (visualizerNodes.length === 0) return;
+            if(visualizerNodes.length === 0) return;
 
             // Trace backward from visualizers to find connected exposures
             const findConnectedExposure = (nodeId: string, depth = 0): string | null => {
-                if (depth > 5) return null;
+                if(depth > 5) return null;
                 const incomingEdge = edges.find(e => e.target === nodeId);
-                if (!incomingEdge) return null;
+                if(!incomingEdge) return null;
                 const sourceNode = nodes.find(n => n.id === incomingEdge.source);
-                if (!sourceNode) return null;
-                if (sourceNode.type === NodeType.EXPOSURE) {
+                if(!sourceNode) return null;
+                if(sourceNode.type === NodeType.EXPOSURE){
                     return sourceNode.data?.exposure?.name || null;
                 }
                 return findConnectedExposure(sourceNode.id, depth + 1);
@@ -163,7 +161,7 @@ const DashboardLayout = () => {
 
             visualizerNodes.forEach(vizNode => {
                 const exposureName = findConnectedExposure(vizNode.id);
-                if (exposureName && !seenExposures.has(exposureName)) {
+                if(exposureName && !seenExposures.has(exposureName)) {
                     seenExposures.add(exposureName);
                     const hasPerAtomProperties = Boolean(
                         vizNode.data?.visualizers?.perAtomProperties?.length
@@ -172,7 +170,7 @@ const DashboardLayout = () => {
                 }
             });
 
-            if (exposures.length === 0) return;
+            if(exposures.length === 0) return;
 
             // Get modifier name for plugin display name
             const modifierNode = nodes.find(n => n.type === NodeType.MODIFIER);
@@ -222,13 +220,13 @@ const DashboardLayout = () => {
     const [teamsInitialized, setTeamsInitialized] = useState(false);
 
     useEffect(() => {
-        if (selectedTeam === null || trajectories.length) return;
+        if(selectedTeam === null || trajectories.length) return;
         setTeamsInitialized(true);
     }, [selectedTeam, trajectories]);
 
     useEffect(() => {
         // Only load if we have a team and haven't loaded yet
-        if (selectedTeam?._id && !teamsInitialized) {
+        if(selectedTeam?._id && !teamsInitialized){
             getTrajectories(selectedTeam._id, { page: 1, limit: 20 });
             getDashboardTrajectories(selectedTeam._id);
             fetchPlugins({ page: 1, limit: 100 });
@@ -246,25 +244,23 @@ const DashboardLayout = () => {
     }, [initializeSocket]);
 
     useEffect(() => {
-        if (!teams.length) return;
+        if(!teams.length) return;
 
         const urlTeamId = searchParams.get('team');
         const storedTeamId = localStorage.getItem('selectedTeamId');
 
-        if (urlTeamId && urlTeamId !== storedTeamId) {
+        if(urlTeamId && urlTeamId !== storedTeamId){
             const team = teams.find(t => t._id === urlTeamId);
-            if (team) {
+            if(team){
                 localStorage.setItem('selectedTeamId', urlTeamId);
                 setSelectedTeam(urlTeamId);
             }
-        }
-        else if (!urlTeamId && storedTeamId) {
+        }else if(!urlTeamId && storedTeamId){
             const team = teams.find(t => t._id === storedTeamId);
-            if (team) {
+            if(team){
                 setSearchParams({ team: storedTeamId });
             }
-        }
-        else if (!urlTeamId && !storedTeamId && teams.length > 0) {
+        }else if(!urlTeamId && !storedTeamId && teams.length > 0){
             const firstTeam = teams[0];
             setSearchParams({ team: firstTeam._id });
             localStorage.setItem('selectedTeamId', firstTeam._id);
@@ -273,14 +269,14 @@ const DashboardLayout = () => {
 
     useEffect(() => {
         const popoverEl = document.getElementById('notifications-popover');
-        if (!popoverEl) return;
+        if(!popoverEl) return;
 
         const handleToggle = (e: Event) => {
             const toggleEvent = e as ToggleEvent;
-            if (toggleEvent.newState === 'open') {
+            if(toggleEvent.newState === 'open'){
                 setTimeout(() => {
                     notificationList.forEach((notification) => {
-                        if (!notification.read && !observedNotificationsRef.current.has(notification._id)) {
+                        if(!notification.read && !observedNotificationsRef.current.has(notification._id)) {
                             observedNotificationsRef.current.add(notification._id);
                             markAsRead(notification._id);
                         }
@@ -312,8 +308,8 @@ const DashboardLayout = () => {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
-                if (e.repeat) return;
+            if((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
+                if(e.repeat) return;
                 e.preventDefault();
                 e.stopPropagation();
                 toggleSSHFileExplorer();
@@ -333,12 +329,11 @@ const DashboardLayout = () => {
     );
 
     const handleTeamChange = (teamId: string) => {
-        if (selectedTeam?._id === teamId) return;
+        if(selectedTeam?._id === teamId) return;
 
         const { reset: resetTrajectories } = useTrajectoryStore.getState();
         const { clearFrameCache } = useRasterStore.getState();
         const { resetAnalysisConfig } = useAnalysisConfigStore.getState();
-        const { reset: resetStructureAnalysis } = useStructureAnalysisStore.getState();
         const { reset: resetModel } = useModelStore.getState();
         const { reset: resetTimesteps } = useTimestepStore.getState();
         const { reset: resetPlayback } = usePlaybackStore.getState();
@@ -348,7 +343,6 @@ const DashboardLayout = () => {
         resetTrajectories();
         clearFrameCache();
         resetAnalysisConfig();
-        resetStructureAnalysis();
         resetModel();
         resetTimesteps();
         resetPlayback();
@@ -359,22 +353,21 @@ const DashboardLayout = () => {
         setSearchParams({ team: teamId });
     };
 
-    const handleLeaveTeam = async (teamId: string) => {
-        try {
+    const handleLeaveTeam = async(teamId: string) => {
+        try{
             await leaveTeam(teamId);
 
             const state = useTeamStore.getState();
             const remainingTeams = state.teams;
             const currentSelected = state.selectedTeam;
 
-            if (currentSelected?._id === teamId && remainingTeams.length > 0) {
+            if(currentSelected?._id === teamId && remainingTeams.length > 0){
                 const newTeamId = remainingTeams[0]._id;
                 setSelectedTeam(newTeamId);
 
                 const { reset: resetTrajectories } = useTrajectoryStore.getState();
                 const { clearFrameCache } = useRasterStore.getState();
                 const { resetAnalysisConfig } = useAnalysisConfigStore.getState();
-                const { reset: resetStructureAnalysis } = useStructureAnalysisStore.getState();
                 const { reset: resetModel } = useModelStore.getState();
                 const { reset: resetTimesteps } = useTimestepStore.getState();
                 const { reset: resetPlayback } = usePlaybackStore.getState();
@@ -384,7 +377,6 @@ const DashboardLayout = () => {
                 resetTrajectories();
                 clearFrameCache();
                 resetAnalysisConfig();
-                resetStructureAnalysis();
                 resetModel();
                 resetTimesteps();
                 resetPlayback();
@@ -395,14 +387,14 @@ const DashboardLayout = () => {
             }
 
             showSuccess(`Left team successfully`);
-        } catch (err: any) {
+        }catch(err: any){
             const errorMessage = err?.message || 'Failed to leave team';
             showError(errorMessage);
         }
     };
 
     const getUserInitials = () => {
-        if (!user) return 'U';
+        if(!user) return 'U';
         const first = user.firstName?.[0] || '';
         const last = user.lastName?.[0] || '';
         return (first + last).toUpperCase() || 'U';
@@ -485,9 +477,9 @@ const DashboardLayout = () => {
                                         onClick={() => {
                                             setExpandedPlugins(prev => {
                                                 const next = new Set(prev);
-                                                if (next.has(plugin.pluginSlug)) {
+                                                if(next.has(plugin.pluginSlug)) {
                                                     next.delete(plugin.pluginSlug);
-                                                } else {
+                                                }else{
                                                     next.add(plugin.pluginSlug);
                                                 }
                                                 return next;
@@ -768,7 +760,7 @@ const DashboardLayout = () => {
                                                     key={n._id}
                                                     className={`dashboard-notification-item ${n.read ? 'is-read' : ''} cursor-pointer`}
                                                     onClick={() => {
-                                                        if (n.link) navigate(n.link);
+                                                        if(n.link) navigate(n.link);
                                                         document.getElementById('notifications-popover')?.hidePopover();
                                                     }}
                                                 >
@@ -793,7 +785,7 @@ const DashboardLayout = () => {
                 <SSHFileExplorer
                     onClose={toggleSSHFileExplorer}
                     onImportSuccess={() => {
-                        if (selectedTeam) {
+                        if(selectedTeam){
                             getTrajectories(selectedTeam._id);
                             getDashboardTrajectories(selectedTeam._id);
                         }

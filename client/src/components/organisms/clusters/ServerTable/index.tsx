@@ -9,14 +9,14 @@ import Button from '@/components/primitives/Button'
 import './ServerTable.css'
 import Title from '@/components/primitives/Title'
 
-export function ServerTable() {
+export function ServerTable(){
   const { metrics, isHistoryLoaded } = useServerMetrics()
   const [selectedServer, setSelectedServer] = useState<any | null>(null)
 
   const isLoading = !metrics || !isHistoryLoaded
 
   const server = useMemo(() => {
-    if (!metrics) return null
+    if(!metrics) return null
 
     // Calculate real CPU usage from cores
     const cpuUsage = metrics.cpu.coresUsage && metrics.cpu.coresUsage.length > 0

@@ -75,7 +75,7 @@ const CanvasSidebarModifiers = () => {
             modifierId: 'raster',
             isPlugin: false
         }
-    ]), [modifiers, idRateSeries?.length]);
+    ]), [modifiers]);
 
     const handleToggle = (option: any) => {
         if(option.isPlugin){

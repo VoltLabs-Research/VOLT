@@ -77,7 +77,7 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
         const unsubscribe = socketService.onConnectionChange((connected) => {
             isConnectedRef.current = connected;
             // Only try to subscribe when connection established
-            if (connected && enabled && trajectoryId && !subscribedRef.current) {
+            if(connected && enabled && trajectoryId && !subscribedRef.current){
                 subscribeToPresence();
             }
         });
@@ -85,7 +85,7 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
     }, [enabled, trajectoryId]);
 
     const subscribeToPresence = useCallback(() => {
-        if (!enabled || !trajectoryId || !isConnectedRef.current || subscribedRef.current) {
+        if(!enabled || !trajectoryId || !isConnectedRef.current || subscribedRef.current){
             return;
         }
 
@@ -105,12 +105,12 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
 
     // Main subscription effect - runs once when conditions are met
     useEffect(() => {
-        if (!enabled || !trajectoryId) {
+        if(!enabled || !trajectoryId){
             return;
         }
 
         // Try to subscribe if already connected
-        if (isConnectedRef.current) {
+        if(isConnectedRef.current){
             subscribeToPresence();
         }
 
@@ -124,7 +124,7 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
             unsubscribeRaster();
 
             // Cleanup subscriptions
-            if (isConnectedRef.current) {
+            if(isConnectedRef.current){
                 socketService.emit('unsubscribe_from_canvas', { trajectoryId }).catch(() => { });
                 socketService.emit('unsubscribe_from_raster', { trajectoryId }).catch(() => { });
             }

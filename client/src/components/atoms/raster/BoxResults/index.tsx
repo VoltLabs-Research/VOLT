@@ -11,11 +11,11 @@ export interface BoxResultsProps {
 };
 
 const formatValue = (value: any, format?: string, decimals: number = 2): string => {
-    if (value === undefined || value === null || (typeof value === 'number' && isNaN(value))) {
+    if(value === undefined || value === null || (typeof value === 'number' && isNaN(value))) {
         return 'N/A';
     }
 
-    switch (format) {
+    switch(format){
         case 'number':
             return typeof value === 'number' ? value.toLocaleString() : String(value);
         case 'decimal':
@@ -23,11 +23,11 @@ const formatValue = (value: any, format?: string, decimals: number = 2): string 
         case 'percentage':
             return typeof value === 'number' ? `${(value * 100).toFixed(decimals)}%` : String(value);
         case 'bytes':
-            if (typeof value !== 'number') return String(value);
+            if(typeof value !== 'number') return String(value);
             const units = ['B', 'KB', 'MB', 'GB'];
             let size = value;
             let unitIndex = 0;
-            while (size >= 1024 && unitIndex < units.length - 1) {
+            while(size >= 1024 && unitIndex < units.length - 1){
                 size /= 1024;
                 unitIndex++;
             }

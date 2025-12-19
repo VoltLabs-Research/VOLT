@@ -4,13 +4,13 @@ export const formatNetworkSpeed = (kbs: number): string => {
 };
 
 export const formatNetworkSpeedWithUnit = (kbs: number): { value: string; unit: string } => {
-    if (kbs < 1) {
+    if(kbs < 1){
         return { value: (kbs * 1024).toFixed(0), unit: 'B/s' };
-    } else if (kbs < 1024) {
+    }else if(kbs < 1024){
         return { value: kbs.toFixed(1), unit: 'KB/s' };
-    } else if (kbs < 1024 * 1024) {
+    }else if(kbs < 1024 * 1024){
         return { value: (kbs / 1024).toFixed(2), unit: 'MB/s' };
-    } else {
+    }else{
         return { value: (kbs / (1024 * 1024)).toFixed(2), unit: 'GB/s' };
     }
 };

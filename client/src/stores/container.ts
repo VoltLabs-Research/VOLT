@@ -39,26 +39,26 @@ const useContainerStore = create<ContainerState>((set, get) => ({
     isFetchingMore: false,
     error: null,
 
-    fetchContainers: async (opts = {}) => {
+    fetchContainers: async(opts = {}) => {
         const { page = 1, limit = 20, search = '', append = false } = opts;
         const state = get();
 
-        if (state.isLoading || state.isFetchingMore) return;
+        if(state.isLoading || state.isFetchingMore) return;
 
-        if (append) {
+        if(append){
             set({ isFetchingMore: true, error: null });
-        } else {
+        }else{
             set({ isLoading: true, error: null });
         }
 
-        try {
+        try{
             const response = await containerApi.getAll({ search, page, limit });
 
             let newContainers: Container[] = [];
 
-            if (Array.isArray(response)) {
+            if(Array.isArray(response)) {
                 newContainers = response as unknown as Container[];
-            } else if ((response as any).data) {
+            }else if((response as any).data) {
                 newContainers = (response as any).data as unknown as Container[];
             }
 
@@ -80,7 +80,7 @@ const useContainerStore = create<ContainerState>((set, get) => ({
                 error: null
             });
 
-        } catch (error: any) {
+        }catch(error: any){
             set({
                 isLoading: false,
                 isFetchingMore: false,

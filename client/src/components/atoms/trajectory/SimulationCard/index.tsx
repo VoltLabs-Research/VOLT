@@ -29,7 +29,7 @@ interface SimulationCardProps {
 type ProcessingStage = 'idle' | 'queued' | 'processing' | 'rendering' | 'completed' | 'failed' | 'analyzing';
 
 const getMessageForStage = (stage: ProcessingStage): string => {
-    switch (stage) {
+    switch(stage){
         case 'idle':
             return '';
         case 'queued':
@@ -48,13 +48,13 @@ const getMessageForStage = (stage: ProcessingStage): string => {
 };
 
 const getInitialsFromUser = (user: Trajectory['createdBy']): string => {
-    if (!user || typeof user === 'string') return '?';
-    if (user.firstName && user.lastName) {
+    if(!user || typeof user === 'string') return '?';
+    if(user.firstName && user.lastName){
         return (user.firstName[0] + user.lastName[0]).toUpperCase();
     }
-    if (user.email) {
+    if(user.email){
         const parts = user.email.split('@')[0].split('.');
-        if (parts.length >= 2) {
+        if(parts.length >= 2){
             return (parts[0][0] + parts[1][0]).toUpperCase();
         }
         return user.email[0].toUpperCase();
@@ -63,11 +63,11 @@ const getInitialsFromUser = (user: Trajectory['createdBy']): string => {
 };
 
 const getUserDisplayName = (user: Trajectory['createdBy']): string => {
-    if (!user || typeof user === 'string') return 'Unknown';
-    if (user.firstName && user.lastName) {
+    if(!user || typeof user === 'string') return 'Unknown';
+    if(user.firstName && user.lastName){
         return `${user.firstName} ${user.lastName}`;
     }
-    if (user.email) {
+    if(user.email){
         return user.email.split('@')[0];
     }
     return 'Unknown';
@@ -130,12 +130,12 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
     const handleShare = (): void => {
     };
 
-    const handleRasterize = useCallback(async () => {
-        try {
-            if (rasterize) {
+    const handleRasterize = useCallback(async() => {
+        try{
+            if(rasterize){
                 await rasterize(trajectory._id);
             }
-        } catch (error: any) {
+        }catch(error: any){
             console.error('Rasterize failed:', error);
         }
     }, [trajectory._id, rasterize]);

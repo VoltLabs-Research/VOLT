@@ -60,14 +60,14 @@ const PluginBuilder = () => {
             }))
         );
 
-    const handleSave = useCallback(async () => {
-        if (isSaving) return;
+    const handleSave = useCallback(async() => {
+        if(isSaving) return;
         setSaveStatus('saving');
         const result = await saveWorkflow();
-        if (result) {
+        if(result){
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 2000);
-        } else {
+        }else{
             setSaveStatus('error');
             setTimeout(() => setSaveStatus('idle'), 3000);
         }
@@ -75,7 +75,7 @@ const PluginBuilder = () => {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            if((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
                 handleSave();
             }
@@ -98,7 +98,7 @@ const PluginBuilder = () => {
     }, [modifierNode]);
 
     const handlePluginNameChange = useCallback((newName: string) => {
-        if (modifierNode) {
+        if(modifierNode){
             const currentData = modifierNode.data as { modifier?: Record<string, any> } | undefined;
             updateNodeData(modifierNode.id, {
                 modifier: { ...currentData?.modifier, name: newName }
@@ -114,7 +114,7 @@ const PluginBuilder = () => {
     const onDrop = useCallback((event: React.DragEvent) => {
         event.preventDefault();
         const type = event.dataTransfer.getData('application/reactflow') as NodeType;
-        if (!type || !reactFlowInstance) return;
+        if(!type || !reactFlowInstance) return;
         const position = reactFlowInstance.screenToFlowPosition({
             x: event.clientX,
             y: event.clientY

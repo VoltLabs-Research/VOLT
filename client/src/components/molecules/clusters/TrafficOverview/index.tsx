@@ -7,7 +7,6 @@ import { formatNetworkSpeed } from '@/utilities/network'
 import './TrafficOverview.css'
 import Paragraph from '@/components/primitives/Paragraph'
 
-
 const MAX_POINTS = 60
 
 interface DataPoint {
@@ -18,7 +17,7 @@ interface DataPoint {
 }
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
+  if(active && payload && payload.length){
     return (
       <div className="traffic-tooltip">
         <Paragraph className="traffic-tooltip-label font-size-2 font-weight-6">{payload[0].payload.time}</Paragraph>
@@ -33,17 +32,17 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null
 }
 
-export function TrafficOverview() {
+export function TrafficOverview(){
   const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics()
   const [data, setData] = useState<DataPoint[]>([])
 
   // Preload with historical data
   useEffect(() => {
-    if (isHistoryLoaded && metricsHistory.length > 0 && data.length === 0) {
+    if(isHistoryLoaded && metricsHistory.length > 0 && data.length === 0){
       console.log('[TrafficOverview] Preloading with', metricsHistory.length, 'historical points')
       const historicalData = metricsHistory
-        .slice(-MAX_POINTS)
-        .map((m: any) => {
+          .slice(-MAX_POINTS)
+          .map((m: any) => {
           const timestamp = new Date(m.timestamp)
           const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')} `
           return {
@@ -59,7 +58,7 @@ export function TrafficOverview() {
 
   // Update with real-time metrics
   useEffect(() => {
-    if (metrics?.network && data.length > 0) {
+    if(metrics?.network && data.length > 0){
       const timestamp = new Date()
       const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')} `
 

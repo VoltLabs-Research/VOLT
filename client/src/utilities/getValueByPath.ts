@@ -1,8 +1,8 @@
 export const getValueByPath = (obj: any, path: string): any => {
-    if (!obj || !path) return undefined;
+    if(!obj || !path) return undefined;
 
     // Fast path for simple keys without dots
-    if (path.indexOf('.') === -1) {
+    if(path.indexOf('.') === -1) {
         return obj?.[path];
     }
 

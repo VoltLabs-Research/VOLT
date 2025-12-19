@@ -33,7 +33,7 @@ const useTrajectoryUpload = () => {
     const { createTrajectory: createTrajectoryInStore } = useTrajectoryStore.getState();
     const uploadId = uuidv4();
 
-    const uploadAndProcessTrajectory = async (
+    const uploadAndProcessTrajectory = async(
         filesWithPaths: FileWithPath[],
         originalFolderName: string,
         teamId: string
@@ -48,11 +48,11 @@ const useTrajectoryUpload = () => {
         formData.append('uploadId', uploadId);
 
         const handleProgress = (data: any) => {
-            if (data.uploadId === uploadId) {
+            if(data.uploadId === uploadId){
                 const progress = data.progress;
-                if (progress >= 1) {
+                if(progress >= 1){
                     useTrajectoryStore.getState().dismissUpload(uploadId);
-                } else {
+                }else{
                     useTrajectoryStore.getState().updateUploadProgress(uploadId, progress, 'processing');
                 }
             }
@@ -61,11 +61,11 @@ const useTrajectoryUpload = () => {
         // Subscribe to socket events
         const unsubscribe = socketService.on('trajectory:upload-progress', handleProgress);
 
-        try {
+        try{
             await createTrajectoryInStore(formData, teamId, undefined, uploadId);
 
-        } finally {
-            if (unsubscribe) {
+        }finally{
+            if(unsubscribe){
                 unsubscribe();
             }
         }

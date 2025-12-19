@@ -29,7 +29,7 @@ import type { ExtendedSceneState } from '@/types/canvas';
 const _box = new Box3();
 const _center = new Vector3();
 
-export default class AnimationController {
+export default class AnimationController{
     private needsInvalidate = false;
 
     constructor(
@@ -39,8 +39,8 @@ export default class AnimationController {
         private invalidate: () => void
     ) { }
 
-    update(): void {
-        if (!this.state.model) return;
+    update(): void{
+        if(!this.state.model) return;
 
         const now = Date.now();
         this.needsInvalidate = false;
@@ -54,22 +54,22 @@ export default class AnimationController {
         this.updateSelection(now);
 
         // Single invalidate call per frame instead of multiple
-        if (this.needsInvalidate) {
+        if(this.needsInvalidate){
             this.invalidate();
         }
     }
 
-    private updateCameraUniforms(): void {
+    private updateCameraUniforms(): void{
         const { mesh } = this.state;
-        if (mesh && mesh instanceof Points && mesh.material instanceof ShaderMaterial) {
-            if (mesh.material.uniforms?.cameraPosition) {
+        if(mesh && mesh instanceof Points && mesh.material instanceof ShaderMaterial){
+            if(mesh.material.uniforms?.cameraPosition){
                 mesh.material.uniforms.cameraPosition.value.copy(this.camera.position);
             }
         }
     }
 
-    private updateSimulationBox(): void {
-        if (!this.state.model) return;
+    private updateSimulationBox(): void{
+        if(!this.state.model) return;
 
         // Reuse box object
         _box.setFromObject(this.state.model);
@@ -77,13 +77,13 @@ export default class AnimationController {
 
         // @ts-ignore
         ensureSimulationBox(this.state, this.scene, _box);
-        if (this.state.simBoxMesh) {
+        if(this.state.simBoxMesh){
             this.state.simBoxMesh.position.copy(_center);
         }
     }
 
-    private updateDrag(): void {
-        if (this.state.selected && this.state.targetPosition) {
+    private updateDrag(): void{
+        if(this.state.selected && this.state.targetPosition){
             this.state.targetPosition.z = Math.max(0, this.state.targetPosition.z);
             this.state.selected.position.lerp(
                 this.state.targetPosition,
@@ -93,8 +93,8 @@ export default class AnimationController {
         }
     }
 
-    private updateRotation(now: number): void {
-        if (!this.state.selected || !this.state.targetRotation) return;
+    private updateRotation(now: number): void{
+        if(!this.state.selected || !this.state.targetRotation) return;
 
         const f = ANIMATION_CONSTANTS.ROTATION_LERP_SPEED;
         this.state.currentRotation.x += (this.state.targetRotation.x - this.state.currentRotation.x) * f;
@@ -108,19 +108,19 @@ export default class AnimationController {
         const dz = Math.abs(this.state.targetRotation.z - this.state.currentRotation.z);
         const rotatingNow = dx + dy + dz > ANIMATION_CONSTANTS.ROT_EPS;
 
-        if (rotatingNow) {
+        if(rotatingNow){
             this.handleActiveRotation();
             this.state.isRotating = true;
             this.state.lastRotationActiveMs = now;
-        } else {
+        }else{
             this.handleRotationSettle(now);
         }
     }
 
-    private handleActiveRotation(): void {
-        if (this.state.isRotating) return;
+    private handleActiveRotation(): void{
+        if(this.state.isRotating) return;
 
-        if (this.state.selection) {
+        if(this.state.selection){
             const baseGeo = this.state.selection.base.geometry as EdgesGeometry;
             baseGeo.computeBoundingBox();
             const curBB = baseGeo.boundingBox!;
@@ -129,10 +129,10 @@ export default class AnimationController {
             this.state.rotationFreezeSize = curSize.clone();
         }
 
-        if (this.state.sizeAnimActive) {
+        if(this.state.sizeAnimActive){
             this.state.sizeAnimActive = false;
 
-            if (this.state.sizeAnimTo && this.state.selection) {
+            if(this.state.sizeAnimTo && this.state.selection){
                 updateSelectionGeometry(
                     this.state.selection,
                     this.state.sizeAnimTo.clone(),
@@ -140,9 +140,9 @@ export default class AnimationController {
                 );
             }
 
-            if (this.state.sizeAnimTo &&
+            if(this.state.sizeAnimTo &&
                 this.state.simBoxMesh &&
-                this.state.simBoxBaseSize) {
+                this.state.simBoxBaseSize){
                 const target = this.state.sizeAnimTo;
                 const base = this.state.simBoxBaseSize;
                 this.state.simBoxMesh.scale.set(
@@ -156,18 +156,18 @@ export default class AnimationController {
     }
 
     private handleRotationSettle(now: number) {
-        if (this.state.isRotating &&
-            now - this.state.lastRotationActiveMs >= ANIMATION_CONSTANTS.ROTATION_SETTLE_MS) {
+        if(this.state.isRotating &&
+            now - this.state.lastRotationActiveMs >= ANIMATION_CONSTANTS.ROTATION_SETTLE_MS){
             this.state.isRotating = false;
             // @ts-ignore
             startSizeAnimAfterRotation(this.state, this.scene, now);
         }
     }
 
-    private updateScale(): void {
-        if (!this.state.selected) return;
+    private updateScale(): void{
+        if(!this.state.selected) return;
 
-        if (Math.abs(this.state.targetScale - this.state.currentScale) > 1e-3) {
+        if(Math.abs(this.state.targetScale - this.state.currentScale) > 1e-3) {
             const newScale = this.state.currentScale +
                 (this.state.targetScale - this.state.currentScale) * ANIMATION_CONSTANTS.SCALE_LERP_SPEED;
             this.state.selected.scale.setScalar(newScale);
@@ -176,15 +176,15 @@ export default class AnimationController {
         }
     }
 
-    private updateSizeAnimation(now: number): void {
+    private updateSizeAnimation(now: number): void{
         // @ts-ignore
-        if (runSizeAnimationStep(this.state, now)) {
+        if(runSizeAnimationStep(this.state, now)) {
             this.needsInvalidate = true;
         }
     }
 
-    private updateSelection(now: number): void {
-        if (!this.state.selection || !this.state.model) return;
+    private updateSelection(now: number): void{
+        if(!this.state.selection || !this.state.model) return;
 
         const hover = this.state.isHovered && !this.state.isSelectedPersistent;
 
@@ -203,7 +203,7 @@ export default class AnimationController {
         const next = curScale + (target - curScale) * ANIMATION_CONSTANTS.SELECTION_LERP_SPEED;
         this.state.selection.group.scale.setScalar(next);
 
-        if (!this.state.showSelection && !this.state.isHovered && next < 0.01) {
+        if(!this.state.showSelection && !this.state.isHovered && next < 0.01){
             this.scene.remove(this.state.selection.group);
             this.state.selection = null;
         }

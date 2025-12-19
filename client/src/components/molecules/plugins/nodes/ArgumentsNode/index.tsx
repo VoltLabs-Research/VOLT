@@ -9,7 +9,7 @@ const ArgumentsNode = memo((props: NodeProps) => {
 
     return(
         <BaseNode
-            {...props} 
+            {...props}
             nodeType={NodeType.ARGUMENTS}
             description={`${args.length} argument(s)`}
         />

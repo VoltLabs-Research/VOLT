@@ -44,16 +44,16 @@ const TrajectoryList: React.FC<TrajectoryListProps> = ({ onFileSelect }) => {
     const logger = useLogger('trajectory-list');
 
     useEffect(() => {
-        if (!trajectories.length) {
+        if(!trajectories.length){
             getTrajectories();
         }
     }, []);
 
-    const handleDelete = async (trajectoryId: string, e: React.MouseEvent) => {
+    const handleDelete = async(trajectoryId: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        try {
+        try{
             await deleteTrajectoryById(trajectoryId);
-        } catch (err) {
+        }catch(err){
             logger.error('Error deleting folder:', err);
         }
     };

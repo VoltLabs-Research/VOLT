@@ -29,11 +29,11 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
     const [uploadError, setUploadError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = useCallback(async(event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file) return;
+        if(!file) return;
 
-        if (!currentPlugin?._id) {
+        if(!currentPlugin?._id){
             setUploadError('Please save the plugin first before uploading a binary');
             return;
         }
@@ -42,7 +42,7 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
         setUploadProgress(0);
         setUploadError(null);
 
-        try {
+        try{
             const result = await pluginApi.uploadBinary(
                 currentPlugin._id,
                 file,
@@ -57,17 +57,17 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
             });
 
             setUploadProgress(100);
-        } catch (error: any) {
+        }catch(error: any){
             setUploadError(error.message || 'Failed to upload binary');
-        } finally {
+        }finally{
             setIsUploading(false);
         }
     }, [currentPlugin?._id, updateData]);
 
-    const handleRemoveBinary = useCallback(async () => {
-        if (!currentPlugin?._id || !entrypoint.binaryObjectPath) return;
+    const handleRemoveBinary = useCallback(async() => {
+        if(!currentPlugin?._id || !entrypoint.binaryObjectPath) return;
 
-        try {
+        try{
             await pluginApi.deleteBinary(currentPlugin._id);
             // Clear all binary fields at once
             updateData({
@@ -75,7 +75,7 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
                 binaryObjectPath: undefined,
                 binaryFileName: undefined
             });
-        } catch (error: any) {
+        }catch(error: any){
             setUploadError(error.message || 'Failed to delete binary');
         }
     }, [currentPlugin?._id, entrypoint.binaryObjectPath, updateData]);

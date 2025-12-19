@@ -59,4 +59,3 @@ const ExposureEditor: React.FC<ExposureEditorProps> = ({ node }) => {
 };
 
 export default ExposureEditor;
-

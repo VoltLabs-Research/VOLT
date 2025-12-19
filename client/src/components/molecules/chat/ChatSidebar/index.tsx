@@ -21,9 +21,9 @@ const ChatSidebar: React.FC = () => {
 
     // Filter chats based on search query
     const filteredChats = chats.filter(chat => {
-        if (!searchQuery) return true;
+        if(!searchQuery) return true;
         const participant = chat.participants.find(p => p._id !== user?._id);
-        if (!participant) return false;
+        if(!participant) return false;
         const name = `${participant.firstName} ${participant.lastName}`.toLowerCase();
         return name.includes(searchQuery.toLowerCase());
     });
@@ -76,7 +76,7 @@ const ChatSidebar: React.FC = () => {
                         .filter((member, index, self) =>
                             self.findIndex(m => m._id === member._id) === index
                         )
-                        .map((member) => (
+                            .map((member) => (
                             <div className='d-flex items-center chat-team-member-item cursor-pointer'
                                 onClick={() => {
                                     startChatWithMember(member);
@@ -115,7 +115,7 @@ const ChatSidebar: React.FC = () => {
                             chat.participants.find(p => p._id !== user?._id)?.firstName + ' ' +
                             chat.participants.find(p => p._id !== user?._id)?.lastName;
 
-                        if (!displayName) return null;
+                        if(!displayName) return null;
 
                         return (
                             <div className={`d-flex items-center chat-conversation-item ${currentChat?._id === chat._id ? 'active' : ''} p-relative cursor-pointer`}

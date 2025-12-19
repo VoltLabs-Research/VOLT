@@ -13,8 +13,8 @@ const EntrypointNode = memo((props: NodeProps) => {
         : undefined;
 
     return(
-        <BaseNode 
-            {...props} 
+        <BaseNode
+            {...props}
             nodeType={NodeType.ENTRYPOINT}
             description={hasBinary ? binaryDisplay : 'No binary attached'}
         />

@@ -8,8 +8,8 @@ const ForEachNode = memo((props: NodeProps) => {
     const iterableSource = data.forEach?.iterableSource;
 
     return(
-        <BaseNode 
-            {...props} 
+        <BaseNode
+            {...props}
             nodeType={NodeType.FOREACH}
             description={`Receives an array to iterate`}
         />

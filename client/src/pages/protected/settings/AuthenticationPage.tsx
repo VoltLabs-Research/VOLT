@@ -26,9 +26,9 @@ const AuthenticationPage: React.FC = () => {
         getPasswordInfo();
     }, [getPasswordInfo]);
 
-    const handlePasswordChange = useCallback(async (e: React.FormEvent) => {
+    const handlePasswordChange = useCallback(async(e: React.FormEvent) => {
         e.preventDefault();
-        try {
+        try{
             await changePassword(passwordForm);
             setShowPasswordForm(false);
             setPasswordForm({
@@ -37,7 +37,7 @@ const AuthenticationPage: React.FC = () => {
                 confirmPassword: ''
             });
             await getPasswordInfo();
-        } catch (error: any) {
+        }catch(error: any){
             console.error('Password change failed:', error);
         }
     }, [changePassword, passwordForm, getPasswordInfo]);

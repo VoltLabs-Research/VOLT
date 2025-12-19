@@ -41,52 +41,37 @@ const initialState: TrajectoryState = {
         total: 0,
         hasMore: false
     },
-    isAnalysisLoading: true,
     trajectory: null,
     isLoading: true,
     isFetchingMore: false,
     isDashboardTrajectoriesLoading: true,
-    isSavingPreview: false,
     uploadingFileCount: 0,
     activeUploads: {},
     error: null,
     isMetricsLoading: false,
     trajectoryMetrics: {},
-    structureAnalysis: null,
     selectedTrajectories: [],
-    analysisStats: {},
-    avgSegmentSeries: [],
-    idRateSeries: [],
     isLoadingTrajectories: true,
-    dislocationSeries: [],
-    cache: {},
-    analysisCache: {},
-    differencesCache: {},
-    atomsCache: {},
-    rasterData: {},
-    rasterObjectUrlCache: {} as any,
-    rasterCache: {} as any,
-    isRasterLoading: false
 };
 
-export function dataURLToBlob(dataURL: string): Blob {
+export function dataURLToBlob(dataURL: string): Blob{
     const [header, data] = dataURL.split(',');
     const isBase64 = /;base64/i.test(header);
     const mimeMatch = header.match(/data:([^;]+)/i);
     const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
 
-    if (isBase64) {
+    if(isBase64){
         const byteString = atob(data);
         const len = byteString.length;
         const u8 = new Uint8Array(len);
-        for (let i = 0; i < len; i++) u8[i] = byteString.charCodeAt(i);
+        for(let i = 0; i < len; i++) u8[i] = byteString.charCodeAt(i);
         return new Blob([u8], { type: mime });
-    } else {
+    }else{
         return new Blob([decodeURIComponent(data)], { type: mime });
     }
 }
 
-export function dataURLToObjectURL(dataURL: string): string {
+export function dataURLToObjectURL(dataURL: string): string{
     const blob = dataURLToBlob(dataURL);
     return URL.createObjectURL(blob);
 }
@@ -102,22 +87,20 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         const currentDashboardTrajectories = get().dashboardTrajectories;
         const currentTrajectory = get().trajectory;
         return {
-            trajectories: currentTrajectories.map(trajectory =>
-                trajectory._id === id ? { ...trajectory, ...updates } : trajectory
+            trajectories: currentTrajectories.map(t => (t._id === id ? { ...t, ...updates } : t)),
+            dashboardTrajectories: currentDashboardTrajectories.map(t =>
+                t._id === id ? { ...t, ...updates } : t
             ),
-            dashboardTrajectories: currentDashboardTrajectories.map(trajectory =>
-                trajectory._id === id ? { ...trajectory, ...updates } : trajectory
-            ),
-            trajectory: currentTrajectory?._id === id
-                ? { ...currentTrajectory, ...updates }
-                : currentTrajectory
+            trajectory:
+                currentTrajectory?._id === id ? { ...currentTrajectory, ...updates } : currentTrajectory
         };
-    };
+  };
 
     const removeTrajectoryFromList = (id: string) => {
         const currentTrajectories = get().trajectories;
         const currentDashboardTrajectories = get().dashboardTrajectories;
         const currentTrajectory = get().trajectory;
+
         return {
             trajectories: currentTrajectories.filter(t => t._id !== id),
             dashboardTrajectories: currentDashboardTrajectories.filter(t => t._id !== id),
@@ -125,71 +108,62 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         };
     };
 
-    const keyForTeam = (teamId?: string) => teamId || 'all';
-
-    return {
-        ...initialState,
+  return {
+      ...initialState,
 
         getTrajectories: (teamId?: string, opts = {}) => {
-            const { force = false, page = 1, limit = 20, search = '', append = false } = opts;
-            const key = keyForTeam(teamId);
-            const cached = get().cache[key];
+            const { page = 1, limit = 20, search = '', append = false } = opts;
 
-            // If using cache and not forcing refresh/append
-            if (cached && !force && !append && page === 1 && !search) {
-                set({ trajectories: cached, isLoading: false, error: null });
-                return Promise.resolve();
-            }
-
-            if (append) {
-                if (get().isFetchingMore) return Promise.resolve();
+            if(append){
+                if(get().isFetchingMore) return Promise.resolve();
                 set({ isFetchingMore: true });
-            } else {
-                set({ isLoading: true });
+            }else{
+                set({ isLoadingTrajectories: true });
             }
 
-            return asyncAction(() => trajectoryApi.getAllPaginated({
-                teamId,
-                populate: 'analysis,createdBy',
-                page,
-                limit,
-                q: search
-            }), {
-                loadingKey: append ? 'isFetchingMore' : 'isLoadingTrajectories',
-                onSuccess: (response) => {
-                    const { data: nextList, listingMeta } = calculatePaginationState({
-                        newData: response.data || [],
-                        currentData: get().trajectories,
-                        page,
-                        limit,
-                        append,
-                        totalFromApi: response.total,
-                        previousTotal: get().listingMeta.total
-                    });
+            return asyncAction(
+                () =>
+                trajectoryApi.getAllPaginated({
+                    teamId,
+                    populate: 'analysis,createdBy',
+                    page,
+                    limit,
+                    q: search
+                }),
+                {
+                    loadingKey: append ? 'isFetchingMore' : 'isLoadingTrajectories',
+                    onSuccess: (response) => {
+                        const { data: nextList, listingMeta } = calculatePaginationState({
+                            newData: response.data || [],
+                            currentData: get().trajectories,
+                            page,
+                            limit,
+                            append,
+                            totalFromApi: response.total,
+                            previousTotal: get().listingMeta.total
+                        });
 
-                    const nextCache = { ...get().cache, [key]: nextList };
-
-                    return {
-                        trajectories: nextList,
-                        listingMeta,
-                        cache: nextCache,
-                        error: null,
-                        isFetchingMore: false,
-                        isLoading: false
-                    };
-                },
-                onError: (error) => {
-                    const errorMessage = extractErrorMessage(error, 'Failed to load trajectories');
-                    return {
-                        error: errorMessage,
-                        isFetchingMore: false,
-                        isLoading: false
-                    };
+                        return {
+                            trajectories: nextList,
+                            listingMeta,
+                            error: null,
+                            isFetchingMore: false,
+                            isLoadingTrajectories: false
+                        };
+                    },
+                    onError: (error) => {
+                        const errorMessage = extractErrorMessage(error, 'Failed to load trajectories');
+                        return {
+                            error: errorMessage,
+                            isFetchingMore: false,
+                            isLoadingTrajectories: false
+                        };
+                    }
                 }
-            });
+            );
         },
 
-        getDashboardTrajectories: (teamId?: string, opts?: { force?: boolean }) => {
+        getDashboardTrajectories: (teamId?: string, _opts?: { force?: boolean }) => {
             return asyncAction(() => trajectoryApi.getAll({ teamId, populate: 'analysis,createdBy', limit: 5 }), {
                 loadingKey: 'isDashboardTrajectoriesLoading',
                 onSuccess: (list) => {
@@ -200,100 +174,67 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 },
                 onError: (error) => {
                     const errorMessage = extractErrorMessage(error, 'Failed to load dashboard trajectories');
-                    return {
-                        error: errorMessage
-                    };
+                    return { error: errorMessage };
                 }
             });
         },
 
-        getStructureAnalysis: (teamId: string, opts?: { force?: boolean }) => {
-            const force = !!opts?.force;
-            const cached = get().analysisCache[teamId];
-            if (cached && !force) {
-                set({ structureAnalysis: cached, isLoading: false, error: null });
-                return Promise.resolve();
-            }
-            return asyncAction(async () => {
-                const structureAnalysisApi = await import('@/services/structure-analysis');
-                return structureAnalysisApi.getStructureAnalysisByTeam(teamId);
-            }, {
-                loadingKey: 'isLoading',
-                onSuccess: (data) => {
-                    const next = { ...get().analysisCache, [teamId]: data };
-                    return {
-                        structureAnalysis: data,
-                        analysisCache: next,
-                        error: null
-                    };
-                },
-                onError: (error) => ({
-                    error: extractErrorMessage(error, 'Failed to load structure analysis')
-                })
-            });
-        },
-
-        getTrajectoryById: (id: string) =>
-            asyncAction(() => trajectoryApi.getOne(id, 'team,analysis'), {
-                loadingKey: 'isLoading',
-                onSuccess: (trajectory) => ({
-                    trajectory,
-                    error: null
-                }),
-                onError: (error) => {
-                    const errorMessage = extractErrorMessage(error, 'Failed to load trajectory');
-                    return {
-                        error: errorMessage
-                    };
-                }
+        getTrajectoryById: (id: string) => asyncAction(() => trajectoryApi.getOne(id, 'team,analysis'), {
+            loadingKey: 'isLoading',
+            onSuccess: (trajectory) => ({
+                trajectory,
+                error: null
             }),
 
-        createTrajectory: async (formData: FormData, teamId?: string, onProgress?: (progress: number) => void, existingUploadId?: string) => {
+            onError: (error) => {
+                const errorMessage = extractErrorMessage(error, 'Failed to load trajectory');
+                return { error: errorMessage };
+            }
+        }),
+
+        createTrajectory: async(
+            formData: FormData,
+            _teamId?: string,
+            onProgress?: (progress: number) => void,
+            existingUploadId?: string
+        ) => {
             const uploadId = existingUploadId || uuidv4();
 
-            // Add to active uploads
             set(state => ({
                 activeUploads: {
                     ...state.activeUploads,
-                    [uploadId]: { id: uploadId, uploadProgress: 0, processingProgress: 0, status: 'uploading' }
+                [uploadId]: { id: uploadId, uploadProgress: 0, processingProgress: 0, status: 'uploading' }
                 }
             }));
 
-            try {
+            try{
                 const newTrajectory = await trajectoryApi.create(formData, (progress) => {
-                    set(state => ({
-                        activeUploads: {
-                            ...state.activeUploads,
-                            [uploadId]: {
-                                ...state.activeUploads[uploadId],
-                                uploadProgress: progress,
-                                status: progress === 1 ? 'processing' : 'uploading'
-                            }
-                        }
-                    }));
-                    if (onProgress) onProgress(progress);
+                set(state => ({
+                    activeUploads: {
+                        ...state.activeUploads,
+                    [uploadId]: {
+                        ...state.activeUploads[uploadId],
+                        uploadProgress: progress,
+                        status: progress === 1 ? 'processing' : 'uploading'
+                    }
+                    }
+                }));
+                if(onProgress) onProgress(progress);
                 });
-                const key = keyForTeam(teamId);
-                const currentList = get().cache[key] || get().trajectories;
-                const updated = [newTrajectory, ...currentList];
-                const updatedCache = { ...get().cache, [key]: updated };
-                const currentDashboardList = get().dashboardTrajectories;
-                const updatedDashboardList = [newTrajectory, ...currentDashboardList];
 
                 set(state => ({
-                    trajectories: updated,
-                    dashboardTrajectories: updatedDashboardList,
-                    cache: updatedCache,
-                    error: null
+                trajectories: [newTrajectory, ...state.trajectories],
+                dashboardTrajectories: [newTrajectory, ...state.dashboardTrajectories],
+                error: null
                 }));
-            } catch (error: any) {
+            }catch(error: any){
                 const errorMessage = extractErrorMessage(error, 'Error uploading trajectory');
                 set(state => {
-                    const { [uploadId]: _, ...remainingUploads } = state.activeUploads;
-                    return {
-                        activeUploads: remainingUploads,
-                        error: errorMessage
-                    };
+                const { [uploadId]: _, ...remainingUploads } = state.activeUploads;
+                return {
+                    activeUploads: remainingUploads,
+                    error: errorMessage
+                };
                 });
                 throw error;
             }
@@ -309,36 +250,33 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         updateUploadProgress: (uploadId: string, progress: number, type: 'upload' | 'processing') => {
             set(state => {
                 const upload = state.activeUploads[uploadId];
-                if (!upload) return state;
+                if(!upload) return state;
 
                 return {
-                    activeUploads: {
-                        ...state.activeUploads,
-                        [uploadId]: {
-                            ...upload,
-                            [type === 'upload' ? 'uploadProgress' : 'processingProgress']: progress,
-                            status: type === 'upload' && progress < 1 ? 'uploading' : 'processing'
-                        }
+                activeUploads: {
+                    ...state.activeUploads,
+                    [uploadId]: {
+                        ...upload,
+                    [type === 'upload' ? 'uploadProgress' : 'processingProgress']: progress,
+                    status: type === 'upload' && progress < 1 ? 'uploading' : 'processing'
                     }
+                }
                 };
             });
         },
 
-        updateTrajectoryById: async (id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => {
+        updateTrajectoryById: async(id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => {
             const originalState = {
                 trajectories: get().trajectories,
-                trajectory: get().trajectory,
-                cache: get().cache
+                dashboardTrajectories: get().dashboardTrajectories,
+                trajectory: get().trajectory
             };
+
             set(updateTrajectoryInList(id, data));
-            try {
+
+            try{
                 await trajectoryApi.update(id, data);
-                const nextCache: Record<string, Trajectory[]> = {};
-                Object.entries(get().cache).forEach(([k, arr]) => {
-                    nextCache[k] = arr.map(t => t._id === id ? { ...t, ...data } as Trajectory : t);
-                });
-                set({ cache: nextCache });
-            } catch (error: any) {
+            }catch(error: any){
                 set(originalState);
                 const errorMessage = extractErrorMessage(error, 'Failed to update trajectory');
                 set({ error: errorMessage });
@@ -346,22 +284,45 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             }
         },
 
-        deleteTrajectoryById: async (id: string, teamId?: string) => {
+        deleteSelectedTrajectories: async() => {
+            const ids = get().selectedTrajectories;
+            if(ids.length === 0) return;
+
             const originalState = {
                 trajectories: get().trajectories,
                 dashboardTrajectories: get().dashboardTrajectories,
                 trajectory: get().trajectory,
-                cache: get().cache
+                selectedTrajectories: get().selectedTrajectories
             };
+
+            set(state => ({
+                trajectories: state.trajectories.filter(t => !ids.includes(t._id)),
+                dashboardTrajectories: state.dashboardTrajectories.filter(t => !ids.includes(t._id)),
+                trajectory: state.trajectory && ids.includes(state.trajectory._id) ? null : state.trajectory,
+                selectedTrajectories: []
+            }));
+
+            try{
+                await Promise.all(ids.map((id) => trajectoryApi.delete(id)));
+            }catch(e: any){
+                set(originalState);
+                throw e;
+            }
+        },
+
+        deleteTrajectoryById: async(id: string, _teamId?: string) => {
+            const originalState = {
+                trajectories: get().trajectories,
+                dashboardTrajectories: get().dashboardTrajectories,
+                trajectory: get().trajectory
+            };
+
             set(removeTrajectoryFromList(id));
             clearTrajectoryPreviewCache(id);
-            const key = keyForTeam(teamId);
-            const currentList = get().cache[key] || [];
-            const updated = currentList.filter(t => t._id !== id);
-            set({ cache: { ...get().cache, [key]: updated } });
-            try {
+
+            try{
                 await trajectoryApi.delete(id);
-            } catch (error: any) {
+            }catch(error: any){
                 set(originalState);
                 set({ error: extractErrorMessage(error, 'Failed to delete trajectory') });
                 throw error;
@@ -373,49 +334,19 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const isSelected = currentSelected.includes(id);
             set({
                 selectedTrajectories: isSelected
-                    ? currentSelected.filter(selectedId => selectedId !== id)
-                    : [...currentSelected, id]
+                ? currentSelected.filter(selectedId => selectedId !== id)
+                : [...currentSelected, id]
             });
         },
 
-        deleteSelectedTrajectories: async () => {
-            const { selectedTrajectories } = get();
-            if (selectedTrajectories.length === 0) return;
-            const idsToDelete = [...selectedTrajectories];
-            set({ selectedTrajectories: [] });
-            const deletePromises = idsToDelete.map(id =>
-                get().deleteTrajectoryById(id).catch(() => {
-                    logger.error(`Failed to delete trajectory ${id}`);
-                })
-            );
-            await Promise.allSettled(deletePromises);
-        },
-
-        async getRasterizedFrames(_id: string, _query?: any) {
-            return null; // Not implemented here
-        },
-
-        // Fetch atoms positions for a given trajectory/timestep with simple cache.
         async getFrameAtoms(trajectoryId, timestep, opts) {
-            const force = !!opts?.force;
             const page = opts?.page ?? 1;
             const pageSize = opts?.pageSize ?? 100000;
-            const cacheKey = `${trajectoryId}:${timestep}:${page}:${pageSize}`;
-            const cached = get().atomsCache?.[cacheKey];
-            if (cached && !force) {
-                return cached;
-            }
 
-            try {
+            try{
                 const payload = await trajectoryApi.getAtoms(trajectoryId, timestep, { page, pageSize });
-                if (!payload) {
-                    return null;
-                }
-                set((state) => ({
-                    atomsCache: { ...(state.atomsCache || {}), [cacheKey]: payload }
-                }));
-                return payload;
-            } catch (e: any) {
+                return payload || null;
+            }catch(e: any){
                 const errorMessage = extractErrorMessage(e, 'Error loading frame atoms');
                 console.error('Failed to load frame atoms:', errorMessage);
                 return null;
@@ -425,9 +356,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         getMetrics: (id: string, opts?: { force?: boolean }) => {
             const force = !!opts?.force;
             const current = get().trajectoryMetrics as any;
-
-            // Evita refetch si ya tenemos métricas de esa trayectoria(a menos que force)
-            if (current && current?.trajectory?._id === id && !force) {
+            if(current && current?.trajectory?._id === id && !force){
                 return Promise.resolve();
             }
 
@@ -453,10 +382,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             set({
                 trajectory: null,
                 error: null,
-                analysisStats: [],
-                dislocationSeries: [],
-                idRateSeries: [],
-                avgSegmentSeries: [],
                 selectedTrajectories: []
             });
         },

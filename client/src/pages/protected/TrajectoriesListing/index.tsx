@@ -20,19 +20,19 @@ const TrajectoriesListing = () => {
     const searchQuery = useDashboardSearchStore((s) => s.query);
 
     useEffect(() => {
-        if (!team?._id) return;
+        if(!team?._id) return;
         // Fetch handled by DashboardLayout prefetch, but ensure consistent state if missing
-        if (trajectories.length === 0) {
+        if(trajectories.length === 0){
             getTrajectories(team._id, { page: 1, limit: 20, search: searchQuery });
-        } else if (searchQuery) {
-            // If searching, we must fetch (store might cache non-search results)
+        }else if(searchQuery){
+            // If searching, we must fetch(store might cache non-search results)
             getTrajectories(team._id, { page: 1, limit: 20, search: searchQuery, force: true });
         }
     }, [team?._id, searchQuery, getTrajectories, trajectories.length])
 
-    const handleMenuAction = useCallback(async (action: string, item: any) => {
-        if (action === 'delete') {
-            if (window.confirm('Delete this trajectory?')) {
+    const handleMenuAction = useCallback(async(action: string, item: any) => {
+        if(action === 'delete'){
+            if(window.confirm('Delete this trajectory?')) {
                 await deleteTrajectoryById(item._id)
             }
         }
@@ -94,8 +94,8 @@ const TrajectoriesListing = () => {
         }
     ], [])
 
-    const handleLoadMore = useCallback(async () => {
-        if (!team?._id || !listingMeta.hasMore || isFetchingMore) return;
+    const handleLoadMore = useCallback(async() => {
+        if(!team?._id || !listingMeta.hasMore || isFetchingMore) return;
         await getTrajectories(team._id, {
             page: listingMeta.page + 1,
             limit: listingMeta.limit,

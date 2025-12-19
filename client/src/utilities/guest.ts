@@ -12,7 +12,7 @@ const GUEST_KEY = 'guest_uid_v1';
 // Pure hash function - can be used in worker
 export const hash = (str: string): number => {
     let h = 2166136261 >>> 0;
-    for (let i = 0; i < str.length; i++) {
+    for(let i = 0; i < str.length; i++){
         h ^= str.charCodeAt(i);
         // FNV-1a
         h = Math.imul(h, 16777619) >>> 0;
@@ -32,7 +32,7 @@ export const hslFromUid = (uid: string): string => {
 export const generateColorsWorker = (uids: string[]): Record<string, string> => {
     const hashFn = (str: string): number => {
         let h = 2166136261 >>> 0;
-        for (let i = 0; i < str.length; i++) {
+        for(let i = 0; i < str.length; i++){
             h ^= str.charCodeAt(i);
             h = Math.imul(h, 16777619) >>> 0;
         }
@@ -40,16 +40,16 @@ export const generateColorsWorker = (uids: string[]): Record<string, string> => 
     };
 
     const result: Record<string, string> = {};
-    for (const uid of uids) {
+    for(const uid of uids){
         const h = hashFn(uid) % 360;
         result[uid] = `hsl(${h} 62% 58%)`;
     }
     return result;
 };
 
-export const getOrCreateGuestUser = async (): Promise<GuestUser> => {
+export const getOrCreateGuestUser = async(): Promise<GuestUser> =>{
     let uid = localStorage.getItem(GUEST_KEY);
-    if (!uid) {
+    if(!uid){
         uid = v4().slice(0, 12);
         localStorage.setItem(GUEST_KEY, uid);
     }
@@ -57,7 +57,7 @@ export const getOrCreateGuestUser = async (): Promise<GuestUser> => {
     // Try to get cached name first
     const cachedName = localStorage.getItem(`${GUEST_KEY}_name`);
 
-    if (cachedName) {
+    if(cachedName){
         return {
             id: 'guest:' + uid,
             firstName: cachedName,

@@ -7,7 +7,7 @@ import Paragraph from '@/components/primitives/Paragraph';
 interface SectionHeaderProps {
     title: string;
     description?: string;
-    children?: React.ReactNode; 
+    children?: React.ReactNode;
 }
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({ title, description, children }) => {

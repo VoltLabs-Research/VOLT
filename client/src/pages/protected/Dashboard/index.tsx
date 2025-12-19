@@ -36,7 +36,7 @@ const DashboardPage: React.FC = memo(() => {
     const scene3DRef = useRef<Scene3DRef>(null)
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
 
-    // Check if there are any trajectories being processed (not completed)
+    // Check if there are any trajectories being processed(not completed)
     const isProcessing = useMemo(() => {
         return trajectories.some((trajectory) => trajectory.status !== 'completed');
     }, [trajectories]);
@@ -64,7 +64,7 @@ const DashboardPage: React.FC = memo(() => {
 
     // Update background color in environment config when theme changes
     useEffect(() => {
-        if (typeof document === 'undefined') return;
+        if(typeof document === 'undefined') return;
         const root = document.documentElement;
         const update = () => {
             const isLightTheme = root.getAttribute('data-theme') === 'light';

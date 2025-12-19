@@ -51,7 +51,7 @@ type RowRenderProps = {
 };
 
 const renderMenuOption = (option: MenuOption, idx: number) => {
-  if (Array.isArray(option)) {
+  if(Array.isArray(option)) {
     const [label, Icon, onClick] = option;
     return (
       <PopoverMenuItem key={idx} icon={<Icon />} onClick={onClick}>
@@ -88,7 +88,7 @@ const RowBase = ({
   const menuOptions = getMenuOptions ? getMenuOptions(item) : [];
 
   const rowStyle: React.CSSProperties = {
-    ...style,
+      ...style,
     width: useFlexDistribution ? '100%' : totalRowWidth,
     display: 'flex',
     alignItems: 'center',
@@ -128,7 +128,7 @@ const RowBase = ({
     </button>
   );
 
-  if (menuOptions.length === 0) return content;
+  if(menuOptions.length === 0) return content;
 
   return (
     <Popover id={`row-menu-${rowKey}`} trigger={content}>
@@ -240,7 +240,6 @@ const DocumentListingTable = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lastScrollOffset = useRef(0);
 
-
   const columnWidths = useMemo(() => columns.map(getColumnWidth), [columns]);
 
   const minContentWidth = useMemo(() => {
@@ -256,27 +255,27 @@ const DocumentListingTable = ({
   // This avoids re-renders while still enabling horizontal scroll when content doesn't fit
   const useFlexDistribution = useMemo(() => {
     const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-    // Add some buffer (sidebar ~250px, padding ~100px)
+    // Add some buffer(sidebar ~250px, padding ~100px)
     const availableWidth = viewportWidth - 350;
     return availableWidth >= minContentWidth;
   }, [minContentWidth]);
 
   const effectiveWidth = useFlexDistribution ? '100%' : `${totalRowWidth}px`;
 
-  // Observe intersection of the sentinel within the provided scroll container (non-virtualized)
+  // Observe intersection of the sentinel within the provided scroll container(non-virtualized)
   useEffect(() => {
-    if (!enableInfinite || useVirtualization) return;
+    if(!enableInfinite || useVirtualization) return;
 
     const root =
       scrollContainerRef && 'current' in scrollContainerRef ? (scrollContainerRef.current as any) : null;
 
     const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    if(!sentinel) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (entry?.isIntersecting && hasMore && !isFetchingMore) onLoadMore?.();
+        if(entry?.isIntersecting && hasMore && !isFetchingMore) onLoadMore?.();
       },
       { root: root ?? null, rootMargin: '0px 0px 200px 0px', threshold: 0 }
     );
@@ -288,7 +287,7 @@ const DocumentListingTable = ({
   // Handle infinite scroll for virtualized list
   const handleScroll = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
-      if (!enableInfinite || !useVirtualization) return;
+      if(!enableInfinite || !useVirtualization) return;
 
       const target = event.target as HTMLElement;
       const scrollOffset = target.scrollTop;
@@ -297,7 +296,7 @@ const DocumentListingTable = ({
       const visibleHeight = listHeight;
       const scrollThreshold = totalHeight - visibleHeight - 200;
 
-      if (scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold && hasMore && !isFetchingMore) {
+      if(scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold && hasMore && !isFetchingMore){
         onLoadMore?.();
       }
 
@@ -405,7 +404,7 @@ const DocumentListingTable = ({
               />
             ))}
 
-          {/* Infinite scroll sentinel (for non-virtualized) */}
+          {/* Infinite scroll sentinel(for non-virtualized) */}
           {enableInfinite && !useVirtualization && <div ref={sentinelRef} style={{ height: 1 }} />}
 
           {shouldShowEmptyState && (

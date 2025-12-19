@@ -31,14 +31,14 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         fetchFiles(currentPath);
     }, [containerId, currentPath]);
 
-    const fetchFiles = async (path: string) => {
+    const fetchFiles = async(path: string) => {
         setLoading(true);
-        try {
+        try{
             const data = await containerApi.fileExplorer.list(containerId, path);
             setFiles(data.files);
-        } catch (error) {
+        }catch(error){
             showError('Failed to fetch files');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
@@ -49,23 +49,23 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
     };
 
     const handleGoUp = () => {
-        if (currentPath === '/') return;
+        if(currentPath === '/') return;
         const parts = currentPath.split('/');
         parts.pop();
         const newPath = parts.join('/') || '/';
         setCurrentPath(newPath);
     };
 
-    const handleFileClick = async (fileName: string) => {
+    const handleFileClick = async(fileName: string) => {
         const filePath = currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`;
         setLoading(true);
-        try {
+        try{
             const data = await containerApi.fileExplorer.read(containerId, filePath);
             setFileContent(data.content);
             setViewingFile(fileName);
-        } catch (error) {
+        }catch(error){
             showError('Failed to read file');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
@@ -75,7 +75,7 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         setFileContent(null);
     };
 
-    if (viewingFile) {
+    if(viewingFile){
         return (
             <Container className='d-flex column h-max gap-1'>
                 <Container className="d-flex items-center gap-1 viewer-header">

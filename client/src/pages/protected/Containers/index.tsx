@@ -28,45 +28,45 @@ const Containers: React.FC = () => {
 
     // Initial fetch handled by DashboardLayout, but good ensure logic
     useEffect(() => {
-        if (containers.length === 0) {
+        if(containers.length === 0){
             fetchContainers({ page: 1, limit: 20 });
         }
     }, [fetchContainers, containers.length]);
 
-    const handleControl = async (container: Container, action: 'start' | 'stop') => {
-        try {
+    const handleControl = async(container: Container, action: 'start' | 'stop') => {
+        try{
             await containerApi.control(container._id, action);
             showSuccess(`Container ${action}ed successfully`);
             fetchContainers({ page: 1, force: true });
-        } catch (error: any) {
+        }catch(error: any){
             showError(error.response?.data?.message || `Failed to ${action} container`);
         }
     };
 
-    const handleDelete = async (container: Container) => {
-        if (!window.confirm(`Are you sure you want to delete container "${container.name}"?`)) {
+    const handleDelete = async(container: Container) => {
+        if(!window.confirm(`Are you sure you want to delete container "${container.name}"?`)) {
             return;
         }
-        try {
+        try{
             await containerApi.delete(container._id);
             showSuccess('Container deleted successfully');
             fetchContainers({ page: 1, force: true });
-        } catch (error: any) {
+        }catch(error: any){
             showError(error.response?.data?.message || 'Failed to delete container');
         }
     };
 
-    const handleMenuAction = useCallback(async (action: string, item: any) => {
+    const handleMenuAction = useCallback(async(action: string, item: any) => {
         // Cast item to Container
         const container = item as Container;
-        switch (action) {
+        switch(action){
             case 'view':
                 navigate(`/dashboard/containers/${container._id}`);
                 break;
             case 'terminal':
-                if (container.status === 'running') {
+                if(container.status === 'running'){
                     setTerminalContainer(container);
-                } else {
+                }else{
                     showError('Container must be running to open terminal');
                 }
                 break;
@@ -88,12 +88,12 @@ const Containers: React.FC = () => {
             ['View Details', RiEyeLine, () => handleMenuAction('view', container)]
         ];
 
-        if (container.status === 'running') {
+        if(container.status === 'running'){
             options.push(
                 ['Open Terminal', RiTerminalLine, () => handleMenuAction('terminal', container)],
                 ['Stop', Square, () => handleMenuAction('stop', container)]
             );
-        } else {
+        }else{
             options.push(['Start', Play, () => handleMenuAction('start', container)]);
         }
 
@@ -154,7 +154,7 @@ const Containers: React.FC = () => {
             title: 'Ports',
             key: 'ports',
             render: (value) => {
-                if (!value || value.length === 0) return <span className='text-muted font-size-2 color-muted'>-</span>;
+                if(!value || value.length === 0) return <span className='text-muted font-size-2 color-muted'>-</span>;
                 const port = value[0];
                 return (
                     <span className='container-port-text font-size-2 font-weight-5'>
@@ -177,8 +177,8 @@ const Containers: React.FC = () => {
         }
     ], []);
 
-    const handleLoadMore = useCallback(async () => {
-        if (!listingMeta.hasMore || isFetchingMore) return;
+    const handleLoadMore = useCallback(async() => {
+        if(!listingMeta.hasMore || isFetchingMore) return;
         await fetchContainers({
             page: listingMeta.page + 1,
             limit: listingMeta.limit,
@@ -189,7 +189,7 @@ const Containers: React.FC = () => {
     return (
         <DashboardContainer pageName='Containers' className='d-flex column h-max'>
             <DocumentListing
-                title={`Containers (${listingMeta.total || containers.length})`}
+                title={`Containers(${listingMeta.total || containers.length})`}
                 columns={columns}
                 data={containers}
                 isLoading={loading}

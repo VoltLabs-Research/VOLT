@@ -40,7 +40,7 @@ const TimestepControls: React.FC = () => {
         setCurrentTimestep
     } = usePlaybackStore();
 
-    if (currentTimestep === undefined) return null;
+    if(currentTimestep === undefined) return null;
 
     return (
         <EditorWidget className='editor-timestep-controls row items-center content-between p-absolute' draggable={false}>

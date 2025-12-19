@@ -8,9 +8,9 @@ const ModifierNode = memo((props: NodeProps) => {
     const modifier = data.modifier || {};
 
     return(
-        <BaseNode 
-            {...props} 
-            nodeType={NodeType.MODIFIER} 
+        <BaseNode
+            {...props}
+            nodeType={NodeType.MODIFIER}
             nodeTitle={modifier.name}
             description={modifier.description}
         />

@@ -56,7 +56,7 @@ router.route('/')
         authMiddleware.protect,
         controller.getAll
     )
-    .post(
+        .post(
         authMiddleware.protect,
         upload.array('trajectoryFiles'),
         middleware.processAndValidateUpload,
@@ -116,12 +116,12 @@ router.route('/:id')
         middleware.checkTeamMembershipForTrajectory,
         controller.getOne
     )
-    .patch(
+        .patch(
         authMiddleware.protect,
         middleware.requireTeamMembershipForTrajectory,
         controller.updateOne
     )
-    .delete(
+        .delete(
         authMiddleware.protect,
         middleware.requireTeamMembershipForTrajectory,
         controller.deleteOne

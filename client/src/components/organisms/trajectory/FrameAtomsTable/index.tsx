@@ -65,9 +65,9 @@ const FrameAtomsTable = ({
     ], []);
 
     const typeToColor = (t?: number): string => {
-        if (!Number.isFinite) return '#888888';
+        if(!Number.isFinite) return '#888888';
         const type = Math.max(1, Math.floor(t as number));
-        if (type <= typePalette.length) return typePalette[type - 1];
+        if(type <= typePalette.length) return typePalette[type - 1];
         const hue = ((type - 1) * 47) % 360;
         return `hsl(${hue}deg 60% 55%)`;
     };
@@ -91,7 +91,7 @@ const FrameAtomsTable = ({
     ], [decimals, typePalette]);
 
     useEffect(() => {
-        if (!data?.positions) return;
+        if(!data?.positions) return;
         const currPage = data.page ?? page;
         const currPageSize = data.pageSize ?? pageSize;
         const startIndex = (currPage - 1) * currPageSize;
@@ -104,13 +104,13 @@ const FrameAtomsTable = ({
             z: pos[2],
         }));
 
-        if (currPage <= 1 || lastAppendedPage === 0) {
+        if(currPage <= 1 || lastAppendedPage === 0){
             setAccRows(newRows);
             setLastAppendedPage(currPage);
             return;
         }
 
-        if (currPage > lastAppendedPage) {
+        if(currPage > lastAppendedPage){
             setAccRows(prev => [...prev, ...newRows]);
             setLastAppendedPage(currPage);
         }
@@ -127,11 +127,11 @@ const FrameAtomsTable = ({
     useEffect(() => {
         const container = scrollContainerRef.current;
         const sentinel = sentinelRef.current;
-        if (!container || !sentinel) return;
+        if(!container || !sentinel) return;
         const observer = new IntersectionObserver(
             (entries) => {
                 const entry = entries[0];
-                if (entry.isIntersecting && hasMore && !loading) {
+                if(entry.isIntersecting && hasMore && !loading){
                     setPage((p) => p + 1);
                 }
             },
@@ -142,14 +142,14 @@ const FrameAtomsTable = ({
     }, [hasMore, loading]);
 
     const handleLoadMore = () => {
-        if (hasMore && !loading) {
+        if(hasMore && !loading){
             setPage((p) => p + 1);
         }
     };
 
     const isInitialLoading = loading && rows.length === 0;
 
-    if (isMinimized) return null;
+    if(isMinimized) return null;
 
     return (
         <Draggable

@@ -14,16 +14,14 @@ interface NativeModule {
 const nativePath = path.join(process.cwd(), 'native/build/Release/stats_parser.node');
 const nativeModule: NativeModule = require(nativePath);
 
-export function getStatsNative(filePath: string, propIdx: number): StatsResult {
+export function getStatsNative(filePath: string, propIdx: number): StatsResult{
     return nativeModule.getStatsForProperty(filePath, propIdx);
 }
 
-export function getMinMaxNative(arr: Float32Array | Float64Array | Int32Array | Uint32Array): StatsResult | undefined {
+export function getMinMaxNative(arr: Float32Array | Float64Array | Int32Array | Uint32Array): StatsResult | undefined{
     return nativeModule.getMinMaxFromTypedArray(arr);
 }
 
-export function computeMagnitudesNative(vectors: any[]): Float32Array | undefined {
+export function computeMagnitudesNative(vectors: any[]): Float32Array | undefined{
     return nativeModule.computeMagnitudes(vectors);
 }
-
-

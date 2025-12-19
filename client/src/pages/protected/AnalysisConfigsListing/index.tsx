@@ -20,31 +20,31 @@ const AnalysisConfigsListing = () => {
 
     // Initial fetch handled by DashboardLayout or here if missing
     useEffect(() => {
-        if (!team?._id) return;
-        // Only fetch if empty to avoid double fetch with DashboardLayout, 
+        if(!team?._id) return;
+        // Only fetch if empty to avoid double fetch with DashboardLayout,
         // OR rely on DashboardLayout and just do nothing here?
         // To be safe against direct navigation, check if data exists.
-        if (analysisConfigs.length === 0) {
+        if(analysisConfigs.length === 0){
             getAnalysisConfigs(team._id, { page: 1, limit: 20 });
         }
     }, [team?._id, getAnalysisConfigs, analysisConfigs.length]);
 
-    const handleMenuAction = useCallback(async (action: string, item: any) => {
-        switch (action) {
+    const handleMenuAction = useCallback(async(action: string, item: any) => {
+        switch(action){
             case 'view':
                 break;
 
             case 'delete':
-                if (!window.confirm('Delete this analysis config? This cannot be undone.')) {
+                if(!window.confirm('Delete this analysis config? This cannot be undone.')) {
                     return;
                 }
 
-                try {
+                try{
                     await analysisConfigApi.delete(item._id);
-                    // Refresh current list (re-fetch page 1 or current set?)
+                    // Refresh current list(re-fetch page 1 or current set?)
                     // Safest is to reset to page 1
-                    if (team?._id) getAnalysisConfigs(team._id, { page: 1, force: true });
-                } catch (e) {
+                    if(team?._id) getAnalysisConfigs(team._id, { page: 1, force: true });
+                }catch(e){
                     console.error('Failed to delete analysis config', e);
                 }
                 break;
@@ -105,8 +105,8 @@ const AnalysisConfigsListing = () => {
         }
     ], []);
 
-    const handleLoadMore = useCallback(async () => {
-        if (!team?._id || !listingMeta.hasMore || isFetchingMore) return;
+    const handleLoadMore = useCallback(async() => {
+        if(!team?._id || !listingMeta.hasMore || isFetchingMore) return;
         await getAnalysisConfigs(team._id, {
             page: listingMeta.page + 1,
             limit: listingMeta.limit,

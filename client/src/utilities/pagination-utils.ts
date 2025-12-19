@@ -40,18 +40,18 @@ export const calculatePaginationState = <T>(params: CalculatePaginationParams<T>
 
     let total = totalFromApi;
 
-    if (total === undefined) {
+    if(total === undefined){
         // If API doesn't provide total, estimate it
-        if (append && previousTotal && previousTotal > 0) {
+        if(append && previousTotal && previousTotal > 0){
             // Keep existing total if we are just appending and don't have better info
             total = previousTotal;
-        } else {
+        }else{
             // Calculate based on what we have seen so far
             total = (page - 1) * limit + newData.length;
         }
 
         // If we know there's more, ensure total > current count
-        if (hasMore && total <= mergedData.length) {
+        if(hasMore && total <= mergedData.length){
             total = mergedData.length + 1;
         }
     }

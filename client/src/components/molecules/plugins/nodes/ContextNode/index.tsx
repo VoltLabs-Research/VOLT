@@ -10,8 +10,8 @@ const ContextNode = memo((props: NodeProps) => {
     const sourceLabel = CONTEXT_OPTIONS.find((option) => option.value === source)?.label || source;
 
     return(
-        <BaseNode 
-            {...props} 
+        <BaseNode
+            {...props}
             nodeType={NodeType.CONTEXT}
             description={`Using ${sourceLabel}`}
         />

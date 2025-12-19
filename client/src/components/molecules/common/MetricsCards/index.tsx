@@ -6,12 +6,12 @@ import Container from '@/components/primitives/Container'
 import Button from '@/components/primitives/Button'
 import './MetricsCards.css'
 
-export function MetricsCards() {
+export function MetricsCards(){
   const { metrics, isHistoryLoaded } = useServerMetrics()
 
   const isLoading = !metrics || !isHistoryLoaded
 
-  if (isLoading) {
+  if(isLoading){
     return (
       <Container className="metrics-cards gap-1">
         {[...Array(4)].map((_, i) => (
@@ -50,7 +50,7 @@ export function MetricsCards() {
       icon: Cpu,
       title: 'CPU Load',
       value: metrics ? (() => {
-        if (metrics.cpu.coresUsage && metrics.cpu.coresUsage.length > 0) {
+        if(metrics.cpu.coresUsage && metrics.cpu.coresUsage.length > 0){
           const avgCoreUsage = metrics.cpu.coresUsage.reduce((sum: number, val: number) => sum + val, 0) / metrics.cpu.coresUsage.length;
           return `${avgCoreUsage.toFixed(1)}%`;
         }

@@ -53,21 +53,21 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         sort: '-createdAt'
     });
 
-    const handleRefresh = async () => {
+    const handleRefresh = async() => {
         setRefreshing(true);
         await refetch();
         setRefreshing(false);
     };
 
     const getStatusCodeClass = (statusCode: number) => {
-        if (statusCode >= 200 && statusCode < 300) return 'success';
-        if (statusCode >= 400 && statusCode < 500) return 'client-error';
-        if (statusCode >= 500) return 'server-error';
+        if(statusCode >= 200 && statusCode < 300) return 'success';
+        if(statusCode >= 400 && statusCode < 500) return 'client-error';
+        if(statusCode >= 500) return 'server-error';
         return 'success';
     };
 
     const formatResponseTime = (time: number) => {
-        if (time < 1000) return `${time}ms`;
+        if(time < 1000) return `${time}ms`;
         return `${(time / 1000).toFixed(1)}s`;
     };
 
@@ -82,7 +82,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         return colors[method as keyof typeof colors] || 'var(--accent-gray)';
     };
 
-    if (loading && !data) {
+    if(loading && !data){
         return (
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header mb-1-5">
@@ -106,7 +106,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         );
     }
 
-    if (error) {
+    if(error){
         return (
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header mb-1-5">
@@ -130,7 +130,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
     const requests = Array.isArray(data?.data) ? data.data : [];
     const summary = data?.data?.summary;
 
-    if (requests.length === 0) {
+    if(requests.length === 0){
         return (
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header mb-1-5">

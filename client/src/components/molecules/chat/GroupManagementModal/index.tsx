@@ -75,29 +75,29 @@ const GroupManagementModal = () => {
         editGroupDescription: { maxLength: 250, message: 'Description cannot exceed 250 characters' }
     });
 
-    if (!currentChat || !currentChat.isGroup) return null;
+    if(!currentChat || !currentChat.isGroup) return null;
 
     const isAdmin = currentChat.admins?.some(admin => admin._id === user?._id) || false;
     const isOwner = currentChat.createdBy?._id === user?._id;
 
     // Initialize form with current group data
     useEffect(() => {
-        if (currentChat) {
+        if(currentChat){
             setEditGroupName(currentChat.groupName || '');
             setEditGroupDescription(currentChat.groupDescription || '');
         }
     }, [currentChat, setEditGroupName, setEditGroupDescription]);
 
-    const handleLeaveGroup = async () => {
-        if (!confirm('Are you sure you want to leave this group?')) return;
+    const handleLeaveGroup = async() => {
+        if(!confirm('Are you sure you want to leave this group?')) return;
 
         setIsLoading(true);
-        try {
+        try{
             await leaveGroup(currentChat._id);
             setShowGroupManagement(false);
-        } catch (error) {
+        }catch(error){
             console.error('Failed to leave group:', error);
-        } finally {
+        }finally{
             setIsLoading(false);
         }
     };
@@ -109,7 +109,7 @@ const GroupManagementModal = () => {
             const nameError = validateField('editGroupName', editGroupName);
             const descError = validateField('editGroupDescription', editGroupDescription);
 
-            if (!nameError && !descError && editGroupName.trim() && editGroupName !== currentChat?.groupName) {
+            if(!nameError && !descError && editGroupName.trim() && editGroupName !== currentChat?.groupName) {
                 updateGroupInfo(
                     currentChat._id,
                     editGroupName.trim(),
@@ -124,22 +124,22 @@ const GroupManagementModal = () => {
     // Add Members functions
     const handleAddMembers = () => {
         setShowAddMembers(true);
-        if (currentChat?.team?._id) {
+        if(currentChat?.team?._id){
             loadTeamMembers(currentChat.team._id);
         }
     };
 
-    const handleAddSelectedMembers = async () => {
-        if (selectedMembers.length === 0) return;
+    const handleAddSelectedMembers = async() => {
+        if(selectedMembers.length === 0) return;
 
         setIsLoading(true);
-        try {
+        try{
             await addUsersToGroup(currentChat!._id, selectedMembers);
             setSelectedMembers([]);
             setShowAddMembers(false);
-        } catch (error) {
+        }catch(error){
             console.error('Failed to add members:', error);
-        } finally {
+        }finally{
             setIsLoading(false);
         }
     };
@@ -160,11 +160,11 @@ const GroupManagementModal = () => {
         setSelectedAdmins(currentAdminIds);
     };
 
-    const handleSaveAdmins = async () => {
-        if (!currentChat) return;
+    const handleSaveAdmins = async() => {
+        if(!currentChat) return;
 
         setIsLoading(true);
-        try {
+        try{
             // Get current admin IDs
             const currentAdminIds = currentChat.admins?.map(admin => admin._id) || [];
 
@@ -179,20 +179,20 @@ const GroupManagementModal = () => {
             );
 
             // Add new admins
-            if (membersToAdd.length > 0) {
+            if(membersToAdd.length > 0){
                 await updateGroupAdmins(currentChat._id, membersToAdd, 'add');
             }
 
             // Remove admins
-            if (membersToRemove.length > 0) {
+            if(membersToRemove.length > 0){
                 await updateGroupAdmins(currentChat._id, membersToRemove, 'remove');
             }
 
             setSelectedAdmins([]);
             setShowManageAdmins(false);
-        } catch (error) {
+        }catch(error){
             console.error('Failed to update admins:', error);
-        } finally {
+        }finally{
             setIsLoading(false);
         }
     };
@@ -234,7 +234,7 @@ const GroupManagementModal = () => {
     };
 
     const renderContent = () => {
-        switch (activeSection) {
+        switch(activeSection){
             case 'general':
                 return (
                     <div className='group-management-content h-max'>

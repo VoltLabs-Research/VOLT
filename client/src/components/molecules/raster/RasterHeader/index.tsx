@@ -43,7 +43,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                         const getInitials = (u: any) => {
                             const f = u.firstName?.[0] ?? '';
                             const l = u.lastName?.[0] ?? '';
-                            if (f || l) return `${f}${l}`.toUpperCase();
+                            if(f || l) return `${f}${l}`.toUpperCase();
                             const name = u.name ?? u.email ?? '';
                             const parts = String(name).trim().split(/\s+/);
                             return (parts[0]?.[0] ?? '?').toUpperCase();

@@ -13,19 +13,19 @@ const data = [
 ]
 
 const getColor = (percentage: number) => {
-  if (percentage >= 85) return 'url(#storageCritical)'
-  if (percentage >= 70) return 'url(#storageWarning)'
+  if(percentage >= 85) return 'url(#storageCritical)'
+  if(percentage >= 70) return 'url(#storageWarning)'
   return 'url(#storageNormal)'
 }
 
 const getSolidColor = (percentage: number) => {
-  if (percentage >= 85) return '#FF453A'
-  if (percentage >= 70) return '#FF9F0A'
+  if(percentage >= 85) return '#FF453A'
+  if(percentage >= 70) return '#FF9F0A'
   return '#0A84FF'
 }
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
+  if(active && payload && payload.length){
     const data = payload[0].payload
     return (
       <div className="storage-tooltip">
@@ -42,7 +42,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null
 }
 
-export function StorageUsage() {
+export function StorageUsage(){
   const totalUsed = data.reduce((sum, d) => sum + d.used, 0)
   const totalCapacity = data.reduce((sum, d) => sum + d.total, 0)
   const totalPercentage = Math.round((totalUsed / totalCapacity) * 100)

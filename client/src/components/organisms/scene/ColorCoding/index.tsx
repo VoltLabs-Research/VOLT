@@ -37,7 +37,7 @@ const ColorCoding = () => {
         frame: currentTimestep
     });
 
-    const applyColorCoding = async () => {
+    const applyColorCoding = async() => {
         await rasterApi.colorCoding.apply(trajectory!._id, analysisConfig!._id, currentTimestep!, {
             property, startValue, endValue, gradient, exposureId: exposureId || undefined
         });
@@ -65,13 +65,13 @@ const ColorCoding = () => {
         setExposureId(selectedOption?.exposureId || null);
     };
 
-    const fetchStats = async () => {
-        if (!property || !trajectory?._id || !analysisConfig?._id) return;
+    const fetchStats = async() => {
+        if(!property || !trajectory?._id || !analysisConfig?._id) return;
 
         const selectedOption = propertyOptions.find(opt => opt.value === property);
         const type = selectedOption?.exposureId ? 'modifier' : 'base';
 
-        try {
+        try{
             const stats = await rasterApi.colorCoding.getStats(trajectory._id, analysisConfig._id, {
                 timestep: currentTimestep,
                 property,
@@ -80,27 +80,27 @@ const ColorCoding = () => {
             });
             const { min, max } = stats;
 
-            if (symmetricRange) {
+            if(symmetricRange){
                 const limit = Math.max(Math.abs(min), Math.abs(max));
                 setStartValue(-limit);
                 setEndValue(limit);
-            } else {
+            }else{
                 setStartValue(min);
                 setEndValue(max);
             }
-        } catch (e) {
+        }catch(e){
             console.error(e);
         }
     };
 
     useEffect(() => {
-        if (automaticRange) {
+        if(automaticRange){
             fetchStats();
         }
     }, [automaticRange, currentTimestep, property, exposureId, symmetricRange]);
 
     useEffect(() => {
-        if (symmetricRange && !automaticRange) {
+        if(symmetricRange && !automaticRange){
             const limit = Math.max(Math.abs(startValue), Math.abs(endValue));
             setStartValue(-limit);
             setEndValue(limit);

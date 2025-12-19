@@ -43,20 +43,20 @@ interface TrajectoryInfo {
 }
 
 const trajectoryApi = {
-    async getAll(params?: GetTrajectoriesParams): Promise<Trajectory[]> {
+    async getAll(params?: GetTrajectoriesParams): Promise<Trajectory[]>{
         const queryParams = new URLSearchParams();
-        if (params?.teamId) queryParams.append('teamId', params.teamId);
-        if (params?.page) queryParams.append('page', params.page.toString());
-        if (params?.limit) queryParams.append('limit', params.limit.toString());
-        if (params?.search) queryParams.append('search', params.search);
-        if (params?.populate) queryParams.append('populate', params.populate);
+        if(params?.teamId) queryParams.append('teamId', params.teamId);
+        if(params?.page) queryParams.append('page', params.page.toString());
+        if(params?.limit) queryParams.append('limit', params.limit.toString());
+        if(params?.search) queryParams.append('search', params.search);
+        if(params?.populate) queryParams.append('populate', params.populate);
 
         const url = `/trajectories${queryParams.toString() ? `?${queryParams}` : ''}`;
         const response = await api.get<ApiResponse<Trajectory[]>>(url);
         return response.data.data;
     },
 
-    async getOne(id: string, populate?: string): Promise<Trajectory> {
+    async getOne(id: string, populate?: string): Promise<Trajectory>{
         const url = populate ? `/trajectories/${id}?populate=${populate}` : `/trajectories/${id}`;
         const response = await api.get<ApiResponse<Trajectory>>(url);
         return response.data.data;
@@ -66,7 +66,7 @@ const trajectoryApi = {
         const response = await api.post<ApiResponse<Trajectory>>('/trajectories', formData, {
             onUploadProgress: (evt) => {
                 const total = evt.total ?? 0;
-                if (total > 0 && onProgress) {
+                if(total > 0 && onProgress){
                     onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
                 }
             }
@@ -74,16 +74,16 @@ const trajectoryApi = {
         return response.data.data;
     },
 
-    async update(id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>): Promise<Trajectory> {
+    async update(id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>): Promise<Trajectory>{
         const response = await api.patch<ApiResponse<Trajectory>>(`/trajectories/${id}`, data);
         return response.data.data;
     },
 
-    async delete(id: string): Promise<void> {
+    async delete(id: string): Promise<void>{
         await api.delete(`/trajectories/${id}`);
     },
 
-    async getPreview(trajectoryId: string, options?: { headers?: Record<string, string>; timeout?: number }): Promise<string> {
+    async getPreview(trajectoryId: string, options?: { headers?: Record<string, string>; timeout?: number }): Promise<string>{
         const cacheBuster = new URLSearchParams({
             t: Date.now().toString(),
             r: Math.random().toString(36)
@@ -111,14 +111,14 @@ const trajectoryApi = {
         };
     },
 
-    async getMetrics(teamId?: string): Promise<any> {
+    async getMetrics(teamId?: string): Promise<any>{
         const response = await api.get<ApiResponse<any>>('/trajectories/metrics', {
             params: teamId ? { teamId } : undefined
         });
         return response.data.data;
     },
 
-    async getAtoms(trajectoryId: string, timestep: number, params?: TrajectoryAtomsParams): Promise<TrajectoryAtomsResponse | null> {
+    async getAtoms(trajectoryId: string, timestep: number, params?: TrajectoryAtomsParams): Promise<TrajectoryAtomsResponse | null>{
         const response = await api.get(`/trajectories/${trajectoryId}/atoms/${timestep}`, {
             responseType: 'json',
             params: {
@@ -128,7 +128,7 @@ const trajectoryApi = {
         });
 
         const data = response.data?.data || response.data;
-        if (!data || !Array.isArray(data.positions)) {
+        if(!data || !Array.isArray(data.positions)) {
             return null;
         }
 
@@ -171,7 +171,7 @@ const trajectoryApi = {
         );
 
         const result = response.data;
-        if (!result || result.status !== 'success') {
+        if(!result || result.status !== 'success'){
             return null;
         }
 
@@ -186,12 +186,12 @@ const trajectoryApi = {
     },
 
     vfs: {
-        async list(params: { connectionId: string; path: string }): Promise<FsListResponse> {
+        async list(params: { connectionId: string; path: string }): Promise<FsListResponse>{
             const response = await api.get<{ status: 'success'; data: FsListResponse }>('/trajectory-vfs/', { params });
             return response.data.data;
         },
 
-        async download(params: { connectionId: string; path: string }): Promise<Blob> {
+        async download(params: { connectionId: string; path: string }): Promise<Blob>{
             const response = await api.get('/trajectory-vfs/download', {
                 params,
                 responseType: 'blob'
@@ -199,7 +199,7 @@ const trajectoryApi = {
             return response.data;
         },
 
-        async getTrajectories(): Promise<TrajectoryInfo[]> {
+        async getTrajectories(): Promise<TrajectoryInfo[]>{
             const response = await api.get<{ status: 'success'; data: { trajectories: TrajectoryInfo[] } }>('/trajectory-vfs/trajectories');
             return response.data.data.trajectories;
         }

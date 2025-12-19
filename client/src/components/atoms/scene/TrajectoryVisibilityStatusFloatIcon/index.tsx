@@ -13,12 +13,12 @@ const TrajectoryVisibilityStatusFloatIcon = () => {
     const isPublic = !!trajectory?.isPublic;
     const id = trajectory?._id;
 
-    const onToggle = useCallback(async () => {
-        if (isUpdating || !id) return;
+    const onToggle = useCallback(async() => {
+        if(isUpdating || !id) return;
         setIsUpdating(true);
-        try {
+        try{
             await updateTrajectoryById(id, { isPublic: !isPublic });
-        } catch (error: any) {
+        }catch(error: any){
             const errorContext = {
                 endpoint: `/trajectories/${id}`,
                 method: 'PATCH',
@@ -29,12 +29,12 @@ const TrajectoryVisibilityStatusFloatIcon = () => {
                 timestamp: new Date().toISOString()
             };
             console.error('Failed to toggle trajectory visibility:', errorContext);
-        } finally {
+        }finally{
             setIsUpdating(false);
         }
     }, [isUpdating, updateTrajectoryById, id, isPublic]);
 
-    if (!trajectory) return null;
+    if(!trajectory) return null;
 
     return (
         <EditorWidget

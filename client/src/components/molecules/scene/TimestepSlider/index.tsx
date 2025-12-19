@@ -47,7 +47,7 @@ const TimestepSlider: React.FC<TimestepSliderProps> = ({
 
     const handleSliderChange = (index: number) => {
         const roundedIndex = Math.round(index);
-        if (roundedIndex >= 0 && roundedIndex < availableTimesteps.length) {
+        if(roundedIndex >= 0 && roundedIndex < availableTimesteps.length){
             const selectedTimestep = availableTimesteps[roundedIndex];
             onTimestepChange(selectedTimestep);
         }

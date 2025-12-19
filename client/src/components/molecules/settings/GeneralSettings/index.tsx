@@ -45,7 +45,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
     });
 
     useEffect(() => {
-        if (user) {
+        if(user){
             setFormData({
                 firstName: user.firstName || "",
                 lastName: user.lastName || "",
@@ -59,21 +59,21 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
         setFormData((prev) => ({ ...prev, [field]: value }));
 
         const errorMessage = checkField(field, value);
-        if (!errorMessage) {
+        if(!errorMessage){
             onFieldChange(field, value);
         }
     };
 
-    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAvatarUpload = async(e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file) return;
+        if(!file) return;
 
-        if (!file.type.startsWith("image/")) {
+        if(!file.type.startsWith("image/")) {
             alert("Please upload an image file");
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
+        if(file.size > 5 * 1024 * 1024){
             alert("File size must be less than 5MB");
             return;
         }
@@ -81,13 +81,13 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
         const fd = new FormData();
         fd.append("avatar", file);
 
-        try {
+        try{
             setIsUploadingAvatar(true);
             await authApi.updateMe(fd);
             window.location.reload();
-        } catch (error) {
+        }catch(error){
             alert("Failed to upload avatar. Please try again.");
-        } finally {
+        }finally{
             setIsUploadingAvatar(false);
         }
     };
@@ -203,14 +203,14 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                 </div>
             </Section>
 
-            <RecentActivity 
-                limit={15} 
-                showStats={true} 
+            <RecentActivity
+                limit={15}
+                showStats={true}
                 className="account-activity-section" />
 
             <Section className="danger-section d-flex column gap-1-5">
-                <SectionHeader 
-                    title="Danger Zone" 
+                <SectionHeader
+                    title="Danger Zone"
                     description="Irreversible and destructive actions" />
 
                 <Container className="danger-item d-flex items-center content-between">

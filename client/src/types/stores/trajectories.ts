@@ -14,28 +14,13 @@ export interface TrajectoryState {
     isLoading: boolean;
     isFetchingMore: boolean;
     isDashboardTrajectoriesLoading: boolean;
-    isSavingPreview: boolean;
     uploadingFileCount: number;
     activeUploads: Record<string, { id: string; uploadProgress: number; processingProgress: number; status: 'uploading' | 'processing' }>;
     error: string | null;
-    analysisStats: object;
-    rasterData: object;
-    isAnalysisLoading: boolean;
-    rasterObjectUrlCache: Record<string, Record<string, string>>;
-    rasterCache: Record<string, RasterPage>;
-    isRasterLoading: boolean;
     isLoadingTrajectories: boolean;
     selectedTrajectories: string[];
-    structureAnalysis: any;
-    avgSegmentSeries: any[];
-    idRateSeries: any[];
-    dislocationSeries: any[];
     trajectoryMetrics: object;
     isMetricsLoading: boolean;
-    cache: Record<string, Trajectory[]>;
-    analysisCache: Record<string, any>;
-    differencesCache: Record<string, any>;
-    atomsCache?: Record<string, { timestep: number; natoms?: number; total?: number; page?: number; pageSize?: number; positions: number[][]; types?: number[] }>;
 }
 
 export interface TrajectoryActions {
@@ -48,13 +33,11 @@ export interface TrajectoryActions {
     toggleTrajectorySelection: (id: string) => void;
     deleteSelectedTrajectories: () => Promise<void>;
     getMetrics: (id: string, opts?: { force?: boolean }) => void;
-    getRasterizedFrames: (id: string, query?: RasterQuery & { force?: boolean }) => Promise<RasterPage | null>;
     getFrameAtoms: (
         trajectoryId: string,
         timestep: number,
         opts?: { force?: boolean; page?: number; pageSize?: number }
     ) => Promise<{ timestep: number; natoms?: number; total?: number; page?: number; pageSize?: number; positions: number[][]; types?: number[] } | null>;
-    getStructureAnalysis: (teamId: string, opts?: { force?: boolean }) => Promise<void>;
     setTrajectory: (trajectory: Trajectory | null) => void;
     clearError: () => void;
     reset: () => void;

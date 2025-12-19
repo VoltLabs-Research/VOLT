@@ -30,12 +30,12 @@ interface CanvasPresenceAvatarsProps {
 }
 
 const getInitialsFromUser = (user: CanvasPresenceUser): string => {
-    if (user.firstName && user.lastName) {
+    if(user.firstName && user.lastName){
         return (user.firstName[0] + user.lastName[0]).toUpperCase();
     }
-    if (user.email) {
+    if(user.email){
         const parts = user.email.split('@')[0].split('.');
-        if (parts.length >= 2) {
+        if(parts.length >= 2){
             return (parts[0][0] + parts[1][0]).toUpperCase();
         }
         return user.email[0].toUpperCase();
@@ -44,17 +44,17 @@ const getInitialsFromUser = (user: CanvasPresenceUser): string => {
 };
 
 const getDisplayName = (user: CanvasPresenceUser): string => {
-    if (user.firstName && user.lastName) {
+    if(user.firstName && user.lastName){
         return `${user.firstName} ${user.lastName}`;
     }
-    if (user.email) {
+    if(user.email){
         return user.email.split('@')[0];
     }
     return 'Anonymous User';
 };
 
 const CanvasPresenceAvatars: React.FC<CanvasPresenceAvatarsProps> = ({ users }) => {
-    if (!users || users.length === 0) {
+    if(!users || users.length === 0){
         return null;
     }
 

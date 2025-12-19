@@ -34,7 +34,7 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
     const navigate = useNavigate();
 
     // Si no hay usuario autenticado, mostrar una interfaz genérica o nada
-    if (!user) {
+    if(!user){
         return null;
     }
 

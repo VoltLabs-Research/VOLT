@@ -271,8 +271,8 @@ const CameraSettingsControls: React.FC = () => {
 
     const sections = [
         projectionSection,
-        ...(type === 'perspective' ? [perspectiveSection] : []),
-        ...(type === 'orthographic' ? [orthographicSection] : []),
+            ...(type === 'perspective' ? [perspectiveSection] : []),
+            ...(type === 'orthographic' ? [orthographicSection] : []),
         transformSection
     ];
 

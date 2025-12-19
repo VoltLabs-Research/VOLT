@@ -55,7 +55,7 @@ const FormField: React.FC<FormFieldProps> = ({
     const [schemas, setSchemas] = useState<Record<NodeType, NodeOutputSchema> | null>(schemasCache);
 
     useEffect(() => {
-        if (schemasCache || !expressionEnabled) return;
+        if(schemasCache || !expressionEnabled) return;
 
         pluginApi.getNodeSchemas().then(data => {
             schemasCache = data as Record<NodeType, NodeOutputSchema>;
@@ -72,7 +72,7 @@ const FormField: React.FC<FormFieldProps> = ({
 
     // Create expression autocomplete config if enabled
     const expressionAutocomplete = useMemo(() => {
-        if (!expressionEnabled || !expressionNodeId) return undefined;
+        if(!expressionEnabled || !expressionNodeId) return undefined;
 
         return {
             nodeId: expressionNodeId,
@@ -82,7 +82,7 @@ const FormField: React.FC<FormFieldProps> = ({
     }, [expressionEnabled, expressionNodeId, nodes, edges]);
 
     const renderInput = () => {
-        switch (fieldType) {
+        switch(fieldType){
             case 'select':
                 return (
                     <Select

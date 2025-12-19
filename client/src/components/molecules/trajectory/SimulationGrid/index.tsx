@@ -25,12 +25,12 @@ const SimulationGrid = memo(() => {
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (selectedTrajectories.length === 0) {
+            if(selectedTrajectories.length === 0){
                 return;
             }
 
             const isDeleteShortcut = (event.ctrlKey || event.metaKey) && (event.key === 'Backspace' || event.key === 'Delete');
-            if (isDeleteShortcut) {
+            if(isDeleteShortcut){
                 event.preventDefault();
                 deleteSelectedTrajectories();
             }
@@ -43,8 +43,7 @@ const SimulationGrid = memo(() => {
         };
     }, [selectedTrajectories.length, deleteSelectedTrajectories]);
 
-
-    if (hasEmptyState) {
+    if(hasEmptyState){
         return <EmptyState
             title='No Trajectories Yet'
             description='Get started by uploading your first simulation trajectory file to visualize and analyze atomic structures.' />
@@ -66,7 +65,7 @@ const SimulationGrid = memo(() => {
                 // If this trajectory corresponds to an active upload, don't show it yet
                 // to avoid "double loaders" (one skeleton, one processing card)
                 // We show the skeleton until the upload processing is fully done and acknowledged by the store logic
-                if ((trajectory as any).uploadId && activeUploads[(trajectory as any).uploadId]) {
+                if((trajectory as any).uploadId && activeUploads[(trajectory as any).uploadId]) {
                     return null;
                 }
 

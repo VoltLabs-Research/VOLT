@@ -9,7 +9,7 @@ import { ServerTable } from '@/components/organisms/clusters/ServerTable'
 import Container from '@/components/primitives/Container'
 import './Clusters.css'
 
-export default function DashboardPage() {
+export default function DashboardPage(){
   return (
     <Container className="clusters-page vh-max">
       <Container className="clusters-main d-flex column gap-2 w-max">

@@ -9,7 +9,7 @@ const EditableTrajectoryName = ({ trajectory, className }) => {
     const isAuthenticated = !!user;
 
     const handleNameUpdate = async(newName: string) => {
-        if(!isAuthenticated) return; 
+        if(!isAuthenticated) return;
         try{
             await updateTrajectoryById(trajectory._id, { name: newName });
         }catch(error: any){

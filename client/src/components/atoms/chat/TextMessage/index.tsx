@@ -15,12 +15,12 @@ const TextMessage = ({ msg, onSave }: TextMessageProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [draft, setDraft] = useState(msg.content);
 
-    if (!isEditing) {
+    if(!isEditing){
         return <Paragraph className='chat-message-text font-size-2-5 color-primary'>{msg.content}</Paragraph>;
     }
 
     const handleEditSave = () => {
-        if (draft.trim()) {
+        if(draft.trim()) {
             onSave(draft);
         }
 

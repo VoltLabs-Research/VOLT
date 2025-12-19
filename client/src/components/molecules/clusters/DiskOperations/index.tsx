@@ -12,18 +12,18 @@ interface DataPoint {
 
 const MAX_POINTS = 60;
 
-export function DiskOperations() {
+export function DiskOperations(){
   const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics();
   const [history, setHistory] = useState<DataPoint[]>([]);
 
   // Preload with historical data
   useEffect(() => {
-    if (isHistoryLoaded && metricsHistory.length > 0 && history.length === 0) {
+    if(isHistoryLoaded && metricsHistory.length > 0 && history.length === 0){
       console.log('[DiskOperations] Preloading with', metricsHistory.length, 'historical points')
       const historicalData = metricsHistory
-        .filter((m: any) => m.diskOperations)
-        .slice(-MAX_POINTS)
-        .map((m: any) => ({
+          .filter((m: any) => m.diskOperations)
+          .slice(-MAX_POINTS)
+          .map((m: any) => ({
           read: m.diskOperations.read,
           write: m.diskOperations.write,
           speed: m.diskOperations.speed
@@ -34,7 +34,7 @@ export function DiskOperations() {
 
   // Update with realtime metrics
   useEffect(() => {
-    if (!metrics?.diskOperations) return;
+    if(!metrics?.diskOperations) return;
 
     setHistory(prev => {
       const newHistory = [...prev, {
@@ -42,16 +42,16 @@ export function DiskOperations() {
         write: metrics.diskOperations!.write,
         speed: metrics.diskOperations!.speed
       }];
-      if (newHistory.length > MAX_POINTS) newHistory.shift();
+      if(newHistory.length > MAX_POINTS) newHistory.shift();
       return newHistory;
     });
   }, [metrics]);
 
   const isLoading = !isHistoryLoaded || !metrics?.diskOperations || history.length === 0;
 
-  // Calculate paths synchronously (60 items is fast)
+  // Calculate paths synchronously(60 items is fast)
   const paths = (() => {
-    if (history.length === 0) return { readPath: '', writePath: '', speedPath: '', maxValue: 1 };
+    if(history.length === 0) return { readPath: '', writePath: '', speedPath: '', maxValue: 1 };
 
     const maxRead = Math.max(...history.map(d => d.read), 1);
     const maxWrite = Math.max(...history.map(d => d.write), 1);
@@ -63,9 +63,9 @@ export function DiskOperations() {
     const getY = (value: number) => 100 - ((value / maxValue) * (100 - padding * 2) + padding);
 
     const createPath = (values: number[]) => {
-      if (values.length === 0) return '';
+      if(values.length === 0) return '';
       let path = `M ${getX(0)} ${getY(values[0])}`;
-      for (let i = 1; i < values.length; i++) {
+      for(let i = 1; i < values.length; i++){
         path += ` L ${getX(i)} ${getY(values[i])}`;
       }
       return path;

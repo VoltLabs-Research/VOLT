@@ -47,19 +47,19 @@ const computeGlbUrl = (
     analysisId: string,
     activeScene?: TimestepViewerProps['activeScene']
 ): string | null => {
-    if (!trajectoryId || currentTimestep === undefined) return null;
+    if(!trajectoryId || currentTimestep === undefined) return null;
 
     // Handle different scene sources
-    if (activeScene?.source === 'plugin') {
+    if(activeScene?.source === 'plugin'){
         const { analysisId: sceneAnalysisId, exposureId } = activeScene;
-        if (!sceneAnalysisId || !exposureId) return null;
+        if(!sceneAnalysisId || !exposureId) return null;
         return `/plugins/glb/${trajectoryId}/${sceneAnalysisId}/${exposureId}/${currentTimestep}`;
     }
 
-    if (activeScene?.source === 'color-coding') {
+    if(activeScene?.source === 'color-coding'){
         const { property, startValue, endValue, gradient, analysisId: sceneAnalysisId, exposureId } = activeScene;
         let url = `/color-coding/${trajectoryId}/${sceneAnalysisId}/?property=${property}&startValue=${startValue}&endValue=${endValue}&gradient=${gradient}&timestep=${currentTimestep}`;
-        if (exposureId) url += `&exposureId=${exposureId}`;
+        if(exposureId) url += `&exposureId=${exposureId}`;
         return url;
     }
 
@@ -121,7 +121,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         [autoFit, modelBounds]
     );
 
-    if (!shouldRenderCamera) return null;
+    if(!shouldRenderCamera) return null;
 
     return (
         <CameraManager

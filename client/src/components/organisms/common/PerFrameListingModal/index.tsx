@@ -33,18 +33,18 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
         title: col.label,
         skeleton: { variant: 'text', width: 100 },
         render: (val: any) => {
-            if (col.format === 'number' && typeof val === 'number') {
+            if(col.format === 'number' && typeof val === 'number'){
                 return val.toFixed(4).replace(/\.?0+$/, '');
             }
-            if (Array.isArray(val)) return val.join(', ');
+            if(Array.isArray(val)) return val.join(', ');
             return String(val ?? '');
         }
     })), [config]);
 
-    const fetchPage = async (pageNum: number) => {
-        if (!item) return;
+    const fetchPage = async(pageNum: number) => {
+        if(!item) return;
         setLoading(true);
-        try {
+        try{
             const analysis = item.analysis;
             const trajectoryId = analysis.trajectory?._id || analysis.trajectory || item.trajectory?._id || item.trajectory;
             const analysisId = analysis._id;
@@ -61,9 +61,9 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
 
             setRows(prev => pageNum === 1 ? data.rows : [...prev, ...data.rows]);
             setHasMore(data.hasMore);
-        } catch (err) {
+        }catch(err){
             console.error(err);
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
@@ -77,11 +77,11 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
     useEffect(() => {
         const container = scrollContainerRef.current;
         const sentinel = sentinelRef.current;
-        if (!container || !sentinel) return;
+        if(!container || !sentinel) return;
         const observer = new IntersectionObserver(
             (entries) => {
                 const entry = entries[0];
-                if (entry.isIntersecting && hasMore && !loading) {
+                if(entry.isIntersecting && hasMore && !loading){
                     setPage((p) => {
                         const nextPage = p + 1;
                         fetchPage(nextPage);
@@ -95,7 +95,7 @@ const PerFrameListingModal = ({ item, config, onClose }: PerFrameListingModalPro
         return () => observer.disconnect();
     }, [hasMore, loading]);
 
-    if (isMinimized) return null;
+    if(isMinimized) return null;
 
     return (
         <Draggable

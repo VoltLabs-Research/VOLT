@@ -35,7 +35,7 @@ import * as os from 'node:os';
 
 type DumpInput = Buffer | string;
 
-export default class DumpStorage {
+export default class DumpStorage{
     private static readonly COMPRESSION_LEVEL = zlib.constants.Z_BEST_SPEED;
     private static readonly CACHE_DIR = path.join(os.tmpdir(), 'volterra-dumps-cache');
     private static readonly TEMP_DIR = path.join(os.tmpdir(), 'volterra-temp-uploads');
@@ -44,18 +44,18 @@ export default class DumpStorage {
     private static pendingRequests = new Map<string, Promise<string | null>>();
     private static storageLimit = pLimit(50);
 
-    private static async ensureDirs(): Promise<void> {
+    private static async ensureDirs(): Promise<void>{
         await Promise.all([
             fs.mkdir(this.CACHE_DIR, { recursive: true }),
             fs.mkdir(this.TEMP_DIR, { recursive: true })
         ]);
     }
 
-    private static getObjectName(trajectoryId: string, timestep: string | number): string {
+    private static getObjectName(trajectoryId: string, timestep: string | number): string{
         return `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`;
     }
 
-    private static getCachePath(trajectoryId: string, timestep: string | number): string {
+    private static getCachePath(trajectoryId: string, timestep: string | number): string{
         return path.join(this.CACHE_DIR, trajectoryId, `${timestep}.dump`);
     }
 
@@ -68,9 +68,9 @@ export default class DumpStorage {
         const objectName = this.getObjectName(trajectoryId, timestep);
         const startTime = Date.now();
 
-        try {
+        try{
             // Small Buffer -> Compress in RAM -> Upload
-            if (Buffer.isBuffer(data) && data.length <= this.RAM_THRESHOLD) {
+            if(Buffer.isBuffer(data) && data.length <= this.RAM_THRESHOLD) {
                 const compressed = zlib.gzipSync(data, { level: this.COMPRESSION_LEVEL });
                 await storage.put(SYS_BUCKETS.DUMPS, objectName, compressed, {
                     'Content-Type': 'application/gzip',
@@ -100,20 +100,20 @@ export default class DumpStorage {
             });
 
             let totalSize = 0;
-            if (typeof data === 'string') {
-                try {
+            if(typeof data === 'string'){
+                try{
                     totalSize = (await fs.stat(data)).size;
                 } catch { }
-            } else if (Buffer.isBuffer(data)) {
+            }else if(Buffer.isBuffer(data)) {
                 totalSize = data.length;
             }
 
-            if (onProgress && totalSize > 0) {
+            if(onProgress && totalSize > 0){
                 sourceStream.on('data', () => {
                     const p = Math.min(1, processedBytes / totalSize);
                     onProgress(p);
                 });
-            } else {
+            }else{
                 logger.warn(`[DumpStorage] Cannot track progress. TotalSize: ${totalSize}`);
             }
 
@@ -136,7 +136,7 @@ export default class DumpStorage {
             // Cleanup
             await fs.unlink(tempFilePath).catch(() => { });
             return objectName;
-        } catch (error) {
+        }catch(error){
             logger.error(`Failed to save dump ${objectName}: ${error}`);
             throw error;
         }
@@ -146,20 +146,20 @@ export default class DumpStorage {
      * Retrieving with Thundering Herd Protection.
      * If 10 requests come for the same file, only 1 download triggers.
      */
-    static async getDump(trajectoryId: string, timestep: string | number): Promise<string | null> {
+    static async getDump(trajectoryId: string, timestep: string | number): Promise<string | null>{
         const objectName = this.getObjectName(trajectoryId, timestep);
         const cachePath = this.getCachePath(trajectoryId, timestep);
         const cacheKey = `${trajectoryId}:${timestep}`;
 
         // Check valid cache on disk
-        if (await this.isCacheValid(cachePath)) {
+        if(await this.isCacheValid(cachePath)) {
             // Update access time(LRU behavior)
             fs.utimes(cachePath, new Date(), new Date()).catch(() => { });
             return cachePath;
         }
 
         // Check if already downloading(promise locking)
-        if (this.pendingRequests.has(cacheKey)) {
+        if(this.pendingRequests.has(cacheKey)) {
             return this.pendingRequests.get(cacheKey)!;
         }
 
@@ -173,10 +173,10 @@ export default class DumpStorage {
         objectName: string,
         cachePath: string,
         cacheKey: string
-    ): Promise<string | null> {
-        try {
+    ): Promise<string | null>{
+        try{
             const exists = await storage.exists(SYS_BUCKETS.DUMPS, objectName);
-            if (!exists) return null;
+            if(!exists) return null;
 
             await this.ensureDirs();
             const cacheDir = path.dirname(cachePath);
@@ -191,18 +191,18 @@ export default class DumpStorage {
             await pipeline(remoteStream, gunzip, fileWriter);
             logger.info(`Downloaded & Decompressed ${objectName} in ${Date.now() - startTime}ms`);
             return cachePath;
-        } catch (err) {
+        }catch(err){
             // If failed, delete partial file
             await fs.unlink(cachePath).catch(() => { });
             logger.error(`Error processing ${objectName}: ${err}`);
             return null;
-        } finally {
+        }finally{
             // Unlock
             this.pendingRequests.delete(cacheKey);
         }
     }
 
-    static async calculateSize(trajectoryId: string): Promise<number> {
+    static async calculateSize(trajectoryId: string): Promise<number>{
         const prefix = `trajectory-${trajectoryId}/`;
         let totalSize = 0;
 
@@ -210,27 +210,27 @@ export default class DumpStorage {
         const BATCH_SIZE = 50;
 
         for await (const key of storage.listByPrefix(SYS_BUCKETS.DUMPS, prefix)) {
-            if (!key.endsWith('.dump.gz')) continue;
+            if(!key.endsWith('.dump.gz')) continue;
 
-            const task = this.storageLimit(async () => {
-                try {
+            const task = this.storageLimit(async() => {
+                try{
                     const stat = await storage.getStat(SYS_BUCKETS.DUMPS, key);
                     return stat.size;
-                } catch (e) {
+                }catch(e){
                     return 0;
                 }
             });
 
             pendingTasks.push(task);
 
-            if (pendingTasks.length >= BATCH_SIZE) {
+            if(pendingTasks.length >= BATCH_SIZE){
                 const results = await Promise.all(pendingTasks);
                 totalSize += results.reduce((acc, size) => acc + size, 0);
                 pendingTasks.length = 0;
             }
         }
 
-        if (pendingTasks.length > 0) {
+        if(pendingTasks.length > 0){
             const results = await Promise.all(pendingTasks);
             totalSize += results.reduce((acc, size) => acc + size, 0);
         }
@@ -238,19 +238,19 @@ export default class DumpStorage {
         return totalSize;
     }
 
-    static async getDumpStream(trajectoryId: string, timestep: string | number): Promise<Readable> {
+    static async getDumpStream(trajectoryId: string, timestep: string | number): Promise<Readable>{
         const objectName = this.getObjectName(trajectoryId, timestep);
         const rawStream = await storage.getStream(SYS_BUCKETS.DUMPS, objectName);
         return rawStream.pipe(zlib.createGunzip());
     }
 
-    static async listDumps(trajectoryId: string): Promise<string[]> {
+    static async listDumps(trajectoryId: string): Promise<string[]>{
         const prefix = `trajectory-${trajectoryId}/`;
         const timesteps: string[] = [];
 
         for await (const name of storage.listByPrefix(SYS_BUCKETS.DUMPS, prefix)) {
             const match = name.match(/timestep-(\d+)\.dump\.gz$/);
-            if (match) {
+            if(match){
                 timesteps.push(match[1]);
             }
         }
@@ -258,7 +258,7 @@ export default class DumpStorage {
         return timesteps.sort((a, b) => Number(a) - Number(b));
     }
 
-    static async deleteDumps(trajectoryId: string): Promise<void> {
+    static async deleteDumps(trajectoryId: string): Promise<void>{
         const prefix = `trajectory-${trajectoryId}/`;
         await Promise.all([
             storage.deleteByPrefix(SYS_BUCKETS.DUMPS, prefix),
@@ -267,8 +267,8 @@ export default class DumpStorage {
         logger.info(`Deleted dumps for trajectory ${trajectoryId}`);
     }
 
-    private static async isCacheValid(filePath: string): Promise<boolean> {
-        try {
+    private static async isCacheValid(filePath: string): Promise<boolean>{
+        try{
             const stats = await fs.stat(filePath);
             return (Date.now() - stats.mtimeMs) < this.CACHE_TTL_MS;
         } catch {
@@ -282,12 +282,12 @@ export default class DumpStorage {
         logger.info(`Saved ${name} | Size: ${original} -> ${compressed} (${ratio}%) | Time: ${duration}ms`);
     }
 
-    static async pruneCache(): Promise<void> {
-        try {
+    static async pruneCache(): Promise<void>{
+        try{
             await fs.rm(this.CACHE_DIR, { recursive: true, force: true });
             await fs.rm(this.TEMP_DIR, { recursive: true, force: true });
             logger.info('Dump cache pruned');
-        } catch (error) {
+        }catch(error){
             logger.warn(`Cache prune failed: ${error}`);
         }
     }

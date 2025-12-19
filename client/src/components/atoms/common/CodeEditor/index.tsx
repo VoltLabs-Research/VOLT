@@ -42,7 +42,7 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
     const handleEditorMount = useCallback((editorInstance: editor.IStandaloneCodeEditor, monaco: Monaco) => {
         // Disable JSON completion provider to avoid weird behavior with numbers
-        if (language === 'json') {
+        if(language === 'json'){
             monaco.languages.json.jsonDefaults.setModeConfiguration({
                 documentFormattingEdits: false,
                 documentRangeFormattingEdits: false,

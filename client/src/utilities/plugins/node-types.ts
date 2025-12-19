@@ -159,5 +159,5 @@ export const EXPORTER_OPTIONS = [{
 
 export const EXPORT_TYPE_OPTIONS = [{
     value: ExportType.GLB,
-    label: 'GLB (3D Model)'
+    label: 'GLB(3D Model)'
 }];

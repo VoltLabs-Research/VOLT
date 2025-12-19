@@ -8,8 +8,8 @@ const ExposureNode = memo((props: NodeProps) => {
     const exposure = data.exposure || {};
 
     return(
-        <BaseNode 
-            {...props} 
+        <BaseNode
+            {...props}
             nodeType={NodeType.EXPOSURE}
             nodeTitle={exposure.name}
             description={exposure.results ? `Reading from ${exposure.results}` : `Configuration needed`}

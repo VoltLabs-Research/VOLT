@@ -31,7 +31,7 @@ const ChatInput = ({
 
     const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newFiles = Array.from(e.target.files || []);
-        if (!newFiles.length) return;
+        if(!newFiles.length) return;
         setFiles((prev) => [...prev, ...newFiles]);
 
         newFiles.filter(f => f.type.startsWith('image/')).forEach(file => {
@@ -41,18 +41,18 @@ const ChatInput = ({
         });
     };
 
-    const handleSend = async (e: React.FormEvent) => {
+    const handleSend = async(e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!message.trim() && files.length === 0) return;
+        if(!message.trim() && files.length === 0) return;
 
-        if (files.length) {
+        if(files.length){
             await onSendFiles(files);
             setFiles([]);
             setPreviews([]);
         }
 
-        if (message.trim()) {
+        if(message.trim()) {
             await onSendText(message);
             setMessage('');
         }

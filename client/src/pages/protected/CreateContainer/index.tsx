@@ -175,23 +175,23 @@ const CreateContainer: React.FC = () => {
     });
 
     useEffect(() => {
-        const fetchSystemStats = async () => {
-            try {
+        const fetchSystemStats = async() => {
+            try{
                 const stats = await systemApi.getStats();
                 setSystemStats(stats);
-            } catch (error) {
+            }catch(error){
                 console.error('Failed to fetch system stats:', error);
             }
         };
 
-        const fetchTeams = async () => {
-            try {
+        const fetchTeams = async() => {
+            try{
                 const teamsList = await teamApi.getAll();
                 setTeams(teamsList);
-                if (teamsList.length > 0) {
+                if(teamsList.length > 0){
                     setSelectedTeamId(teamsList[0]._id);
                 }
-            } catch (error) {
+            }catch(error){
                 console.error('Failed to fetch teams:', error);
             }
         };
@@ -202,7 +202,7 @@ const CreateContainer: React.FC = () => {
 
     const handleTemplateSelect = (templateId: string) => {
         const template = TEMPLATES.find(t => t.id === templateId);
-        if (template) {
+        if(template){
             setSelectedTemplate(templateId);
             setCustomImage('');
             setConfig(prev => ({
@@ -222,7 +222,7 @@ const CreateContainer: React.FC = () => {
     };
 
     const confirmCustomImage = () => {
-        if (!tempCustomImage.trim()) {
+        if(!tempCustomImage.trim()) {
             showError('Please enter a valid image name');
             return;
         }
@@ -232,24 +232,24 @@ const CreateContainer: React.FC = () => {
         setStep(2);
     };
 
-    const handleCreate = async () => {
+    const handleCreate = async() => {
         setLoading(true);
-        try {
+        try{
             const image = selectedTemplate
                 ? TEMPLATES.find(t => t.id === selectedTemplate)?.image
                 : customImage;
 
-            if (!image) {
+            if(!image){
                 showError('Please select a template or specify an image');
                 return;
             }
 
-            if (!config.name) {
+            if(!config.name){
                 showError('Please give your container a name');
                 return;
             }
 
-            if (!selectedTeamId) {
+            if(!selectedTeamId){
                 showError('Please select a team for this container');
                 return;
             }
@@ -269,16 +269,16 @@ const CreateContainer: React.FC = () => {
             };
 
             // Add custom command if template specifies one
-            if (template?.defaultCmd) {
+            if(template?.defaultCmd){
                 payload.cmd = template.defaultCmd;
             }
 
             await containerApi.create(payload);
             showSuccess('Container created successfully');
             navigate('/dashboard/containers');
-        } catch (error: any) {
+        }catch(error: any){
             showError(error.response?.data?.message || 'Failed to create container');
-        } finally {
+        }finally{
             setLoading(false);
         }
     };
@@ -482,7 +482,7 @@ const CreateContainer: React.FC = () => {
                                         />
                                         <div className="resource-limits">
                                             <span>0.5 vCPU</span>
-                                            <span>{maxCpus} vCPU (Max)</span>
+                                            <span>{maxCpus} vCPU(Max)</span>
                                         </div>
                                     </div>
                                     <div className="resource-row">
@@ -499,7 +499,7 @@ const CreateContainer: React.FC = () => {
                                         />
                                         <div className="resource-limits">
                                             <span>128 MB</span>
-                                            <span>{maxMemory} MB (Max)</span>
+                                            <span>{maxMemory} MB(Max)</span>
                                         </div>
                                     </div>
                                 </div>
@@ -581,7 +581,6 @@ const CreateContainer: React.FC = () => {
                                     )}
                                 </div>
 
-
                                 <div className="config-card d-flex column gap-05">
                                     <FormField
                                         label="Enable Docker Access"
@@ -592,7 +591,6 @@ const CreateContainer: React.FC = () => {
                                     />
                                     <div className="font-size-2 color-muted">Mounts /var/run/docker.sock to allow container management</div>
                                 </div>
-
 
                             </div>
 
@@ -642,7 +640,6 @@ const CreateContainer: React.FC = () => {
                     )}
                 </div>
             </div>
-
 
             {
                 showCustomImageModal && (

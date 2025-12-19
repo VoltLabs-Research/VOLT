@@ -5,19 +5,19 @@ import './ResourceUsage.css'
 import Title from '@/components/primitives/Title';
 import Button from '@/components/primitives/Button';
 
-function getLoadColor(value: number): string {
-  if (value >= 80) return '#FF453A' // Rojo - Sobrecarga
-  if (value >= 60) return '#FF9F0A' // Naranja - Moderado
+function getLoadColor(value: number): string{
+  if(value >= 80) return '#FF453A' // Rojo - Sobrecarga
+  if(value >= 60) return '#FF9F0A' // Naranja - Moderado
   return '#32D74B' // Verde - Normal
 }
 
-function getLoadGlow(value: number): string {
-  if (value >= 80) return '0 0 20px rgba(255, 69, 58, 0.4)'
-  if (value >= 60) return '0 0 20px rgba(255, 159, 10, 0.4)'
+function getLoadGlow(value: number): string{
+  if(value >= 80) return '0 0 20px rgba(255, 69, 58, 0.4)'
+  if(value >= 60) return '0 0 20px rgba(255, 159, 10, 0.4)'
   return '0 0 20px rgba(50, 215, 75, 0.4)'
 }
 
-export function ResourceUsage() {
+export function ResourceUsage(){
   const { metrics, isHistoryLoaded } = useServerMetrics()
 
   const isLoading = !metrics || !isHistoryLoaded

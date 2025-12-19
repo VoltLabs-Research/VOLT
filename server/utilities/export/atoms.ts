@@ -69,7 +69,7 @@ export type CompressionOptions = {
     meshopt?: boolean;
 };
 
-export default class AtomisticExporter {
+export default class AtomisticExporter{
     private readonly lammpsTypeColors: Map<number, number[]> = new Map([
         [0, [0.5, 0.5, 0.5, 1.0]],
         [1, [1.0, 0.267, 0.267, 1.0]],
@@ -121,7 +121,7 @@ export default class AtomisticExporter {
         const n = order.length;
         const pos2 = new Float32Array(n * 3);
 
-        for (let i = 0; i < n; i++) {
+        for(let i = 0; i < n; i++){
             const src = order[i] * 3;
             const dst = i * 3;
             pos2[dst] = positions[src];
@@ -130,17 +130,17 @@ export default class AtomisticExporter {
         }
 
         let types2: Uint16Array | undefined;
-        if (types) {
+        if(types){
             types2 = new Uint16Array(n);
-            for (let i = 0; i < n; i++) {
+            for(let i = 0; i < n; i++){
                 types2[i] = types[order[i]];
             }
         }
 
         let colors2: Float32Array | undefined;
-        if (colors) {
+        if(colors){
             colors2 = new Float32Array(n * 3);
-            for (let i = 0; i < n; i++) {
+            for(let i = 0; i < n; i++){
                 const src = order[i] * 3;
                 const dst = i * 3;
                 colors2[dst] = colors[src];
@@ -156,31 +156,31 @@ export default class AtomisticExporter {
         };
     }
 
-    private static radixSortByMorton(idx: Uint32Array, mortonKeys: Uint32Array): void {
+    private static radixSortByMorton(idx: Uint32Array, mortonKeys: Uint32Array): void{
         const n = idx.length;
-        if (n <= 1) return;
+        if(n <= 1) return;
 
         const tmp = new Uint32Array(n);
         const RADIX = 256;
         const count = new Uint32Array(RADIX);
 
-        for (let shift = 0; shift < 32; shift += 8) {
+        for(let shift = 0; shift < 32; shift += 8){
             count.fill(0);
 
-            for (let i = 0; i < n; i++) {
+            for(let i = 0; i < n; i++){
                 const key = mortonKeys[idx[i]];
                 const bucket = (key >>> shift) & 0xff;
                 count[bucket]++;
             }
 
             let sum = 0;
-            for (let i = 0; i < RADIX; i++) {
+            for(let i = 0; i < RADIX; i++){
                 const c = count[i];
                 count[i] = sum + c;
                 sum += c;
             }
 
-            for (let i = n - 1; i >= 0; i--) {
+            for(let i = n - 1; i >= 0; i--){
                 const index = idx[i];
                 const key = mortonKeys[index];
                 const bucket = (key >>> shift) & 0xff;
@@ -198,7 +198,7 @@ export default class AtomisticExporter {
         max: [number, number, number],
         opts: CompressionOptions,
         colors?: Float32Array
-    ): Promise<Uint8Array> {
+    ): Promise<Uint8Array>{
         const extent = {
             x: Math.max(1e-20, max[0] - min[0]),
             y: Math.max(1e-20, max[1] - min[1]),
@@ -219,7 +219,7 @@ export default class AtomisticExporter {
             .setAttribute('POSITION', posAcc)
             .setMode(0);
 
-        if (colors) {
+        if(colors){
             const colAcc = doc
                 .createAccessor('COLOR_0')
                 .setArray(colors)
@@ -259,12 +259,12 @@ export default class AtomisticExporter {
         gradientName: string,
         opts: CompressionOptions = {},
         externalValues?: Float32Array
-    ): Promise<void> {
+    ): Promise<void>{
         const parseOptions: any = {};
         // If there are external values, we need the dump IDs to cross-reference them.
-        if (externalValues) {
+        if(externalValues){
             parseOptions.includeIds = true;
-        } else {
+        }else{
             parseOptions.properties = [property];
         }
         const parsed = await TrajectoryParserFactory.parse(filePath, parseOptions);
@@ -278,27 +278,27 @@ export default class AtomisticExporter {
         const colors = new Float32Array(natoms * 3);
 
         let getValue: (index: number) => number;
-        if (externalValues) {
-            if (!parsed.ids) throw new Error('Atom IDs required for external values mapping');
+        if(externalValues){
+            if(!parsed.ids) throw new Error('Atom IDs required for external values mapping');
             const ids = parsed.ids;
             const extVals = externalValues;
             getValue = (i: number) => {
                 const atomId = ids[i];
                 return extVals[atomId];
             };
-        } else {
+        }else{
             const propertyValues = parsed.properties![property];
             getValue = (i: number) => {
                 return propertyValues[i];
             };
         }
 
-        for (let i = 0; i < natoms; i++) {
+        for(let i = 0; i < natoms; i++){
             const value = getValue(i);
             let t = (value - startValue) * invRange;
-            if (t < 0) t = 0;
-            else if (t > 1) t = 1;
-            else if (!(t === t)) t = 0;
+            if(t < 0) t = 0;
+            else if(t > 1) t = 1;
+            else if(!(t === t)) t = 0;
 
             const lutIndex = (t * lutMaxIndex) | 0;
             const colorBase = lutIndex * 3;
@@ -321,31 +321,31 @@ export default class AtomisticExporter {
         });
     }
 
-    private static countingSortByType(idx: Uint32Array, types: Uint16Array): void {
+    private static countingSortByType(idx: Uint32Array, types: Uint16Array): void{
         const n = idx.length;
-        if (n <= 1) return;
+        if(n <= 1) return;
 
         let maxType = 0;
-        for (let i = 0; i < n; i++) {
+        for(let i = 0; i < n; i++){
             const t = types[idx[i]];
-            if (t > maxType) maxType = t;
+            if(t > maxType) maxType = t;
         }
 
         const count = new Uint32Array(maxType + 1);
 
-        for (let i = 0; i < n; i++) {
+        for(let i = 0; i < n; i++){
             count[types[idx[i]]]++;
         }
 
         let sum = 0;
-        for (let i = 0; i <= maxType; i++) {
+        for(let i = 0; i <= maxType; i++){
             const c = count[i];
             count[i] = sum + c;
             sum += c;
         }
 
         const tmp = new Uint32Array(n);
-        for (let i = n - 1; i >= 0; i--) {
+        for(let i = n - 1; i >= 0; i--){
             const index = idx[i];
             const t = types[index];
             const pos = --count[t];
@@ -361,7 +361,7 @@ export default class AtomisticExporter {
         filePath: string,
         optsOrLegacy?: CompressionOptions | Function,
         maybeOpts?: CompressionOptions
-    ): Promise<Buffer> {
+    ): Promise<Buffer>{
         const opts = (typeof optsOrLegacy === 'function') ? (maybeOpts ?? {}) : (optsOrLegacy ?? {});
         const mortonBits = Math.max(1, opts.maxMortonBitsPerAxis ?? 10);
 
@@ -375,14 +375,14 @@ export default class AtomisticExporter {
 
         const n = positions.length / 3;
         const idx = new Uint32Array(n);
-        for (let i = 0; i < n; i++) {
+        for(let i = 0; i < n; i++){
             idx[i] = i;
         }
 
         let uniqueTypesCount = 0;
         {
             const seen = new Set<number>();
-            for (let i = 0; i < n; i++) {
+            for(let i = 0; i < n; i++){
                 seen.add(types[i]);
             }
             uniqueTypesCount = seen.size;
@@ -390,7 +390,7 @@ export default class AtomisticExporter {
 
         const perTypePrimitives = opts.perTypePrimitives ?? (uniqueTypesCount <= 16);
         const mortonKeys = new Uint32Array(n);
-        for (let i = 0; i < n; i++) {
+        for(let i = 0; i < n; i++){
             const p = i * 3;
             const nx = (positions[p] - min[0]) / extent.x;
             const ny = (positions[p + 1] - min[1]) / extent.y;
@@ -399,7 +399,7 @@ export default class AtomisticExporter {
         }
 
         AtomisticExporter.radixSortByMorton(idx, mortonKeys);
-        if (perTypePrimitives) {
+        if(perTypePrimitives){
             AtomisticExporter.countingSortByType(idx, types);
         }
 
@@ -419,11 +419,11 @@ export default class AtomisticExporter {
         const colors = new Float32Array(n * 3);
         const colorCache = new Map<number, [number, number, number]>();
 
-        for (let i = 0, p = 0; i < n; i++) {
+        for(let i = 0, p = 0; i < n; i++){
             const t = typesR[i];
             let rgb = colorCache.get(t);
 
-            if (!rgb) {
+            if(!rgb){
                 const c = this.lammpsTypeColors.get(t) || [0.6, 0.6, 0.6, 1];
                 rgb = [c[0], c[1], c[2]];
                 colorCache.set(t, rgb);
@@ -472,7 +472,7 @@ export default class AtomisticExporter {
         filePath: string,
         minioObjectName: string,
         optsOrLegacy?: CompressionOptions | Function
-    ): Promise<void> {
+    ): Promise<void>{
         const opts = (typeof optsOrLegacy === 'function') ? {} : (optsOrLegacy ?? {});
         const buffer = await this.toGLBBuffer(filePath, opts);
         await storage.put(SYS_BUCKETS.MODELS, minioObjectName, buffer, {
@@ -483,7 +483,7 @@ export default class AtomisticExporter {
     public async exportAtomsTypeToGLBBuffer(
         atomsByType: AtomsGroupedByType,
         opts: CompressionOptions = {}
-    ): Promise<Buffer> {
+    ): Promise<Buffer>{
         const totalAtoms = Object.values(atomsByType).reduce((s, list) => s + list.length, 0);
         const positions = new Float32Array(totalAtoms * 3);
         const colors = new Float32Array(totalAtoms * 3);
@@ -512,20 +512,20 @@ export default class AtomisticExporter {
             [115, 191, 217], // Sky Blue
         ];
 
-        for (const [typeName, atoms] of Object.entries(atomsByType)) {
+        for(const [typeName, atoms] of Object.entries(atomsByType)) {
             const key = typeName.toUpperCase().replace(/ /g, '_');
 
             // Dynamic color for grain keys
             let rgbInts: number[];
-            if (typeName.startsWith('Grain_')) {
+            if(typeName.startsWith('Grain_')) {
                 rgbInts = GRAIN_PALETTE[grainColorIndex % GRAIN_PALETTE.length];
                 grainColorIndex++;
-            } else {
+            }else{
                 rgbInts = this.STRUCTURE_COLORS[key] || this.STRUCTURE_COLORS['OTHER'];
             }
             const rgb = [rgbInts[0] / 255, rgbInts[1] / 255, rgbInts[2] / 255];
 
-            for (let i = 0; i < atoms.length; i++) {
+            for(let i = 0; i < atoms.length; i++){
                 const idxBase = (cursor + i) * 3;
                 const a = atoms[i];
                 const x = a.pos[0];
@@ -540,12 +540,12 @@ export default class AtomisticExporter {
                 colors[idxBase + 1] = rgb[1];
                 colors[idxBase + 2] = rgb[2];
 
-                if (x < minX) minX = x;
-                if (y < minY) minY = y;
-                if (z < minZ) minZ = z;
-                if (x > maxX) maxX = x;
-                if (y > maxY) maxY = y;
-                if (z > maxZ) maxZ = z;
+                if(x < minX) minX = x;
+                if(y < minY) minY = y;
+                if(z < minZ) minZ = z;
+                if(x > maxX) maxX = x;
+                if(y > maxY) maxY = y;
+                if(z > maxZ) maxZ = z;
             }
 
             cursor += atoms.length;
@@ -604,7 +604,7 @@ export default class AtomisticExporter {
         atomsByType: AtomsGroupedByType,
         minioObjectName: string,
         opts: CompressionOptions = {}
-    ): Promise<void> {
+    ): Promise<void>{
         const buffer = await this.exportAtomsTypeToGLBBuffer(atomsByType, opts);
         await storage.put(SYS_BUCKETS.MODELS, minioObjectName, buffer, {
             'Content-Type': 'model/gltf-binary'

@@ -106,11 +106,11 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
         init();
     }, []);
 
-    const loadImagePreview = async (entry: FsEntry) => {
+    const loadImagePreview = async(entry: FsEntry) => {
         setPreviewLoading(true);
         setPreviewFileName(entry.name);
 
-        try {
+        try{
             const token = localStorage.getItem('authToken');
             const API_BASE_URL = import.meta.env.VITE_API_URL + '/api';
 
@@ -121,7 +121,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                 }
             });
 
-            if (!response.ok) {
+            if(!response.ok){
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
@@ -138,7 +138,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                 setPreviewLoading(false);
             };
             reader.readAsDataURL(blob);
-        } catch (error) {
+        }catch(error){
             console.error('Error loading image preview:', error);
             setPreviewImage(null);
             setPreviewLoading(false);
@@ -153,7 +153,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
     };
 
     const handleDownloadPreview = () => {
-        if (!previewImage || !previewFileName) return;
+        if(!previewImage || !previewFileName) return;
         const a = document.createElement('a');
         a.href = previewImage;
         a.download = previewFileName;
@@ -163,15 +163,15 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
     };
 
     const handleDoubleClick = (e: FsEntry) => {
-        if (e.type === 'dir') {
+        if(e.type === 'dir'){
             enter(e.name);
-        } else {
+        }else{
             const isPNG = e.ext?.toLowerCase() === 'png' || e.name.toLowerCase().endsWith('.png');
-            if (isPNG) {
+            if(isPNG){
                 loadImagePreview(e);
-            } else if (onFileOpen) {
+            }else if(onFileOpen){
                 onFileOpen(e);
-            } else {
+            }else{
                 download(e.relPath);
             }
         }
@@ -216,7 +216,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
         </div>
     );
 
-    if (isMinimized) return null;
+    if(isMinimized) return null;
 
     const navItems = (
         <>

@@ -30,11 +30,11 @@ const SidebarNavigationOption = ({ name, Icon, onClick = null, to = null, isSele
     const navigate = useNavigate();
 
     const handleClick = () => {
-        if (onClick !== null) {
+        if(onClick !== null){
             onClick();
         }
 
-        if (to !== null) {
+        if(to !== null){
             navigate(to);
         }
     };

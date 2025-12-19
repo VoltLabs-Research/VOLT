@@ -55,7 +55,7 @@ const AuthenticationSettings: React.FC<AuthenticationSettingsProps> = ({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (validate(passwordForm)) {
+        if(validate(passwordForm)) {
             onSubmitPassword(e);
         }
     };

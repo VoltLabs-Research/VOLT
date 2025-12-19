@@ -16,7 +16,7 @@ interface DataPoint {
 const MAX_POINTS = 60;
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length >= 3) {
+  if(active && payload && payload.length >= 3){
     return (
       <div className="db-tooltip">
         <Paragraph className="db-tooltip-label font-size-2 font-weight-6">{payload[0].payload.time}</Paragraph>
@@ -35,17 +35,17 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null
 }
 
-export function DatabasePerformance() {
+export function DatabasePerformance(){
   const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics();
   const [history, setHistory] = useState<DataPoint[]>([]);
 
   // Preload with historical data
   useEffect(() => {
-    if (isHistoryLoaded && metricsHistory.length > 0 && history.length === 0) {
+    if(isHistoryLoaded && metricsHistory.length > 0 && history.length === 0){
       const filtered = metricsHistory
-        .filter((m: any) => m.mongodb)
-        .slice(-MAX_POINTS)
-        .map((m: any) => ({
+          .filter((m: any) => m.mongodb)
+          .slice(-MAX_POINTS)
+          .map((m: any) => ({
           queries: m.mongodb.queries,
           connections: m.mongodb.connections,
           latency: m.mongodb.latency
@@ -53,7 +53,7 @@ export function DatabasePerformance() {
 
       // Calculate queriesPerSecond for each point
       const withQps = filtered.map((point, index) => {
-        if (index === 0) return point;
+        if(index === 0) return point;
         const lastPoint = filtered[index - 1];
         const queriesDelta = Math.max(0, point.queries - lastPoint.queries);
         return { ...point, queriesPerSecond: queriesDelta };
@@ -65,7 +65,7 @@ export function DatabasePerformance() {
 
   // Update with realtime metrics
   useEffect(() => {
-    if (!metrics?.mongodb) return;
+    if(!metrics?.mongodb) return;
 
     setHistory(prev => {
       const newDataPoint: DataPoint = {
@@ -74,21 +74,21 @@ export function DatabasePerformance() {
         latency: metrics.mongodb!.latency
       };
 
-      if (prev.length > 0) {
+      if(prev.length > 0){
         const lastPoint = prev[prev.length - 1];
         const queriesDelta = Math.max(0, newDataPoint.queries - lastPoint.queries);
         newDataPoint.queriesPerSecond = queriesDelta;
       }
 
       const newHistory = [...prev, newDataPoint];
-      if (newHistory.length > MAX_POINTS) newHistory.shift();
+      if(newHistory.length > MAX_POINTS) newHistory.shift();
       return newHistory;
     });
   }, [metrics]);
 
   // Calculate stats synchronously
   const stats = (() => {
-    if (history.length === 0) return { avgQueries: 0, avgLatency: 0 };
+    if(history.length === 0) return { avgQueries: 0, avgLatency: 0 };
     const withQps = history.filter(d => d.queriesPerSecond !== undefined);
     const avgQueries = Math.round(
       withQps.reduce((sum, d) => sum + (d.queriesPerSecond || 0), 0) / Math.max(1, withQps.length)

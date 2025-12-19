@@ -31,12 +31,12 @@ const Select = ({
     optionClassName = '',
     showSelectionIcon = true,
     onLeaveTeam,
-    ...props
+        ...props
 }: SelectProps) => {
     const uid = useId();
 
     const selectedOption = useMemo(() => {
-        if (!value) return null;
+        if(!value) return null;
         return options.find((o) => o.value === value) || null;
     }, [options, value]);
 

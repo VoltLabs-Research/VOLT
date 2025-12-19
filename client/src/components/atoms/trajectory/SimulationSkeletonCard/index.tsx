@@ -31,7 +31,7 @@ type Props = {
 };
 
 const SimulationSkeletonCard: React.FC<Props> = ({ n = 8, progress, status }) => {
-    if (progress !== undefined) {
+    if(progress !== undefined){
         return (
             <Container className='simulation-container loading p-relative w-max overflow-hidden cursor-pointer'>
                 <Skeleton variant='rounded' width='100%' height={200} />

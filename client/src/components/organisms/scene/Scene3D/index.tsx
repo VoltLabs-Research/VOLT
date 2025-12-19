@@ -120,7 +120,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	const ocTarget = useOrbitControlsSettings((s) => s.target);
 
 	const dpr = useMemo(() => {
-		if (dprCfg.mode === 'fixed') return dprCfg.fixed;
+		if(dprCfg.mode === 'fixed') return dprCfg.fixed;
 		const min = (isInteracting && interactionDegradeEnabled) ? Math.min(dprCfg.interactionMin, dprCfg.min) : dprCfg.min;
 		return [min, dprCfg.max] as [number, number];
 	}, [dprCfg.mode, dprCfg.fixed, dprCfg.min, dprCfg.max, dprCfg.interactionMin, interactionDegradeEnabled, isInteracting]);
@@ -132,7 +132,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 
 	const markInteractingDebounced = useCallback(() => {
 		setSceneInteracting(true);
-		if (interactionTimeoutRef.current) window.clearTimeout(interactionTimeoutRef.current);
+		if(interactionTimeoutRef.current) window.clearTimeout(interactionTimeoutRef.current);
 		interactionTimeoutRef.current = window.setTimeout(() => {
 			setSceneInteracting(false);
 			interactionTimeoutRef.current = null;
@@ -140,7 +140,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	}, [setSceneInteracting]);
 
 	const endInteracting = useCallback(() => {
-		if (interactionTimeoutRef.current) {
+		if(interactionTimeoutRef.current){
 			window.clearTimeout(interactionTimeoutRef.current);
 			interactionTimeoutRef.current = null;
 		}
@@ -148,7 +148,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	}, [setSceneInteracting]);
 
 	const backgroundColor = useMemo(() => {
-		if (background !== null && background !== undefined) return background;
+		if(background !== null && background !== undefined) return background;
 		return !showEditorWidgets ? '#FFF' : '#1E1E1E';
 	}, [showEditorWidgets, background]);
 
@@ -161,19 +161,19 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 
 	useImperativeHandle(ref, () => ({
 		captureScreenshot: (options) => {
-			if (tools && typeof tools.captureScreenshot === 'function') return tools.captureScreenshot(options);
+			if(tools && typeof tools.captureScreenshot === 'function') return tools.captureScreenshot(options);
 			return Promise.reject(new Error('Screenshot not available yet.'));
 		},
 		waitForVisibleFrame: () => tools?.waitForVisibleFrame?.() ?? Promise.resolve(),
 		markContentReady: () => tools?.markContentReady?.(),
 		waitForContentFrame: () => tools?.waitForContentFrame?.() ?? Promise.resolve(),
 		zoomTo: (zoomPercent: number) => {
-			if (!orbitControlsRef.current) return;
+			if(!orbitControlsRef.current) return;
 			const controls = orbitControlsRef.current;
 			const camera = controls.object as THREE.PerspectiveCamera;
 
 			// Initialize the reference distance on first call
-			if (!initialDistanceRef.current) {
+			if(!initialDistanceRef.current){
 				initialDistanceRef.current = camera.position.distanceTo(controls.target);
 			}
 
@@ -201,12 +201,12 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 			controls.update();
 		},
 		getCurrentZoom: () => {
-			if (!orbitControlsRef.current) return 100;
+			if(!orbitControlsRef.current) return 100;
 			const controls = orbitControlsRef.current;
 			const camera = controls.object as THREE.PerspectiveCamera;
 
 			// Initialize reference distance on first call if not already done
-			if (!initialDistanceRef.current) {
+			if(!initialDistanceRef.current){
 				initialDistanceRef.current = camera.position.distanceTo(controls.target);
 			}
 
@@ -229,7 +229,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	}, [onCameraControlsRef]);
 
 	useEffect(() => {
-		if (!orbitControlsRef.current) return;
+		if(!orbitControlsRef.current) return;
 		orbitControlsRef.current.target.set(ocTarget[0], ocTarget[1], ocTarget[2]);
 		orbitControlsRef.current.update();
 	}, [ocTarget[0], ocTarget[1], ocTarget[2]]);
@@ -237,7 +237,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	// Initialize zoom reference distance when OrbitControls is ready
 	useEffect(() => {
 		const initializeZoom = () => {
-			if (!orbitControlsRef.current || initialDistanceRef.current) return true;
+			if(!orbitControlsRef.current || initialDistanceRef.current) return true;
 			const controls = orbitControlsRef.current;
 			const camera = controls.object as any;
 			initialDistanceRef.current = camera.position.distanceTo(controls.target);
@@ -245,7 +245,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 		};
 
 		// Try to initialize immediately
-		if (!initializeZoom()) {
+		if(!initializeZoom()) {
 			// If not ready, retry on next frame
 			const timer = setTimeout(initializeZoom, 100);
 			return () => clearTimeout(timer);
@@ -260,24 +260,24 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	const canvasStyle = useMemo(() => ({
 		width: '100%',
 		height: '100%',
-		...(cssBackground ? { background: cssBackground } : { backgroundColor }),
+      ...(cssBackground ? { background: cssBackground } : { backgroundColor }),
 		touchAction: 'none',
 		willChange: 'transform',
 		transform: 'translateZ(0)'
 	}), [backgroundColor, cssBackground]);
 
 	const threeBackgroundColor = useMemo(() => {
-		if (cssBackground && rCreate.alpha) return 'transparent';
+		if(cssBackground && rCreate.alpha) return 'transparent';
 		return backgroundColor;
 	}, [cssBackground, rCreate.alpha, backgroundColor]);
 
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b') { e.preventDefault(); toggleCanvasGrid(); }
-			if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'n') { e.preventDefault(); toggleEditorWidgets(); }
-			if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'z') {
+			if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'b') { e.preventDefault(); toggleCanvasGrid(); }
+			if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'n') { e.preventDefault(); toggleEditorWidgets(); }
+			if(e.ctrlKey && e.altKey && e.key.toLowerCase() === 'z') {
 				e.preventDefault();
-				if (orbitControlsRef.current) {
+				if(orbitControlsRef.current){
 					const optimal = calculateClosestCameraPositionZY(activeModel?.modelBounds.box, orbitControlsRef.current.object);
 					orbitControlsRef.current.object.position.copy(optimal.position);
 					orbitControlsRef.current.target.copy(optimal.target);
@@ -293,7 +293,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 
 	useEffect(() => {
 		return () => {
-			if (interactionTimeoutRef.current) {
+			if(interactionTimeoutRef.current){
 				window.clearTimeout(interactionTimeoutRef.current);
 			}
 		};

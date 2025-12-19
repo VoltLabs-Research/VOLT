@@ -9,9 +9,9 @@ const ExportNode = memo((props: NodeProps) => {
     const exportData = data.export || {};
 
     return(
-        <BaseNode 
-            {...props} 
-            nodeType={NodeType.EXPORT} 
+        <BaseNode
+            {...props}
+            nodeType={NodeType.EXPORT}
             nodeTitle={exportData.exporter}
             description={exportData.type ? `${EXPORT_TYPE_OPTIONS.find((v) => v.value === exportData.type).label}` : 'Configuration needed'}
         />

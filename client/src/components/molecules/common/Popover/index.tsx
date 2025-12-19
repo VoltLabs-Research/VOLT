@@ -38,7 +38,7 @@ const Popover = ({
         const handleClick = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             const triggerElement = target.closest(`[commandfor="${id}"]`);
-            if (triggerElement) {
+            if(triggerElement){
                 clickPosRef.current = { x: e.clientX, y: e.clientY };
             }
         };
@@ -49,10 +49,10 @@ const Popover = ({
     // Position the popover near the click position when it opens
     React.useEffect(() => {
         const popover = document.getElementById(id);
-        if (!popover) return;
+        if(!popover) return;
 
         const positionPopover = () => {
-            if (!clickPosRef.current) return;
+            if(!clickPosRef.current) return;
 
             const popoverRect = popover.getBoundingClientRect();
             const { x, y } = clickPosRef.current;
@@ -61,19 +61,19 @@ const Popover = ({
             let top = y + 8;
             let left = x;
 
-            // Adjust if popover would go off-screen (right)
-            if (left + popoverRect.width > window.innerWidth) {
+            // Adjust if popover would go off-screen(right)
+            if(left + popoverRect.width > window.innerWidth){
                 left = window.innerWidth - popoverRect.width - 16;
             }
 
-            // Adjust if popover would go off-screen (bottom)
-            if (top + popoverRect.height > window.innerHeight) {
+            // Adjust if popover would go off-screen(bottom)
+            if(top + popoverRect.height > window.innerHeight){
                 // Show above the click instead
                 top = y - popoverRect.height - 8;
             }
 
             // Ensure left doesn't go negative
-            if (left < 8) left = 8;
+            if(left < 8) left = 8;
 
             popover.style.top = `${top + 16}px`;
             popover.style.left = `${left}px`;
@@ -82,7 +82,7 @@ const Popover = ({
 
         // Watch for toggle events to handle positioning
         const handleToggle = (e: any) => {
-            if (e.newState === 'open') {
+            if(e.newState === 'open'){
                 // Use setTimeout to ensure popover is rendered
                 setTimeout(positionPopover, 0);
             }

@@ -17,7 +17,7 @@ import logger from '@/logger';
  * - Attaches the Redis adapter for multi-node setups.
  * - Registers feature modules and forwards connection events to them.
  */
-class SocketGateway {
+class SocketGateway{
     private io?: Server;
     private adapterPub?: Redis;
     private adapterSub?: Redis;
@@ -33,12 +33,12 @@ class SocketGateway {
         ],
         private pingTimeout = 60_000,
         private pingInterval = 25_000
-    ) { }
+    ){ }
 
     /**
      * Register a feature module(before initialize()).
      */
-    register(module: BaseSocketModule): this {
+    register(module: BaseSocketModule): this{
         this.modules.push(module);
         return this;
     }
@@ -46,8 +46,8 @@ class SocketGateway {
     /**
      * Initialize Socket.IO on top of the HTTP server and set up Redis adapter.
      */
-    async initialize(server: http.Server): Promise<Server> {
-        if (this.initialized && this.io) return this.io;
+    async initialize(server: http.Server): Promise<Server>{
+        if(this.initialized && this.io) return this.io;
 
         this.io = new Server(server, {
             cors: {
@@ -68,12 +68,12 @@ class SocketGateway {
         }));
 
         // Add authentication middleware(allows anonymous users for public trajectories)
-        this.io.use(async (socket, next) => {
-            try {
+        this.io.use(async(socket, next) => {
+            try{
                 const token = socket.handshake.auth?.token;
 
                 // Allow anonymous connections(for public trajectories)
-                if (!token) {
+                if(!token){
                     (socket as any).user = null;
                     logger.info(`[Socket Gateway] Anonymous user connected: ${socket.id}`);
                     return next();
@@ -83,7 +83,7 @@ class SocketGateway {
                 const decoded = jwt.verify(token, secret) as any;
 
                 const user = await User.findById(decoded.id).select('-password');
-                if (!user) {
+                if(!user){
                     // Invalid token but allow anonymous access(socket as any).user = null;
                     logger.info(`[Socket Gateway] User not found for token, allowing anonymous: ${socket.id}`);
                     return next();
@@ -92,7 +92,7 @@ class SocketGateway {
                 (socket as any).user = user;
                 logger.info(`[Socket Gateway] Authenticated user connected: ${user.firstName} ${user.lastName} (${socket.id})`);
                 next();
-            } catch (error) {
+            }catch(error){
                 // Token verification failed, allow anonymous access(socket as any).user = null;
                 logger.info(`[Socket Gateway] Token verification failed, allowing anonymous: ${socket.id}`);
                 next();
@@ -102,7 +102,7 @@ class SocketGateway {
         // Register built-in modules
         this.register(new ContainerModule());
 
-        for (const module of this.modules) {
+        for(const module of this.modules){
             module.onInit(this.io);
         }
 
@@ -114,7 +114,7 @@ class SocketGateway {
 
         this.io.on('connection', (socket: Socket) => {
             logger.info(`[Socket Gateway] Connected ${socket.id}`);
-            for (const module of this.modules) {
+            for(const module of this.modules){
                 module.onConnection(socket);
             }
         });
@@ -126,36 +126,36 @@ class SocketGateway {
     /**
      * Graceful shutdown: close io, adapter redis, and notify modules.
      */
-    async close(): Promise<void> {
-        try {
+    async close(): Promise<void>{
+        try{
             await Promise.all(this.modules.map((module) => module.onShutdown()));
-        } catch (err: any) {
+        }catch(err: any){
             logger.error(`[Socket Gateway] Module shutdown error ${err}`);
         }
 
-        try {
+        try{
             await new Promise<void>((res) => {
-                if (this.io) {
+                if(this.io){
                     this.io.close(() => res());
-                } else {
+                }else{
                     res();
                 }
             });
         } catch { }
 
-        try {
+        try{
             await this.adapterPub?.quit();
         } catch { }
 
-        try {
+        try{
             await this.adapterSub?.quit();
         } catch { }
 
-        try {
+        try{
             await this.jobUpdatesSubscriber?.quit();
         } catch { }
 
-        try {
+        try{
             await this.trajectoryUpdatesSubscriber?.quit();
         } catch { }
 
@@ -170,8 +170,8 @@ class SocketGateway {
     /**
      * Return the initialized SocketIO server.
      */
-    getIO(): Server {
-        if (!this.io) {
+    getIO(): Server{
+        if(!this.io){
             throw new Error('SocketIO not initialized');
         }
 

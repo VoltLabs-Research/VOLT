@@ -27,8 +27,8 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
         let rafId: number | null = null;
 
         const updateZoom = () => {
-            try {
-                if (!scene3DRef?.current?.getCurrentZoom) {
+            try{
+                if(!scene3DRef?.current?.getCurrentZoom){
                     rafId = requestAnimationFrame(updateZoom);
                     return;
                 }
@@ -36,7 +36,7 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
                 const newZoom = scene3DRef.current.getCurrentZoom();
 
                 // Only update if zoom changed significantly(more than 1%)
-                if (Math.abs(newZoom - lastZoomRef.current) > 1) {
+                if(Math.abs(newZoom - lastZoomRef.current) > 1) {
                     lastZoomRef.current = newZoom;
                     // Find closest preset
                     const closest = ZOOM_PRESETS.reduce((prev, curr) =>
@@ -44,7 +44,7 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
                     );
                     setCurrentZoom(closest.toString());
                 }
-            } catch (error) {
+            }catch(error){
                 console.error('Error updating zoom:', error);
             }
 
@@ -54,7 +54,7 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
         rafId = requestAnimationFrame(updateZoom);
 
         return () => {
-            if (rafId !== null) {
+            if(rafId !== null){
                 cancelAnimationFrame(rafId);
             }
         };
@@ -74,7 +74,7 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
         lastZoomRef.current = zoomPercent;
 
         // Use scene3DRef to zoom via OrbitControls if available
-        if (scene3DRef?.current?.zoomTo) {
+        if(scene3DRef?.current?.zoomTo){
             scene3DRef.current.zoomTo(zoomPercent);
         }
     }, [scene3DRef]);

@@ -112,7 +112,7 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = () => {
                                         </span>
                                         <span className="activity-time font-size-2 color-secondary">
                                             {(() => {
-                                                try {
+                                                try{
                                                     const date = new Date(activity.createdAt);
                                                     return isValid(date) ?
                                                         formatDistanceToNow(date, { addSuffix: true }) :

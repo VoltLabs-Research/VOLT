@@ -8,8 +8,8 @@ const VisualizersNode = memo((props: NodeProps) => {
     const visualizers = data.visualizers || {};
 
     return(
-        <BaseNode 
-            {...props} 
+        <BaseNode
+            {...props}
             nodeType={NodeType.VISUALIZERS}
             description={'Exposure accessibility'}
         />

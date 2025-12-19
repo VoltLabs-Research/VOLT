@@ -20,11 +20,11 @@ interface CreateTrajectoryOptions {
     onProgress?: (progress: number) => void;
 };
 
-const processTrajectoryFile = async (
-    trajectoryId: string, 
+const processTrajectoryFile = async(
+    trajectoryId: string,
     updateProgress: any,
-    workingDir: string, 
-    file: any, 
+    workingDir: string,
+    file: any,
     i: number
 ) => {
     let tempPath = file.path;
@@ -47,7 +47,7 @@ const processTrajectoryFile = async (
 
     const fileSize = file.size || (await fs.stat(tempPath)).size;
 
-    // Upload to storage using the file path directly (streaming).
+    // Upload to storage using the file path directly(streaming).
     await DumpStorage.saveDump(trajectoryId, frameInfo.timestep, tempPath, (progress) => {
         updateProgress(i, progress * fileSize);
     });
@@ -62,7 +62,7 @@ const processTrajectoryFile = async (
     };
 };
 
-const dispatchTrajectoryJobs = async (validFiles: any[], trajectory: ITrajectory, teamId: string) => {
+const dispatchTrajectoryJobs = async(validFiles: any[], trajectory: ITrajectory, teamId: string) => {
     const queue = getTrajectoryProcessingQueue();
     const CHUNK_SIZE = 20;
     const jobs: any[] = [];
@@ -99,13 +99,13 @@ const dispatchTrajectoryJobs = async (validFiles: any[], trajectory: ITrajectory
  * Processes incoming raw files, uploads them to Object Storge(MinIO),
  * and dispatches jobs to the processing queue.
  */
-const createTrajectory = async ({
+const createTrajectory = async({
     files,
     teamId,
     userId,
     trajectoryName,
     onProgress
-}: CreateTrajectoryOptions): Promise<InstanceType<typeof Trajectory>> => {
+}: CreateTrajectoryOptions): Promise<InstanceType<typeof Trajectory>> =>{
     const trajectoryId = new Types.ObjectId();
     const trajectoryIdStr = trajectoryId.toString();
 
@@ -135,7 +135,7 @@ const createTrajectory = async ({
 
     for(let i = 0; i < files.length; i += BATCH_SIZE){
         const batch = files.slice(i, i + BATCH_SIZE);
-        const batchPromises = batch.map((file, batchIndex) => 
+        const batchPromises = batch.map((file, batchIndex) =>
             processTrajectoryFile(trajectoryIdStr, updateProgress, workingDir, file, i + batchIndex));
         const batchResults = await Promise.all(batchPromises);
         allResults.push(...batchResults);
@@ -165,7 +165,7 @@ const createTrajectory = async ({
     await dispatchTrajectoryJobs(validFiles, newTrajectory, teamId);
 
     // The file upload was completed in previous steps; however, we'll wait
-    // until the jobs are queued before marking it as complete. 
+    // until the jobs are queued before marking it as complete.
     // Otherwise, the path card will briefly appear and disappear from the front end.
     if(onProgress) onProgress(1);
 

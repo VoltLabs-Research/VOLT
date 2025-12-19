@@ -17,16 +17,16 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
     const [preview, setPreview] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!isImage || !currentChatId) return;
+        if(!isImage || !currentChatId) return;
 
         let cancelled = false;
-        const run = async () => {
-            try {
+        const run = async() => {
+            try{
                 const res = await chatApi.getFilePreview(currentChatId, msg._id);
-                if (!cancelled) {
+                if(!cancelled){
                     setPreview(res.dataUrl);
                 }
-            } catch (error: any) {
+            }catch(error: any){
                 const errorContext = {
                     endpoint: `/chat/${currentChatId}/files/${msg._id}`,
                     method: 'GET',
@@ -48,7 +48,7 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
         }
     }, [isImage, currentChatId, msg._id]);
 
-    if (isImage) {
+    if(isImage){
         return (
             <div className='d-flex column gap-05'>
                 {preview ? (

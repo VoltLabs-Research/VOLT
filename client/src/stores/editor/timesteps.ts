@@ -20,7 +20,7 @@ const initialState: TimestepState = {
 
 // Pure function for worker - extracts and sorts timesteps
 const extractTimestepsWorker = (frames: any[]): number[] => {
-    if (!frames || frames.length === 0) return [];
+    if(!frames || frames.length === 0) return [];
     return frames
         .map((frame: any) => frame.timestep)
         .sort((a: number, b: number) => a - b);
@@ -46,8 +46,8 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
         const analysis = useAnalysisConfigStore.getState().analysisConfig;
         const { timesteps } = get().timestepData;
 
-        if (!trajectory?._id) throw new Error('No trajectory loaded');
-        if (timesteps.length === 0) throw new Error('No timesteps available in trajectory');
+        if(!trajectory?._id) throw new Error('No trajectory loaded');
+        if(timesteps.length === 0) throw new Error('No timesteps available in trajectory');
 
         const analysisId = analysis?._id || 'default';
 
@@ -66,7 +66,7 @@ const useTimestepStore = create<TimestepStore>()((set, get) => ({
     },
 
     async computeTimestepData(trajectory: Trajectory | null, currentTimestep?: number, cacheBuster?: number) {
-        if (!trajectory?.frames || trajectory.frames.length === 0) {
+        if(!trajectory?.frames || trajectory.frames.length === 0){
             set({ timestepData: initialTimestepData });
             return;
         }

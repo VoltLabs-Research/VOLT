@@ -54,7 +54,7 @@ const JobQueue = ({ job }: { job: Job }) => {
         }
     };
 
-    if (!(job.status in statusConfig)) return;
+    if(!(job.status in statusConfig)) return;
 
     const IconComponent = statusConfig[job.status].icon;
 

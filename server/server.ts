@@ -55,16 +55,16 @@ let metricsCollector: MetricsCollector;
 let collectionInterval: NodeJS.Timeout;
 let cleanupInterval: NodeJS.Timeout;
 
-const shutodwn = async () => {
+const shutodwn = async() => {
     // Stop metrics collection
-    if (collectionInterval) clearInterval(collectionInterval);
-    if (cleanupInterval) clearInterval(cleanupInterval);
+    if(collectionInterval) clearInterval(collectionInterval);
+    if(cleanupInterval) clearInterval(cleanupInterval);
 
     await gateway.close();
     process.exit(0);
 };
 
-server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
+server.listen(SERVER_PORT as number, SERVER_HOST, async() => {
     await initializeRedis();
     await initializeMinio();
     await mongoConnector();
@@ -73,20 +73,20 @@ server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
     metricsCollector = new MetricsCollector();
 
     // Start collecting metrics every second in background
-    collectionInterval = setInterval(async () => {
-        try {
+    collectionInterval = setInterval(async() => {
+        try{
             await metricsCollector.collect();
-        } catch (error) {
+        }catch(error){
             logger.error(`[Server] Metrics collection error: ${error}`);
         }
     }, 1000);
 
     // Clean old metrics from Redis every 24 hours
-    cleanupInterval = setInterval(async () => {
-        try {
+    cleanupInterval = setInterval(async() => {
+        try{
             await metricsCollector.cleanOldMetrics();
             logger.info('[Server] Cleaned old metrics from Redis');
-        } catch (error) {
+        }catch(error){
             logger.error(`[Server] Metrics cleanup error: ${error}`);
         }
     }, 24 * 60 * 60 * 1000);

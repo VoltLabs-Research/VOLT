@@ -10,7 +10,7 @@ const SchemaNode = memo((props: NodeProps) => {
 
     return(
         <BaseNode
-            {...props} 
+            {...props}
             nodeType={NodeType.SCHEMA}
             description={`${fieldCount} field(s) registered`}
         />
