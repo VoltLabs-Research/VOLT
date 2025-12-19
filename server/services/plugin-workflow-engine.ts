@@ -5,8 +5,10 @@ import nodeRegistry, { ExecutionContext } from '@/services/nodes/node-registry';
 import { topologicalSort, findDescendantByType } from '@/utilities/plugins/workflow-utils';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+// Ensure all node handlers are registered
+import '@/services/nodes/handlers';
 
-interface ExposureResult{
+interface ExposureResult {
     exposureName: string;
     nodeId: string;
     data: any;
@@ -23,20 +25,93 @@ interface ExposureResult{
     };
 };
 
-export default class PluginWorkflowEngine{
+export default class PluginWorkflowEngine {
     private pluginsDir: string;
 
-    constructor(pluginsDir: string = process.env.PLUGINS_DIR || 'plugins'){
+    constructor(pluginsDir: string = process.env.PLUGINS_DIR || 'plugins') {
         this.pluginsDir = pluginsDir;
     }
 
-    async execute(
+    /**
+     * Evaluates the workflow up to the forEach node and returns the items to iterate over.
+     * This is used to determine how many jobs to create.
+     */
+    async evaluateForEachItems(
         plugin: IPlugin,
         trajectoryId: string,
         analysisId: string,
         userConfig: Record<string, any>
-    ): Promise<ExposureResult[]>{
-        const context: ExecutionContext = {
+    ): Promise<{ items: any[]; forEachNodeId: string } | null> {
+        const context = this.createContext(plugin, trajectoryId, analysisId, userConfig);
+        const executionOrder = topologicalSort(plugin.workflow);
+
+        // Execute nodes until we hit the forEach node
+        for (const node of executionOrder) {
+            await nodeRegistry.execute(node, context);
+
+            if (node.type === NodeType.FOREACH) {
+                const forEachOutput = context.outputs.get(node.id);
+                if (forEachOutput?.items) {
+                    return {
+                        items: forEachOutput.items,
+                        forEachNodeId: node.id
+                    };
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Execute the full workflow for a specific forEach item.
+     * Called by the worker for each job.
+     */
+    async execute(
+        plugin: IPlugin,
+        trajectoryId: string,
+        analysisId: string,
+        userConfig: Record<string, any>,
+        forEachItem?: any,
+        forEachIndex?: number
+    ): Promise<ExposureResult[]> {
+        const context = this.createContext(plugin, trajectoryId, analysisId, userConfig);
+
+        try {
+            const executionOrder = topologicalSort(plugin.workflow);
+            logger.info(`[PluginWorkflowEngine] Executing "${plugin.slug}" - ${executionOrder.length} nodes`);
+
+            for (const node of executionOrder) {
+                // If this is the forEach node and we have a specific item, inject it
+                if (node.type === NodeType.FOREACH && forEachItem !== undefined) {
+                    // Execute the forEach to get the items array first
+                    await nodeRegistry.execute(node, context);
+                    const forEachOutput = context.outputs.get(node.id);
+                    if (forEachOutput) {
+                        // Override with the specific item for this job
+                        forEachOutput.currentValue = forEachItem;
+                        forEachOutput.currentIndex = forEachIndex ?? 0;
+                    }
+                } else {
+                    await nodeRegistry.execute(node, context);
+                }
+            }
+
+            return this.collectExposureResults(plugin.workflow, context);
+        } catch (error: any) {
+            logger.error(`[PluginWorkflowEngine] Execution failed: ${error.message}`);
+            await this.cleanup(context.generatedFiles);
+            throw error;
+        }
+    }
+
+    private createContext(
+        plugin: IPlugin,
+        trajectoryId: string,
+        analysisId: string,
+        userConfig: Record<string, any>
+    ): ExecutionContext {
+        return {
             outputs: new Map(),
             userConfig,
             trajectoryId,
@@ -46,30 +121,15 @@ export default class PluginWorkflowEngine{
             pluginDir: path.join(this.pluginsDir, plugin.slug),
             workflow: plugin.workflow
         };
-
-        try{
-            const executionOrder = topologicalSort(plugin.workflow);
-            logger.info(`[PluginWorkflowEngine] Executing "${plugin.slug}" - ${executionOrder.length} nodes`);
-
-            for(const node of executionOrder){
-                await nodeRegistry.execute(node, context);
-            }
-
-            return this.collectExposureResults(plugin.workflow, context);
-        }catch(error: any){
-            logger.error(`[PluginWorkflowEngine] Execution failed: ${error.message}`);
-            await this.cleanup(context.generatedFiles);
-            throw error;
-        }
     }
 
-    private collectExposureResults(workflow: IWorkflow, context: ExecutionContext): ExposureResult[]{
+    private collectExposureResults(workflow: IWorkflow, context: ExecutionContext): ExposureResult[] {
         const results: ExposureResult[] = [];
         const exposureNodes = workflow.nodes.filter((node) => node.type === NodeType.EXPOSURE);
 
-        for(const exposureNode of exposureNodes){
+        for (const exposureNode of exposureNodes) {
             const exposureOutput = context.outputs.get(exposureNode.id);
-            if(!exposureOutput?.results) continue;
+            if (!exposureOutput?.results) continue;
 
             const schemaNode = findDescendantByType(exposureNode.id, workflow, NodeType.SCHEMA);
             const visualizersNode = findDescendantByType(exposureNode.id, workflow, NodeType.VISUALIZERS);
@@ -99,11 +159,11 @@ export default class PluginWorkflowEngine{
         return results;
     }
 
-    private async cleanup(files: string[]): Promise<void>{
-        for(const file of files){
-            try{
+    private async cleanup(files: string[]): Promise<void> {
+        for (const file of files) {
+            try {
                 await fs.unlink(file);
-            }catch{
+            } catch {
             }
         }
     }

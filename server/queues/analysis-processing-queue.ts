@@ -30,7 +30,7 @@ export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob>{
         const options: QueueOptions = {
             queueName: 'analysis-processing-queue',
             workerPath: path.resolve(__dirname, '../workers/analysis.ts'),
-            maxConcurrentJobs: 10,
+            maxConcurrentJobs: 5,
             cpuLoadThreshold: 80,
             ramLoadThreshold: 85,
         };

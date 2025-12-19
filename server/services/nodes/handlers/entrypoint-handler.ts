@@ -32,61 +32,65 @@ class EntrypointHandler implements NodeHandler {
         }
     };
 
-    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
+    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>> {
         const config = node.data.entrypoint!;
-        if(!config.binaryObjectPath) throw new Error('Entrypoint::Binary::NotUploaded');
+        if (!config.binaryObjectPath) throw new Error('Entrypoint::Binary::NotUploaded');
 
         const binaryPath = await this.getBinaryPath(config, context);
         const forEachNode = findParentByType(node.id, context.workflow, NodeType.FOREACH);
-        if(!forEachNode) throw new Error('Entrypoint must be connected to ForEach');
+        if (!forEachNode) throw new Error('Entrypoint must be connected to ForEach');
 
         const forEachOutput = context.outputs.get(forEachNode.id)!;
-        const items = (forEachOutput.items || []) as any[];
-        const results: any[] = [];
 
-        for(let i = 0; i < items.length; i++){
-            const item = items[i];
-            forEachOutput.currentValue = item;
-            forEachOutput.currentIndex = i;
-            forEachOutput.outputPath = path.join(os.tmpdir(), `${context.pluginSlug}-${context.analysisId}-${i}-${Date.now()}`);
+        // The currentValue and currentIndex are set by the workflow engine
+        // when a specific forEachItem is provided to the job
+        const item = forEachOutput.currentValue;
+        const index = forEachOutput.currentIndex ?? 0;
 
-            const resolvedArgs = resolveTemplate(config.arguments, context);
-            const argsArray = parseArgumentString(resolvedArgs);
+        if (item === undefined || item === null) {
+            throw new Error('Entrypoint::ForEach::NoCurrentItem - forEach item not set');
+        }
 
-            logger.info(`[EntrypointHandler] Running: ${config.binary} [${i + 1}/${items.length}]`);
+        // Set the output path for this item
+        forEachOutput.outputPath = path.join(os.tmpdir(), `${context.pluginSlug}-${context.analysisId}-${index}-${Date.now()}`);
 
-            try{
-                await this.cli.run(binaryPath, argsArray);
-                results.push({
-                    index: i,
+        const resolvedArgs = resolveTemplate(config.arguments, context);
+        const argsArray = parseArgumentString(resolvedArgs);
+
+        logger.info(`[EntrypointHandler] Running: ${config.binary}`);
+
+        try {
+            await this.cli.run(binaryPath, argsArray);
+            return {
+                results: [{
+                    index,
                     input: item,
                     success: true,
                     outputPath: forEachOutput.outputPath
-                });
-            }catch(error: any){
-                logger.error(`[EntrypointHandler] Failed for item ${i}: ${error.message}`);
-                results.push({
-                    index: i,
+                }],
+                successCount: 1,
+                failCount: 0
+            };
+        } catch (error: any) {
+            logger.error(`[EntrypointHandler] Failed: ${error.message}`);
+            return {
+                results: [{
+                    index,
                     input: item,
                     success: false,
                     error: error.message
-                });
-            }
-        }
-
-        return {
-            results,
-            successCount: results.filter((r) => r.success).length,
-            // TODO: total - successCount?? hahah
-            failCount: results.filter((r) => !r.success).length
+                }],
+                successCount: 0,
+                failCount: 1
+            };
         }
     }
 
-    private async getBinaryPath(config: any, context: ExecutionContext): Promise<string>{
+    private async getBinaryPath(config: any, context: ExecutionContext): Promise<string> {
         const hash = config.binaryHash;
-        if(hash){
+        if (hash) {
             const cachedPath = await binaryCache.get(hash);
-            if(cachedPath) return cachedPath;
+            if (cachedPath) return cachedPath;
         }
 
         logger.info(`[EntrypointHandler] Downloading binary: ${config.binaryObjectPath}`);
@@ -97,7 +101,7 @@ class EntrypointHandler implements NodeHandler {
         const writeStream = createWriteStream(binaryPath);
         await pipeline(stream, writeStream);
 
-        if(hash){
+        if (hash) {
             const buffer = await fs.readFile(binaryPath);
             await binaryCache.putBuffer(hash, buffer);
         }

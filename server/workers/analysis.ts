@@ -25,42 +25,46 @@ import { Analysis, Plugin } from '@/models';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import PluginWorkflowEngine from '@/services/plugin-workflow-engine';
 import mongoConnector from '@/utilities/mongo/mongo-connector';
-import path from 'node:path';
 import logger from '@/logger';
 import '@config/env';
 import '@/services/nodes/handlers';
 
-const processJob = async(job: AnalysisJob): Promise<void> =>{
-    if(!job){
+const processJob = async (job: AnalysisJob): Promise<void> => {
+    if (!job) {
         throw new Error('No job data received in message.');
     }
 
-    try{
+    try {
         logger.info(`[Worker #${process.pid}] Received job ${job.jobId}. Starting processing...`);
         const plugin = await Plugin.findOne({ slug: job.plugin });
-        if(!plugin){
+        if (!plugin) {
             throw new Error(`Plugin not found: ${job.plugin}`);
         }
 
         const engine = new PluginWorkflowEngine();
+        // Pass the specific forEach item for this job
         await engine.execute(
             plugin,
             job.trajectoryId,
             job.analysisId,
-            job.config || {}
+            job.config || {},
+            job.forEachItem,
+            job.forEachIndex
         );
 
-        // TODO: This should be more robust; besides, there's an existing function for this.
-        const frameNumber = parseInt(path.basename(job.inputFile), 10);
+        // Increment completed frames counter
+        const updated = await Analysis.findOneAndUpdate(
+            { _id: job.analysisId },
+            { $inc: { completedFrames: 1 } },
+            { new: true }
+        );
 
-        const update = {
-            $inc: { completedFrames: 1 },
-            $set: { lastFrameProcessed: frameNumber }
-        };
-
-        const updated = await Analysis.findOneAndUpdate({ _id: job.analysisId }, update, { new: true });
-        if(updated && updated.totalFrames && (updated.completedFrames ?? 0) >= updated.totalFrames) {
-            await Analysis.updateOne({ _id: job.analysisId }, { status: 'completed', finishedAt: new Date() });
+        // Mark as completed if all frames are done
+        if (updated && updated.totalFrames && (updated.completedFrames ?? 0) >= updated.totalFrames) {
+            await Analysis.updateOne(
+                { _id: job.analysisId },
+                { status: 'completed', finishedAt: new Date() }
+            );
         }
 
         parentPort?.postMessage({
@@ -68,9 +72,9 @@ const processJob = async(job: AnalysisJob): Promise<void> =>{
             jobId: job.jobId,
             result: null
         });
-        logger.info(`[Worker #${process.pid}] Finished job ${job.trajectoryId} successfully.`);
-    }catch(err: any){
-        logger.error(`[Worker #${process.pid}] An error occurred while processing trajectory ${job.trajectoryId}: ${err}`);
+        logger.info(`[Worker #${process.pid}] Finished job ${job.jobId} successfully.`);
+    } catch (err: any) {
+        logger.error(`[Worker #${process.pid}] An error occurred while processing job ${job.jobId}: ${err}`);
         await Analysis.updateOne({ _id: job.analysisId }, { status: 'failed', finishedAt: new Date() }).catch(() => { /** noop */ });
 
         parentPort?.postMessage({
@@ -81,11 +85,11 @@ const processJob = async(job: AnalysisJob): Promise<void> =>{
     }
 };
 
-const main = async() => {
-    try{
+const main = async () => {
+    try {
         await mongoConnector();
         logger.info(`[Worker #${process.pid}] Connected to MongoDB and ready to process jobs.`);
-    }catch(dbError){
+    } catch (dbError) {
         logger.error(`[Worker #${process.pid}] Failed to connect to MongoDB. Worker will not be able to process jobs: ${dbError}`);
         process.exit(1);
     }
