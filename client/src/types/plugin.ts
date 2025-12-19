@@ -91,7 +91,6 @@ export interface IExposureData {
     icon?: string;
     results: string;
     iterable?: string;
-    perAtomProperties?: string[];
 };
 
 export interface ISchemaData {
@@ -103,6 +102,7 @@ export interface IVisualizersData {
     raster?: boolean;
     listingTitle?: string;
     listing?: Record<string, string>;
+    perAtomProperties?: string[];
 };
 
 export interface IExportData {

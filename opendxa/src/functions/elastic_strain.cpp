@@ -11,7 +11,9 @@ void showUsage(const std::string& name) {
         << "  --caRatio <float>             c/a ratio for HCP/hex crystals. [default: 1.0]\n"
         << "  --pushForward                 Push to spatial frame (Euler strain). [default: false]\n"
         << "  --calcDeformationGradient     Compute deformation gradient F. [default: true]\n"
-        << "  --calcStrainTensors           Compute strain tensors. [default: true]\n";
+        << "  --calcStrainTensors           Compute strain tensors. [default: true]\n"
+        << "  --identificationMode <mode>   Structure identification mode (CNA|PTM). [default: PTM]\n"
+        << "  --rmsd <float>                RMSD cutoff for PTM. [default: 0.12]\n";
     printHelpOption();
 }
 
@@ -53,6 +55,18 @@ int main(int argc, char* argv[]) {
         getBool(opts, "--calcDeformationGradient", true),
         getBool(opts, "--calcStrainTensors", true)
     );
+
+    std::string modeStr = getString(opts, "--identificationMode", "PTM");
+    if(modeStr == "CNA"){
+        analyzer.setIdentificationMode(StructureAnalysis::Mode::CNA);
+    }else if(modeStr == "PTM"){
+        analyzer.setIdentificationMode(StructureAnalysis::Mode::PTM);
+    }else{
+        spdlog::warn("Unknown identification mode '{}', defaulting to PTM.", modeStr);
+        analyzer.setIdentificationMode(StructureAnalysis::Mode::PTM);
+    }
+
+    analyzer.setRmsd(getDouble(opts, "--rmsd", 0.12));
     
     spdlog::info("Starting elastic strain analysis...");
     json result = analyzer.compute(frame, outputBase);

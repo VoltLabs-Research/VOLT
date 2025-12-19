@@ -134,10 +134,6 @@ const ExposureDataSchema = new Schema({
     },
     iterable: {
         type: String
-    },
-    perAtomProperties: {
-        type: [String],
-        default: []
     }
 });
 
@@ -163,6 +159,10 @@ const VisualizersDataSchema = new Schema({
     },
     listing: {
         type: Schema.Types.Mixed
+    },
+    perAtomProperties: {
+        type: [String],
+        default: []
     }
 }, { _id: false });
 

@@ -427,58 +427,21 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
             _elasticCalcStrainTensors,
             _elasticLatticeConstant,
             _elasticCaRatio,
-            _elasticPushForward
+            _elasticPushForward,
+            _identificationMode,
+            _rmsd
         );
 
         engine.perform();
 
-        json strainJson;
-        strainJson["elastic_strain"] = json::array();
-
-        auto volProp = engine.volumetricStrains();
-        auto strainProp = engine.strainTensors();
-        auto defgradProp = engine.deformationGradients();
-
-        for(std::size_t i = 0; i < frame.positions.size(); i++){
-            json a;
-            a["id"] = frame.ids[i];
-            a["volumetric_strain"] = volProp ? volProp->getDouble(i) : 0.0;
-            if(strainProp){
-                double xx = strainProp->getDoubleComponent(i, 0);
-                double yy = strainProp->getDoubleComponent(i, 1);
-                double zz = strainProp->getDoubleComponent(i, 2);
-                double yz = strainProp->getDoubleComponent(i, 3);
-                double xz = strainProp->getDoubleComponent(i, 4);
-                double xy = strainProp->getDoubleComponent(i, 5);
-                a["strain_tensor"] = { xx, yy, zz, xy, xz, yz };
-            }
-
-            if(defgradProp){
-                double fxx = defgradProp->getDoubleComponent(i, 0);
-                double fyx = defgradProp->getDoubleComponent(i, 1);
-                double fzx = defgradProp->getDoubleComponent(i, 2);
-                double fxy = defgradProp->getDoubleComponent(i, 3);
-                double fyy = defgradProp->getDoubleComponent(i, 4);
-                double fzy = defgradProp->getDoubleComponent(i, 5);
-                double fxz = defgradProp->getDoubleComponent(i, 6);
-                double fyz = defgradProp->getDoubleComponent(i, 7);
-                double fzz = defgradProp->getDoubleComponent(i, 8);
-                a["deformation_gradient"] = { fxx, fyx, fzx, fxy, fyy, fzy, fxz, fyz, fzz };
-            }
-
-            strainJson["elastic_strain"].push_back(a);
+        if(!outputFile.empty()){
+            std::string path = outputFile + "_elastic_strain.msgpack";
+            _jsonExporter.writeElasticStrainMsgpack(engine, frame.ids, path);
+            spdlog::info("Elastic strain data written to {}", path);
+            result["elastic_strain_file"] = path;
         }
 
         result["is_failed"] = false;
-        result["elastic_strain"] = strainJson;
-
-        if(!outputFile.empty()){
-            std::string path = outputFile + "_elastic_strain.json";
-            std::ofstream ofs(path);
-            ofs << std::setw(2) << strainJson << std::endl;
-            ofs.close();
-            spdlog::info("Elastic strain data written to {}", path);
-        }
 
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(

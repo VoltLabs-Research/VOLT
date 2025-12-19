@@ -16,6 +16,7 @@ import {
     VisualizersEditor,
     ExportEditor
 } from './editors';
+import './NodeEditor.css';
 
 interface NodeEditorProps {
     node: Node;
@@ -46,7 +47,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ node }) => {
     };
 
     return (
-        <Container className='p-2'>
+        <Container className='p-2 node-editor-container'>
             <Container>
                 {EditorComponent ? (
                     <EditorComponent node={node} />

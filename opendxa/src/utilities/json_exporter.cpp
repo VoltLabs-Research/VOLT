@@ -13,6 +13,7 @@
 #include <future>
 #include <mutex>
 #include <opendxa/utilities/msgpack_writer.h>
+#include <opendxa/analysis/elastic_strain.h>
 
 namespace OpenDXA {
 
@@ -1363,4 +1364,78 @@ json frameToJson(const LammpsParser::Frame& frame, const BurgersLoopBuilder* tra
     return exporter.getAtomsData(frame, tracer);
 }
 
+}
+bool OpenDXA::DXAJsonExporter::writeElasticStrainMsgpack(const OpenDXA::ElasticStrainEngine& engine,
+                                                const std::vector<int>& ids,
+                                                const std::string& filepath){
+    try{
+        std::ofstream of(filepath, std::ios::binary);
+        if(!of.is_open()) return false;
+        OpenDXA::MsgpackWriter w(of);
+
+        auto volumetric = engine.volumetricStrains();
+        auto strainTensor = engine.strainTensors();
+        auto defGrad = engine.deformationGradients();
+
+        size_t n = ids.size();
+
+        // Summary stats
+        double totalVolumetric = 0.0;
+        int count = 0;
+        for(size_t i=0; i<n; ++i){
+            if(volumetric){
+                totalVolumetric += volumetric->getDouble(i);
+            }
+            count++;
+        }
+
+        w.write_map_header(3); 
+
+        w.write_key("metadata");
+        w.write_map_header(1);
+        w.write_key("count"); w.write_uint(n);
+        
+        w.write_key("summary");
+        w.write_map_header(1);
+        w.write_key("average_volumetric_strain"); w.write_double(count > 0 ? totalVolumetric / count : 0.0);
+
+        w.write_key("data");
+        w.write_array_header(static_cast<uint32_t>(n));
+
+        for(size_t i=0; i<n; ++i){
+            // Access properties by index i
+            
+            int mapSize = 1; // id
+            if(volumetric) mapSize++;
+            if(strainTensor) mapSize++;
+            if(defGrad) mapSize++;
+
+            w.write_map_header(mapSize);
+            w.write_key("id"); w.write_uint(ids[i]); // Write the tag
+
+            if(volumetric){
+                w.write_key("volumetric_strain");
+                w.write_double(volumetric->getDouble(i)); // Access by index
+            }
+
+            if(strainTensor){
+                w.write_key("strain_tensor");
+                // 6 components for symmetric tensor
+                w.write_array_header(6);
+                for(int c=0; c<6; ++c) w.write_double(strainTensor->getDoubleComponent(i, c));
+            }
+
+            if(defGrad){
+                w.write_key("deformation_gradient");
+                // 9 components for matrix3
+                w.write_array_header(9);
+                for(int c=0; c<9; ++c) w.write_double(defGrad->getDoubleComponent(i, c));
+            }
+        }
+
+        of.flush();
+        return true;
+    }catch(...){
+        return false;
+    }
 }

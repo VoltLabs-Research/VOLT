@@ -23,7 +23,9 @@ public:
         bool calculateStrainTensors,
         double latticeConstant,
         double caRatio,
-        bool pushStrainTensorsForward
+        bool pushStrainTensorsForward,
+        StructureAnalysis::Mode identificationMode = StructureAnalysis::Mode::PTM,
+        double rmsd = 0.12
     );
 
     void perform();

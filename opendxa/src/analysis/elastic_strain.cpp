@@ -16,7 +16,9 @@ ElasticStrainEngine::ElasticStrainEngine(
     bool calculateStrainTensors,
     double latticeConstant,
     double caRatio,
-    bool pushStrainTensorsForward
+    bool pushStrainTensorsForward,
+    StructureAnalysis::Mode identificationMode,
+    double rmsd
 )
     : _latticeConstant(latticeConstant)
     , _axialScaling(1.0)
@@ -30,8 +32,8 @@ ElasticStrainEngine::ElasticStrainEngine(
                std::move(preferredCrystalOrientations))
     , _structureAnalysis(_context,
                          /*identifyPlanarDefects*/ false,
-                         StructureAnalysis::Mode::CNA,
-                         /*rmsd*/ 0.0f)
+                         identificationMode,
+                         rmsd)
     , _volumetricStrains(std::make_unique<ParticleProperty>(
           positions->size(), DataType::Double, 1, 0, false))
     , _strainTensors(calculateStrainTensors
@@ -56,6 +58,13 @@ ElasticStrainEngine::ElasticStrainEngine(
 void ElasticStrainEngine::perform(){
     _structureAnalysis.identifyStructures();
 
+    auto stats = _structureAnalysis.getNamedStructureStatistics();
+    spdlog::info("Structure Identification Results:");
+    for(const auto& [name, count] : stats){
+        spdlog::info("  {}: {}", name, count);
+    }
+    spdlog::info("Input Crystal Structure (Expected): {}", _inputCrystalStructure);
+
     ClusterConnector clusterConnector(_structureAnalysis, _context);
     clusterConnector.buildClusters();
     clusterConnector.connectClusters();
@@ -69,7 +78,6 @@ void ElasticStrainEngine::perform(){
 
         Cluster* localCluster = _structureAnalysis.atomCluster(static_cast<int>(particleIndex));
         if(!localCluster || localCluster->id == 0){
-            // Marca como inválido / sin strain
             _volumetricStrains->setDouble(particleIndex, 0.0);
             if(_strainTensors){
                 for(size_t c = 0; c < 6; ++c){
@@ -115,6 +123,7 @@ void ElasticStrainEngine::perform(){
 
         assert(parentCluster->structure == _inputCrystalStructure);
 
+        // TODO: PTM already provides this information. We should use it if it is available.
         Matrix_3<double> orientationV = Matrix_3<double>::Zero();
         Matrix_3<double> orientationW = Matrix_3<double>::Zero();
 
@@ -150,7 +159,7 @@ void ElasticStrainEngine::perform(){
             }
         }
 
-        // 5) Strain tensor
+        // Strain tensor
         SymmetricTensor2T<double> elasticStrain;
         if(!_pushStrainTensorsForward){
             // Green strain (material frame)
@@ -174,7 +183,7 @@ void ElasticStrainEngine::perform(){
             _strainTensors->setSymmetricTensor2(particleIndex, (SymmetricTensor2)elasticStrain);
         }
 
-        // 6) Volumetric strain = tr(ε)/3
+        // Volumetric strain = tr(ε)/3
         double volumetricStrain =
             (elasticStrain(0,0) + elasticStrain(1,1) + elasticStrain(2,2)) / 3.0;
         assert(std::isfinite(volumetricStrain));

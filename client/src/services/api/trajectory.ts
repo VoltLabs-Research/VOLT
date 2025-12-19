@@ -143,6 +143,48 @@ const trajectoryApi = {
         };
     },
 
+    /**
+     * Get merged atoms: LAMMPS dump data + per-atom properties from plugin exports
+     */
+    async getMergedAtoms(
+        trajectoryId: string,
+        analysisId: string,
+        params: { timestep: number; exposureId: string; page?: number; pageSize?: number }
+    ): Promise<{
+        data: any[];
+        properties: string[];
+        page: number;
+        pageSize: number;
+        total: number;
+        hasMore: boolean;
+    } | null> {
+        const response = await api.get(
+            `/trajectories/${trajectoryId}/analysis/${analysisId}/merged-atoms`,
+            {
+                params: {
+                    timestep: params.timestep,
+                    exposureId: params.exposureId,
+                    page: params?.page ?? 1,
+                    pageSize: params?.pageSize ?? 1000
+                }
+            }
+        );
+
+        const result = response.data;
+        if (!result || result.status !== 'success') {
+            return null;
+        }
+
+        return {
+            data: result.data,
+            properties: result.properties,
+            page: result.page,
+            pageSize: result.pageSize,
+            total: result.total,
+            hasMore: result.hasMore
+        };
+    },
+
     vfs: {
         async list(params: { connectionId: string; path: string }): Promise<FsListResponse> {
             const response = await api.get<{ status: 'success'; data: FsListResponse }>('/trajectory-vfs/', { params });

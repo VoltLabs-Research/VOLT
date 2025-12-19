@@ -348,6 +348,12 @@ export default class PluginsController extends BaseController<IPlugin> {
         const visualizersNode = findVisualizerForExposure(listingSlug);
         const exposureNodes = nodes.filter((node: IWorkflowNode) => node.type === NodeType.EXPOSURE);
 
+        // Find the primary exposure node ID for this listing (the one matching listingSlug)
+        const primaryExposureNode = nodes.find((n: IWorkflowNode) =>
+            n.type === NodeType.EXPOSURE && n.data?.exposure?.name === listingSlug
+        );
+        const primaryExposureId = primaryExposureNode?.id;
+
         const visualizersData = visualizersNode?.data?.visualizers || {};
         const displayName = listingSlug;
 
@@ -466,6 +472,7 @@ export default class PluginsController extends BaseController<IPlugin> {
                     timestep: entry.timestep,
                     analysisId: entry.analysisId,
                     trajectoryId: entry.trajectoryId,
+                    exposureId: primaryExposureId,
                     trajectoryName: analysis?.trajectory?.name || entry.trajectoryId,
                     ...resolveRow(columns, context)
                 };

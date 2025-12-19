@@ -13,9 +13,9 @@ interface VisualizersEditorProps {
 
 const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
-    const visualizersData = (node.data?.visualizers || { canvas: false, raster: false, listing: {} }) as IVisualizersData;
+    const visualizersData = (node.data?.visualizers || { canvas: false, raster: false, listing: {}, perAtomProperties: [] }) as IVisualizersData;
 
-    const { canvas = false, raster = false, listing = {} } = visualizersData;
+    const { canvas = false, raster = false, listing = {}, perAtomProperties = [] } = visualizersData;
 
     const updateVisualizer = useCallback((field: string, value: any) => {
         updateNodeData(node.id, { visualizers: { ...visualizersData, [field]: value } });
@@ -27,6 +27,17 @@ const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
 
     const { entries, handleAdd, handleRemove, handleKeyChange, handleValueChange } =
         useKeyValueHandlers(updateListing, listing, 'column', 'Column Title');
+
+    // Handle perAtomProperties as comma-separated string
+    const perAtomPropertiesStr = (perAtomProperties || []).join(', ');
+
+    const handlePerAtomPropertiesChange = useCallback((_key: string, value: string) => {
+        const props = value
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean);
+        updateVisualizer('perAtomProperties', props);
+    }, [updateVisualizer]);
 
     return (
         <>
@@ -44,6 +55,14 @@ const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
                     fieldType='checkbox'
                     fieldValue={raster}
                     onFieldChange={(_, value) => updateVisualizer('raster', value)}
+                />
+                <FormField
+                    label='Per-Atom Properties'
+                    fieldKey='perAtomProperties'
+                    fieldType='input'
+                    fieldValue={perAtomPropertiesStr}
+                    onFieldChange={handlePerAtomPropertiesChange}
+                    inputProps={{ placeholder: 'shear_strain, volumetric_strain' }}
                 />
             </CollapsibleSection>
 
@@ -68,3 +87,4 @@ const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
 };
 
 export default VisualizersEditor;
+

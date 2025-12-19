@@ -123,23 +123,24 @@ const DashboardLayout = () => {
         fetchPlugins();
     }, []);
 
-    // Group plugins with their exposures that have listings
+    // Group plugins with their exposures that have listings or perAtomProperties
     const pluginsWithExposures = useMemo(() => {
         const result: Array<{
             pluginName: string;
             pluginSlug: string;
-            exposures: Array<{ name: string; slug: string }>;
+            exposures: Array<{ name: string; slug: string; hasPerAtomProperties: boolean }>;
         }> = [];
 
         plugins.forEach(plugin => {
             if (!plugin.workflow?.nodes || !plugin.workflow?.edges || !plugin.slug) return;
             const { nodes, edges } = plugin.workflow;
 
-            // Find visualizer nodes with listings
+            // Find visualizer nodes with listings OR perAtomProperties
             const visualizerNodes = nodes.filter(node =>
-                node.type === NodeType.VISUALIZERS &&
-                node.data?.visualizers?.listing &&
-                Object.keys(node.data.visualizers.listing).length > 0
+                node.type === NodeType.VISUALIZERS && (
+                    (node.data?.visualizers?.listing && Object.keys(node.data.visualizers.listing).length > 0) ||
+                    (node.data?.visualizers?.perAtomProperties && node.data.visualizers.perAtomProperties.length > 0)
+                )
             );
 
             if (visualizerNodes.length === 0) return;
@@ -157,14 +158,17 @@ const DashboardLayout = () => {
                 return findConnectedExposure(sourceNode.id, depth + 1);
             };
 
-            const exposures: Array<{ name: string; slug: string }> = [];
+            const exposures: Array<{ name: string; slug: string; hasPerAtomProperties: boolean }> = [];
             const seenExposures = new Set<string>();
 
             visualizerNodes.forEach(vizNode => {
                 const exposureName = findConnectedExposure(vizNode.id);
                 if (exposureName && !seenExposures.has(exposureName)) {
                     seenExposures.add(exposureName);
-                    exposures.push({ name: exposureName, slug: exposureName });
+                    const hasPerAtomProperties = Boolean(
+                        vizNode.data?.visualizers?.perAtomProperties?.length
+                    );
+                    exposures.push({ name: exposureName, slug: exposureName, hasPerAtomProperties });
                 }
             });
 

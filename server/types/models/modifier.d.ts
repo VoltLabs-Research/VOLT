@@ -93,7 +93,6 @@ export interface IExposureData {
     name: string;
     results: string;
     iterable?: string;
-    perAtomProperties?: string[];
 };
 
 export interface ISchemaData {
@@ -104,6 +103,7 @@ export interface IVisualizersData {
     canvas?: boolean;
     raster?: boolean;
     listing?: Record<string, string>;
+    perAtomProperties?: string[];
 };
 
 export interface IExportData {
@@ -161,7 +161,7 @@ export interface IPluginModel extends Model<IPlugin> {
     getNodesByType(workflow: IWorkflow, type: NodeType): IWorkflowNode[];
 };
 
-export interface IPlugin extends Document{
+export interface IPlugin extends Document {
     slug: string;
     workflow: IWorkflow;
     status: PluginStatus;

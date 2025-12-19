@@ -17,6 +17,8 @@ namespace OpenDXA{
 
 using json = nlohmann::json;
 
+class ElasticStrainEngine;
+
 class DXAJsonExporter{
 public:
     explicit DXAJsonExporter(const std::string& filename = "")
@@ -76,6 +78,10 @@ public:
     bool writeAtomicStrainMsgpack(const AtomicStrainModifier::AtomicStrainEngine& engine,
                                   const std::vector<int>& ids,
                                   const std::string& filepath);
+
+    bool writeElasticStrainMsgpack(const ElasticStrainEngine& engine,
+                                   const std::vector<int>& ids,
+                                   const std::string& filepath);
 
     json getInterfaceMeshData(
         const InterfaceMesh* interfaceMesh,

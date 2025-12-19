@@ -7,7 +7,7 @@ import analysisConfigApi from '@/services/api/analysis-config';
 import { Skeleton } from '@mui/material';
 import usePluginStore from '@/stores/plugins/plugin';
 import useTeamStore from '@/stores/team/team';
-import { RiDeleteBin6Line } from 'react-icons/ri';
+import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import PerFrameListingModal from '@/components/organisms/common/PerFrameListingModal';
 import { formatCellValue, normalizeRows, type ColumnDef } from '@/utilities/plugins/expression-utils';
 import Select from '@/components/atoms/form/Select';
@@ -174,6 +174,18 @@ const PluginListing = () => {
 
     const getMenuOptions = useCallback((item: any) => {
         const options: any[] = [];
+
+        // View atoms - for items with per-atom data
+        if (item?.trajectoryId && item?.analysisId && item?.exposureId && item?.timestep !== undefined) {
+            options.push([
+                'View Atoms',
+                RiEyeLine,
+                () => navigate(
+                    `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms/${item.exposureId}?timestep=${item.timestep}`
+                )
+            ]);
+        }
+
         if (item?.analysisId) {
             options.push([
                 'Delete Analysis',
@@ -182,7 +194,7 @@ const PluginListing = () => {
             ]);
         }
         return options;
-    }, [handleMenuAction]);
+    }, [handleMenuAction, navigate]);
 
     const handleTrajectoryChange = (newTrajId: string) => {
         if (newTrajId) {
