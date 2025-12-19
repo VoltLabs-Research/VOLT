@@ -18,6 +18,7 @@ namespace OpenDXA{
 using json = nlohmann::json;
 
 class ElasticStrainEngine;
+class MsgpackWriter;
 
 class DXAJsonExporter{
 public:
@@ -39,49 +40,16 @@ public:
 
     json exportClusterGraphToJson(const ClusterGraph* graph);
     json exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo = false, const SimulationCell* simulationCell = nullptr);
-    // Streaming writers: write directly to MessagePack to avoid large in-memory JSON
-    bool writeAtomsMsgpack(const LammpsParser::Frame& frame,
-                           const BurgersLoopBuilder* tracer,
-                           const std::vector<int>* structureTypes,
-                           const std::string& filepath,
-                           int threadCount = 1);
+    static inline uint32_t checked_u32_size(std::size_t n){
+        if(n > static_cast<std::size_t>(std::numeric_limits<uint32_t>::max())){
+            throw std::runtime_error("JSON container too large for msgpack u32 header.");
+        }
+        return static_cast<uint32_t>(n);
+    }
 
-    bool writeAtomsSimpleMsgpack(const LammpsParser::Frame& frame,
-                                 const StructureAnalysis& structureAnalysis,
-                                 const std::vector<int>* structureTypes,
-                                 const std::string& filepath);
+    bool writeJsonMsgpackToFile(const json& data, const std::string& filePath, bool sortKeys = true);
 
-    bool writeDislocationsMsgpack(const DislocationNetwork* network,
-                                  const SimulationCell* simulationCell,
-                                  const std::string& filepath,
-                                  bool includeDetailedInfo = false,
-                                  int threadCount = 1);
 
-    bool writeInterfaceMeshMsgpack(const InterfaceMesh* interfaceMesh,
-                                   const std::string& filepath,
-                                   bool includeTopologyInfo = true);
-
-    bool writeDefectMeshMsgpack(const HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& defectMesh,
-                                const StructureAnalysis& structureAnalysis,
-                                const std::string& filepath);
-
-    bool writeStructureStatsMsgpack(const StructureAnalysis& structureAnalysis,
-                                    const std::string& filepath);
-
-    bool writeSimulationCellMsgpack(const SimulationCell& cell,
-                                    const std::string& filepath);
-
-    bool writeRdfMsgpack(const std::vector<double>& rdfX,
-                         const std::vector<double>& rdfY,
-                         const std::string& filepath);
-
-    bool writeAtomicStrainMsgpack(const AtomicStrainModifier::AtomicStrainEngine& engine,
-                                  const std::vector<int>& ids,
-                                  const std::string& filepath);
-
-    bool writeElasticStrainMsgpack(const ElasticStrainEngine& engine,
-                                   const std::vector<int>& ids,
-                                   const std::string& filepath);
 
     json getInterfaceMeshData(
         const InterfaceMesh* interfaceMesh,
@@ -90,6 +58,9 @@ public:
     );
     
     json getAtomsData(const LammpsParser::Frame& frame, const BurgersLoopBuilder* tracer, const std::vector<int>* structureTypes = nullptr);
+    json getAtomsDataSimple(const LammpsParser::Frame& frame, const StructureAnalysis& structureAnalysis, const std::vector<int>* structureTypes = nullptr);
+    json getAtomicStrainData(const AtomicStrainModifier::AtomicStrainEngine& engine, const std::vector<int>& ids);
+    json getElasticStrainData(const ElasticStrainEngine& engine, const std::vector<int>& ids);
     json getProcessingTime();
     json getMetadata();
     
@@ -105,10 +76,6 @@ public:
 
     bool saveToFile(const json& data, const std::string& filepath);
 
-private:
-    std::string _filename;
-    std::chrono::high_resolution_clock::time_point _startTime;
-
     template <typename MeshType>
     json getMeshData(
         const MeshType& mesh,
@@ -116,6 +83,12 @@ private:
         bool includeTopologyInfo,
         const InterfaceMesh* interfaceMeshForTopology
     );
+
+private:
+    std::string _filename;
+    std::chrono::high_resolution_clock::time_point _startTime;
+
+
     
     json pointToJson(const Point3& point);
     json vectorToJson(const Vector3& vector);
@@ -134,6 +107,8 @@ private:
     int countDanglingSegments(const DislocationNetwork* network);
     double calculateAverageVertexDegree(const InterfaceMesh* interfaceMesh);
     double calculateAngle(const Vector3& a, const Vector3& b);
+
+    void writeJsonAsMsgpack(MsgpackWriter& writer, const json& data, bool sortKeys = true);
 };
 
 // TODO: ?

@@ -381,6 +381,175 @@ json DXAJsonExporter::getAtomsData(
     return json(groupedAtoms);
 }
 
+json DXAJsonExporter::getAtomsDataSimple(
+    const LammpsParser::Frame& frame,
+    const StructureAnalysis& structureAnalysis,
+    const std::vector<int>* structureTypes
+){
+    std::map<std::string, json> groupedAtoms;
+
+    for(size_t i = 0; i < frame.natoms; ++i){
+        int structureType = 0;
+        if(structureTypes && i < structureTypes->size()){
+            structureType = (*structureTypes)[i];
+        }
+
+        std::string typeName = structureAnalysis.getStructureTypeName(structureType);
+        
+        json atomJson;
+        atomJson["id"] = i;
+        
+        if(i < frame.positions.size()){
+            const auto& pos = frame.positions[i];
+            atomJson["pos"] = {pos.x(), pos.y(), pos.z()};
+        }else{
+            atomJson["pos"] = {0.0, 0.0, 0.0};
+        }
+        
+        if(!groupedAtoms[typeName].is_array()){
+            groupedAtoms[typeName] = json::array();
+        }
+
+        groupedAtoms[typeName].push_back(atomJson);
+    }
+    
+    return json(groupedAtoms);
+}
+
+json DXAJsonExporter::getAtomicStrainData(
+    const AtomicStrainModifier::AtomicStrainEngine& engine,
+    const std::vector<int>& ids
+){
+    json result;
+    
+    auto shear = engine.shearStrains();
+    auto volumetric = engine.volumetricStrains();
+    auto strainProp = engine.strainTensors();
+    auto defgrad = engine.deformationGradients();
+    auto D2minProp = engine.nonaffineSquaredDisplacements();
+    auto invalid = engine.invalidParticles();
+
+    size_t n = ids.size();
+    
+    // Calculate summary stats
+    double totalShear = 0.0;
+    double totalVolumetric = 0.0;
+    double maxShear = 0.0;
+    int count = 0;
+
+    for(size_t i = 0; i < n; ++i){
+        if(shear){
+            double s = shear->getDouble(i);
+            totalShear += s;
+            if(s > maxShear) maxShear = s;
+        }
+        if(volumetric) totalVolumetric += volumetric->getDouble(i);
+        count++;
+    }
+
+    result["metadata"] = {
+        {"count", n},
+        {"num_invalid_particles", engine.numInvalidParticles()}
+    };
+
+    result["summary"] = {
+        {"average_shear_strain", count > 0 ? totalShear / count : 0.0},
+        {"average_volumetric_strain", count > 0 ? totalVolumetric / count : 0.0},
+        {"max_shear_strain", maxShear}
+    };
+
+    json dataArray = json::array();
+    for(size_t i = 0; i < n; ++i){
+        json atomData;
+        atomData["id"] = ids[i];
+        atomData["shear_strain"] = shear ? shear->getDouble(i) : 0.0;
+        atomData["volumetric_strain"] = volumetric ? volumetric->getDouble(i) : 0.0;
+
+        if(strainProp){
+            json tensor = json::array();
+            for(int k = 0; k < 6; ++k) tensor.push_back(strainProp->getDoubleComponent(i, k));
+            atomData["strain_tensor"] = tensor;
+        }
+
+        if(defgrad){
+            json grad = json::array();
+            for(int k = 0; k < 9; ++k) grad.push_back(defgrad->getDoubleComponent(i, k));
+            atomData["deformation_gradient"] = grad;
+        }
+
+        if(D2minProp){
+            atomData["D2min"] = D2minProp->getDouble(i);
+        }
+
+        if(invalid){
+            atomData["invalid"] = (invalid->getInt(i) != 0);
+        }
+
+        dataArray.push_back(atomData);
+    }
+
+    result["data"] = dataArray;
+    return result;
+}
+
+json DXAJsonExporter::getElasticStrainData(
+    const ElasticStrainEngine& engine,
+    const std::vector<int>& ids
+){
+    json result;
+    
+    auto volumetric = engine.volumetricStrains();
+    auto strainTensor = engine.strainTensors();
+    auto defGrad = engine.deformationGradients();
+
+    size_t n = ids.size();
+
+    // Summary stats
+    double totalVolumetric = 0.0;
+    int count = 0;
+    for(size_t i = 0; i < n; ++i){
+        if(volumetric){
+            totalVolumetric += volumetric->getDouble(i);
+        }
+        count++;
+    }
+
+    result["metadata"] = {
+        {"count", n}
+    };
+
+    result["summary"] = {
+        {"average_volumetric_strain", count > 0 ? totalVolumetric / count : 0.0}
+    };
+
+    json dataArray = json::array();
+    for(size_t i = 0; i < n; ++i){
+        json atomData;
+        atomData["id"] = ids[i];
+
+        if(volumetric){
+            atomData["volumetric_strain"] = volumetric->getDouble(i);
+        }
+
+        if(strainTensor){
+            json tensor = json::array();
+            for(int c = 0; c < 6; ++c) tensor.push_back(strainTensor->getDoubleComponent(i, c));
+            atomData["strain_tensor"] = tensor;
+        }
+
+        if(defGrad){
+            json grad = json::array();
+            for(int c = 0; c < 9; ++c) grad.push_back(defGrad->getDoubleComponent(i, c));
+            atomData["deformation_gradient"] = grad;
+        }
+
+        dataArray.push_back(atomData);
+    }
+
+    result["data"] = dataArray;
+    return result;
+}
+
 json DXAJsonExporter::exportClusterGraphToJson(const ClusterGraph* graph){
     json clusterGraphJson;
 
@@ -467,305 +636,6 @@ bool DXAJsonExporter::saveToFile(const json& data, const std::string& filepath){
     }
 }
 
-// Stream atoms grouped by structure type to MessagePack without building a giant JSON object.
-// Output schema matches current server expectations: a map<string, array<atom>> where atom has id, pos[, ptm_quaternion].
-bool DXAJsonExporter::writeAtomsMsgpack(const LammpsParser::Frame& frame,
-                           const BurgersLoopBuilder* tracer,
-                           const std::vector<int>* structureTypes,
-                           const std::string& filepath,
-                           int threadCount){
-    try{
-        std::ofstream of(filepath, std::ios::binary);
-        if(!of.is_open()) return false;
-
-        // Precompute type names and counts in a single pass without storing per-atom JSON.
-        std::vector<std::string> typeNames(frame.natoms);
-        std::unordered_map<std::string, uint32_t> counts;
-        typeNames.reserve(frame.natoms);
-
-        for(size_t i = 0; i < frame.natoms; ++i){
-            int t = 0;
-            if(structureTypes && i < structureTypes->size())
-                t = (*structureTypes)[i];
-            const std::string name = tracer->mesh().structureAnalysis().getStructureTypeName(t);
-            typeNames[i] = name;
-            counts[name]++;
-        }
-
-        // Write a map with keys = typeNames and values = arrays with fixed size counts[name].
-        MsgpackWriter w(of);
-        w.write_map_header(static_cast<uint32_t>(counts.size()));
-
-        // For deterministic order, iterate keys sorted to keep stable output.
-        std::vector<std::string> keys;
-        keys.reserve(counts.size());
-        for(auto& kv : counts) keys.push_back(kv.first);
-        std::sort(keys.begin(), keys.end());
-
-        // Build index lists per type lazily to avoid holding all atoms: we do one type at a time.
-        for(const auto& key : keys){
-            w.write_key(key);
-            const uint32_t size = counts[key];
-            w.write_array_header(size);
-
-            // Stream atoms of this type by scanning once. To speed up with large data, do chunked parallel gather of indices.
-            // We avoid storing positions, we write each atom straight away.
-            uint32_t written = 0;
-            const size_t N = frame.natoms;
-            const size_t chunk = 1 << 20; // 1M scan window
-            for(size_t start = 0; start < N && written < size; start += chunk){
-                size_t end = std::min(N, start + chunk);
-                for(size_t i = start; i < end && written < size; ++i){
-                    if(typeNames[i] != key) continue;
-                    // atom object: { id, pos[, ptm_quaternion] }
-                    w.write_map_header(2); // id, pos (PTM quat omitted for now to keep memory low and avoid call cost)
-                    w.write_key("id");
-                    w.write_uint(static_cast<uint64_t>(i));
-                    w.write_key("pos");
-                    w.write_array_header(3);
-                    if(i < frame.positions.size()){
-                        const auto& p = frame.positions[i];
-                        w.write_double(p.x());
-                        w.write_double(p.y());
-                        w.write_double(p.z());
-                    }else{
-                        w.write_double(0.0); w.write_double(0.0); w.write_double(0.0);
-                    }
-                    written++;
-                }
-            }
-        }
-        of.flush();
-        return true;
-    }catch(...){
-        return false;
-    }
-}
-
-// Simplified version of writeAtomsMsgpack that doesn't require tracer, only StructureAnalysis
-bool DXAJsonExporter::writeAtomsSimpleMsgpack(const LammpsParser::Frame& frame,
-                                              const StructureAnalysis& structureAnalysis,
-                                              const std::vector<int>* structureTypes,
-                                              const std::string& filepath){
-    try{
-        std::ofstream of(filepath, std::ios::binary);
-        if(!of.is_open()) return false;
-
-        // Precompute type names and counts in a single pass without storing per-atom JSON.
-        std::vector<std::string> typeNames(frame.natoms);
-        std::unordered_map<std::string, uint32_t> counts;
-        typeNames.reserve(frame.natoms);
-
-        for(size_t i = 0; i < frame.natoms; ++i){
-            int t = 0;
-            if(structureTypes && i < structureTypes->size())
-                t = (*structureTypes)[i];
-            const std::string name = structureAnalysis.getStructureTypeName(t);
-            typeNames[i] = name;
-            counts[name]++;
-        }
-
-        // Write a map with keys = typeNames and values = arrays with fixed size counts[name].
-        MsgpackWriter w(of);
-        w.write_map_header(static_cast<uint32_t>(counts.size()));
-
-        // For deterministic order, iterate keys sorted to keep stable output.
-        std::vector<std::string> keys;
-        keys.reserve(counts.size());
-        for(auto& kv : counts) keys.push_back(kv.first);
-        std::sort(keys.begin(), keys.end());
-
-        // Build index lists per type lazily to avoid holding all atoms: we do one type at a time.
-        for(const auto& key : keys){
-            w.write_key(key);
-            const uint32_t size = counts[key];
-            w.write_array_header(size);
-
-            // Stream atoms of this type by scanning once.
-            uint32_t written = 0;
-            const size_t N = frame.natoms;
-            const size_t chunk = 1 << 20; // 1M scan window
-            for(size_t start = 0; start < N && written < size; start += chunk){
-                size_t end = std::min(N, start + chunk);
-                for(size_t i = start; i < end && written < size; ++i){
-                    if(typeNames[i] != key) continue;
-                    // atom object: { id, pos }
-                    w.write_map_header(2); // id, pos
-                    w.write_key("id");
-                    w.write_uint(static_cast<uint64_t>(i));
-                    w.write_key("pos");
-                    w.write_array_header(3);
-                    if(i < frame.positions.size()){
-                        const auto& p = frame.positions[i];
-                        w.write_double(p.x());
-                        w.write_double(p.y());
-                        w.write_double(p.z());
-                    }else{
-                        w.write_double(0.0);
-                        w.write_double(0.0);
-                        w.write_double(0.0);
-                    }
-                    written++;
-                }
-            }
-        }
-
-        of.flush();
-        return true;
-    }catch(...){
-        return false;
-    }
-}
-
-// Stream dislocations: similar shape as JSON currently produced, but encoded directly to MessagePack.
-// We iterate segments, clip with PBC, and flush per segment chunk. For large inputs, we optionally parallelize
-// chunk generation, then write results in order to keep stable output ordering.
-bool DXAJsonExporter::writeDislocationsMsgpack(const DislocationNetwork* network,
-                                  const SimulationCell* simulationCell,
-                                  const std::string& filepath,
-                                  bool includeDetailedInfo,
-                                  int threadCount){
-    try{
-        std::ofstream of(filepath, std::ios::binary);
-        if(!of.is_open()) return false;
-        MsgpackWriter w(of);
-
-        const auto& segments = network->segments();
-
-        // We will write a map with keys: metadata, data, summary
-        // However, we don't know counts until after processing. We'll buffer only scalar summary stats,
-        // and write the data array in a streaming-friendly way by first writing a fixarray header with the final size.
-
-        // Pre-compute chunk counts per segment in parallel to obtain total element count, lengths, etc., without storing points.
-        struct ChunkStat { uint32_t chunks = 0; double totalLen = 0; int totalPoints = 0; double maxLen=0, minLen=std::numeric_limits<double>::max(); };
-
-        std::vector<ChunkStat> stats(segments.size());
-
-        auto process_segment_stats = [&](size_t i){
-            ChunkStat s;
-            auto* seg = segments[i];
-            if(!(seg && !seg->isDegenerate())){ stats[i] = s; return; }
-            std::deque<Point3> currentChunk;
-            clipDislocationLine(seg->line, *simulationCell,
-                [&](const Point3& p1, const Point3& p2, bool isInitial){
-                    if(isInitial && !currentChunk.empty()){
-                        // finalize chunk stats
-                        double len = 0.0;
-                        for(size_t k=1;k<currentChunk.size();++k) len += (currentChunk[k] - currentChunk[k-1]).length();
-                        s.totalLen += len; s.totalPoints += static_cast<int>(currentChunk.size());
-                        s.maxLen = std::max(s.maxLen, len);
-                        s.minLen = std::min(s.minLen, len);
-                        s.chunks++;
-                        currentChunk.clear();
-                    }
-                    if(currentChunk.empty()) currentChunk.push_back(p1);
-                    currentChunk.push_back(p2);
-                });
-            if(!currentChunk.empty()){
-                double len = 0.0;
-                for(size_t k=1;k<currentChunk.size();++k) len += (currentChunk[k] - currentChunk[k-1]).length();
-                s.totalLen += len; s.totalPoints += static_cast<int>(currentChunk.size());
-                s.maxLen = std::max(s.maxLen, len);
-                s.minLen = std::min(s.minLen, len);
-                s.chunks++;
-            }
-            stats[i] = s;
-        };
-
-        if(threadCount <= 0) threadCount = std::thread::hardware_concurrency();
-        if(threadCount <= 1 || segments.size() < 1024){
-            for(size_t i=0;i<segments.size();++i) process_segment_stats(i);
-        }else{
-            // simple parallel for
-            std::vector<std::future<void>> futs;
-            futs.reserve(threadCount);
-            std::atomic<size_t> idx{0};
-            for(int t=0;t<threadCount;++t){
-                futs.emplace_back(std::async(std::launch::async, [&]{
-                    size_t i;
-                    while((i = idx.fetch_add(1)) < segments.size()) process_segment_stats(i);
-                }));
-            }
-            for(auto& f: futs) f.get();
-        }
-
-        uint64_t totalChunks = 0; double totalLen = 0; int totalPoints = 0; double maxLen = 0; double minLen = std::numeric_limits<double>::max();
-        for(const auto& s: stats){
-            totalChunks += s.chunks;
-            totalLen += s.totalLen;
-            totalPoints += s.totalPoints;
-            maxLen = std::max(maxLen, s.maxLen);
-            if(s.chunks>0) minLen = std::min(minLen, s.minLen);
-        }
-        if(totalChunks == 0) minLen = 0.0;
-
-        // Begin object map with 3 entries: metadata, data, summary
-        w.write_map_header(3);
-
-        // metadata
-        w.write_key("metadata");
-        w.write_map_header(2);
-        w.write_key("type"); w.write_str("dislocation_segments");
-        w.write_key("count"); w.write_uint(static_cast<uint64_t>(totalChunks));
-
-        // data: array of segment chunks
-        w.write_key("data");
-        w.write_array_header(static_cast<uint32_t>(totalChunks));
-
-        // Now stream actual chunks in segment order for stability
-        for(size_t i=0;i<segments.size();++i){
-            auto* seg = segments[i];
-            if(!(seg && !seg->isDegenerate())) continue;
-            std::deque<Point3> currentChunk;
-            auto flushChunk = [&](const std::deque<Point3>& chunk){
-                double chunkLen = 0.0;
-                for(size_t k=1;k<chunk.size();++k) chunkLen += (chunk[k] - chunk[k-1]).length();
-                // object: { segment_id, points, length, num_points, burgers }
-                w.write_map_header(5);
-                w.write_key("segment_id"); w.write_uint(static_cast<uint64_t>(i));
-                w.write_key("points");
-                w.write_array_header(static_cast<uint32_t>(chunk.size()));
-                for(const auto& p : chunk){
-                    w.write_array_header(3);
-                    w.write_double(p.x()); w.write_double(p.y()); w.write_double(p.z());
-                }
-                w.write_key("length"); w.write_double(chunkLen);
-                w.write_key("num_points"); w.write_uint(static_cast<uint64_t>(chunk.size()));
-                Vector3 b = seg->burgersVector.localVec();
-                w.write_key("burgers");
-                w.write_map_header(3);
-                w.write_key("vector"); w.write_array_header(3); w.write_double(b.x()); w.write_double(b.y()); w.write_double(b.z());
-                w.write_key("magnitude"); w.write_double(b.length());
-                w.write_key("fractional"); w.write_str(getBurgersVectorString(b));
-            };
-
-            clipDislocationLine(seg->line, *simulationCell,
-                [&](const Point3& p1, const Point3& p2, bool isInitial){
-                    if(isInitial && !currentChunk.empty()){
-                        flushChunk(currentChunk);
-                        currentChunk.clear();
-                    }
-                    if(currentChunk.empty()) currentChunk.push_back(p1);
-                    currentChunk.push_back(p2);
-                });
-            if(!currentChunk.empty()) flushChunk(currentChunk);
-        }
-
-        // summary
-        w.write_key("summary");
-        w.write_map_header(5);
-        w.write_key("total_points"); w.write_uint(static_cast<uint64_t>(totalPoints));
-        w.write_key("average_segment_length"); w.write_double(totalChunks ? (totalLen / static_cast<double>(totalChunks)) : 0.0);
-        w.write_key("max_segment_length"); w.write_double(maxLen);
-        w.write_key("min_segment_length"); w.write_double(minLen);
-        w.write_key("total_length"); w.write_double(totalLen);
-
-        of.flush();
-        return true;
-    }catch(...){
-        return false;
-    }
-}
 
 json DXAJsonExporter::pointToJson(const Point3& point){
     json pointJson;
@@ -866,137 +736,6 @@ json DXAJsonExporter::getExtendedSimulationCellInfo(const SimulationCell& cell){
     return cellJson;
 }
 
-bool DXAJsonExporter::writeSimulationCellMsgpack(const SimulationCell& cell,
-                                    const std::string& filepath){
-    try{
-        std::ofstream of(filepath, std::ios::binary);
-        if(!of.is_open()) return false;
-        auto j = getExtendedSimulationCellInfo(cell);
-        auto bytes = nlohmann::json::to_msgpack(j);
-        of.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
-        of.flush();
-        return true;
-    }catch(...){ return false; }
-}
-
-bool DXAJsonExporter::writeRdfMsgpack(const std::vector<double>& rdfX,
-                         const std::vector<double>& rdfY,
-                         const std::string& filepath){
-    try{
-        std::ofstream of(filepath, std::ios::binary);
-        if(!of.is_open()) return false;
-        MsgpackWriter w(of);
-
-        w.write_map_header(2);
-        w.write_key("distance");
-        w.write_array_header(rdfX.size());
-        for(double v : rdfX) w.write_double(v);
-
-        w.write_key("g_r");
-        w.write_array_header(rdfY.size());
-        for(double v : rdfY) w.write_double(v);
-
-        of.flush();
-        return true;
-    }catch(...){
-        return false;
-    }
-}
-
-bool DXAJsonExporter::writeAtomicStrainMsgpack(const AtomicStrainModifier::AtomicStrainEngine& engine,
-                                               const std::vector<int>& ids,
-                                               const std::string& filepath){
-    try{
-        std::ofstream of(filepath, std::ios::binary);
-        if(!of.is_open()) return false;
-        MsgpackWriter w(of);
-
-        auto shear = engine.shearStrains();
-        auto volumetric = engine.volumetricStrains();
-        auto strainProp = engine.strainTensors();
-        auto defgrad = engine.deformationGradients();
-        auto D2minProp = engine.nonaffineSquaredDisplacements();
-        auto invalid = engine.invalidParticles();
-
-        size_t n = ids.size();
-        
-        // Calculate summary stats
-        double totalShear = 0.0;
-        double totalVolumetric = 0.0;
-        double maxShear = 0.0;
-        int count = 0;
-
-        for(size_t i=0; i<n; ++i){
-             if(shear){
-                 double s = shear->getDouble(i);
-                 totalShear += s;
-                 if(s > maxShear) maxShear = s;
-             }
-             if(volumetric) totalVolumetric += volumetric->getDouble(i);
-             count++;
-        }
-
-        w.write_map_header(3); // metadata, summary, data
-
-        // Metadata
-        w.write_key("metadata");
-        w.write_map_header(2);
-        w.write_key("count"); w.write_uint(n);
-        w.write_key("num_invalid_particles"); w.write_uint(engine.numInvalidParticles());
-
-        // Summary
-        w.write_key("summary");
-        w.write_map_header(3);
-        w.write_key("average_shear_strain"); w.write_double(count > 0 ? totalShear / count : 0.0);
-        w.write_key("average_volumetric_strain"); w.write_double(count > 0 ? totalVolumetric / count : 0.0);
-        w.write_key("max_shear_strain"); w.write_double(maxShear);
-
-        // Data
-        w.write_key("data");
-        w.write_array_header(n);
-
-        for(size_t i=0; i<n; ++i){
-            // Count fields
-            int fields = 3; // id, shear, volumetric
-            if(strainProp) fields++;
-            if(defgrad) fields++;
-            if(D2minProp) fields++;
-            if(invalid) fields++;
-
-            w.write_map_header(fields);
-            
-            w.write_key("id"); w.write_int(ids[i]);
-            w.write_key("shear_strain"); w.write_double(shear ? shear->getDouble(i) : 0.0);
-            w.write_key("volumetric_strain"); w.write_double(volumetric ? volumetric->getDouble(i) : 0.0);
-
-            if(strainProp){
-                w.write_key("strain_tensor");
-                w.write_array_header(6);
-                for(int k=0; k<6; ++k) w.write_double(strainProp->getDoubleComponent(i, k));
-            }
-
-            if(defgrad){
-                w.write_key("deformation_gradient");
-                w.write_array_header(9);
-                for(int k=0; k<9; ++k) w.write_double(defgrad->getDoubleComponent(i, k));
-            }
-
-            if(D2minProp){
-                w.write_key("D2min"); w.write_double(D2minProp->getDouble(i));
-            }
-
-            if(invalid){
-                w.write_key("invalid"); w.write_bool(invalid->getInt(i) != 0);
-            }
-        }
-
-        of.flush();
-        return true;
-    }catch(...){
-        return false;
-    }
-}
-
 json DXAJsonExporter::segmentToJson(const DislocationSegment* segment, bool includeDetailedInfo){
     json segmentJson;
     
@@ -1053,45 +792,85 @@ json DXAJsonExporter::segmentToJson(const DislocationSegment* segment, bool incl
     return segmentJson;
 }
 
-bool DXAJsonExporter::writeStructureStatsMsgpack(const StructureAnalysis& structureAnalysis,
-                                    const std::string& filepath){
-    try{
-        std::ofstream of(filepath, std::ios::binary);
-        if(!of.is_open()) return false;
-        auto j = structureAnalysis.getStructureStatisticsJson();
-        auto bytes = nlohmann::json::to_msgpack(j);
-        of.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
-        of.flush();
-        return true;
-    }catch(...){ return false; }
+void DXAJsonExporter::writeJsonAsMsgpack(MsgpackWriter& writer, const json& data, bool sortKeys){
+    if(data.is_discarded() || data.is_null()){
+        writer.write_nil();
+        return;
+    }
+
+    if(data.is_boolean()){
+        writer.write_bool(data.get<bool>());
+        return;
+    }
+
+    if(data.is_number_unsigned()){
+        writer.write_uint(data.get<uint64_t>());
+        return;
+    }
+
+    if(data.is_number_integer()){
+        writer.write_int(data.get<int64_t>());
+        return;
+    }
+
+    if(data.is_number_float()){
+        writer.write_double(data.get<double>());
+        return;
+    }
+
+    if(data.is_string()){
+        const std::string& str = data.get_ref<const std::string&>();
+        writer.write_str(str);
+        return;
+    }
+
+    if(data.is_array()){
+        const uint32_t n = checked_u32_size(data.size());
+        writer.write_array_header(n);
+        for(const auto &el : data){
+            writeJsonAsMsgpack(writer, el, sortKeys);
+        }
+        return;
+    }
+
+    if(data.is_object()){
+        const uint32_t n = checked_u32_size(data.size());
+        writer.write_map_header(n);
+
+        if(!sortKeys){
+            for(auto it = data.begin(); it != data.end(); it++){
+                writer.write_key(it.key());
+                writeJsonAsMsgpack(writer, it.value(), sortKeys);
+            }
+        }else{
+            std::vector<std::string> keys;
+            keys.reserve(data.size());
+            for(auto it = data.begin(); it != data.end(); it++){
+                keys.push_back(it.key());
+            }
+            std::sort(keys.begin(), keys.end());
+            for(const auto &k : keys){
+                writer.write_key(k);
+                writeJsonAsMsgpack(writer, data.at(k), sortKeys);
+            }
+        }
+        return;
+    }
+
+    writer.write_nil();
 }
 
-bool DXAJsonExporter::writeInterfaceMeshMsgpack(const InterfaceMesh* interfaceMesh,
-                                   const std::string& filepath,
-                                   bool includeTopologyInfo){
+bool DXAJsonExporter::writeJsonMsgpackToFile(const json &data, const std::string &filePath, bool sortKeys){
     try{
-        std::ofstream of(filepath, std::ios::binary);
+        std::ofstream of(filePath, std::ios::binary);
         if(!of.is_open()) return false;
-        auto j = getMeshData(*interfaceMesh, interfaceMesh->structureAnalysis(), /*includeTopologyInfo*/ includeTopologyInfo, interfaceMesh);
-        auto bytes = nlohmann::json::to_msgpack(j);
-        of.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+        MsgpackWriter writer(of);
+        writeJsonAsMsgpack(writer, data, sortKeys);
         of.flush();
         return true;
-    }catch(...){ return false; }
-}
-
-bool DXAJsonExporter::writeDefectMeshMsgpack(const HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& defectMesh,
-                                const StructureAnalysis& structureAnalysis,
-                                const std::string& filepath){
-    try{
-        std::ofstream of(filepath, std::ios::binary);
-        if(!of.is_open()) return false;
-        auto j = getMeshData(defectMesh, structureAnalysis, /*includeTopologyInfo*/ false, nullptr);
-        auto bytes = nlohmann::json::to_msgpack(j);
-        of.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
-        of.flush();
-        return true;
-    }catch(...){ return false; }
+    }catch(...){
+        return false;
+    }
 }
 
 std::string DXAJsonExporter::getBurgersVectorString(const Vector3& burgers){
@@ -1365,77 +1144,17 @@ json frameToJson(const LammpsParser::Frame& frame, const BurgersLoopBuilder* tra
 }
 
 }
-bool OpenDXA::DXAJsonExporter::writeElasticStrainMsgpack(const OpenDXA::ElasticStrainEngine& engine,
-                                                const std::vector<int>& ids,
-                                                const std::string& filepath){
-    try{
-        std::ofstream of(filepath, std::ios::binary);
-        if(!of.is_open()) return false;
-        OpenDXA::MsgpackWriter w(of);
+// Explicit template instantiations for getMeshData
+template OpenDXA::json OpenDXA::DXAJsonExporter::getMeshData<OpenDXA::HalfEdgeMesh<OpenDXA::InterfaceMeshEdge, OpenDXA::InterfaceMeshFace, OpenDXA::InterfaceMeshVertex>>(
+    const OpenDXA::HalfEdgeMesh<OpenDXA::InterfaceMeshEdge, OpenDXA::InterfaceMeshFace, OpenDXA::InterfaceMeshVertex>& mesh,
+    const OpenDXA::StructureAnalysis& structureAnalysis,
+    bool includeTopologyInfo,
+    const OpenDXA::InterfaceMesh* interfaceMeshForTopology
+);
 
-        auto volumetric = engine.volumetricStrains();
-        auto strainTensor = engine.strainTensors();
-        auto defGrad = engine.deformationGradients();
-
-        size_t n = ids.size();
-
-        // Summary stats
-        double totalVolumetric = 0.0;
-        int count = 0;
-        for(size_t i=0; i<n; ++i){
-            if(volumetric){
-                totalVolumetric += volumetric->getDouble(i);
-            }
-            count++;
-        }
-
-        w.write_map_header(3); 
-
-        w.write_key("metadata");
-        w.write_map_header(1);
-        w.write_key("count"); w.write_uint(n);
-        
-        w.write_key("summary");
-        w.write_map_header(1);
-        w.write_key("average_volumetric_strain"); w.write_double(count > 0 ? totalVolumetric / count : 0.0);
-
-        w.write_key("data");
-        w.write_array_header(static_cast<uint32_t>(n));
-
-        for(size_t i=0; i<n; ++i){
-            // Access properties by index i
-            
-            int mapSize = 1; // id
-            if(volumetric) mapSize++;
-            if(strainTensor) mapSize++;
-            if(defGrad) mapSize++;
-
-            w.write_map_header(mapSize);
-            w.write_key("id"); w.write_uint(ids[i]); // Write the tag
-
-            if(volumetric){
-                w.write_key("volumetric_strain");
-                w.write_double(volumetric->getDouble(i)); // Access by index
-            }
-
-            if(strainTensor){
-                w.write_key("strain_tensor");
-                // 6 components for symmetric tensor
-                w.write_array_header(6);
-                for(int c=0; c<6; ++c) w.write_double(strainTensor->getDoubleComponent(i, c));
-            }
-
-            if(defGrad){
-                w.write_key("deformation_gradient");
-                // 9 components for matrix3
-                w.write_array_header(9);
-                for(int c=0; c<9; ++c) w.write_double(defGrad->getDoubleComponent(i, c));
-            }
-        }
-
-        of.flush();
-        return true;
-    }catch(...){
-        return false;
-    }
-}
+template OpenDXA::json OpenDXA::DXAJsonExporter::getMeshData<OpenDXA::InterfaceMesh>(
+    const OpenDXA::InterfaceMesh& mesh,
+    const OpenDXA::StructureAnalysis& structureAnalysis,
+    bool includeTopologyInfo,
+    const OpenDXA::InterfaceMesh* interfaceMeshForTopology
+);

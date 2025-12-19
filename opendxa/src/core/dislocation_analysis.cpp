@@ -257,7 +257,8 @@ json DislocationAnalysis::computeAtomicStrain(
     };
 
     if(!outputFilename.empty()){
-        _jsonExporter.writeAtomicStrainMsgpack(engine, currentFrame.ids, outputFilename + "_atomic_strain.msgpack");
+        auto atomicStrainData = _jsonExporter.getAtomicStrainData(engine, currentFrame.ids);
+        _jsonExporter.writeJsonMsgpackToFile(atomicStrainData, outputFilename + "_atomic_strain.msgpack");
         spdlog::info("Atomic strain data written to {}_atomic_strain.msgpack", outputFilename);
         root["atomic_strain"] = json::array();
     }else{
@@ -316,8 +317,6 @@ json DislocationAnalysis::computeAtomicStrain(
 
     return root; 
 }
-
-
 
 json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::string& outputFile){
     auto start_time = std::chrono::high_resolution_clock::now();
@@ -390,15 +389,14 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         result["rdf"]["x"] = rdfX;
         result["rdf"]["y"] = rdfY;
         result["coordination"] = coord;
-        if(!outputFile.empty()){
-            std::string rdfPath = outputFile + "_rdf.msgpack";
-            _jsonExporter.writeRdfMsgpack(rdfX, rdfY, rdfPath);
-            spdlog::info("RDF data written to {}", rdfPath);
-        }
         auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-            end_time - start_time).count();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
         result["total_time"] = duration;
+        
+        if(!outputFile.empty()){
+            _jsonExporter.writeJsonMsgpackToFile(result, outputFile + "_rdf.msgpack");
+        }
+
         spdlog::debug("Coordination analysis time {} ms", duration);
 
         return result;
@@ -433,20 +431,19 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         );
 
         engine.perform();
-
-        if(!outputFile.empty()){
-            std::string path = outputFile + "_elastic_strain.msgpack";
-            _jsonExporter.writeElasticStrainMsgpack(engine, frame.ids, path);
-            spdlog::info("Elastic strain data written to {}", path);
-            result["elastic_strain_file"] = path;
-        }
-
         result["is_failed"] = false;
 
         auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-            end_time - start_time).count();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
         result["total_time"] = duration;
+
+        if(!outputFile.empty()){
+            std::string path = outputFile + "_elastic_strain.msgpack";
+            auto elasticStrainData = _jsonExporter.getElasticStrainData(engine, frame.ids);
+            _jsonExporter.writeJsonMsgpackToFile(elasticStrainData, path);
+            spdlog::info("Elastic strain data written to {}", path);
+            result["elastic_strain_file"] = path;
+        }
 
         return result;
     }
@@ -497,14 +494,15 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         extractedStructureTypes.push_back(structureType);
     }
 
-    if(_structureIdentificationOnly && !outputFile.empty()){
-        json atomsData = structureAnalysis->getStructureStatisticsJson();
+    json atomsData = structureAnalysis->getStructureStatisticsJson();
 
+    if(_structureIdentificationOnly && !outputFile.empty()){
         // Export full atoms data with positions and structure types
-        _jsonExporter.writeAtomsSimpleMsgpack(frame, *structureAnalysis, &extractedStructureTypes, outputFile + "_atoms.msgpack");
+        auto atomsData = _jsonExporter.getAtomsDataSimple(frame, *structureAnalysis, &extractedStructureTypes);
+        _jsonExporter.writeJsonMsgpackToFile(atomsData, outputFile + "_atoms.msgpack");
 
         // Also export structure statistics separately
-        _jsonExporter.writeStructureStatsMsgpack(*structureAnalysis, outputFile + "_structure_stats.msgpack");
+        _jsonExporter.writeJsonMsgpackToFile(atomsData, outputFile + "_structure_stats.msgpack");
 
         return atomsData;
     }
@@ -668,31 +666,36 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
    if(!outputFile.empty()){
         {
             PROFILE("Streaming Defect Mesh MsgPack");
-            _jsonExporter.writeDefectMeshMsgpack(defectMesh, interfaceMesh.structureAnalysis(), outputFile + "_defect_mesh.msgpack");
+            auto meshData = _jsonExporter.getMeshData(defectMesh, interfaceMesh.structureAnalysis(), /*includeTopologyInfo*/ true, &interfaceMesh);
+            _jsonExporter.writeJsonMsgpackToFile(meshData, outputFile + "_defect_mesh.msgpack");
         }
 
         {
             PROFILE("Streaming Atoms MsgPack");
-            _jsonExporter.writeAtomsMsgpack(frame, &tracer, &extractedStructureTypes, outputFile + "_atoms.msgpack");
+            auto atomsDataJson = _jsonExporter.getAtomsData(frame, &tracer, &extractedStructureTypes);
+            _jsonExporter.writeJsonMsgpackToFile(atomsDataJson, outputFile + "_atoms.msgpack");
         }
         {
             PROFILE("Streaming Dislocations MsgPack");
-            _jsonExporter.writeDislocationsMsgpack(networkUptr.get(), &frame.simulationCell, outputFile + "_dislocations.msgpack");
+            auto dislocationsData = _jsonExporter.exportDislocationsToJson(networkUptr.get(), true, &frame.simulationCell);
+            _jsonExporter.writeJsonMsgpackToFile(dislocationsData, outputFile + "_dislocations.msgpack");
         }
 
         {
             PROFILE("Streaming Interface Mesh MsgPack");
-            _jsonExporter.writeInterfaceMeshMsgpack(&interfaceMesh, outputFile + "_interface_mesh.msgpack", /*includeTopologyInfo*/ true);
+            auto meshData = _jsonExporter.getMeshData(interfaceMesh, interfaceMesh.structureAnalysis(), /*includeTopologyInfo*/ true, &interfaceMesh);
+            _jsonExporter.writeJsonMsgpackToFile(meshData, outputFile + "_interface_mesh.msgpack");
         }
 
         {
             PROFILE("Streaming Structure Stats MsgPack");
-            _jsonExporter.writeStructureStatsMsgpack(interfaceMesh.structureAnalysis(), outputFile + "_structures_stats.msgpack");
+            _jsonExporter.writeJsonMsgpackToFile(atomsData, outputFile + "_structures_stats.msgpack");
         }
 
         {
             PROFILE("Streaming Simulation Cell MsgPack");
-            _jsonExporter.writeSimulationCellMsgpack(frame.simulationCell, outputFile + "_simulation_cell.msgpack");
+            auto simCellInfo = _jsonExporter.getExtendedSimulationCellInfo(frame.simulationCell);
+            _jsonExporter.writeJsonMsgpackToFile(simCellInfo, outputFile + "_simulation_cell.msgpack");
         }
     }
     
@@ -761,18 +764,6 @@ bool DislocationAnalysis::validateSimulationCell(const SimulationCell &cell){
 
     spdlog::debug("Cell volume: {} ", volume);
     return true;
-}
-
-// TODO:
-// If no compute() call has been made, or if it produced no JSON data,
-// emis an error to stderr and returns an empty JSON object.
-json DislocationAnalysis::exportResultsToJson(const std::string& filename) const {
-    if (_lastJsonData.empty()) {
-        std::cerr << "No analysis results available for export. Run compute() first." << std::endl;
-        return json();
-    }
-    
-    return _lastJsonData;
 }
 
 json DislocationAnalysis::performGrainSegmentation(
@@ -887,70 +878,45 @@ json DislocationAnalysis::performGrainSegmentation(
         // Export atoms msgpack in AtomisticExporter-compatible format
         // Format: map<"Grain_X", array<{id, pos[3]}>>
         std::string msgpackPath = outputFile + "_grains.msgpack";
-        {
-            std::ofstream of(msgpackPath, std::ios::binary);
-            MsgpackWriter w(of);
-            
-            // Count atoms per grain
-            std::map<int, uint32_t> grainCounts;
-            for (int gid : grainIds) {
-                grainCounts[gid]++;
-            }
-            
-            // Write map header (number of grains + 1 for "Unassigned")
-            uint32_t numGroups = static_cast<uint32_t>(grainCounts.size());
-            w.write_map_header(numGroups);
-            
-            // Get sorted grain IDs for deterministic output
-            std::vector<int> sortedGrainIds;
-            for (const auto& kv : grainCounts) {
-                sortedGrainIds.push_back(kv.first);
-            }
-            std::sort(sortedGrainIds.begin(), sortedGrainIds.end());
-            
-            // Write each grain group
-            for (int gid : sortedGrainIds) {
-                // Key: "Grain_X" or "Unassigned" for gid=0
-                std::string key = (gid == 0) ? "Unassigned" : ("Grain_" + std::to_string(gid));
-                w.write_key(key);
+
+        
+        try {
+            std::map<int, json> grainGroups;
+            for (size_t i = 0; i < static_cast<size_t>(frame.natoms); ++i) {
+                int gid = grainIds[i];
                 
-                // Array of atoms
-                w.write_array_header(grainCounts[gid]);
-                
-                // Write atoms belonging to this grain
-                for (size_t i = 0; i < static_cast<size_t>(frame.natoms); ++i) {
-                    if (grainIds[i] != gid) continue;
-                    
-                    // atom object: {id, pos}
-                    w.write_map_header(2);
-                    w.write_key("id");
-                    w.write_uint(static_cast<uint64_t>(i));
-                    w.write_key("pos");
-                    w.write_array_header(3);
-                    if (i < frame.positions.size()) {
-                        const auto& p = frame.positions[i];
-                        w.write_double(p.x());
-                        w.write_double(p.y()); 
-                        w.write_double(p.z());
-                    } else {
-                        w.write_double(0.0);
-                        w.write_double(0.0);
-                        w.write_double(0.0);
-                    }
+                json atomData;
+                atomData["id"] = i;
+                if(i < frame.positions.size()){
+                    const auto& p = frame.positions[i];
+                    atomData["pos"] = {p.x(), p.y(), p.z()};
+                } else {
+                    atomData["pos"] = {0.0, 0.0, 0.0};
                 }
+                
+                if(grainGroups.find(gid) == grainGroups.end()){
+                    grainGroups[gid] = json::array();
+                }
+                grainGroups[gid].push_back(atomData);
             }
             
-            of.flush();
+            json finalOutput;
+            for(auto& [gid, atoms] : grainGroups){
+                 std::string key = (gid == 0) ? "Unassigned" : ("Grain_" + std::to_string(gid));
+                 finalOutput[key] = atoms;
+            }
+            
+            _jsonExporter.writeJsonMsgpackToFile(finalOutput, msgpackPath);
+            
+        } catch(...) {
+             spdlog::error("Failed to export grains msgpack");
         }
         
         spdlog::info("Exported atoms msgpack to: {}", msgpackPath);
 
         // Export grain metadata msgpack
         std::string metaPath = outputFile + "_grains_meta.msgpack";
-        std::vector<uint8_t> metaMsgpack = json::to_msgpack(grainData);
-        std::ofstream metaFile(metaPath, std::ios::binary);
-        metaFile.write(reinterpret_cast<const char*>(metaMsgpack.data()), metaMsgpack.size());
-        metaFile.close();
+        _jsonExporter.writeJsonMsgpackToFile(grainData, metaPath);
         
         spdlog::info("Exported grain metadata msgpack to: {}", metaPath);
 

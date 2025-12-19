@@ -90,7 +90,6 @@ public:
     void setMarkCoreAtoms(bool markCoreAtoms);
     void setRmsd(float rmsd);
     json compute(const LammpsParser::Frame &frame, const std::string& jsonOutputFile = "");
-    json exportResultsToJson(const std::string& filename = "") const;
 
     json computeAtomicStrain(
         const LammpsParser::Frame &currentFrame,
