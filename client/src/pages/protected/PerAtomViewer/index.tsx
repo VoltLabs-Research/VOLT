@@ -120,13 +120,14 @@ const PerAtomViewer = () => {
             { key: 'z', title: 'Z', skeleton: { variant: 'text', width: 80 }, render: (v: number) => v?.toFixed?.(3) ?? String(v) },
         ];
 
-        // Add per-atom property columns
-        for (const prop of properties) {
+        // Add per-atom property columns (deduplicated)
+        const uniqueProperties = [...new Set(properties)];
+        for (const prop of uniqueProperties) {
             baseCols.push({
                 key: prop,
                 title: prop,
                 skeleton: { variant: 'text', width: 80 },
-                render: (v: number) => typeof v === 'number' ? v.toFixed(4) : String(v ?? '-')
+                render: (v: number) => typeof v === 'number' ? v.toFixed(20) : String(v ?? '-')
             });
         }
 

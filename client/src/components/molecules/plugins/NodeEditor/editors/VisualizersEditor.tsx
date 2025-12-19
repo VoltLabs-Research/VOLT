@@ -3,6 +3,7 @@ import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
 import KeyValueEditor from '@/components/molecules/plugins/KeyValueEditor';
+import ListEditor from '@/components/molecules/plugins/ListEditor';
 import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
 import { useKeyValueHandlers } from '@/hooks/plugins/use-node-data';
 import type { IVisualizersData } from '@/types/plugin';
@@ -28,16 +29,21 @@ const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
     const { entries, handleAdd, handleRemove, handleKeyChange, handleValueChange } =
         useKeyValueHandlers(updateListing, listing, 'column', 'Column Title');
 
-    // Handle perAtomProperties as comma-separated string
-    const perAtomPropertiesStr = (perAtomProperties || []).join(', ');
+    // Per-atom properties list handlers
+    const handleAddProperty = useCallback(() => {
+        updateVisualizer('perAtomProperties', [...perAtomProperties, '']);
+    }, [perAtomProperties, updateVisualizer]);
 
-    const handlePerAtomPropertiesChange = useCallback((_key: string, value: string) => {
-        const props = value
-            .split(',')
-            .map(s => s.trim())
-            .filter(Boolean);
-        updateVisualizer('perAtomProperties', props);
-    }, [updateVisualizer]);
+    const handleRemoveProperty = useCallback((index: number) => {
+        const updated = perAtomProperties.filter((_, i) => i !== index);
+        updateVisualizer('perAtomProperties', updated);
+    }, [perAtomProperties, updateVisualizer]);
+
+    const handleChangeProperty = useCallback((index: number, value: string) => {
+        const updated = [...perAtomProperties];
+        updated[index] = value;
+        updateVisualizer('perAtomProperties', updated);
+    }, [perAtomProperties, updateVisualizer]);
 
     return (
         <>
@@ -56,13 +62,18 @@ const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
                     fieldValue={raster}
                     onFieldChange={(_, value) => updateVisualizer('raster', value)}
                 />
-                <FormField
-                    label='Per-Atom Properties'
-                    fieldKey='perAtomProperties'
-                    fieldType='input'
-                    fieldValue={perAtomPropertiesStr}
-                    onFieldChange={handlePerAtomPropertiesChange}
-                    inputProps={{ placeholder: 'shear_strain, volumetric_strain' }}
+            </CollapsibleSection>
+
+            <CollapsibleSection title='Per-Atom Properties' defaultExpanded>
+                <ListEditor
+                    items={perAtomProperties}
+                    onAdd={handleAddProperty}
+                    onRemove={handleRemoveProperty}
+                    onChange={handleChangeProperty}
+                    label="Property Name"
+                    placeholder="e.g. shear_strain"
+                    description="Add per-atom properties that will be available in the atom viewer."
+                    addButtonText="Add Property"
                 />
             </CollapsibleSection>
 
@@ -87,4 +98,3 @@ const VisualizersEditor: React.FC<VisualizersEditorProps> = ({ node }) => {
 };
 
 export default VisualizersEditor;
-

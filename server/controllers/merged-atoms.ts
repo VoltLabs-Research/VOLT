@@ -10,9 +10,6 @@ import DumpStorage from '@/services/dump-storage';
 import TrajectoryParserFactory from '@/parsers/factory';
 import storage from '@/services/storage';
 
-/**
- * Controller for serving merged atoms data (LAMMPS dump + per-atom properties from plugins)
- */
 export default class MergedAtomsController {
     /**
      * GET /api/trajectories/:trajectoryId/analysis/:analysisId/merged-atoms
@@ -59,6 +56,13 @@ export default class MergedAtomsController {
         );
         const iterableKey = exposureNode?.data?.exposure?.iterable;
 
+        // Find schema node for check if "expected_len" and "keys" are defined
+        const schemaNode = plugin.workflow.nodes.find((n: any) => n.type === NodeType.SCHEMA);
+        if(!schemaNode){
+            // TODO: change
+            return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
+        }
+
         // Find visualizer node to get perAtomProperties
         const visualizerNode = plugin.workflow.nodes.find(
             (n: any) => n.type === NodeType.VISUALIZERS && n.data?.visualizers?.perAtomProperties?.length
@@ -84,8 +88,6 @@ export default class MergedAtomsController {
                 const key = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
                 const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, key);
                 pluginData = decode(buffer);
-                console.log(Object.keys(pluginData))
-                console.log(Object.values(pluginData).slice(0, 10));
 
                 // Unwrap using iterable key if specified
                 if (iterableKey && pluginData[iterableKey]) {
@@ -105,12 +107,13 @@ export default class MergedAtomsController {
                 console.warn(`[MergedAtoms] Could not load plugin data: ${err}`);
             }
         }
+        let finalPerAtomProperties = [];
 
         // Build merged rows
         const rows: any[] = [];
         for (let i = startIndex; i < limit; i++) {
             const base = i * 3;
-            const atomId = parsed.ids ? parsed.ids[i] : i + 1; // LAMMPS IDs are 1-indexed
+            const atomId = parsed.ids ? parsed.ids[i] : i + 1; 
 
             const row: any = {
                 id: atomId,
@@ -126,12 +129,21 @@ export default class MergedAtomsController {
                 for (const prop of perAtomProperties) {
                     const value = pluginItem[prop];
                     if (Array.isArray(value)) {
-                        // Calculate magnitude for vector properties
-                        let sum = 0;
-                        for (const v of value) sum += v * v;
-                        row[prop] = Math.sqrt(sum);
+                        // Let prop = [i0, i1, i2, ..., in].
+                        // Then define an array of strings where the i-th element
+                        // is the displayName of prop[i]. 
+                        // Finally, define columnName as: {prop} [strings.join(' ')].
+                        const { keys } = schemaNode?.data?.schema?.definition.data.items[prop] || [];
+                        for(let i = 0; i < keys.length; i++){
+                            const columnName = `${prop} ${keys[i]}`;
+                            row[columnName] = value[i];
+                        if(!finalPerAtomProperties.find((c) => c === columnName)){
+                        finalPerAtomProperties.push(columnName);
+                        }
+                    }
                     } else {
                         row[prop] = value;
+                        finalPerAtomProperties.push(prop);
                     }
                 }
             }
@@ -142,7 +154,7 @@ export default class MergedAtomsController {
         res.status(200).json({
             status: 'success',
             data: rows,
-            properties: perAtomProperties,
+            properties: finalPerAtomProperties,
             page,
             pageSize,
             total: totalAtoms,
