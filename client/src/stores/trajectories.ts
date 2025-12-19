@@ -34,7 +34,6 @@ import trajectoryApi from '@/services/api/trajectory';
 
 const initialState: TrajectoryState = {
     trajectories: [],
-    dashboardTrajectories: [],
     listingMeta: {
         page: 1,
         limit: 20,
@@ -44,7 +43,6 @@ const initialState: TrajectoryState = {
     trajectory: null,
     isLoading: true,
     isFetchingMore: false,
-    isDashboardTrajectoriesLoading: true,
     uploadingFileCount: 0,
     activeUploads: {},
     error: null,
@@ -52,7 +50,7 @@ const initialState: TrajectoryState = {
     trajectoryMetrics: {},
     selectedTrajectories: [],
     isLoadingTrajectories: true,
-};
+} as any;
 
 export function dataURLToBlob(dataURL: string): Blob{
     const [header, data] = dataURL.split(',');
@@ -82,34 +80,59 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
     const asyncAction = createAsyncAction(set, get);
     const logger = new Logger('use-trajectory-store');
 
+    const upsertIntoList = (list: any[], item: any) => {
+        const id = item?._id;
+        if(!id) return list;
+
+        return [
+            { ...(list.find((t: any) => t._id === id) || {}), ...item },
+            ...list.filter((t: any) => t._id !== id)
+        ];
+    };
+
+    const dedupePreserveOrder = (list: any[]) => {
+        const seen = new Set<string>();
+        const out: any[] = [];
+
+        for(const t of list){
+            const id = t?._id;
+            if(!id) continue;
+            if(seen.has(id)) continue;
+            seen.add(id);
+            out.push(t);
+        }
+
+        return out;
+    };
+
     const updateTrajectoryInList = (id: string, updates: Partial<Trajectory>) => {
         const currentTrajectories = get().trajectories;
-        const currentDashboardTrajectories = get().dashboardTrajectories;
         const currentTrajectory = get().trajectory;
+
+        const nextTrajectories = [
+            { ...(currentTrajectories.find(t => t._id === id) || {}), ...updates, _id: id },
+            ...currentTrajectories.filter(t => t._id !== id)
+        ];
+
         return {
-            trajectories: currentTrajectories.map(t => (t._id === id ? { ...t, ...updates } : t)),
-            dashboardTrajectories: currentDashboardTrajectories.map(t =>
-                t._id === id ? { ...t, ...updates } : t
-            ),
+            trajectories: nextTrajectories,
             trajectory:
                 currentTrajectory?._id === id ? { ...currentTrajectory, ...updates } : currentTrajectory
         };
-  };
+    };
 
     const removeTrajectoryFromList = (id: string) => {
         const currentTrajectories = get().trajectories;
-        const currentDashboardTrajectories = get().dashboardTrajectories;
         const currentTrajectory = get().trajectory;
 
         return {
             trajectories: currentTrajectories.filter(t => t._id !== id),
-            dashboardTrajectories: currentDashboardTrajectories.filter(t => t._id !== id),
             trajectory: currentTrajectory?._id === id ? null : currentTrajectory
         };
     };
 
-  return {
-      ...initialState,
+    return {
+        ...initialState,
 
         getTrajectories: (teamId?: string, opts = {}) => {
             const { page = 1, limit = 20, search = '', append = false } = opts;
@@ -123,13 +146,13 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
 
             return asyncAction(
                 () =>
-                trajectoryApi.getAllPaginated({
-                    teamId,
-                    populate: 'analysis,createdBy',
-                    page,
-                    limit,
-                    q: search
-                }),
+                    trajectoryApi.getAllPaginated({
+                        teamId,
+                        populate: 'analysis,createdBy',
+                        page,
+                        limit,
+                        q: search
+                    }),
                 {
                     loadingKey: append ? 'isFetchingMore' : 'isLoadingTrajectories',
                     onSuccess: (response) => {
@@ -144,7 +167,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                         });
 
                         return {
-                            trajectories: nextList,
+                            trajectories: dedupePreserveOrder(nextList),
                             listingMeta,
                             error: null,
                             isFetchingMore: false,
@@ -161,22 +184,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                     }
                 }
             );
-        },
-
-        getDashboardTrajectories: (teamId?: string, _opts?: { force?: boolean }) => {
-            return asyncAction(() => trajectoryApi.getAll({ teamId, populate: 'analysis,createdBy', limit: 5 }), {
-                loadingKey: 'isDashboardTrajectoriesLoading',
-                onSuccess: (list) => {
-                    return {
-                        dashboardTrajectories: list,
-                        error: null
-                    };
-                },
-                onError: (error) => {
-                    const errorMessage = extractErrorMessage(error, 'Failed to load dashboard trajectories');
-                    return { error: errorMessage };
-                }
-            });
         },
 
         getTrajectoryById: (id: string) => asyncAction(() => trajectoryApi.getOne(id, 'team,analysis'), {
@@ -203,38 +210,43 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             set(state => ({
                 activeUploads: {
                     ...state.activeUploads,
-                [uploadId]: { id: uploadId, uploadProgress: 0, processingProgress: 0, status: 'uploading' }
+                    [uploadId]: { id: uploadId, uploadProgress: 0, processingProgress: 0, status: 'uploading' }
                 }
             }));
 
             try{
                 const newTrajectory = await trajectoryApi.create(formData, (progress) => {
-                set(state => ({
-                    activeUploads: {
-                        ...state.activeUploads,
-                    [uploadId]: {
-                        ...state.activeUploads[uploadId],
-                        uploadProgress: progress,
-                        status: progress === 1 ? 'processing' : 'uploading'
-                    }
-                    }
-                }));
-                if(onProgress) onProgress(progress);
+                    set(state => ({
+                        activeUploads: {
+                            ...state.activeUploads,
+                            [uploadId]: {
+                                ...state.activeUploads[uploadId],
+                                uploadProgress: progress,
+                                status: progress === 1 ? 'processing' : 'uploading'
+                            }
+                        }
+                    }));
+                    if(onProgress) onProgress(progress);
                 });
 
-                set(state => ({
-                trajectories: [newTrajectory, ...state.trajectories],
-                dashboardTrajectories: [newTrajectory, ...state.dashboardTrajectories],
-                error: null
-                }));
+                set(state => {
+                    const { [uploadId]: _, ...remainingUploads } = state.activeUploads;
+                    return {
+                        activeUploads: remainingUploads,
+                        trajectories: upsertIntoList(state.trajectories, newTrajectory),
+                        error: null
+                    };
+                });
+
+                return newTrajectory;
             }catch(error: any){
                 const errorMessage = extractErrorMessage(error, 'Error uploading trajectory');
                 set(state => {
-                const { [uploadId]: _, ...remainingUploads } = state.activeUploads;
-                return {
-                    activeUploads: remainingUploads,
-                    error: errorMessage
-                };
+                    const { [uploadId]: _, ...remainingUploads } = state.activeUploads;
+                    return {
+                        activeUploads: remainingUploads,
+                        error: errorMessage
+                    };
                 });
                 throw error;
             }
@@ -253,14 +265,14 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 if(!upload) return state;
 
                 return {
-                activeUploads: {
-                    ...state.activeUploads,
-                    [uploadId]: {
-                        ...upload,
-                    [type === 'upload' ? 'uploadProgress' : 'processingProgress']: progress,
-                    status: type === 'upload' && progress < 1 ? 'uploading' : 'processing'
+                    activeUploads: {
+                        ...state.activeUploads,
+                        [uploadId]: {
+                            ...upload,
+                            [type === 'upload' ? 'uploadProgress' : 'processingProgress']: progress,
+                            status: type === 'upload' && progress < 1 ? 'uploading' : 'processing'
+                        }
                     }
-                }
                 };
             });
         },
@@ -268,7 +280,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         updateTrajectoryById: async(id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => {
             const originalState = {
                 trajectories: get().trajectories,
-                dashboardTrajectories: get().dashboardTrajectories,
                 trajectory: get().trajectory
             };
 
@@ -290,14 +301,12 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
 
             const originalState = {
                 trajectories: get().trajectories,
-                dashboardTrajectories: get().dashboardTrajectories,
                 trajectory: get().trajectory,
                 selectedTrajectories: get().selectedTrajectories
             };
 
             set(state => ({
                 trajectories: state.trajectories.filter(t => !ids.includes(t._id)),
-                dashboardTrajectories: state.dashboardTrajectories.filter(t => !ids.includes(t._id)),
                 trajectory: state.trajectory && ids.includes(state.trajectory._id) ? null : state.trajectory,
                 selectedTrajectories: []
             }));
@@ -313,7 +322,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         deleteTrajectoryById: async(id: string, _teamId?: string) => {
             const originalState = {
                 trajectories: get().trajectories,
-                dashboardTrajectories: get().dashboardTrajectories,
                 trajectory: get().trajectory
             };
 
@@ -334,8 +342,8 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const isSelected = currentSelected.includes(id);
             set({
                 selectedTrajectories: isSelected
-                ? currentSelected.filter(selectedId => selectedId !== id)
-                : [...currentSelected, id]
+                    ? currentSelected.filter(selectedId => selectedId !== id)
+                    : [...currentSelected, id]
             });
         },
 

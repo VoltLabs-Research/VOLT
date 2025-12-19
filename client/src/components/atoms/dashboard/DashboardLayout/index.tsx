@@ -104,7 +104,6 @@ const DashboardLayout = () => {
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
-    const getDashboardTrajectories = useTrajectoryStore((state) => state.getDashboardTrajectories);
     const { notifications, loading, fetch, markAsRead, unreadCount, initializeSocket } = useNotificationStore();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const notificationBodyRef = useRef<HTMLDivElement | null>(null);
@@ -228,12 +227,11 @@ const DashboardLayout = () => {
         // Only load if we have a team and haven't loaded yet
         if(selectedTeam?._id && !teamsInitialized){
             getTrajectories(selectedTeam._id, { page: 1, limit: 20 });
-            getDashboardTrajectories(selectedTeam._id);
             fetchPlugins({ page: 1, limit: 100 });
             getAnalysisConfigs(selectedTeam._id, { page: 1, limit: 20 });
             fetchContainers({ page: 1, limit: 20 });
         }
-    }, [selectedTeam, getTrajectories, getDashboardTrajectories, fetchPlugins, getAnalysisConfigs, fetchContainers, teamsInitialized]);
+    }, [selectedTeam, getTrajectories, fetchPlugins, getAnalysisConfigs, fetchContainers, teamsInitialized]);
 
     useEffect(() => {
         getUserTeams();
@@ -787,7 +785,6 @@ const DashboardLayout = () => {
                     onImportSuccess={() => {
                         if(selectedTeam){
                             getTrajectories(selectedTeam._id);
-                            getDashboardTrajectories(selectedTeam._id);
                         }
                     }}
                 />

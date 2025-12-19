@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { socketService } from '@/services/socketio';
 import useTrajectoryStore from '@/stores/trajectories';
 import useLogger from '@/hooks/core/use-logger';
@@ -10,64 +10,70 @@ type PendingUpdate = {
 };
 
 const upsertTrajectory = (state: any, trajectory: any) => {
-    const exists = state.trajectories.some(({ _id }: any) => _id === trajectory._id);
+    const id = trajectory._id;
 
-    const nextTrajectories = exists
-        ? state.trajectories.map((t: any) => (trajectory._id === t._id ? { ...trajectory, ...t } : t))
-        : [trajectory, ...state.trajectories];
+    const nextTrajectories = [
+        { ...(state.trajectories.find((t: any) => t._id === id) || {}), ...trajectory },
+        ...state.trajectories.filter((t: any) => t._id !== id)
+    ];
 
-    // If the card exists in the dashboard and an update is received, then update it.
-    const dashboardExists = state.dashboardTrajectories?.some((t: any) => t._id === trajectory._id);
-    const nextDashboard = dashboardExists
-        ? state.dashboardTrajectories.map((t: any) => (t._id === trajectory._id ? { ...t, ...trajectory } : t))
-        : state.dashboardTrajectories;
-
-    const nextCurrent = state.trajectory?._id === trajectory._id
+    const nextCurrent = state.trajectory?._id === id
         ? { ...state.trajectory, ...trajectory }
         : state.trajectory;
 
     return {
         trajectories: nextTrajectories,
-        dashboardTrajectories: nextDashboard,
         trajectory: nextCurrent
     };
 };
 
 const patchTrajectoryStatus = (state: any, trajectoryId: string, pending: PendingUpdate) => {
     const updateData: any = {
+        _id: trajectoryId,
         status: pending.status
     };
 
     if(pending.updatedAt) updateData.updatedAt = pending.updatedAt;
 
-    const nextTrajectories = state.trajectories.map((t: any) =>
-        t._id === trajectoryId ? { ...t, ...updateData } : t);
-    const nextDashboard = state.dashboardTrajectories?.map((t: any) =>
-        t._id === trajectoryId ? { ...t, ...updateData } : t);
-    const nextCurrent = state.trajectory?._id === trajectoryId ?
-        { ...state.trajectory, ...updateData } : state.trajectory;
+    const nextTrajectories = [
+        { ...(state.trajectories.find((t: any) => t._id === trajectoryId) || {}), ...updateData },
+        ...state.trajectories.filter((t: any) => t._id !== trajectoryId)
+    ];
+
+    const nextCurrent = state.trajectory?._id === trajectoryId
+        ? { ...state.trajectory, ...updateData }
+        : state.trajectory;
 
     return {
         trajectories: nextTrajectories,
-        dashboardTrajectories: nextDashboard,
         trajectory: nextCurrent
     };
 };
 
+
 const useTrajectoryUpdates = () => {
     const logger = useLogger('use-trajectory-updates');
+    const inFlightRef = useRef(new Set<string>());
 
     const fetchAndUpsert = async(trajectoryId: string, pending?: PendingUpdate) => {
-        const fetched = await trajectoryApi.getOne(trajectoryId, 'team,analysis');
-        const trajectoryToInsert = pending
-            ? {
-                ...fetched,
-                status: pending.status,
-                    ...(pending.updatedAt ? { updatedAt: pending.updatedAt } : {})
-            }
-            : fetched;
+        const inFlight = inFlightRef.current;
+        if(inFlight.has(trajectoryId)) return;
+        inFlight.add(trajectoryId);
 
-        useTrajectoryStore.setState((state) => upsertTrajectory(state, trajectoryToInsert));
+        try{
+            const fetched = await trajectoryApi.getOne(trajectoryId, 'team,analysis');
+            const trajectoryToInsert = pending
+                ? {
+                    ...fetched,
+                    status: pending.status,
+                        ...(pending.updatedAt ? { updatedAt: pending.updatedAt } : {})
+                }
+                : fetched;
+
+            useTrajectoryStore.setState((state) => upsertTrajectory(state, trajectoryToInsert));
+        }finally{
+            inFlight.delete(trajectoryId);
+        }
     };
 
     useEffect(() => {
