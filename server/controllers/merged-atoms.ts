@@ -11,14 +11,6 @@ import TrajectoryParserFactory from '@/parsers/factory';
 import storage from '@/services/storage';
 
 export default class MergedAtomsController {
-    /**
-     * GET /api/trajectories/:trajectoryId/analysis/:analysisId/merged-atoms
-     * Query: timestep, exposureId, page, pageSize
-     * 
-     * Returns merged atom data:
-     * - Base columns from LAMMPS dump: id, type, x, y, z
-     * - Per-atom property columns from plugin data
-     */
     public getAtoms = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { id: trajectoryId, analysisId } = req.params;
         const { timestep, exposureId, page: pageStr, pageSize: pageSizeStr } = req.query;
@@ -32,44 +24,36 @@ export default class MergedAtomsController {
         const startIndex = (page - 1) * pageSize;
         const endIndex = startIndex + pageSize;
 
-        // Get trajectory from middleware (already verified by checkTeamMembershipForTrajectory)
         const trajectory = res.locals.trajectory;
         if (!trajectory) {
             return next(new RuntimeError(ErrorCodes.TRAJECTORY_NOT_FOUND, 404));
         }
 
-        // Verify analysis exists
         const analysis = await Analysis.findById(analysisId);
         if (!analysis) {
             return next(new RuntimeError(ErrorCodes.ANALYSIS_NOT_FOUND, 404));
         }
 
-        // Get plugin and find relevant nodes
         const plugin = await Plugin.findOne({ slug: analysis.plugin });
         if (!plugin) {
             return next(new RuntimeError(ErrorCodes.PLUGIN_NOT_FOUND, 404));
         }
 
-        // Find exposure node to get iterable path
         const exposureNode = plugin.workflow.nodes.find(
             (n: any) => n.type === NodeType.EXPOSURE && n.id === exposureId
         );
         const iterableKey = exposureNode?.data?.exposure?.iterable;
 
-        // Find schema node for check if "expected_len" and "keys" are defined
         const schemaNode = plugin.workflow.nodes.find((n: any) => n.type === NodeType.SCHEMA);
-        if(!schemaNode){
-            // TODO: change
+        if (!schemaNode) {
             return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
         }
 
-        // Find visualizer node to get perAtomProperties
         const visualizerNode = plugin.workflow.nodes.find(
             (n: any) => n.type === NodeType.VISUALIZERS && n.data?.visualizers?.perAtomProperties?.length
         );
         const perAtomProperties: string[] = visualizerNode?.data?.visualizers?.perAtomProperties || [];
 
-        // Parse LAMMPS dump for base atom data
         const dumpPath = await DumpStorage.getDump(trajectoryId, String(timestep));
         if (!dumpPath) {
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));
@@ -79,76 +63,103 @@ export default class MergedAtomsController {
         const totalAtoms = parsed.metadata.natoms;
         const limit = Math.min(endIndex, totalAtoms);
 
-        // Fetch plugin data from MinIO
-        let pluginData: any = null;
-        let pluginDataByAtomId: Map<number, any> = new Map();
+        const schemaKeysCache: Map<string, string[]> = new Map();
+        const schemaDefinition = schemaNode?.data?.schema?.definition?.data?.items;
+        if (schemaDefinition) {
+            for (const prop of perAtomProperties) {
+                const propDef = schemaDefinition[prop];
+                if (propDef?.keys) {
+                    schemaKeysCache.set(prop, propDef.keys);
+                }
+            }
+        }
+
+        let pluginDataByAtomId: Map<number, any> | null = null;
 
         if (perAtomProperties.length > 0) {
             try {
                 const key = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
                 const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, key);
-                pluginData = decode(buffer);
+                let pluginData = decode(buffer) as any;
 
-                // Unwrap using iterable key if specified
                 if (iterableKey && pluginData[iterableKey]) {
                     pluginData = pluginData[iterableKey];
                 }
 
-                // Build a map by atom ID for fast lookup
                 if (Array.isArray(pluginData)) {
-                    for (const item of pluginData) {
+                    pluginDataByAtomId = new Map();
+                    const len = pluginData.length;
+                    for (let i = 0; i < len; i++) {
+                        const item = pluginData[i];
                         if (item.id !== undefined) {
                             pluginDataByAtomId.set(item.id, item);
                         }
                     }
                 }
             } catch (err) {
-                // Plugin data may not exist for this frame, continue without it
                 console.warn(`[MergedAtoms] Could not load plugin data: ${err}`);
             }
         }
-        let finalPerAtomProperties = [];
 
-        // Build merged rows
-        const rows: any[] = [];
-        for (let i = startIndex; i < limit; i++) {
+        const propertySet = new Set<string>();
+        const finalPerAtomProperties: string[] = [];
+
+        const rowCount = limit - startIndex;
+        const rows = new Array(rowCount);
+
+        const positions = parsed.positions;
+        const types = parsed.types;
+        const ids = parsed.ids;
+        const hasIds = ids !== undefined;
+        const hasTypes = types !== undefined;
+        const hasPluginData = pluginDataByAtomId !== null;
+        const propsLen = perAtomProperties.length;
+
+        for (let idx = 0; idx < rowCount; idx++) {
+            const i = startIndex + idx;
             const base = i * 3;
-            const atomId = parsed.ids ? parsed.ids[i] : i + 1; 
+            const atomId = hasIds ? ids![i] : i + 1;
 
             const row: any = {
                 id: atomId,
-                type: parsed.types ? parsed.types[i] : undefined,
-                x: parsed.positions[base],
-                y: parsed.positions[base + 1],
-                z: parsed.positions[base + 2]
+                type: hasTypes ? types![i] : undefined,
+                x: positions[base],
+                y: positions[base + 1],
+                z: positions[base + 2]
             };
 
-            // Add per-atom properties from plugin data
-            const pluginItem = pluginDataByAtomId.get(atomId);
-            if (pluginItem) {
-                for (const prop of perAtomProperties) {
-                    const value = pluginItem[prop];
-                    if (Array.isArray(value)) {
-                        // Let prop = [i0, i1, i2, ..., in].
-                        // Then define an array of strings where the i-th element
-                        // is the displayName of prop[i]. 
-                        // Finally, define columnName as: {prop} [strings.join(' ')].
-                        const { keys } = schemaNode?.data?.schema?.definition.data.items[prop] || [];
-                        for(let i = 0; i < keys.length; i++){
-                            const columnName = `${prop} ${keys[i]}`;
-                            row[columnName] = value[i];
-                        if(!finalPerAtomProperties.find((c) => c === columnName)){
-                        finalPerAtomProperties.push(columnName);
+            if (hasPluginData) {
+                const pluginItem = pluginDataByAtomId!.get(atomId);
+                if (pluginItem) {
+                    for (let p = 0; p < propsLen; p++) {
+                        const prop = perAtomProperties[p];
+                        const value = pluginItem[prop];
+
+                        if (Array.isArray(value)) {
+                            const keys = schemaKeysCache.get(prop);
+                            if (keys) {
+                                const keysLen = keys.length;
+                                for (let k = 0; k < keysLen; k++) {
+                                    const columnName = `${prop} ${keys[k]}`;
+                                    row[columnName] = value[k];
+                                    if (!propertySet.has(columnName)) {
+                                        propertySet.add(columnName);
+                                        finalPerAtomProperties.push(columnName);
+                                    }
+                                }
+                            }
+                        } else if (value !== undefined) {
+                            row[prop] = value;
+                            if (!propertySet.has(prop)) {
+                                propertySet.add(prop);
+                                finalPerAtomProperties.push(prop);
+                            }
                         }
-                    }
-                    } else {
-                        row[prop] = value;
-                        finalPerAtomProperties.push(prop);
                     }
                 }
             }
 
-            rows.push(row);
+            rows[idx] = row;
         }
 
         res.status(200).json({
@@ -162,3 +173,4 @@ export default class MergedAtomsController {
         });
     });
 }
+
