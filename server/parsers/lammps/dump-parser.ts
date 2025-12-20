@@ -1,195 +1,94 @@
-import BaseParser from '@/parsers/base-parser';
-import { FrameMetadata } from '@/types/parser';
+import path from 'path';
+import { ParseResult, FrameMetadata, ParseOptions } from '@/types/parser';
 import { getStatsNative } from './native-stats';
 
-export default class LammpsDumpParser extends BaseParser{
-    public async getStatsForProperty(filePath: string, property: string): Promise<{ min: number; max: number }> {
-        const headerLines = await this.getHeaderLines(filePath);
-        this.extractMetadata(headerLines);
-        const propIdx = this.headers.findIndex((c) => c === property.toLowerCase());
+interface NativeDumpResult {
+    positions: Float32Array;
+    types: Uint16Array;
+    ids?: Uint32Array;
+    properties?: { [name: string]: Float32Array };
+    metadata: {
+        timestep: number;
+        natoms: number;
+        boxBounds: {
+            xlo: number;
+            xhi: number;
+            ylo: number;
+            yhi: number;
+            zlo: number;
+            zhi: number;
+        };
+        headers: string[];
+    };
+    min: [number, number, number];
+    max: [number, number, number];
+}
 
-        if(propIdx === -1){
+interface NativeModule {
+    parseDump(filePath: string, options: { includeIds?: boolean; properties?: string[] }): NativeDumpResult | undefined;
+}
+
+const nativePath = path.join(process.cwd(), 'native/build/Release/dump_parser.node');
+const nativeModule: NativeModule = require(nativePath);
+
+/**
+ * High-performance LAMMPS dump parser using native C++ addon.
+ * Uses mmap + fast_atof for maximum parsing speed.
+ */
+export default class LammpsDumpParser {
+    /**
+     * Parse a LAMMPS dump file using the native C++ parser.
+     */
+    public parse(filePath: string, options: ParseOptions = {}): ParseResult {
+        const result = nativeModule.parseDump(filePath, {
+            includeIds: options.includeIds,
+            properties: options.properties
+        });
+
+        if (!result) {
+            throw new Error('NativeDumpParserFailed');
+        }
+
+        return {
+            metadata: result.metadata as FrameMetadata,
+            positions: result.positions,
+            types: result.types,
+            ids: result.ids,
+            properties: result.properties,
+            min: result.min,
+            max: result.max
+        };
+    }
+
+    /**
+     * Get min/max statistics for a property using native C++ parser.
+     */
+    public getStatsForProperty(filePath: string, property: string): { min: number; max: number } {
+        // First parse header to find property index
+        const result = nativeModule.parseDump(filePath, { properties: [] });
+        if (!result) {
+            throw new Error('NativeDumpParserFailed');
+        }
+
+        const propIdx = result.metadata.headers.findIndex(
+            (h: string) => h === property.toLowerCase()
+        );
+
+        if (propIdx === -1) {
             throw new Error(`Property ${property} not found in dump file headers.`);
         }
 
-        const result = getStatsNative(filePath, propIdx);
-        if(!result){
+        const stats = getStatsNative(filePath, propIdx);
+        if (!stats) {
             throw new Error('Native stats parser failed');
         }
-        return result;
+        return stats;
     }
 
-    private idxType = -1;
-    private idxX = -1;
-    private idxY = -1;
-    private idxZ = -1;
-    private idxId = -1;
-    private propertyIndices: { [name: string]: number } = {};
-    private headers: string[] = [];
-
-    private maxColumnIndex = 0;
-
-    canParse(headerLines: string[]): boolean{
+    /**
+     * Check if file is a valid LAMMPS dump format.
+     */
+    public canParse(headerLines: string[]): boolean {
         return headerLines.some((line) => line.includes('ITEM: TIMESTEP'));
     }
-
-    extractMetadata(lines: string[]): FrameMetadata{
-        let timestep = 0;
-        let natoms = 0;
-        const boxBounds = {
-            xlo: 0,
-            xhi: 0,
-            ylo: 0,
-            yhi: 0,
-            zlo: 0,
-            zhi: 0
-        };
-
-        // Validation flags
-        let foundTimestep = false;
-        let foundNatoms = false;
-        let foundBounds = false;
-        let foundAtomsHeader = false;
-
-        for(let i = 0; i < lines.length; i++){
-            const line = lines[i].trim();
-
-            if(line === 'ITEM: TIMESTEP' && lines[i + 1]){
-                timestep = parseInt(lines[i + 1].trim(), 10);
-                foundTimestep = !isNaN(timestep);
-            }else if(line === 'ITEM: NUMBER OF ATOMS' && lines[i + 1]){
-                natoms = parseInt(lines[i + 1].trim(), 10);
-                foundNatoms = !isNaN(natoms);
-            }else if(line.startsWith('ITEM: BOX BOUNDS')) {
-                const isTriclinic = line.includes('xy') || line.includes('xz') || line.includes('yz');
-                if(lines[i + 1] && lines[i + 2] && lines[i + 3]){
-                    const xLine = lines[i + 1].trim().split(/\s+/).map(Number);
-                    const yLine = lines[i + 2].trim().split(/\s+/).map(Number);
-                    const zLine = lines[i + 3].trim().split(/\s+/).map(Number);
-
-                    if(xLine.length >= 2 && yLine.length >= 2 && zLine.length >= 2){
-                        boxBounds.xlo = xLine[0];
-                        boxBounds.xhi = xLine[1];
-                        boxBounds.ylo = yLine[0];
-                        boxBounds.yhi = yLine[1];
-                        boxBounds.zlo = zLine[0];
-                        boxBounds.zhi = zLine[1];
-                        foundBounds = true;
-                    }
-                }
-            }else if(line.startsWith('ITEM: ATOMS')) {
-                this.mapColumns(line);
-                foundAtomsHeader = true;
-            }
-        }
-
-        // Validation
-        if(!foundTimestep || !foundNatoms || !foundBounds || !foundAtomsHeader){
-            throw new Error('InvalidLammpsDumpsFormat');
-        }
-
-        return { timestep, natoms, boxBounds, headers: this.headers };
-    }
-
-    private mapColumns(headerLine: string) {
-        this.headers = headerLine.replace(/^ITEM:\s*ATOMS\s*/, '')
-            .trim()
-            .split(/\s+/)
-            .map(c => c.toLowerCase());
-        this.idxType = this.headers.findIndex((c) => c === 'type');
-
-        const findCoord = (suffixes: string[]) => this.headers.findIndex((c) => suffixes.includes(c));
-        this.idxX = findCoord(['x', 'xu', 'xs']);
-        this.idxY = findCoord(['y', 'yu', 'ys']);
-        this.idxZ = findCoord(['z', 'zu', 'zs']);
-
-        if(this.parseOptions.includeIds){
-            this.idxId = this.headers.findIndex((c) => c === 'id');
-        }
-
-        if(this.parseOptions.properties){
-            for(const prop of this.parseOptions.properties){
-                const idx = this.headers.findIndex((c) => c === prop.toLowerCase());
-                if(idx !== -1){
-                    this.propertyIndices[prop] = idx;
-                }
-            }
-        }
-
-        if(this.idxType < 0 || this.idxX < 0 || this.idxY < 0 || this.idxZ < 0){
-            throw new Error('MissingRequiredColumnsInDumpFile');
-        }
-
-        this.maxColumnIndex = Math.max(
-            this.idxType,
-            this.idxX,
-            this.idxY,
-            this.idxZ,
-            this.idxId,
-                ...Object.values(this.propertyIndices)
-        );
-    }
-
-    isAtomSection(line: string): boolean{
-        if(line.startsWith('ITEM: ATOMS')) {
-            this.mapColumns(line);
-            return true;
-        }
-        if(line.startsWith('ITEM:')) return false;
-        return false;
-    }
-
-    parseAtomLine(line: string): void{
-        this.scanner.load(line);
-
-        let currentTokenIdx = 0;
-        let type = 0;
-        let x = 0.0, y = 0.0, z = 0.0;
-        let id: number | undefined;
-        const props: { [name: string]: number } = {};
-
-        while(currentTokenIdx <= this.maxColumnIndex){
-            let val: number | undefined;
-            let read = false;
-
-            if(currentTokenIdx === this.idxType){
-                type = this.scanner.nextInt();
-                val = type;
-                read = true;
-            }else if(currentTokenIdx === this.idxX){
-                x = this.scanner.nextFloat();
-                val = x;
-                read = true;
-            }else if(currentTokenIdx === this.idxY){
-                y = this.scanner.nextFloat();
-                val = y;
-                read = true;
-            }else if(currentTokenIdx === this.idxZ){
-                z = this.scanner.nextFloat();
-                val = z;
-                read = true;
-            }else if(currentTokenIdx === this.idxId){
-                id = this.scanner.nextInt();
-                val = id;
-                read = true;
-            }
-
-            for(const propName in this.propertyIndices){
-                if(this.propertyIndices[propName] === currentTokenIdx){
-                    if(!read){
-                        val = this.scanner.nextFloat();
-                        read = true;
-                    }
-                    props[propName] = val!;
-                }
-            }
-
-            if(!read){
-                this.scanner.jump(1);
-            }
-
-            currentTokenIdx++;
-        }
-        this.pushAtom(type, x, y, z, id, props);
-    }
-};
+}

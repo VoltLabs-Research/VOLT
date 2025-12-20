@@ -1,146 +1,62 @@
 #include <node_api.h>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <cmath>
-#include <algorithm>
-
-static inline double fast_atof(const char* p, const char* end) {
-    double sign = 1.0;
-    
-    if (p >= end) return 0.0;
-    
-    if (*p == '-') {
-        sign = -1.0;
-        p++;
-    } else if (*p == '+') {
-        p++;
-    }
-    
-    double intPart = 0.0;
-    while (p < end && *p >= '0' && *p <= '9') {
-        intPart = intPart * 10.0 + (*p - '0');
-        p++;
-    }
-    
-    double fracPart = 0.0;
-    double fracDiv = 1.0;
-    if (p < end && *p == '.') {
-        p++;
-        while (p < end && *p >= '0' && *p <= '9') {
-            fracPart = fracPart * 10.0 + (*p - '0');
-            fracDiv *= 10.0;
-            p++;
-        }
-    }
-    
-    double result = sign * (intPart + fracPart / fracDiv);
-    
-    if (p < end && (*p == 'e' || *p == 'E')) {
-        p++;
-        int expSign = 1;
-        if (p < end && *p == '-') {
-            expSign = -1;
-            p++;
-        } else if (p < end && *p == '+') {
-            p++;
-        }
-        int exp = 0;
-        while (p < end && *p >= '0' && *p <= '9') {
-            exp = exp * 10 + (*p - '0');
-            p++;
-        }
-        result *= pow(10.0, expSign * exp);
-    }
-    
-    return result;
-}
+#include "common.hpp"
 
 struct StatsResult {
-    double min;
-    double max;
+    double min = 1e300;
+    double max = -1e300;
 };
 
-static StatsResult get_stats_native(const char* filepath, int propIdx) {
-    StatsResult result = { 1e300, -1e300 };
+HOT static StatsResult getStatsForProperty(const char* RESTRICT filepath, int propIdx) {
+    StatsResult result;
     
-    int fd = open(filepath, O_RDONLY);
-    if (fd < 0) return result;
+    MappedFile file = mapFile(filepath);
+    if (!file.valid) return result;
     
-    struct stat sb;
-    if (fstat(fd, &sb) < 0) {
-        close(fd);
-        return result;
-    }
-    
-    size_t fileSize = sb.st_size;
-    const char* data = (const char*)mmap(nullptr, fileSize, PROT_READ, MAP_PRIVATE, fd, 0);
-    if (data == MAP_FAILED) {
-        close(fd);
-        return result;
-    }
-    
-    // Advise kernel for sequential access
-    madvise((void*)data, fileSize, MADV_SEQUENTIAL);
-    
-    const char* end = data + fileSize;
-    const char* p = data;
+    const char* end = file.data + file.size;
     
     // Find ITEM: ATOMS
-    const char* atomsMarker = "ITEM: ATOMS";
-    const char* atomsStart = (const char*)memmem(data, fileSize, atomsMarker, 11);
-    if (!atomsStart) {
-        munmap((void*)data, fileSize);
-        close(fd);
+    const char* atomsMarker = (const char*)memmem(file.data, file.size, "ITEM: ATOMS", 11);
+    if (UNLIKELY(!atomsMarker)) {
+        unmapFile(file);
         return result;
     }
     
-    // Skip to next line
-    p = atomsStart;
-    while (p < end && *p != '\n') p++;
-    p++; // Skip newline
+    // Skip header line
+    const char* p = jumpToNextLine(atomsMarker, end);
     
-    // Process lines until next ITEM: or EOF
+    // Process lines
     while (p < end) {
-        // Check for next ITEM:
-        if (*p == 'I' && p + 4 < end && p[4] == ':') {
+        const char* lineEnd = findLineEnd(p, end);
+        const char* content = skipWhitespace(p, lineEnd);
+        
+        // Check for next ITEM: section
+        if (UNLIKELY(content[0] == 'I' && lineEnd - content >= 5 && content[4] == ':')) {
             break;
         }
         
-        // Find end of line
-        const char* lineEnd = p;
-        while (lineEnd < end && *lineEnd != '\n') lineEnd++;
-        
-        // Skip leading whitespace
-        while (p < lineEnd && (*p == ' ' || *p == '\t')) p++;
-        
-        // Parse fields
+        // Parse fields to find target property
         int fieldIdx = 0;
-        while (p < lineEnd) {
-            const char* tokenStart = p;
-            while (p < lineEnd && *p != ' ' && *p != '\t') p++;
+        const char* tok = content;
+        
+        while (tok < lineEnd) {
+            const char* tokEnd = findTokenEnd(tok, lineEnd);
             
             if (fieldIdx == propIdx) {
-                double val = fast_atof(tokenStart, p);
+                double val = fastAtof(tok, tokEnd);
                 if (val < result.min) result.min = val;
                 if (val > result.max) result.max = val;
                 break;
             }
             
             fieldIdx++;
-            while (p < lineEnd && (*p == ' ' || *p == '\t')) p++;
+            tok = skipWhitespace(tokEnd, lineEnd);
         }
         
-        // Move to next line
         p = lineEnd + 1;
     }
     
-    munmap((void*)data, fileSize);
-    close(fd);
+    unmapFile(file);
     
     if (result.min > 1e299) result.min = 0;
     if (result.max < -1e299) result.max = 0;
@@ -148,7 +64,41 @@ static StatsResult get_stats_native(const char* filepath, int propIdx) {
     return result;
 }
 
-// N-API wrapper for file-based stats
+template<typename T>
+HOT static void computeMinMax(T* RESTRICT data, size_t length, double& min, double& max) {
+    min = 1e300;
+    max = -1e300;
+    
+    size_t i = 0;
+    
+    // Unrolled loop (4x)
+    for (; i + 4 <= length; i += 4) {
+        double v0 = (double)data[i];
+        double v1 = (double)data[i + 1];
+        double v2 = (double)data[i + 2];
+        double v3 = (double)data[i + 3];
+        
+        if (v0 < min) min = v0;
+        if (v0 > max) max = v0;
+        if (v1 < min) min = v1;
+        if (v1 > max) max = v1;
+        if (v2 < min) min = v2;
+        if (v2 > max) max = v2;
+        if (v3 < min) min = v3;
+        if (v3 > max) max = v3;
+    }
+    
+    // Remainder
+    for (; i < length; i++) {
+        double v = (double)data[i];
+        if (v < min) min = v;
+        if (v > max) max = v;
+    }
+    
+    if (min > 1e299) min = 0;
+    if (max < -1e299) max = 0;
+}
+
 static napi_value GetStatsForProperty(napi_env env, napi_callback_info info) {
     size_t argc = 2;
     napi_value args[2];
@@ -157,43 +107,34 @@ static napi_value GetStatsForProperty(napi_env env, napi_callback_info info) {
     // Get filepath
     size_t pathLen;
     napi_get_value_string_utf8(env, args[0], nullptr, 0, &pathLen);
-    char* filepath = new char[pathLen + 1];
+    char filepath[pathLen + 1];
     napi_get_value_string_utf8(env, args[0], filepath, pathLen + 1, &pathLen);
     
     // Get property index
     int32_t propIdx;
     napi_get_value_int32(env, args[1], &propIdx);
     
-    // Call native function
-    StatsResult stats = get_stats_native(filepath, propIdx);
+    StatsResult stats = getStatsForProperty(filepath, propIdx);
     
-    delete[] filepath;
-    
-    // Create result object
     napi_value result;
     napi_create_object(env, &result);
     
     napi_value minVal, maxVal;
     napi_create_double(env, stats.min, &minVal);
     napi_create_double(env, stats.max, &maxVal);
-    
     napi_set_named_property(env, result, "min", minVal);
     napi_set_named_property(env, result, "max", maxVal);
     
     return result;
 }
 
-// N-API wrapper for in-memory Float32Array/Float64Array min/max
 static napi_value GetMinMaxFromTypedArray(napi_env env, napi_callback_info info) {
     size_t argc = 1;
     napi_value args[1];
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
     
-    napi_value arr = args[0];
-    
-    // Check if it's a TypedArray
     bool isTypedArray;
-    napi_is_typedarray(env, arr, &isTypedArray);
+    napi_is_typedarray(env, args[0], &isTypedArray);
     
     if (!isTypedArray) {
         napi_value undefined;
@@ -201,65 +142,31 @@ static napi_value GetMinMaxFromTypedArray(napi_env env, napi_callback_info info)
         return undefined;
     }
     
-    // Get TypedArray info
     napi_typedarray_type type;
     size_t length;
     void* data;
     napi_value arraybuffer;
-    size_t byte_offset;
+    size_t offset;
+    napi_get_typedarray_info(env, args[0], &type, &length, &data, &arraybuffer, &offset);
     
-    napi_get_typedarray_info(env, arr, &type, &length, &data, &arraybuffer, &byte_offset);
+    double min, max;
     
-    if (length == 0) {
-        napi_value result;
-        napi_create_object(env, &result);
-        napi_value zero;
-        napi_create_double(env, 0.0, &zero);
-        napi_set_named_property(env, result, "min", zero);
-        napi_set_named_property(env, result, "max", zero);
-        return result;
+    switch (type) {
+        case napi_float32_array:
+            computeMinMax((float*)data, length, min, max);
+            break;
+        case napi_float64_array:
+            computeMinMax((double*)data, length, min, max);
+            break;
+        case napi_int32_array:
+            computeMinMax((int32_t*)data, length, min, max);
+            break;
+        case napi_uint32_array:
+            computeMinMax((uint32_t*)data, length, min, max);
+            break;
+        default:
+            min = max = 0;
     }
-    
-    double min = 1e300;
-    double max = -1e300;
-    
-    if (type == napi_float32_array) {
-        float* arr_data = static_cast<float*>(data);
-        for (size_t i = 0; i < length; i++) {
-            float val = arr_data[i];
-            if (val < min) min = val;
-            if (val > max) max = val;
-        }
-    } else if (type == napi_float64_array) {
-        double* arr_data = static_cast<double*>(data);
-        for (size_t i = 0; i < length; i++) {
-            double val = arr_data[i];
-            if (val < min) min = val;
-            if (val > max) max = val;
-        }
-    } else if (type == napi_int32_array) {
-        int32_t* arr_data = static_cast<int32_t*>(data);
-        for (size_t i = 0; i < length; i++) {
-            double val = static_cast<double>(arr_data[i]);
-            if (val < min) min = val;
-            if (val > max) max = val;
-        }
-    } else if (type == napi_uint32_array) {
-        uint32_t* arr_data = static_cast<uint32_t*>(data);
-        for (size_t i = 0; i < length; i++) {
-            double val = static_cast<double>(arr_data[i]);
-            if (val < min) min = val;
-            if (val > max) max = val;
-        }
-    } else {
-        // Unsupported type
-        napi_value undefined;
-        napi_get_undefined(env, &undefined);
-        return undefined;
-    }
-    
-    if (min > 1e299) min = 0;
-    if (max < -1e299) max = 0;
     
     napi_value result;
     napi_create_object(env, &result);
@@ -267,60 +174,50 @@ static napi_value GetMinMaxFromTypedArray(napi_env env, napi_callback_info info)
     napi_value minVal, maxVal;
     napi_create_double(env, min, &minVal);
     napi_create_double(env, max, &maxVal);
-    
     napi_set_named_property(env, result, "min", minVal);
     napi_set_named_property(env, result, "max", maxVal);
     
     return result;
 }
 
-// N-API wrapper for computing vector magnitudes from array of Float32Arrays
-// Input: Array of Float32Arrays (each is a vector [x, y, z, ...])
-// Output: Float32Array of magnitudes
 static napi_value ComputeMagnitudes(napi_env env, napi_callback_info info) {
     size_t argc = 1;
     napi_value args[1];
     napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
     
-    napi_value inputArray = args[0];
-    
-    // Check if it's an array
     bool isArray;
-    napi_is_array(env, inputArray, &isArray);
-    
+    napi_is_array(env, args[0], &isArray);
     if (!isArray) {
         napi_value undefined;
         napi_get_undefined(env, &undefined);
         return undefined;
     }
     
-    // Get array length
     uint32_t length;
-    napi_get_array_length(env, inputArray, &length);
+    napi_get_array_length(env, args[0], &length);
     
     if (length == 0) {
-        // Return empty Float32Array
-        napi_value arraybuffer, result;
+        napi_value buf, arr;
         void* data;
-        napi_create_arraybuffer(env, 0, &data, &arraybuffer);
-        napi_create_typedarray(env, napi_float32_array, 0, arraybuffer, 0, &result);
-        return result;
+        napi_create_arraybuffer(env, 0, &data, &buf);
+        napi_create_typedarray(env, napi_float32_array, 0, buf, 0, &arr);
+        return arr;
     }
     
-    // Allocate output buffer
-    napi_value arraybuffer, result;
+    // Allocate output
+    napi_value outBuffer, outArray;
     void* outData;
-    napi_create_arraybuffer(env, length * sizeof(float), &outData, &arraybuffer);
-    float* magnitudes = static_cast<float*>(outData);
+    napi_create_arraybuffer(env, length * sizeof(float), &outData, &outBuffer);
+    float* magnitudes = (float*)outData;
     
-    // Process each vector
     for (uint32_t i = 0; i < length; i++) {
         napi_value element;
-        napi_get_element(env, inputArray, i, &element);
+        napi_get_element(env, args[0], i, &element);
         
-        // Check if element is a TypedArray (Float32Array)
         bool isTypedArray;
         napi_is_typedarray(env, element, &isTypedArray);
+        
+        double sum = 0.0;
         
         if (isTypedArray) {
             napi_typedarray_type type;
@@ -330,29 +227,23 @@ static napi_value ComputeMagnitudes(napi_env env, napi_callback_info info) {
             size_t offset;
             napi_get_typedarray_info(env, element, &type, &vecLen, &vecData, &ab, &offset);
             
-            double sum = 0.0;
             if (type == napi_float32_array) {
-                float* fdata = static_cast<float*>(vecData);
+                float* fdata = (float*)vecData;
                 for (size_t j = 0; j < vecLen; j++) {
                     sum += fdata[j] * fdata[j];
                 }
             } else if (type == napi_float64_array) {
-                double* ddata = static_cast<double*>(vecData);
+                double* ddata = (double*)vecData;
                 for (size_t j = 0; j < vecLen; j++) {
                     sum += ddata[j] * ddata[j];
                 }
             }
-            magnitudes[i] = static_cast<float>(sqrt(sum));
         } else {
-            // Check if it's a regular JS array
             bool isJsArray;
             napi_is_array(env, element, &isJsArray);
-            
             if (isJsArray) {
                 uint32_t vecLen;
                 napi_get_array_length(env, element, &vecLen);
-                
-                double sum = 0.0;
                 for (uint32_t j = 0; j < vecLen; j++) {
                     napi_value val;
                     napi_get_element(env, element, j, &val);
@@ -360,18 +251,16 @@ static napi_value ComputeMagnitudes(napi_env env, napi_callback_info info) {
                     napi_get_value_double(env, val, &num);
                     sum += num * num;
                 }
-                magnitudes[i] = static_cast<float>(sqrt(sum));
-            } else {
-                magnitudes[i] = 0.0f;
             }
         }
+        
+        magnitudes[i] = (float)sqrt(sum);
     }
     
-    napi_create_typedarray(env, napi_float32_array, length, arraybuffer, 0, &result);
-    return result;
+    napi_create_typedarray(env, napi_float32_array, length, outBuffer, 0, &outArray);
+    return outArray;
 }
 
-// Module initialization
 static napi_value Init(napi_env env, napi_value exports) {
     napi_value fn1, fn2, fn3;
     
@@ -388,5 +277,3 @@ static napi_value Init(napi_env env, napi_value exports) {
 }
 
 NAPI_MODULE(NODE_GYP_MODULE_NAME, Init)
-
-

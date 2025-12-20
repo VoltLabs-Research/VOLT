@@ -1,31 +1,33 @@
-import BaseParser from '@/parsers/base-parser';
 import LammpsDumpParser from '@/parsers/lammps/dump-parser';
 import LammpsDataParser from '@/parsers/lammps/data-parser';
 import { readLargeFile } from '@/utilities/fs';
-import { ParseOptions } from '@/types/parser';
+import { ParseOptions, ParseResult } from '@/types/parser';
 
-export default class TrajectoryParserFactory{
+/**
+ * Factory for parsing trajectory files using native C++ parsers.
+ */
+export default class TrajectoryParserFactory {
     /**
-     * Automatically detects the file format and returns a fully populated ParseResult.
+     * Automatically detects the file format and parses using native C++ addon.
      */
-    public static async parse(filePath: string, options?: ParseOptions){
-        // Peek at header
+    public static async parse(filePath: string, options?: ParseOptions): Promise<ParseResult> {
+        // Peek at header to detect format
         const headerLines: string[] = [];
         await readLargeFile(filePath, {
             maxLines: 50,
             onLine: (line) => headerLines.push(line)
         });
 
-        // Select strategy
-        let parser: BaseParser;
-        if(new LammpsDumpParser().canParse(headerLines)){
-            parser = new LammpsDumpParser();
-        }else if(new LammpsDataParser().canParse(headerLines)){
-            parser = new LammpsDataParser();
-        }else{
+        // Select parser based on format
+        const dumpParser = new LammpsDumpParser();
+        const dataParser = new LammpsDataParser();
+
+        if (dumpParser.canParse(headerLines)) {
+            return dumpParser.parse(filePath, options);
+        } else if (dataParser.canParse(headerLines)) {
+            return dataParser.parse(filePath, options);
+        } else {
             throw new Error('UnsupportedTrajectoryFormat');
         }
-
-        return parser.parse(filePath, options);
     }
-};
+}
