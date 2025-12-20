@@ -24,7 +24,7 @@ import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import { BaseProcessingQueue } from './base-processing-queue';
 import { Trajectory } from '@/models';
-import { rasterizeGLBs } from '@/utilities/export/raster';
+import { rasterizeGLBs } from '@/utilities/raster';
 import path from 'path';
 import { SYS_BUCKETS } from '@/config/minio';
 import logger from '@/logger';

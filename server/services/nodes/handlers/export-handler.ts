@@ -25,19 +25,19 @@ class ExportHandler implements NodeHandler {
         }
     };
 
-    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
+    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>> {
         const config = node.data.export!;
         const exposureNode = findAncestorByType(node.id, context.workflow, NodeType.EXPOSURE);
-        if(!exposureNode) throw new Error('Export must be connected to an Exposure');
+        if (!exposureNode) throw new Error('Export must be connected to an Exposure');
 
         const exposureOutput = context.outputs.get(exposureNode.id);
-        if(!exposureOutput?.results) return { error: 'No exposure data available to export' };
+        if (!exposureOutput?.results) return { error: 'No exposure data available to export' };
 
         const exposureResults = exposureOutput.results as any[];
         const exportResults: any[] = [];
 
-        for(const item of exposureResults){
-            if(item.error || !item.data){
+        for (const item of exposureResults) {
+            if (item.error || !item.data) {
                 exportResults.push({
                     index: item.index,
                     success: false,
@@ -48,7 +48,7 @@ class ExportHandler implements NodeHandler {
 
             const objectName = `trajectory-${context.trajectoryId}/analysis-${context.analysisId}/glb/${item.frame ?? item.index}/${slugify(exposureNode.id)}.${config.type}`;
 
-            try{
+            try {
                 await this.exportItem(
                     config.exporter as Exporter,
                     item.data,
@@ -62,7 +62,7 @@ class ExportHandler implements NodeHandler {
                     exporter: config.exporter,
                     type: config.type
                 });
-            }catch(error: any){
+            } catch (error: any) {
                 logger.error(`[ExportHandler] Failed for item ${item.index}: ${error.message}`);
                 exportResults.push({
                     index: item.index,
@@ -80,27 +80,27 @@ class ExportHandler implements NodeHandler {
         data: any,
         objectName: string,
         options: Record<string, any>
-    ): Promise<void>{
+    ): Promise<void> {
         // For AtomisticExporter, check if data is already grouped by structure type
-        if(exporterType === Exporter.ATOMISTIC){
+        if (exporterType === Exporter.ATOMISTIC) {
             const exporter = new AtomisticExporter();
 
             // If data has 'keys' array, it's the keyed schema format with atoms grouped by type
-            if(data.keys && Array.isArray(data.keys)) {
+            if (data.keys && Array.isArray(data.keys)) {
                 // Extract the grouped atoms(exclude 'keys' from the data)
                 const groupedAtoms: Record<string, any[]> = {};
-                for(const key of data.keys){
-                    if(data[key] && Array.isArray(data[key])) {
+                for (const key of data.keys) {
+                    if (data[key] && Array.isArray(data[key])) {
                         groupedAtoms[key] = data[key];
                     }
                 }
-                await exporter.exportAtomsTypeToGLBMinIO(groupedAtoms, objectName, options);
+                await exporter.exportAtomsTypeToGLBMinIO(groupedAtoms, objectName);
                 return;
             }
 
             // If data is a string(file path), use original method
-            if(typeof data === 'string'){
-                await exporter.toGLBMinIO(data, objectName, options);
+            if (typeof data === 'string') {
+                await exporter.toGLBMinIO(data, objectName);
                 return;
             }
 
@@ -108,8 +108,8 @@ class ExportHandler implements NodeHandler {
             const structureKeys = Object.keys(data).filter(k =>
                 Array.isArray(data[k]) && data[k].length > 0 && data[k][0]?.pos
             );
-            if(structureKeys.length > 0){
-                await exporter.exportAtomsTypeToGLBMinIO(data, objectName, options);
+            if (structureKeys.length > 0) {
+                await exporter.exportAtomsTypeToGLBMinIO(data, objectName);
                 return;
             }
 
@@ -121,8 +121,8 @@ class ExportHandler implements NodeHandler {
         await exporter.toGLBMinIO(data, objectName, options);
     }
 
-    private getExporter(exporterType: Exporter): any{
-        switch(exporterType){
+    private getExporter(exporterType: Exporter): any {
+        switch (exporterType) {
             case Exporter.ATOMISTIC: return new AtomisticExporter();
             case Exporter.DISLOCATION: return new DislocationExporter();
             case Exporter.MESH: return new MeshExporter();

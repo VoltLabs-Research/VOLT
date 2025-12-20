@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { Analysis, Trajectory } from '@/models';
-import { getTimestepPreview, rasterizeGLBs } from '@/utilities/export/raster';
+import { RasterizerOptions } from '@/utilities/export/rasterizer';
+import { getTimestepPreview, rasterizeGLBs } from '@/utilities/raster';
 import { SYS_BUCKETS } from '@/config/minio';
 import TrajectoryVFS from '@/services/trajectory-vfs';
 import archiver from 'archiver';
@@ -12,7 +12,7 @@ export default class RasterController{
     public rasterizeFrames = catchAsync(async(req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
-        const opts: Partial<HeadlessRasterizerOptions> = req.body ?? {};
+        const opts: Partial<RasterizerOptions> = req.body ?? {};
 
         const trajectoryPreviews = `trajectory-${trajectoryId}/previews/`;
         await rasterizeGLBs(trajectoryPreviews, SYS_BUCKETS.MODELS, SYS_BUCKETS.RASTERIZER, trajectory, opts);

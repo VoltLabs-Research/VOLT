@@ -1,8 +1,8 @@
 import { BaseJob } from '@/types/queues/base-processing-queue';
-import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
+import { RasterizerOptions } from '@/utilities/export/rasterizer';
 
 export interface RasterizerJob extends BaseJob{
-    opts: Partial<HeadlessRasterizerOptions>;
+    opts: Partial<RasterizerOptions>;
     sessionStartTime?: string;
     timestep: number;
 }

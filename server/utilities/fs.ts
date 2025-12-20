@@ -51,20 +51,20 @@ interface ReadBinaryFileResult {
     metadata: Record<string, any>
 }
 
-export const listGlbFiles = async(dir: string, out: string[] = []): Promise<string[]> =>{
+export const listGlbFiles = async (dir: string, out: string[] = []): Promise<string[]> => {
     const entries = await readdir(dir, { withFileTypes: true });
-    for(const e of entries){
-        if(!e.isFile()) continue;
-        if(!/\.(glb|gltf)$/i.test(e.name)) continue;
+    for (const e of entries) {
+        if (!e.isFile()) continue;
+        if (!/\.(glb|gltf)$/i.test(e.name)) continue;
         out.push(join(dir, e.name));
     }
     return out;
 };
 
-export const readBinaryFile = async(
+export const readBinaryFile = async (
     filePath: string,
     options: ReadBinaryFileOptions = {}
-): Promise<ReadBinaryFileResult> =>{
+): Promise<ReadBinaryFileResult> => {
     const {
         // 1 mb
         chunkSize = 1024 * 1024,
@@ -82,8 +82,8 @@ export const readBinaryFile = async(
         stream.on('data', (chunk: Buffer) => {
             bytesRead += chunk.length;
             chunks.push(chunk);
-            if(onChunk) onChunk(chunk, bytesRead);
-            if(onProgress && bytesRead % (10 * 1024 * 1024) < chunk.length) {
+            if (onChunk) onChunk(chunk, bytesRead);
+            if (onProgress && bytesRead % (10 * 1024 * 1024) < chunk.length) {
                 onProgress(bytesRead);
             }
         });
@@ -100,12 +100,12 @@ export const readBinaryFile = async(
     });
 };
 
-export const fileExists = async(filePath: string): Promise<boolean> =>{
-    try{
+export const fileExists = async (filePath: string): Promise<boolean> => {
+    try {
         await access(filePath, constants.F_OK);
         return true;
-    }catch(err: any){
-        if(err?.code === 'ENOENT'){
+    } catch (err: any) {
+        if (err?.code === 'ENOENT') {
             return false;
         }
 
@@ -113,14 +113,14 @@ export const fileExists = async(filePath: string): Promise<boolean> =>{
     }
 };
 
-export const copyFile = async(source: string, destination: string): Promise<void> =>{
+export const copyFile = async (source: string, destination: string): Promise<void> => {
     logger.info(`Starting file copy: ${source} -> ${destination}`);
 
-    try{
+    try {
         const sourceStats = await stat(source);
         logger.info(`Source file size: ${sourceStats.size} bytes(${(sourceStats.size / 1024 / 1024).toFixed(2)}MB)`);
 
-        if(sourceStats.size === 0){
+        if (sourceStats.size === 0) {
             throw new Error(`Source file is empty: ${source}`);
         }
 
@@ -130,24 +130,24 @@ export const copyFile = async(source: string, destination: string): Promise<void
         const destinationStats = await stat(destination);
         logger.info(`Destination file size: ${destinationStats.size} bytes(${(destinationStats.size / 1024 / 1024).toFixed(2)}MB)`);
 
-        if(destinationStats.size !== sourceStats.size){
+        if (destinationStats.size !== sourceStats.size) {
             throw new Error(`File copy incomplete: source ${sourceStats.size} bytes, destination ${destinationStats.size} bytes`);
         }
-    }catch(err){
+    } catch (err) {
         logger.error(`Error copying file from ${source} to ${destination}: ${err}`);
         // Clean up partial file if it exists
-        try{
+        try {
             await rm(destination);
-        }catch(cleanupError){ }
+        } catch (cleanupError) { }
 
         throw err;
     }
 };
 
-export const readLargeFile = async(
+export const readLargeFile = async (
     filePath: string,
     options: ReadLargeFileOptions = {}
-): Promise<ReadLargeFileResult> =>{
+): Promise<ReadLargeFileResult> => {
     const {
         maxLines = 1000,
         encoding = 'utf8',
@@ -159,6 +159,7 @@ export const readLargeFile = async(
         const lines: string[] = [];
         let lineCount = 0;
         const metadata: Record<string, any> = {};
+        let stopped = false;
 
         const fileStream = createReadStream(filePath, { encoding });
         const rl = createInterface({
@@ -166,34 +167,58 @@ export const readLargeFile = async(
             crlfDelay: Infinity
         });
 
+        const cleanup = () => {
+            if (!stopped) {
+                stopped = true;
+                rl.close();
+                fileStream.destroy();
+            }
+        };
+
         rl.on('line', (line) => {
+            if (stopped) return;
+
             lineCount++;
 
             // Only keep the necessary lines in memory
-            if(lines.length < maxLines){
+            if (lines.length < maxLines) {
                 lines.push(line);
             }
 
             // Custom callback to process each line
-            if(onLine){
+            if (onLine) {
                 onLine(line, lineCount);
             }
 
+            // If we have onLine and hit maxLines, stop reading
+            if (onLine && lineCount >= maxLines) {
+                cleanup();
+                resolve({
+                    lines,
+                    totalLines: lineCount,
+                    metadata
+                });
+                return;
+            }
+
             // Progress callback
-            if(onProgress && lineCount % 1000 === 0){
+            if (onProgress && lineCount % 1000 === 0) {
                 onProgress(lineCount);
             }
         });
 
         rl.on('close', () => {
-            resolve({
-                lines,
-                totalLines: lineCount,
-                metadata
-            });
+            if (!stopped) {
+                resolve({
+                    lines,
+                    totalLines: lineCount,
+                    metadata
+                });
+            }
         });
 
         rl.on('error', (err) => {
+            cleanup();
             reject(err);
         });
     });

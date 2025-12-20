@@ -13,7 +13,7 @@ import { catchAsync } from '@/utilities/runtime/runtime';
 import { getMetricsByTeamId } from '@/utilities/metrics/team';
 import { Trajectory, Team } from '@/models';
 import { SYS_BUCKETS } from '@/config/minio';
-import { getAnyTrajectoryPreview, sendImage } from '@/utilities/export/raster';
+import { getAnyTrajectoryPreview, sendImage } from '@/utilities/raster';
 
 export default class TrajectoryController extends BaseController<any> {
     constructor(){

@@ -1,5 +1,5 @@
 import { ITrajectory } from '@/types/models/trajectory';
-import { HeadlessRasterizerOptions } from '@/services/headless-rasterizer';
+import { RasterizerOptions } from './export/rasterizer';
 import { createTempDir } from '@/utilities/runtime/runtime';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
 import { getRasterizerQueue } from '@/queues';
@@ -15,7 +15,7 @@ export const rasterizeGLBs = async(
     prefixBucketName: string,
     bucketName: string,
     trajectory: ITrajectory,
-    opts: Partial<HeadlessRasterizerOptions> = {}
+    opts: Partial<RasterizerOptions> = {}
 ): Promise<void> =>{
     const jobs: RasterizerJob[] = [];
     const CONCURRENCY_LIMIT = 10;
@@ -55,7 +55,7 @@ export const rasterizeGLBs = async(
                     message: `${trajectory.name} - Preview frame ${timestep}`,
                     opts: {
                         inputPath: tempPath,
-                            ...opts
+                        ...opts
                     }
                 });
             }catch(error){
