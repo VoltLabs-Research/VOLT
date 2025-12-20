@@ -24,15 +24,16 @@ import { BaseProcessingQueue } from '@/queues/base-processing-queue';
 import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import path from 'path';
+import { Queues } from '@/constants/queues';
 
 export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob>{
     constructor(){
         const options: QueueOptions = {
-            queueName: 'analysis-processing-queue',
+            queueName: Queues.ANALYSIS_PROCESSING,
             workerPath: path.resolve(__dirname, '../workers/analysis.ts'),
-            maxConcurrentJobs: 5,
-            cpuLoadThreshold: 80,
-            ramLoadThreshold: 85,
+            maxConcurrentJobs: Number(process.env.ANALYSIS_QUEUE_MAX_CONCURRENT_JOBS),
+            cpuLoadThreshold: Number(process.env.ANALYSIS_QUEUE_CPU_LOAD_THRESHOLD),
+            ramLoadThreshold: Number(process.env.ANALYSIS_QUEUE_RAM_LOAD_THRESHOLD),
         };
 
         super(options);

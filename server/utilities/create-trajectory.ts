@@ -64,7 +64,7 @@ const processTrajectoryFile = async(
 
 const dispatchTrajectoryJobs = async(validFiles: any[], trajectory: ITrajectory, teamId: string) => {
     const queue = getTrajectoryProcessingQueue();
-    const CHUNK_SIZE = 20;
+    const CHUNK_SIZE = Number(process.env.TRAJECTORY_QUEUE_JOB_CHUNK_SIZE);
     const jobs: any[] = [];
     const sessionId = v4();
 

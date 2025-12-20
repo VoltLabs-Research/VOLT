@@ -22,17 +22,20 @@
 
 import { BaseProcessingQueue } from '@/queues/base-processing-queue';
 import { QueueOptions } from '@/types/queues/base-processing-queue';
+import { Queues } from '@/constants/queues';
+import { Trajectory } from '@/models';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
 import path from 'path';
-import { Trajectory } from '@/models';
 import logger from '@/logger';
 
 export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
     constructor(){
         const options: QueueOptions = {
-            queueName: 'rasterizer-queue',
+            queueName: Queues.RASTERIZER,
             workerPath: path.resolve(__dirname, '../workers/headless-rasterizer.ts'),
-            maxConcurrentJobs: 5
+            maxConcurrentJobs: Number(process.env.RASTERIZER_QUEUE_MAX_CONCURRENT_JOBS),
+            cpuLoadThreshold: Number(process.env.RASTERIZER_QUEUE_CPU_LOAD_THRESHOLD),
+            ramLoadThreshold: Number(process.env.RASTERIZER_QUEUE_RAM_LOAD_THRESHOLD)
         };
 
         super(options);

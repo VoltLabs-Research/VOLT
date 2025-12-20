@@ -25,8 +25,9 @@ import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-qu
 import { BaseProcessingQueue } from './base-processing-queue';
 import { Trajectory } from '@/models';
 import { rasterizeGLBs } from '@/utilities/raster';
-import path from 'path';
 import { SYS_BUCKETS } from '@/config/minio';
+import { Queues } from '@/constants/queues';
+import path from 'path';
 import logger from '@/logger';
 
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
@@ -34,11 +35,11 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
 
     constructor(){
         const options: QueueOptions = {
-            queueName: 'trajectory-processing-queue',
+            queueName: Queues.TRAJECTORY_PROCESSING,
             workerPath: path.resolve(__dirname, '../workers/trajectory-processing.ts'),
-            maxConcurrentJobs: 5,
-            cpuLoadThreshold: 60,
-            ramLoadThreshold: 70,
+            maxConcurrentJobs: Number(process.env.TRAJECTORY_QUEUE_MAX_CONCURRENT_JOBS),
+            cpuLoadThreshold: Number(process.env.TRAJECTORY_QUEUE_CPU_LOAD_THRESHOLD),
+            ramLoadThreshold: Number(process.env.TRAJECTORY_QUEUE_RAM_LOAD_THREHOLD),
             useStreamingAdd: true
         };
 

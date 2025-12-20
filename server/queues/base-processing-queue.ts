@@ -455,7 +455,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         const workerId = worker.threadId;
 
         worker.on('message', (message) => this.handleWorkerMessage(workerId, message));
-        worker.on('error', (err) => this.handleWorkerError(workerId, err));
+        worker.on('error', (err: any) => this.handleWorkerError(workerId, err));
         worker.on('exit', (code) => this.handleWorkerExit(workerId, code));
 
         return worker;
