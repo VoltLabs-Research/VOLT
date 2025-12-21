@@ -30,23 +30,23 @@ export const initializeJobUpdatesListener = (io: Server) => {
     const subscriber = createRedisClient();
 
     subscriber.subscribe(CHANNEL, (err, count) => {
-        if(err){
+        if (err) {
             logger.error(`[JobUpdatesListener] Failed to subscribe to ${CHANNEL}: ${err}`);
-        }else{
+        } else {
             logger.info(`[JobUpdatesListener] Subscribed to ${count} channel(s)`);
         }
     });
 
     subscriber.on('message', (channel: string, message: string) => {
-        if(channel !== CHANNEL) return;
+        if (channel !== CHANNEL) return;
 
-        try{
+        try {
             const { teamId, payload } = JSON.parse(message);
 
             // Emit to all clients in the team room
-            if(teamId && payload){
+            if (teamId && payload) {
                 // Check if this is a session completion event
-                if(payload.type === 'session_completed'){
+                if (payload.type === 'session_completed') {
                     const sessionCompleteEvent = {
                         trajectoryId: payload.trajectoryId,
                         sessionId: payload.sessionId,
@@ -70,19 +70,21 @@ export const initializeJobUpdatesListener = (io: Server) => {
                     name: payload.name,
                     message: payload.message,
                     trajectoryId: payload.trajectoryId,
+                    analysisId: payload.analysisId,
+                    timestep: payload.timestep,
                     sessionId: payload.sessionId,
                     sessionStartTime: payload.sessionStartTime,
                     timestamp: payload.timestamp || new Date().toISOString(),
                     queueType: payload.queueType || 'unknown',
                     type: payload.type,
-                        ...(payload.error && { error: payload.error }),
-                        ...(payload.result && { result: payload.result }),
-                        ...(payload.processingTimeMs && { processingTimeMs: payload.processingTimeMs })
+                    ...(payload.error && { error: payload.error }),
+                    ...(payload.result && { result: payload.result }),
+                    ...(payload.processingTimeMs && { processingTimeMs: payload.processingTimeMs })
                 };
 
                 io.to(`team-${teamId}`).emit('job_update', normalizedPayload);
             }
-        }catch(error){
+        } catch (error) {
             logger.error(`[JobUpdatesListener] Error processing message from ${CHANNEL}, Raw message: ${message}: ${error}`);
         }
     });

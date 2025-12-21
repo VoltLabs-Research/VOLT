@@ -1,7 +1,10 @@
-import React, { memo, useMemo, useState, useEffect, useRef } from 'react';
+import React, { memo, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import JobsHistory from '@/components/molecules/common/JobsHistory';
 import useTeamJobsStore from '@/stores/team/jobs';
+import useAnalysisConfigStore from '@/stores/analysis-config';
+import useTrajectoryStore from '@/stores/trajectories';
+import usePlaybackStore from '@/stores/editor/playback';
 import useToast from '@/hooks/ui/use-toast';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
@@ -19,11 +22,18 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo(({
     const jobs = useTeamJobsStore((state) => state.jobs);
     const isConnected = useTeamJobsStore((state) => state.isConnected);
     const isLoading = useTeamJobsStore((state) => state.isLoading);
+    const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
+    const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
+    const setCurrentTimestep = usePlaybackStore((state) => state.setCurrentTimestep);
     const { showSuccess } = useToast();
 
     // Track if we've ever had active jobs (to know when to show toast)
     const hadActiveJobsRef = useRef(false);
     const hasShownCompletionToastRef = useRef(false);
+
+    // Track jobs for auto-select: store jobIds that were active (non-completed)
+    const trackedJobIdsRef = useRef<Set<string>>(new Set());
+    const hasAutoSelectedAnalysisRef = useRef(false);
 
     // Filter jobs based on trajectoryId if provided
     const relevantJobs = useMemo(() => {
@@ -44,13 +54,104 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo(({
         return relevantJobs.every((job) => job.status === 'completed');
     }, [relevantJobs]);
 
-    // Track when we have active jobs
+    // Track when we have active jobs and reset for new analysis run
     useEffect(() => {
         if (hasActiveJobs) {
             hadActiveJobsRef.current = true;
             hasShownCompletionToastRef.current = false;
+            hasAutoSelectedAnalysisRef.current = false;
+            trackedJobIdsRef.current = new Set(); // Reset tracked jobs for new run
         }
     }, [hasActiveJobs]);
+
+    // Track active jobs and detect when they complete
+    useEffect(() => {
+        if (!trajectoryId) {
+            console.log('[JobsHistoryViewer] Skipping - no trajectoryId');
+            return;
+        }
+        if (hasAutoSelectedAnalysisRef.current) {
+            console.log('[JobsHistoryViewer] Skipping - already auto-selected');
+            return;
+        }
+
+        console.log('[JobsHistoryViewer] Checking jobs:', relevantJobs.length, 'tracked:', trackedJobIdsRef.current.size);
+
+        // Find jobs with status != 'completed' and track them by jobId
+        for (const job of relevantJobs) {
+            if (job.status !== 'completed' && job.status !== 'failed' && job.jobId) {
+                if (!trackedJobIdsRef.current.has(job.jobId)) {
+                    console.log('[JobsHistoryViewer] Tracking new active job:', job.jobId, 'status:', job.status);
+                }
+                trackedJobIdsRef.current.add(job.jobId);
+            }
+        }
+
+        // Check if any tracked job has now completed
+        for (const job of relevantJobs) {
+            const isTracked = job.jobId && trackedJobIdsRef.current.has(job.jobId);
+
+            // Extract analysisId from jobId if not directly available
+            // jobId format is: analysisId-index (e.g., "69485a1b69a50983b651f645-0")
+            let analysisId = job.analysisId;
+            if (!analysisId && job.jobId && job.jobId.includes('-')) {
+                const parts = job.jobId.split('-');
+                if (parts.length >= 2) {
+                    // Remove the last part (index) to get analysisId
+                    parts.pop();
+                    analysisId = parts.join('-');
+                    console.log('[JobsHistoryViewer] Extracted analysisId from jobId:', analysisId);
+                }
+            }
+
+            console.log('[JobsHistoryViewer] Checking job:', job.jobId,
+                'status:', job.status,
+                'isTracked:', isTracked,
+                'analysisId:', analysisId);
+
+            if (job.status === 'completed' && isTracked && analysisId) {
+                // This tracked job just completed - use its analysisId
+                hasAutoSelectedAnalysisRef.current = true;
+                console.log('[JobsHistoryViewer] First job completed:', job.jobId, 'analysisId:', analysisId);
+
+                // Refresh trajectory and select the analysis
+                (async () => {
+                    try {
+                        // Refresh trajectory to get updated analysis list
+                        console.log('[JobsHistoryViewer] Refreshing trajectory:', trajectoryId);
+                        await getTrajectoryById(trajectoryId);
+                        console.log('[JobsHistoryViewer] Trajectory refreshed');
+
+                        // Get the updated trajectory with new analysis
+                        const updatedTrajectory = useTrajectoryStore.getState().trajectory;
+                        const analysisList = updatedTrajectory?.analysis || [];
+
+                        console.log('[JobsHistoryViewer] Analysis list:', analysisList.map((a: any) => a._id));
+
+                        // Find and select the analysis
+                        const analysis = analysisList.find((a: any) => a._id === analysisId);
+
+                        if (analysis) {
+                            console.log('[JobsHistoryViewer] Selecting analysis:', analysis._id);
+                            updateAnalysisConfig(analysis);
+
+                            // Set current timestep to the completed job's frame
+                            if (job.timestep !== undefined) {
+                                console.log('[JobsHistoryViewer] Setting timestep:', job.timestep);
+                                setCurrentTimestep(job.timestep);
+                            }
+                        } else {
+                            console.warn('[JobsHistoryViewer] Analysis not found in trajectory:', analysisId);
+                        }
+                    } catch (error) {
+                        console.error('[JobsHistoryViewer] Failed to auto-select analysis:', error);
+                    }
+                })();
+
+                break; // Only handle first completed tracked job
+            }
+        }
+    }, [relevantJobs, trajectoryId, updateAnalysisConfig, setCurrentTimestep, getTrajectoryById]);
 
     // Determine if panel should be visible
     // For Canvas (trajectoryId set): show while there are active jobs

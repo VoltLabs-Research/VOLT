@@ -218,6 +218,7 @@ export default class PluginsController extends BaseController<IPlugin> {
             config,
             inputFile: item.path || '',
             analysisId: analysisId.toString(),
+            timestep: item.timestep,
             modifierId: plugin.slug,
             plugin: plugin.slug,
             name: plugin.modifier?.name || plugin.slug,
