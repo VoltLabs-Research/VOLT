@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { TbObjectScan } from 'react-icons/tb';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { TbObjectScan, TbSearch } from 'react-icons/tb';
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md';
 import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
 import useModelStore from '@/stores/editor/model';
@@ -19,6 +19,7 @@ interface CanvasSidebarSceneProps {
 interface AnalysisSection {
     analysisId: string;
     pluginName: string;
+    plugin: string;
     exposures: RenderableExposure[];
     isCurrentAnalysis: boolean;
 }
@@ -31,9 +32,10 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
 
-    const [allExposures, setAllExposures] = useState<RenderableExposure[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [exposuresByAnalysis, setExposuresByAnalysis] = useState<Map<string, RenderableExposure[]>>(new Map());
+    const [loadingAnalyses, setLoadingAnalyses] = useState<Set<string>>(new Set());
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+    const [searchQuery, setSearchQuery] = useState('');
 
     const analysisConfigId = analysisConfig?._id;
     const activeSceneRef = useRef(activeScene);
@@ -42,47 +44,22 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         activeSceneRef.current = activeScene;
     }, [activeScene]);
 
-    // Load exposures for ALL analyses
-    useEffect(() => {
-        if (!trajectory?._id || !trajectory.analysis || trajectory.analysis.length === 0) {
-            setLoading(false);
-            setAllExposures([]);
-            return;
-        }
-
-        const loadAllExposures = async () => {
-            setLoading(true);
-            try {
-                const exposurePromises = trajectory.analysis.map((analysis: any) =>
-                    getRenderableExposures(trajectory._id, analysis._id, 'canvas', analysis.plugin)
-                );
-                const results = await Promise.all(exposurePromises);
-                setAllExposures(results.flat());
-            } catch (error) {
-                console.error('Failed to load plugin exposures:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadAllExposures();
-    }, [trajectory?._id, trajectory?.analysis, getRenderableExposures]);
-
-    // Group exposures by analysis
-    const analysisSections = useMemo((): AnalysisSection[] => {
+    // Build analysis sections from trajectory (data already loaded in trajectory object)
+    const allAnalysisSections = useMemo((): AnalysisSection[] => {
         if (!trajectory?.analysis) return [];
 
         const modifiers = getModifiers();
         const sections: AnalysisSection[] = [];
 
         for (const analysis of trajectory.analysis) {
-            const analysisExposures = allExposures.filter(e => e.analysisId === analysis._id);
             const modifier = modifiers.find(m => m.pluginSlug === analysis.plugin);
+            const exposures = exposuresByAnalysis.get(analysis._id) || [];
 
             sections.push({
                 analysisId: analysis._id,
                 pluginName: modifier?.name || analysis.plugin || 'Unknown',
-                exposures: analysisExposures,
+                plugin: analysis.plugin,
+                exposures,
                 isCurrentAnalysis: analysis._id === analysisConfigId
             });
         }
@@ -93,7 +70,53 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
             if (b.isCurrentAnalysis) return 1;
             return 0;
         });
-    }, [trajectory?.analysis, allExposures, analysisConfigId, getModifiers]);
+    }, [trajectory?.analysis, exposuresByAnalysis, analysisConfigId, getModifiers]);
+
+    // Filter by search query (client-side filtering since data is already loaded)
+    const filteredSections = useMemo(() => {
+        if (!searchQuery.trim()) return allAnalysisSections;
+        const query = searchQuery.toLowerCase();
+        return allAnalysisSections.filter(s =>
+            s.pluginName.toLowerCase().includes(query)
+        );
+    }, [allAnalysisSections, searchQuery]);
+
+    // Load exposures for a specific analysis (this is the actual server call)
+    const loadExposuresForAnalysis = useCallback(async (analysisId: string, plugin: string) => {
+        if (exposuresByAnalysis.has(analysisId) || loadingAnalyses.has(analysisId)) return;
+
+        setLoadingAnalyses(prev => new Set([...prev, analysisId]));
+        try {
+            const exposures = await getRenderableExposures(
+                trajectory!._id,
+                analysisId,
+                'canvas',
+                plugin
+            );
+            setExposuresByAnalysis(prev => {
+                const next = new Map(prev);
+                next.set(analysisId, exposures);
+                return next;
+            });
+        } catch (error) {
+            console.error('Failed to load exposures for analysis:', analysisId, error);
+        } finally {
+            setLoadingAnalyses(prev => {
+                const next = new Set(prev);
+                next.delete(analysisId);
+                return next;
+            });
+        }
+    }, [trajectory, getRenderableExposures, exposuresByAnalysis, loadingAnalyses]);
+
+    // Auto-load exposures for current analysis
+    useEffect(() => {
+        if (!analysisConfigId || !trajectory?.analysis) return;
+        const analysis = trajectory.analysis.find((a: any) => a._id === analysisConfigId);
+        if (analysis) {
+            loadExposuresForAnalysis(analysisConfigId, analysis.plugin);
+        }
+    }, [analysisConfigId, trajectory?.analysis, loadExposuresForAnalysis]);
 
     // Auto-expand current analysis section
     useEffect(() => {
@@ -102,13 +125,26 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         }
     }, [analysisConfigId]);
 
+    // Load exposures when section is expanded (lazy loading - server call)
     useEffect(() => {
-        if (loading || !analysisConfigId) return;
+        if (!trajectory?.analysis) return;
+
+        for (const analysisId of expandedSections) {
+            const analysis = trajectory.analysis.find((a: any) => a._id === analysisId);
+            if (analysis && !exposuresByAnalysis.has(analysisId)) {
+                loadExposuresForAnalysis(analysisId, analysis.plugin);
+            }
+        }
+    }, [expandedSections, trajectory?.analysis, exposuresByAnalysis, loadExposuresForAnalysis]);
+
+    // Update active scene when analysis changes
+    useEffect(() => {
+        if (!analysisConfigId) return;
         const currentScene = activeSceneRef.current;
         if (!currentScene || currentScene.source !== 'plugin') return;
         if (currentScene.analysisId === analysisConfigId) return;
 
-        const currentExposures = allExposures.filter(e => e.analysisId === analysisConfigId);
+        const currentExposures = exposuresByAnalysis.get(analysisConfigId) || [];
         const matchingExposure = currentExposures.find(
             (exposure) => exposure.exposureId === currentScene.sceneType
         );
@@ -135,7 +171,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         }
 
         setActiveScene({ sceneType: 'trajectory', source: 'default' });
-    }, [analysisConfigId, loading, allExposures, setActiveScene]);
+    }, [analysisConfigId, exposuresByAnalysis, setActiveScene]);
 
     const toggleSection = (analysisId: string) => {
         setExpandedSections(prev => {
@@ -147,11 +183,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
             }
             return next;
         });
-    };
-
-    const selectAnalysis = (analysis: any) => {
-        updateAnalysisConfig(analysis);
-        setExpandedSections(prev => new Set([...prev, analysis._id]));
     };
 
     const onSelect = (option: any, analysis?: any) => {
@@ -166,6 +197,8 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         title: 'Frame Atoms',
         sceneType: { sceneType: 'trajectory', source: 'default' }
     }];
+
+    const totalAnalyses = trajectory?.analysis?.length || 0;
 
     return (
         <div className='editor-sidebar-scene-container'>
@@ -186,20 +219,26 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                     </div>
                 ))}
 
-                {loading && (
-                    Array.from({ length: 3 }).map((_, index) => (
-                        <Skeleton
-                            key={`plugin-exposure-skeleton-${index}`}
-                            variant="rounded"
-                            height={48}
-                            sx={{ width: '100%', mb: 1.5, borderRadius: 2 }}
-                        />
-                    ))
+                {/* Search Input */}
+                {totalAnalyses > 0 && (
+                    <Container className='analysis-search-container'>
+                        <Container className='analysis-search-input-wrapper d-flex items-center gap-05'>
+                            <TbSearch className='analysis-search-icon' />
+                            <input
+                                type='text'
+                                className='analysis-search-input'
+                                placeholder='Search analyses...'
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </Container>
+                    </Container>
                 )}
 
                 {/* Analysis Sections */}
-                {!loading && analysisSections.map((section) => {
+                {filteredSections.map((section) => {
                     const isExpanded = expandedSections.has(section.analysisId);
+                    const isLoading = loadingAnalyses.has(section.analysisId);
                     const analysis = trajectory?.analysis?.find((a: any) => a._id === section.analysisId);
 
                     return (
@@ -219,7 +258,13 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                                 </Paragraph>
                             </Container>
 
-                            {isExpanded && section.exposures.length > 0 && (
+                            {isExpanded && isLoading && (
+                                <Container className='analysis-section-content'>
+                                    <Skeleton variant="rounded" height={40} sx={{ borderRadius: 1 }} />
+                                </Container>
+                            )}
+
+                            {isExpanded && !isLoading && section.exposures.length > 0 && (
                                 <Container className='analysis-section-content d-flex column gap-05'>
                                     {section.exposures.map((exposure, index) => (
                                         <div key={`${exposure.exposureId}-${index}`}>
@@ -245,7 +290,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                                 </Container>
                             )}
 
-                            {isExpanded && section.exposures.length === 0 && (
+                            {isExpanded && !isLoading && section.exposures.length === 0 && (
                                 <Paragraph className='analysis-section-empty color-muted font-size-1 pl-2'>
                                     No visualizations available
                                 </Paragraph>
@@ -253,10 +298,16 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                         </Container>
                     );
                 })}
+
+                {/* Empty state when search has no results */}
+                {searchQuery && filteredSections.length === 0 && (
+                    <Paragraph className='color-muted font-size-1 text-center p-1'>
+                        No analyses match your search
+                    </Paragraph>
+                )}
             </div>
         </div>
     );
 };
 
 export default CanvasSidebarScene;
-
