@@ -38,6 +38,7 @@ const ModifierConfiguration = ({
 }: ModifierConfigurationProps) => {
     const [config, setConfig] = useState<Record<string, any>>({});
     const [isLoading, setIsLoading] = useState(false);
+    const [selectedFrameOnly, setSelectedFrameOnly] = useState(false);
     const hasAutoStarted = useRef(false);
     const [hasInitializedPreset, setHasInitializedPreset] = useState(false);
     const configRef = useRef<Record<string, any>>({});
@@ -160,7 +161,11 @@ const ModifierConfiguration = ({
                 modifierId,
                 modifierId,
                 trajectoryId,
-                { config, timestep: currentTimestep }
+                {
+                    config,
+                    selectedFrameOnly,
+                    timestep: selectedFrameOnly ? currentTimestep : undefined
+                }
             );
             const analysisId = (response as any)?.analysisId;
             onAnalysisSuccess?.(analysisId);
@@ -170,7 +175,7 @@ const ModifierConfiguration = ({
         } finally {
             setIsLoading(false);
         }
-    }, [modifierId, trajectoryId, config, modifierInfo, onAnalysisStart, onAnalysisSuccess, onAnalysisError, currentTimestep]);
+    }, [modifierId, trajectoryId, config, selectedFrameOnly, currentTimestep, onAnalysisStart, onAnalysisSuccess, onAnalysisError]);
 
     const displayTitle = title || modifierInfo?.displayName || 'Analysis Configuration';
 
@@ -187,7 +192,7 @@ const ModifierConfiguration = ({
                         modifierId,
                         modifierId,
                         trajectoryId,
-                        { config: configRef.current, timestep: currentTimestep }
+                        { config: configRef.current }
                     );
                     const analysisId = (response as any)?.analysisId;
                     onAnalysisSuccess?.(analysisId);
@@ -234,7 +239,22 @@ const ModifierConfiguration = ({
                 )}
             </Container>
 
-            <Container>
+            <Container className='d-flex column gap-1'>
+                <Container
+                    className='d-flex items-center gap-1 cursor-pointer selected-frame-checkbox'
+                    onClick={() => setSelectedFrameOnly(!selectedFrameOnly)}
+                >
+                    <input
+                        type='checkbox'
+                        checked={selectedFrameOnly}
+                        onChange={(e) => setSelectedFrameOnly(e.target.checked)}
+                        className='cursor-pointer'
+                    />
+                    <Paragraph className='color-secondary font-size-2 u-select-none'>
+                        Selected frame only
+                    </Paragraph>
+                </Container>
+
                 <Button
                     className='start-analysis-btn'
                     isLoading={isLoading}

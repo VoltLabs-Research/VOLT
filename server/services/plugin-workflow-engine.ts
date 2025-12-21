@@ -40,9 +40,10 @@ export default class PluginWorkflowEngine {
         plugin: IPlugin,
         trajectoryId: string,
         analysisId: string,
-        userConfig: Record<string, any>
+        userConfig: Record<string, any>,
+        options?: { selectedFrameOnly?: boolean; timestep?: number }
     ): Promise<{ items: any[]; forEachNodeId: string } | null> {
-        const context = this.createContext(plugin, trajectoryId, analysisId, userConfig);
+        const context = this.createContext(plugin, trajectoryId, analysisId, userConfig, options);
         const executionOrder = topologicalSort(plugin.workflow);
 
         // Execute nodes until we hit the forEach node
@@ -109,7 +110,8 @@ export default class PluginWorkflowEngine {
         plugin: IPlugin,
         trajectoryId: string,
         analysisId: string,
-        userConfig: Record<string, any>
+        userConfig: Record<string, any>,
+        options?: { selectedFrameOnly?: boolean; timestep?: number }
     ): ExecutionContext {
         return {
             outputs: new Map(),
@@ -119,6 +121,8 @@ export default class PluginWorkflowEngine {
             generatedFiles: [],
             pluginSlug: plugin.slug,
             pluginDir: path.join(this.pluginsDir, plugin.slug),
+            selectedFrameOnly: options?.selectedFrameOnly,
+            selectedTimestep: options?.timestep,
             workflow: plugin.workflow
         };
     }

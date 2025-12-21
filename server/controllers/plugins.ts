@@ -162,7 +162,7 @@ export default class PluginsController extends BaseController<IPlugin> {
      */
     public evaluatePlugin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { pluginSlug, id: trajectoryId } = req.params;
-        const { config } = req.body;
+        const { config, selectedFrameOnly, timestep } = req.body;
         const { trajectory } = res.locals;
 
         const plugin = await Plugin.findOne({
@@ -187,7 +187,8 @@ export default class PluginsController extends BaseController<IPlugin> {
             plugin,
             trajectoryId,
             analysisId.toString(),
-            config || {}
+            config || {},
+            { selectedFrameOnly, timestep }
         );
 
         if (!forEachResult || !forEachResult.items.length) {

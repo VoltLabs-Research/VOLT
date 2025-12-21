@@ -4,8 +4,9 @@ import { NodeHandler, ExecutionContext } from '@/services/nodes/node-registry';
 import { T, NodeOutputSchema } from '@/services/nodes/schema-types';
 import { Trajectory } from '@/models';
 import DumpStorage from '@/services/dump-storage';
+import logger from '@/logger';
 
-class ContextHandler implements NodeHandler{
+class ContextHandler implements NodeHandler {
     readonly type = NodeType.CONTEXT;
 
     readonly outputSchema: NodeOutputSchema = {
@@ -19,14 +20,25 @@ class ContextHandler implements NodeHandler{
         }
     };
 
-    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
+    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>> {
         const source = node.data.context?.source;
 
-        if(source === ModifierContext.TRAJECTORY_DUMPS){
-            const timesteps = await DumpStorage.listDumps(context.trajectoryId);
+        if (source === ModifierContext.TRAJECTORY_DUMPS) {
+            let timesteps = await DumpStorage.listDumps(context.trajectoryId);
             const trajectory = await Trajectory.findById(context.trajectoryId).lean();
 
-            const dumpPromises = timesteps.map(async(timestep) => {
+            // Filter to single frame if selectedFrameOnly is enabled
+            if (context.selectedFrameOnly && context.selectedTimestep !== undefined) {
+                const targetTimestep = String(context.selectedTimestep);
+                logger.info(`[ContextHandler] Filtering for selected frame: ${targetTimestep}`);
+                timesteps = timesteps.filter((ts) => ts === targetTimestep);
+
+                if (timesteps.length === 0) {
+                    logger.warn(`[ContextHandler] Selected timestep ${targetTimestep} not found in dumps`);
+                }
+            }
+
+            const dumpPromises = timesteps.map(async (timestep) => {
                 const dumpPath = await DumpStorage.getDump(context.trajectoryId, timestep);
                 return { path: dumpPath, frame: parseInt(timestep, 10) };
             });

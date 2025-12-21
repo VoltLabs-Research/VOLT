@@ -3,7 +3,7 @@ import { IWorkflowNode, IWorkflowEdge } from '@/types/models/modifier';
 import { NodeOutputSchema } from '@/services/nodes/schema-types';
 import logger from '@/logger';
 
-export interface ExecutionContext{
+export interface ExecutionContext {
     outputs: Map<string, Record<string, any>>;
     userConfig: Record<string, any>;
     trajectoryId: string;
@@ -11,35 +11,37 @@ export interface ExecutionContext{
     generatedFiles: string[];
     pluginSlug: string;
     pluginDir: string;
+    selectedFrameOnly?: boolean;
+    selectedTimestep?: number;
     workflow: {
         nodes: IWorkflowNode[];
         edges: IWorkflowEdge[];
     };
 };
 
-export interface NodeHandler<TOutput = Record<string, any>>{
+export interface NodeHandler<TOutput = Record<string, any>> {
     readonly type: NodeType;
     readonly outputSchema: NodeOutputSchema;
     execute(node: IWorkflowNode, context: ExecutionContext): Promise<TOutput>;
 }
 
-class NodeRegistry{
+class NodeRegistry {
     private handlers = new Map<NodeType, NodeHandler>();
 
-    register(handler: NodeHandler): void{
-        if(this.handlers.has(handler.type)){
+    register(handler: NodeHandler): void {
+        if (this.handlers.has(handler.type)) {
             logger.warn(`[NodeRegistry] Overwriting handler for type: ${handler.type}`);
         }
         this.handlers.set(handler.type, handler);
     }
 
-    get(type: NodeType): NodeHandler | undefined{
+    get(type: NodeType): NodeHandler | undefined {
         return this.handlers.get(type);
     }
 
-    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
+    async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>> {
         const handler = this.handlers.get(node.type as NodeType);
-        if(!handler){
+        if (!handler) {
             throw new Error(`[NodeRegistry] No handler registered for type: ${node.type}`);
         }
         logger.debug(`[NodeRegistry] Executing: ${node.id} (${node.type})`);
@@ -48,17 +50,17 @@ class NodeRegistry{
         return output;
     }
 
-    has(type: NodeType): boolean{
+    has(type: NodeType): boolean {
         return this.handlers.has(type);
     }
 
-    getRegisteredTypes(): NodeType[]{
+    getRegisteredTypes(): NodeType[] {
         return Array.from(this.handlers.keys());
     }
 
-    getSchemas(): Record<string, NodeOutputSchema>{
+    getSchemas(): Record<string, NodeOutputSchema> {
         const schemas: Record<string, NodeOutputSchema> = {};
-        for(const [type, handler] of this.handlers){
+        for (const [type, handler] of this.handlers) {
             schemas[type] = handler.outputSchema;
         }
         return schemas;
@@ -72,12 +74,12 @@ export const resolveReference = (ref: string, context: ExecutionContext): any =>
     const nodeId = parts[0];
     const propertyPath = parts.slice(1).join('.');
     const nodeOutput = context.outputs.get(nodeId);
-    if(!nodeOutput){
+    if (!nodeOutput) {
         logger.error(`[NodeRegistry] Reference resolution failed: Node '${nodeId}' not found`);
         return undefined;
     }
 
-    if(!propertyPath) return nodeOutput;
+    if (!propertyPath) return nodeOutput;
     return propertyPath.split('.').reduce((acc, key) => acc?.[key], nodeOutput);
 };
 
