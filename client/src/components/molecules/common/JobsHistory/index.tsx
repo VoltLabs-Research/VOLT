@@ -20,26 +20,35 @@
  * SOFTWARE.
  */
 
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import useTeamJobsStore from '@/stores/team/jobs';
 import JobSkeleton from '@/components/atoms/common/JobSkeleton';
 import JobQueue from '@/components/atoms/common/JobQueue';
 import Container from '@/components/primitives/Container';
 import './JobsHistory.css';
 
-const JobsHistory = memo(() => {
+interface JobsHistoryProps {
+    trajectoryId?: string;
+}
+
+const JobsHistory = memo(({ trajectoryId }: JobsHistoryProps) => {
     const jobs = useTeamJobsStore((state) => state.jobs);
     const isConnected = useTeamJobsStore((state) => state.isConnected);
     const isLoading = useTeamJobsStore((state) => state.isLoading);
 
+    const filteredJobs = useMemo(() => {
+        if (!trajectoryId) return jobs;
+        return jobs.filter((job) => job.trajectoryId === trajectoryId);
+    }, [jobs, trajectoryId]);
+
     const shouldShowSkeleton = !isConnected || isLoading;
 
-    return(
+    return (
         <Container className='d-flex column'>
             {shouldShowSkeleton ? (
                 <JobSkeleton />
             ) : (
-                jobs.map((job, index) => (
+                filteredJobs.map((job, index) => (
                     <JobQueue
                         job={job}
                         key={job.jobId || `job-${index}`}

@@ -103,6 +103,31 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+    color: currentColor;
+}
+
+/* Loader color for each intent */
+.button.is-loading.intent-neutral .button-loader,
+.button.is-loading.intent-white .button-loader {
+    color: #ffffff;
+}
+
+.button.is-loading.intent-brand .button-loader {
+    color: #000000;
+}
+
+.button.is-loading.intent-danger .button-loader {
+    color: #ffffff;
+}
+
+.button.is-loading.intent-success .button-loader {
+    color: #ffffff;
+}
+
+/* Start Analysis button specific styling */
+.start-analysis-btn {
+    background: rgba(49, 49, 49, 0.8) !important;
+    border: unset !important;
 }
 
 /* --- Variants & Intents --- */

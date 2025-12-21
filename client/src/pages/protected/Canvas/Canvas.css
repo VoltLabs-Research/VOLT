@@ -122,3 +122,25 @@
         font-size: .6rem;
     }
 }
+
+.canvas-jobs-panel {
+    right: 1rem;
+    bottom: 1rem;
+    max-height: 40vh;
+    max-width: 350px;
+    z-index: 50;
+}
+
+.canvas-jobs-panel .jobs-history-viewer-enhanced {
+    position: relative;
+    max-height: 200px;
+}
+
+@media screen and (max-width: 768px) {
+    .canvas-jobs-panel {
+        right: 0.5rem;
+        bottom: 0.5rem;
+        max-width: 280px;
+        max-height: 35vh;
+    }
+}

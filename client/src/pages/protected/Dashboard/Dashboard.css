@@ -148,6 +148,7 @@ body.jobs-history-expanded {
     cursor: default;
     width: 340px;
     height: clamp(220px, 28vh, 320px);
+    overflow-y: scroll;
 }
 
 .jobs-history-viewer-enhanced.expanded .jobs-history-expanded-content {

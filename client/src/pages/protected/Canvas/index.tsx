@@ -12,6 +12,8 @@ import useEditorUIStore from '@/stores/ui/editor';
 import useModelStore from '@/stores/editor/model';
 import usePlaybackStore from '@/stores/editor/playback';
 import useAnalysisConfigStore from '@/stores/analysis-config';
+import useTeamJobs from '@/hooks/jobs/use-team-jobs';
+import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
 import Loader from '@/components/atoms/common/Loader';
 import Container from '@/components/primitives/Container';
 import './Canvas.css';
@@ -29,6 +31,9 @@ const EditorPage: React.FC = () => {
     const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
     const scene3DRef = useRef<Scene3DRef>(null);
     const trajectoryId = rawTrajectoryId ?? '';
+
+    // Subscribe to team jobs for real-time updates
+    useTeamJobs();
 
     // Get trajectory data and current timestep from coordinator
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId });
@@ -72,6 +77,10 @@ const EditorPage: React.FC = () => {
 
             <CanvasWidgets trajectory={trajectory} currentTimestep={currentTimestep} scene3DRef={scene3DRef} />
             <CanvasPresenceAvatars users={canvasUsers} />
+
+            <Container className='canvas-jobs-panel p-absolute'>
+                <JobsHistoryViewer trajectoryId={trajectoryId} showHeader={false} />
+            </Container>
 
             <Scene3D ref={scene3DRef} showCanvasGrid={showCanvasGrid}>
                 {/* Pass ALL required props to TimestepViewer - URL is computed inside */}
