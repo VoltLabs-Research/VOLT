@@ -106,6 +106,10 @@
     width: 100%;
 }
 
+.editor-container .jobs-history-viewer-enhanced.expanded{
+    width: 400px;
+}
+
 .file-upload-loader-container p {
     margin-top: 7rem;
     color: #dadada;
@@ -127,7 +131,6 @@
     right: 1rem;
     bottom: 1rem;
     max-height: 40vh;
-    max-width: 350px;
     z-index: 50;
 }
 
