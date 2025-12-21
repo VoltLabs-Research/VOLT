@@ -240,20 +240,13 @@ const ModifierConfiguration = ({
             </Container>
 
             <Container className='d-flex column gap-1'>
-                <Container
-                    className='d-flex items-center gap-1 cursor-pointer selected-frame-checkbox'
-                    onClick={() => setSelectedFrameOnly(!selectedFrameOnly)}
-                >
-                    <input
-                        type='checkbox'
-                        checked={selectedFrameOnly}
-                        onChange={(e) => setSelectedFrameOnly(e.target.checked)}
-                        className='cursor-pointer'
-                    />
-                    <Paragraph className='color-secondary font-size-2 u-select-none'>
-                        Selected frame only
-                    </Paragraph>
-                </Container>
+                <FormField
+                    label='Selected frame only'
+                    fieldKey='selectedFrameOnly'
+                    fieldType='checkbox'
+                    fieldValue={selectedFrameOnly}
+                    onFieldChange={(_, value) => setSelectedFrameOnly(value)}
+                />
 
                 <Button
                     className='start-analysis-btn'
