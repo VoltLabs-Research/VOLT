@@ -69,7 +69,8 @@ inline std::string deriveOutputBase(const std::string& filename, const std::stri
 inline bool parseFrame(const std::string& filename, LammpsParser::Frame& frame) {
     spdlog::info("Parsing LAMMPS file: {}", filename);
     LammpsParser parser;
-    if (!parser.parseFile(filename, frame)) {
+    LammpsParser::ParseOptions opts;
+    if (!parser.parseFile(filename, frame, opts)) {
         spdlog::error("Failed to parse LAMMPS file: {}", filename);
         return false;
     }

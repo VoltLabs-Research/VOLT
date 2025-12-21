@@ -12,6 +12,7 @@ build-release/
 !/opendxa/dependencies/ptm/**
 !/opendxa/dependencies/geogram/
 !/opendxa/dependencies/geogram/**
+!/opendxa/dependencies/fast_float/**
 debug-data/
 
 client/wasm/zstd/dependencies
