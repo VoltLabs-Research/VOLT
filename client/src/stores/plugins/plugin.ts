@@ -33,6 +33,7 @@ export interface RenderableExposure {
     pluginSlug: string;
     analysisId: string;
     exposureId: string;
+    modifierId?: string;
     name: string;
     icon?: string;
     results: string;
@@ -100,7 +101,8 @@ export interface PluginState {
     getRenderableExposures: (
         trajectoryId: string,
         analysisId?: string,
-        context?: 'canvas' | 'raster'
+        context?: 'canvas' | 'raster',
+        pluginSlug?: string
     ) => Promise<RenderableExposure[]>;
 };
 
@@ -133,17 +135,17 @@ const buildWorkflowIndex = (plugin: IPluginRecord): WorkflowIndex => {
     const outgoing = new Map<string, string[]>();
     const nodesByType = new Map<NodeType, string[]>();
 
-    for(const node of nodes){
+    for (const node of nodes) {
         nodeById.set(node.id, node);
         const type = node.type as NodeType;
         const arr = nodesByType.get(type);
-        if(arr) arr.push(node.id);
+        if (arr) arr.push(node.id);
         else nodesByType.set(type, [node.id]);
     }
 
-    for(const edge of edges){
+    for (const edge of edges) {
         const list = outgoing.get(edge.source);
-        if(list) list.push(edge.target);
+        if (list) list.push(edge.target);
         else outgoing.set(edge.source, [edge.target]);
     }
 
@@ -160,7 +162,7 @@ const getIndexForPlugin = (plugin: IPluginRecord): WorkflowIndex => {
     const entryKey = `${plugin._id}:${versionSignal}`;
 
     const cached = workflowIndexCache.get(cacheKey);
-    if(cached?.key === entryKey) return cached.index;
+    if (cached?.key === entryKey) return cached.index;
 
     const index = buildWorkflowIndex(plugin);
     workflowIndexCache.set(cacheKey, { key: entryKey, index });
@@ -189,20 +191,20 @@ const usePluginStore = create<PluginState>((set, get) => ({
         const state = get();
 
         // Check TTL only for first page refresh(non-forced)
-        if(!force && !append && page === 1 && now - lastFetchAt < PLUGINS_TTL_MS && state.plugins.length > 0){
+        if (!force && !append && page === 1 && now - lastFetchAt < PLUGINS_TTL_MS && state.plugins.length > 0) {
             return;
         }
 
         // Avoid duplicate fetch for same operation
-        if(state.loading || state.isFetchingMore) return;
+        if (state.loading || state.isFetchingMore) return;
 
-        if(append){
+        if (append) {
             set({ isFetchingMore: true, error: null });
-        }else{
+        } else {
             set({ loading: true, error: null });
         }
 
-        try{
+        try {
             const response = await pluginApi.getPlugins({ page, limit, search });
             const newPlugins = (response.data || []) as IPluginRecord[];
             const total = (response as any).results?.total ?? 0;
@@ -218,7 +220,7 @@ const usePluginStore = create<PluginState>((set, get) => ({
             });
 
             const pluginsBySlug: Record<string, IPluginRecord> = { ...state.pluginsBySlug };
-            for(const plugin of newPlugins) pluginsBySlug[plugin.slug] = plugin;
+            for (const plugin of newPlugins) pluginsBySlug[plugin.slug] = plugin;
 
             set((prev) => ({
                 plugins: data,
@@ -229,9 +231,9 @@ const usePluginStore = create<PluginState>((set, get) => ({
                 listingMeta
             }));
 
-            if(!append && page === 1) lastFetchAt = Date.now();
+            if (!append && page === 1) lastFetchAt = Date.now();
 
-        }catch(err){
+        } catch (err) {
             set({
                 loading: false,
                 isFetchingMore: false,
@@ -243,7 +245,7 @@ const usePluginStore = create<PluginState>((set, get) => ({
     getModifiers() {
         const { plugins } = get();
         const key = getPluginsKeyForModifiers(plugins);
-        if(key === lastModifiersKey && lastModifiers.length > 0) return lastModifiers;
+        if (key === lastModifiersKey && lastModifiers.length > 0) return lastModifiers;
 
         lastModifiersKey = key;
         lastModifiers = plugins.map((plugin) => {
@@ -265,13 +267,13 @@ const usePluginStore = create<PluginState>((set, get) => ({
         return lastModifiers;
     },
 
-    getPluginArguments(pluginSlug: string): PluginArgument[]{
+    getPluginArguments(pluginSlug: string): PluginArgument[] {
         const plugin = get().pluginsBySlug[pluginSlug];
-        if(!plugin) return [];
+        if (!plugin) return [];
 
         const idx = getIndexForPlugin(plugin);
         const argIds = idx.nodesByType.get(NodeType.ARGUMENTS) ?? [];
-        if(!argIds.length) return [];
+        if (!argIds.length) return [];
 
         const argsNode = idx.nodeById.get(argIds[0]);
         const argsData = (argsNode?.data?.arguments as any)?.arguments || [];
@@ -281,30 +283,32 @@ const usePluginStore = create<PluginState>((set, get) => ({
     async getRenderableExposures(
         trajectoryId: string,
         analysisId?: string,
-        context: 'canvas' | 'raster' = 'canvas'
+        context: 'canvas' | 'raster' = 'canvas',
+        pluginSlug?: string
     ) {
         const { analysisConfig } = useAnalysisConfigStore.getState();
         const activeAnalysisId = analysisId ?? analysisConfig?._id;
-        if(!activeAnalysisId || !analysisConfig) return [];
+        if (!activeAnalysisId) return [];
 
-        const pluginSlug = analysisConfig?.plugin;
-        if(!pluginSlug) return [];
+        // Use provided pluginSlug, or fall back to analysisConfig's plugin
+        const resolvedPluginSlug = pluginSlug ?? analysisConfig?.plugin;
+        if (!resolvedPluginSlug) return [];
 
         await get().fetchPlugins();
 
-        const plugin = get().pluginsBySlug[pluginSlug];
-        if(!plugin) return [];
+        const plugin = get().pluginsBySlug[resolvedPluginSlug];
+        if (!plugin) return [];
 
         const idx = getIndexForPlugin(plugin);
         const exposureIds = idx.nodesByType.get(NodeType.EXPOSURE) ?? [];
-        if(!exposureIds.length) return [];
+        if (!exposureIds.length) return [];
 
         const out = idx.outgoing;
         const renderable: RenderableExposure[] = [];
 
-        for(const exposureId of exposureIds){
+        for (const exposureId of exposureIds) {
             const exposureNode = idx.nodeById.get(exposureId);
-            if(!exposureNode) continue;
+            if (!exposureNode) continue;
 
             const exposureData = (exposureNode.data?.exposure || {}) as IExposureData;
             let hasCanvas = false;
@@ -315,42 +319,43 @@ const usePluginStore = create<PluginState>((set, get) => ({
 
             const processTarget = (nodeId: string) => {
                 const node = idx.nodeById.get(nodeId);
-                if(!node) return;
+                if (!node) return;
 
-                if(node.type === NodeType.VISUALIZERS){
+                if (node.type === NodeType.VISUALIZERS) {
                     const viz = (node.data?.visualizers || {}) as IVisualizersData;
-                    if(viz.canvas) hasCanvas = true;
-                    if(viz.raster) hasRaster = true;
-                }else if(node.type === NodeType.EXPORT){
+                    if (viz.canvas) hasCanvas = true;
+                    if (viz.raster) hasRaster = true;
+                } else if (node.type === NodeType.EXPORT) {
                     exportConfig = node.data?.export as IExportData;
-                }else if(node.type === NodeType.SCHEMA){
+                } else if (node.type === NodeType.SCHEMA) {
                     const schemaTargets = out.get(nodeId) ?? [];
-                    for(const target of schemaTargets){
+                    for (const target of schemaTargets) {
                         const targetNode = idx.nodeById.get(target);
-                        if(!targetNode) continue;
-                        if(targetNode.type === NodeType.VISUALIZERS){
+                        if (!targetNode) continue;
+                        if (targetNode.type === NodeType.VISUALIZERS) {
                             // TODO: duplicated code
                             const viz = (targetNode.data?.visualizers || {}) as IVisualizersData;
-                            if(viz.canvas) hasCanvas = true;
-                            if(viz.raster) hasRaster = true;
-                        }else if(targetNode.type === NodeType.EXPORT){
+                            if (viz.canvas) hasCanvas = true;
+                            if (viz.raster) hasRaster = true;
+                        } else if (targetNode.type === NodeType.EXPORT) {
                             exportConfig = targetNode.data?.export as IExportData;
                         }
                     }
                 }
             };
 
-            for(const target of directTargets) processTarget(target);
+            for (const target of directTargets) processTarget(target);
 
             const isValidForContext = context === 'canvas' ? hasCanvas : hasRaster;
             const hasGlbExport = exportConfig?.type === 'glb';
 
-            if(isValidForContext && hasGlbExport){
+            if (isValidForContext && hasGlbExport) {
                 renderable.push({
                     pluginId: plugin._id,
                     pluginSlug: plugin.slug,
                     analysisId: activeAnalysisId,
                     exposureId,
+                    modifierId: plugin.slug,
                     name: exposureData.name || exposureId,
                     icon: exposureData.icon,
                     results: exposureData.results || '',
