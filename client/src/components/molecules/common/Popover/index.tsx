@@ -38,7 +38,7 @@ const Popover = ({
         const handleClick = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             const triggerElement = target.closest(`[commandfor="${id}"]`);
-            if(triggerElement){
+            if (triggerElement) {
                 clickPosRef.current = { x: e.clientX, y: e.clientY };
             }
         };
@@ -49,41 +49,56 @@ const Popover = ({
     // Position the popover near the click position when it opens
     React.useEffect(() => {
         const popover = document.getElementById(id);
-        if(!popover) return;
+        if (!popover) return;
 
         const positionPopover = () => {
-            if(!clickPosRef.current) return;
+            if (!clickPosRef.current) return;
 
-            const popoverRect = popover.getBoundingClientRect();
-            const { x, y } = clickPosRef.current;
+            // Use requestAnimationFrame to ensure styles are applied
+            requestAnimationFrame(() => {
+                const popoverRect = popover.getBoundingClientRect();
+                const { x, y } = clickPosRef.current!;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const padding = 16;
 
-            // Position below and to the right of click
-            let top = y + 8;
-            let left = x;
+                // Calculate initial position (below and to the left of click for right-aligned triggers)
+                let top = y + 8;
+                let left = x - popoverRect.width; // Align right edge with click
 
-            // Adjust if popover would go off-screen(right)
-            if(left + popoverRect.width > window.innerWidth){
-                left = window.innerWidth - popoverRect.width - 16;
-            }
+                // If popover is wider than available space on left, position to right of click
+                if (left < padding) {
+                    left = x;
+                }
 
-            // Adjust if popover would go off-screen(bottom)
-            if(top + popoverRect.height > window.innerHeight){
-                // Show above the click instead
-                top = y - popoverRect.height - 8;
-            }
+                // Adjust if popover would go off-screen (right)
+                if (left + popoverRect.width > viewportWidth - padding) {
+                    left = viewportWidth - popoverRect.width - padding;
+                }
 
-            // Ensure left doesn't go negative
-            if(left < 8) left = 8;
+                // Adjust if popover would go off-screen (bottom)
+                if (top + popoverRect.height > viewportHeight - padding) {
+                    // Show above the click instead
+                    top = y - popoverRect.height - 8;
+                }
 
-            popover.style.top = `${top + 16}px`;
-            popover.style.left = `${left}px`;
-            popover.style.margin = '0';
+                // Ensure left doesn't go negative
+                if (left < padding) left = padding;
+
+                // Ensure top doesn't go negative
+                if (top < padding) top = padding;
+
+                popover.style.top = `${top}px`;
+                popover.style.left = `${left}px`;
+                popover.style.margin = '0';
+                popover.style.maxWidth = `calc(100vw - ${padding * 2}px)`;
+            });
         };
 
         // Watch for toggle events to handle positioning
         const handleToggle = (e: any) => {
-            if(e.newState === 'open'){
-                // Use setTimeout to ensure popover is rendered
+            if (e.newState === 'open') {
+                // Use setTimeout to ensure popover is rendered, then position
                 setTimeout(positionPopover, 0);
             }
         };

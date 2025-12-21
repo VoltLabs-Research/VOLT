@@ -239,7 +239,8 @@ const DashboardLayout = () => {
 
     useEffect(() => {
         initializeSocket();
-    }, [initializeSocket]);
+        fetch(); // Load initial notifications from server
+    }, [initializeSocket, fetch]);
 
     useEffect(() => {
         if (!teams.length) return;
