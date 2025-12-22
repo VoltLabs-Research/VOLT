@@ -11,7 +11,8 @@ export enum NodeType {
     SCHEMA = 'schema',
     VISUALIZERS = 'visualizers',
     EXPORT = 'export',
-    DIRECTORY = 'directory'
+    DIRECTORY = 'directory',
+    IF_STATEMENT = 'if-statement'
 };
 
 export enum ArgumentType {
@@ -113,6 +114,27 @@ export interface IExportData {
     options?: Record<string, any>;
 };
 
+export enum ConditionType {
+    AND = 'and',
+    OR = 'or'
+};
+
+export enum ConditionHandler {
+    IS_EQUAL_TO = 'is_equal_to',
+    IS_NOT_EQUAL_TO = 'is_not_equal_to'
+};
+
+export interface ICondition {
+    type: ConditionType;
+    leftExpr: string;
+    handler: ConditionHandler;
+    rightExpr: string;
+};
+
+export interface IIfStatementData {
+    conditions: ICondition[];
+};
+
 export interface INodeData {
     modifier?: IModifierData;
     arguments?: IArgumentsData;
@@ -123,6 +145,7 @@ export interface INodeData {
     schema?: ISchemaData;
     visualizers?: IVisualizersData;
     export?: IExportData;
+    ifStatement?: IIfStatementData;
 };
 
 export interface IWorkflowNode {

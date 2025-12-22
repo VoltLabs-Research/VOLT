@@ -71,7 +71,7 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
         outputs: -1,
         allowedConnections: {
             from: [NodeType.FOREACH],
-            to: [NodeType.EXPOSURE]
+            to: [NodeType.EXPOSURE, NodeType.IF_STATEMENT]
         }
     },
     [NodeType.EXPOSURE]: {
@@ -120,6 +120,18 @@ export const NODE_CONFIGS: Record<NodeType, NodeTypeConfig> = {
         allowedConnections: {
             from: [NodeType.EXPOSURE, NodeType.VISUALIZERS],
             to: []
+        }
+    },
+    [NodeType.IF_STATEMENT]: {
+        type: NodeType.IF_STATEMENT,
+        label: 'If Statement',
+        icon: 'TbGitBranch',
+        description: 'Conditional branching',
+        inputs: 1,
+        outputs: 2,
+        allowedConnections: {
+            from: [NodeType.ENTRYPOINT, NodeType.FOREACH, NodeType.CONTEXT],
+            to: [NodeType.ENTRYPOINT, NodeType.EXPOSURE, NodeType.EXPORT]
         }
     }
 };

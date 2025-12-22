@@ -467,6 +467,11 @@ export default class PluginsController extends BaseController<IPlugin> {
                 const exposureData = await loadExposuresParallel(
                     exposureIds, entry.trajectoryId, entry.analysisId, entry.timestep);
 
+                // Skip if the primary exposure has no data (If-Statement may have filtered it)
+                if (primaryExposureId && !exposureData.has(primaryExposureId)) {
+                    return null;
+                }
+
                 const analysis = analysisMap.get(entry.analysisId);
                 const context = {
                     nodeMap,
@@ -476,8 +481,6 @@ export default class PluginsController extends BaseController<IPlugin> {
                     analysis,
                     timestep: entry.timestep
                 };
-
-                console.log('[PluginListing] Context trajectory:', JSON.stringify(analysis?.trajectory));
 
                 return {
                     _id: `${entry.analysisId}-${entry.timestep}`,
@@ -490,7 +493,7 @@ export default class PluginsController extends BaseController<IPlugin> {
                 };
             }));
 
-            rows.push(...batchRows);
+            rows.push(...batchRows.filter(row => row !== null));
         }
 
         res.status(200).json({

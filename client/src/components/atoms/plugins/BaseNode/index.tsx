@@ -8,10 +8,11 @@ import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 
-interface BaseNodeProps extends NodeProps{
+interface BaseNodeProps extends NodeProps {
     nodeType: NodeType;
     nodeTitle?: undefined;
     description?: string;
+    children?: React.ReactNode;
 };
 
 const BaseNode: React.FC<BaseNodeProps> = memo(({
@@ -20,10 +21,11 @@ const BaseNode: React.FC<BaseNodeProps> = memo(({
     nodeType,
     nodeTitle,
     description,
+    children,
 }) => {
     const config = NODE_CONFIGS[nodeType];
 
-    return(
+    return (
         <Container className={`workflow-node ${selected ? 'workflow-node--selected' : ''}`}>
             {config.inputs > 0 && (
                 <Handle
@@ -46,7 +48,9 @@ const BaseNode: React.FC<BaseNodeProps> = memo(({
                 </Container>
             </Container>
 
-            {config.outputs !== 0 && (
+            {children}
+
+            {!children && config.outputs !== 0 && (
                 <Handle
                     type='source'
                     position={Position.Right}

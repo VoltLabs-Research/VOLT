@@ -23,7 +23,7 @@ export const createNode = (type: NodeType, position: { x: number; y: number }): 
 };
 
 export const getDefaultDataForType = (type: NodeType): Record<string, any> => {
-    switch(type){
+    switch (type) {
         case NodeType.MODIFIER:
             return {
                 modifier: {
@@ -98,6 +98,13 @@ export const getDefaultDataForType = (type: NodeType): Record<string, any> => {
                     exporter: Exporter.ATOMISTIC,
                     type: 'glb',
                     options: {}
+                }
+            };
+
+        case NodeType.IF_STATEMENT:
+            return {
+                ifStatement: {
+                    conditions: []
                 }
             };
 

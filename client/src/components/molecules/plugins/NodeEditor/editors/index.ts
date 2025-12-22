@@ -7,3 +7,4 @@ export { default as ExposureEditor } from './ExposureEditor';
 export { default as SchemaEditor } from './SchemaEditor';
 export { default as VisualizersEditor } from './VisualizersEditor';
 export { default as ExportEditor } from './ExportEditor';
+export { default as IfStatementEditor } from './IfStatementEditor';

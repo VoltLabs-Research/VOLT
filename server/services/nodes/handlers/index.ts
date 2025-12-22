@@ -9,6 +9,7 @@ import exposureHandler from './exposure-handler';
 import schemaHandler from './schema-handler';
 import visualizersHandler from './visualizers-handler';
 import exportHandler from './export-handler';
+import ifStatementHandler from './if-statement-handler';
 
 // TODO: I think this is too verbose; perhaps we can read
 // the directory directly and take what's exported by default to load it.
@@ -22,6 +23,7 @@ export const registerAllHandlers = (): void => {
     nodeRegistry.register(schemaHandler);
     nodeRegistry.register(visualizersHandler);
     nodeRegistry.register(exportHandler);
+    nodeRegistry.register(ifStatementHandler);
 };
 
 registerAllHandlers();
@@ -35,5 +37,6 @@ export {
     exposureHandler,
     schemaHandler,
     visualizersHandler,
-    exportHandler
+    exportHandler,
+    ifStatementHandler
 };

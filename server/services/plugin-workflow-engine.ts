@@ -82,7 +82,16 @@ export default class PluginWorkflowEngine {
             const executionOrder = topologicalSort(plugin.workflow);
             logger.info(`[PluginWorkflowEngine] Executing "${plugin.slug}" - ${executionOrder.length} nodes`);
 
+            // Track nodes to skip based on If-Statement branches
+            const skippedNodes = new Set<string>();
+
             for (const node of executionOrder) {
+                // Check if this node should be skipped due to If-Statement branch
+                if (skippedNodes.has(node.id)) {
+                    logger.debug(`[PluginWorkflowEngine] Skipping node ${node.id} (${node.type}) - branch not taken`);
+                    continue;
+                }
+
                 // If this is the forEach node and we have a specific item, inject it
                 if (node.type === NodeType.FOREACH && forEachItem !== undefined) {
                     // Execute the forEach to get the items array first
@@ -96,6 +105,20 @@ export default class PluginWorkflowEngine {
                 } else {
                     await nodeRegistry.execute(node, context);
                 }
+
+                // After executing an If-Statement, determine which branch to skip
+                if (node.type === NodeType.IF_STATEMENT) {
+                    const ifOutput = context.outputs.get(node.id);
+                    const result = ifOutput?.result; // true or false
+                    const skipBranch = result ? 'output-false' : 'output-true';
+
+                    // Find nodes connected to the skipped branch and mark them (recursively)
+                    const nodesToSkip = this.getNodesOnBranch(node.id, skipBranch, plugin.workflow);
+                    for (const nodeId of nodesToSkip) {
+                        skippedNodes.add(nodeId);
+                    }
+                    logger.info(`[PluginWorkflowEngine] If-Statement ${node.id} = ${result}, skipping ${nodesToSkip.length} nodes on ${skipBranch} branch`);
+                }
             }
 
             return this.collectExposureResults(plugin.workflow, context);
@@ -105,6 +128,37 @@ export default class PluginWorkflowEngine {
             throw error;
         }
     }
+
+    /**
+     * Get all nodes transitively reachable from a specific source handle
+     */
+    private getNodesOnBranch(ifNodeId: string, sourceHandle: string, workflow: IWorkflow): string[] {
+        const result: string[] = [];
+        const visited = new Set<string>();
+
+        // Find direct children connected via the specific handle
+        const directChildren = workflow.edges
+            .filter(e => e.source === ifNodeId && e.sourceHandle === sourceHandle)
+            .map(e => e.target);
+
+        const queue = [...directChildren];
+
+        while (queue.length > 0) {
+            const nodeId = queue.shift()!;
+            if (visited.has(nodeId)) continue;
+            visited.add(nodeId);
+            result.push(nodeId);
+
+            // Add all children of this node (they're also on this branch)
+            const children = workflow.edges
+                .filter(e => e.source === nodeId)
+                .map(e => e.target);
+            queue.push(...children);
+        }
+
+        return result;
+    }
+
 
     private createContext(
         plugin: IPlugin,

@@ -9,6 +9,7 @@ import ExposureNode from './ExposureNode';
 import SchemaNode from './SchemaNode';
 import VisualizersNode from './VisualizersNode';
 import ExportNode from './ExportNode';
+import IfStatementNode from './IfStatementNode';
 
 export const nodeTypes: NodeTypes = {
     [NodeType.MODIFIER]: ModifierNode,
@@ -19,7 +20,8 @@ export const nodeTypes: NodeTypes = {
     [NodeType.EXPOSURE]: ExposureNode,
     [NodeType.SCHEMA]: SchemaNode,
     [NodeType.VISUALIZERS]: VisualizersNode,
-    [NodeType.EXPORT]: ExportNode
+    [NodeType.EXPORT]: ExportNode,
+    [NodeType.IF_STATEMENT]: IfStatementNode
 };
 
 export {
@@ -31,5 +33,7 @@ export {
     ExposureNode,
     SchemaNode,
     VisualizersNode,
-    ExportNode
+    ExportNode,
+    IfStatementNode
 };
+

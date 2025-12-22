@@ -14,7 +14,8 @@ import {
     ExposureEditor,
     SchemaEditor,
     VisualizersEditor,
-    ExportEditor
+    ExportEditor,
+    IfStatementEditor
 } from './editors';
 import './NodeEditor.css';
 
@@ -31,7 +32,8 @@ const EDITOR_COMPONENTS: Partial<Record<NodeType, React.FC<{ node: Node }>>> = {
     [NodeType.EXPOSURE]: ExposureEditor,
     [NodeType.SCHEMA]: SchemaEditor,
     [NodeType.VISUALIZERS]: VisualizersEditor,
-    [NodeType.EXPORT]: ExportEditor
+    [NodeType.EXPORT]: ExportEditor,
+    [NodeType.IF_STATEMENT]: IfStatementEditor
 };
 
 const NodeEditor: React.FC<NodeEditorProps> = ({ node }) => {

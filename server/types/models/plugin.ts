@@ -8,7 +8,7 @@ export enum NodeType {
     SCHEMA = 'schema',
     VISUALIZERS = 'visualizers',
     EXPORT = 'export',
-    DIRECTORY = 'directory'
+    IF_STATEMENT = 'if-statement',
 };
 
 export enum ArgumentType {
@@ -37,4 +37,14 @@ export enum PluginStatus {
     DRAFT = 'draft',
     PUBLISHED = 'published',
     DISABLED = 'disabled'
+};
+
+export enum ConditionType {
+    AND = 'and',
+    OR = 'or'
+};
+
+export enum ConditionHandler {
+    IS_EQUAL_TO = 'is_equal_to',
+    IS_NOT_EQUAL_TO = 'is_not_equal_to'
 };
