@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { isValidObjectId } from 'mongoose';
 import BaseController from '@/controllers/base-controller';
 import RuntimeError from '@/utilities/runtime/runtime-error';
@@ -11,9 +11,12 @@ import processAndCreateTrajectory from '@/utilities/create-trajectory';
 import archiver from 'archiver';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { getMetricsByTeamId } from '@/utilities/metrics/team';
-import { Trajectory, Team } from '@/models';
+import { Trajectory, Team, Analysis, Plugin } from '@/models';
 import { SYS_BUCKETS } from '@/config/minio';
 import { getAnyTrajectoryPreview, sendImage } from '@/utilities/raster';
+import { NodeType } from '@/types/models/modifier';
+import { findDescendantByType } from '@/utilities/plugins/workflow-utils';
+import { decode } from '@msgpack/msgpack';
 
 export default class TrajectoryController extends BaseController<any> {
     constructor(){
@@ -102,43 +105,152 @@ export default class TrajectoryController extends BaseController<any> {
         return sendImage(res, result.etag, result.buffer);
     });
 
-    public getAtoms = catchAsync(async(req: Request, res: Response) => {
-        const { timestep } = req.params as any;
-        const page = Math.max(1, parseInt((req.query.page as string) || '1', 10));
-        const pageSize = Math.max(1, Math.min(200000, parseInt((req.query.pageSize as string) || '100000', 10)));
+    public getAtoms = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+        const { analysisId } = req.params;
+        const { timestep, exposureId, page: pageStr, pageSize: pageSizeStr } = req.query;
+        const trajectoryId = res.locals.trajectory._id.toString();
+
+        if(!timestep || !exposureId){
+            return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
+        }
+
+        const trajectory = res.locals.trajectory;
+        if(!trajectory){
+            return next(new RuntimeError(ErrorCodes.TRAJECTORY_NOT_FOUND, 404));
+        }
+
+        const page = Math.max(1, parseInt(String(pageStr) || '1', 10));
+        const pageSize = Math.max(1, Math.min(10000, parseInt(String(pageSizeStr) || '1000', 10)));
         const startIndex = (page - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const trajectoryId = (res as any).locals.trajectory._id.toString();
 
-        const dumpPath = await DumpStorage.getDump(trajectoryId, timestep);
-        if(!dumpPath) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
+        const [analysis, dumpPath] = await Promise.all([
+            Analysis.findById(analysisId).lean(),
+            DumpStorage.getDump(trajectoryId, String(timestep))
+        ]);
 
-        const parsed = await TrajectoryParserFactory.parse(dumpPath);
-        const total = parsed.metadata.natoms;
-        const limit = Math.min(endIndex, total);
+        if(!analysis) return next(new RuntimeError(ErrorCodes.ANALYSIS_NOT_FOUND, 404));
+        if(!dumpPath) return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));
 
-        const positionsPage: number[][] = [];
-        const typesPage: number[] = [];
+        const plugin = await Plugin.findOne({ slug: analysis.plugin }).lean();
+        if(!plugin) return next(new RuntimeError(ErrorCodes.PLUGIN_NOT_FOUND, 404));
 
-        for(let i = startIndex; i < limit; i++){
+        const exposureNode = plugin.workflow.nodes.find((node: any) => node.type === NodeType.EXPOSURE && node.id === exposureId);
+        if(!exposureNode) return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
+
+        // Find schema and visualizer nodes connected to this specific exposure
+        const schemaNode = findDescendantByType(String(exposureId), plugin.workflow, NodeType.SCHEMA);
+        const visualizerNode = findDescendantByType(String(exposureId), plugin.workflow, NodeType.VISUALIZERS);
+
+        // The visualizer node is not necessary, but the schema node is.
+        if(!schemaNode) return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
+        
+        const iterableKey = exposureNode?.data?.exposure?.iterable;
+        const perAtomProperties: string[] = visualizerNode?.data?.visualizers?.perAtomProperties || [];
+
+        const pluginDataPromise = (perAtomProperties.length > 0)
+            ? storage.getBuffer(SYS_BUCKETS.PLUGINS, `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`)
+            : Promise.resolve(null);
+
+        const [parsed, pluginBuffer] = await Promise.all([
+            TrajectoryParserFactory.parse(dumpPath, { includeIds: true }),
+            pluginDataPromise
+        ]);
+
+        const totalAtoms = parsed.metadata.natoms;
+        const endIndex = Math.min(startIndex + pageSize, totalAtoms);
+        const rowCount = endIndex - startIndex;
+
+        if(rowCount <= 0){
+            return res.status(200).json({
+                status: 'success',
+                data: [],
+                properties: [],
+                page,
+                pageSize,
+                total: totalAtoms,
+                hasMore: false
+            });
+        }
+
+        // Build plugin data index
+        let pluginIndex: Map<number, any> | null = null;
+        if(pluginBuffer){
+            let pluginData = decode(pluginBuffer) as any;
+
+            if(iterableKey && pluginData[iterableKey]) pluginData = pluginData[iterableKey];
+            if(Array.isArray(pluginData)){
+                pluginIndex = new Map();
+                for(let i = 0, len = pluginData.length; i < len; i++){
+                    const item = pluginData[i];
+                    if(item.id !== undefined) pluginIndex.set(item.id, item);
+                }
+            }
+        }
+
+        // Pre-cache schema keys
+        const schemaDefinition = schemaNode?.data?.schema?.definition?.data?.items;
+        const schemaKeysMap = new Map<string, string[]>();
+        if(schemaDefinition){
+            for(const prop of perAtomProperties){
+                const propDef = schemaDefinition[prop];
+                if(propDef?.keys) schemaKeysMap.set(prop, propDef.keys);
+            }
+        }
+
+        // Build rows
+        const { positions, types, ids } = parsed;
+        const rows = new Array(rowCount);
+        const discoveredProps = new Set<string>();
+
+        for(let idx = 0; idx < rowCount; idx++){
+            const i = startIndex + idx;
             const base = i * 3;
-            positionsPage.push([
-                parsed.positions[base],
-                parsed.positions[base + 1],
-                parsed.positions[base + 2]]
-            );
-            if(parsed.types) typesPage.push(parsed.types[i]);
+            const atomId = ids ? ids[i] : i + 1;
+            const row: any = {
+                id: atomId,
+                type: types?.[i],
+                x: positions[base],
+                y: positions[base + 1],
+                z: positions[base + 2]
+            };
+
+            if(pluginIndex){
+                const item = pluginIndex.get(atomId);
+                if(item){
+                    for(const prop of perAtomProperties){
+                        const value = item[prop];
+                        if(value === undefined) continue;
+
+                        // If the property value is an array (e.g., deformationGradient), 
+                        // each i-th element of the array has a corresponding title in keys.
+                        if(Array.isArray(value)){
+                            const keys = schemaKeysMap.get(prop);
+                            if(!keys?.length) continue;
+                            for(const k in keys){
+                                const columnTitle = `${prop} ${keys[k]}`;
+                                row[columnTitle] = value[k];
+                                discoveredProps.add(columnTitle);
+                            }
+                        }else{
+                            row[prop] = value;
+                            discoveredProps.add(prop);
+                        }
+                    }
+                }
+            }
+
+            rows[idx] = row;
         }
 
         res.status(200).json({
-            timestep: parsed.metadata.timestep || Number(timestep) || 0,
+            status: 'success',
+            data: rows,
+            properties: Array.from(discoveredProps),
             page,
             pageSize,
-            natoms: parsed.metadata.natoms,
-            positions: positionsPage,
-            types: typesPage.length ? typesPage : undefined,
-            total
-        });
+            total: totalAtoms,
+            hasMore: endIndex < totalAtoms
+        })
     });
 
     public getGLB = catchAsync(async(req: Request, res: Response) => {

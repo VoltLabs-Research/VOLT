@@ -13,6 +13,7 @@ class BinaryCache{
 
     private async ensureDir(): Promise<void>{
         if(this.initialized) return;
+        
         try{
             await fs.mkdir(CACHE_DIR, { recursive: true });
             this.initialized = true;

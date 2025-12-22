@@ -42,7 +42,7 @@ const PerAtomViewer = () => {
         }
 
         try{
-            const result = await trajectoryApi.getMergedAtoms(
+            const result = await trajectoryApi.getAtoms(
                 trajectoryId,
                 analysisId,
                 { timestep, exposureId, page: nextPage, pageSize }

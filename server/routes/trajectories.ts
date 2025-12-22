@@ -22,14 +22,12 @@
 
 import { Router } from 'express';
 import TrajectoryController from '@controllers/trajectories';
-import MergedAtomsController from '@controllers/merged-atoms';
 import multer, { FileFilterCallback } from 'multer';
 import * as middleware from '@middlewares/trajectory';
 import * as authMiddleware from '@middlewares/authentication';
 
 const router = Router();
 const controller = new TrajectoryController();
-const mergedAtomsController = new MergedAtomsController();
 
 const upload = multer({
     storage: multer.diskStorage({
@@ -71,18 +69,10 @@ router.get(
 );
 
 router.get(
-    '/:id/atoms/:timestep',
-    authMiddleware.optionalAuth,
-    middleware.checkTeamMembershipForTrajectory,
-    controller.getAtoms
-);
-
-// Merged atoms: LAMMPS dump + per-atom properties from plugins
-router.get(
-    '/:id/analysis/:analysisId/merged-atoms',
+    '/:id/analysis/:analysisId',
     authMiddleware.protect,
     middleware.checkTeamMembershipForTrajectory,
-    mergedAtomsController.getAtoms
+    controller.getAtoms
 );
 
 router.get(

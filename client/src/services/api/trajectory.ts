@@ -118,35 +118,10 @@ const trajectoryApi = {
         return response.data.data;
     },
 
-    async getAtoms(trajectoryId: string, timestep: number, params?: TrajectoryAtomsParams): Promise<TrajectoryAtomsResponse | null>{
-        const response = await api.get(`/trajectories/${trajectoryId}/atoms/${timestep}`, {
-            responseType: 'json',
-            params: {
-                page: params?.page ?? 1,
-                pageSize: params?.pageSize ?? 100000
-            }
-        });
-
-        const data = response.data?.data || response.data;
-        if(!data || !Array.isArray(data.positions)) {
-            return null;
-        }
-
-        return {
-            timestep: Number(data.timestep ?? timestep),
-            natoms: typeof data.natoms === 'number' ? data.natoms : undefined,
-            total: typeof data.total === 'number' ? data.total : undefined,
-            page: typeof data.page === 'number' ? data.page : (params?.page ?? 1),
-            pageSize: typeof data.pageSize === 'number' ? data.pageSize : (params?.pageSize ?? 100000),
-            positions: data.positions as number[][],
-            types: Array.isArray(data.types) ? data.types as number[] : undefined
-        };
-    },
-
     /**
      * Get merged atoms: LAMMPS dump data + per-atom properties from plugin exports
      */
-    async getMergedAtoms(
+    async getAtoms(
         trajectoryId: string,
         analysisId: string,
         params: { timestep: number; exposureId: string; page?: number; pageSize?: number }
@@ -159,7 +134,7 @@ const trajectoryApi = {
         hasMore: boolean;
     } | null> {
         const response = await api.get(
-            `/trajectories/${trajectoryId}/analysis/${analysisId}/merged-atoms`,
+            `/trajectories/${trajectoryId}/analysis/${analysisId}`,
             {
                 params: {
                     timestep: params.timestep,
