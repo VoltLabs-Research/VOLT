@@ -40,6 +40,10 @@ public:
         return &_structureAnalysis.clusterGraph();
     }
 
+    const StructureAnalysis& structureAnalysis() const{
+        return _structureAnalysis;
+    }
+
     // Returns the property storage that contains the computed per-particle volumetric strain values
     ParticleProperty* volumetricStrains() const{
         return _volumetricStrains.get();

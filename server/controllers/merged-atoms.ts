@@ -9,6 +9,7 @@ import { decode } from '@msgpack/msgpack';
 import DumpStorage from '@/services/dump-storage';
 import TrajectoryParserFactory from '@/parsers/factory';
 import storage from '@/services/storage';
+import { findDescendantByType } from '@/utilities/plugins/workflow-utils';
 
 export default class MergedAtomsController {
     public getAtoms = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -40,11 +41,13 @@ export default class MergedAtomsController {
         const plugin = await Plugin.findOne({ slug: analysis.plugin }).lean();
         if (!plugin) return next(new RuntimeError(ErrorCodes.PLUGIN_NOT_FOUND, 404));
 
-        // Extract nodes once
-        const nodes = plugin.workflow.nodes;
-        const exposureNode = nodes.find((n: any) => n.type === NodeType.EXPOSURE && n.id === exposureId);
-        const schemaNode = nodes.find((n: any) => n.type === NodeType.SCHEMA);
-        const visualizerNode = nodes.find((n: any) => n.type === NodeType.VISUALIZERS && n.data?.visualizers?.perAtomProperties?.length);
+        // Find exposure node first
+        const exposureNode = plugin.workflow.nodes.find((n: any) => n.type === NodeType.EXPOSURE && n.id === exposureId);
+        if (!exposureNode) return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
+
+        // Find schema and visualizer nodes connected to this specific exposure
+        const schemaNode = findDescendantByType(String(exposureId), plugin.workflow, NodeType.SCHEMA);
+        const visualizerNode = findDescendantByType(String(exposureId), plugin.workflow, NodeType.VISUALIZERS);
 
         if (!schemaNode) return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
 

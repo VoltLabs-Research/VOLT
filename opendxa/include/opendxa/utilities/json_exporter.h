@@ -12,6 +12,7 @@
 #include <opendxa/core/lammps_parser.h>
 #include <opendxa/math/lin_alg.h>
 #include <opendxa/analysis/atomic_strain.h>
+#include <opendxa/analysis/analysis_context.h>
 
 namespace OpenDXA{
 
@@ -61,6 +62,8 @@ public:
     json getAtomsDataSimple(const LammpsParser::Frame& frame, const StructureAnalysis& structureAnalysis, const std::vector<int>* structureTypes = nullptr);
     json getAtomicStrainData(const AtomicStrainModifier::AtomicStrainEngine& engine, const std::vector<int>& ids);
     json getElasticStrainData(const ElasticStrainEngine& engine, const std::vector<int>& ids);
+    json getPTMData(const AnalysisContext& context, const std::vector<int>& ids);
+    void exportPTMData(const AnalysisContext& context, const std::vector<int>& ids, const std::string& outputFilename);
     json getProcessingTime();
     json getMetadata();
     

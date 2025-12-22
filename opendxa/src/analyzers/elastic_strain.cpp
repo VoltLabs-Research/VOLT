@@ -115,6 +115,14 @@ json ElasticStrainAnalyzer::compute(const LammpsParser::Frame &frame, const std:
         result["elastic_strain_file"] = path;
     }
 
+    if(!outputFilename.empty() && _identificationMode == StructureAnalysis::Mode::PTM){
+        _jsonExporter.exportPTMData(
+            engine.structureAnalysis().context(),
+            frame.ids,
+            outputFilename
+        );
+    }
+
     return result;
 }
 }

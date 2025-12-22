@@ -106,6 +106,13 @@ json GrainSegmentationAnalyzer::compute(const LammpsParser::Frame &frame, const 
     }
 
     if(!outputFilename.empty()){
+        if(_identificationMode == StructureAnalysis::Mode::PTM){
+            _jsonExporter.exportPTMData(
+                structureAnalysis->context(),
+                frame.ids,
+                outputFilename
+            );
+        }
         result = performGrainSegmentation(frame, *structureAnalysis, extractedStructureTypes, outputFilename);
     }else{
         result["is_failed"] = true;

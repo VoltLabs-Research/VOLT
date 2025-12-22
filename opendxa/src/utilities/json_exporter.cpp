@@ -550,6 +550,50 @@ json DXAJsonExporter::getElasticStrainData(
     return result;
 }
 
+json DXAJsonExporter::getPTMData(
+    const AnalysisContext& context,
+    const std::vector<int>& ids
+){
+    json result;
+    auto ptmProp = context.ptmOrientation;
+    auto corrProp = context.correspondencesCode;
+
+    if(!ptmProp || !corrProp){
+        return result;
+    }
+
+    size_t n = ids.size();
+    json dataArray = json::array();
+
+    for(size_t i = 0; i < n; ++i){
+        json atomData;
+        atomData["id"] = ids[i];
+        atomData["correspondence"] = corrProp->getInt64(i);
+        
+        json orient = json::array();
+        for(int c = 0; c < 4; ++c) orient.push_back(ptmProp->getDoubleComponent(i, c));
+        atomData["orientation"] = orient;
+        
+        dataArray.push_back(atomData);
+    }
+
+    result["data"] = dataArray;
+    return result;
+}
+
+void DXAJsonExporter::exportPTMData(
+    const AnalysisContext& context,
+    const std::vector<int>& ids,
+    const std::string& outputFilename
+){
+    json data = getPTMData(context, ids);
+    if(!data.empty()){
+        std::string ptmPath = outputFilename + "_ptm_data.msgpack";
+        writeJsonMsgpackToFile(data, ptmPath);
+        spdlog::info("PTM data written to {}", ptmPath);
+    }
+}
+
 json DXAJsonExporter::exportClusterGraphToJson(const ClusterGraph* graph){
     json clusterGraphJson;
 

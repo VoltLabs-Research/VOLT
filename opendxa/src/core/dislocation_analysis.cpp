@@ -139,6 +139,15 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         extractedStructureTypes.push_back(structureType);
     }
 
+    // If identification mode is PTM, export PTM data
+    if(!outputFile.empty() && _identificationMode == StructureAnalysis::Mode::PTM){
+         _jsonExporter.exportPTMData(
+            structureAnalysis->context(),
+            frame.ids,
+            outputFile
+        );
+    }
+
     // If structure identification only is requested
     if(_structureIdentificationOnly && !outputFile.empty()){
         auto atomsData = _jsonExporter.getAtomsDataSimple(frame, *structureAnalysis, &extractedStructureTypes);
