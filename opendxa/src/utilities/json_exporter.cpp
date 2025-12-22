@@ -949,6 +949,9 @@ void DXAJsonExporter::exportForStructureIdentification(
     }
 
     writeJsonMsgpackToFile(out, outputFilename + "_atoms.msgpack");
+
+    // also export statistics
+    writeJsonMsgpackToFile(structureAnalysis.getStructureStatisticsJson(), outputFilename + "_structure_analysis_stats.msgpack");
 }
 
 json DXAJsonExporter::getNetworkStatistics(const DislocationNetwork* network, double cellVolume){
@@ -958,7 +961,6 @@ json DXAJsonExporter::getNetworkStatistics(const DislocationNetwork* network, do
     double totalLength = 0.0;
     int validSegments = 0;
     
-    // Paralelizar el cálculo de estadísticas
     #pragma omp parallel for reduction(+:totalLength,validSegments) schedule(dynamic)
     for(size_t i = 0; i < segments.size(); ++i){
         const auto* segment = segments[i];

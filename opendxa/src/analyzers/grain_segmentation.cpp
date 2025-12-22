@@ -112,6 +112,8 @@ json GrainSegmentationAnalyzer::compute(const LammpsParser::Frame &frame, const 
                 frame.ids,
                 outputFilename
             );
+            // Export structure stats
+            _jsonExporter.writeJsonMsgpackToFile(structureAnalysis->getStructureStatisticsJson(), outputFilename + "_structure_analysis_stats");
         }
         result = performGrainSegmentation(frame, *structureAnalysis, extractedStructureTypes, outputFilename);
     }else{

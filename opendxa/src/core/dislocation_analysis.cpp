@@ -264,7 +264,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     {
         try{
-            PROFILE("JSON Exporter - Export Analysis Data (lightweight)");
+            PROFILE("JSON Exporter - Export Analysis Data");
             result = _jsonExporter.exportAnalysisData(
                 networkUptr.get(),
                 defectMesh,
@@ -297,8 +297,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
         {
             PROFILE("Streaming Atoms MsgPack");
-            auto atomsDataJson = _jsonExporter.getAtomsData(frame, &tracer, &extractedStructureTypes);
-            _jsonExporter.writeJsonMsgpackToFile(atomsDataJson, outputFile + "_atoms.msgpack");
+            _jsonExporter.exportForStructureIdentification(frame, interfaceMesh.structureAnalysis(), outputFile);
         }
         {
             PROFILE("Streaming Dislocations MsgPack");

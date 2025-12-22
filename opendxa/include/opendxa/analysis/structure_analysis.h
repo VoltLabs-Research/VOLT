@@ -193,44 +193,60 @@ public:
     }
     
     json getStructureStatisticsJson() const{
-        if (!_statisticsValid) {
-            calculateStructureStatistics();
-        }
-        
-        json stats;
-        stats["total_atoms"] = _context.atomCount();
-		// TODO: Create a private method with a switch for handle this.
-        stats["analysis_method"] = _identificationMode == StructureAnalysis::Mode::DIAMOND ? "DIAMOND" : usingPTM() ? "PTM" : "CNA";
-        
-        json typeStats;
-        int totalIdentified = 0;
-        
-        for(const auto& [structureType, count] : _structureStatistics){
-            std::string name = getStructureTypeName(structureType);
-            
-            json typeInfo;
-            typeInfo["count"] = count;
-            typeInfo["percentage"] = (count * 100.0) / _context.atomCount();
-            typeInfo["type_id"] = structureType;
-            
-            typeStats[name] = typeInfo;
-            
-            if (structureType != static_cast<int>(StructureType::OTHER) && 
-                structureType != static_cast<int>(CoordinationStructureType::COORD_OTHER)) {
-                totalIdentified += count;
-            }
-        }
-        
-        stats["structure_types"] = typeStats;
-        stats["summary"] = {
-            {"total_identified", totalIdentified},
-            {"total_unidentified", _structureStatistics.count(static_cast<int>(StructureType::OTHER)) ? _structureStatistics.at(static_cast<int>(StructureType::OTHER)) : 0},
-            {"identification_rate", (totalIdentified * 100.0) / _context.atomCount()},
-            {"unique_structure_types", static_cast<int>(_structureStatistics.size())}
-        };
-        
-        return stats;
-    }
+		if(!_statisticsValid) calculateStructureStatistics();
+
+		const int N = _context.atomCount();
+		const double invN = (N > 0) ? (100.0 / static_cast<double>(N)) : 0.0;
+		json stats = json::object();
+		stats["total_atoms"] = N;
+
+		json typeStats = json::object();
+		int totalIdentified = 0;
+
+		constexpr int K = static_cast<int>(StructureType::NUM_STRUCTURE_TYPES);
+		std::vector<std::string> nameCache(K);
+		std::vector<char> hasName(K, 0);
+
+		auto getNameCached = [&](int st) -> const std::string& {
+			const int idx = (0 <= st && st < K) ? st : static_cast<int>(StructureType::OTHER);
+			if(!hasName[idx]){
+				nameCache[idx] = getStructureTypeName(idx);
+				hasName[idx] = 1;
+			}
+			return nameCache[idx];
+		};
+
+		for(const auto& [structureType, count] : _structureStatistics){
+			const std::string& name = getNameCached(structureType);
+
+			json& typeInfo = typeStats[name];
+			typeInfo = json::object();
+			typeInfo["count"] = count;
+			typeInfo["percentage"] = static_cast<double>(count) * invN;
+			typeInfo["type_id"] = structureType;
+
+			if(structureType != static_cast<int>(StructureType::OTHER) &&
+				structureType != static_cast<int>(CoordinationStructureType::COORD_OTHER)){
+				totalIdentified += count;
+			}
+		}
+
+		int unidentified = 0;
+		auto itOther = _structureStatistics.find(static_cast<int>(StructureType::OTHER));
+		if(itOther != _structureStatistics.end()){
+			unidentified = itOther->second;
+		}
+
+		stats["structure_types"] = std::move(typeStats);
+		stats["summary"] = {
+			{"total_identified", totalIdentified},
+			{"total_unidentified", unidentified},
+			{"identification_rate", static_cast<double>(totalIdentified) * invN},
+			{"unique_structure_types", static_cast<int>(_structureStatistics.size())}
+		};
+
+		return stats;
+	}
 
 private:
 	void storeDeformationGradient(const PTM::Kernel& kernel, size_t atomIndex);

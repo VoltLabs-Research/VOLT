@@ -116,12 +116,13 @@ const ModifierConfiguration = ({
                         break;
 
                     case 'frame':
+                        field.type = 'select';
                         field.options = (trajectory?.frames || []).map((frame: any, index: number) => ({
                             value: String(frame.timestep),
-                            title: `Frame ${index + 1} (Time ${frame.timestep})`
+                            title: `Frame ${index + 1} (Timestep ${frame.timestep})`
                         }));
                         if (field.options.length === 0) {
-                            field.options = [{ value: '0', title: 'Default(First Frame)' }];
+                            field.options = [{ value: '0', title: 'Default (First Frame)' }];
                         }
                         field.selectProps = { renderInPortal: true };
                         break;
