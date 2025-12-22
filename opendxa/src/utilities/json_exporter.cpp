@@ -341,6 +341,7 @@ json DXAJsonExporter::getMeshData(
     return meshData;
 }
 
+
 json DXAJsonExporter::getAtomsData(
     const LammpsParser::Frame& frame, 
     const BurgersLoopBuilder* tracer,
@@ -365,41 +366,6 @@ json DXAJsonExporter::getAtomsData(
         }
         
         if(i < static_cast<int>(frame.positions.size())){
-            const auto& pos = frame.positions[i];
-            atomJson["pos"] = {pos.x(), pos.y(), pos.z()};
-        }else{
-            atomJson["pos"] = {0.0, 0.0, 0.0};
-        }
-        
-        if(!groupedAtoms[typeName].is_array()){
-            groupedAtoms[typeName] = json::array();
-        }
-
-        groupedAtoms[typeName].push_back(atomJson);
-    }
-    
-    return json(groupedAtoms);
-}
-
-json DXAJsonExporter::getAtomsDataSimple(
-    const LammpsParser::Frame& frame,
-    const StructureAnalysis& structureAnalysis,
-    const std::vector<int>* structureTypes
-){
-    std::map<std::string, json> groupedAtoms;
-
-    for(size_t i = 0; i < frame.natoms; ++i){
-        int structureType = 0;
-        if(structureTypes && i < structureTypes->size()){
-            structureType = (*structureTypes)[i];
-        }
-
-        std::string typeName = structureAnalysis.getStructureTypeName(structureType);
-        
-        json atomJson;
-        atomJson["id"] = i;
-        
-        if(i < frame.positions.size()){
             const auto& pos = frame.positions[i];
             atomJson["pos"] = {pos.x(), pos.y(), pos.z()};
         }else{
@@ -929,6 +895,60 @@ std::string DXAJsonExporter::getLineDirectionString(const Vector3& direction){
     oss << std::fixed << std::setprecision(3);
     oss << "⟨" << direction.x() << " " << direction.y() << " " << direction.z() << "⟩";
     return oss.str();
+}
+
+void DXAJsonExporter::exportForStructureIdentification(
+    const LammpsParser::Frame &frame,
+    const StructureAnalysis& structureAnalysis,
+    const std::string& outputFilename
+){
+    const size_t N = frame.natoms;
+    constexpr int K = static_cast<int>(StructureType::NUM_STRUCTURE_TYPES);
+
+    assert(frame.ids.size() == N);
+    assert(frame.positions.size() == N);
+
+    std::vector<std::string> names(K);
+    for(int st = 0; st < K; st++){
+        names[st] = structureAnalysis.getStructureTypeName(st);
+    }
+
+    std::vector<uint8_t> stOfAtom(N);
+    std::vector<size_t> counts(K, 0);
+
+    for(size_t i = 0; i < N; i++){
+        const int raw = structureAnalysis.context().structureTypes->getInt(static_cast<int>(i));
+        const int st = (0 <= raw && raw < K) ? raw : 0;
+        stOfAtom[i] = static_cast<uint8_t>(st);
+        counts[st]++;
+    }
+
+    std::vector<json> buckets;
+    buckets.reserve(K);
+    for(int st = 0; st < K; st++) buckets.emplace_back(json::array());
+
+    for(int st = 0; st < K; st++){
+        if(counts[st] == 0) continue;
+        buckets[st].get_ref<json::array_t&>().reserve(counts[st]);
+    }
+
+    for(size_t i = 0; i < N; i++){
+        const int st = static_cast<int>(stOfAtom[i]);
+        const Point3& pos = frame.positions[i];
+        buckets[st].push_back({
+            { "id", frame.ids[i] },
+            { "pos", { pos.x(), pos.y(), pos.z() } }
+        });
+    }
+
+    json out = json::object();
+    for(int st = 0; st < K; st++){
+        if(!buckets[st].empty()){
+            out[names[st]] = std::move(buckets[st]);
+        }
+    }
+
+    writeJsonMsgpackToFile(out, outputFilename + "_atoms.msgpack");
 }
 
 json DXAJsonExporter::getNetworkStatistics(const DislocationNetwork* network, double cellVolume){

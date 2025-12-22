@@ -34,10 +34,16 @@ public:
         const BurgersLoopBuilder* tracer,
         const std::vector<int>* structureTypes = nullptr,
         bool includeDetailedNetworkInfo = true,
-    bool includeTopologyInfo = true,
-    bool includeDislocationsInMemory = true,
-    bool includeAtomsInMemory = true
+        bool includeTopologyInfo = true,
+        bool includeDislocationsInMemory = true,
+        bool includeAtomsInMemory = true
     );
+
+    void exportForStructureIdentification(
+        const LammpsParser::Frame& frame,
+        const StructureAnalysis& structureAnalysis,
+        const std::string& outputFilename
+    );;
 
     json exportClusterGraphToJson(const ClusterGraph* graph);
     json exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo = false, const SimulationCell* simulationCell = nullptr);
@@ -59,7 +65,6 @@ public:
     );
     
     json getAtomsData(const LammpsParser::Frame& frame, const BurgersLoopBuilder* tracer, const std::vector<int>* structureTypes = nullptr);
-    json getAtomsDataSimple(const LammpsParser::Frame& frame, const StructureAnalysis& structureAnalysis, const std::vector<int>* structureTypes = nullptr);
     json getAtomicStrainData(const AtomicStrainModifier::AtomicStrainEngine& engine, const std::vector<int>& ids);
     json getElasticStrainData(const ElasticStrainEngine& engine, const std::vector<int>& ids);
     json getPTMData(const AnalysisContext& context, const std::vector<int>& ids);

@@ -113,16 +113,7 @@ json ElasticStrainAnalyzer::compute(const LammpsParser::Frame &frame, const std:
         _jsonExporter.writeJsonMsgpackToFile(elasticStrainData, path);
         spdlog::info("Elastic strain data written to {}", path);
 
-        // TODO: Duplicated code
-        std::vector<int> extractedStructureTypes;
-        extractedStructureTypes.reserve(frame.natoms);
-        for(int i = 0; i < frame.natoms; i++){
-            int structureType = engine.structureAnalysis().context().structureTypes->getInt(i);
-            extractedStructureTypes.push_back(structureType);
-        }
-
-        auto atomsData = _jsonExporter.getAtomsDataSimple(frame, engine.structureAnalysis(), &extractedStructureTypes);
-        _jsonExporter.writeJsonMsgpackToFile(atomsData, outputFilename + "_atoms.msgpack");
+        _jsonExporter.exportForStructureIdentification(frame, engine.structureAnalysis(), outputFilename);
     }
 
     if(!outputFilename.empty() && _identificationMode == StructureAnalysis::Mode::PTM){

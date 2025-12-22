@@ -150,13 +150,8 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
 
     // If structure identification only is requested
     if(_structureIdentificationOnly && !outputFile.empty()){
-        auto atomsData = _jsonExporter.getAtomsDataSimple(frame, *structureAnalysis, &extractedStructureTypes);
-        _jsonExporter.writeJsonMsgpackToFile(atomsData, outputFile + "_atoms.msgpack");
+        _jsonExporter.exportForStructureIdentification(frame, *structureAnalysis, outputFile);
 
-        // TODO: DUPLICATED EXPORT
-        _jsonExporter.writeJsonMsgpackToFile(atomsData, outputFile + "_structure_stats.msgpack");
-        
-        result = atomsData;
         result["is_failed"] = false;
         
         auto end_time = std::chrono::high_resolution_clock::now();
