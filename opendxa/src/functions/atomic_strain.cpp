@@ -1,4 +1,5 @@
 #include <opendxa/cli/common.h>
+#include <opendxa/analyzers/atomic_strain.h>
 
 using namespace OpenDXA;
 using namespace OpenDXA::CLI;
@@ -44,8 +45,7 @@ int main(int argc, char* argv[]) {
     if (!refFile.empty()) {
         spdlog::info("Parsing reference file: {}", refFile);
         LammpsParser refParser;
-        LammpsParser::ParseOptions opts;
-        if (!refParser.parseFile(refFile, refFrame, opts)) {
+        if (!refParser.parseFile(refFile, refFrame, {})) {
             spdlog::error("Failed to parse reference file: {}", refFile);
             return 1;
         }
@@ -60,15 +60,14 @@ int main(int argc, char* argv[]) {
     outputBase = deriveOutputBase(filename, outputBase);
     spdlog::info("Output base: {}", outputBase);
     
-    DislocationAnalysis analyzer;
-    analyzer.enableAtomicStrain(true);
-    analyzer.setAtomicStrainCutoff(getDouble(opts, "--cutoff", 3.0));
+    AtomicStrainAnalyzer analyzer;
+    analyzer.setCutoff(getDouble(opts, "--cutoff", 3.0));
     
     if (hasReference) {
-        analyzer.setAtomicStrainReferenceFrame(refFrame);
+        analyzer.setReferenceFrame(refFrame);
     }
     
-    analyzer.setAtomicStrainOptions(
+    analyzer.setOptions(
         getBool(opts, "--eliminateCellDeformation", false),
         getBool(opts, "--assumeUnwrapped", false),
         getBool(opts, "--calcDeformationGradient", true),

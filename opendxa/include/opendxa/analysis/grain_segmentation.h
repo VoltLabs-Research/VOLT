@@ -45,7 +45,7 @@ struct HalfEdge{
     double weight;
 };
 
-double calculateMedian(std::vector<double>& data){
+inline double calculateMedian(std::vector<double>& data){
     size_t n = data.size();
     std::sort(data.begin(), data.end());
     double median = data[n / 2];
@@ -56,7 +56,7 @@ double calculateMedian(std::vector<double>& data){
     return median;
 }
 
-void weightedLinearRegression(
+inline void weightedLinearRegression(
     std::vector<double>& weights,
     std::vector<double>& xs,
     std::vector<double>& ys,
@@ -94,7 +94,7 @@ void weightedLinearRegression(
     intercept = ymean - gradient * xmean;
 }
 
-std::vector<double> leastAbsoluteDeviations(
+inline std::vector<double> leastAbsoluteDeviations(
     std::vector<double>& weights, 
     std::vector<double>& xs, 
     std::vector<double>& ys, 

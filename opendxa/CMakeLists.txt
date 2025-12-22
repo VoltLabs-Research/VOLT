@@ -123,6 +123,10 @@ set(LIBRARY_SOURCES
     src/math/affine_decomposition.cpp
     src/utilities/json_exporter.cpp
     src/utilities/msgpack_writer.cpp
+    src/analyzers/atomic_strain.cpp
+    src/analyzers/coordination.cpp
+    src/analyzers/elastic_strain.cpp
+    src/analyzers/grain_segmentation.cpp
 )
 
 add_library(opendxa_lib STATIC ${LIBRARY_SOURCES})

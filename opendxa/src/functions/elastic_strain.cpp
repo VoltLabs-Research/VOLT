@@ -1,4 +1,5 @@
 #include <opendxa/cli/common.h>
+#include <opendxa/analyzers/elastic_strain.h>
 
 using namespace OpenDXA;
 using namespace OpenDXA::CLI;
@@ -13,43 +14,42 @@ void showUsage(const std::string& name) {
         << "  --calcDeformationGradient     Compute deformation gradient F. [default: true]\n"
         << "  --calcStrainTensors           Compute strain tensors. [default: true]\n"
         << "  --identificationMode <mode>   Structure identification mode (CNA|PTM). [default: PTM]\n"
-        << "  --rmsd <float>                RMSD cutoff for PTM. [default: 0.12]\n";
+        << "  --rmsd <float>                RMSD cutoff for PTM. [default: 0.10]\n";
     printHelpOption();
 }
 
-int main(int argc, char* argv[]) {
-    if (argc < 2) {
+int main(int argc, char* argv[]){
+    if(argc < 2){
         showUsage(argv[0]);
         return 1;
     }
-    
+
     std::string filename, outputBase;
     auto opts = parseArgs(argc, argv, filename, outputBase);
-    
-    if (hasOption(opts, "--help") || filename.empty()) {
+
+    if(hasOption(opts, "--help") || filename.empty()){
         showUsage(argv[0]);
         return filename.empty() ? 1 : 0;
     }
-    
-    if (!hasOption(opts, "--latticeConstant")) {
+
+    if(!hasOption(opts, "--latticeConstant")){
         spdlog::error("--latticeConstant is required for elastic strain analysis.");
         showUsage(argv[0]);
         return 1;
     }
-    
+
     initLogging("opendxa-elastic-strain");
-    
+
     LammpsParser::Frame frame;
-    if (!parseFrame(filename, frame)) return 1;
-    
+    if(!parseFrame(filename, frame)) return 1;
+
     outputBase = deriveOutputBase(filename, outputBase);
     spdlog::info("Output base: {}", outputBase);
-    
-    DislocationAnalysis analyzer;
+
+    ElasticStrainAnalyzer analyzer;
     analyzer.setInputCrystalStructure(parseCrystalStructure(getString(opts, "--crystalStructure", "BCC")));
-    analyzer.enableElasticStrain(true);
-    analyzer.setElasticStrainParameters(
-        getDouble(opts, "--latticeConstant", 1.0),
+    analyzer.setParameters(
+        getDouble(opts, "--latticeConstant", 1.63),
         getDouble(opts, "--caRatio", 1.0),
         getBool(opts, "--pushForward", false),
         getBool(opts, "--calcDeformationGradient", true),
@@ -66,12 +66,11 @@ int main(int argc, char* argv[]) {
         analyzer.setIdentificationMode(StructureAnalysis::Mode::PTM);
     }
 
-    analyzer.setRmsd(getDouble(opts, "--rmsd", 0.12));
-    
+    analyzer.setRMSD(getDouble(opts, "--rmsd", 0.10));
     spdlog::info("Starting elastic strain analysis...");
     json result = analyzer.compute(frame, outputBase);
-    
-    if (result.value("is_failed", false)) {
+
+    if(result.value("is_failed", false)){
         spdlog::error("Analysis failed: {}", result.value("error", "Unknown error"));
         return 1;
     }

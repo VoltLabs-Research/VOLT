@@ -1,4 +1,5 @@
 #include <opendxa/cli/common.h>
+#include <opendxa/analyzers/grain_segmentation.h>
 
 using namespace OpenDXA;
 using namespace OpenDXA::CLI;
@@ -36,7 +37,6 @@ int main(int argc, char* argv[]) {
     outputBase = deriveOutputBase(filename, outputBase);
     spdlog::info("Output base: {}", outputBase);
     
-    // Parse grain segmentation options
     bool adoptOrphanAtoms = getString(opts, "--adoptOrphanAtoms", "true") == "true";
     int minGrainAtomCount = getInt(opts, "--minGrainAtomCount", 100);
     bool handleCoherentInterfaces = getString(opts, "--handleCoherentInterfaces", "true") == "true";
@@ -48,11 +48,10 @@ int main(int argc, char* argv[]) {
     spdlog::info("  - handleCoherentInterfaces: {}", handleCoherentInterfaces);
     spdlog::info("  - outputBonds: {}", outputBonds);
     
-    DislocationAnalysis analyzer;
-    analyzer.setGrainSegmentationOnly(true);
+    GrainSegmentationAnalyzer analyzer;
     analyzer.setIdentificationMode(StructureAnalysis::Mode::PTM);
-    analyzer.setRmsd(getDouble(opts, "--rmsd", 0.1f));
-    analyzer.setGrainSegmentationParameters(
+    analyzer.setRMSD(getDouble(opts, "--rmsd", 0.1f));
+    analyzer.setParameters(
         adoptOrphanAtoms,
         minGrainAtomCount,
         handleCoherentInterfaces,
@@ -68,4 +67,3 @@ int main(int argc, char* argv[]) {
     }
     return 0;
 }
-

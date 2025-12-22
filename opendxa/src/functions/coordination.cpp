@@ -1,4 +1,5 @@
 #include <opendxa/cli/common.h>
+#include <opendxa/analyzers/coordination.h>
 
 using namespace OpenDXA;
 using namespace OpenDXA::CLI;
@@ -6,8 +7,8 @@ using namespace OpenDXA::CLI;
 void showUsage(const std::string& name) {
     printUsageHeader(name, "OpenDXA - Coordination Analysis");
     std::cerr
-        << "  --cutoff <float>    Cutoff radius for coordination analysis. [default: 3.5]\n"
-        << "  --bins <int>        Number of RDF bins. [default: 100]\n";
+        << "  --cutoff <float>              Cutoff radius for neighbor search. [default: 3.2]\n"
+        << "  --rdfBins <int>               Number of bins for RDF calculation. [default: 500]\n";
     printHelpOption();
 }
 
@@ -33,10 +34,9 @@ int main(int argc, char* argv[]) {
     outputBase = deriveOutputBase(filename, outputBase);
     spdlog::info("Output base: {}", outputBase);
     
-    DislocationAnalysis analyzer;
-    analyzer.setCoordinationAnalysisOnly(true);
-    analyzer.setCoordinationCutoff(getDouble(opts, "--cutoff", 3.5));
-    analyzer.setCoordinationRdfBins(getInt(opts, "--bins", 100));
+    CoordinationAnalyzer analyzer;
+    analyzer.setCutoff(getDouble(opts, "--cutoff", 3.2));
+    analyzer.setRdfBins(getInt(opts, "--rdfBins", 500));
     
     spdlog::info("Starting coordination analysis...");
     json result = analyzer.compute(frame, outputBase);
