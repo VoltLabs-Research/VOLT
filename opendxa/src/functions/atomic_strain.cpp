@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
     if (!refFile.empty()) {
         spdlog::info("Parsing reference file: {}", refFile);
         LammpsParser refParser;
-        if (!refParser.parseFile(refFile, refFrame, {})) {
+        if (!refParser.parseFile(refFile, refFrame)) {
             spdlog::error("Failed to parse reference file: {}", refFile);
             return 1;
         }
