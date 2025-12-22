@@ -15,6 +15,8 @@ import storage from '@/services/storage';
 import logger from '@/logger';
 import multer from 'multer';
 import path from 'path';
+import archiver from 'archiver';
+import unzipper from 'unzipper';
 import BaseController from './base-controller';
 import nodeRegistry from '@/services/nodes/node-registry';
 import workflowValidator from '@/services/nodes/workflow-validator';
@@ -29,6 +31,13 @@ const binaryUpload = multer({
     storage: multer.memoryStorage(),
     limits: {
         fileSize: 100 * 1024 * 1024
+    }
+});
+
+const zipUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 200 * 1024 * 1024
     }
 });
 
@@ -657,6 +666,133 @@ export default class PluginsController extends BaseController<IPlugin> {
         res.status(200).json({
             status: 'success',
             message: 'Binary deleted successfully'
+        });
+    });
+
+    /**
+     * Export a plugin as a ZIP file containing plugin.json and binary
+     */
+    public exportPlugin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const { id } = req.params;
+        const plugin = await Plugin.findOne({ $or: [{ _id: id }, { slug: id }] }).lean();
+
+        if (!plugin) {
+            return next(new RuntimeError('Plugin::NotFound', 404));
+        }
+
+        // Prepare plugin data for export (exclude team-specific data)
+        const exportData = {
+            slug: plugin.slug,
+            workflow: plugin.workflow,
+            status: PluginStatus.DRAFT, // Always export as draft
+            validated: plugin.validated,
+            exportedAt: new Date().toISOString(),
+            version: '1.0'
+        };
+
+        // Find entrypoint node for binary info
+        const entrypointNode = plugin.workflow.nodes.find(
+            (n: IWorkflowNode) => n.type === NodeType.ENTRYPOINT
+        );
+        const binaryObjectPath = entrypointNode?.data?.entrypoint?.binaryObjectPath;
+        const binaryFileName = entrypointNode?.data?.entrypoint?.binaryFileName || 'binary';
+
+        // Set response headers
+        const pluginName = slugify(plugin.slug);
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${pluginName}.zip"`);
+
+        // Create archive
+        const archive = archiver('zip', { zlib: { level: 5 } });
+        archive.pipe(res);
+
+        // Add plugin.json
+        archive.append(JSON.stringify(exportData, null, 2), { name: 'plugin.json' });
+
+        // Add binary if exists
+        if (binaryObjectPath) {
+            try {
+                const binaryStream = await storage.getStream(SYS_BUCKETS.PLUGINS, binaryObjectPath);
+                archive.append(binaryStream, { name: `binary/${binaryFileName}` });
+            } catch (err) {
+                logger.warn(`[PluginsController] Binary not found during export: ${binaryObjectPath}`);
+            }
+        }
+
+        await archive.finalize();
+    });
+
+    /**
+     * Import a plugin from a ZIP file
+     */
+    public importPluginMiddleware = zipUpload.single('plugin');
+
+    public importPlugin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        if (!req.file) {
+            return next(new RuntimeError('Plugin::Import::FileRequired', 400));
+        }
+
+        const teamId = req.body.teamId || req.query.teamId;
+
+        // Parse ZIP file
+        const directory = await unzipper.Open.buffer(req.file.buffer);
+
+        // Find plugin.json
+        const pluginJsonFile = directory.files.find((f: any) => f.path === 'plugin.json');
+        if (!pluginJsonFile) {
+            return next(new RuntimeError('Plugin::Import::InvalidZip', 400));
+        }
+
+        const pluginJsonBuffer = await pluginJsonFile.buffer();
+        const importData = JSON.parse(pluginJsonBuffer.toString('utf-8'));
+
+        if (!importData.workflow) {
+            return next(new RuntimeError('Plugin::Import::InvalidFormat', 400));
+        }
+
+        // Generate unique slug
+        const baseSlug = importData.slug || 'imported-plugin';
+        const uniqueSlug = `${baseSlug}-${Date.now()}`;
+
+        // Create the plugin first (without binary)
+        const newPlugin = await Plugin.create({
+            slug: uniqueSlug,
+            workflow: importData.workflow,
+            status: PluginStatus.DRAFT,
+            team: teamId
+        });
+
+        // Find and upload binary if exists
+        const binaryFile = directory.files.find((f: any) => f.path.startsWith('binary/'));
+        if (binaryFile) {
+            const binaryBuffer = await binaryFile.buffer();
+            const binaryFileName = path.basename(binaryFile.path);
+            const binaryObjectPath = `plugin-binaries/${newPlugin._id}/${uuidv4()}-${binaryFileName}`;
+
+            await storage.put(SYS_BUCKETS.PLUGINS, binaryObjectPath, binaryBuffer, {
+                'Content-Type': 'application/octet-stream',
+                'x-amz-meta-original-name': binaryFileName
+            });
+
+            // Update entrypoint node with binary info
+            const entrypointNode = newPlugin.workflow.nodes.find(
+                (n: IWorkflowNode) => n.type === NodeType.ENTRYPOINT
+            );
+            if (entrypointNode?.data?.entrypoint) {
+                entrypointNode.data.entrypoint.binaryObjectPath = binaryObjectPath;
+                entrypointNode.data.entrypoint.binaryFileName = binaryFileName;
+                newPlugin.markModified('workflow');
+                await newPlugin.save();
+            }
+
+            logger.info(`[PluginsController] Imported binary: ${binaryObjectPath}`);
+        }
+
+        logger.info(`[PluginsController] Plugin imported: ${newPlugin.slug}`);
+
+        res.status(201).json({
+            status: 'success',
+            data: newPlugin
         });
     });
 };

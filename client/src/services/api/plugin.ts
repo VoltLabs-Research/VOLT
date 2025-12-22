@@ -259,6 +259,32 @@ const pluginApi = {
             payload
         );
         return response.data.data.analysisId;
+    },
+
+    /**
+     * Export a plugin as a ZIP file
+     */
+    exportPlugin: async (idOrSlug: string): Promise<Blob> => {
+        const response = await api.get(`/plugins/${idOrSlug}/export`, {
+            responseType: 'blob'
+        });
+        return response.data;
+    },
+
+    /**
+     * Import a plugin from a ZIP file
+     */
+    importPlugin: async (file: File, teamId?: string): Promise<IPluginRecord> => {
+        const formData = new FormData();
+        formData.append('plugin', file);
+        if (teamId) {
+            formData.append('teamId', teamId);
+        }
+
+        const response = await api.post<GetPluginResponse>('/plugins/import', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.data.data;
     }
 };
 

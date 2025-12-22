@@ -20,33 +20,14 @@
  * SOFTWARE.
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import PluginsController from '@/controllers/plugins';
 import * as authMiddleware from '@/middlewares/authentication';
 import * as trajMiddleware from '@/middlewares/trajectory';
-import Plugin from '@/models/plugin';
-import RuntimeError from '@/utilities/runtime/runtime-error';
+import * as pluginMiddleware from '@/middlewares/plugins';
 
 const router = Router();
 const controller = new PluginsController();
-
-// Middleware to load plugin into res.locals
-const loadPlugin = async(req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
-    const mongoose = require('mongoose');
-
-    const query: any = { $or: [{ slug: id }] };
-    if(mongoose.Types.ObjectId.isValid(id)) {
-        query.$or.push({ _id: id });
-    }
-
-    const plugin = await Plugin.findOne(query);
-    if(!plugin){
-        return next(new RuntimeError('Plugin::NotFound', 404));
-    }
-    res.locals.plugin = plugin;
-    next();
-};
 
 router.use(authMiddleware.protect);
 
@@ -59,8 +40,10 @@ router.get('/:id', controller.getOne);
 router.put('/:id', controller.updateOne);
 router.delete('/:id', controller.deleteOne);
 router.post('/:id/publish', controller.publishPlugin);
-router.post('/:id/binary', loadPlugin, controller.uploadBinaryMiddleware, controller.uploadBinary);
-router.delete('/:id/binary', loadPlugin, controller.deleteBinary);
+router.post('/:id/binary', pluginMiddleware.loadPlugin, controller.uploadBinaryMiddleware, controller.uploadBinary);
+router.delete('/:id/binary', pluginMiddleware.loadPlugin, controller.deleteBinary);
+router.get('/:id/export', controller.exportPlugin);
+router.post('/import', controller.importPluginMiddleware, controller.importPlugin);
 
 router.post(
     '/:pluginSlug/modifier/:modifierSlug/trajectory/:id',

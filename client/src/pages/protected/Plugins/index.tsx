@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RiDeleteBin6Line, RiEditLine, RiFileCopyLine } from 'react-icons/ri';
+import { RiDeleteBin6Line, RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine } from 'react-icons/ri';
 import { TbRocket } from 'react-icons/tb';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
 import pluginApi, { type IPluginRecord } from '@/services/api/plugin';
 import { PluginStatus } from '@/types/plugin';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
-import useDashboardSearchStore from '@/stores/ui/dashboard-search';
 import usePluginStore from '@/stores/plugins/plugin';
 import useTeamStore from '@/stores/team/team';
 import './Plugins.css';
@@ -18,26 +17,27 @@ const PluginsListing = () => {
     const isLoading = usePluginStore((s) => s.loading);
     const isFetchingMore = usePluginStore((s) => s.isFetchingMore);
     const listingMeta = usePluginStore((s) => s.listingMeta);
-    const searchQuery = useDashboardSearchStore((s) => s.query);
     const selectedTeam = useTeamStore((s) => s.selectedTeam);
+    const [isImporting, setIsImporting] = useState(false);
+    const importInputRef = useRef<HTMLInputElement>(null);
 
     // Initial fetch handled by DashboardLayout mostly, but ensure here
     useEffect(() => {
-        if(plugins.length === 0){
+        if (plugins.length === 0) {
             fetchPlugins({ page: 1, limit: 20 });
         }
     }, [fetchPlugins, plugins.length]);
 
-    const handleMenuAction = useCallback(async(action: string, item: IPluginRecord) => {
-        switch(action){
+    const handleMenuAction = useCallback(async (action: string, item: IPluginRecord) => {
+        switch (action) {
             case 'edit':
                 navigate(`/dashboard/plugins/builder?id=${item._id}`);
                 break;
             case 'clone':
-                try{
+                try {
                     const originalPlugin = await pluginApi.getPlugin(item._id);
                     const clonedNodes = originalPlugin.workflow.nodes.map(node => {
-                        if(node.type === 'modifier' && node.data.modifier){
+                        if (node.type === 'modifier' && node.data.modifier) {
                             return {
                                 ...node,
                                 data: {
@@ -62,25 +62,40 @@ const PluginsListing = () => {
                         team: selectedTeam?._id
                     });
                     navigate(`/dashboard/plugins/builder?id=${clonedPlugin._id}`);
-                }catch(e){
+                } catch (e) {
                     console.error('Failed to clone plugin:', e);
                 }
                 break;
             case 'publish':
-                try{
+                try {
                     await pluginApi.publishPlugin(item._id);
                     fetchPlugins({ page: 1, force: true });
-                }catch(e){
+                } catch (e) {
                     console.error('Failed to publish plugin:', e);
                 }
                 break;
             case 'delete':
-                if(!window.confirm('Delete this plugin? This cannot be undone.')) return;
-                try{
+                if (!window.confirm('Delete this plugin? This cannot be undone.')) return;
+                try {
                     await pluginApi.deletePlugin(item._id);
                     fetchPlugins({ page: 1, force: true });
-                }catch(e){
+                } catch (e) {
                     console.error('Failed to delete plugin:', e);
+                }
+                break;
+            case 'export':
+                try {
+                    const blob = await pluginApi.exportPlugin(item._id);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${item.slug || 'plugin'}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch (e) {
+                    console.error('Failed to export plugin:', e);
                 }
                 break;
         }
@@ -89,10 +104,11 @@ const PluginsListing = () => {
     const getMenuOptions = useCallback((item: IPluginRecord) => {
         const options: Array<[string, React.ElementType, () => void]> = [
             ['Edit', RiEditLine, () => handleMenuAction('edit', item)],
-            ['Clone', RiFileCopyLine, () => handleMenuAction('clone', item)]
+            ['Clone', RiFileCopyLine, () => handleMenuAction('clone', item)],
+            ['Export', RiDownloadLine, () => handleMenuAction('export', item)]
         ];
 
-        if(item.status !== 'published'){
+        if (item.status !== 'published') {
             options.push(['Publish', TbRocket, () => handleMenuAction('publish', item)]);
         }
 
@@ -108,6 +124,25 @@ const PluginsListing = () => {
     const handleCreateNew = useCallback(() => {
         navigate('/dashboard/plugins/builder');
     }, [navigate]);
+
+    const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsImporting(true);
+        try {
+            const importedPlugin = await pluginApi.importPlugin(file, selectedTeam?._id);
+            fetchPlugins({ page: 1, force: true });
+            navigate(`/dashboard/plugins/builder?id=${importedPlugin._id}`);
+        } catch (err) {
+            console.error('Failed to import plugin:', err);
+        } finally {
+            setIsImporting(false);
+            if (importInputRef.current) {
+                importInputRef.current.value = '';
+            }
+        }
+    }, [selectedTeam?._id, fetchPlugins, navigate]);
 
     const columns: ColumnConfig[] = useMemo(() => [
         {
@@ -168,8 +203,8 @@ const PluginsListing = () => {
         }
     ], [handleRowClick]);
 
-    const handleLoadMore = useCallback(async() => {
-        if(!listingMeta.hasMore || isFetchingMore) return;
+    const handleLoadMore = useCallback(async () => {
+        if (!listingMeta.hasMore || isFetchingMore) return;
         await fetchPlugins({
             page: listingMeta.page + 1,
             limit: listingMeta.limit,
@@ -193,6 +228,25 @@ const PluginsListing = () => {
                 buttonTitle: 'New Plugin',
                 onCreate: handleCreateNew
             }}
+            headerActions={
+                <>
+                    <input
+                        ref={importInputRef}
+                        type='file'
+                        accept='.zip'
+                        onChange={handleImport}
+                        style={{ display: 'none' }}
+                    />
+                    <button
+                        className='import-plugin-btn'
+                        onClick={() => importInputRef.current?.click()}
+                        disabled={isImporting}
+                        title='Import Plugin'
+                    >
+                        <RiUploadLine size={18} />
+                    </button>
+                </>
+            }
         />
     );
 };
