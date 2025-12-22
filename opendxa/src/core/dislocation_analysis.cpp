@@ -153,6 +153,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
         auto atomsData = _jsonExporter.getAtomsDataSimple(frame, *structureAnalysis, &extractedStructureTypes);
         _jsonExporter.writeJsonMsgpackToFile(atomsData, outputFile + "_atoms.msgpack");
 
+        // TODO: DUPLICATED EXPORT
         _jsonExporter.writeJsonMsgpackToFile(atomsData, outputFile + "_structure_stats.msgpack");
         
         result = atomsData;
