@@ -23,6 +23,7 @@
 import { Client, SFTPWrapper } from 'ssh2';
 import { ISSHConnection } from '@/models/ssh-connection';
 import { createWriteStream } from 'node:fs';
+import { spawn } from 'node:child_process';
 import { pipeline } from 'node:stream/promises';
 import logger from '@/logger';
 import * as fs from 'node:fs/promises';
@@ -80,7 +81,12 @@ class SSHService {
     private readonly IDLE_TIMEOUT = 1000 * 60 * 5;
     private readonly CONNECT_TIMEOUT = 20000;
     private readonly MAX_RETRIES = 2;
-    private readonly DOWNLOAD_CONCURRENCY = 10;
+
+    // Progress throttling (ms)
+    private readonly PROGRESS_THROTTLE_MS = 150;
+
+    // Buffer tuning for big files
+    private readonly STREAM_HIGH_WATER_MARK = 1024 * 1024; // 1MB
 
     constructor() {
         // Periodic cleaning of inactive connections
@@ -125,6 +131,33 @@ class SSHService {
         };
     }
 
+    private shQuote(value: string): string {
+        // Safe single-quote for sh:
+        // abc'def -> 'abc'\''def'
+        return `'${value.replace(/'/g, `'\\''`)}'`;
+    }
+
+    private async walkFiles(root: string): Promise<string[]> {
+        const out: string[] = [];
+        const stack: string[] = [root];
+
+        while (stack.length > 0) {
+            const dir = stack.pop()!;
+            const entries = await fs.readdir(dir, { withFileTypes: true });
+
+            for (const entry of entries) {
+                const p = path.join(dir, entry.name);
+                if (entry.isDirectory()) {
+                    stack.push(p);
+                } else {
+                    out.push(p);
+                }
+            }
+        }
+
+        return out;
+    }
+
     private async executeWithRetry<T>(
         connection: ISSHConnection,
         operation: (sftp: SFTPWrapper) => Promise<T>,
@@ -135,13 +168,16 @@ class SSHService {
             return await operation(sftp);
         } catch (error: any) {
             const shouldRetry = attempt <= this.MAX_RETRIES &&
-                (error.code === 'ECONNRESET' || error.message.includes('No SFTP') || !error.code);
+                (error.code === 'ECONNRESET' || error.message?.includes('No SFTP') || !error.code);
 
             if (!shouldRetry) throw error;
+
             logger.warn(`Retrying SSH operation(Attempt ${attempt}/${this.MAX_RETRIES}) for ${connection.host}`);
+
             // force reconnection by clearing cache
             const connectionId = connection._id.toString();
             this.closeConnection(connectionId);
+
             // backoff
             await new Promise((r) => setTimeout(r, 500 * attempt));
             return this.executeWithRetry(connection, operation, attempt + 1);
@@ -179,6 +215,7 @@ class SSHService {
             return new Promise((resolve, reject) => {
                 sftp.readdir(remotePath, (err, list) => {
                     if (err) return reject(err);
+
                     const entries: SSHFileEntry[] = list.map((item) => ({
                         name: item.filename,
                         path: path.posix.join(remotePath, item.filename),
@@ -212,37 +249,51 @@ class SSHService {
 
     async downloadFile(connection: ISSHConnection, remotePath: string, localPath: string): Promise<void> {
         return this.executeWithRetry(connection, async (sftp) => {
-            // ensure local dir
             await fs.mkdir(path.dirname(localPath), { recursive: true });
-            await pipeline(sftp.createReadStream(remotePath), createWriteStream(localPath));
+
+            const readStream = sftp.createReadStream(remotePath, {
+                highWaterMark: this.STREAM_HIGH_WATER_MARK
+            });
+
+            const writeStream = createWriteStream(localPath, {
+                highWaterMark: this.STREAM_HIGH_WATER_MARK
+            });
+
+            await pipeline(readStream, writeStream);
         });
     }
 
-    async calculateDirectorySize(connection: ISSHConnection, remotePath: string): Promise<number> {
-        return this.executeWithRetry(connection, async (sftp) => {
-            let totalSize = 0;
-            // array as a queue to avoid deep stack recursion(stack overflow)
-            const queue = [remotePath];
-            while (queue.length > 0) {
-                const currentDir = queue.shift()!;
-                try {
-                    const list = await new Promise<any[]>((resolve, reject) => {
-                        sftp.readdir(currentDir, (err, list) => err ? reject(err) : resolve(list));
-                    });
-                    for (const item of list) {
-                        const itemPath = path.posix.join(currentDir, item.filename);
-                        if (item.attrs.isDirectory()) {
-                            queue.push(itemPath);
-                        } else {
-                            totalSize += item.attrs.size;
-                        }
-                    }
-                } catch (e) {
-                    logger.warn(`Error reading directory ${currentDir} during size calculation: ${e}`);
-                }
+    async getRemoteDirectorySize(connection: ISSHConnection, remotePath: string): Promise<number> {
+        const { client } = await this.getConnection(connection);
+
+        return new Promise((resolve) => {
+            if (remotePath === '/') {
+                // Avoid accidentally sizing the entire filesystem.
+                return resolve(0);
             }
 
-            return totalSize;
+            const cmd = `du -sb -- ${this.shQuote(remotePath)}`;
+
+            client.exec(cmd, (err, stream) => {
+                if (err) return resolve(0);
+
+                let output = '';
+
+                stream.on('data', (data: Buffer) => {
+                    output += data.toString();
+                });
+
+                stream.stderr.on('data', () => {
+                    // ignore
+                });
+
+                stream.on('close', () => {
+                    const match = output.match(/^(\d+)/);
+                    resolve(match ? parseInt(match[1], 10) : 0);
+                });
+
+                stream.on('error', () => resolve(0));
+            });
         });
     }
 
@@ -252,117 +303,132 @@ class SSHService {
         localPath: string,
         onProgress?: (progress: DownloadProgress) => void
     ): Promise<string[]> {
-        const { sftp } = await this.getConnection(connection);
-        const downloadFiles: string[] = [];
+        const { client } = await this.getConnection(connection);
 
-        let totalBytes = 0;
-        let downloadedBytes = 0;
-
-        if (onProgress) {
-            try {
-                totalBytes = await this.calculateDirectorySize(connection, remotePath);
-            } catch (error) {
-                logger.warn(`Failed to calculate directory size: ${error}`);
-            }
+        if (remotePath === '/') {
+            throw new Error('Refusing to download "/"');
         }
-
-        const tasks: FileTask[] = [];
-        const dirQueue = [{ remote: remotePath, local: localPath }];
 
         await fs.mkdir(localPath, { recursive: true });
 
-        while (dirQueue.length > 0) {
-            const { remote, local } = dirQueue.shift()!;
+        let totalBytes = 0;
+        if (onProgress) {
             try {
-                // TODO: duplicated code with SSHService.downloadFile
-                const list = await new Promise<any[]>((resolve, reject) => {
-                    sftp.readdir(remote, (err, l) => err ? reject(err) : resolve(l));
-                });
-
-                for (const item of list) {
-                    const itemRemote = path.posix.join(remote, item.filename);
-                    const itemLocal = path.join(local, item.filename);
-
-                    if (item.attrs.isDirectory()) {
-                        await fs.mkdir(itemLocal, { recursive: true });
-                        dirQueue.push({ remote: itemRemote, local: itemLocal });
-                    } else {
-                        tasks.push({
-                            remote: itemRemote,
-                            local: itemLocal,
-                            size: item.attrs.size,
-                            filename: item.filename
-                        });
-                    }
-                }
-            } catch (err) {
-                logger.error(`Error reading dir ${remote}: ${err}`);
-                throw err;
+                totalBytes = await this.getRemoteDirectorySize(connection, remotePath);
+            } catch (e) {
+                logger.warn(`Failed to calculate remote directory size: ${e}`);
             }
         }
 
-        const downloadWorker = async (task: FileTask) => {
-            return new Promise<void>((resolve, reject) => {
-                const readStream = sftp.createReadStream(task.remote);
-                const writeStream = createWriteStream(task.local);
+        return new Promise((resolve, reject) => {
+            const remoteDir = path.posix.dirname(remotePath);
+            const remoteBase = path.posix.basename(remotePath);
 
-                readStream.on('data', (chunk: Buffer) => {
+            // Stream remote content using tar
+            // -C: change directory
+            // -c: create archive
+            // -f -: write to stdout
+            // --: end of options
+            const cmd = `tar -C ${this.shQuote(remoteDir)} -cf - -- ${this.shQuote(remoteBase)}`;
+
+            client.exec(cmd, (err, stream) => {
+                if (err) return reject(err);
+
+                const tarExtract = spawn('tar', ['-xf', '-', '-C', localPath], {
+                    stdio: ['pipe', 'ignore', 'pipe']
+                });
+
+                let downloadedBytes = 0;
+                let lastEmit = 0;
+
+                const fail = (e: any) => {
+                    try {
+                        stream.destroy();
+                    } catch (ex) {
+                        // ignore
+                    }
+
+                    try {
+                        tarExtract.stdin?.destroy();
+                    } catch (ex) {
+                        // ignore
+                    }
+
+                    reject(e instanceof Error ? e : new Error(String(e)));
+                };
+
+                stream.on('error', fail);
+
+                tarExtract.on('error', (spawnErr) => {
+                    fail(new Error(`Local tar failed: ${spawnErr.message}`));
+                });
+
+                tarExtract.stdin?.on('error', fail);
+
+                stream.on('data', (chunk: Buffer) => {
                     downloadedBytes += chunk.length;
-                    if (onProgress) {
-                        onProgress({
-                            totalBytes,
-                            downloadedBytes,
-                            currentFile: task.filename,
-                            percent: totalBytes > 0 ? Math.round((downloadedBytes / totalBytes) * 100) : 0
-                        });
+
+                    if (!onProgress) return;
+
+                    const now = Date.now();
+                    if ((now - lastEmit) < this.PROGRESS_THROTTLE_MS) return;
+
+                    lastEmit = now;
+
+                    const percent = totalBytes > 0
+                        ? Math.min(100, Math.round((downloadedBytes / totalBytes) * 100))
+                        : 0;
+
+                    onProgress({
+                        totalBytes,
+                        downloadedBytes,
+                        currentFile: 'streaming...',
+                        percent
+                    });
+                });
+
+                stream.stderr.on('data', (data: Buffer) => {
+                    logger.warn(`Remote tar stderr: ${data.toString()}`);
+                });
+
+                tarExtract.stderr?.on('data', (data: Buffer) => {
+                    logger.warn(`Local tar stderr: ${data.toString()}`);
+                });
+
+                // Pipe remote tar stream to local tar stdin (backpressure-aware)
+                stream.pipe(tarExtract.stdin!);
+
+                tarExtract.on('close', async (code) => {
+                    if (code !== 0) {
+                        return fail(new Error(`Local tar exited with code ${code}`));
+                    }
+
+                    try {
+                        // Emit a final progress update
+                        if (onProgress) {
+                            onProgress({
+                                totalBytes,
+                                downloadedBytes,
+                                currentFile: 'done',
+                                percent: totalBytes > 0 ? 100 : 0
+                            });
+                        }
+
+                        const files = await this.walkFiles(localPath);
+                        resolve(files);
+                    } catch (e) {
+                        fail(e);
                     }
                 });
 
-                readStream.pipe(writeStream);
-
-                readStream.on('error', (err: any) => {
-                    writeStream.close();
-                    reject(err);
-                });
-
-                writeStream.on('error', (err) => reject(err));
-
-                writeStream.on('finish', () => {
-                    downloadFiles.push(task.local);
-                    resolve();
+                stream.on('close', (code: any) => {
+                    // ssh2 stream "close" may include exit code; log only
+                    if (code !== 0 && code !== null && code !== undefined) {
+                        logger.warn(`Remote tar closed with code ${code}`);
+                    }
                 });
             });
-        };
-
-        const runQueue = async () => {
-            const results: Promise<void>[] = [];
-            const executing: Promise<void>[] = [];
-
-            for (const task of tasks) {
-                const promise = downloadWorker(task);
-                results.push(promise);
-
-                const e: Promise<void> = promise.then(() => {
-                    executing.splice(executing.indexOf(e), 1);
-                });
-                executing.push(e);
-
-                if (executing.length >= this.DOWNLOAD_CONCURRENCY) {
-                    await Promise.race(executing);
-                }
-            }
-
-            return Promise.all(results);
-        };
-
-        try {
-            await runQueue();
-        } catch (error) {
-            logger.error(`Error during batch download: ${error}`);
-            throw error;
-        }
-
-        return downloadFiles;
+        });
     }
 
     private async getConnection(connection: ISSHConnection): Promise<SSHConnection> {
