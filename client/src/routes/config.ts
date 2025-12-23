@@ -23,7 +23,9 @@
 import type { RouteGroup } from './types';
 import Canvas from '@/pages/protected/Canvas';
 import Dashboard from '@/pages/protected/Dashboard';
-import TrajectoryFileExplorer from '@/components/organisms/trajectory/TrajectoryFileExplorer';
+import FileExplorer from '@/pages/protected/FileExplorer';
+import SSHConnectionsListing from '@/pages/protected/SSHConnectionsListing';
+import SSHFileExplorer from '@/pages/protected/SSHFileExplorer';
 import HeadlessRasterizerView from '@/pages/protected/HeadlessRasterizerView';
 import Messages from '@/pages/protected/Messages';
 import PluginListing from '@/pages/protected/PluginListing';
@@ -128,8 +130,23 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/file-explorer',
-            component: TrajectoryFileExplorer,
+            component: FileExplorer,
             requiresLayout: true
+        },
+        {
+            path: '/dashboard/import/:connectionId',
+            component: SSHFileExplorer,
+            requiresLayout: true
+        },
+        {
+            path: '/dashboard/ssh-connections',
+            component: SSHConnectionsListing,
+            requiresLayout: true,
+        },
+        {
+            path: '/dashboard/ssh-connections/:connectionId/file-explorer',
+            component: SSHFileExplorer,
+            requiresLayout: true,
         },
         {
             path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId',

@@ -19,29 +19,29 @@ interface CreateSSHConnectionPayload {
 }
 
 interface SSHFileListResponse {
-    files: Array<{
+    entries: Array<{
         name: string;
-        type: 'file' | 'directory';
+        type: 'file' | 'dir';
         size?: number;
-        modified?: string;
-        path: string;
+        mtime?: string;
+        relPath: string;
     }>;
-    currentPath: string;
+    cwd: string;
 }
 
 const sshApi = {
     connections: {
-        async getAll(): Promise<SSHConnection[]>{
+        async getAll(): Promise<SSHConnection[]> {
             const response = await api.get<{ status: 'success'; data: { connections: SSHConnection[] } }>('/ssh-connections');
             return response.data.data.connections;
         },
 
-        async create(data: CreateSSHConnectionPayload): Promise<SSHConnection>{
+        async create(data: CreateSSHConnectionPayload): Promise<SSHConnection> {
             const response = await api.post<{ status: 'success'; data: { connection: SSHConnection } }>('/ssh-connections', data);
             return response.data.data.connection;
         },
 
-        async delete(id: string): Promise<void>{
+        async delete(id: string): Promise<void> {
             await api.delete(`/ssh-connections/${id}`);
         },
 
@@ -52,12 +52,12 @@ const sshApi = {
     },
 
     fileExplorer: {
-        async list(params: { connectionId: string; path: string }): Promise<SSHFileListResponse>{
+        async list(params: { connectionId: string; path: string }): Promise<SSHFileListResponse> {
             const response = await api.get<{ status: 'success'; data: SSHFileListResponse }>('/ssh-file-explorer/list', { params });
             return response.data.data;
         },
 
-        async import(data: { connectionId: string; remotePath: string; trajectoryName?: string }): Promise<void>{
+        async import(data: { connectionId: string; remotePath: string; teamId: string; trajectoryName?: string }): Promise<void> {
             await api.post('/ssh-file-explorer/import', data);
         }
     }

@@ -7,7 +7,7 @@ interface FileExplorerProps {
     title: string;
 
     // Left Sidebar
-    navItems: React.ReactNode;
+    navItems?: React.ReactNode;
     bottomNavItems?: React.ReactNode;
 
     // Right Content Header

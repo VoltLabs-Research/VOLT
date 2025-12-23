@@ -25,10 +25,10 @@ import { Outlet, useNavigate, useSearchParams, useLocation } from 'react-router-
 import { IoSettingsOutline, IoCubeOutline, IoSearchOutline, IoCloseOutline, IoMenuOutline, IoChevronDown, IoAnalytics } from 'react-icons/io5';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { IoNotificationsOutline } from "react-icons/io5";
-import { CiChat1, CiFileOn } from 'react-icons/ci';
+import { CiChat1 } from 'react-icons/ci';
 import { GoPersonAdd, GoWorkflow } from "react-icons/go";
 import { HiOutlineDotsVertical } from "react-icons/hi";
-import { TbBook, TbHelp, TbCube3dSphere } from 'react-icons/tb';
+import { TbHelp, TbCube3dSphere } from 'react-icons/tb';
 import useTeamStore from '@/stores/team/team';
 import useTrajectoryStore from '@/stores/trajectories';
 import useRasterStore from '@/stores/raster';
@@ -39,7 +39,6 @@ import usePlaybackStore from '@/stores/editor/playback';
 import useEditorUIStore from '@/stores/ui/editor';
 import useRenderConfigStore from '@/stores/editor/render-config';
 import useNotificationStore from '@/stores/notifications';
-import useWindowsStore from '@/stores/ui/windows';
 import useAuthStore from '@/stores/authentication';
 import Select from '@/components/atoms/form/Select';
 import useToast from '@/hooks/ui/use-toast';
@@ -49,7 +48,6 @@ import useDashboardSearchStore from '@/stores/ui/dashboard-search';
 import { IoIosAdd } from 'react-icons/io';
 import TeamCreator from '@/components/organisms/team/TeamCreator';
 import TeamInvitePanel from '@/components/organisms/team/TeamInvitePanel';
-import SSHFileExplorer from '@/components/organisms/ssh/SSHFileExplorer';
 import useContainerStore from '@/stores/container';
 import Container from '@/components/primitives/Container';
 import Popover from '@/components/molecules/common/Popover';
@@ -57,11 +55,12 @@ import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import { IoChevronForward } from 'react-icons/io5';
-import './DashboardLayout.css';
 import { HiOutlineServer } from 'react-icons/hi2';
 import { MdImportExport } from 'react-icons/md';
 import usePluginStore from '@/stores/plugins/plugin';
 import { NodeType } from '@/types/plugin';
+import { BsFiles } from 'react-icons/bs';
+import './DashboardLayout.css';
 
 // Greeting helper functions
 const getGreeting = (): string => {
@@ -98,8 +97,6 @@ const DashboardLayout = () => {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const { showError, showSuccess } = useToast();
-    const toggleSSHFileExplorer = useWindowsStore((state) => state.toggleSSHFileExplorer);
-    const showSSHFileExplorer = useWindowsStore((state) => state.showSSHFileExplorer);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
@@ -197,8 +194,8 @@ const DashboardLayout = () => {
         ['Plugins', GoWorkflow, '/dashboard/plugins/list'],
         ['Messages', CiChat1, '/dashboard/messages'],
         ['Clusters', HiOutlineServer, '/dashboard/clusters'],
-        ['File Explorer', CiFileOn, '/dashboard/file-explorer'],
-        ['Import', MdImportExport, '/dashboard/import']
+        ['File Explorer', BsFiles, '/dashboard/file-explorer'],
+        ['Import', MdImportExport, '/dashboard/ssh-connections']
     ]), []);
 
     // Settings sub-items for collapsible section
@@ -305,20 +302,6 @@ const DashboardLayout = () => {
         const id = setTimeout(() => setSearchQuery(localQuery), 300);
         return () => clearTimeout(id);
     }, [localQuery, setSearchQuery]);
-
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'i' || e.key === 'I')) {
-                if (e.repeat) return;
-                e.preventDefault();
-                e.stopPropagation();
-                toggleSSHFileExplorer();
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [toggleSSHFileExplorer]);
 
     const teamOptions = useMemo(() =>
         teams.map(team => ({
@@ -808,17 +791,6 @@ const DashboardLayout = () => {
                     <Outlet />
                 </Container>
             </Container>
-
-            {showSSHFileExplorer && (
-                <SSHFileExplorer
-                    onClose={toggleSSHFileExplorer}
-                    onImportSuccess={() => {
-                        if (selectedTeam) {
-                            getTrajectories(selectedTeam._id);
-                        }
-                    }}
-                />
-            )}
         </main>
     );
 };

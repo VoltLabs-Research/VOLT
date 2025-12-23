@@ -49,10 +49,6 @@ dialog.volt-modal[open]::backdrop {
     border-bottom: 1px solid var(--color-border-soft);
 }
 
-.volt-modal-body {
-    padding: 1.5rem;
-}
-
 .volt-modal-footer {
     padding: 1rem 1.5rem;
     background: var(--color-surface-1);

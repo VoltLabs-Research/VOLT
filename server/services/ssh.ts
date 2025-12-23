@@ -28,12 +28,12 @@ import logger from '@/logger';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-export interface SSHConnection{
+export interface SSHConnection {
     client: Client;
     sftp: SFTPWrapper;
 };
 
-export interface SSHFileEntry{
+export interface SSHFileEntry {
     name: string;
     path: string;
     isDirectory: boolean;
@@ -41,14 +41,14 @@ export interface SSHFileEntry{
     mtime: Date;
 };
 
-export interface FileTask{
+export interface FileTask {
     remote: string;
     local: string;
     size: number;
     filename: string;
 };
 
-export interface SSHConnectionConfig{
+export interface SSHConnectionConfig {
     host: string;
     port: number;
     username: string;
@@ -57,7 +57,7 @@ export interface SSHConnectionConfig{
     keepaliveInterval?: number;
 };
 
-export interface CachedConnection{
+export interface CachedConnection {
     client: Client;
     sftp: SFTPWrapper;
     lastUsed: number;
@@ -65,14 +65,14 @@ export interface CachedConnection{
     isClosing: boolean;
 };
 
-export interface DownloadProgress{
+export interface DownloadProgress {
     totalBytes: number;
     downloadedBytes: number;
     currentFile: string;
     percent: number;
 };
 
-class SSHService{
+class SSHService {
     private connections: Map<string, CachedConnection> = new Map();
     // thundering herd protection
     private connectionPromises: Map<string, Promise<SSHConnection>> = new Map();
@@ -82,39 +82,39 @@ class SSHService{
     private readonly MAX_RETRIES = 2;
     private readonly DOWNLOAD_CONCURRENCY = 10;
 
-    constructor(){
+    constructor() {
         // Periodic cleaning of inactive connections
         setInterval(() => this.cleanupIdleConnections(), 1000 * 60);
     }
 
-    private cleanupIdleConnections(){
+    private cleanupIdleConnections() {
         const now = Date.now();
-        for(const [id, conn] of this.connections.entries()){
-            if(!conn.isClosing && (now - conn.lastUsed > this.IDLE_TIMEOUT)){
+        for (const [id, conn] of this.connections.entries()) {
+            if (!conn.isClosing && (now - conn.lastUsed > this.IDLE_TIMEOUT)) {
                 this.closeConnection(id);
             }
         }
     }
 
-    private closeConnection(connectionId: string){
+    private closeConnection(connectionId: string) {
         const conn = this.connections.get(connectionId);
-        if(conn){
+        if (conn) {
             logger.info(`Closing idle SSH connection: ${connectionId}`);
             conn.isClosing = true;
-            try{
+            try {
                 conn.client.end();
-            }catch(e){
+            } catch (e) {
                 // ignore
             }
             this.connections.delete(connectionId);
         }
     }
 
-    private getConfigHash(config: SSHConnectionConfig): string{
+    private getConfigHash(config: SSHConnectionConfig): string {
         return `${config.host}:${config.port}:${config.username}:${config.password.length}`;
     }
 
-    private createConfig(connection: ISSHConnection): SSHConnectionConfig{
+    private createConfig(connection: ISSHConnection): SSHConnectionConfig {
         return {
             host: connection.host,
             port: connection.port,
@@ -129,15 +129,15 @@ class SSHService{
         connection: ISSHConnection,
         operation: (sftp: SFTPWrapper) => Promise<T>,
         attempt = 1
-    ): Promise<T>{
-        try{
+    ): Promise<T> {
+        try {
             const { sftp } = await this.getConnection(connection);
             return await operation(sftp);
-        }catch(error: any){
+        } catch (error: any) {
             const shouldRetry = attempt <= this.MAX_RETRIES &&
                 (error.code === 'ECONNRESET' || error.message.includes('No SFTP') || !error.code);
 
-            if(!shouldRetry) throw error;
+            if (!shouldRetry) throw error;
             logger.warn(`Retrying SSH operation(Attempt ${attempt}/${this.MAX_RETRIES}) for ${connection.host}`);
             // force reconnection by clearing cache
             const connectionId = connection._id.toString();
@@ -148,7 +148,7 @@ class SSHService{
         }
     }
 
-    async testConnection(connection: ISSHConnection): Promise<boolean>{
+    async testConnection(connection: ISSHConnection): Promise<boolean> {
         const config = this.createConfig(connection);
         const client = new Client();
 
@@ -174,12 +174,11 @@ class SSHService{
         });
     }
 
-    async listFiles(connection: ISSHConnection, remotePath: string = '.'): Promise<SSHFileEntry[]>{
-        return this.executeWithRetry(connection, async(sftp) => {
+    async listFiles(connection: ISSHConnection, remotePath: string = '.'): Promise<SSHFileEntry[]> {
+        return this.executeWithRetry(connection, async (sftp) => {
             return new Promise((resolve, reject) => {
                 sftp.readdir(remotePath, (err, list) => {
-                    if(err) return reject(err);
-
+                    if (err) return reject(err);
                     const entries: SSHFileEntry[] = list.map((item) => ({
                         name: item.filename,
                         path: path.posix.join(remotePath, item.filename),
@@ -194,11 +193,11 @@ class SSHService{
         });
     }
 
-    async getFileStats(connection: ISSHConnection, remotePath: string): Promise<SSHFileEntry | null>{
-        return this.executeWithRetry(connection, async(sftp) => {
+    async getFileStats(connection: ISSHConnection, remotePath: string): Promise<SSHFileEntry | null> {
+        return this.executeWithRetry(connection, async (sftp) => {
             return new Promise((resolve) => {
                 sftp.stat(remotePath, (err, stats) => {
-                    if(err) return resolve(null);
+                    if (err) return resolve(null);
                     resolve({
                         name: path.posix.basename(remotePath),
                         path: remotePath,
@@ -211,34 +210,34 @@ class SSHService{
         });
     }
 
-    async downloadFile(connection: ISSHConnection, remotePath: string, localPath: string): Promise<void>{
-        return this.executeWithRetry(connection, async(sftp) => {
+    async downloadFile(connection: ISSHConnection, remotePath: string, localPath: string): Promise<void> {
+        return this.executeWithRetry(connection, async (sftp) => {
             // ensure local dir
             await fs.mkdir(path.dirname(localPath), { recursive: true });
             await pipeline(sftp.createReadStream(remotePath), createWriteStream(localPath));
         });
     }
 
-    async calculateDirectorySize(connection: ISSHConnection, remotePath: string): Promise<number>{
-        return this.executeWithRetry(connection, async(sftp) => {
+    async calculateDirectorySize(connection: ISSHConnection, remotePath: string): Promise<number> {
+        return this.executeWithRetry(connection, async (sftp) => {
             let totalSize = 0;
             // array as a queue to avoid deep stack recursion(stack overflow)
             const queue = [remotePath];
-            while(queue.length > 0){
+            while (queue.length > 0) {
                 const currentDir = queue.shift()!;
-                try{
+                try {
                     const list = await new Promise<any[]>((resolve, reject) => {
                         sftp.readdir(currentDir, (err, list) => err ? reject(err) : resolve(list));
                     });
-                    for(const item of list){
+                    for (const item of list) {
                         const itemPath = path.posix.join(currentDir, item.filename);
-                        if(item.attrs.isDirectory()){
+                        if (item.attrs.isDirectory()) {
                             queue.push(itemPath);
-                        }else{
+                        } else {
                             totalSize += item.attrs.size;
                         }
                     }
-                }catch(e){
+                } catch (e) {
                     logger.warn(`Error reading directory ${currentDir} during size calculation: ${e}`);
                 }
             }
@@ -252,17 +251,17 @@ class SSHService{
         remotePath: string,
         localPath: string,
         onProgress?: (progress: DownloadProgress) => void
-    ): Promise<string[]>{
+    ): Promise<string[]> {
         const { sftp } = await this.getConnection(connection);
         const downloadFiles: string[] = [];
 
         let totalBytes = 0;
         let downloadedBytes = 0;
 
-        if(onProgress){
-            try{
+        if (onProgress) {
+            try {
                 totalBytes = await this.calculateDirectorySize(connection, remotePath);
-            }catch(error){
+            } catch (error) {
                 logger.warn(`Failed to calculate directory size: ${error}`);
             }
         }
@@ -272,22 +271,22 @@ class SSHService{
 
         await fs.mkdir(localPath, { recursive: true });
 
-        while(dirQueue.length > 0){
+        while (dirQueue.length > 0) {
             const { remote, local } = dirQueue.shift()!;
-            try{
+            try {
                 // TODO: duplicated code with SSHService.downloadFile
                 const list = await new Promise<any[]>((resolve, reject) => {
                     sftp.readdir(remote, (err, l) => err ? reject(err) : resolve(l));
                 });
 
-                for(const item of list){
+                for (const item of list) {
                     const itemRemote = path.posix.join(remote, item.filename);
                     const itemLocal = path.join(local, item.filename);
 
-                    if(item.attrs.isDirectory()){
+                    if (item.attrs.isDirectory()) {
                         await fs.mkdir(itemLocal, { recursive: true });
                         dirQueue.push({ remote: itemRemote, local: itemLocal });
-                    }else{
+                    } else {
                         tasks.push({
                             remote: itemRemote,
                             local: itemLocal,
@@ -296,20 +295,20 @@ class SSHService{
                         });
                     }
                 }
-            }catch(err){
+            } catch (err) {
                 logger.error(`Error reading dir ${remote}: ${err}`);
                 throw err;
             }
         }
 
-        const downloadWorker = async(task: FileTask) => {
+        const downloadWorker = async (task: FileTask) => {
             return new Promise<void>((resolve, reject) => {
                 const readStream = sftp.createReadStream(task.remote);
                 const writeStream = createWriteStream(task.local);
 
                 readStream.on('data', (chunk: Buffer) => {
                     downloadedBytes += chunk.length;
-                    if(onProgress){
+                    if (onProgress) {
                         onProgress({
                             totalBytes,
                             downloadedBytes,
@@ -335,11 +334,11 @@ class SSHService{
             });
         };
 
-        const runQueue = async() => {
+        const runQueue = async () => {
             const results: Promise<void>[] = [];
             const executing: Promise<void>[] = [];
 
-            for(const task of tasks){
+            for (const task of tasks) {
                 const promise = downloadWorker(task);
                 results.push(promise);
 
@@ -348,7 +347,7 @@ class SSHService{
                 });
                 executing.push(e);
 
-                if(executing.length >= this.DOWNLOAD_CONCURRENCY){
+                if (executing.length >= this.DOWNLOAD_CONCURRENCY) {
                     await Promise.race(executing);
                 }
             }
@@ -356,9 +355,9 @@ class SSHService{
             return Promise.all(results);
         };
 
-        try{
+        try {
             await runQueue();
-        }catch(error){
+        } catch (error) {
             logger.error(`Error during batch download: ${error}`);
             throw error;
         }
@@ -366,14 +365,14 @@ class SSHService{
         return downloadFiles;
     }
 
-    private async getConnection(connection: ISSHConnection): Promise<SSHConnection>{
+    private async getConnection(connection: ISSHConnection): Promise<SSHConnection> {
         const connectionId = connection._id.toString();
         const config = this.createConfig(connection);
         const configHash = this.getConfigHash(config);
 
         const cached = this.connections.get(connectionId);
-        if(cached){
-            if(cached.configHash === configHash && !cached.isClosing){
+        if (cached) {
+            if (cached.configHash === configHash && !cached.isClosing) {
                 cached.lastUsed = Date.now();
                 return { client: cached.client, sftp: cached.sftp };
             }
@@ -382,7 +381,7 @@ class SSHService{
         }
 
         // promise sharing
-        if(this.connectionPromises.has(connectionId)){
+        if (this.connectionPromises.has(connectionId)) {
             return this.connectionPromises.get(connectionId)!;
         }
 
@@ -398,7 +397,7 @@ class SSHService{
             client.on('ready', () => {
                 client.sftp((err, sftp) => {
                     clearTimeout(timeoutTimer);
-                    if(err){
+                    if (err) {
                         client.end();
                         return reject(err);
                     }
@@ -426,9 +425,9 @@ class SSHService{
                 this.connectionPromises.delete(connectionId);
             });
 
-            try{
+            try {
                 client.connect(config);
-            }catch(err){
+            } catch (err) {
                 clearTimeout(timeoutTimer);
                 reject(err);
             }
@@ -437,13 +436,13 @@ class SSHService{
         // save the promise so others can reuse it while connecting
         this.connectionPromises.set(connectionId, connectPromise);
 
-        try{
+        try {
             const result = await connectPromise;
             return result;
-        }catch(error){
+        } catch (error) {
             this.connections.delete(connectionId);
             throw error;
-        }finally{
+        } finally {
             this.connectionPromises.delete(connectionId);
         }
     }

@@ -16,10 +16,11 @@ import {
     LuArrowUp,
     LuDownload
 } from 'react-icons/lu';
-import { Skeleton, Box, CircularProgress } from '@mui/material';
+import { CircularProgress } from '@mui/material';
 import { formatSize } from '@/utilities/scene-utils';
 import './TrajectoryFileExplorer.css';
 import Paragraph from '@/components/primitives/Paragraph';
+import { BreadcrumbsSkeleton, HeaderIconSkeleton, FileRowSkeleton } from '@/components/organisms/trajectory/FileExplorer/Skeletons';
 
 type TrajectoryFileExplorerProps = {
     height?: number | string;
@@ -168,45 +169,6 @@ const TrajectoryFileExplorer = ({ onFileOpen }: TrajectoryFileExplorerProps) => 
             }
         }
     };
-
-    const BreadcrumbsSkeleton = () => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: .8 }}>
-            {Array.from({ length: 3 }).map((_, i) => (
-                <Box key={i} sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Skeleton variant="text" width={60 + i * 20} height={18} />
-                    {i < 2 && <Box component="span" sx={{ mx: .6, fontSize: 12 }}>/</Box>}
-                </Box>
-            ))}
-        </Box>
-    );
-
-    const HeaderIconSkeleton = () => (
-        <Skeleton variant="circular" width={24} height={24} />
-    );
-
-    const FileRowSkeleton = () => (
-        <div className='file-explorer-list-row items-center'>
-            <div className='d-flex items-center gap-05 file-explorer-list-column file-explorer-list-name-container'>
-                <Skeleton variant="circular" width={18} height={18} />
-                <Skeleton variant="text" width="60%" height={18} />
-            </div>
-            <div className='file-explorer-list-column'>
-                <Skeleton variant="text" width="70%" height={18} />
-            </div>
-            <div className='file-explorer-list-column'>
-                <Skeleton variant="text" width="50%" height={18} />
-            </div>
-            <div className='file-explorer-list-column'>
-                <Skeleton variant="text" width="80%" height={18} />
-            </div>
-        </div>
-    );
-
-    const TrajectoryItemSkeleton = () => (
-        <div className='file-explorer-nav-item'>
-            <Skeleton variant="text" width="80%" height={18} />
-        </div>
-    );
 
     const breadcrumbsContent = loading ? (
         <BreadcrumbsSkeleton />
