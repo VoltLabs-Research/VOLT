@@ -7,7 +7,6 @@ import sshService from '@/services/ssh';
 import * as fs from 'fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
-import createTrajectory from '@/utilities/create-trajectory';
 import logger from '@/logger';
 import '@/config/env';
 
@@ -63,17 +62,17 @@ const processJob = async (job: SSHImportJob) => {
         size: 0
     }));
 
-    await createTrajectory({
+    const result = {
         files: filesToProcess,
         teamId,
         userId,
         trajectoryName
-    });
+    };
 
     parentPort?.postMessage({
         status: 'completed',
         jobId,
-        result: null
+        result
     });
 };
 
