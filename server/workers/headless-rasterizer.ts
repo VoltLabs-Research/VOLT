@@ -1,8 +1,3 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. MIT License.
- * Headless rasterizer worker - uses native C++ rasterizer.
- */
-
 import { parentPort } from 'node:worker_threads';
 import { performance } from 'node:perf_hooks';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';

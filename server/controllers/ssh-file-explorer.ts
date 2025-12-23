@@ -21,20 +21,13 @@
  */
 
 import { Request, Response } from 'express';
-import SSHConnection from '@/models/ssh-connection';
 import SSHService from '@/services/ssh';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { catchAsync } from '@/utilities/runtime/runtime';
-import { mkdir, rm } from 'fs/promises';
-import { join } from 'path';
-import * as os from 'node:os';
-import { Types } from 'mongoose';
 import { v4 } from 'uuid';
-import { createRedisClient } from '@/config/redis';
-import createTrajectory from '@/utilities/create-trajectory';
 import logger from '@/logger';
-import path from 'path';
 import { ErrorCodes } from '@/constants/error-codes';
+import { getSSHImportQueue } from '@/queues';
 
 export default class SSHFileExplorerController{
     public listSSHFiles = catchAsync(async(req: Request, res: Response) => {
@@ -67,127 +60,21 @@ export default class SSHFileExplorerController{
         }
     });
 
-    public importTrajectoryFromSSH = catchAsync(async(req: Request, res: Response) => {
-        const userId = (req as any).user._id || (req as any).user.id;
-        const { remotePath, teamId, name } = req.body;
-        const connection = res.locals.sshConnection;
+    public importTrajectoryFromSSH = catchAsync(async (req: Request, res: Response) => {
+        const userId = (req as any).user._id;
+        const { connectionId, remotePath, teamId } = req.body;
+        const { sshConnection } = res.locals;
 
-        const trajectoryId = new Types.ObjectId();
-        const trajectoryIdStr = trajectoryId.toString();
-        const tempBaseDir = join(os.tmpdir(), 'opendxa-trajectories');
-        const localFolder = join(tempBaseDir, trajectoryIdStr);
-
-        const publisher = createRedisClient();
-        const jobId = v4();
-        const sessionId = v4();
-        const sessionStartTime = new Date().toISOString();
-
-        const publishProgress = async(status: string, progress: number, message?: string) => {
-            const payload = {
-                jobId,
-                status,
-                progress,
-                chunkIndex: 0,
-                totalChunks: 1,
-                name: 'SSH Import',
-                message: message || `Importing ${name || 'trajectory'}...`,
-                trajectoryId: trajectoryIdStr,
-                sessionId,
-                sessionStartTime,
-                timestamp: new Date().toISOString(),
-                queueType: 'ssh-import',
-                type: 'ssh_import'
-            };
-
-            await publisher.publish('job_updates', JSON.stringify({ teamId, payload }));
-
-            const pipeline = publisher.pipeline();
-            pipeline.sadd(`team:${teamId}:jobs`, jobId);
-            pipeline.setex(`ssh-import:status:${jobId}`, 3600, JSON.stringify({ ...payload, teamId }));
-            await pipeline.exec();
-        };
-
-        try{
-            await mkdir(localFolder, { recursive: true });
-
-            publishProgress('running', 0, 'Connecting to SSH server...');
-
-            const fileStats = await SSHService.getFileStats(connection, remotePath);
-
-            if(!fileStats){
-                throw new RuntimeError(ErrorCodes.SSH_PATH_NOT_FOUND, 404);
-            }
-
-            let localFiles: string[] = [];
-            const trajectoryName = name || fileStats.name || 'SSH Import';
-
-            publishProgress('running', 5, 'Downloading files...');
-
-            if(fileStats.isDirectory){
-                logger.info(`Downloading directory from SSH: ${remotePath}`);
-                localFiles = await SSHService.downloadDirectory(
-                    connection,
-                    remotePath,
-                    localFolder,
-                    (progress) => {
-                        const percentage = 5 + Math.round((progress.downloaded / progress.total) * 75);
-                        publishProgress(
-                            'running',
-                            percentage,
-                            `Downloading: ${progress.currentFile} (${Math.round(progress.downloaded / 1024 / 1024)}MB / ${Math.round(progress.total / 1024 / 1024)}MB)`
-                        );
-                    }
-                );
-            }else{
-                logger.info(`Downloading file from SSH: ${remotePath}`);
-                const localFilePath = join(localFolder, fileStats.name);
-                await SSHService.downloadFile(connection, remotePath, localFilePath);
-                localFiles = [localFilePath];
-                publishProgress('running', 80, 'Download complete');
-            }
-
-            if(localFiles.length === 0){
-                await rm(localFolder, { recursive: true, force: true });
-                throw new RuntimeError(ErrorCodes.SSH_IMPORT_NO_FILES, 400);
-            }
-
-            publishProgress('running', 85, 'Processing files...');
-
-            const filesToProcess = localFiles.map(filePath => ({
-                path: filePath,
-                originalname: path.basename(filePath),
-                size: 0
-            }));
-
-            const newTrajectory = await createTrajectory(
-                filesToProcess,
-                teamId,
-                userId.toString(),
-                trajectoryName
-            );
-
-            publishProgress('completed', 100, 'Import successful');
-
-            res.status(201).json({
-                status: 'success',
-                data: newTrajectory
-            });
-        }catch(err: any){
-            publishProgress('failed', 0, err.message || 'Import failed');
-
-            try{
-                await rm(localFolder, { recursive: true, force: true });
-            }catch(cleanupErr){
-                logger.error(`Failed to cleanup after SSH import error: ${cleanupErr}`);
-            }
-
-            if(err instanceof RuntimeError){
-                throw err;
-            }
-            logger.error(`Failed to import trajectory from SSH: ${err.message}`);
-            throw new RuntimeError(ErrorCodes.SSH_IMPORT_ERROR, 500);
-        }finally{
-            publisher.quit();
-        }
+        const queueService = getSSHImportQueue();
+        queueService.addJobs([{
+            jobId: v4(),
+            sessionId: v4(),
+            teamId,
+            name: 'Import Trajectory',
+            message: `From ${sshConnection.username}@${sshConnection.host}`,
+            sshConnectionId: connectionId,
+            remotePath,
+            userId
+        }]);
     });
 }

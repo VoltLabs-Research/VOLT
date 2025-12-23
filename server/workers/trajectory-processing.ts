@@ -108,7 +108,7 @@ const processCloudFrame = async(
 /**
  * Process the entire chunk of files in parallel.
  */
-const processJob = async(job: TrajectoryProcessingJob) => {
+const processJob = async (job: TrajectoryProcessingJob) => {
     if(!job?.jobId){
         throw new Error('MissingJobId');
     }
@@ -155,7 +155,7 @@ const main = () => {
 
     parentPort?.on('message', async(message: { job: TrajectoryProcessingJob }) => {
         try{
-            if(message.job) await processJob(message.job);
+            await processJob(message.job);
         }catch(error){
             logger.error(`[Worker #${process.pid}] Fatal Exception: ${error}`);
             parentPort?.postMessage({
