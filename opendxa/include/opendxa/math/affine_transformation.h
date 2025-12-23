@@ -30,7 +30,7 @@ public:
 	using typename std::array<Vector_3<T>, 4>::const_iterator;
 
 public:
-	constexpr AffineTransformationT() noexcept {}
+	constexpr AffineTransformationT() noexcept : std::array<Vector_3<T>, 4>{} {}
 	constexpr AffineTransformationT(
 						T m11, T m12, T m13,
 					    T m21, T m22, T m23,

@@ -15,7 +15,7 @@ public:
 	using typename std::array<T, 2>::iterator;
 	using typename std::array<T, 2>::const_iterator;
 
-	Point_2() {}
+	Point_2() : std::array<T, 2>{} {}
 	explicit Point_2(T val) : std::array<T, 2>{{val,val}} {}
 	Point_2(T x, T y) : std::array<T, 2>{{x, y}} {}
 	Point_2(Origin) : std::array<T, 2>{{T(0), T(0)}} {}

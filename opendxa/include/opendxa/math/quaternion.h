@@ -23,7 +23,7 @@ public:
 	using typename std::array<T, 4>::iterator;
 	using typename std::array<T, 4>::const_iterator;
 
-	constexpr QuaternionT() noexcept {}
+	constexpr QuaternionT() noexcept : std::array<T, 4>{} {}
 	constexpr QuaternionT(T x, T y, T z, T w) noexcept : std::array<T, 4>{{x,y,z,w}} {}
 	explicit constexpr QuaternionT(Identity) noexcept : std::array<T, 4>{{ T(0), T(0), T(0), T(1) }} {}
 	explicit QuaternionT(const Matrix_3<T>& tm);

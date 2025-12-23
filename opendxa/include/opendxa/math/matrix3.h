@@ -38,7 +38,7 @@ public:
 	};
 
 public:
-	constexpr Matrix_3() noexcept {}
+	constexpr Matrix_3() noexcept : std::array<Vector_3<T>, 3>{} {}
 	constexpr Matrix_3(T m11, T m12, T m13,
 					   T m21, T m22, T m23,
 					   T m31, T m32, T m33) noexcept

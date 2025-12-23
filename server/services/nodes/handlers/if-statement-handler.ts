@@ -95,6 +95,11 @@ class IfStatementHandler implements NodeHandler {
     private resolveExpression(expr: string, context: ExecutionContext): any {
         if (!expr) return '';
         const resolved = resolveTemplate(expr, context);
+
+        const lower = resolved.toLowerCase().trim();
+        if (lower === 'true') return true;
+        if (lower === 'false') return false;
+
         // Try to parse as number if it looks numeric
         const num = Number(resolved);
         return !isNaN(num) && resolved.trim() !== '' ? num : resolved;

@@ -24,7 +24,7 @@ public:
 	using typename std::array<Vector_4<T>, 4>::const_iterator;
 
 public:
-	Matrix_4() {}
+	Matrix_4() : std::array<Vector_4<T>, 4>{} {}
 	 Matrix_4(T m11, T m12, T m13,
 					   T m21, T m22, T m23,
 					   T m31, T m32, T m33)

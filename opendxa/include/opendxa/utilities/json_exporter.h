@@ -6,6 +6,7 @@
 #include <chrono>
 #include <numeric>
 #include <cmath>
+#include <unordered_set>
 #include <opendxa/structures/dislocation_network.h>
 #include <opendxa/geometry/interface_mesh.h>
 #include <opendxa/analysis/burgers_circuit.h>
@@ -81,6 +82,12 @@ public:
     void setFilename(const std::string& filename){
         _filename = filename;
     }
+
+    void exportCoreAtoms(
+        const LammpsParser::Frame& frame,
+        const std::unordered_set<int>& coreAtomIndices,
+        const std::string& outputFilename
+    );
 
     bool saveToFile(const json& data, const std::string& filepath);
 

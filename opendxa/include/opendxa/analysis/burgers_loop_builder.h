@@ -96,8 +96,6 @@ private:
 	int _maxBurgersCircuitSize;
 	int _maxExtendedBurgersCircuitSize;
     std::optional<DelaunayTessellationSpatialQuery> _spatialQuery;
-    std::vector<std::array<Point3, 3>> _triangles;
-    std::vector<BoxValue> _ranges;
 
 	MemoryPool<BurgersCircuit> _circuitPool;
 	std::mt19937 rng;

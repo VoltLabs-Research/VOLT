@@ -16,7 +16,7 @@ public:
 	using typename std::array<T, 4>::iterator;
 	using typename std::array<T, 4>::const_iterator;
 
-	Vector_4() {}
+	Vector_4() : std::array<T, 4>{} {}
 
 	explicit Vector_4(T val) : std::array<T, 4>{{val,val,val,val}} {}
 	Vector_4(T x, T y, T z, T w) : std::array<T, 4>{{x, y, z, w}} {}

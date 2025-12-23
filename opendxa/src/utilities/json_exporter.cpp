@@ -560,6 +560,40 @@ void DXAJsonExporter::exportPTMData(
     }
 }
 
+void DXAJsonExporter::exportCoreAtoms(
+    const LammpsParser::Frame& frame,
+    const std::unordered_set<int>& coreAtomIndices,
+    const std::string& outputFilename
+){
+    if(coreAtomIndices.empty()) return;
+
+    json dataArray = json::array();
+    for(int atomIdx : coreAtomIndices){
+        if(atomIdx >= 0 && atomIdx < static_cast<int>(frame.natoms)){
+            json atomData;
+            atomData["id"] = frame.ids[atomIdx];
+            
+            if(atomIdx < static_cast<int>(frame.positions.size())){
+                const auto& pos = frame.positions[atomIdx];
+                atomData["pos"] = {pos.x(), pos.y(), pos.z()};
+            }
+            
+            dataArray.push_back(atomData);
+        }
+    }
+
+    json result;
+    result["metadata"] = {
+        {"count", static_cast<int>(dataArray.size())}
+    };
+    result["core_atoms"] = dataArray;
+
+    if(!dataArray.empty()){
+        writeJsonMsgpackToFile(result, outputFilename);
+        spdlog::info("Core atoms data written to {} ({} atoms)", outputFilename, dataArray.size());
+    }
+}
+
 json DXAJsonExporter::exportClusterGraphToJson(const ClusterGraph* graph){
     json clusterGraphJson;
 

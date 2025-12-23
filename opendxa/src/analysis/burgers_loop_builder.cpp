@@ -851,13 +851,13 @@ void BurgersLoopBuilder::identifyNodeCoreAtoms(DislocationNode& node, const Poin
 	
 	// Build cap triangles of the Burgers circuit at this node and compute their bounding box
     InterfaceMesh::Edge* edge = node.circuit->firstEdge;
-    _triangles.clear();
+    std::vector<std::array<Point3, 3>> triangles;
     Box3 bbox;
 	
 	do{
 		const auto& cell = mesh().structureAnalysis().context().simCell;
 		// Each triangle is defined by two vertices of the edge and the `newPoint`
-        _triangles.push_back({
+        triangles.push_back({
             newPoint + cell.wrapVector(edge->vertex1()->pos() - newPoint),
             newPoint + cell.wrapVector(edge->vertex2()->pos() - newPoint),
             newPoint
@@ -865,20 +865,21 @@ void BurgersLoopBuilder::identifyNodeCoreAtoms(DislocationNode& node, const Poin
 		
 		// Expand bounding box to include this triangle
 		for(size_t i = 0; i < 3; ++i){
-            bbox.addPoint(_triangles.back()[i]);
+            bbox.addPoint(triangles.back()[i]);
         }
 		
 		edge = edge->nextCircuitEdge;
 	}while(edge != node.circuit->firstEdge);
 	
 	// Find all Delaunay cells intersecting the bounding box
-    _spatialQuery->getOverlappingCells(bbox, _ranges);
+    std::vector<BoxValue> ranges;
+    _spatialQuery->getOverlappingCells(bbox, ranges);
 
 	// Parallel loop over all overlapping Delaunay cells
 	#pragma omp parallel for schedule(static,256) default(none) \
-        shared(_ranges, tessellation, _triangles, _cellDataForCoreAtomIdentification, node)
-    for(size_t idx = 0; idx < _ranges.size(); ++idx){
-        const BoxValue& boxval = _ranges[idx];
+        shared(ranges, tessellation, triangles, _cellDataForCoreAtomIdentification, node, _coreAtomIndices)
+    for(size_t idx = 0; idx < ranges.size(); ++idx){
+        const BoxValue& boxval = ranges[idx];
         const bBox& bbox = boxval.first;
         size_t cell = boxval.second;
 
@@ -899,18 +900,21 @@ void BurgersLoopBuilder::identifyNodeCoreAtoms(DislocationNode& node, const Poin
         }
 
         // Test intersection of each triangle with this tetrahedron
-        for(const auto& triangle : _triangles){
+        for(const auto& triangle : triangles){
             if(TetrahedronTriangleIntersection::test(tet, triangle)){
-                // Mark this cell as belonging to the current dislocation
-                _cellDataForCoreAtomIdentification[cellIdx] = {
-                    &node,
-                    !node.circuit->segmentMeshCap.empty()
-                };
+                #pragma omp critical(core_atom_marking)
+                {
+                    // Mark this cell as belonging to the current dislocation
+                    _cellDataForCoreAtomIdentification[cellIdx] = {
+                        &node,
+                        !node.circuit->segmentMeshCap.empty()
+                    };
 
-                // Mark all 4 atoms of this tetrahedron as core atoms
-                for(size_t v = 0; v < 4; ++v){
-                    int atomIdx = tessellation.cellVertex(cell, v);
-                    _coreAtomIndices.insert(atomIdx);
+                    // Mark all 4 atoms of this tetrahedron as core atoms
+                    for(size_t v = 0; v < 4; ++v){
+                        int atomIdx = tessellation.cellVertex(cell, v);
+                        _coreAtomIndices.insert(atomIdx);
+                    }
                 }
 
 				// Done with this cell

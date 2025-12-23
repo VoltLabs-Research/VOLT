@@ -12,7 +12,7 @@ public:
 	using typename std::array<T, 2>::iterator;
 	using typename std::array<T, 2>::const_iterator;
 
-	Vector_2() {}
+	Vector_2() : std::array<T, 2>{} {}
 	explicit Vector_2(T val) : std::array<T, 2>{{val,val}} {}
 	Vector_2(T x, T y) : std::array<T, 2>{{x, y}} {}
 	Vector_2(Zero) : std::array<T, 2>{{T(0), T(0)}} {}

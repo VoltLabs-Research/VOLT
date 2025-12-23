@@ -255,8 +255,7 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     for(int i = 0; i < segments.size(); ++i){
         DislocationSegment* segment = segments[i];
         if(segment && !segment->isDegenerate()){
-            double len = segment->calculateLength();
-            totalLineLength += len;
+            totalLineLength += segment->calculateLength();
         }
     }
 
@@ -315,6 +314,11 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
             PROFILE("Streaming Simulation Cell MsgPack");
             auto simCellInfo = _jsonExporter.getExtendedSimulationCellInfo(frame.simulationCell);
             _jsonExporter.writeJsonMsgpackToFile(simCellInfo, outputFile + "_simulation_cell.msgpack");
+        }
+
+        if(_markCoreAtoms){
+            PROFILE("Streaming Core Atoms MsgPack");
+            _jsonExporter.exportCoreAtoms(frame, tracer._coreAtomIndices, outputFile + "_core_atoms.msgpack");
         }
     }
     

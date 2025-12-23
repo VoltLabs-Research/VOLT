@@ -116,16 +116,12 @@ struct DislocationSegment{
 		return line.size() <= 1;
 	}
 
-	[[nodiscard]] double calculateLength() const{
-		assert(!isDegenerate());
-
+	[[nodiscard]] double calculateLength() const noexcept {
 		double length = 0;
-		auto i1 = line.begin();
-		for(;;){
-			auto i2 = i1 + 1;
-			if(i2 == line.end()) break;
+		if(line.size() < 2) return 0;
+		auto next = line.begin();
+		for(auto i1 = line.begin(), i2 = ++next; i2 != line.end(); i1 = i2, ++i2){
 			length += (*i1 - *i2).length();
-			i1 = i2;
 		}
 		return length;
 	}

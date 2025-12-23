@@ -18,7 +18,7 @@ public:
 	using typename std::array<T, 3>::iterator;
 	using typename std::array<T, 3>::const_iterator;
 
-	constexpr Point_3() noexcept {}
+	constexpr Point_3() noexcept : std::array<T, 3>{} {}
 	explicit constexpr Point_3(T val) noexcept : std::array<T, 3>{{val,val,val}} {}
 	constexpr Point_3(T x, T y, T z) noexcept : std::array<T, 3>{{x, y, z}} {}
 	constexpr Point_3(Origin) noexcept : std::array<T, 3>{{T(0), T(0), T(0)}} {}
