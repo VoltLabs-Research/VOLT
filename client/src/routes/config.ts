@@ -23,6 +23,7 @@
 import type { RouteGroup } from './types';
 import Canvas from '@/pages/protected/Canvas';
 import Dashboard from '@/pages/protected/Dashboard';
+import TrajectoryFileExplorer from '@/components/organisms/trajectory/TrajectoryFileExplorer';
 import HeadlessRasterizerView from '@/pages/protected/HeadlessRasterizerView';
 import Messages from '@/pages/protected/Messages';
 import PluginListing from '@/pages/protected/PluginListing';
@@ -124,6 +125,11 @@ export const routesConfig: RouteGroup = {
             path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginSlug/listing/:listingSlug',
             component: PluginListing,
             requiresLayout: true,
+        },
+        {
+            path: '/dashboard/file-explorer',
+            component: TrajectoryFileExplorer,
+            requiresLayout: true
         },
         {
             path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId',

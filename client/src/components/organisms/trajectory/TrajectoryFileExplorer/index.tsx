@@ -1,10 +1,8 @@
 /// <reference types="vite/client" />
 import { useEffect, useState } from 'react';
 import useTrajectoryFS, { type FsEntry } from '@/stores/trajectory-vfs';
-import WindowIcons from '@/components/molecules/common/WindowIcons';
-import Draggable from '@/components/atoms/common/Draggable';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
-import FileExplorerWindow from '@/components/organisms/trajectory/FileExplorerWindow';
+import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
 import {
     LuLayoutList,
     LuFolder,
@@ -19,22 +17,16 @@ import {
     LuDownload
 } from 'react-icons/lu';
 import { Skeleton, Box, CircularProgress } from '@mui/material';
-import Container from '@/components/primitives/Container';
 import { formatSize } from '@/utilities/scene-utils';
-
 import './TrajectoryFileExplorer.css';
-import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 
 type TrajectoryFileExplorerProps = {
     height?: number | string;
     onFileOpen?: (entry: FsEntry) => void;
-    onClose?: () => void;
 };
 
-const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerProps) => {
-    const [isMaximized, setIsMaximized] = useState(false);
-    const [isMinimized, setIsMinimized] = useState(false);
+const TrajectoryFileExplorer = ({ onFileOpen }: TrajectoryFileExplorerProps) => {
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewFileName, setPreviewFileName] = useState<string>('');
@@ -106,11 +98,11 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
         init();
     }, []);
 
-    const loadImagePreview = async(entry: FsEntry) => {
+    const loadImagePreview = async (entry: FsEntry) => {
         setPreviewLoading(true);
         setPreviewFileName(entry.name);
 
-        try{
+        try {
             const token = localStorage.getItem('authToken');
             const API_BASE_URL = import.meta.env.VITE_API_URL + '/api';
 
@@ -121,7 +113,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                 }
             });
 
-            if(!response.ok){
+            if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
@@ -138,7 +130,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
                 setPreviewLoading(false);
             };
             reader.readAsDataURL(blob);
-        }catch(error){
+        } catch (error) {
             console.error('Error loading image preview:', error);
             setPreviewImage(null);
             setPreviewLoading(false);
@@ -153,7 +145,7 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
     };
 
     const handleDownloadPreview = () => {
-        if(!previewImage || !previewFileName) return;
+        if (!previewImage || !previewFileName) return;
         const a = document.createElement('a');
         a.href = previewImage;
         a.download = previewFileName;
@@ -163,15 +155,15 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
     };
 
     const handleDoubleClick = (e: FsEntry) => {
-        if(e.type === 'dir'){
+        if (e.type === 'dir') {
             enter(e.name);
-        }else{
+        } else {
             const isPNG = e.ext?.toLowerCase() === 'png' || e.name.toLowerCase().endsWith('.png');
-            if(isPNG){
+            if (isPNG) {
                 loadImagePreview(e);
-            }else if(onFileOpen){
+            } else if (onFileOpen) {
                 onFileOpen(e);
-            }else{
+            } else {
                 download(e.relPath);
             }
         }
@@ -215,52 +207,6 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
             <Skeleton variant="text" width="80%" height={18} />
         </div>
     );
-
-    if(isMinimized) return null;
-
-    const navItems = (
-        <>
-            {loadingTrajectories ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                    <TrajectoryItemSkeleton key={`skeleton-${i}`} />
-                ))
-            ) : trajectories.length === 0 ? (
-                <div className='file-explorer-nav-item'>
-                    <Title className='font-size-3 file-explorer-nav-item-title font-weight-4' style={{ opacity: 0.5 }}>No trajectories available</Title>
-                </div>
-            ) : (
-                trajectories.map((traj) => (
-                    <div
-                        className={`file-explorer-nav-item ${currentTrajectoryId === traj.id ? 'active' : ''}`}
-                        key={traj.id}
-                        onClick={() => navigateToTrajectory(traj.id)}
-                        style={{ cursor: 'pointer' }}
-                    >
-                        <Title className='font-size-3 file-explorer-nav-item-title font-weight-4'>{traj.name}</Title>
-                    </div>
-                ))
-            )}
-        </>
-    );
-
-    const bottomNavItemsContent = bottomNavIcons.map(({ Icon, title }, index) => (
-        <div className='d-flex items-center gap-1 file-explorer-left-bottom-nav-icon-container' key={'bottom-icon-' + index}>
-            <i className='file-explorer-left-bottom-nav-icon'>
-                <Icon size={15} />
-            </i>
-            <Paragraph className='file-explorer-left-bottom-nav-title'>{title}</Paragraph>
-        </div>
-    ));
-
-    const headerLeftIconsContent = headerIcons.map(({ Icon, onClick, disabled }, index) => (
-        <i
-            className={`file-explorer-header-icon-container ${disabled ? 'is-disabled' : ''}`}
-            onClick={onClick}
-            key={index}
-        >
-            {loading ? <HeaderIconSkeleton /> : <Icon size={20} />}
-        </i>
-    ));
 
     const breadcrumbsContent = loading ? (
         <BreadcrumbsSkeleton />
@@ -319,15 +265,8 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
 
     return (
         <>
-            <FileExplorerWindow
+            <FileExplorer
                 title="Trajectories"
-                isMaximized={isMaximized}
-                setIsMaximized={setIsMaximized}
-                onClose={onClose}
-                onMinimize={() => setIsMinimized(true)}
-                navItems={navItems}
-                bottomNavItems={bottomNavItemsContent}
-                headerLeftIcons={headerLeftIconsContent}
                 breadcrumbs={breadcrumbsContent}
                 headerRightIcons={headerRightIconsContent}
                 fileListHeader={fileListHeader}
@@ -335,86 +274,67 @@ const TrajectoryFileExplorer = ({ onFileOpen, onClose }: TrajectoryFileExplorerP
             />
 
             {(previewImage || previewLoading) && !previewMinimized && (
-                <Draggable
-                    className='trajectory-fs-image-preview primary-surface'
-                    enabled
-                    bounds='viewport'
-                    axis='both'
-                    doubleClickToDrag={true}
-                    handle='.trajectory-fs-preview-header'
-                    scaleWhileDragging={0.98}
-                    resizable={true}
-                    minWidth={400}
-                    minHeight={400}
-                >
-                    <div className={`d-flex column gap-1 trajectory-fs-preview-wrapper ${previewMaximized ? 'maximized' : ''}`} style={{
-                        borderRadius: '8px',
-                        padding: '1rem',
-                    }}>
-                        <div
-                            className='d-flex column gap-05 trajectory-fs-preview-header'
-                            style={{
-                                cursor: 'grab',
-                                userSelect: 'none',
-                            }}
-                        >
-                            <WindowIcons
-                                onClose={closePreview}
-                                onExpand={() => setPreviewMaximized(!previewMaximized)}
-                                onMinimize={() => setPreviewMinimized(true)}
-                            />
-
-                            <div className="d-flex items-center content-between" style={{
-                                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                                paddingBottom: '0.75rem',
-                            }}>
-                                <div className="d-flex items-center gap-05">
-                                    <LuFile size={20} />
-                                    <span style={{ fontSize: '14px', fontWeight: 500 }}>
-                                        {previewFileName}
-                                    </span>
-                                </div>
-                                <div className="d-flex gap-05">
-                                    <i
-                                        onClick={handleDownloadPreview}
-                                        style={{
-                                            cursor: 'pointer',
-                                            padding: '0.5rem',
-                                            borderRadius: '4px',
-                                        }}
-                                        className='d-flex items-center content-center trajectory-fs-preview-icon'
-                                    >
-                                        <LuDownload size={20} />
-                                    </i>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="d-flex items-center content-center" style={{
-                            minWidth: '400px',
-                            minHeight: '400px',
-                            maxWidth: '80vw',
-                            maxHeight: '70vh',
+                <div className={`d-flex column gap-1 trajectory-fs-preview-wrapper ${previewMaximized ? 'maximized' : ''}`} style={{
+                    borderRadius: '8px',
+                    padding: '1rem',
+                }}>
+                    <div
+                        className='d-flex column gap-05 trajectory-fs-preview-header'
+                        style={{
+                            cursor: 'grab',
+                            userSelect: 'none',
+                        }}
+                    >
+                        <div className="d-flex items-center content-between" style={{
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                            paddingBottom: '0.75rem',
                         }}>
-                            {previewLoading ? (
-                                <CircularProgress />
-                            ) : previewImage ? (
-                                <img
-                                    src={previewImage}
-                                    alt={previewFileName}
+                            <div className="d-flex items-center gap-05">
+                                <LuFile size={20} />
+                                <span style={{ fontSize: '14px', fontWeight: 500 }}>
+                                    {previewFileName}
+                                </span>
+                            </div>
+                            <div className="d-flex gap-05">
+                                <i
+                                    onClick={handleDownloadPreview}
                                     style={{
-                                        maxWidth: '100%',
-                                        maxHeight: '100%',
-                                        objectFit: 'contain',
+                                        cursor: 'pointer',
+                                        padding: '0.5rem',
                                         borderRadius: '4px',
                                     }}
-                                />
-                            ) : (
-                                <span>No image to display</span>
-                            )}
+                                    className='d-flex items-center content-center trajectory-fs-preview-icon'
+                                >
+                                    <LuDownload size={20} />
+                                </i>
+                            </div>
                         </div>
                     </div>
-                </Draggable>
+
+                    <div className="d-flex items-center content-center" style={{
+                        minWidth: '400px',
+                        minHeight: '400px',
+                        maxWidth: '80vw',
+                        maxHeight: '70vh',
+                    }}>
+                        {previewLoading ? (
+                            <CircularProgress />
+                        ) : previewImage ? (
+                            <img
+                                src={previewImage}
+                                alt={previewFileName}
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '100%',
+                                    objectFit: 'contain',
+                                    borderRadius: '4px',
+                                }}
+                            />
+                        ) : (
+                            <span>No image to display</span>
+                        )}
+                    </div>
+                </div>
             )}
         </>
     );

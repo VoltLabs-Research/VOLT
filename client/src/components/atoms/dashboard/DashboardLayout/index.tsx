@@ -25,7 +25,7 @@ import { Outlet, useNavigate, useSearchParams, useLocation } from 'react-router-
 import { IoSettingsOutline, IoCubeOutline, IoSearchOutline, IoCloseOutline, IoMenuOutline, IoChevronDown, IoAnalytics } from 'react-icons/io5';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { IoNotificationsOutline } from "react-icons/io5";
-import { CiChat1 } from 'react-icons/ci';
+import { CiChat1, CiFileOn } from 'react-icons/ci';
 import { GoPersonAdd, GoWorkflow } from "react-icons/go";
 import { HiOutlineDotsVertical } from "react-icons/hi";
 import { TbBook, TbHelp, TbCube3dSphere } from 'react-icons/tb';
@@ -197,6 +197,7 @@ const DashboardLayout = () => {
         ['Plugins', GoWorkflow, '/dashboard/plugins/list'],
         ['Messages', CiChat1, '/dashboard/messages'],
         ['Clusters', HiOutlineServer, '/dashboard/clusters'],
+        ['File Explorer', CiFileOn, '/dashboard/file-explorer'],
         ['Import', MdImportExport, '/dashboard/import']
     ]), []);
 

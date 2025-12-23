@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import useSSHFileExplorer from '@/stores/ssh-file-explorer';
 import useSSHConnections, { type SSHConnection } from '@/stores/ssh-connections';
 import useTeamStore from '@/stores/team/team';
-import FileExplorerWindow from '@/components/organisms/trajectory/FileExplorerWindow';
+import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
 import SSHConnectionModal from '@/components/molecules/ssh/SSHConnectionModal';
+import Draggable from '@/components/atoms/common/Draggable';
+import WindowIcons from '@/components/molecules/common/WindowIcons';
+import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import {
@@ -22,6 +26,7 @@ import { TbServer } from 'react-icons/tb';
 import { CircularProgress } from '@mui/material';
 import { formatSize } from '@/utilities/scene-utils';
 import useToast from '@/hooks/ui/use-toast';
+import './SSHFileExplorer.css';
 
 type SSHFileExplorerProps = {
     onClose?: () => void;
@@ -70,38 +75,37 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
         return () => reset();
     }, []);
 
-    const handleConnectionSelect = async(conn: SSHConnection) => {
+    const handleConnectionSelect = async (conn: SSHConnection) => {
         setConnection(conn._id);
-        try{
+        try {
             await open('.');
-        }catch(err: any){
+        } catch (err: any) {
             showError(err.message || 'Failed to connect to SSH server');
         }
     };
 
-    const handleImport = async() => {
-        if(!selected || !selectedTeam) return;
+    const handleImport = async () => {
+        if (!selected || !selectedTeam) return;
 
-        try{
+        try {
             await importTrajectory(selectedTeam._id);
             showSuccess('Trajectory import started successfully');
-            if(onImportSuccess) onImportSuccess();
-            if(onClose) onClose();
-        }catch(err: any){
+            if (onImportSuccess) onImportSuccess();
+        } catch (err: any) {
             showError(err.message || 'Failed to import trajectory');
         }
     };
 
-    const handleDeleteConnection = async(conn: SSHConnection) => {
-        if(!confirm(`Delete connection "${conn.name}"?`)) return;
+    const handleDeleteConnection = async (conn: SSHConnection) => {
+        if (!confirm(`Delete connection "${conn.name}"?`)) return;
 
-        try{
+        try {
             await deleteConnection(conn._id);
-            if(connectionId === conn._id){
+            if (connectionId === conn._id) {
                 reset();
             }
             showSuccess('Connection deleted successfully');
-        }catch(err: any){
+        } catch (err: any) {
             showError(err.message || 'Failed to delete connection');
         }
     };
@@ -261,27 +265,49 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
         </>
     );
 
-    return (
+    return createPortal(
         <>
-            <FileExplorerWindow
-                title="SSH Connections"
-                isMaximized={isMaximized}
-                setIsMaximized={setIsMaximized}
-                onClose={onClose}
-                navItems={navItems}
-                headerLeftIcons={headerLeftIcons}
-                breadcrumbs={breadcrumbsContent}
-                headerRightIcons={headerRightIcons}
-                fileListHeader={fileListHeader}
-                fileListContent={fileListContent}
-                hidden={false}
-            />
+            <Draggable
+                className='ssh-file-explorer-container primary-surface'
+                enabled={!isMaximized}
+                bounds='viewport'
+                axis='both'
+                doubleClickToDrag={true}
+                handle='.ssh-file-explorer-title'
+                scaleWhileDragging={0.95}
+                resizable={true}
+                minWidth={800}
+                minHeight={500}
+                style={{
+                    width: isMaximized ? '100vw' : undefined,
+                    height: isMaximized ? '100vh' : undefined,
+                    top: isMaximized ? 0 : undefined,
+                    left: isMaximized ? 0 : 'calc(50% - 500px)'
+                }}
+            >
+                <Container className='d-flex column ssh-file-explorer-window-header'>
+                    <WindowIcons
+                        onClose={onClose}
+                        onExpand={() => setIsMaximized(!isMaximized)}
+                    />
+                </Container>
+                <FileExplorer
+                    title="SSH Connections"
+                    navItems={navItems}
+                    headerLeftIcons={headerLeftIcons}
+                    breadcrumbs={breadcrumbsContent}
+                    headerRightIcons={headerRightIcons}
+                    fileListHeader={fileListHeader}
+                    fileListContent={fileListContent}
+                />
+            </Draggable>
 
             <SSHConnectionModal
                 connection={editingConnection}
                 mode={editingConnection ? 'edit' : 'create'}
             />
-        </>
+        </>,
+        document.body
     );
 };
 

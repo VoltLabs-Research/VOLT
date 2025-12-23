@@ -43,7 +43,6 @@ import CursorShareLayer from '@/components/atoms/common/CursorShareLayer';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import useRasterConnectedUsers from '@/hooks/raster/useRasterConnectedUsers';
 import FrameAtomsTable from '@/components/organisms/trajectory/FrameAtomsTable';
-import TrajectoryFileExplorer from '@/components/organisms/trajectory/TrajectoryFileExplorer';
 import './HeadlessRasterizerView.css';
 import './RasterMessages.css';
 
@@ -593,7 +592,7 @@ const HeadlessRasterizerView: React.FC = () => {
                 connectedUsers={connectedUsers}
             />
 
-            {activeTools['file-explorer'] && <TrajectoryFileExplorer onClose={() => toggleTool('file-explorer')} />}
+            {/* {activeTools['file-explorer'] && {<TrajectoryFileExplorer onClose={() => toggleTool('file-explorer')} />*/}
 
             {activeTools['frame-particles'] && (
                 <FrameAtomsTable

@@ -7,6 +7,8 @@ import useTeamStore from '@/stores/team/team'
 import formatTimeAgo from '@/utilities/formatTimeAgo'
 import trajectoryApi from '@/services/api/trajectory'
 import useDashboardSearchStore from '@/stores/ui/dashboard-search'
+import { CiFileOn } from 'react-icons/ci'
+import { useNavigate } from 'react-router'
 
 const TrajectoriesListing = () => {
     const getTrajectories = useTrajectoryStore((s) => s.getTrajectories)
@@ -16,6 +18,7 @@ const TrajectoriesListing = () => {
     const isFetchingMore = useTrajectoryStore((s) => s.isFetchingMore)
     const trajectories = useTrajectoryStore((s) => s.trajectories)
     const listingMeta = useTrajectoryStore((s) => s.listingMeta)
+    const navigate = useNavigate();
 
     const searchQuery = useDashboardSearchStore((s) => s.query);
 
