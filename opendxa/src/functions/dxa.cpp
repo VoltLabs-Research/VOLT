@@ -14,7 +14,9 @@ void showUsage(const std::string& name) {
         << "  --lineSmoothingLevel <float>      Line smoothing level. [default: 1]\n"
         << "  --linePointInterval <float>       Point interval on dislocation lines. [default: 2.5]\n"
         << "  --onlyPerfectDislocations <bool>  Detect only perfect dislocations. [default: false]\n"
-        << "  --markCoreAtoms <bool>            Mark dislocation core atoms. [default: false]\n";
+        << "  --markCoreAtoms <bool>            Mark dislocation core atoms. [default: false]\n"
+        << "  --threads <int>                   Max worker threads (TBB/OMP). [default: 1]\n"
+        << "  --deterministic <bool>            Force single-threaded deterministic run. [default: true]\n";
     printHelpOption();
 }
 
@@ -32,7 +34,8 @@ int main(int argc, char* argv[]) {
         return filename.empty() ? 1 : 0;
     }
     
-    initLogging("opendxa-dxa");
+    auto parallel = initParallelism(opts, true);
+    initLogging("opendxa-dxa", parallel.threads, parallel.deterministic);
     
     LammpsParser::Frame frame;
     if (!parseFrame(filename, frame)) return 1;

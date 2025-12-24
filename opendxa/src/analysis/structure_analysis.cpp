@@ -141,6 +141,28 @@ void StructureAnalysis::storeDeformationGradient(const PTM::Kernel& kernel, size
     }
 }
 
+int StructureAnalysis::findClosestSymmetryPermutation(int structureType, const Matrix3& rotation){
+    const LatticeStructure& lattice = CoordinationStructures::getLatticeStruct(structureType);
+    int bestIndex = 0;
+    double bestDeviation = std::numeric_limits<double>::max();
+
+    for(int i = 0; i < lattice.permutations.size(); ++i){
+        const Matrix3& sym = lattice.permutations[i].transformation;
+        double deviation = 0;
+        for(int r = 0; r < 3; ++r){
+            for(int c = 0; c < 3; ++c){
+                double diff = rotation(r, c) - sym(r, c);
+                deviation += diff * diff;
+            }
+        }
+        if(deviation < bestDeviation){
+            bestDeviation = deviation;
+            bestIndex = i;
+        }
+    }
+    return bestIndex;
+}
+
 // Compute the maximum distance of any neighbor from a crystalline atom
 void StructureAnalysis::computeMaximumNeighborDistanceFromPTM(){
     const size_t N = _context.atomCount();

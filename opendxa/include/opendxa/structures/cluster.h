@@ -1,6 +1,8 @@
 #pragma once
 
 #include <opendxa/core/opendxa.h>
+#include <tbb/spin_mutex.h>
+#include <atomic>
 
 namespace OpenDXA{
 
@@ -16,7 +18,7 @@ struct ClusterTransition{
 	ClusterTransition* reverse = nullptr;
 	ClusterTransition* next = nullptr;
 	int distance = 1;
-	int area = 0;
+	std::atomic<int> area = 0;
 
 	[[nodiscard]] bool isSelfTransition() const{
 		assert((reverse != this) || (cluster1 == cluster2));
@@ -52,11 +54,13 @@ struct Cluster{
 	int symmetryTransformation = 0;
 	Point3 centerOfMass = Point3::Origin();
 	ClusterTransition* parentTransition = nullptr;
+    mutable tbb::spin_mutex mutex;
 
 	Cluster(int _id, int _structure) : id(_id), structure(_structure){}
 
 	void insertTransition(ClusterTransition* newTransition){
 		assert(newTransition->cluster1 == this);
+        tbb::spin_mutex::scoped_lock lock(mutex);
 		ClusterTransition* prev = nullptr;
 
 		for(auto* transition = transitions; transition && transition->distance < newTransition->distance; transition = transition->next){
@@ -74,6 +78,7 @@ struct Cluster{
 	}
 
 	void removeTransition(ClusterTransition* transition){
+        tbb::spin_mutex::scoped_lock lock(mutex);
 		if(transitions == transition){
 			transitions = transition->next;
 			transition->next = nullptr;
@@ -92,6 +97,7 @@ struct Cluster{
 	}
 
 	[[nodiscard]] ClusterTransition* findTransition(Cluster* clusterB) const{
+        tbb::spin_mutex::scoped_lock lock(mutex);
 		for(auto* transition = transitions; transition; transition = transition->next){
 			if(transition->cluster2 == clusterB) return transition;
 		}
@@ -100,6 +106,7 @@ struct Cluster{
 	}
 
 	[[nodiscard]] bool hasTransition(ClusterTransition* target) const{
+        tbb::spin_mutex::scoped_lock lock(mutex);
 		for(auto* transition = transitions; transition; transition = transition->next){
 			if(transition == target) return true;
 		}

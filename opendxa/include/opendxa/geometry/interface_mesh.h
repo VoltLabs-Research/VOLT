@@ -3,6 +3,7 @@
 #include <opendxa/core/opendxa.h>
 #include <opendxa/geometry/half_edge_mesh.h>
 #include <opendxa/analysis/elastic_mapping.h>
+#include <atomic>
 
 namespace OpenDXA{
 
@@ -11,8 +12,7 @@ struct BurgersCircuitSearchStruct;
 class BurgersLoopBuilder;
 
 struct InterfaceMeshVertex{
-    BurgersCircuitSearchStruct* burgersSearchStruct = nullptr;
-    bool visited = false;
+    // Thread-local state used during Burgers circuit search
 };
 
 struct InterfaceMeshFace{
@@ -53,19 +53,19 @@ public:
     void createMesh(double maximumNeighborDistance);
 
     [[nodiscard]] bool isCompletelyGood() const noexcept{
-		return _isCompletelyGood;
+		return _isCompletelyGood.load();
 	}
 
     [[nodiscard]] bool isCompletelyBad()  const noexcept{
-		return _isCompletelyBad;
+		return _isCompletelyBad.load();
 	}
 
     void generateDefectMesh(BurgersLoopBuilder const& tracer, HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>& defectMesh);
 
 private:
     ElasticMapping& _elasticMapping;
-    bool _isCompletelyGood = true;
-    bool _isCompletelyBad  = true;
+    std::atomic<bool> _isCompletelyGood{true};
+    std::atomic<bool> _isCompletelyBad{true};
 };
 
 }

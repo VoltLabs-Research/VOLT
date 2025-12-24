@@ -14,7 +14,9 @@ void showUsage(const std::string& name) {
         << "  --calcDeformationGradient     Compute deformation gradient F. [default: true]\n"
         << "  --calcStrainTensors           Compute strain tensors. [default: true]\n"
         << "  --identificationMode <mode>   Structure identification mode (CNA|PTM). [default: PTM]\n"
-        << "  --rmsd <float>                RMSD cutoff for PTM. [default: 0.10]\n";
+        << "  --rmsd <float>                RMSD cutoff for PTM. [default: 0.10]\n"
+        << "  --threads <int>               Max worker threads (TBB/OMP). [default: auto]\n"
+        << "  --deterministic <bool>        Force single-threaded deterministic run. [default: false]\n";
     printHelpOption();
 }
 
@@ -38,7 +40,8 @@ int main(int argc, char* argv[]){
         return 1;
     }
 
-    initLogging("opendxa-elastic-strain");
+    auto parallel = initParallelism(opts, false);
+    initLogging("opendxa-elastic-strain", parallel.threads, parallel.deterministic);
 
     LammpsParser::Frame frame;
     if(!parseFrame(filename, frame)) return 1;

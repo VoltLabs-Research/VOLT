@@ -107,6 +107,8 @@ public:
 		_identificationMode = identificationMode;
 	}
 
+	int findClosestSymmetryPermutation(int structureType, const Matrix3& rotation);
+
 	// Returns the ideal lattice vector associated with a neighbor bond
 	const Vector3& neighborLatticeVector(int centralAtomIndex, int neighborIndex) const{
 		assert(_context.atomSymmetryPermutations);

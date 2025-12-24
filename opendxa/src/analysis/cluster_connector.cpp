@@ -13,7 +13,9 @@ namespace OpenDXA{
 ClusterConnector::ClusterConnector(
     StructureAnalysis& sa,
     AnalysisContext& context
-) : _sa(sa), _context(context){}
+) : _sa(sa), _context(context){
+    _neighborMutexes = std::make_unique<tbb::spin_mutex[]>(1024);
+}
 
 void ClusterConnector::connectClusterNeighbors(int atomIndex, Cluster* cluster1){
     int structureType = _context.structureTypes->getInt(atomIndex);
@@ -143,6 +145,7 @@ void ClusterConnector::createNewClusterTransition(int atomIndex, int neighbor, i
 }
 
 void ClusterConnector::addReverseNeighbor(int neighbor, int atomIndex){
+    tbb::spin_mutex::scoped_lock lock(_neighborMutexes[neighbor & 1023]);
     int otherListCount = _sa.numberOfNeighbors(neighbor);
     if(otherListCount < _context.neighborLists->componentCount()){
         _context.neighborLists->setIntComponent(neighbor, otherListCount, atomIndex);
@@ -188,9 +191,10 @@ Cluster* ClusterConnector::getParentGrain(Cluster* c){
 }
 
 void ClusterConnector::connectClusters(){
-    auto indices = std::views::iota(size_t{0}, _context.atomCount());
-    std::for_each(std::execution::par, indices.begin(), indices.end(), [this](size_t atomIndex){
-        processAtomConnections(atomIndex);
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, _context.atomCount()), [&](const tbb::blocked_range<size_t>& r){
+        for(size_t atomIndex = r.begin(); atomIndex != r.end(); ++atomIndex){
+            processAtomConnections(atomIndex);
+        }
     });
     spdlog::info("Number of cluster transitions: {}", _sa.clusterGraph().clusterTransitions().size());
 }
@@ -332,18 +336,19 @@ void ClusterConnector::buildClustersForPTM(){
 
         initializePTMClusterOrientation(cluster, seedAtomIndex);
 
-        int bestSym = _context.templateIndex->getInt(seedAtomIndex);
-        cluster->symmetryTransformation = bestSym;
-        _context.atomSymmetryPermutations->setInt(seedAtomIndex, bestSym);
+        // Find the best symmetry permutation that matches the cluster's base orientation
+        // We start with identity as the local symmetry for the seed atom
+        cluster->symmetryTransformation = 0; 
+        _context.atomSymmetryPermutations->setInt(seedAtomIndex, 0);
 
         std::deque<int> atomsToVisit{ int(seedAtomIndex) };
-        growClusterPTM(cluster, atomsToVisit, structureType, bestSym);
+        growClusterPTM(cluster, atomsToVisit, structureType);
     }
 
     reorientAtomsToAlignClusters();
 }
 
-void ClusterConnector::growClusterPTM(Cluster* cluster, std::deque<int>& atomsToVisit, int structureType, int symmetryIndex){
+void ClusterConnector::growClusterPTM(Cluster* cluster, std::deque<int>& atomsToVisit, int structureType){
     while(!atomsToVisit.empty()){
         int currentAtom = atomsToVisit.front();
         atomsToVisit.pop_front();
@@ -357,7 +362,15 @@ void ClusterConnector::growClusterPTM(Cluster* cluster, std::deque<int>& atomsTo
             if(areOrientationsCompatible(currentAtom, neighbor, structureType)){
                 _context.atomClusters->setInt(neighbor, cluster->id);
                 cluster->atomCount++;
+
+                // Find the local symmetry index k such that R_cluster * S_k approx R_neighbor
+                Matrix3 R_cluster = cluster->orientation;
+                Matrix3 R_neighbor = quaternionToMatrix(getPTMAtomOrientation(neighbor));
+                Matrix3 localRotation = R_cluster.inverse() * R_neighbor;
+                
+                int symmetryIndex = _sa.findClosestSymmetryPermutation(structureType, localRotation);
                 _context.atomSymmetryPermutations->setInt(neighbor, symmetryIndex);
+                
                 atomsToVisit.push_back(neighbor);
             }
         }

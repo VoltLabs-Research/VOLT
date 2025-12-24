@@ -14,7 +14,9 @@ void showUsage(const std::string& name) {
         << "  --assumeUnwrapped             Assume unwrapped coordinates. [default: false]\n"
         << "  --calcDeformationGradient     Compute deformation gradient F. [default: true]\n"
         << "  --calcStrainTensors           Compute strain tensors. [default: true]\n"
-        << "  --calcD2min                   Compute D²min (nonaffine displacement). [default: true]\n";
+        << "  --calcD2min                   Compute D²min (nonaffine displacement). [default: true]\n"
+        << "  --threads <int>               Max worker threads (TBB/OMP). [default: auto]\n"
+        << "  --deterministic <bool>        Force single-threaded deterministic run. [default: false]\n";
     printHelpOption();
 }
 
@@ -32,7 +34,8 @@ int main(int argc, char* argv[]) {
         return filename.empty() ? 1 : 0;
     }
     
-    initLogging("opendxa-atomic-strain");
+    auto parallel = initParallelism(opts, false);
+    initLogging("opendxa-atomic-strain", parallel.threads, parallel.deterministic);
     
     LammpsParser::Frame frame;
     if (!parseFrame(filename, frame)) return 1;

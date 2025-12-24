@@ -138,11 +138,15 @@ void InterfaceMesh::createMesh(double maxNeighborDist){
     };
 
     // Build the faces and topology. If any step fails, bail out.
+    spdlog::debug("[PROFILE] Interface Mesh - Constructing manifold...");
     if(!helper.construct(tetraRegion, prepareFace)){
         throw std::runtime_error("Error building the faces and topology.");
 	}
+    spdlog::debug("[PROFILE] Interface Mesh - Constructing manifold took ... (not timed yet)");
 
+    spdlog::debug("[PROFILE] Interface Mesh - makeManifold...");
     makeManifold();
+    spdlog::debug("[PROFILE] Interface Mesh - makeManifold finished.");
 }
 
 // After tracing dislocation circuits on the interface mesh, extract only

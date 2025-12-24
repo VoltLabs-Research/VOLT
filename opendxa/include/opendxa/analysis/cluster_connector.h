@@ -1,6 +1,8 @@
-#include <opendxa/core/opendxa.h>
 #include <opendxa/analysis/analysis_context.h>
 #include <opendxa/analysis/structure_analysis.h>
+#include <tbb/spin_mutex.h>
+#include <vector>
+#include <memory>
 
 namespace OpenDXA{
 
@@ -28,7 +30,7 @@ private:
 	void buildClustersForPTM();
 	void baseBuildClusters();
 	void initializePTMClusterOrientation(Cluster* cluster, size_t seedAtomIndex);
-void growClusterPTM(Cluster* cluster, std::deque<int>& atomsToVisit, int structureType, int symmetryIndex);
+void growClusterPTM(Cluster* cluster, std::deque<int>& atomsToVisit, int structureType);
 	void growCluster(
 		Cluster* cluster,
 		std::deque<int>& atomsToVisit,
@@ -59,6 +61,7 @@ void growClusterPTM(Cluster* cluster, std::deque<int>& atomsToVisit, int structu
 
     AnalysisContext& _context;
     StructureAnalysis& _sa;
+    std::unique_ptr<tbb::spin_mutex[]> _neighborMutexes;
 };
 
 }

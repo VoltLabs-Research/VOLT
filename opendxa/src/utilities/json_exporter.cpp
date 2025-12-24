@@ -627,7 +627,7 @@ json DXAJsonExporter::exportClusterGraphToJson(const ClusterGraph* graph){
         json transitionJson;
         transitionJson["cluster1"] = t->cluster1->id;
         transitionJson["cluster2"] = t->cluster2->id;
-        transitionJson["area"] = t->area;
+        transitionJson["area"] = t->area.load();
         transitionJson["distance"] = t->distance;
         transitionJson["transformation"] = matrixToJson(t->tm);
 

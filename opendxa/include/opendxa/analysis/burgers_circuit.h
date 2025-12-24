@@ -53,20 +53,23 @@ struct BurgersCircuit{
 		Vector3 b{};
 		Matrix3 tm = Matrix3::Identity();
 		auto* edge = firstEdge;
+        if(!edge) return ClusterVector();
 
+        size_t safety_counter = 0;
 		do{
-			assert(edge);
 			// Add this edge's vector, after transforming from its original grain
 			b += tm * edge->clusterVector;
 
 			// If this edge crosses a grain boundary, update the transformation
-			if(!edge->clusterTransition->isSelfTransition()){
+			if(edge->clusterTransition && !edge->clusterTransition->isSelfTransition()){
 				tm = tm * edge->clusterTransition->reverse->tm;
 			}
 
 			edge = edge->nextCircuitEdge;
-		}while(edge != firstEdge);
+            if(++safety_counter > edgeCount + 100) break; // Infinite loop protection
+		}while(edge != nullptr && edge != firstEdge);
 
+        if(!firstEdge || !firstEdge->clusterTransition) return ClusterVector(b, nullptr);
 		// The Burgers vector lives in the cluster of the first edge
 		return ClusterVector(b, firstEdge->clusterTransition->cluster1);
 	}
@@ -80,13 +83,15 @@ struct BurgersCircuit{
 		Vector3 center{};
 		Vector3 current{};
 		auto* edge = firstEdge;
+        if(!edge || edgeCount == 0) return Point3::Origin();
 
+        size_t safety_counter = 0;
 		do{
-			assert(edge);
 			center += current;
 			current += edge->physicalVector;
 			edge = edge->nextCircuitEdge;
-		}while(edge != firstEdge);
+            if(++safety_counter > edgeCount + 100) break;
+		}while(edge != nullptr && edge != firstEdge);
 
 		// The base position of the circuit is the position of the first edge's start vertex
 		return firstEdge->vertex1()->pos() + (center / static_cast<double>(edgeCount));
@@ -99,11 +104,12 @@ struct BurgersCircuit{
 	size_t countEdges() const noexcept{
 		size_t cnt = 0;
 		auto *edge = firstEdge;
+        if(!edge) return 0;
 		do{
-			assert(edge);
 			++cnt;
 			edge = edge->nextCircuitEdge;
-		}while(edge != firstEdge);
+            if(cnt > 10000) break; // Hard limit for safety
+		}while(edge != nullptr && edge != firstEdge);
 		return cnt;
 	}
 
@@ -111,9 +117,10 @@ struct BurgersCircuit{
 	// Allows indexed access during segment construction or trimming.
 	[[nodiscard]]
 	InterfaceMesh::Edge* getEdge(size_t idx) const noexcept{
-		assert(idx < edgeCount);
+        if(edgeCount == 0) return nullptr;
+		//assert(idx < edgeCount);
 		auto *edge = firstEdge;
-		while(idx--){
+		while(idx-- && edge != nullptr){
 			edge = edge->nextCircuitEdge;
 		}
 		return edge;

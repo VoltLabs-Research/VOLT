@@ -40,6 +40,7 @@ private:
 	std::set<std::pair<Cluster*, Cluster*>> _disconnectedClusters;
 
 	int _maximumClusterDistance;
+    mutable tbb::spin_mutex mutex;
 };
 
 }

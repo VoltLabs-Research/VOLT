@@ -6,7 +6,9 @@
 #include <opendxa/structures/dislocation_network.h>
 #include <opendxa/geometry/interface_mesh.h>
 #include <unordered_set>
+#include <unordered_map>
 #include <random>
+#include <mutex>
 
 namespace OpenDXA{
 
@@ -64,7 +66,15 @@ private:
 	void findPrimarySegments(int maxBurgersCircuitSize);
 	void identifyNodeCoreAtoms(DislocationNode& node, const Point3& newPoint);
 
-	bool createBurgersCircuit(InterfaceMesh::Edge* edge, int maxBurgersCircuitSize);
+    struct SearchNode {
+        InterfaceMesh::Vertex* node;
+        Point3 coord;
+        Matrix3 tm;
+        int depth;
+        InterfaceMesh::Edge* viaEdge;
+    };
+
+	bool createBurgersCircuit(InterfaceMesh::Edge* edge, int maxBurgersCircuitSize, const std::unordered_map<InterfaceMesh::Vertex*, SearchNode*>& visited_map);
 	bool intersectsOtherCircuits(BurgersCircuit* circuit);
 	bool tryRemoveTwoCircuitEdges(InterfaceMesh::Edge*& edge0, InterfaceMesh::Edge*& edge1, InterfaceMesh::Edge*& edge2);
 	bool tryRemoveThreeCircuitEdges(InterfaceMesh::Edge*& edge0, InterfaceMesh::Edge*& edge1, InterfaceMesh::Edge*& edge2, bool isPrimarySegment);
@@ -102,6 +112,7 @@ private:
 	std::vector<DislocationNode*> _danglingNodes;
 	BurgersCircuit* _unusedCircuit;
 	mutable size_t _edgeStartIndex;  
+    mutable std::mutex _builderMutex;
 };
 
 }

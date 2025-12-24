@@ -228,7 +228,9 @@ json DislocationAnalysis::compute(const LammpsParser::Frame &frame, const std::s
     
     {
         PROFILE("Burgers Loop Builder - Trace Dislocation Segments");
+        spdlog::set_level(spdlog::level::trace);
         tracer.traceDislocationSegments();
+        spdlog::set_level(spdlog::level::debug);
     }
 
     {

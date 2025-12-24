@@ -1,5 +1,6 @@
 #include <opendxa/core/opendxa.h>
 #include <opendxa/structures/cluster_graph.h>
+#include <tbb/spin_mutex.h>
 
 namespace OpenDXA{
 
@@ -26,6 +27,7 @@ ClusterGraph::ClusterGraph(const ClusterGraph& other){
 // Create a new cluster node with the given structure type and optional ID.
 // If no ID is provided, one is assigned sequentially.
 Cluster* ClusterGraph::createCluster(int structureType, int id){
+    tbb::spin_mutex::scoped_lock lock(mutex);
 	if(id < 0){
 		id = clusters().size();
 		assert(id > 0);
@@ -70,6 +72,7 @@ ClusterTransition* ClusterGraph::createClusterTransition(Cluster* clusterA, Clus
 	}
 
 	// Build the forward and reverse transition objects
+    tbb::spin_mutex::scoped_lock lock(mutex);
 	ClusterTransition* tAB = _clusterTransitionPool.construct();
 	ClusterTransition* tBA = _clusterTransitionPool.construct();
 
@@ -114,6 +117,7 @@ ClusterTransition* ClusterGraph::createSelfTransition(Cluster* cluster){
 		return cluster->transitions;
 	}
 
+    tbb::spin_mutex::scoped_lock lock(mutex);
 	ClusterTransition* transition = _clusterTransitionPool.construct();
 	transition->cluster1 = cluster;
 	transition->cluster2 = cluster;
@@ -165,9 +169,12 @@ ClusterTransition* ClusterGraph::determineClusterTransition(Cluster* clusterA, C
 	}
 
 	// If we already known they're disconnected, skip
-	if(_disconnectedClusters.contains({ clusterA, clusterB })){
-		return nullptr;
-	}
+    {
+        tbb::spin_mutex::scoped_lock lock(mutex);
+        if(_disconnectedClusters.contains({ clusterA, clusterB })){
+            return nullptr;
+        }
+    }
 
 	// Try all 2-step path A -> X -> B and pick the shortest distance
 	assert(_maximumClusterDistance == 2);
@@ -199,6 +206,7 @@ ClusterTransition* ClusterGraph::determineClusterTransition(Cluster* clusterA, C
 	}
 
 	// Record that no path exists under the allowed maximum
+    tbb::spin_mutex::scoped_lock lock(mutex);
 	_disconnectedClusters.insert({ clusterA, clusterB });
 	return nullptr;
 }

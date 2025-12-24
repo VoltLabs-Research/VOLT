@@ -2,6 +2,8 @@
 
 #include <opendxa/core/opendxa.h>
 #include <opendxa/utilities/memory_pool.h>
+#include <tbb/spin_mutex.h>
+#include <mutex>
 
 namespace OpenDXA{
 
@@ -49,7 +51,8 @@ public:
 		}
 
         void linkToOppositeEdge(Edge* other) noexcept{
-            assert(!_oppositeEdge && !other->_oppositeEdge);
+            if(!other) return;
+            //assert(!_oppositeEdge && !other->_oppositeEdge);
             _oppositeEdge = other;
             other->_oppositeEdge = this;
         }
@@ -140,12 +143,14 @@ public:
             , _index(idx){}
 
         void addEdge(Edge* e) noexcept{
+            tbb::spin_mutex::scoped_lock lock(mutex);
             e->_nextVertexEdge = _edges;
             _edges = e;
             ++_numEdges;
         }
 
         void removeEdge(Edge* e) noexcept{
+            tbb::spin_mutex::scoped_lock lock(mutex);
             --_numEdges;
             if(e == _edges){
                 _edges = e->nextVertexEdge();
@@ -168,6 +173,7 @@ public:
         Edge* _edges;
         size_t _numEdges;
         int _index;
+        mutable tbb::spin_mutex mutex;
 
         friend class HalfEdgeMesh;
     };
@@ -331,6 +337,7 @@ public:
 	}
 
     Vertex* createVertex(const Point3& p){
+        tbb::spin_mutex::scoped_lock lock(mutex);
         auto* v = _vertexPool.construct(p, static_cast<int>(vertexCount()));
         _vertices.push_back(v);
         return v;
@@ -423,12 +430,14 @@ public:
     }
 
     Face* createFace(){
+        tbb::spin_mutex::scoped_lock lock(mutex);
         auto* f = _facePool.construct(static_cast<int>(faceCount()));
         _faces.push_back(f);
         return f;
     }
 
     Edge* createEdge(Vertex* v1, Vertex* v2, Face* f){
+        tbb::spin_mutex::scoped_lock lock(mutex);
         auto* e = _edgePool.construct(v2, f);
         v1->addEdge(e);
         
@@ -489,6 +498,7 @@ public:
     MemoryPool<InternalEdge> _edgePool;
     std::vector<Face*> _faces;
     MemoryPool<InternalFace> _facePool;
+    mutable tbb::spin_mutex mutex;
 };
 
 }

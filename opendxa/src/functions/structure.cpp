@@ -7,7 +7,9 @@ void showUsage(const std::string& name) {
     printUsageHeader(name, "OpenDXA - Structure Identification");
     std::cerr
         << "  --mode <mode>     Identification mode. (CNA|PTM|DIAMOND) [default: CNA]\n"
-        << "  --rmsd <float>    RMSD threshold for PTM. [default: 0.1]\n";
+        << "  --rmsd <float>    RMSD threshold for PTM. [default: 0.1]\n"
+        << "  --threads <int>   Max worker threads (TBB/OMP). [default: auto]\n"
+        << "  --deterministic <bool> Force single-threaded deterministic run. [default: false]\n";
     printHelpOption();
 }
 
@@ -25,7 +27,8 @@ int main(int argc, char* argv[]) {
         return filename.empty() ? 1 : 0;
     }
     
-    initLogging("opendxa-structure");
+    auto parallel = initParallelism(opts, false);
+    initLogging("opendxa-structure", parallel.threads, parallel.deterministic);
     
     LammpsParser::Frame frame;
     if (!parseFrame(filename, frame)) return 1;

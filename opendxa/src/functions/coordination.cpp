@@ -8,7 +8,9 @@ void showUsage(const std::string& name) {
     printUsageHeader(name, "OpenDXA - Coordination Analysis");
     std::cerr
         << "  --cutoff <float>              Cutoff radius for neighbor search. [default: 3.2]\n"
-        << "  --rdfBins <int>               Number of bins for RDF calculation. [default: 500]\n";
+        << "  --rdfBins <int>               Number of bins for RDF calculation. [default: 500]\n"
+        << "  --threads <int>               Max worker threads (TBB/OMP). [default: auto]\n"
+        << "  --deterministic <bool>        Force single-threaded deterministic run. [default: false]\n";
     printHelpOption();
 }
 
@@ -26,7 +28,8 @@ int main(int argc, char* argv[]) {
         return filename.empty() ? 1 : 0;
     }
     
-    initLogging("opendxa-coordination");
+    auto parallel = initParallelism(opts, false);
+    initLogging("opendxa-coordination", parallel.threads, parallel.deterministic);
     
     LammpsParser::Frame frame;
     if (!parseFrame(filename, frame)) return 1;

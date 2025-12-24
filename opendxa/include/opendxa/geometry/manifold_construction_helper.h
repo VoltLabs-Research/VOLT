@@ -2,6 +2,7 @@
 
 #include <opendxa/core/opendxa.h>
 #include <opendxa/core/simulation_cell.h>
+#include <spdlog/spdlog.h>
 #include <opendxa/core/particle_property.h>
 #include <opendxa/geometry/delaunay_tessellation.h>
 
@@ -10,6 +11,7 @@
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/mutex.h>
+#include <atomic>
 
 #include <boost/functional/hash.hpp>
 #include <type_traits>
@@ -48,8 +50,11 @@ public:
 		PrepareMeshFaceFunc&& prepareMeshFaceFunc = PrepareMeshFaceFunc(),
 		LinkManifoldsFunc&& linkManifoldsFunc = LinkManifoldsFunc()
 	){
+		spdlog::debug("  [PROFILE] Helper - classifyTetrahedra...");
 		if(!classifyTetrahedra(std::move(determineCellRegion))) return false;
+		spdlog::debug("  [PROFILE] Helper - createInterfaceFacets...");
 		if(!createInterfaceFacets(std::move(prepareMeshFaceFunc))) return false;
+		spdlog::debug("  [PROFILE] Helper - linkHalfedges...");
 		if(!linkHalfedges(std::move(linkManifoldsFunc))) return false;
 		return true;
 	}
@@ -139,7 +144,9 @@ private:
 		for(auto cell : cells){
 			if(_tessellation.getUserField(cell) != 0 && !_tessellation.isGhostCell(cell)){
 				_tessellation.setCellIndex(cell, cellIndex++);
-			}
+			}else{
+                _tessellation.setCellIndex(cell, -1);
+            }
 		}
 
 		if(_spaceFillingRegion == -2) _spaceFillingRegion = 0;
@@ -149,72 +156,55 @@ private:
 
 	template<typename PrepareMeshFaceFunc>
 	bool createInterfaceFacets(PrepareMeshFaceFunc&& prepareMeshFaceFunc){
-		std::vector<typename HalfEdgeStructureType::Vertex*> vertexMap(_positions->size(), nullptr);
+		std::vector<std::atomic<typename HalfEdgeStructureType::Vertex*>> vertexMap(_positions->size());
+        for(size_t i = 0; i < vertexMap.size(); ++i) vertexMap[i].store(nullptr);
+
 		_tetrahedraFaceList.clear();
+        _tetrahedraFaceList.resize(_numSolidCells, { nullptr, nullptr, nullptr, nullptr });
 		_faceLookupMap.clear();
 
-        for(DelaunayTessellation::CellHandle cell : _tessellation.cells()){
-			if(_tessellation.getCellIndex(cell) == -1) continue;
-			int solidRegion = _tessellation.getUserField(cell);
-			Point3 unwrappedVerts[4];
-			for(int i = 0; i < 4; i++){
-				unwrappedVerts[i] = _tessellation.vertexPosition(_tessellation.cellVertex(cell, i));
-			}
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, _tessellation.numberOfTetrahedra()), [&](const tbb::blocked_range<size_t>& r){
+            for(size_t cellIdx = r.begin(); cellIdx != r.end(); ++cellIdx){
+                auto cell = static_cast<DelaunayTessellation::CellHandle>(cellIdx);
+                int internalIdx = _tessellation.getCellIndex(cell);
+                if(internalIdx == -1) continue;
+                int solidRegion = _tessellation.getUserField(cell);
+                
+                for(int f = 0; f < 4; f++){
+                    auto mirrorFacet = _tessellation.mirrorFacet(cell, f);
+                    auto adjacentCell = mirrorFacet.first;
+                    if(_tessellation.getUserField(adjacentCell) == solidRegion) continue;
 
-			_tessellation.setCellIndex(cell, -1);
-			for(int f = 0; f < 4; f++){
-				auto mirrorFacet = _tessellation.mirrorFacet(cell, f);
-				auto adjacentCell = mirrorFacet.first;
-				if(_tessellation.getUserField(adjacentCell) == solidRegion) continue;
+                    std::array<typename HalfEdgeStructureType::Vertex*,3> facetVertices;
+                    std::array<DelaunayTessellation::VertexHandle,3> vertexHandles;
+                    std::array<int,3> vertexIndices;
+                    for(int v = 0; v < 3; v++){
+                        vertexHandles[v] = _tessellation.cellVertex(cell, DelaunayTessellation::cellFacetVertexIndex(f, FlipOrientation ? (2-v) : v));
+                        int idx = vertexIndices[v] = _tessellation.vertexIndex(vertexHandles[v]);
+                        
+                        auto* existingVertex = vertexMap[idx].load(std::memory_order_relaxed);
+                        if(existingVertex == nullptr){
+                            tbb::spin_mutex::scoped_lock lock(_mutex);
+                            existingVertex = vertexMap[idx].load(std::memory_order_relaxed);
+                            if(existingVertex == nullptr){
+                                existingVertex = _mesh.createVertex(_positions->getPoint3(idx));
+                                vertexMap[idx].store(existingVertex, std::memory_order_release);
+                            }
+                        }
+                        facetVertices[v] = existingVertex;
+                    }
 
-				std::array<typename HalfEdgeStructureType::Vertex*,3> facetVertices;
-				std::array<DelaunayTessellation::VertexHandle,3> vertexHandles;
-				std::array<int,3> vertexIndices;
-				for(int v = 0; v < 3; v++){
-					vertexHandles[v] = _tessellation.cellVertex(cell, DelaunayTessellation::cellFacetVertexIndex(f, FlipOrientation ? (2-v) : v));
-					int idx = vertexIndices[v] = _tessellation.vertexIndex(vertexHandles[v]);
-					if(vertexMap[idx] == nullptr){
-						vertexMap[idx] = _mesh.createVertex(_positions->getPoint3(idx));
-					}
-					facetVertices[v] = vertexMap[idx];
-				}
+                    auto* face = _mesh.createFace(facetVertices.begin(), facetVertices.end());
+                    if constexpr(!std::is_same_v<PrepareMeshFaceFunc, std::nullptr_t>){
+                        prepareMeshFaceFunc(face, vertexIndices, vertexHandles, cell);
+                    }
 
-				auto* face = _mesh.createFace(facetVertices.begin(), facetVertices.end());
-				if(!std::is_same_v<PrepareMeshFaceFunc, std::nullptr_t>){
-					prepareMeshFaceFunc(face, vertexIndices, vertexHandles, cell);
-				}
-
-				if constexpr(CreateTwoSidedMesh){
-					if(_tessellation.getUserField(adjacentCell) == 0){
-						std::reverse(vertexHandles.begin(), vertexHandles.end());
-						std::array<int,3> reverseVertexIndices;
-						for(int v = 0; v < 3; v++){
-							vertexHandles[v] = _tessellation.cellVertex(adjacentCell, DelaunayTessellation::cellFacetVertexIndex(mirrorFacet.second, FlipOrientation ? (2-v) : v));
-							int idx = reverseVertexIndices[v] = _tessellation.vertexIndex(vertexHandles[v]);
-							facetVertices[v] = vertexMap[idx];
-						}
-
-						auto* oppositeFace = _mesh.createFace(facetVertices.begin(), facetVertices.end());
-
-						if(!std::is_same_v<PrepareMeshFaceFunc, std::nullptr_t>){
-							prepareMeshFaceFunc(oppositeFace, reverseVertexIndices, vertexHandles, adjacentCell);
-						}
-						reorderFaceVertices(reverseVertexIndices);
-						_faceLookupMap.emplace(reverseVertexIndices, oppositeFace);
-					}
-				}
-
-				reorderFaceVertices(vertexIndices);
-				_faceLookupMap.emplace(vertexIndices, face);
-
-				if(_tessellation.getCellIndex(cell) == -1){
-					_tessellation.setCellIndex(cell, _tetrahedraFaceList.size());
-					_tetrahedraFaceList.push_back({ nullptr, nullptr, nullptr, nullptr });
-				}
-
-				_tetrahedraFaceList[_tessellation.getCellIndex(cell)][f] = face;
-			}
-		}
+                    reorderFaceVertices(vertexIndices);
+                    _faceLookupMap.insert({vertexIndices, face});
+                    _tetrahedraFaceList[internalIdx][f] = face;
+                }
+            }
+        });
 
 		return true;
 	}
@@ -250,8 +240,10 @@ private:
 				for(int e = 0; e < 3; ++e, edge = edge->nextFaceEdge()){
 					if(edge->oppositeEdge()) continue;
 					auto* oppFace = findAdjacentFace(cell, f, e);
-					auto* oppEdge = oppFace->findEdge(edge->vertex2(), edge->vertex1());
-					edge->linkToOppositeEdge(oppEdge);
+					if(oppFace){
+                        auto* oppEdge = oppFace->findEdge(edge->vertex2(), edge->vertex1());
+                        if(oppEdge) edge->linkToOppositeEdge(oppEdge);
+                    }
 				}
 
 				if constexpr(CreateTwoSidedMesh){
@@ -314,7 +306,8 @@ private:
 	ParticleProperty* _positions;
 	HalfEdgeStructureType& _mesh;
 	std::vector<std::array<typename HalfEdgeStructureType::Face*, 4>> _tetrahedraFaceList;
-	std::map<std::array<int,3>, typename HalfEdgeStructureType::Face*> _faceLookupMap;
+    tbb::concurrent_unordered_map<std::array<int,3>, typename HalfEdgeStructureType::Face*, boost::hash<std::array<int, 3>>> _faceLookupMap;
+    tbb::spin_mutex _mutex;
 };
 
 }

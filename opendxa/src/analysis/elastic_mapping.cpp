@@ -3,8 +3,14 @@
 #include <opendxa/analysis/crystal_path_finder.h>
 #include <opendxa/analysis/elastic_mapping.h>
 #include <opendxa/utilities/concurrence/parallel_system.h>
+#include <tbb/parallel_for.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/parallel_sort.h>
 #include <omp.h>
 #include <mutex>
+#include <execution>
+#include <algorithm>
+#include <atomic>
 
 namespace OpenDXA{
 
@@ -22,43 +28,68 @@ static constexpr std::array<std::pair<int, int>, 6> tetraEdgeVertices{{
 // lists: one at its source vertex (edges leaving) and one at its destination vertex
 // (edges arriving), so that we can later traverse all edges adjacent to any given vertex.
 void ElasticMapping::generateTessellationEdges(){
-    for(DelaunayTessellation::CellHandle cell : tessellation().cells()){
-        if(tessellation().isGhostCell(cell)){
-            // Ignore filler cells around the periodic boundaries
-            continue;
-		}
+    struct TempEdge {
+        int v1, v2;
+        bool operator<(const TempEdge& other) const {
+            if(v1 != other.v1) return v1 < other.v1;
+            return v2 < other.v2;
+        }
+        bool operator==(const TempEdge& other) const {
+            return v1 == other.v1 && v2 == other.v2;
+        }
+    };
 
-        // Each tetrahedron has six vertex-pairs that define its edges
-        for(auto [vi, vj] : tetraEdgeVertices){
-            int v1 = tessellation().vertexIndex(tessellation().cellVertex(cell, vi));
-            int v2 = tessellation().vertexIndex(tessellation().cellVertex(cell, vj));
+    tbb::concurrent_vector<TempEdge> potentialEdges;
+    const auto &simCell = structureAnalysis().context().simCell;
 
-            // Skip degenerate case where both ends refer to the same vertex
-            if(v1 == v2) continue;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, tessellation().numberOfTetrahedra()), 
+        [&](const tbb::blocked_range<size_t>& r) {
+        for(size_t cellIdx = r.begin(); cellIdx != r.end(); ++cellIdx){
+            if(tessellation().isGhostCell(cellIdx)) continue;
 
-            // Get the actual 3D positions of the two endpoints
-            Point3 p1 = tessellation().vertexPosition(tessellation().cellVertex(cell, vi));
-            Point3 p2 = tessellation().vertexPosition(tessellation().cellVertex(cell, vj));
+            for(auto [vi, vj] : tetraEdgeVertices){
+                int v1 = tessellation().vertexIndex(tessellation().cellVertex(cellIdx, vi));
+                int v2 = tessellation().vertexIndex(tessellation().cellVertex(cellIdx, vj));
 
-            // If the vector between p1 and p2 crosses a periodic boundary,
-            // we ignore it here-those connections will be picked up elsewhere.
-            if(structureAnalysis().context().simCell.isWrappedVector(p1 - p2)) continue;
+                if(v1 == v2) continue;
 
-            //assert(v1 >= 0 && v2 >= 0);
-            // If we haven't seen this (v1, v2) pair before, create it
-            if(findEdge(v1, v2) == nullptr){
-                TessellationEdge* e = _edgePool.construct(v1, v2);
-                // Link it into the list of edges leaving v1
-                e->nextLeavingEdge  = _vertexEdges[v1].first;
-				_vertexEdges[v1].first = e;
+                Point3 p1 = tessellation().vertexPosition(tessellation().cellVertex(cellIdx, vi));
+                Point3 p2 = tessellation().vertexPosition(tessellation().cellVertex(cellIdx, vj));
 
-                // Link it into the list of edges arriving at v2
-                e->nextArrivingEdge = _vertexEdges[v2].second;
-				_vertexEdges[v2].second = e;
-        
-                ++_edgeCount;
+                if(simCell.isWrappedVector(p1 - p2)) continue;
+
+                int minV = std::min(v1, v2);
+                int maxV = std::max(v1, v2);
+                potentialEdges.push_back({minV, maxV});
             }
         }
+    });
+
+    if(potentialEdges.empty()) return;
+
+    tbb::parallel_sort(potentialEdges.begin(), potentialEdges.end());
+    
+    // De-duplicate
+    std::vector<TempEdge> uniqueEdges;
+    uniqueEdges.reserve(potentialEdges.size());
+    if(!potentialEdges.empty()){
+        uniqueEdges.push_back(potentialEdges[0]);
+        for(size_t i = 1; i < potentialEdges.size(); ++i){
+            if(!(potentialEdges[i] == uniqueEdges.back())){
+                uniqueEdges.push_back(potentialEdges[i]);
+            }
+        }
+    }
+
+    _edgeCount = static_cast<int>(uniqueEdges.size());
+    for(const auto& te : uniqueEdges){
+        TessellationEdge* e = _edgePool.construct(te.v1, te.v2);
+        
+        e->nextLeavingEdge = _vertexEdges[te.v1].first;
+        _vertexEdges[te.v1].first = e;
+
+        e->nextArrivingEdge = _vertexEdges[te.v2].second;
+        _vertexEdges[te.v2].second = e;
     }
 }
 
@@ -75,7 +106,6 @@ void ElasticMapping::generateTessellationEdges(){
 void ElasticMapping::assignVerticesToClusters(){
     const size_t vertex_count = _vertexClusters.size();
     
-    // Copy yhe atomic cluster IDs into each vertex for initial seeds
     #pragma omp parallel for schedule(static) 
     for(size_t i = 0; i < vertex_count; ++i){
         _vertexClusters[i] = structureAnalysis().atomCluster(int(i));
@@ -83,33 +113,35 @@ void ElasticMapping::assignVerticesToClusters(){
 
     bool changed;
     do{
-        // Walk each vertex
-        changed = false;
-        for(int idx = 0; idx < int(_vertexClusters.size()); ++idx){
-            // If this vertex already has a cluster ID, skip it
-            if(clusterOfVertex(idx)->id != 0) continue;
+        std::atomic<bool> any_changed{false};
+        
+        tbb::parallel_for(tbb::blocked_range<int>(0, static_cast<int>(vertex_count)), [&](const tbb::blocked_range<int>& r){
+            bool local_changed = false;
+            for(int idx = r.begin(); idx != r.end(); ++idx){
+                if(clusterOfVertex(idx)->id != 0) continue;
 
-            // Look at every edge leaving this vertex
-			for(auto* e = _vertexEdges[idx].first; e; e = e->nextLeavingEdge){
-                if(clusterOfVertex(e->vertex2)->id != 0){
-                    // Adopt the ID of the first neighbor that has one
-                    _vertexClusters[idx] = _vertexClusters[e->vertex2];
-                    changed = true;
-                    break;
+                for(auto* e = _vertexEdges[idx].first; e; e = e->nextLeavingEdge){
+                    if(clusterOfVertex(e->vertex2)->id != 0){
+                        _vertexClusters[idx] = _vertexClusters[e->vertex2];
+                        local_changed = true;
+                        break;
+                    }
+                }
+
+                if(clusterOfVertex(idx)->id != 0) continue;
+
+                for(auto* e = _vertexEdges[idx].second; e; e = e->nextArrivingEdge){
+                    if(clusterOfVertex(e->vertex1)->id != 0){
+                        _vertexClusters[idx] = _vertexClusters[e->vertex1];
+                        local_changed = true;
+                        break;
+                    }
                 }
             }
-
-            if(clusterOfVertex(idx)->id != 0) continue;
-
-            // If still unassigned, look at edges arriving here
-            for(auto* e = _vertexEdges[idx].second; e; e = e->nextArrivingEdge){
-                if(clusterOfVertex(e->vertex1)->id != 0){
-                    _vertexClusters[idx] = _vertexClusters[e->vertex1];
-                    changed = true;
-                    break;
-                }
-            }
-        }
+            if(local_changed) any_changed = true;
+        });
+        
+        changed = any_changed.load();
     }while(changed);
 }
 
@@ -125,44 +157,37 @@ void ElasticMapping::assignVerticesToClusters(){
 // is stored on the edge so that later elastic compatibility checks can 
 // verify closed-loops balances.
 void ElasticMapping::assignIdealVectorsToEdges(bool reconstructEdgeVectors, int crystalPathSteps){
-    CrystalPathFinder pathFinder{ structureAnalysis(), crystalPathSteps };
-    // Walk every vertex's outgoing edges
-	for(auto const& [head, tail] : _vertexEdges){
-        for(auto* edge = head; edge; edge = edge->nextLeavingEdge){
-            // Skip edges that already have a vector
-            if(edge->hasClusterVector()) { continue; }
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, _vertexEdges.size()), [&](const tbb::blocked_range<size_t>& r){
+        CrystalPathFinder pathFinder{ structureAnalysis(), crystalPathSteps };
+        for(size_t headIdx = r.begin(); headIdx != r.end(); ++headIdx){
+            for(auto* edge = _vertexEdges[headIdx].first; edge; edge = edge->nextLeavingEdge){
+                if(edge->hasClusterVector()) { continue; }
 
-            // Identify the two grain clusters at the edge's endpoints
-            Cluster* c1 = clusterOfVertex(edge->vertex1);
-            Cluster* c2 = clusterOfVertex(edge->vertex2);
-            //assert(c1 && c2);
-            
-            // Both clusters must be nonzero
-            if(c1->id == 0 || c2->id == 0) continue;
+                Cluster* c1 = clusterOfVertex(edge->vertex1);
+                Cluster* c2 = clusterOfVertex(edge->vertex2);
+                
+                if(c1->id == 0 || c2->id == 0) continue;
 
-            // Find the shortest lattice-aligned path between these two mesh sites
-            if(auto optCv = pathFinder.findPath(edge->vertex1, edge->vertex2)){
-                Vector3 localVec = optCv->localVec();
-                Cluster* srcCl = optCv->cluster();
+                if(auto optCv = pathFinder.findPath(edge->vertex1, edge->vertex2)){
+                    Vector3 localVec = optCv->localVec();
+                    Cluster* srcCl = optCv->cluster();
 
-                // Express the vector relative to the first cluter's orientation
-                Vector3 vecInC1;
-                if(srcCl == c1){
-                    vecInC1 = localVec;
-                }else if(auto* tr = clusterGraph().determineClusterTransition(srcCl, c1)){
-                    vecInC1 = tr->transform(localVec);
-                }else{
-                    // No valid transition path, skip this edge
-                    continue;
-                }
+                    Vector3 vecInC1;
+                    if(srcCl == c1){
+                        vecInC1 = localVec;
+                    }else if(auto* tr = clusterGraph().determineClusterTransition(srcCl, c1)){
+                        vecInC1 = tr->transform(localVec);
+                    }else{
+                        continue;
+                    }
 
-                // Finally, map from cluster c1 into cluster c2 and store the result
-                if(auto* tr12 = clusterGraph().determineClusterTransition(c1, c2)){
-                    edge->assignClusterVector(vecInC1, tr12);
+                    if(auto* tr12 = clusterGraph().determineClusterTransition(c1, c2)){
+                        edge->assignClusterVector(vecInC1, tr12);
+                    }
                 }
             }
         }
-    }
+    });
 }
 
 // Before accepting the elastic mapping as valid for simulation or further analysis

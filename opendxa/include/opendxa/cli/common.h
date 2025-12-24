@@ -10,17 +10,23 @@
 #include <fstream>
 #include <map>
 #include <memory>
+#include <algorithm>
+#include <optional>
+#include <cstdlib>
+#include <cctype>
 
 #include <tbb/info.h>
+#include <tbb/global_control.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_sinks.h>
+#include <omp.h>
 
 namespace OpenDXA::CLI {
 
 using json = nlohmann::json;
 
-inline void initLogging(const std::string& toolName = "OpenDXA") {
+inline void initLogging(const std::string& toolName = "OpenDXA", int threads = -1, bool deterministic = false) {
     auto console_sink = std::make_shared<spdlog::sinks::stdout_sink_mt>();
     console_sink->set_level(spdlog::level::debug);
     auto logger = std::make_shared<spdlog::logger>(toolName, console_sink);
@@ -29,8 +35,12 @@ inline void initLogging(const std::string& toolName = "OpenDXA") {
     spdlog::flush_on(spdlog::level::debug);
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] [%l] %v");
     
-    int n = oneapi::tbb::info::default_concurrency();
-    spdlog::info("Using {} threads (OneTBB)", n);
+    int n = threads > 0 ? threads : oneapi::tbb::info::default_concurrency();
+    if(deterministic){
+        spdlog::info("Using {} threads (OneTBB, deterministic)", n);
+    }else{
+        spdlog::info("Using {} threads (OneTBB)", n);
+    }
 }
 
 inline std::map<std::string, std::string> parseArgs(
@@ -83,6 +93,17 @@ inline bool getBool(const std::map<std::string, std::string>& opts, const std::s
     return it->second == "true" || it->second == "1";
 }
 
+inline std::optional<bool> getOptionalBool(const std::map<std::string, std::string>& opts, const std::string& key) {
+    auto it = opts.find(key);
+    if (it == opts.end()) return std::nullopt;
+    std::string value = it->second;
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c){
+        return static_cast<char>(std::tolower(c));
+    });
+    if (value == "true" || value == "1" || value == "yes" || value == "on") return true;
+    return false;
+}
+
 inline double getDouble(const std::map<std::string, std::string>& opts, const std::string& key, double defaultVal = 0.0) {
     auto it = opts.find(key);
     if (it == opts.end()) return defaultVal;
@@ -104,6 +125,72 @@ inline std::string getString(const std::map<std::string, std::string>& opts, con
 
 inline bool hasOption(const std::map<std::string, std::string>& opts, const std::string& key) {
     return opts.find(key) != opts.end();
+}
+
+inline bool getEnvBool(const char* name) {
+    const char* value = std::getenv(name);
+    if (!value) return false;
+    std::string text = value;
+    std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c){
+        return static_cast<char>(std::tolower(c));
+    });
+    return text == "1" || text == "true" || text == "yes" || text == "on";
+}
+
+inline int getEnvInt(const char* name) {
+    const char* value = std::getenv(name);
+    if (!value) return 0;
+    try { return std::stoi(value); }
+    catch (...) { return 0; }
+}
+
+struct ParallelConfig {
+    int threads = 1;
+    bool deterministic = true;
+    std::unique_ptr<oneapi::tbb::global_control> tbbControl;
+};
+
+inline ParallelConfig initParallelism(const std::map<std::string, std::string>& opts, bool deterministicDefault = false) {
+    auto deterministicOpt = getOptionalBool(opts, "--deterministic");
+    bool deterministicEnv = getEnvBool("OPENDXA_DETERMINISTIC");
+
+    auto resolveThreads = [&](int fallback) {
+        int threads = 0;
+        if (hasOption(opts, "--threads")) {
+            threads = getInt(opts, "--threads", 0);
+        }
+        if (threads <= 0) {
+            threads = getEnvInt("OPENDXA_THREADS");
+        }
+        if (threads <= 0) {
+            threads = fallback;
+        }
+        return threads;
+    };
+
+    int threads = 0;
+    if (deterministicOpt.has_value()) {
+        if (*deterministicOpt) {
+            threads = 1;
+        } else {
+            threads = resolveThreads(oneapi::tbb::info::default_concurrency());
+        }
+    } else if (deterministicEnv) {
+        threads = 1;
+    } else {
+        int fallback = deterministicDefault ? 1 : oneapi::tbb::info::default_concurrency();
+        threads = resolveThreads(fallback);
+    }
+
+    threads = std::max(1, threads);
+    bool deterministic = (threads == 1);
+
+    omp_set_dynamic(0);
+    omp_set_num_threads(threads);
+    auto tbbControl = std::make_unique<oneapi::tbb::global_control>(
+        oneapi::tbb::global_control::max_allowed_parallelism, threads);
+
+    return {threads, deterministic, std::move(tbbControl)};
 }
 
 inline LatticeStructureType parseCrystalStructure(const std::string& val) {

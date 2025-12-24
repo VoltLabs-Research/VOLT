@@ -676,7 +676,7 @@ void CoordinationStructures::calculateProductForPermutation(LatticeStructure& la
     Matrix3 inverseProduct = latticeStruct.permutations[s2].transformation.inverse() * latticeStruct.permutations[s1].transformation;
     
     for(int i = 0; i < latticeStruct.permutations.size(); i++){
-        if(latticeStruct.permutations[i].transformation.equals(product)){ 
+        if(latticeStruct.permutations[i].transformation.equals(inverseProduct)){ 
             latticeStruct.permutations[s1].inverseProduct.push_back(i);
             break;
         }
