@@ -450,7 +450,16 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     private createWorker(): Worker {
         const worker = new Worker(this.workerPath, {
-            execArgv: ['-r', 'ts-node/register', '-r', 'tsconfig-paths/register']
+            execArgv: [
+                '-r',
+                'ts-node/register',
+                '-r',
+                'tsconfig-paths/register'
+            ],
+            resourceLimits: {
+                // TODO: Dynamic || max memory
+                maxOldGenerationSizeMb: 30000
+            }
         });
 
         const workerId = worker.threadId;

@@ -238,4 +238,13 @@ std::optional<bool> DelaunayTessellation::alphaTest(CellHandle cell, double alph
     return (nomin / denom) < alpha;
 }
 
+void DelaunayTessellation::releaseMemory() noexcept{
+	_dt.reset();
+	std::vector<Point3>().swap(_pointData);
+	std::vector<CellInfo>().swap(_cellInfo);
+	std::vector<size_t>().swap(_particleIndices);
+	_primaryVertexCount = 0;
+	_numPrimaryTetrahedra = 0;
+}
+
 }

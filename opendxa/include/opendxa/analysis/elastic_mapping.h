@@ -66,6 +66,7 @@ public:
     void assignVerticesToClusters();
     void assignIdealVectorsToEdges(bool reconstructEdgeVectors, int crystalPathSteps);
     [[nodiscard]] auto isElasticMappingCompatible(DelaunayTessellation::CellHandle cell) const -> bool;
+    void releaseCaches() noexcept;
 
     [[nodiscard]] auto clusterOfVertex(int idx) const noexcept -> Cluster*{
 		assert(idx < (int)_vertexClusters.size());

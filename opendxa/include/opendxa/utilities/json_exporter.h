@@ -21,6 +21,7 @@ using json = nlohmann::json;
 
 class ElasticStrainEngine;
 class MsgpackWriter;
+class BurgersLoopBuilder;
 
 class DXAJsonExporter{
 public:
@@ -97,6 +98,23 @@ public:
         const StructureAnalysis& structureAnalysis,
         bool includeTopologyInfo,
         const InterfaceMesh* interfaceMeshForTopology
+    );
+
+    template <typename MeshType>
+    void writeMeshMsgpackToFile(
+        const MeshType& mesh,
+        const StructureAnalysis& structureAnalysis,
+        bool includeTopologyInfo,
+        const InterfaceMesh* interfaceMeshForTopology,
+        const std::string& filePath
+    );
+
+    void writeDefectMeshMsgpackToFile(
+        const InterfaceMesh& interfaceMesh,
+        const BurgersLoopBuilder& tracer,
+        const StructureAnalysis& structureAnalysis,
+        bool includeTopologyInfo,
+        const std::string& filePath
     );
 
 private:

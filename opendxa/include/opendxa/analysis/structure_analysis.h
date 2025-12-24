@@ -103,6 +103,14 @@ public:
 		_context.atomSymmetryPermutations.reset();
 	}
 
+	void freePTMData(){
+		_context.ptmRmsd.reset();
+		_context.ptmOrientation.reset();
+		_context.ptmDeformationGradient.reset();
+		_context.correspondencesCode.reset();
+		_context.templateIndex.reset();
+	}
+
 	void setIdentificationMode(Mode identificationMode){
 		_identificationMode = identificationMode;
 	}

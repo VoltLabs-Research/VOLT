@@ -4,11 +4,11 @@
 #include <fstream>
 #include <iomanip>
 #include <filesystem>
-#include <set>
 #include <climits>
 #include <unordered_set>
 #include <algorithm>
 #include <cmath>
+#include <array>
 #include <thread>
 #include <future>
 #include <mutex>
@@ -16,6 +16,189 @@
 #include <opendxa/analysis/elastic_strain.h>
 
 namespace OpenDXA {
+
+namespace {
+
+struct MeshArrays {
+    std::vector<Point3> vertices;
+    std::vector<std::array<int, 3>> faces;
+    std::size_t originalVertexCount = 0;
+    std::size_t originalFaceCount = 0;
+};
+
+template <typename MeshType>
+MeshArrays buildMeshArraysFromMesh(const MeshType& mesh){
+    MeshArrays arrays;
+    const auto& originalVertices = mesh.vertices();
+    const auto& originalFaces = mesh.faces();
+
+    arrays.originalVertexCount = originalVertices.size();
+    arrays.originalFaceCount = originalFaces.size();
+    arrays.vertices.reserve(originalVertices.size());
+    for(const auto* v : originalVertices){
+        arrays.vertices.push_back(v->pos());
+    }
+
+    arrays.faces.reserve(originalFaces.size());
+    for(const auto* face : originalFaces){
+        if(!face || !face->edges()) continue;
+        std::array<int, 3> indices{};
+        int count = 0;
+        auto* startEdge = face->edges();
+        auto* currentEdge = startEdge;
+        do{
+            if(count < 3){
+                indices[count] = currentEdge->vertex1()->index();
+            }
+            count++;
+            currentEdge = currentEdge->nextFaceEdge();
+        }while(currentEdge != startEdge);
+
+        if(count == 3){
+            arrays.faces.push_back(indices);
+        }
+    }
+
+    return arrays;
+}
+
+MeshArrays buildDefectMeshArrays(const InterfaceMesh& interfaceMesh, const BurgersLoopBuilder& tracer){
+    MeshArrays arrays;
+    const auto& originalVertices = interfaceMesh.vertices();
+    const auto& originalFaces = interfaceMesh.faces();
+
+    arrays.originalVertexCount = originalVertices.size() + tracer.danglingNodes().size();
+    arrays.originalFaceCount = 0;
+    arrays.vertices.reserve(arrays.originalVertexCount);
+    for(const auto* v : originalVertices){
+        arrays.vertices.push_back(v->pos());
+    }
+
+    const std::size_t baseVertexCount = originalVertices.size();
+    arrays.faces.reserve(originalFaces.size());
+    for(const auto* face : originalFaces){
+        if(!face || !face->edges()) continue;
+        if(face->circuit && (face->testFlag(1) || !face->circuit->isDangling)){
+            continue;
+        }
+        std::array<int, 3> indices{};
+        int count = 0;
+        auto* startEdge = face->edges();
+        auto* currentEdge = startEdge;
+        do{
+            if(count < 3){
+                indices[count] = currentEdge->vertex1()->index();
+            }
+            count++;
+            currentEdge = currentEdge->nextFaceEdge();
+        }while(currentEdge != startEdge);
+
+        if(count == 3){
+            arrays.faces.push_back(indices);
+            arrays.originalFaceCount++;
+        }
+    }
+
+    std::size_t capIndex = 0;
+    for(const auto* node : tracer.danglingNodes()){
+        arrays.vertices.push_back(node->position());
+        const int capVertexIndex = static_cast<int>(baseVertexCount + capIndex);
+        capIndex++;
+
+        const auto* circuit = node->circuit;
+        if(!circuit) continue;
+        for(const auto* edge : circuit->segmentMeshCap){
+            std::array<int, 3> indices{
+                edge->vertex2()->index(),
+                edge->vertex1()->index(),
+                capVertexIndex
+            };
+            arrays.faces.push_back(indices);
+            arrays.originalFaceCount++;
+        }
+    }
+
+    return arrays;
+}
+
+std::size_t computeEdgeCount(const std::vector<std::array<int, 3>>& faces){
+    std::unordered_set<uint64_t> edges;
+    edges.reserve(faces.size() * 3);
+    for(const auto& face : faces){
+        auto add_edge = [&](int v1, int v2){
+            if(v1 > v2) std::swap(v1, v2);
+            uint64_t key = (static_cast<uint64_t>(static_cast<uint32_t>(v1)) << 32)
+                | static_cast<uint32_t>(v2);
+            edges.insert(key);
+        };
+        add_edge(face[0], face[1]);
+        add_edge(face[1], face[2]);
+        add_edge(face[2], face[0]);
+    }
+    return edges.size();
+}
+
+struct ExportMeshData {
+    std::vector<Point3> points;
+    std::vector<std::array<int, 3>> faces;
+};
+
+ExportMeshData buildExportMeshData(const MeshArrays& arrays, const SimulationCell& cell){
+    ExportMeshData exportData;
+    exportData.points.reserve(arrays.vertices.size());
+    for(const auto& pos : arrays.vertices){
+        exportData.points.push_back(pos);
+    }
+
+    exportData.faces.reserve(arrays.faces.size());
+    for(const auto& faceIndices : arrays.faces){
+        std::array<Point3, 3> faceVertexPositions = {
+            arrays.vertices[faceIndices[0]],
+            arrays.vertices[faceIndices[1]],
+            arrays.vertices[faceIndices[2]]
+        };
+
+        cell.unwrapPositions(faceVertexPositions.data(), faceVertexPositions.size());
+
+        std::array<int, 3> newFaceIndices{};
+        for(int i = 0; i < 3; ++i){
+            const int originalIndex = faceIndices[i];
+            const Point3& originalPos = arrays.vertices[originalIndex];
+            const Point3& unwrappedPos = faceVertexPositions[i];
+            if(!originalPos.equals(unwrappedPos, 1e-6)){
+                newFaceIndices[i] = static_cast<int>(exportData.points.size());
+                exportData.points.push_back(unwrappedPos);
+            }else{
+                newFaceIndices[i] = originalIndex;
+            }
+        }
+        exportData.faces.push_back(newFaceIndices);
+    }
+
+    return exportData;
+}
+
+void writePointMsgpack(MsgpackWriter& writer, int index, const Point3& pos){
+    writer.write_map_header(2);
+    writer.write_key("index");
+    writer.write_int(index);
+    writer.write_key("position");
+    writer.write_array_header(3);
+    writer.write_double(pos.x());
+    writer.write_double(pos.y());
+    writer.write_double(pos.z());
+}
+
+void writeFacetMsgpack(MsgpackWriter& writer, const std::array<int, 3>& vertices){
+    writer.write_map_header(1);
+    writer.write_key("vertices");
+    writer.write_array_header(3);
+    writer.write_int(vertices[0]);
+    writer.write_int(vertices[1]);
+    writer.write_int(vertices[2]);
+}
+
+} // namespace
 
 json DXAJsonExporter::exportAnalysisData(
     const DislocationNetwork* network,
@@ -318,15 +501,18 @@ json DXAJsonExporter::getMeshData(
     };
     
     if(includeTopologyInfo && interfaceMeshForTopology != nullptr){
-        std::set<std::pair<int, int>> originalEdgeSet;
+        std::unordered_set<uint64_t> originalEdgeSet;
+        originalEdgeSet.reserve(originalFaces.size() * 3);
         for(const auto* face : originalFaces){
             if(!face || !face->edges()) continue;
             auto* edge = face->edges();
             do{
                 int v1 = edge->vertex1()->index();
                 int v2 = edge->vertex2()->index();
-                if (v1 > v2) std::swap(v1, v2);  
-                originalEdgeSet.insert({v1, v2});
+                if(v1 > v2) std::swap(v1, v2);
+                uint64_t key = (static_cast<uint64_t>(static_cast<uint32_t>(v1)) << 32)
+                    | static_cast<uint32_t>(v2);
+                originalEdgeSet.insert(key);
                 edge = edge->nextFaceEdge();
             }while(edge != face->edges());
         }
@@ -339,6 +525,127 @@ json DXAJsonExporter::getMeshData(
     }
     
     return meshData;
+}
+
+template <typename MeshType>
+void DXAJsonExporter::writeMeshMsgpackToFile(
+    const MeshType& mesh,
+    const StructureAnalysis& structureAnalysis,
+    bool includeTopologyInfo,
+    const InterfaceMesh* interfaceMeshForTopology,
+    const std::string& filePath
+){
+    MeshArrays arrays = buildMeshArraysFromMesh(mesh);
+    ExportMeshData exportData = buildExportMeshData(arrays, structureAnalysis.context().simCell);
+
+    const bool isCompletelyGood = interfaceMeshForTopology ? interfaceMeshForTopology->isCompletelyGood() : false;
+    const bool isCompletelyBad = interfaceMeshForTopology ? interfaceMeshForTopology->isCompletelyBad() : false;
+    const std::size_t edgeCount = includeTopologyInfo ? computeEdgeCount(arrays.faces) : 0;
+
+    std::ofstream of(filePath, std::ios::binary);
+    if(!of.is_open()) return;
+    MsgpackWriter writer(of);
+
+    writer.write_map_header(includeTopologyInfo ? 3 : 2);
+
+    writer.write_key("data");
+    writer.write_map_header(2);
+    writer.write_key("facets");
+    writer.write_array_header(checked_u32_size(exportData.faces.size()));
+    for(const auto& face : exportData.faces){
+        writeFacetMsgpack(writer, face);
+    }
+    writer.write_key("points");
+    writer.write_array_header(checked_u32_size(exportData.points.size()));
+    for(size_t i = 0; i < exportData.points.size(); ++i){
+        writePointMsgpack(writer, static_cast<int>(i), exportData.points[i]);
+    }
+
+    writer.write_key("metadata");
+    writer.write_map_header(2);
+    writer.write_key("components");
+    writer.write_map_header(2);
+    writer.write_key("num_facets");
+    writer.write_int(static_cast<int64_t>(exportData.faces.size()));
+    writer.write_key("num_nodes");
+    writer.write_int(static_cast<int64_t>(exportData.points.size()));
+    writer.write_key("count");
+    writer.write_int(static_cast<int64_t>(arrays.originalFaceCount));
+
+    if(includeTopologyInfo){
+        writer.write_key("topology");
+        writer.write_map_header(3);
+        writer.write_key("euler_characteristic");
+        const int64_t euler = static_cast<int64_t>(arrays.originalVertexCount)
+            - static_cast<int64_t>(edgeCount)
+            + static_cast<int64_t>(arrays.originalFaceCount);
+        writer.write_int(euler);
+        writer.write_key("is_completely_bad");
+        writer.write_bool(isCompletelyBad);
+        writer.write_key("is_completely_good");
+        writer.write_bool(isCompletelyGood);
+    }
+
+    of.flush();
+}
+
+void DXAJsonExporter::writeDefectMeshMsgpackToFile(
+    const InterfaceMesh& interfaceMesh,
+    const BurgersLoopBuilder& tracer,
+    const StructureAnalysis& structureAnalysis,
+    bool includeTopologyInfo,
+    const std::string& filePath
+){
+    MeshArrays arrays = buildDefectMeshArrays(interfaceMesh, tracer);
+    ExportMeshData exportData = buildExportMeshData(arrays, structureAnalysis.context().simCell);
+
+    const std::size_t edgeCount = includeTopologyInfo ? computeEdgeCount(arrays.faces) : 0;
+
+    std::ofstream of(filePath, std::ios::binary);
+    if(!of.is_open()) return;
+    MsgpackWriter writer(of);
+
+    writer.write_map_header(includeTopologyInfo ? 3 : 2);
+
+    writer.write_key("data");
+    writer.write_map_header(2);
+    writer.write_key("facets");
+    writer.write_array_header(checked_u32_size(exportData.faces.size()));
+    for(const auto& face : exportData.faces){
+        writeFacetMsgpack(writer, face);
+    }
+    writer.write_key("points");
+    writer.write_array_header(checked_u32_size(exportData.points.size()));
+    for(size_t i = 0; i < exportData.points.size(); ++i){
+        writePointMsgpack(writer, static_cast<int>(i), exportData.points[i]);
+    }
+
+    writer.write_key("metadata");
+    writer.write_map_header(2);
+    writer.write_key("components");
+    writer.write_map_header(2);
+    writer.write_key("num_facets");
+    writer.write_int(static_cast<int64_t>(exportData.faces.size()));
+    writer.write_key("num_nodes");
+    writer.write_int(static_cast<int64_t>(exportData.points.size()));
+    writer.write_key("count");
+    writer.write_int(static_cast<int64_t>(arrays.originalFaceCount));
+
+    if(includeTopologyInfo){
+        writer.write_key("topology");
+        writer.write_map_header(3);
+        writer.write_key("euler_characteristic");
+        const int64_t euler = static_cast<int64_t>(arrays.originalVertexCount)
+            - static_cast<int64_t>(edgeCount)
+            + static_cast<int64_t>(arrays.originalFaceCount);
+        writer.write_int(euler);
+        writer.write_key("is_completely_bad");
+        writer.write_bool(interfaceMesh.isCompletelyBad());
+        writer.write_key("is_completely_good");
+        writer.write_bool(interfaceMesh.isCompletelyGood());
+    }
+
+    of.flush();
 }
 
 
@@ -365,8 +672,8 @@ json DXAJsonExporter::getAtomsData(
             //atomJson["ptm_quaternion"] = {quat.x(), quat.y(), quat.z(), quat.w()};
         }
         
-        if(i < static_cast<int>(frame.positions.size())){
-            const auto& pos = frame.positions[i];
+        if(i < static_cast<int>(frame.positionCount())){
+            const auto& pos = frame.position(i);
             atomJson["pos"] = {pos.x(), pos.y(), pos.z()};
         }else{
             atomJson["pos"] = {0.0, 0.0, 0.0};
@@ -573,8 +880,8 @@ void DXAJsonExporter::exportCoreAtoms(
             json atomData;
             atomData["id"] = frame.ids[atomIdx];
             
-            if(atomIdx < static_cast<int>(frame.positions.size())){
-                const auto& pos = frame.positions[atomIdx];
+            if(atomIdx < static_cast<int>(frame.positionCount())){
+                const auto& pos = frame.position(atomIdx);
                 atomData["pos"] = {pos.x(), pos.y(), pos.z()};
             }
             
@@ -940,7 +1247,7 @@ void DXAJsonExporter::exportForStructureIdentification(
     constexpr int K = static_cast<int>(StructureType::NUM_STRUCTURE_TYPES);
 
     assert(frame.ids.size() == N);
-    assert(frame.positions.size() == N);
+    assert(frame.positionCount() == N);
 
     std::vector<std::string> names(K);
     for(int st = 0; st < K; st++){
@@ -957,32 +1264,40 @@ void DXAJsonExporter::exportForStructureIdentification(
         counts[st]++;
     }
 
-    std::vector<json> buckets;
-    buckets.reserve(K);
-    for(int st = 0; st < K; st++) buckets.emplace_back(json::array());
-
-    for(int st = 0; st < K; st++){
-        if(counts[st] == 0) continue;
-        buckets[st].get_ref<json::array_t&>().reserve(counts[st]);
-    }
-
-    for(size_t i = 0; i < N; i++){
-        const int st = static_cast<int>(stOfAtom[i]);
-        const Point3& pos = frame.positions[i];
-        buckets[st].push_back({
-            { "id", frame.ids[i] },
-            { "pos", { pos.x(), pos.y(), pos.z() } }
-        });
-    }
-
-    json out = json::object();
-    for(int st = 0; st < K; st++){
-        if(!buckets[st].empty()){
-            out[names[st]] = std::move(buckets[st]);
+    std::ofstream of(outputFilename + "_atoms.msgpack", std::ios::binary);
+    if(of.is_open()){
+        MsgpackWriter writer(of);
+        std::vector<int> structureOrder;
+        structureOrder.reserve(K);
+        for(int st = 0; st < K; st++){
+            if(counts[st] > 0){
+                structureOrder.push_back(st);
+            }
         }
-    }
+        std::sort(structureOrder.begin(), structureOrder.end(), [&](int a, int b){
+            return names[a] < names[b];
+        });
 
-    writeJsonMsgpackToFile(out, outputFilename + "_atoms.msgpack");
+        writer.write_map_header(checked_u32_size(structureOrder.size()));
+        for(int st : structureOrder){
+            writer.write_key(names[st]);
+            writer.write_array_header(checked_u32_size(counts[st]));
+
+            for(size_t i = 0; i < N; i++){
+                if(stOfAtom[i] != static_cast<uint8_t>(st)) continue;
+                const Point3& pos = frame.position(i);
+                writer.write_map_header(2);
+                writer.write_key("id");
+                writer.write_int(frame.ids[i]);
+                writer.write_key("pos");
+                writer.write_array_header(3);
+                writer.write_double(pos.x());
+                writer.write_double(pos.y());
+                writer.write_double(pos.z());
+            }
+        }
+        of.flush();
+    }
 
     // also export statistics
     writeJsonMsgpackToFile(structureAnalysis.getStructureStatisticsJson(), outputFilename + "_structure_analysis_stats.msgpack");
@@ -1101,7 +1416,8 @@ json DXAJsonExporter::getTopologyInformation(const InterfaceMesh* interfaceMesh)
     const auto& vertices = interfaceMesh->vertices();
     const auto& faces = interfaceMesh->faces();
 
-    std::set<std::pair<int, int>> edgeSet;
+    std::unordered_set<uint64_t> edgeSet;
+    edgeSet.reserve(faces.size() * 3);
     for(const auto* face : faces){
         if(face && face->edges()){
             auto* edge = face->edges();
@@ -1109,8 +1425,10 @@ json DXAJsonExporter::getTopologyInformation(const InterfaceMesh* interfaceMesh)
                 if(edge->vertex1() && edge->vertex2()){
                     int v1 = edge->vertex1()->index();
                     int v2 = edge->vertex2()->index();
-                    if (v1 > v2) std::swap(v1, v2);  
-                    edgeSet.insert({v1, v2});
+                    if(v1 > v2) std::swap(v1, v2);
+                    uint64_t key = (static_cast<uint64_t>(static_cast<uint32_t>(v1)) << 32)
+                        | static_cast<uint32_t>(v2);
+                    edgeSet.insert(key);
                 }
                 edge = edge->nextFaceEdge();
             }while(edge && edge != face->edges());
@@ -1257,4 +1575,20 @@ template OpenDXA::json OpenDXA::DXAJsonExporter::getMeshData<OpenDXA::InterfaceM
     const OpenDXA::StructureAnalysis& structureAnalysis,
     bool includeTopologyInfo,
     const OpenDXA::InterfaceMesh* interfaceMeshForTopology
+);
+
+template void OpenDXA::DXAJsonExporter::writeMeshMsgpackToFile<OpenDXA::HalfEdgeMesh<OpenDXA::InterfaceMeshEdge, OpenDXA::InterfaceMeshFace, OpenDXA::InterfaceMeshVertex>>(
+    const OpenDXA::HalfEdgeMesh<OpenDXA::InterfaceMeshEdge, OpenDXA::InterfaceMeshFace, OpenDXA::InterfaceMeshVertex>& mesh,
+    const OpenDXA::StructureAnalysis& structureAnalysis,
+    bool includeTopologyInfo,
+    const OpenDXA::InterfaceMesh* interfaceMeshForTopology,
+    const std::string& filePath
+);
+
+template void OpenDXA::DXAJsonExporter::writeMeshMsgpackToFile<OpenDXA::InterfaceMesh>(
+    const OpenDXA::InterfaceMesh& mesh,
+    const OpenDXA::StructureAnalysis& structureAnalysis,
+    bool includeTopologyInfo,
+    const OpenDXA::InterfaceMesh* interfaceMeshForTopology,
+    const std::string& filePath
 );

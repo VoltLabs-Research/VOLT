@@ -93,6 +93,8 @@ public:
 
     void generateTessellation(const SimulationCell& simCell, const Point3* positions,
 		size_t numPoints, double ghostLayerSize, bool coverDomainWithFiniteTets, const int* selectedPoints = nullptr);
+
+    void releaseMemory() noexcept;
 	
     [[nodiscard]] size_type numberOfTetrahedra() const{
 		return _dt->nb_cells();

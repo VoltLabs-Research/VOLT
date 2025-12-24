@@ -258,4 +258,11 @@ bool ElasticMapping::isElasticMappingCompatible(DelaunayTessellation::CellHandle
     return true;
 }
 
+void ElasticMapping::releaseCaches() noexcept{
+    _edgePool.clear();
+    _edgeCount = 0;
+    std::vector<std::pair<TessellationEdge*, TessellationEdge*>>().swap(_vertexEdges);
+    std::vector<Cluster*>().swap(_vertexClusters);
+}
+
 }

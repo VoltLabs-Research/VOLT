@@ -19,24 +19,12 @@ void CoordinationAnalyzer::setRdfBins(int bins){
 }
 
 std::shared_ptr<ParticleProperty> CoordinationAnalyzer::createPositionProperty(const LammpsParser::Frame &frame){
-    std::shared_ptr<ParticleProperty> property(new ParticleProperty(frame.natoms, ParticleProperty::PositionProperty, 0, true));
-
-    if(!property || property->size() != frame.natoms){
-        spdlog::error("Failed to allocate ParticleProperty for positions with correct size");
+    if(!frame.positions || frame.positions->size() != static_cast<size_t>(frame.natoms)){
+        spdlog::error("Failed to access position property");
         return nullptr;
     }
 
-    Point3* data = property->dataPoint3();
-    if(!data){
-        spdlog::error("Failed to get position data pointer from ParticleProperty");
-        return nullptr;
-    }
-
-    for(size_t i = 0; i < frame.positions.size() && i < static_cast<size_t>(frame.natoms); i++){
-        data[i] = frame.positions[i];
-    }
-
-    return property;
+    return frame.positions;
 }
 
 bool CoordinationAnalyzer::validateSimulationCell(const SimulationCell& cell){

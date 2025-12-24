@@ -36,24 +36,12 @@ void GrainSegmentationAnalyzer::setParameters(
 }
 
 std::shared_ptr<ParticleProperty> GrainSegmentationAnalyzer::createPositionProperty(const LammpsParser::Frame &frame){
-    std::shared_ptr<ParticleProperty> property(new ParticleProperty(frame.natoms, ParticleProperty::PositionProperty, 0, true));
-
-    if(!property || property->size() != frame.natoms){
-        spdlog::error("Failed to allocate ParticleProperty for positions with correct size");
+    if(!frame.positions || frame.positions->size() != static_cast<size_t>(frame.natoms)){
+        spdlog::error("Failed to access position property");
         return nullptr;
     }
 
-    Point3* data = property->dataPoint3();
-    if(!data){
-        spdlog::error("Failed to get position data pointer from ParticleProperty");
-        return nullptr;
-    }
-
-    for(size_t i = 0; i < frame.positions.size() && i < static_cast<size_t>(frame.natoms); i++){
-        data[i] = frame.positions[i];
-    }
-
-    return property;
+    return frame.positions;
 }
 
 json GrainSegmentationAnalyzer::compute(const LammpsParser::Frame &frame, const std::string &outputFilename){
@@ -144,9 +132,12 @@ json GrainSegmentationAnalyzer::performGrainSegmentation(
         }
 
         // Create shared pointers for the engine
-        auto positions = std::make_shared<ParticleProperty>(frame.natoms, ParticleProperty::PositionProperty, 0, true);
-        for(size_t i = 0; i < frame.positions.size() && i < static_cast<size_t>(frame.natoms); i++){
-            positions->setPoint3(i, frame.positions[i]);
+        auto positions = frame.positions;
+        if(!positions || positions->size() != static_cast<size_t>(frame.natoms)){
+            spdlog::error("Positions data is missing or invalid.");
+            result["is_failed"] = true;
+            result["error"] = "Positions data is missing or invalid.";
+            return result;
         }
 
         auto structures = std::make_shared<ParticleProperty>(frame.natoms, DataType::Int, 1, 0, false);
@@ -229,8 +220,8 @@ json GrainSegmentationAnalyzer::performGrainSegmentation(
                 int gid = grainIds[i];
                 json atomData;
                 atomData["id"] = i;
-                if(i < frame.positions.size()){
-                    const auto &p = frame.positions[i];
+                if(i < frame.positionCount()){
+                    const auto &p = frame.position(i);
                     atomData["pos"] = {p.x(), p.y(), p.z()};
                 }else{
                     atomData["pos"] = {0.0, 0.0, 0.0};
