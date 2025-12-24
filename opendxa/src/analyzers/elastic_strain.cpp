@@ -44,12 +44,24 @@ void ElasticStrainAnalyzer::setParameters(
 }
 
 std::shared_ptr<ParticleProperty> ElasticStrainAnalyzer::createPositionProperty(const LammpsParser::Frame &frame){
-    if(!frame.positions || frame.positions->size() != static_cast<size_t>(frame.natoms)){
-        spdlog::error("Failed to access position property");
+    std::shared_ptr<ParticleProperty> property(new ParticleProperty(frame.natoms, ParticleProperty::PositionProperty, 0, true));
+
+    if(!property || property->size() != frame.natoms){
+        spdlog::error("Failed to allocate ParticleProperty for positions with correct size");
         return nullptr;
     }
 
-    return frame.positions;
+    Point3* data = property->dataPoint3();
+    if(!data){
+        spdlog::error("Failed to get position data pointer from ParticleProperty");
+        return nullptr;
+    }
+
+    for(size_t i = 0; i < frame.positions.size() && i < static_cast<size_t>(frame.natoms); i++){
+        data[i] = frame.positions[i];
+    }
+
+    return property;
 }
 
 json ElasticStrainAnalyzer::compute(const LammpsParser::Frame &frame, const std::string &outputFilename){

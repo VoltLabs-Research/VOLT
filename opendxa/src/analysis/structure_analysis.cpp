@@ -55,10 +55,8 @@ StructureAnalysis::StructureAnalysis(
         0, false
     );
 
-    if(usingPTM()){
-        _context.templateIndex = std::make_shared<ParticleProperty>(
-            _context.atomCount(), DataType::Int, 1, 0, true);
-    }
+    _context.templateIndex = std::make_shared<ParticleProperty>(
+        _context.atomCount(), DataType::Int, 1, 0, true);
 
     std::fill(_context.neighborLists->dataInt(),
               _context.neighborLists->dataInt() + _context.neighborLists->size()*_context.neighborLists->componentCount(),
@@ -90,8 +88,8 @@ json StructureAnalysis::getAtomsData(
             //atomJson["ptm_quaternion"] = {quat.x(), quat.y(), quat.z(), quat.w()};
         }
 
-        if(i < static_cast<int>(frame.positionCount())){
-            const auto &pos = frame.position(i);
+        if(i < static_cast<int>(frame.positions.size())){
+            const auto &pos = frame.positions[i];
             atomJson["pos"] = {pos.x(), pos.y(), pos.z()};
         }else{
             atomJson["pos"] = {0.0, 0.0, 0.0};
@@ -229,9 +227,6 @@ void StructureAnalysis::determineLocalStructuresWithPTM() {
     _context.ptmDeformationGradient = std::make_shared<ParticleProperty>(N, DataType::Double, 9, 0.0, true);
     _context.ptmRmsd = std::make_shared<ParticleProperty>(N, DataType::Double, 1, 0.0, true);
     _context.correspondencesCode = std::make_shared<ParticleProperty>(N, DataType::Int64, 1, 0, true);
-    if(!_context.templateIndex){
-        _context.templateIndex = std::make_shared<ParticleProperty>(N, DataType::Int, 1, 0, true);
-    }
 
     // Clear arrays for second pass
     std::fill(_context.neighborLists->dataInt(),

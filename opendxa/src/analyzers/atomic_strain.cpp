@@ -41,12 +41,24 @@ void AtomicStrainAnalyzer::setOptions(
 }
 
 std::shared_ptr<ParticleProperty> AtomicStrainAnalyzer::createPositionProperty(const LammpsParser::Frame &frame){
-    if(!frame.positions || frame.positions->size() != static_cast<size_t>(frame.natoms)){
-        spdlog::error("Failed to access position property");
+    std::shared_ptr<ParticleProperty> property(new ParticleProperty(frame.natoms, ParticleProperty::PositionProperty, 0, true));
+
+    if(!property || property->size() != frame.natoms){
+        spdlog::error("Failed to allocate ParticleProperty for positions with correct size");
         return nullptr;
     }
 
-    return frame.positions;
+    Point3* data = property->dataPoint3();
+    if(!data){
+        spdlog::error("Failed to get position data pointer from ParticleProperty");
+        return nullptr;  
+    }
+
+    for(size_t i = 0; i < frame.positions.size() && i < static_cast<size_t>(frame.natoms); i++){
+        data[i] = frame.positions[i];
+    }
+
+    return property;
 }
 
 json AtomicStrainAnalyzer::compute(const LammpsParser::Frame& currentFrame, const std::string &outputFilename){
@@ -75,9 +87,15 @@ json AtomicStrainAnalyzer::computeAtomicStrain(
         throw std::runtime_error("Cannot calculate atomic strain. Number of atoms in current and reference frames does not match.");
     }
 
-    auto refPositions = refFrame.positions;
-    if(!refPositions || refPositions->size() != static_cast<size_t>(refFrame.natoms)){
-        throw std::runtime_error("Reference positions are missing or invalid.");
+    auto refPositions = std::make_shared<ParticleProperty>(
+        refFrame.positions.size(),
+        ParticleProperty::PositionProperty,
+        3,
+        false
+    );
+
+    for(std::size_t i = 0; i < refFrame.positions.size(); i++){
+        refPositions->setPoint3(i, refFrame.positions[i]);
     }
 
     auto identifiers = std::make_shared<ParticleProperty>(
@@ -125,7 +143,7 @@ json AtomicStrainAnalyzer::computeAtomicStrain(
     auto shear = engine.shearStrains();
     auto volumetric = engine.volumetricStrains();
 
-    size_t n = currentFrame.positionCount();
+    size_t n = currentFrame.positions.size();
     for(size_t i = 0; i < n; i++){
         if(shear){
             double s = shear->getDouble(i);
@@ -161,7 +179,7 @@ json AtomicStrainAnalyzer::computeAtomicStrain(
         auto invalid = engine.invalidParticles();
 
         // per atom properties
-        for(std::size_t i = 0; i < currentFrame.positionCount(); i++){
+        for(std::size_t i = 0; i < currentFrame.positions.size(); i++){
             json a;
             a["id"] = currentFrame.ids[i];
             a["shear_strain"] = shear ? shear->getDouble(i) : 0.0;

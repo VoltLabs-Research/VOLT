@@ -672,8 +672,8 @@ json DXAJsonExporter::getAtomsData(
             //atomJson["ptm_quaternion"] = {quat.x(), quat.y(), quat.z(), quat.w()};
         }
         
-        if(i < static_cast<int>(frame.positionCount())){
-            const auto& pos = frame.position(i);
+        if(i < static_cast<int>(frame.positions.size())){
+            const auto& pos = frame.positions[i];
             atomJson["pos"] = {pos.x(), pos.y(), pos.z()};
         }else{
             atomJson["pos"] = {0.0, 0.0, 0.0};
@@ -880,8 +880,8 @@ void DXAJsonExporter::exportCoreAtoms(
             json atomData;
             atomData["id"] = frame.ids[atomIdx];
             
-            if(atomIdx < static_cast<int>(frame.positionCount())){
-                const auto& pos = frame.position(atomIdx);
+            if(atomIdx < static_cast<int>(frame.positions.size())){
+                const auto& pos = frame.positions[atomIdx];
                 atomData["pos"] = {pos.x(), pos.y(), pos.z()};
             }
             
@@ -1285,7 +1285,7 @@ void DXAJsonExporter::exportForStructureIdentification(
 
             for(size_t i = 0; i < N; i++){
                 if(stOfAtom[i] != static_cast<uint8_t>(st)) continue;
-                const Point3& pos = frame.position(i);
+                const Point3& pos = frame.positions[i];
                 writer.write_map_header(2);
                 writer.write_key("id");
                 writer.write_int(frame.ids[i]);
