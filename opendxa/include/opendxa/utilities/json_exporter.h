@@ -16,6 +16,7 @@
 #include <opendxa/analysis/analysis_context.h>
 #include <opendxa/analysis/compute_displacements.h>
 #include <opendxa/analysis/cluster_analysis.h>
+#include <opendxa/analysis/centrosymmetry.h>
 
 namespace OpenDXA{
 
@@ -47,7 +48,12 @@ public:
         const LammpsParser::Frame& frame,
         const StructureAnalysis& structureAnalysis,
         const std::string& outputFilename
-    );;
+    );
+
+    json getCentroSymmetryData(
+        const CentroSymmetryAnalysis::Engine& engine,
+        const std::vector<int>& ids
+    );
 
     json exportClusterGraphToJson(const ClusterGraph* graph);
     json exportDislocationsToJson(const DislocationNetwork* network, bool includeDetailedInfo = false, const SimulationCell* simulationCell = nullptr);

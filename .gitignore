@@ -13,6 +13,7 @@ build-release/
 !/opendxa/dependencies/geogram/
 !/opendxa/dependencies/geogram/**
 !/opendxa/dependencies/fast_float/**
+!/opendxa/dependencies/mwm_csp/**
 debug-data/
 
 client/wasm/zstd/dependencies

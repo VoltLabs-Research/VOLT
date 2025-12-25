@@ -32,6 +32,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined
 add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/json)
 add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/geogram)
 add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/ptm)
+add_subdirectory(${CMAKE_SOURCE_DIR}/dependencies/mwm_csp)
 
 # ccache
 find_program(CCACHE_PROGRAM ccache)
@@ -113,6 +114,7 @@ set(LIBRARY_SOURCES
     src/analysis/compute_displacements.cpp
     src/analysis/burgers_loop_builder.cpp
     src/analysis/analysis_context.cpp
+    src/analysis/centrosymmetry.cpp
     src/analysis/cutoff_neighbor_finder.cpp
     src/analysis/cluster_analysis.cpp
     src/analysis/polyhedral_template_matching.cpp
@@ -127,6 +129,7 @@ set(LIBRARY_SOURCES
     src/utilities/msgpack_writer.cpp
     src/analyzers/atomic_strain.cpp
     src/analyzers/coordination.cpp
+    src/analyzers/centrosymmetry.cpp
     src/analyzers/compute_displacements.cpp
     src/analyzers/elastic_strain.cpp
     src/analyzers/cluster_analysis.cpp
@@ -154,6 +157,7 @@ target_include_directories(opendxa_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/dependencies/pybind11_json/include
     ${CMAKE_SOURCE_DIR}/dependencies/boost
     ${CMAKE_SOURCE_DIR}/dependencies/fast_float
+    ${CMAKE_SOURCE_DIR}/dependencies/mwm_csp
 )
 
 target_link_libraries(opendxa_lib PUBLIC
@@ -164,6 +168,7 @@ target_link_libraries(opendxa_lib PUBLIC
     TBB::tbb
     OpenMP::OpenMP_CXX
     spdlog::spdlog
+    MinimumWeightMatchingCentrosymmetry
 )
 
 # Function executables from src/functions/

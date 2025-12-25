@@ -1238,6 +1238,50 @@ std::string DXAJsonExporter::getLineDirectionString(const Vector3& direction){
     return oss.str();
 }
 
+json DXAJsonExporter::getCentroSymmetryData(
+    const CentroSymmetryAnalysis::Engine& engine,
+    const std::vector<int>& ids
+){
+    json out;
+
+    auto csp = engine.cspProperty();
+    auto hist = engine.histogramCounts();
+
+    const std::size_t n = ids.size();
+    out["metadata"] = {
+        {"count", n},
+        {"histogram_bins", engine.numHistogramBins()},
+        {"histogram_bin_size", engine.histogramBinSize()},
+        {"max_csp", engine.maxCSP()}
+    };
+
+    // per-atom
+    json atoms = json::array();
+    for(std::size_t i = 0; i < n; i++){
+        atoms.push_back({
+            {"id", ids[i]},
+            {"csp", csp ? csp->getDouble(i) : 0.0}
+        });
+    }
+    out["atoms"] = std::move(atoms);
+
+    // histogram
+    json h = json::array();
+    if(hist){
+        for(std::size_t b = 0; b < engine.numHistogramBins(); b++){
+            h.push_back(hist->getInt64(b));
+        }
+    }
+    out["histogram_counts"] = std::move(h);
+
+    out["histogram_interval"] = {
+        {"start", 0.0},
+        {"end", engine.histogramBinSize() * (double)engine.numHistogramBins()}
+    };
+
+    return out;
+}
+
 json DXAJsonExporter::getClusterAnalysisData(
     const ClusterAnalysis::ClusterAnalysisEngine& engine,
     const std::vector<int>& ids
