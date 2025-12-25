@@ -15,6 +15,7 @@
 #include <opendxa/analysis/atomic_strain.h>
 #include <opendxa/analysis/analysis_context.h>
 #include <opendxa/analysis/compute_displacements.h>
+#include <opendxa/analysis/cluster_analysis.h>
 
 namespace OpenDXA{
 
@@ -77,6 +78,11 @@ public:
     void exportPTMData(const AnalysisContext& context, const std::vector<int>& ids, const std::string& outputFilename);
     json getProcessingTime();
     json getMetadata();
+
+    json getClusterAnalysisData(
+        const ClusterAnalysis::ClusterAnalysisEngine& engine,
+        const std::vector<int>& ids
+    );
     
     json getNetworkStatistics(const DislocationNetwork* network, double cellVolume);
     json getJunctionInformation(const DislocationNetwork* network);

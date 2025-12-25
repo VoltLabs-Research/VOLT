@@ -114,6 +114,7 @@ set(LIBRARY_SOURCES
     src/analysis/burgers_loop_builder.cpp
     src/analysis/analysis_context.cpp
     src/analysis/cutoff_neighbor_finder.cpp
+    src/analysis/cluster_analysis.cpp
     src/analysis/polyhedral_template_matching.cpp
     src/analysis/coordination_analysis.cpp
     src/analysis/elastic_mapping.cpp
@@ -128,6 +129,7 @@ set(LIBRARY_SOURCES
     src/analyzers/coordination.cpp
     src/analyzers/compute_displacements.cpp
     src/analyzers/elastic_strain.cpp
+    src/analyzers/cluster_analysis.cpp
     src/analyzers/grain_segmentation.cpp
 )
 

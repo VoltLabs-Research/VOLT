@@ -1238,6 +1238,78 @@ std::string DXAJsonExporter::getLineDirectionString(const Vector3& direction){
     return oss.str();
 }
 
+json DXAJsonExporter::getClusterAnalysisData(
+    const ClusterAnalysis::ClusterAnalysisEngine& engine,
+    const std::vector<int>& ids
+){
+    json out;
+
+    auto clusters = engine.particleClusters();
+    auto unwrapped = engine.unwrappedPositions();
+
+    auto clusterSizes = engine.clusterSizes();
+    auto clusterIds = engine.clusterIDs();
+    auto centers = engine.centersOfMass();
+    auto rg = engine.radiiOfGyration();
+    auto gt = engine.gyrationTensors();
+
+    const size_t n = ids.size();
+    const size_t k = engine.numClusters();
+
+    out["metadata"] = {
+        {"count", n},
+        {"cluster_count", k},
+        {"largest_cluster_size", engine.largestClusterSize()},
+        {"has_zero_weight_cluster", engine.hasZeroWeightCluster()}
+    };
+
+    // cluster list
+    json list = json::array();
+    for(size_t ci = 0; ci < k; ci++){
+        json c;
+        c["cluster_id"] = static_cast<int64_t>(ci + 1);
+        c["size"] = clusterSizes ? clusterSizes->getInt64(ci) : 0;
+
+        if(centers){
+            const Point3 p = centers->getPoint3(ci);
+            c["center"] = {p.x(), p.y(), p.z()};
+        }
+
+        if(rg){
+            c["radius_of_gyration"] = rg->getDouble(ci);
+        }
+
+        if(gt){
+            json tensor = json::array();
+            for(int comp = 0; comp < 6; comp++){
+                tensor.push_back(gt->getDoubleComponent(ci, comp));
+            }
+            c["gyration_tensor"] = tensor;
+        }
+
+        list.push_back(c);
+    }
+    out["cluster_list"] = list;
+
+    // per-atom assignments
+    json atoms = json::array();
+    for(size_t i = 0; i < n; i++){
+        json a;
+        a["id"] = ids[i];
+        a["cluster"] = clusters ? clusters->getInt(i) : 0;
+
+        if(unwrapped){
+            const Point3 p = unwrapped->getPoint3(i);
+            a["pos_unwrapped"] = {p.x(), p.y(), p.z()};
+        }
+
+        atoms.push_back(a);
+    }
+    out["atoms"] = atoms;
+
+    return out;
+}
+
 void DXAJsonExporter::exportForStructureIdentification(
     const LammpsParser::Frame &frame,
     const StructureAnalysis& structureAnalysis,
