@@ -15,8 +15,7 @@ void showUsage(const std::string& name) {
         << "  --calcDeformationGradient     Compute deformation gradient F. [default: true]\n"
         << "  --calcStrainTensors           Compute strain tensors. [default: true]\n"
         << "  --calcD2min                   Compute D²min (nonaffine displacement). [default: true]\n"
-        << "  --threads <int>               Max worker threads (TBB/OMP). [default: auto]\n"
-        << "  --deterministic <bool>        Force single-threaded deterministic run. [default: false]\n";
+        << "  --threads <int>               Max worker threads (TBB/OMP). [default: auto]\n";
     printHelpOption();
 }
 
@@ -35,7 +34,7 @@ int main(int argc, char* argv[]) {
     }
     
     auto parallel = initParallelism(opts, false);
-    initLogging("opendxa-atomic-strain", parallel.threads, parallel.deterministic);
+    initLogging("opendxa-atomic-strain", parallel.threads);
     
     LammpsParser::Frame frame;
     if (!parseFrame(filename, frame)) return 1;

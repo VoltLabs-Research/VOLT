@@ -26,7 +26,7 @@ namespace OpenDXA::CLI {
 
 using json = nlohmann::json;
 
-inline void initLogging(const std::string& toolName = "OpenDXA", int threads = -1, bool deterministic = false) {
+inline void initLogging(const std::string& toolName = "OpenDXA", int threads = -1) {
     auto console_sink = std::make_shared<spdlog::sinks::stdout_sink_mt>();
     console_sink->set_level(spdlog::level::debug);
     auto logger = std::make_shared<spdlog::logger>(toolName, console_sink);
@@ -36,11 +36,7 @@ inline void initLogging(const std::string& toolName = "OpenDXA", int threads = -
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] [%l] %v");
     
     int n = threads > 0 ? threads : oneapi::tbb::info::default_concurrency();
-    if(deterministic){
-        spdlog::info("Using {} threads (OneTBB, deterministic)", n);
-    }else{
-        spdlog::info("Using {} threads (OneTBB)", n);
-    }
+    spdlog::info("Using {} threads (OneTBB)", n);
 }
 
 inline std::map<std::string, std::string> parseArgs(

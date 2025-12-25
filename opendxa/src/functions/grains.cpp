@@ -12,8 +12,7 @@ void showUsage(const std::string& name) {
         << "  --adoptOrphanAtoms <true|false>       Adopt orphan atoms. [default: true]\n"
         << "  --handleCoherentInterfaces <true|false> Handle coherent interfaces. [default: true]\n"
         << "  --outputBonds                         Output neighbor bonds. [default: false]\n"
-        << "  --threads <int>                       Max worker threads (TBB/OMP). [default: auto]\n"
-        << "  --deterministic <bool>                Force single-threaded deterministic run. [default: false]\n";
+        << "  --threads <int>                       Max worker threads (TBB/OMP). [default: auto]\n";
     printHelpOption();
 }
 
@@ -32,7 +31,7 @@ int main(int argc, char* argv[]) {
     }
     
     auto parallel = initParallelism(opts, false);
-    initLogging("grain-segmentation", parallel.threads, parallel.deterministic);
+    initLogging("grain-segmentation", parallel.threads);
     
     LammpsParser::Frame frame;
     if (!parseFrame(filename, frame)) return 1;

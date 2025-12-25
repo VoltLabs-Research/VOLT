@@ -14,6 +14,7 @@
 #include <opendxa/math/lin_alg.h>
 #include <opendxa/analysis/atomic_strain.h>
 #include <opendxa/analysis/analysis_context.h>
+#include <opendxa/analysis/compute_displacements.h>
 
 namespace OpenDXA{
 
@@ -58,7 +59,10 @@ public:
 
     bool writeJsonMsgpackToFile(const json& data, const std::string& filePath, bool sortKeys = true);
 
-
+    json getDisplacementsData(
+        const ComputeDisplacements& engine,
+        const std::vector<int>& ids
+    );
 
     json getInterfaceMeshData(
         const InterfaceMesh* interfaceMesh,

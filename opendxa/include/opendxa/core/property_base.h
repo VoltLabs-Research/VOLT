@@ -87,6 +87,10 @@ public:
         return reinterpret_cast<const Point3*>(constData());
     }
 
+    [[nodiscard]] Vector3* dataVector3(){
+        return reinterpret_cast<Vector3*>(data());
+    }
+
     [[nodiscard]] boost::iterator_range<const Point3*> constPoint3Range() const{
         return { constDataPoint3(), constDataPoint3() + _numElements };
     }

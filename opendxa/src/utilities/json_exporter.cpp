@@ -1539,6 +1539,57 @@ double DXAJsonExporter::calculateAverageVertexDegree(const InterfaceMesh* interf
     return vertices.empty() ? 0.0 : totalDegree / vertices.size();
 }
 
+json DXAJsonExporter::getDisplacementsData(
+    const ComputeDisplacements& engine,
+    const std::vector<int>& ids
+){
+    json result;
+
+    auto U = engine.displacements();
+    auto Umag = engine.displacementMagnitudes();
+
+    if(!U || !Umag){
+        return result;
+    }
+
+    const size_t n = ids.size();
+        double totalMag = 0.0;
+    double maxMag = 0.0;
+    double minMag = std::numeric_limits<double>::max();
+
+    for(size_t i = 0; i < n; ++i){
+        double m = Umag->getDouble(i);
+        totalMag += m;
+        if(m > maxMag) maxMag = m;
+        if(m < minMag) minMag = m;
+    }
+
+    result["metadata"] = {
+        {"count", n}
+    };
+
+    result["summary"] = {
+        {"average_displacement_magnitude", n > 0 ? totalMag / n : 0.0},
+        {"max_displacement_magnitude", maxMag},
+        {"min_displacement_magnitude", (minMag == std::numeric_limits<double>::max()) ? 0.0 : minMag}
+    };
+
+    json dataArray = json::array();
+    for(size_t i = 0; i < n; ++i){
+        json atom;
+        atom["id"] = ids[i];
+
+        Vector3 u = U->dataVector3()[i];
+        atom["displacement"] = {u.x(), u.y(), u.z()};
+        atom["magnitude"] = Umag->getDouble(i);
+
+        dataArray.push_back(atom);
+    }
+
+    result["data"] = dataArray;
+    return result;
+}
+
 double DXAJsonExporter::calculateAngle(const Vector3& a, const Vector3& b){
     double dot = a.dot(b);
     double magnitudes = a.length() * b.length();

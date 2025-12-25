@@ -110,6 +110,7 @@ set(LIBRARY_SOURCES
     src/analysis/crystal_path_finder.cpp
     src/analysis/cluster_connector.cpp
     src/analysis/elastic_strain.cpp
+    src/analysis/compute_displacements.cpp
     src/analysis/burgers_loop_builder.cpp
     src/analysis/analysis_context.cpp
     src/analysis/cutoff_neighbor_finder.cpp
@@ -125,6 +126,7 @@ set(LIBRARY_SOURCES
     src/utilities/msgpack_writer.cpp
     src/analyzers/atomic_strain.cpp
     src/analyzers/coordination.cpp
+    src/analyzers/compute_displacements.cpp
     src/analyzers/elastic_strain.cpp
     src/analyzers/grain_segmentation.cpp
 )
@@ -167,7 +169,7 @@ file(GLOB FUNCTION_SOURCES ${CMAKE_SOURCE_DIR}/src/functions/*.cpp)
 
 foreach(FUNC_SRC ${FUNCTION_SOURCES})
     get_filename_component(FUNC_NAME ${FUNC_SRC} NAME_WE)
-    set(EXEC_NAME "opendxa-${FUNC_NAME}")
+    set(EXEC_NAME "${FUNC_NAME}")
     
     add_executable(${EXEC_NAME} ${FUNC_SRC})
     set_target_properties(${EXEC_NAME} PROPERTIES LINK_FLAGS_RELEASE "${LINKER_FAST}")
