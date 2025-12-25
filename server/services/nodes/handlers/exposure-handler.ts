@@ -52,7 +52,7 @@ class ExposureHandler implements NodeHandler{
                 if(config.iterable) data = getNestedValue(rawData, config.iterable);
 
                 const storageKey = `plugins/trajectory-${context.trajectoryId}/analysis-${context.analysisId}/${node.id}/timestep-${item.input.frame}.msgpack`;
-                const buffer = encodeMsgpack(data);
+                const buffer = encodeMsgpack(rawData);
                 await storage.put(SYS_BUCKETS.PLUGINS, storageKey, buffer, { 'Content-Type': 'application/msgpack' });
 
                 exposureResults.push({

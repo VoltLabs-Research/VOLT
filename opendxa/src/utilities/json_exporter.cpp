@@ -1247,7 +1247,6 @@ void DXAJsonExporter::exportForStructureIdentification(
     constexpr int K = static_cast<int>(StructureType::NUM_STRUCTURE_TYPES);
 
     assert(frame.ids.size() == N);
-    assert(frame.positionCount() == N);
 
     std::vector<std::string> names(K);
     for(int st = 0; st < K; st++){
@@ -1553,7 +1552,7 @@ json DXAJsonExporter::getDisplacementsData(
     }
 
     const size_t n = ids.size();
-        double totalMag = 0.0;
+    double totalMag = 0.0;
     double maxMag = 0.0;
     double minMag = std::numeric_limits<double>::max();
 
