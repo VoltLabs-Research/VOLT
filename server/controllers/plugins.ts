@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { NextFunction, Request, Response } from 'express';
 import { catchAsync, slugify } from '@/utilities/runtime/runtime';
 import { getAnalysisQueue } from '@/queues';
-import { Analysis } from '@/models';
+import { Analysis, PluginListingRow } from '@/models';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import { SYS_BUCKETS } from '@/config/minio';
 import { decode as decodeMsgpack } from '@msgpack/msgpack';
@@ -20,12 +20,7 @@ import unzipper from 'unzipper';
 import BaseController from './base-controller';
 import nodeRegistry from '@/services/nodes/node-registry';
 import workflowValidator from '@/services/nodes/workflow-validator';
-import {
-    buildNodeMap,
-    buildParentMap,
-    loadExposuresParallel,
-    resolveRow
-} from '@/utilities/plugins/listing-resolver';
+import PluginWorkflowEngine from '@/services/plugin-workflow-engine';
 
 const binaryUpload = multer({
     storage: multer.memoryStorage(),
@@ -40,15 +35,6 @@ const zipUpload = multer({
         fileSize: 200 * 1024 * 1024
     }
 });
-
-// TODO: dupicated code
-const getValueByPath = (obj: any, path: string) => {
-    if (!obj || !path) return undefined;
-    if (!path.includes('.')) {
-        return obj?.[path];
-    }
-    return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj);
-};
 
 export default class PluginsController extends BaseController<IPlugin> {
     constructor() {
@@ -190,13 +176,13 @@ export default class PluginsController extends BaseController<IPlugin> {
         const analysisId = new mongoose.Types.ObjectId();
 
         // Evaluate the workflow up to the forEach node to get the items
-        const PluginWorkflowEngine = require('@/services/plugin-workflow-engine').default;
         const engine = new PluginWorkflowEngine();
         const forEachResult = await engine.evaluateForEachItems(
             plugin,
             trajectoryId,
             analysisId.toString(),
             config || {},
+            trajectory.team,
             { selectedFrameOnly, timestep }
         );
 
@@ -319,201 +305,80 @@ export default class PluginsController extends BaseController<IPlugin> {
      */
     public getPluginListingDocuments = catchAsync(async (req: Request, res: Response) => {
         const { pluginSlug, listingSlug } = req.params;
-        const trajectory = res.locals.trajectory; // May be undefined if no :id param
-        const teamId = req.query.teamId as string;
+        const teamId = String(req.query.teamId || '');
+        const trajectory = res.locals.trajectory;
 
-        const pageNum = Math.max(1, +(req.query.page ?? 1) || 1);
-        const limitNum = Math.min(200, Math.max(1, +(req.query.limit ?? 50) || 50));
+        const limit = Math.min(200, Math.max(1, +(req.query.limit ?? 50) || 50));
         const sortAsc = String(req.query.sort ?? 'desc').toLowerCase() === 'asc';
 
-        // Load plugin
-        const plugin = await Plugin.findOne({ slug: pluginSlug }).lean();
-        if (!plugin) throw new RuntimeError('Plugin::NotFound', 404);
-
-        const { nodes, edges } = plugin.workflow;
-
-        // Find visualizer connected to exposure matching listingSlug
-        // Traverse: Exposure -> Schema -> Visualizers(by edges)
-        const findVisualizerForExposure = (exposureName: string): IWorkflowNode | null => {
-            // Find exposure node
-            const exposureNode = nodes.find((n: IWorkflowNode) =>
-                n.type === NodeType.EXPOSURE && n.data?.exposure?.name === exposureName
-            );
-            if (!exposureNode) return null;
-
-            // BFS to find connected visualizer
-            const visited = new Set<string>();
-            const queue = [exposureNode.id];
-
-            while (queue.length) {
-                const currentId = queue.shift()!;
-                if (visited.has(currentId)) continue;
-                visited.add(currentId);
-
-                // Find downstream nodes
-                const outEdges = edges.filter((e: any) => e.source === currentId);
-                for (const edge of outEdges) {
-                    const targetNode = nodes.find((n: IWorkflowNode) => n.id === edge.target);
-                    if (!targetNode) continue;
-                    if (targetNode.type === NodeType.VISUALIZERS &&
-                        targetNode.data?.visualizers?.listing &&
-                        Object.keys(targetNode.data.visualizers.listing).length > 0) {
-                        return targetNode;
-                    }
-                    queue.push(edge.target);
-                }
-            }
-            return null;
-        };
-
-        const visualizersNode = findVisualizerForExposure(listingSlug);
-        const exposureNodes = nodes.filter((node: IWorkflowNode) => node.type === NodeType.EXPOSURE);
-
-        // Find the primary exposure node ID for this listing(the one matching listingSlug)
-        const primaryExposureNode = nodes.find((n: IWorkflowNode) =>
-            n.type === NodeType.EXPOSURE && n.data?.exposure?.name === listingSlug
-        );
-        const primaryExposureId = primaryExposureNode?.id;
-
-        const visualizersData = visualizersNode?.data?.visualizers || {};
-        const displayName = listingSlug;
-
-        const listingDef = visualizersData.listing || {};
-        const columns = Object.entries(listingDef).map(([path, label]) => ({ path, label: String(label) }));
-        const exposureIds = exposureNodes.map((node: IWorkflowNode) => node.id);
-
-        // Determine trajectories to query
-        let trajectoryIds: string[] = [];
-        let trajectoryMap = new Map<string, any>();
-
-        if (trajectory) {
-            // Single trajectory mode
-            trajectoryIds = [trajectory._id.toString()];
-            trajectoryMap.set(trajectory._id.toString(), trajectory);
-        } else if (teamId) {
-            // All trajectories for team
-            const Trajectory = require('@/models/trajectory').default;
-            const teamTrajectories = await Trajectory.find({ team: teamId }).select('_id name').lean();
-            trajectoryIds = teamTrajectories.map((t: any) => t._id.toString());
-            teamTrajectories.forEach((t: any) => trajectoryMap.set(t._id.toString(), t));
-        } else {
-            throw new RuntimeError('TeamID::Required', 400);
+        const after = String(req.query.after ?? '');
+        let afterTimestep: number | null = null;
+        let afterId: string | null = null;
+        if(after.includes(':')){
+            const [timestep, id] = after.split(':');
+            afterTimestep = Number(timestep);
+            afterId = id;
         }
 
-        const meta = {
-            displayName,
+        const plugin = await Plugin.findOne({ slug: pluginSlug }).select('_id').lean();
+        if(!plugin) throw new RuntimeError('Plugin::NotFound', 404);
+
+        const base: any = {
+            plugin: plugin._id,
             listingSlug,
-            pluginSlug,
-            trajectoryName: trajectory?.name || 'All Trajectories',
-            columns
+            team: teamId
         };
 
-        if (!trajectoryIds.length) {
-            return res.status(200).json({
-                status: 'success',
-                data: { meta, rows: [], page: pageNum, limit: limitNum, total: 0, hasMore: false }
-            });
+        if(trajectory){
+            base.trajectory = trajectory._id;
+        }else{
+            if(!teamId) throw new RuntimeError('Team::IdRequired', 400);
         }
 
-        // Find analyses across all selected trajectories
-        const analyses = await Analysis.find({
-            trajectory: { $in: trajectoryIds },
-            plugin: pluginSlug
-        }).select('_id config createdAt trajectory').lean();
-
-        if (!analyses.length) {
-            return res.status(200).json({
-                status: 'success',
-                data: { meta, rows: [], page: pageNum, limit: limitNum, total: 0, hasMore: false }
-            });
+        if(afterTimestep != null && afterId){
+            base.$or = sortAsc 
+                ? [
+                    { timestep: { $gt: afterTimestep } },
+                    { timestep: afterTimestep, _id: { $gt: afterId } }
+                ]
+                : [
+                    { timestep: { $lt: afterTimestep } },
+                    { timestep: afterTimestep, _id: { $lt: afterId } }
+                ];
         }
 
-        const analysisMap = new Map(analyses.map((a: any) => {
-            const trajId = a.trajectory.toString();
-            return [a._id.toString(), { ...a, trajectory: trajectoryMap.get(trajId) || { _id: trajId, name: trajId } }];
+        const docs = await PluginListingRow.find(base)
+            .select('timestep analysis trajectory trajectoryName exposureId row')
+            .sort({ timestep: sortAsc ? 1 : -1, _id: sortAsc ? 1 : -1 })
+            .limit(limit + 1)
+            .lean();
+
+        const hasMore = docs.length > limit;
+        const slice= hasMore ? docs.slice(0, limit) : docs;
+
+        const rows = slice.map((doc: any) => ({
+            _id: String(doc._id),
+            timestep: doc.timestep,
+            analysisId: String(doc.analysis),
+            trajectoryId: String(doc.trajectory),
+            exposureId: doc.exposureId,
+            trajectoryName: doc.trajectoryName,
+            ...doc.row
         }));
 
-        // Collect timesteps from all analyses
-        const timestepPromises = analyses.map(async (analysis: any) => {
-            const trajId = analysis.trajectory.toString();
-            const prefix = `plugins/trajectory-${trajId}/analysis-${analysis._id}/`;
-            const seen = new Set<number>();
-            for await (const key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, prefix)) {
-                const match = key.match(/timestep-(\d+)\.msgpack$/);
-                if (match) seen.add(+match[1]);
-            }
-            return Array.from(seen).map((timestep) => ({
-                analysisId: analysis._id.toString(),
-                trajectoryId: trajId,
-                timestep
-            }));
-        });
 
-        const allTimesteps = (await Promise.all(timestepPromises)).flat();
-        allTimesteps.sort((a: any, b: any) => sortAsc ? a.timestep - b.timestep : b.timestep - a.timestep);
+        const nextCursor = hasMore
+            ? `${slice[slice.length - 1].timestep}:${slice[slice.length - 1]._id}`
+            : null;
 
-        const total = allTimesteps.length;
-        const offset = (pageNum - 1) * limitNum;
-        const pagedEntries = allTimesteps.slice(offset, offset + limitNum);
-
-        if (!pagedEntries.length) {
-            return res.status(200).json({
-                status: 'success',
-                data: { meta, rows: [], page: pageNum, limit: limitNum, total, hasMore: false }
-            });
-        }
-
-        const nodeMap = buildNodeMap(nodes);
-        const parentMap = buildParentMap(edges);
-
-        const BATCH_SIZE = 10;
-        const rows: any[] = [];
-
-        for (let i = 0; i < pagedEntries.length; i += BATCH_SIZE) {
-            const batch = pagedEntries.slice(i, i + BATCH_SIZE);
-
-            const batchRows = await Promise.all(batch.map(async (entry) => {
-                const exposureData = await loadExposuresParallel(
-                    exposureIds, entry.trajectoryId, entry.analysisId, entry.timestep);
-
-                // Skip if the primary exposure has no data (If-Statement may have filtered it)
-                if (primaryExposureId && !exposureData.has(primaryExposureId)) {
-                    return null;
-                }
-
-                const analysis = analysisMap.get(entry.analysisId);
-                const context = {
-                    nodeMap,
-                    parentMap,
-                    exposureData,
-                    trajectory: analysis?.trajectory,
-                    analysis,
-                    timestep: entry.timestep
-                };
-
-                return {
-                    _id: `${entry.analysisId}-${entry.timestep}`,
-                    timestep: entry.timestep,
-                    analysisId: entry.analysisId,
-                    trajectoryId: entry.trajectoryId,
-                    exposureId: primaryExposureId,
-                    trajectoryName: analysis?.trajectory?.name || entry.trajectoryId,
-                    ...resolveRow(columns, context)
-                };
-            }));
-
-            rows.push(...batchRows.filter(row => row !== null));
-        }
-
-        res.status(200).json({
+        return res.status(200).json({
             status: 'success',
             data: {
-                meta,
+                meta: { pluginSlug, listingSlug },
                 rows,
-                page: pageNum,
-                limit: limitNum,
-                total,
-                hasMore: offset + rows.length < total
+                limit,
+                hasMore,
+                nextCursor
             }
         });
     });

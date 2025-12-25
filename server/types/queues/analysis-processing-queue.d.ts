@@ -4,6 +4,7 @@ export interface AnalysisJob extends BaseJob {
     trajectoryId: string;
     config: any;
     inputFile: string;
+    teamId: string;
     analysisId: string;
     modifierId: string;
     plugin: string;

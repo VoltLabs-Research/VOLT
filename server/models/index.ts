@@ -11,3 +11,5 @@ export { default as Trajectory } from '@/models/trajectory';
 export { default as Notification } from '@/models/notification';
 export { default as Container } from '@/models/container';
 export { default as Plugin } from '@/models/plugin';
+export { default as PluginListingRow } from '@/models/plugin-listing-row';
+export { default as PluginExposureMeta } from '@/models/plugin-exposure-meta';

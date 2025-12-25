@@ -10,6 +10,8 @@ export interface ExecutionContext {
     analysisId: string;
     generatedFiles: string[];
     pluginSlug: string;
+    pluginId: string;
+    teamId: string;
     pluginDir: string;
     selectedFrameOnly?: boolean;
     selectedTimestep?: number;

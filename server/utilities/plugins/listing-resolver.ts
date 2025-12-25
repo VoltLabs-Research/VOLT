@@ -1,7 +1,4 @@
 import { NodeType } from '@/types/models/plugin';
-import { SYS_BUCKETS } from '@/config/minio';
-import { decode as decodeMsgpack } from '@msgpack/msgpack';
-import storage from '@/services/storage';
 
 export interface ResolveContext {
     nodeMap: Map<string, any>;
@@ -115,39 +112,6 @@ export const resolve = (path: string, ctx: ResolveContext): any => {
         default:
             return undefined;
     }
-};
-
-// load single exposure, returns [id, data] or null
-const loadExposure = async (
-    exposureId: string,
-    trajectoryId: string,
-    analysisId: string,
-    timestep: number
-): Promise<[string, any] | null> => {
-    const key = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
-    try {
-        const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, key);
-        return [exposureId, decodeMsgpack(buffer)];
-    } catch {
-        return null;
-    }
-};
-
-// load all exposures in parallel
-export const loadExposuresParallel = async (
-    exposureIds: string[],
-    trajectoryId: string,
-    analysisId: string,
-    timestep: number
-): Promise<Map<string, any>> => {
-    const results = await Promise.all(exposureIds.map((id) => loadExposure(id, trajectoryId, analysisId, timestep)));
-    const map = new Map<string, any>();
-    for (const result of results) {
-        if (result) {
-            map.set(result[0], result[1]);
-        }
-    }
-    return map;
 };
 
 export const resolveRow = (columns: Column[], ctx: ResolveContext): Record<string, any> => {

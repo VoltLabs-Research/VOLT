@@ -41,9 +41,10 @@ export default class PluginWorkflowEngine {
         trajectoryId: string,
         analysisId: string,
         userConfig: Record<string, any>,
+        teamId: string,
         options?: { selectedFrameOnly?: boolean; timestep?: number }
     ): Promise<{ items: any[]; forEachNodeId: string } | null> {
-        const context = this.createContext(plugin, trajectoryId, analysisId, userConfig, options);
+        const context = this.createContext(plugin, trajectoryId, analysisId, userConfig, teamId, options);
         const executionOrder = topologicalSort(plugin.workflow);
 
         // Execute nodes until we hit the forEach node
@@ -73,10 +74,11 @@ export default class PluginWorkflowEngine {
         trajectoryId: string,
         analysisId: string,
         userConfig: Record<string, any>,
+        teamId: string,
         forEachItem?: any,
-        forEachIndex?: number
+        forEachIndex?: number,
     ): Promise<ExposureResult[]> {
-        const context = this.createContext(plugin, trajectoryId, analysisId, userConfig);
+        const context = this.createContext(plugin, trajectoryId, analysisId, userConfig, teamId);
 
         try {
             const executionOrder = topologicalSort(plugin.workflow);
@@ -159,18 +161,20 @@ export default class PluginWorkflowEngine {
         return result;
     }
 
-
     private createContext(
         plugin: IPlugin,
         trajectoryId: string,
         analysisId: string,
         userConfig: Record<string, any>,
+        teamId: string,
         options?: { selectedFrameOnly?: boolean; timestep?: number }
     ): ExecutionContext {
         return {
             outputs: new Map(),
             userConfig,
             trajectoryId,
+            pluginId: plugin._id.toString(),
+            teamId,
             analysisId,
             generatedFiles: [],
             pluginSlug: plugin.slug,

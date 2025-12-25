@@ -7,6 +7,8 @@ import { SYS_BUCKETS } from '@/config/minio';
 import { encodeMsgpack, readMsgpackFile } from '@/utilities/msgpack/msgpack';
 import storage from '@/services/storage';
 import logger from '@/logger';
+import { PluginExposureMeta } from '@/models';
+import removeArrays from '@/utilities/runtime/remove-arrays';
 
 class ExposureHandler implements NodeHandler{
     readonly type = NodeType.EXPOSURE;
@@ -43,17 +45,41 @@ class ExposureHandler implements NodeHandler{
                 exposureResults.push({ index: item.index, error: item.error });
                 continue;
             }
+
             const resultsPath = `${item.outputPath}_${config.results}`;
             try{
                 const rawData = await readMsgpackFile(resultsPath);
                 context.generatedFiles.push(resultsPath);
 
+                // TODO: Check iterable
                 let data = rawData;
-                if(config.iterable) data = getNestedValue(rawData, config.iterable);
+                if(config.iterable){
+                    data = getNestedValue(rawData, config.iterable);
+                }
 
-                const storageKey = `plugins/trajectory-${context.trajectoryId}/analysis-${context.analysisId}/${node.id}/timestep-${item.input.frame}.msgpack`;
+                const timestep = item.input.frame;
+                const storageKey = `plugins/trajectory-${context.trajectoryId}/analysis-${context.analysisId}/${node.id}/timestep-${timestep}.msgpack`;
+
                 const buffer = encodeMsgpack(rawData);
                 await storage.put(SYS_BUCKETS.PLUGINS, storageKey, buffer, { 'Content-Type': 'application/msgpack' });
+
+                const metadata = removeArrays(rawData);
+                if(Object.keys(metadata).length){
+                    await PluginExposureMeta.updateOne({
+                        analysis: context.analysisId,
+                        exposureId: node.id,
+                        timestep
+                    }, {
+                        $set: {
+                            plugin: context.pluginId,
+                            trajectory: context.trajectoryId,
+                            analysis: context.analysisId,
+                            exposureId: node.id,
+                            timestep,
+                            metadata
+                        }
+                    }, { upsert: true });
+                }
 
                 exposureResults.push({
                     index: item.index,

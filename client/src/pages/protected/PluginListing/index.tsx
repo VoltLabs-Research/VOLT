@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
+import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import pluginApi from '@/services/api/plugin';
 import trajectoryApi from '@/services/api/trajectory';
 import analysisConfigApi from '@/services/api/analysis-config';
@@ -10,30 +10,23 @@ import useTeamStore from '@/stores/team/team';
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import PerFrameListingModal from '@/components/organisms/common/PerFrameListingModal';
 import { formatCellValue, normalizeRows, type ColumnDef } from '@/utilities/plugins/expression-utils';
+import { NodeType } from '@/types/plugin';
 import Select from '@/components/atoms/form/Select';
 
 type ListingResponse = {
-    meta: {
-        displayName: string;
-        listingKey: string;
-        pluginId: string;
-        listingUrl?: string;
-        columns: ColumnDef[];
-    };
+    meta?: any;
     rows: any[];
-    page: number;
     limit: number;
-    total: number;
     hasMore: boolean;
+    nextCursor: string | null;
 };
 
 const buildColumns = (columnDefs: ColumnDef[], showTrajectory = false): ColumnConfig[] => {
     const cols: ColumnConfig[] = columnDefs.map(({ path, label }) => ({
-        key: label, // Backend keys by label
+        key: label,
         title: label,
         sortable: true,
         render: (_value: any, row: any) => {
-            // Backend returns data keyed by label
             const value = row[label];
             return formatCellValue(value, path);
         },
@@ -53,6 +46,48 @@ const buildColumns = (columnDefs: ColumnDef[], showTrajectory = false): ColumnCo
     return cols;
 };
 
+const extractColumnsFromWorkflow = (plugin: any, listingSlug: string): ColumnDef[] => {
+    const nodes = plugin?.workflow?.nodes || [];
+    const edges = plugin?.workflow?.edges || [];
+
+    const exposureNode = nodes.find((n: any) => n.type === NodeType.EXPOSURE && n.data?.exposure?.name === listingSlug);
+    if(!exposureNode) return [];
+
+    const outMap = new Map<string, string[]>();
+    for(const e of edges){
+        const arr = outMap.get(e.source) || [];
+        arr.push(e.target);
+        outMap.set(e.source, arr);
+    }
+
+    const q = [exposureNode.id];
+    const visited = new Set<string>();
+
+    while(q.length){
+        const id = q.shift()!;
+        if(visited.has(id)) continue;
+        visited.add(id);
+
+        const children = outMap.get(id) || [];
+        for(const childId of children){
+            const child = nodes.find((x: any) => x.id === childId);
+            if(!child) continue;
+
+            if(child.type === NodeType.VISUALIZERS && child.data?.visualizers?.listing){
+                const listingDef = child.data.visualizers.listing || {};
+                const entries = Object.entries(listingDef);
+                if(entries.length){
+                    return entries.map(([path, label]) => ({ path, label: String(label) }));
+                }
+            }
+
+            q.push(childId);
+        }
+    }
+
+    return [];
+};
+
 const PluginListing = () => {
     const { pluginSlug, listingSlug, trajectoryId: paramTrajectoryId } = useParams();
     const navigate = useNavigate();
@@ -64,8 +99,8 @@ const PluginListing = () => {
     const [columns, setColumns] = useState<ColumnConfig[]>([]);
     const [rows, setRows] = useState<any[]>([]);
     const [meta, setMeta] = useState<{ displayName?: string; trajectoryName?: string } | null>(null);
-    const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
+    const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -77,12 +112,10 @@ const PluginListing = () => {
     const pluginsBySlug = usePluginStore((s) => s.pluginsBySlug);
     const fetchPlugins = usePluginStore((s) => s.fetchPlugins);
 
-    // Update trajectoryId when URL param changes
     useEffect(() => {
         setTrajectoryId(paramTrajectoryId);
     }, [paramTrajectoryId]);
 
-    // Fetch trajectories for filter
     useEffect(() => {
         if(!team?._id) return;
         trajectoryApi.getAll({ teamId: team._id })
@@ -90,20 +123,32 @@ const PluginListing = () => {
             .catch(err => console.error('Failed to load trajectories', err));
     }, [team?._id]);
 
-    const fetchPage = useCallback(async(nextPage: number) => {
+    useEffect(() => {
+        if(Object.keys(pluginsBySlug).length === 0) {
+            fetchPlugins();
+        }
+    }, [pluginsBySlug, fetchPlugins]);
+
+    const columnDefs = useMemo(() => {
+        if(!pluginSlug || !listingSlug) return [];
+        const plugin = pluginsBySlug[pluginSlug];
+        if(!plugin) return [];
+        return extractColumnsFromWorkflow(plugin, listingSlug);
+    }, [pluginsBySlug, pluginSlug, listingSlug]);
+
+    const fetchBatch = useCallback(async(after?: string | null) => {
         if(!pluginSlug || !listingSlug){
             setError('Invalid listing parameters.');
             return;
         }
 
-        // Need teamId if no trajectoryId
         if(!trajectoryId && !team?._id){
             setError('Please select a team first.');
             return;
         }
 
         setError(null);
-        if(nextPage === 1){
+        if(!after){
             setLoading(true);
         }else{
             setIsFetchingMore(true);
@@ -114,16 +159,21 @@ const PluginListing = () => {
                 pluginSlug,
                 listingSlug,
                 trajectoryId,
-                { page: nextPage, limit: pageSize, teamId: team?._id }
+                { limit: pageSize, teamId: team?._id, sort: 'desc', after: after || undefined }
             ) as ListingResponse;
 
-            setMeta(payload.meta ?? null);
-            const normalizedRows = normalizeRows(payload.rows ?? [], payload.meta?.columns ?? []);
-            setColumns(buildColumns(payload.meta?.columns ?? [], !trajectoryId));
+            const defs = (payload as any)?.meta?.columns && Array.isArray((payload as any).meta.columns)
+                ? (payload as any).meta.columns as ColumnDef[]
+                : columnDefs;
 
-            setRows((prev) => (nextPage === 1 ? normalizedRows : [...prev, ...normalizedRows]));
-            setPage(nextPage);
-            setHasMore(payload.hasMore ?? ((payload.page * payload.limit) < payload.total));
+            setMeta((prev) => prev ?? { displayName: listingSlug });
+            setColumns(buildColumns(defs, !trajectoryId));
+
+            const normalizedRows = normalizeRows(payload.rows ?? [], defs);
+            setRows((prev) => (!after ? normalizedRows : [...prev, ...normalizedRows]));
+
+            setHasMore(Boolean(payload.hasMore));
+            setNextCursor(payload.nextCursor ?? null);
         }catch(err: any){
             const message = err?.response?.data?.message || err?.message || 'Failed to load listing.';
             setError(message);
@@ -131,25 +181,19 @@ const PluginListing = () => {
             setLoading(false);
             setIsFetchingMore(false);
         }
-    }, [listingSlug, pluginSlug, trajectoryId, team?._id]);
-
-    useEffect(() => {
-        if(Object.keys(pluginsBySlug).length === 0) {
-            fetchPlugins();
-        }
-    }, [pluginsBySlug, fetchPlugins]);
+    }, [listingSlug, pluginSlug, trajectoryId, team?._id, columnDefs]);
 
     useEffect(() => {
         setRows([]);
         setColumns([]);
         setMeta(null);
-        setPage(1);
         setHasMore(false);
+        setNextCursor(null);
 
         if(pluginSlug && listingSlug && (trajectoryId || team?._id)) {
-            fetchPage(1);
+            fetchBatch(null);
         }
-    }, [pluginSlug, listingSlug, trajectoryId, fetchPage, team?._id]);
+    }, [pluginSlug, listingSlug, trajectoryId, fetchBatch, team?._id]);
 
     const handleMenuAction = useCallback(async(action: string, item: any) => {
         if(action === 'delete'){
@@ -167,15 +211,14 @@ const PluginListing = () => {
                 await analysisConfigApi.delete(analysisId);
             }catch(e){
                 console.error('Failed to delete analysis:', e);
-                fetchPage(1);
+                fetchBatch(null);
             }
         }
-    }, [fetchPage]);
+    }, [fetchBatch]);
 
     const getMenuOptions = useCallback((item: any) => {
         const options: any[] = [];
 
-        // View atoms - for items with per-atom data
         if(item?.trajectoryId && item?.analysisId && item?.exposureId && item?.timestep !== undefined){
             options.push([
                 'View Atoms',
@@ -193,6 +236,7 @@ const PluginListing = () => {
                 () => handleMenuAction('delete', item)
             ]);
         }
+
         return options;
     }, [handleMenuAction, navigate]);
 
@@ -229,8 +273,8 @@ const PluginListing = () => {
                 hasMore={hasMore}
                 isFetchingMore={isFetchingMore}
                 onLoadMore={() => {
-                    if(!loading && !isFetchingMore && hasMore){
-                        fetchPage(page + 1);
+                    if(!loading && !isFetchingMore && hasMore && nextCursor){
+                        fetchBatch(nextCursor);
                     }
                 }}
                 onMenuAction={handleMenuAction}
@@ -239,7 +283,7 @@ const PluginListing = () => {
                     <Select
                         options={[
                             { value: '', title: 'All Trajectories' },
-                                ...trajectories.map(t => ({ value: t._id, title: t.name }))
+                            ...trajectories.map(t => ({ value: t._id, title: t.name }))
                         ]}
                         value={trajectoryId || ''}
                         onChange={handleTrajectoryChange}
