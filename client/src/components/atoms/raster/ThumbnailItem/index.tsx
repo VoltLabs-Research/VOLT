@@ -34,7 +34,7 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
   return (
     <motion.div
       key={`thumb - ${timestep} -${scene.model} `}
-      className={`raster - thumbnail - container ${isActive ? 'active' : ''} `}
+      className={`raster-thumbnail-container ${isActive ? 'active' : ''} `}
       animate={
         isPlaying
           ? {

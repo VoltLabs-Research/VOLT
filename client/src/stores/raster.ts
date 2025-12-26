@@ -55,7 +55,7 @@ const useRasterStore = create<RasterStore>((set, get) => {
         async getRasterFrames(id: string) {
             set({ isLoading: true, error: null });
 
-            try{
+            try {
                 const { analyses, trajectory } = await rasterApi.getMetadata(id);
 
                 console.log(analyses);
@@ -66,7 +66,7 @@ const useRasterStore = create<RasterStore>((set, get) => {
                 let finalAnalyses = analyses;
                 let finalAnalysesNames = analysesNames;
 
-                if(analysesNames.length === 0 && trajectory?.frames?.length > 0){
+                if (analysesNames.length === 0 && trajectory?.frames?.length > 0) {
                     const previewAnalysisId = '__preview__';
                     const previewFrames: Record<string, any> = {};
 
@@ -100,7 +100,7 @@ const useRasterStore = create<RasterStore>((set, get) => {
                     error: null,
                     selectedAnalysis: finalAnalysesNames.length > 0 ? finalAnalysesNames[0]._id : null
                 });
-            }catch(e: any){
+            } catch (e: any) {
                 set({
                     isLoading: false,
                     error: e?.message ?? 'Unknown error'
@@ -113,33 +113,44 @@ const useRasterStore = create<RasterStore>((set, get) => {
 
             // Serve from cache if available
             const cached = get().frameCache?.[cacheKey];
-            if(cached){
+            if (cached) {
                 return cached;
             }
+
+            // Validate that the model exists for this frame before making request
+            const analyses = get().analyses;
+            const frameData = analyses?.[analysisId]?.frames?.[timestep];
+            const availableModels = frameData?.availableModels;
+
+            // If we have model info and the requested model isn't available, skip the request
+            if (availableModels && Array.isArray(availableModels) && !availableModels.includes(model)) {
+                return null;
+            }
+
             set((state) => ({
                 loadingFrames: new Set(state.loadingFrames).add(cacheKey)
             }));
 
-            try{
+            try {
                 const actualAnalysisId = analysisId === '__preview__' ? analysisId : analysisId;
-                const frameData = await rasterApi.getFrameData(trajectoryId, timestep, actualAnalysisId, model);
-                const imageData = frameData?.data;
+                const apiFrameData = await rasterApi.getFrameData(trajectoryId, timestep, actualAnalysisId, model);
+                const imageData = apiFrameData?.data;
 
                 set((state) => {
                     const loadingFrames = new Set(state.loadingFrames);
                     loadingFrames.delete(cacheKey);
                     const frameCache = { ...(state.frameCache || {}) } as Record<string, string>;
-                    if(imageData){
+                    if (imageData) {
                         frameCache[cacheKey] = imageData;
                     }
                     return { loadingFrames, frameCache }
                 });
 
                 return imageData ?? null;
-            }catch(e: any){
+            } catch (e: any) {
                 const errorMessage = e?.context?.serverMessage || e?.message || 'Error loading frame';
                 // Enhance context
-                if(e?.context){
+                if (e?.context) {
                     e.context.trajectoryId = trajectoryId;
                     e.context.timestep = timestep;
                     e.context.analysisId = analysisId;
@@ -170,39 +181,41 @@ const useRasterStore = create<RasterStore>((set, get) => {
         async preloadPriorizedFrames(trajectoryId, priorityModels, currentTimestep) {
             const { analyses, getFrameCacheKey, loadingFrames, isPreloading } = get();
 
-            if(!analyses || !Object.keys(analyses).length || isPreloading) return;
+            if (!analyses || !Object.keys(analyses).length || isPreloading) return;
 
             set({ isPreloading: true, preloadProgress: 0 });
 
             const tasks: PreloadTask[] = [];
-            for(const analysisId of Object.keys(analyses)) {
+            for (const analysisId of Object.keys(analyses)) {
                 const frames = analyses[analysisId]?.frames || {};
-                for(const timestepStr of Object.keys(frames)) {
+                for (const timestepStr of Object.keys(frames)) {
                     const timestep = parseInt(timestepStr, 10);
-                    if(!Number.isFinite(timestep)) continue;
+                    if (!Number.isFinite(timestep)) continue;
                     const models: string[] = frames[timestepStr]?.availableModels || [];
-                    for(const model of models){
+                    for (const model of models) {
+                        // Skip preview model - backend metadata incorrectly declares availability
+                        if (model === 'preview') continue;
+
                         const key = getFrameCacheKey(timestep, analysisId, model);
                         // Avoid duplicate concurrent requests withing the same run,
                         // but do NOT cache results between runs.
-                        if(loadingFrames.has(key)) continue;
+                        if (loadingFrames.has(key)) continue;
 
                         // skip if we already have it cached
-                        if(get().frameCache?.[key]) continue;
+                        if (get().frameCache?.[key]) continue;
 
                         let score = 100;
                         // strongly prefer current and nearby frames, preview models, and priority models
-                        if(currentTimestep !== undefined){
+                        if (currentTimestep !== undefined) {
                             const d = Math.abs(timestep - currentTimestep);
-                            if(d === 0) score -= 90;
-                            else if(d <= 1) score -= 70;
-                            else if(d <= 3) score -= 50;
-                            else if(d <= 5) score -= 30;
+                            if (d === 0) score -= 90;
+                            else if (d <= 1) score -= 70;
+                            else if (d <= 3) score -= 50;
+                            else if (d <= 5) score -= 30;
                         }
-                        if(priorityModels.ml && model === priorityModels.ml) score -= 40;
-                        if(priorityModels.mr && model === priorityModels.mr) score -= 40;
-                        if(model === 'preview') score -= 25;
-                        if(model === 'dislocations') score -= 10;
+                        if (priorityModels.ml && model === priorityModels.ml) score -= 40;
+                        if (priorityModels.mr && model === priorityModels.mr) score -= 40;
+                        if (model === 'dislocations') score -= 10;
 
                         tasks.push({ timestep, analysisId, model, score });
                     }
@@ -211,19 +224,19 @@ const useRasterStore = create<RasterStore>((set, get) => {
 
             tasks.sort((a, b) => a.score - b.score);
             const total = tasks.length;
-            if(!total){
+            if (!total) {
                 set({ isPreloading: false, preloadProgress: 100 });
                 return;
             }
 
             let done = 0;
-            const runBatch = async(batch: PreloadTask[]) => {
-                await Promise.all(batch.map(async(task) => {
-                    try{
+            const runBatch = async (batch: PreloadTask[]) => {
+                await Promise.all(batch.map(async (task) => {
+                    try {
                         await get().getRasterFrame(trajectoryId, task.timestep, task.analysisId, task.model);
                     } catch {
                         // ignore single task error
-                    }finally{
+                    } finally {
                         done++;
                         const progress = Math.round((done / total) * 100);
                         set({ preloadProgress: progress });
@@ -234,7 +247,7 @@ const useRasterStore = create<RasterStore>((set, get) => {
             // Increase concurrency dynamically based on hardware threads(fallback 8)
             const hw = (typeof navigator !== 'undefined' && (navigator as any).hardwareConcurrency) || 8;
             const chunk = Math.max(6, Math.min(16, hw));
-            for(let i = 0; i < tasks.length; i += chunk){
+            for (let i = 0; i < tasks.length; i += chunk) {
                 await runBatch(tasks.slice(i, i + chunk));
             }
 

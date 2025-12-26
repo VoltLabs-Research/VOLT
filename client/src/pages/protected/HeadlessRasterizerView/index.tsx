@@ -25,24 +25,18 @@ import { useNavigate, useParams } from 'react-router';
 import useUrlState from '@/hooks/core/use-url-state';
 import useRasterStore from '@/stores/raster';
 import useTrajectoryStore from '@/stores/trajectories';
-import useAnalysisConfigStore from '@/stores/analysis-config';
-import usePluginStore from '@/stores/plugins/plugin';
-import type { RenderableExposure } from '@/stores/plugins/plugin';
 import useAuthStore from '@/stores/authentication';
 import useRasterFrame from '@/hooks/raster/use-raster-frame';
-import type { AnalysisSelectProps, MetricEntry, ModelRailProps, PlaybackControlsProps, RasterTool, Scene } from '@/types/raster';
+import type { AnalysisSelectProps, ModelRailProps, PlaybackControlsProps, Scene } from '@/types/raster';
 import { formatNumber, formatSize } from '@/utilities/scene-utils';
 import { getOrCreateGuestUser } from '@/utilities/guest';
-import { IoTimeOutline, IoLayersOutline, IoBarChartOutline } from 'react-icons/io5';
 import { socketService } from '@/services/socketio';
 import RasterHeader from '@/components/molecules/raster/RasterHeader';
 import SceneColumn from '@/components/molecules/raster/SceneColumn';
 import Thumbnails from '@/components/molecules/raster/Thumbnails';
-import MetricsBar from '@/components/molecules/raster/MetricsBar';
 import CursorShareLayer from '@/components/atoms/common/CursorShareLayer';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import useRasterConnectedUsers from '@/hooks/raster/useRasterConnectedUsers';
-import FrameAtomsTable from '@/components/organisms/trajectory/FrameAtomsTable';
 import './HeadlessRasterizerView.css';
 import './RasterMessages.css';
 
@@ -65,24 +59,22 @@ const HeadlessRasterizerView: React.FC = () => {
     } = useRasterStore();
 
     const { getMetrics, trajectoryMetrics, isMetricsLoading } = useTrajectoryStore();
-    const { getDislocationsByAnalysisId, analysisDislocationsById, updateAnalysisConfig } = useAnalysisConfigStore();
-    const { getRenderableExposures, fetchPlugins } = usePluginStore();
     const user = useAuthStore((state) => state.user);
     const connectedUsers = useRasterConnectedUsers(trajectoryId);
 
     const [guestUser, setGuestUser] = useState<any>(null);
 
     useEffect(() => {
-        if(user) return;
+        if (user) return;
         getOrCreateGuestUser().then(setGuestUser);
     }, [user]);
 
     const cursorUser: any = useMemo(() => {
-        if(user){
+        if (user) {
             const u: any = { id: String(user._id ?? 'anon'), color: '#8A63D2' };
-            if(user.firstName) u.firstName = user.firstName;
-            if(user.lastName) u.lastName = user.lastName;
-            if(user.email) u.email = user.email;
+            if (user.firstName) u.firstName = user.firstName;
+            if (user.lastName) u.lastName = user.lastName;
+            if (user.email) u.email = user.email;
             return u;
         }
         return guestUser;
@@ -90,32 +82,17 @@ const HeadlessRasterizerView: React.FC = () => {
 
     const [leftAnalysis, setLeftAnalysis] = useState<string | null>(null);
     const [rightAnalysis, setRightAnalysis] = useState<string | null>(null);
-    const [leftModel, setLeftModel] = useState<string>('__preview__');
-    const [rightModel, setRightModel] = useState<string>('__preview__');
+    const [leftModel, setLeftModel] = useState<string>('');
+    const [rightModel, setRightModel] = useState<string>('');
     const [frameIndex, setFrameIndex] = useState<number>(-1);
 
     const [isPlaying, setIsPlaying] = useState(false);
 
-    // Dynamic exposures state: exposureId -> boolean
-    const [activeExposures, setActiveExposures] = useState<Record<string, boolean>>({});
-    const [availableExposures, setAvailableExposures] = useState<RenderableExposure[]>([]);
-
-    // Dynamic tools state: toolId -> boolean
-    const [activeTools, setActiveTools] = useState<Record<string, boolean>>({});
-
     const initializedRef = useRef(false);
     const preloadKeyRef = useRef<string | null>(null);
 
-    // Ensure plugins are loaded on mount
     useEffect(() => {
-        const { plugins, loading } = usePluginStore.getState();
-        if(plugins.length === 0 && !loading){
-            fetchPlugins();
-        }
-    }, [fetchPlugins]);
-
-    useEffect(() => {
-        if(!trajectoryId) return;
+        if (!trajectoryId) return;
         getRasterFrames(trajectoryId);
         getMetrics(trajectoryId);
 
@@ -124,39 +101,8 @@ const HeadlessRasterizerView: React.FC = () => {
         };
     }, [trajectoryId, getRasterFrames, getMetrics]);
 
-    // Update available exposures when analysis changes
-    useEffect(() => {
-        const updateExposures = async() => {
-            if(!trajectoryId || !leftAnalysis || !analysesNames.length){
-                setAvailableExposures([]);
-                updateAnalysisConfig(null);
-                return;
-            }
-
-            const selectedAnalysisObj = analysesNames.find((a: any) => a._id === leftAnalysis);
-            if(!selectedAnalysisObj){
-                updateAnalysisConfig(null);
-                setAvailableExposures([]);
-                return;
-            }
-
-            updateAnalysisConfig(selectedAnalysisObj as any);
-            await new Promise(resolve => setTimeout(resolve, 0));
-
-            // Ensure plugins are loaded
-            const { plugins } = usePluginStore.getState();
-            if(plugins.length === 0){
-                await fetchPlugins();
-            }
-
-            const exposures = await getRenderableExposures(trajectoryId, leftAnalysis, 'raster');
-            setAvailableExposures(exposures);
-        };
-        updateExposures();
-    }, [trajectoryId, leftAnalysis, analysesNames, getRenderableExposures, fetchPlugins, updateAnalysisConfig]);
-
     const framesFor = (analysisId: string | null) => {
-        if(!analysisId || !analyses?.[analysisId]?.frames) return [];
+        if (!analysisId || !analyses?.[analysisId]?.frames) return [];
 
         return Object.keys(analyses[analysisId].frames)
             .map((timestepStr) => parseInt(timestepStr, 10))
@@ -168,13 +114,13 @@ const HeadlessRasterizerView: React.FC = () => {
         const L = framesFor(leftAnalysis);
         const R = framesFor(rightAnalysis);
 
-        if(!L.length && !R.length) return [];
-        if(!L.length) return R;
-        if(!R.length) return L;
+        if (!L.length && !R.length) return [];
+        if (!L.length) return R;
+        if (!R.length) return L;
 
         const setL = new Set(L);
         const intersection = R.filter((timestep) => setL.has(timestep));
-        if(intersection.length){
+        if (intersection.length) {
             return intersection;
         }
 
@@ -185,14 +131,14 @@ const HeadlessRasterizerView: React.FC = () => {
     const currentTimestep = frameIndex >= 0 && frameIndex < timeline.length ? timeline[frameIndex] : undefined;
 
     const closestIndex = (timestep: number, list: number[]) => {
-        if(!list.length) return 0;
+        if (!list.length) return 0;
 
         let best = 0;
         let bestD = Math.abs(list[0] - timestep);
 
-        for(let i = 1; i < list.length; i++){
+        for (let i = 1; i < list.length; i++) {
             const d = Math.abs(list[i] - timestep);
-            if(d < bestD){
+            if (d < bestD) {
                 best = i;
                 bestD = d;
             }
@@ -203,7 +149,7 @@ const HeadlessRasterizerView: React.FC = () => {
 
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
-            if((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
                 setIsPlaying((isPlaying) => !isPlaying);
             }
@@ -216,7 +162,7 @@ const HeadlessRasterizerView: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if(!trajectory?._id || initializedRef.current) return;
+        if (!trajectory?._id || initializedRef.current) return;
 
         const al = getUrlParam('al');
         const ar = getUrlParam('ar');
@@ -224,26 +170,6 @@ const HeadlessRasterizerView: React.FC = () => {
         const mr = getUrlParam('mr');
         const ts = parseInt(getUrlParam('ts') || '0', 10);
 
-        // Restore active exposures from URL
-        const exposuresParam = getUrlParam('exposures');
-        if(exposuresParam){
-            try{
-                const parsed = JSON.parse(atob(exposuresParam));
-                setActiveExposures(parsed);
-            }catch(e){
-                console.error("Failed to parse exposures param", e);
-            }
-        }else{
-            // Legacy fallback
-            const disl = getUrlParam('disl') === '1';
-            const sa = getUrlParam('sa') === '1';
-            if(disl || sa){
-                setActiveExposures({
-                    'dislocation-analysis': disl,
-                    'structure-identification-stats': sa
-                });
-            }
-        }
 
         const validIds = new Set(analysesNames.map((a) => a._id));
         const left = al && validIds.has(al) ? al : analysesNames[0]?._id ?? null;
@@ -257,13 +183,13 @@ const HeadlessRasterizerView: React.FC = () => {
                 const L = framesFor(left);
                 const R = framesFor(right);
 
-                if(!L.length && !R.length) return [];
-                if(!L.length) return R;
-                if(!R.length) return L;
+                if (!L.length && !R.length) return [];
+                if (!L.length) return R;
+                if (!R.length) return L;
 
                 const setL = new Set(L);
                 const intersection = R.filter((timestep) => setL.has(timestep));
-                if(intersection.length){
+                if (intersection.length) {
                     return intersection;
                 }
 
@@ -277,49 +203,53 @@ const HeadlessRasterizerView: React.FC = () => {
             setFrameIndex(initialIndex);
 
             const modelsFor = (analysisId: string | null, timestep?: number) => {
-                if(!analysisId || !timestep || !analyses?.[analysisId]?.frames?.[timestep]) return [];
+                if (!analysisId || !timestep || !analyses?.[analysisId]?.frames?.[timestep]) return [];
                 return (analyses[analysisId].frames[timestep].availableModels) ?? [];
             };
 
             const leftModels = modelsFor(left, tsList[initialIndex]);
             const rightModels = modelsFor(right, tsList[initialIndex]);
 
-            setLeftModel(ml && leftModels.includes(ml) ? ml : leftModels[0] ?? 'preview');
-            setRightModel(mr && rightModels.includes(mr) ? mr : rightModels[0] ?? 'preview');
+            // Filter out 'preview' since it often doesn't exist in backend
+            const safeLeftModels = leftModels.filter((m: string) => m !== 'preview');
+            const safeRightModels = rightModels.filter((m: string) => m !== 'preview');
+
+            setLeftModel(ml && safeLeftModels.includes(ml) ? ml : safeLeftModels[0] ?? '');
+            setRightModel(mr && safeRightModels.includes(mr) ? mr : safeRightModels[0] ?? '');
 
             initializedRef.current = true;
         }, 0);
     }, [trajectory]);
 
     const modelsLeft = useMemo(() => {
-        if(!leftAnalysis || currentTimestep === undefined) return [];
+        if (!leftAnalysis || currentTimestep === undefined) return [];
         const frame = analyses?.[leftAnalysis]?.frames?.[currentTimestep];
         return (frame?.availableModels) ?? [];
     }, [analyses, leftAnalysis, currentTimestep]);
 
     const modelsRight = useMemo(() => {
-        if(!rightAnalysis || currentTimestep === undefined) return [];
+        if (!rightAnalysis || currentTimestep === undefined) return [];
         const frame = analyses?.[rightAnalysis]?.frames?.[currentTimestep];
         return (frame?.availableModels) ?? [];
     }, [analyses, rightAnalysis, currentTimestep]);
 
     useEffect(() => {
-        if(!initializedRef.current) return;
-        if(modelsLeft.length && !modelsLeft.includes(leftModel)) {
+        if (!initializedRef.current) return;
+        if (modelsLeft.length && !modelsLeft.includes(leftModel)) {
             setLeftModel(modelsLeft[0]);
         }
     }, [modelsLeft, leftModel]);
 
     useEffect(() => {
-        if(!initializedRef.current) return;
-        if(modelsRight.length && !modelsRight.includes(rightModel)) {
+        if (!initializedRef.current) return;
+        if (modelsRight.length && !modelsRight.includes(rightModel)) {
             setRightModel(modelsRight[0]);
         }
     }, [modelsRight, rightModel]);
 
     useEffect(() => {
-        if(!initializedRef.current || !trajectoryId || !analyses || isLoading) return;
-        if(!timeline.length || currentTimestep === undefined) return;
+        if (!initializedRef.current || !trajectoryId || !analyses || isLoading) return;
+        if (!timeline.length || currentTimestep === undefined) return;
 
         const key = JSON.stringify({
             id: trajectoryId,
@@ -328,16 +258,16 @@ const HeadlessRasterizerView: React.FC = () => {
             ts: currentTimestep
         });
 
-        if(preloadKeyRef.current === key) return;
+        if (preloadKeyRef.current === key) return;
         preloadKeyRef.current = key;
 
         const priority: { ml?: string; mr?: string } = {};
-        if(leftModel && leftModel !== 'preview') priority.ml = leftModel;
-        if(rightModel && rightModel !== 'preview') priority.mr = rightModel;
+        if (leftModel && leftModel !== 'preview') priority.ml = leftModel;
+        if (rightModel && rightModel !== 'preview') priority.mr = rightModel;
 
-        if(priority.ml || priority.mr){
+        if (priority.ml || priority.mr) {
             preloadPriorizedFrames(trajectoryId, priority, currentTimestep);
-        }else{
+        } else {
             preloadAllFrames(trajectoryId);
         }
     }, [
@@ -354,7 +284,7 @@ const HeadlessRasterizerView: React.FC = () => {
     ]);
 
     useEffect(() => {
-        if(!initializedRef.current) return;
+        if (!initializedRef.current) return;
 
         const handle = setTimeout(() => {
             const updates: Record<string, string | null> = {
@@ -363,9 +293,6 @@ const HeadlessRasterizerView: React.FC = () => {
                 ml: leftModel || null,
                 mr: rightModel || null,
                 ts: Number.isFinite(currentTimestep) ? String(currentTimestep) : null,
-                exposures: Object.keys(activeExposures).length > 0
-                    ? btoa(JSON.stringify(activeExposures))
-                    : null
             };
             updateUrlParams(updates);
         }, isPlaying ? 500 : 120);
@@ -377,22 +304,21 @@ const HeadlessRasterizerView: React.FC = () => {
         rightAnalysis,
         leftModel,
         rightModel,
-        activeExposures,
         currentTimestep,
         isPlaying,
         updateUrlParams,
     ]);
 
     useEffect(() => {
-        if(!isPlaying || !timeline.length) return;
+        if (!isPlaying || !timeline.length) return;
         const id = setInterval(() => {
-            if(!timeline.length) return;
+            if (!timeline.length) return;
 
-            if(frameIndex >= timeline.length){
+            if (frameIndex >= timeline.length) {
                 setFrameIndex(timeline.length - 1);
-            }else if(frameIndex < 0){
+            } else if (frameIndex < 0) {
                 setFrameIndex(0);
-            }else{
+            } else {
                 setFrameIndex((i) => (timeline.length ? (i + 1) % timeline.length : i));
             }
         }, 500);
@@ -400,34 +326,19 @@ const HeadlessRasterizerView: React.FC = () => {
         return () => clearInterval(id);
     }, [isPlaying, timeline.length]);
 
-    // Data fetching for active exposures based on results type
-    useEffect(() => {
-        availableExposures.forEach(exposure => {
-            if(!activeExposures[exposure.exposureId]) return;
-            /*
-            // Identify exposure type by results filename
-            if(exposure.results === 'dislocations.msgpack'){
-                if(leftAnalysis) getDislocationsByAnalysisId(leftAnalysis);
-                if(rightAnalysis && rightAnalysis !== leftAnalysis) getDislocationsByAnalysisId(rightAnalysis);
-            }else if(exposure.results === 'structure_stats.msgpack'){
-                if(leftAnalysis) fetchStructureAnalysesByConfig(leftAnalysis);
-                if(rightAnalysis && rightAnalysis !== leftAnalysis) fetchStructureAnalysesByConfig(rightAnalysis);
-            }*/
-        });
-    }, [activeExposures, availableExposures, leftAnalysis, rightAnalysis, getDislocationsByAnalysisId]);
 
     const subscribedKeyRef = useRef<string | null>(null);
 
     useEffect(() => {
-        if(!trajectory?._id || !trajectoryId) return;
+        if (!trajectory?._id || !trajectoryId) return;
 
         // Wait for cursorUser to be ready(either from auth or guest fetch)
-        if(!cursorUser) return;
+        if (!cursorUser) return;
 
         const presenceUser = cursorUser;
 
         const key = `${trajectory._id}:${presenceUser.id}`;
-        if(subscribedKeyRef.current === key) return;
+        if (subscribedKeyRef.current === key) return;
 
         const prevTrajectory = subscribedKeyRef.current?.split(':')[0];
         socketService.subscribeToTrajectory(trajectory._id, presenceUser, prevTrajectory);
@@ -448,24 +359,6 @@ const HeadlessRasterizerView: React.FC = () => {
         rightModel || 'preview'
     );
 
-    const dislLeft = leftAnalysis ? analysisDislocationsById?.[leftAnalysis] : undefined;
-    const dislRight = rightAnalysis ? analysisDislocationsById?.[rightAnalysis] : undefined;
-
-    const findDisl = (arr: any[] | undefined, timestep?: number) => {
-        return arr?.find?.((d) => Number.isFinite(d?.timestep) && d.timestep === timestep);
-    };
-
-    const dislDataLeft = findDisl(dislLeft, currentTimestep);
-    const dislDataRight = findDisl(dislRight, currentTimestep);
-
-    const metricEntries: MetricEntry[] = useMemo(() => {
-        const m = trajectoryMetrics as any;
-        return [
-            { key: 'frames.totalFrames', label: 'Frames', value: formatNumber(m?.frames?.totalFrames), icon: IoTimeOutline },
-            { key: 'files.totalSizeBytes', label: 'Size', value: formatSize(m?.files?.totalSizeBytes), icon: IoLayersOutline },
-            { key: 'structureAnalysis.totalDocs', label: 'Analyses', value: formatNumber(m?.structureAnalysis?.totalDocs), icon: IoBarChartOutline },
-        ];
-    }, [trajectoryMetrics]);
 
     const handlePlayPause = useCallback(() => setIsPlaying((p) => !p), []);
     const handleGoBack = useCallback(() => navigate('/dashboard'), [navigate]);
@@ -473,19 +366,6 @@ const HeadlessRasterizerView: React.FC = () => {
     const handleSignIn = useCallback(() => navigate('/auth/sign-in'), [navigate]);
     const handleThumbClick = useCallback((i: number) => setFrameIndex(i), []);
 
-    const toggleExposure = useCallback((exposureId: string) => {
-        setActiveExposures((prev) => ({
-            ...prev,
-            [exposureId]: !prev[exposureId]
-        }));
-    }, []);
-
-    const toggleTool = useCallback((toolId: string) => {
-        setActiveTools((prev) => ({
-            ...prev,
-            [toolId]: !prev[toolId]
-        }));
-    }, []);
 
     const playbackControlsProps: PlaybackControlsProps = useMemo(() => {
         return {
@@ -536,10 +416,10 @@ const HeadlessRasterizerView: React.FC = () => {
         }
     }, [modelsRight, currentTimestep, rightAnalysis, rightModel]);
 
-    const getThumbnailScene = useCallback((timestep: number): Scene | null =>{
+    const getThumbnailScene = useCallback((timestep: number): Scene | null => {
         const analysisId = leftAnalysis || rightAnalysis;
         const model = leftAnalysis ? leftModel : rightModel;
-        if(!analysisId) return null;
+        if (!analysisId) return null;
         const available = analyses?.[analysisId]?.frames?.[timestep]?.availableModels as string[] | undefined;
         const isReady = !!available?.includes(model);
         return {
@@ -561,25 +441,6 @@ const HeadlessRasterizerView: React.FC = () => {
     const hasNoRasterData = !isLoading && (!trajectory || ((!analysesNames || analysesNames.length === 0) && (!trajectory?.frames || trajectory.frames.length === 0)));
     const hasError = !!error;
 
-    // Generate dynamic tools list
-    const tools: RasterTool[] = useMemo(() => {
-        const t: RasterTool[] = [];
-
-        // Always available tools
-        t.push({
-            id: 'frame-particles',
-            label: 'Frame Particles',
-            isActive: !!activeTools['frame-particles']
-        });
-
-        t.push({
-            id: 'file-explorer',
-            label: 'File Explorer',
-            isActive: !!activeTools['file-explorer']
-        });
-
-        return t;
-    }, [availableExposures, activeTools]);
 
     return (
         <CursorShareLayer roomName={trajectoryId} user={cursorUser} className='raster-view-container h-max overflow-hidden' style={{ position: 'relative' }}>
@@ -594,16 +455,6 @@ const HeadlessRasterizerView: React.FC = () => {
 
             {/* {activeTools['file-explorer'] && {<TrajectoryFileExplorer onClose={() => toggleTool('file-explorer')} />*/}
 
-            {activeTools['frame-particles'] && (
-                <FrameAtomsTable
-                    trajectoryId={trajectory?._id}
-                    timestep={currentTimestep as number}
-                    pageSize={50_000}
-                    initialPage={1}
-                    decimals={3}
-                    onClose={() => toggleTool('frame-particles')}
-                />
-            )}
 
             <div className='d-flex column gap-1 raster-scenes-container p-relative w-max h-max' style={{ position: 'relative' }}>
                 {isPreloading && (
@@ -634,34 +485,22 @@ const HeadlessRasterizerView: React.FC = () => {
                     <SceneColumn
                         trajectoryId={trajectory?._id}
                         scene={canRender ? leftScene.scene ?? null : null}
-                        dislocationData={dislDataLeft}
-                        isDislocationsLoading={!!leftAnalysis && !dislDataLeft && availableExposures.some(e => activeExposures[e.exposureId] && e.results === 'dislocations.msgpack')}
-                        activeExposures={activeExposures}
-                        availableExposures={availableExposures}
                         isPlaying={isPlaying}
                         isLoading={isLoading || !canRender || leftScene.isLoading}
                         playbackControls={playbackControlsProps}
                         analysisSelect={analysisSelectLeftProps}
                         modelRail={modelRailLeftProps}
-                        configId={leftAnalysis || undefined}
-                        timestep={currentTimestep}
                         delay={0}
                     />
 
                     <SceneColumn
                         trajectoryId={trajectory?._id}
                         scene={canRender ? rightScene.scene ?? null : null}
-                        dislocationData={dislDataRight}
-                        isDislocationsLoading={!!rightAnalysis && !dislDataRight && availableExposures.some(e => activeExposures[e.exposureId] && e.results === 'dislocations.msgpack')}
-                        activeExposures={activeExposures}
-                        availableExposures={availableExposures}
                         isPlaying={isPlaying}
                         isLoading={isLoading || !canRender || rightScene.isLoading}
                         playbackControls={playbackControlsProps}
                         analysisSelect={analysisSelectRightProps}
                         modelRail={modelRailRightProps}
-                        configId={rightAnalysis || undefined}
-                        timestep={currentTimestep}
                         delay={0.1}
                     />
                 </div>
@@ -675,15 +514,22 @@ const HeadlessRasterizerView: React.FC = () => {
                     getThumbnailScene={getThumbnailScene}
                 />
 
-                <MetricsBar
-                    items={metricEntries}
-                    isLoading={isMetricsLoading}
-                    availableExposures={availableExposures}
-                    activeExposures={activeExposures}
-                    onToggleExposure={toggleExposure}
-                    tools={tools}
-                    onToggleTool={toggleTool}
-                />
+                {!isMetricsLoading && trajectoryMetrics && (
+                    <div className='d-flex items-center gap-1 raster-metadata-bar'>
+                        <span className='raster-metadata-item'>
+                            <span className='raster-metadata-label'>Frames</span>
+                            <span className='raster-metadata-value'>{formatNumber((trajectoryMetrics as any)?.frames?.totalFrames)}</span>
+                        </span>
+                        <span className='raster-metadata-item'>
+                            <span className='raster-metadata-label'>Size</span>
+                            <span className='raster-metadata-value'>{formatSize((trajectoryMetrics as any)?.files?.totalSizeBytes)}</span>
+                        </span>
+                        <span className='raster-metadata-item'>
+                            <span className='raster-metadata-label'>Analyses</span>
+                            <span className='raster-metadata-value'>{formatNumber((trajectoryMetrics as any)?.structureAnalysis?.totalDocs)}</span>
+                        </span>
+                    </div>
+                )}
             </div>
         </CursorShareLayer>
     );

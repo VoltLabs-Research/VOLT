@@ -1,6 +1,5 @@
 import type { IconType } from 'react-icons/lib';
 import { type User } from '@/types/models';
-import type { RenderableExposure } from '@/stores/plugins';
 
 export interface Scene {
     frame: number;
@@ -75,26 +74,7 @@ export interface ThumbnailsProps {
     getThumbnailScene: (timestep: number) => Scene | null;
 }
 
-export interface RasterTool {
-    id: string;
-    label: string;
-    icon?: string; // Icon name to be resolved
-    isActive: boolean;
-}
 
-export interface MetricsBarProps {
-    items: MetricEntry[];
-    isLoading: boolean;
-
-    // Dynamic exposures
-    availableExposures: RenderableExposure[];
-    activeExposures: Record<string, boolean>;
-    onToggleExposure: (exposureId: string) => void;
-
-    // Dynamic tools
-    tools: RasterTool[];
-    onToggleTool: (toolId: string) => void;
-}
 
 export interface ThumbnailItemProps {
     scene: Scene;
@@ -109,17 +89,11 @@ export interface ThumbnailItemProps {
 export interface SceneColumnProps {
     trajectoryId?: string;
     scene: Scene | null;
-    dislocationData: any;
-    isDislocationsLoading: boolean;
-    activeExposures: Record<string, boolean>;
-    availableExposures: RenderableExposure[];
     isPlaying: boolean;
     isLoading: boolean;
     playbackControls: PlaybackControlsProps;
     analysisSelect: AnalysisSelectProps;
     modelRail: ModelRailProps;
-    configId?: string;
-    timestep?: number;
     delay?: number;
 }
 

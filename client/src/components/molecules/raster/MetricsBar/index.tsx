@@ -33,22 +33,6 @@ const MetricsBar: React.FC<MetricsBarProps> = ({
                     <MetricItem key={item.key} label={item.label} value={item.value} icon={item.icon} />
                 ))}
 
-                {availableExposures.map((exposure) => {
-                    const Icon = resolveIcon(exposure.icon);
-
-                    return (
-                        <ToggleOption
-                            key={exposure.exposureId}
-                            isVisible={!!activeExposures[exposure.exposureId]}
-                            className={`d-flex items-center gap-05 raster-metric-item modifier-result ${activeExposures[exposure.exposureId] ? "active" : ""} h-max color-primary`}
-                            onToggle={() => onToggleExposure(exposure.exposureId)}
-                            label={exposure.displayName}
-                            // @ts-ignore
-                            icon={Icon}
-                        />
-                    );
-                })}
-
                 {tools.map((tool) => {
                     const Icon = resolveIcon(tool.icon);
 

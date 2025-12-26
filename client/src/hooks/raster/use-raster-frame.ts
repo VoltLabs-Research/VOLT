@@ -23,7 +23,7 @@
 import { useEffect, useState } from 'react';
 import useRasterStore from '@/stores/raster';
 
-export interface UseRasterFrameResult{
+export interface UseRasterFrameResult {
     scene: {
         frame: number;
         model: string;
@@ -49,24 +49,24 @@ const useRasterFrame = (
     useEffect(() => {
         let mounted = true;
 
-        if(!trajectoryId || timestep === undefined || !analysisId || !model){
+        if (!trajectoryId || timestep === undefined || !analysisId || !model) {
             setScene(null);
             setError('Missing required parameters');
             setIsLoading(false);
 
-            return() => {
+            return () => {
                 mounted = false;
             };
         }
 
-        const run = async() => {
+        const run = async () => {
             setIsLoading(true);
 
-            try{
+            try {
                 const data = await getRasterFrame(trajectoryId, timestep, analysisId, model);
-                if(!mounted) return;
+                if (!mounted) return;
 
-                if(data){
+                if (data) {
                     setScene({
                         frame: timestep,
                         model,
@@ -75,7 +75,7 @@ const useRasterFrame = (
                         isUnavailable: false
                     });
                     setError(null);
-                }else{
+                } else {
                     setScene({
                         frame: timestep,
                         model,
@@ -84,25 +84,25 @@ const useRasterFrame = (
                     });
                     setError(`Frame ${timestep} not available`);
                 }
-            }catch(e: any){
-                if(!mounted) return;
-                console.error('Error loading raster frame');
+            } catch (e: any) {
+                if (!mounted) return;
+                // Silently handle 404s for missing frames - this is expected
                 setScene({
                     frame: timestep,
                     model,
                     analysisId,
                     isUnavailable: true
                 });
-                setError(e?.message ?? 'Unknown error loading frame');
-            }finally{
-                if(mounted){
+                setError(e?.message ?? 'Frame not available');
+            } finally {
+                if (mounted) {
                     setIsLoading(false);
                 }
             }
         };
 
         run();
-        return() => {
+        return () => {
             mounted = false;
         };
     }, [trajectoryId, timestep, analysisId, model]);

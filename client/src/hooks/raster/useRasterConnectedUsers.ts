@@ -6,8 +6,6 @@ const useRasterConnectedUsers = (trajectoryId?: string) => {
     const [connectedUsers, setConnectedUsers] = useState<User[]>([]);
     const [isConnected, setIsConnected] = useState(() => socketService.isConnected());
 
-    console.log(`[useRasterConnectedUsers] Hook initialized - trajectoryId: ${trajectoryId}, isConnected: ${isConnected}`);
-
     // Monitor connection status
     useEffect(() => {
         setIsConnected(socketService.isConnected());
@@ -21,7 +19,7 @@ const useRasterConnectedUsers = (trajectoryId?: string) => {
     }, []);
 
     useEffect(() => {
-        if(!trajectoryId || !isConnected){
+        if (!trajectoryId || !isConnected) {
             console.log(`[useRasterConnectedUsers] Skipping subscription - trajectoryId: ${trajectoryId}, isConnected: ${isConnected}`);
             return;
         }
@@ -44,7 +42,7 @@ const useRasterConnectedUsers = (trajectoryId?: string) => {
 
         const unsubscribe = socketService.on('raster_users_update', handleUsersUpdate);
 
-        return() => {
+        return () => {
             console.log(`[useRasterConnectedUsers] Cleanup: Unsubscribing from raster: ${trajectoryId}`);
             unsubscribe();
 

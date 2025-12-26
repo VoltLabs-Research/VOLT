@@ -4,16 +4,14 @@
   border-radius: 2px;
 }
 
-.type-legend-text {
-}
 
 .connected-user-container {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: #333;
-  color: #FFF;
-  border: 2px solid #1a1a1a;
+  background-color: var(--color-surface-3);
+  color: var(--color-text-primary);
+  border: 2px solid var(--color-border);
   text-transform: uppercase;
   font-size: 12px;
   font-weight: bold;
@@ -250,9 +248,8 @@
 }
 
 .raster-scene-container {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-soft);
   border-radius: 1rem;
-  background: var(--color-surface-1);
 }
 
 /* Unify raster scene height via CSS variable for easy responsive control */
@@ -262,11 +259,6 @@
 
 .raster-scene {
   height: var(--raster-scene-height);
-}
-
-.raster-view-trajectory-playback-container,
-.btn-chip:hover {
-  background-color: var(--color-surface-3);
 }
 
 /* Barras internas */
@@ -307,7 +299,7 @@
 .raster-view-trajectory-playback-container {
   grid-column: 2;
   justify-self: center;
-  color: #dadada;
+  color: var(--color-text-secondary);
   border-radius: 5rem;
   padding: .3rem .75rem;
   gap: .5rem;
@@ -325,9 +317,8 @@
 }
 
 .raster-thumbnail-container {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-soft);
   border-radius: 1rem;
-  background-color: var(--color-surface-1);
   width: 280px;
   perspective: 1000px;
   transform-style: preserve-3d;
@@ -335,8 +326,8 @@
 }
 
 .raster-thumbnail-container.active {
-  border: 3px solid #6366F1;
-  box-shadow: 0 12px 32px rgba(99, 102, 241, 0.45);
+  border: 3px solid var(--accent-indigo);
+  box-shadow: var(--shadow-elevated);
   z-index: 2;
 }
 
@@ -425,7 +416,6 @@
 }
 
 @media (max-width: 600px) {
-  .raster-scene-topbar {}
 
   .raster-scene-topbar-center {
     min-width: unset;
@@ -553,8 +543,6 @@
   z-index: 0;
 }
 
-.raster-scene-header-views-container {
-}
 
 /* Asegura que el contenido quede arriba de la aurora */
 .raster-metric-item>* {
@@ -768,5 +756,33 @@
 
   .raster-scene-header-users-container {
     display: none;
+  }
+}
+
+.raster-metadata-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-surface-1);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+}
+
+.raster-metadata-label {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.raster-metadata-value {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .raster-metadata-item {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
   }
 }

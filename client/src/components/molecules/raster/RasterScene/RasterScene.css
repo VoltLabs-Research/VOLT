@@ -1,17 +1,9 @@
-/* Theme-aware progress colors */
+/* Theme-aware progress colors using theme.css variables */
 :root {
-    --progress-color: #7c3aed;
-    /* violet-600 for light mode */
-    --progress-track: rgba(0, 0, 0, 0.08);
+    --progress-color: var(--accent-purple);
+    --progress-track: var(--hover-bg);
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --progress-color: #a78bfa;
-        /* violet-300 for dark mode pop */
-        --progress-track: rgba(255, 255, 255, 0.14);
-    }
-}
 
 .download-loader-container {
     top: 1rem;
