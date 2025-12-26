@@ -1,4 +1,4 @@
-export interface TrajectoryGLBs{
+export interface TrajectoryGLBs {
     trajectory: string;
     defect_mesh: string;
     interface_mesh: string;
@@ -32,24 +32,30 @@ export type ColorCodingScene = {
 
 export type SceneObjectType = DefaultScene | PluginScene | ColorCodingScene;
 
-export interface ModelData{
+export interface ModelData {
     modelBounds?: null,
     glbs: null
 }
 
-export interface ModelState{
-    activeScene: SceneObjectType;
+export type ActiveScene = SceneObjectType;
+
+export interface ModelState {
+    activeScene: SceneObjectType; // Deprecated/Computed from activeScenes[0] or primary
+    activeScenes: ActiveScene[];
     activeModel: ModelData | null;
     isModelLoading: boolean;
 }
 
-export interface ModelActions{
+export interface ModelActions {
     selectModel: (glbs: any) => void;
     setGlbsWithoutLoading: (glbs: any) => void;
     reset: () => void;
     setIsModelLoading: (loading: boolean) => void;
     setModelBounds: (modelBounds: any) => void;
     setActiveScene: (scene: SceneObjectType) => void;
+    addScene: (scene: SceneObjectType) => void;
+    removeScene: (scene: SceneObjectType) => void;
+    toggleScene: (scene: SceneObjectType) => void;
 }
 
 export type ModelStore = ModelActions & ModelState;

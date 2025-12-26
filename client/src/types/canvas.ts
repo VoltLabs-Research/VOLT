@@ -39,6 +39,8 @@ export type UseGlbSceneParams = {
     referencePoint?: 'origin' | 'initial' | 'custom';
     customReference?: { x: number; y: number; z: number };
     preserveInitialTransform?: boolean;
+    onSelect?: () => void;
+    orbitControlsRef?: React.RefObject<any>;
 };
 
 export interface ExtendedSceneState extends SceneState {

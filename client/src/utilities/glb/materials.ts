@@ -9,36 +9,36 @@ export const configurePointCloudMaterial = (points: THREE.Points) => {
     fragmentShader,
     uniforms: {
       cameraPosition: { value: new THREE.Vector3() },
-      // Valores ajustados para colores más sólidos y saturados
-      ambientFactor: { value: 0.7 },    // Aumentado de 0.14 a 0.7
-      diffuseFactor:  { value: 0.6 },   // Reducido de 1.0 a 0.6
-      specularFactor: { value: 0.1 },   // Reducido drásticamente de 0.62 a 0.1
-      shininess:      { value: 50.0 },  // Reducido de 170.0 a 50.0
-      rimFactor:      { value: 0.05 },  // Reducido de 0.24 a 0.05
-      rimPower:       { value: 2.0 },   // Reducido de 3.2 a 2.0
-      pointScale:     { value: 1.0 },
+      // Values adjusted for more solid and saturated colors
+      ambientFactor: { value: 0.7 },    // Increased from 0.14 to 0.7
+      diffuseFactor: { value: 0.6 },   // Reduced from 1.0 to 0.6
+      specularFactor: { value: 0.1 },   // Drastically reduced from 0.62 to 0.1
+      shininess: { value: 50.0 },  // Reduced from 170.0 to 50.0
+      rimFactor: { value: 0.05 },  // Reduced from 0.24 to 0.05
+      rimPower: { value: 2.0 },   // Reduced from 3.2 to 2.0
+      pointScale: { value: 1.0 },
     },
     vertexColors: true,
 
-    // Sin transparencia para colores sólidos
+    // No transparency for solid colors
     transparent: false,
     opacity: 1.0,
 
-    // Z-buffer correcto
-    depthTest:  true,
+    // Correct Z-buffer
+    depthTest: true,
     depthWrite: true,
 
-    // Blending normal
+    // Normal blending
     blending: THREE.NormalBlending,
 
-    // Alpha test para descartar fragmentos
+    // Alpha test to discard fragments
     alphaTest: 0.5,
 
     dithering: false,
     premultipliedAlpha: false,
   });
 
-  // Escalado dinámico del punto
+  // Dynamic point scaling
   const numPoints = points.geometry.attributes.position.count;
   const VISUAL_ADJUSTMENT_FACTOR = 17;
   const dynamicPointScale = VISUAL_ADJUSTMENT_FACTOR / Math.cbrt(numPoints);
@@ -48,25 +48,25 @@ export const configurePointCloudMaterial = (points: THREE.Points) => {
 };
 
 export const configureGeometry = (model: THREE.Group, sliceClippingPlanes: any, setMesh: (m: THREE.Mesh) => void) => {
-    let mainGeometry: THREE.BufferGeometry | null = null;
-    model.traverse((child) => {
-        if(child instanceof THREE.Mesh && !mainGeometry){
-            mainGeometry = child.geometry;
-            child.frustumCulled = true;
-            child.visible = true;
-            child.material = getOptimizedMaterial(child.material, sliceClippingPlanes);
-            setMesh(child);
-        }
-    });
+  let mainGeometry: THREE.BufferGeometry | null = null;
+  model.traverse((child) => {
+    if (child instanceof THREE.Mesh && !mainGeometry) {
+      mainGeometry = child.geometry;
+      child.frustumCulled = true;
+      child.visible = true;
+      child.material = getOptimizedMaterial(child.material, sliceClippingPlanes);
+      setMesh(child);
+    }
+  });
 };
 
 export const isPointCloudObject = (model: THREE.Group): THREE.Points | null => {
-    let pointClouds: THREE.Points | null = null;
-    model.traverse((child) => {
-        if(child instanceof THREE.Points){
-            pointClouds = child;
-        }
-    });
+  let pointClouds: THREE.Points | null = null;
+  model.traverse((child) => {
+    if (child instanceof THREE.Points) {
+      pointClouds = child;
+    }
+  });
 
-    return pointClouds;
+  return pointClouds;
 };

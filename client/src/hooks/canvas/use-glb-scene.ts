@@ -36,11 +36,9 @@ import ModelLoader from '@/utilities/glb/scene/model-loader';
 import AnimationController from '@/utilities/glb/scene/animation-controller';
 import InteractionController from '@/utilities/glb/scene/interaction-controllers';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
-import useTrajectoryStore from '@/stores/trajectories';
-import usePlaybackStore from '@/stores/editor/playback';
-import usePluginStore from '@/stores/plugins/plugin';
 
-export default function useGlbScene(params: UseGlbSceneParams){
+
+export default function useGlbScene(params: UseGlbSceneParams) {
     const { scene, camera, gl, invalidate } = useThree();
     const logger = useLogger('use-glb-scene');
 
@@ -48,9 +46,6 @@ export default function useGlbScene(params: UseGlbSceneParams){
     const setModelBounds = useModelStore((s) => s.setModelBounds);
     const setIsModelLoading = useModelStore((s) => s.setIsModelLoading);
     const activeScene = useModelStore((state) => state.activeScene);
-    const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
-    const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const plugins = usePluginStore((state) => state.plugins);
 
     const stateRef = useRef<ExtendedSceneState>({
         model: null,
@@ -142,77 +137,65 @@ export default function useGlbScene(params: UseGlbSceneParams){
             raycaster,
             groundPlane.current,
             selectionManager,
-            transformManager
+            transformManager,
+            undefined,
+            undefined,
+            params.onSelect,
+            params.orbitControlsRef
         )
     ).current;
 
     useEffect(() => {
+        return () => {
+            resourceManager.cleanup();
+        };
+    }, [resourceManager]);
+
+    useEffect(() => {
+        interactionController.setCamera(camera);
         interactionController.attach();
         return () => interactionController.detach();
-    }, [interactionController]);
+    }, [interactionController, camera]);
 
     useFrame(() => {
         animationController.update();
     });
 
     useEffect(() => {
-        if(!gl) return;
+        if (!gl) return;
         clippingManager.setLocalClippingEnabled((params.sliceClippingPlanes?.length ?? 0) > 0);
     }, [gl, params.sliceClippingPlanes, clippingManager]);
 
     useEffect(() => {
-        if(!stateRef.current.isSetup || !stateRef.current.model) return;
+        if (!stateRef.current.isSetup || !stateRef.current.model) return;
         clippingManager.applyToModel(stateRef.current.model, params.sliceClippingPlanes);
         invalidate();
     }, [params.sliceClippingPlanes, invalidate, clippingManager]);
 
-    const getTargetUrl = useCallback((): string | null =>{
-        if(params.url !== undefined){
-            return params.url;
-        }
+    useEffect(() => {
+        modelSetupManager.updateParams(params);
+    }, [params, modelSetupManager]);
 
-        // Otherwise, derive URL from stores(legacy behavior)
-        if(!activeModel || !activeScene) return null;
+    useEffect(() => {
+        if (!stateRef.current.model) return;
+        const x = params.position?.x || 0;
+        const y = params.position?.y || 0;
+        const z = params.position?.z || 0;
 
-        if(activeScene.source === 'plugin'){
-            const { analysisId, exposureId } = activeScene;
-            const timestep = currentTimestep;
-            if(!trajectory?._id || timestep === undefined) return null;
+        transformManager.setPosition(x, y, z);
+        invalidate();
+    }, [params.position?.x, params.position?.y, params.position?.z, transformManager, invalidate, loadingState.isLoading]);
 
-            // Check if this exposure is a chart using workflow nodes
-            for(const plugin of plugins){
-                const exportNode = plugin.workflow.nodes.find((n: any) =>
-                    n.type === 'export' &&
-                    plugin.workflow.edges.some((e: any) =>
-                        e.target === n.id &&
-                        plugin.workflow.edges.some((e2: any) => e2.source === exposureId && e2.target === e.source)
-                    )
-                );
-                if((exportNode?.data?.export?.type as string) === 'line-chart') {
-                    return null;
-                }
-            }
+    // Position updates are handled by ModelSetupManager during setup or via updateParams before setup
+    // We avoid forcing setPosition here to prevent overwriting centering/grounding logic
 
-            return `/plugins/glb/${trajectory._id}/${analysisId}/${exposureId}/${timestep}`;
-        }
-
-        if(activeScene.source === 'color-coding'){
-            const { property, startValue, endValue, gradient, analysisId, exposureId } = activeScene;
-            let url = `/color-coding/${trajectory?._id}/${analysisId}/?property=${property}&startValue=${startValue}&endValue=${endValue}&gradient=${gradient}&timestep=${currentTimestep}`;
-            if(exposureId) url += `&exposureId=${exposureId}`;
-            return url;
-        }
-
-        if(activeScene.source === 'default'){
-            if(!activeModel.glbs) return null;
-            return activeModel.glbs[activeScene.sceneType];
-        }
-        return null
-    }, [params.url, activeModel, activeScene, currentTimestep, trajectory, plugins]);
+    const getTargetUrl = useCallback((): string | null => {
+        return params.url ?? null;
+    }, [params.url]);
 
     const updateScene = useCallback(() => {
         const targetUrl = getTargetUrl();
-        if(targetUrl &&
+        if (targetUrl &&
             targetUrl !== stateRef.current.lastLoadedUrl &&
             !modelLoader.isLoading()) {
             modelLoader.load(targetUrl);

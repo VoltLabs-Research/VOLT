@@ -30,8 +30,8 @@ const CameraRig: React.FC<Props> = ({ orbitRef }) => {
     }, [scene, up]);
 
     useEffect(() => {
-        // Esto solo fuerza a OrbitControls a recalcular matrices cuando cambia la cámara;
-        // no toca estado de React/Zustand, por lo que no crea loops.
+        // This only forces OrbitControls to recalculate matrices when the camera changes;
+        // does not touch React/Zustand state, so it does not create loops.
         orbitRef?.current?.update?.();
     }, [
         orbitRef,
@@ -42,8 +42,8 @@ const CameraRig: React.FC<Props> = ({ orbitRef }) => {
         oNear, oFar, oZoom
     ]);
 
-    if(type === 'orthographic'){
-        return(
+    if (type === 'orthographic') {
+        return (
             <OrthographicCamera
                 key="ortho"
                 makeDefault
@@ -59,7 +59,7 @@ const CameraRig: React.FC<Props> = ({ orbitRef }) => {
         );
     }
 
-    return(
+    return (
         <PerspectiveCamera
             key="persp"
             makeDefault
@@ -72,9 +72,7 @@ const CameraRig: React.FC<Props> = ({ orbitRef }) => {
             onUpdate={(c) => {
                 const cam = c as ThreePerspective;
                 cam.focus = pFocus;
-                // @ts-expect-error propiedades válidas en three, no tipadas en d.ts
                 cam.filmGauge = pFilmGauge;
-                // @ts-expect-error idem
                 cam.filmOffset = pFilmOffset;
                 cam.updateProjectionMatrix();
             }}

@@ -41,7 +41,7 @@ const EditorPage: React.FC = () => {
 
     // Simple individual store subscriptions
     const isModelLoading = useModelStore((s) => s.isModelLoading);
-    const activeScene = useModelStore((s) => s.activeScene);
+
     const reset = useModelStore((s) => s.reset);
     const didPreload = usePlaybackStore((s) => s.didPreload ?? false);
     const isPlaying = usePlaybackStore((s) => s.isPlaying);
@@ -88,7 +88,7 @@ const EditorPage: React.FC = () => {
                     trajectoryId={trajectory?._id || ''}
                     currentTimestep={currentTimestep}
                     analysisId={analysisConfigId || 'default'}
-                    activeScene={activeScene as any}
+
                     scale={CANVAS_CONFIG.timestepViewerDefaults.scale}
                     rotation={CANVAS_CONFIG.timestepViewerDefaults.rotation}
                     position={CANVAS_CONFIG.timestepViewerDefaults.position}

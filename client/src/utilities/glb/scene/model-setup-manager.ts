@@ -29,7 +29,7 @@ import ClippingManager from '@/utilities/glb/scene/clipping-manager';
 import { Group, Vector3 } from 'three';
 import { GLB_CONSTANTS } from '@/utilities/glb/loader';
 
-export default class ModelSetupManager{
+export default class ModelSetupManager {
     constructor(
         private state: ExtendedSceneState,
         private params: UseGlbSceneParams,
@@ -38,10 +38,14 @@ export default class ModelSetupManager{
         private transformManager: TransformationManager,
         private setModelBounds: (bounds: any) => void,
         private invalidate: () => void,
-    ){}
+    ) { }
 
-    setup(model: Group): Group{
-        if(this.state.isSetup) return model;
+    updateParams(newParams: UseGlbSceneParams): void {
+        this.params = newParams;
+    }
+
+    setup(model: Group): Group {
+        if (this.state.isSetup) return model;
 
         const bounds = calculateModelBounds({ scene: model });
         // @ts-ignore
@@ -61,13 +65,13 @@ export default class ModelSetupManager{
         return model;
     }
 
-    private setupMaterials(model: Group): void{
+    private setupMaterials(model: Group): void {
         const pointCloud = isPointCloudObject(model);
 
-        if(pointCloud){
+        if (pointCloud) {
             configurePointCloudMaterial(pointCloud);
             this.state.mesh = pointCloud;
-        }else{
+        } else {
             configureGeometry(
                 model,
                 this.params.sliceClippingPlanes,
@@ -76,12 +80,12 @@ export default class ModelSetupManager{
         }
     }
 
-    private applyTransforms(model: Group, bounds: any): void{
+    private applyTransforms(model: Group, bounds: any): void {
         const { position, rotation, scale } = this.params;
 
-        if(!this.params.useFixedReference){
+        if (!this.params.useFixedReference) {
             this.applyNormalTransforms(model, bounds, position, /*rotation,*/ scale);
-        }else{
+        } else {
             this.applyFixedReferenceTransforms(model, bounds, position, rotation, scale);
         }
 
@@ -96,7 +100,7 @@ export default class ModelSetupManager{
         position: any,
         // rotation: any,
         scale: number
-    ): void{
+    ): void {
         const optimal = calculateOptimalTransforms(bounds);
 
         model.position.set(
@@ -123,8 +127,8 @@ export default class ModelSetupManager{
         position: any,
         rotation: any,
         scale: number
-    ): void{
-        if(this.state.referenceScaleFactor == null){
+    ): void {
+        if (this.state.referenceScaleFactor == null) {
             const { scale: scaleRef } = calculateOptimalTransforms(bounds);
             this.state.referenceScaleFactor = scaleRef;
         }
@@ -144,7 +148,7 @@ export default class ModelSetupManager{
             rotation.z ?? GLB_CONSTANTS.DEFAULT_ROTATION.z
         );
 
-        if(!this.state.useFixedReference){
+        if (!this.state.useFixedReference) {
             this.referenceManager.setFixedReference(
                 model,
                 this.params.referencePoint,

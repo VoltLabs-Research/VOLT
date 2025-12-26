@@ -23,14 +23,14 @@
 import { Group, Scene, MeshBasicMaterial } from 'three';
 import type { ExtendedSceneState } from '@/types/canvas';
 
-export default class ResourceManager{
+export default class ResourceManager {
     constructor(
         private state: ExtendedSceneState,
         private scene: Scene,
         private invalidate: () => void
-    ){}
+    ) { }
 
-    cleanup(): void{
+    cleanup(): void {
         this.cleanupModels();
         this.cleanupSelection();
         this.cleanupSimulationBox();
@@ -38,23 +38,22 @@ export default class ResourceManager{
         this.invalidate();
     }
 
-    private cleanupModels(): void{
-        this.scene.children.forEach((child: any) => {
-            if(child.userData?.glbUrl && child instanceof Group){
-                this.scene.remove(child);
-            }
-        });
+    private cleanupModels(): void {
+        if (this.state.model) {
+            this.scene.remove(this.state.model);
+            this.state.model = null;
+        }
     }
 
-    private cleanupSelection(): void{
-        if(this.state.selection){
+    private cleanupSelection(): void {
+        if (this.state.selection) {
             this.scene.remove(this.state.selection.group)
             this.state.selection = null;
         }
     }
 
-    private cleanupSimulationBox(): void{
-        if(this.state.simBoxMesh){
+    private cleanupSimulationBox(): void {
+        if (this.state.simBoxMesh) {
             this.scene.remove(this.state.simBoxMesh);
             this.state.simBoxMesh.geometry.dispose();
             (this.state.simBoxMesh.material as MeshBasicMaterial).dispose();
@@ -64,7 +63,7 @@ export default class ResourceManager{
         }
     }
 
-    private resetState(): void{
+    private resetState(): void {
         this.state.model = null;
         this.state.mesh = null;
         this.state.isSetup = false;

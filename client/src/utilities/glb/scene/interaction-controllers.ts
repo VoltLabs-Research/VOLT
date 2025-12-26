@@ -26,7 +26,7 @@ import { attachPointerEvents, attachKeyboard } from '@/utilities/glb/interaction
 import SelectionManager from '@/utilities/glb/scene/selection-manager';
 import TransformationManager from '@/utilities/glb/scene/transformation-manager';
 
-export default class InteractionController{
+export default class InteractionController {
     constructor(
         private state: ExtendedSceneState,
         private camera: Camera,
@@ -38,11 +38,18 @@ export default class InteractionController{
         private transformManager: TransformationManager,
 
         private detachPointer?: () => void,
-        private detachKeyboard?: () => void
-    ){}
+        private detachKeyboard?: () => void,
+        private onSelect?: () => void,
+        private orbitControlsRef?: any
+    ) { }
 
-    attach(): void{
-        if(!this.gl.domElement) return;
+    setCamera(camera: Camera): void {
+        this.camera = camera;
+    }
+
+
+    attach(): void {
+        if (!this.gl.domElement) return;
 
         this.detachPointer = attachPointerEvents({
             glCanvas: this.gl.domElement,
@@ -54,7 +61,13 @@ export default class InteractionController{
             state: this.state,
             showSelectionBox: (hover) => this.selectionManager.show(!!hover),
             hideSelectionBox: () => this.selectionManager.hide(),
-            deselect: () => this.selectionManager.deselect()
+            deselect: () => this.selectionManager.deselect(),
+            onSelect: this.onSelect,
+            setOrbitControlsEnabled: (enabled) => {
+                if (this.orbitControlsRef?.current) {
+                    this.orbitControlsRef.current.enabled = enabled;
+                }
+            }
         });
 
         this.detachKeyboard = attachKeyboard({
@@ -66,7 +79,7 @@ export default class InteractionController{
         });
     }
 
-    detach(): void{
+    detach(): void {
         this.detachPointer?.();
         this.detachKeyboard?.();
     }

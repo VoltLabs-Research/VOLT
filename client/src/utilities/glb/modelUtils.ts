@@ -16,12 +16,12 @@ type LoadModelsParams = {
     signal?: AbortSignal;
     onProgress?: (progress: number, metrics?: { bps: number }) => void;
     /**
-     * Límite de frames a precargar. Si no se especifica, precarga todos.
-     * Útil para simulaciones grandes para evitar consumo excesivo de RAM.
+     * Limit of frames to preload. If not specified, preloads all.
+     * Useful for large simulations to avoid excessive RAM usage.
      */
     maxFramesToPreload?: number;
     /**
-     * Frame actual para precargar frames cercanos(+-maxFramesToPreload/2)
+     * Current frame index, used to preload nearby frames (+-maxFramesToPreload/2)
      */
     currentFrameIndex?: number;
 };
@@ -56,12 +56,12 @@ export const createTrajectoryGLBs = (
 
 const resolveGlbUrl = (trajectoryId: string, timestep: number, analysisId: string): string => {
     const res = createTrajectoryGLBs(trajectoryId, timestep, analysisId);
-    if(typeof res === 'string') return res as unknown as string;
-    if(res && typeof res.trajectory === 'string') return res.trajectory;
+    if (typeof res === 'string') return res as unknown as string;
+    if (res && typeof res.trajectory === 'string') return res.trajectory;
     throw new Error('Invalid GLB URL');
 };
 
-export const fetchModels = async(params: LoadModelsParams): Promise<TimelineGLBMap> =>{
+export const fetchModels = async (params: LoadModelsParams): Promise<TimelineGLBMap> => {
     const {
         trajectoryId,
         analysisId,
@@ -76,28 +76,28 @@ export const fetchModels = async(params: LoadModelsParams): Promise<TimelineGLBM
 
     const unique = Array.from(new Set(timesteps)).sort((a, b) => a - b);
 
-    // Determinar qué frames precargar
+    // Determine which frames to preload
     let framesToPreload = unique;
 
-    if(maxFramesToPreload && maxFramesToPreload > 0 && currentFrameIndex !== undefined){
-        // Precargar solo frames cercanos al actual
+    if (maxFramesToPreload && maxFramesToPreload > 0 && currentFrameIndex !== undefined) {
+        // Preload only frames close to the current one
         const halfWindow = Math.floor(maxFramesToPreload / 2);
         const startIdx = Math.max(0, currentFrameIndex - halfWindow);
         const endIdx = Math.min(unique.length, currentFrameIndex + halfWindow + 1);
         framesToPreload = unique.slice(startIdx, endIdx);
 
         console.log(`[fetchModels] Smart preload: Loading ${framesToPreload.length}/${unique.length} frames(window: ${halfWindow} frames around index ${currentFrameIndex})`);
-    }else if(unique.length > 50){
-        // Advertencia si se van a precargar muchos frames
+    } else if (unique.length > 50) {
+        // Warning if preloading many frames
         console.warn(`[fetchModels] WARNING: Preloading ${unique.length} frames. This may consume significant memory. Consider using maxFramesToPreload parameter.`);
     }
 
     const urlsByTs: TimelineGLBMap = {};
-    for(const ts of unique){
+    for (const ts of unique) {
         urlsByTs[ts] = resolveGlbUrl(trajectoryId, ts, analysisId);
     }
 
-    if(!preloadBehavior || framesToPreload.length === 0){
+    if (!preloadBehavior || framesToPreload.length === 0) {
         onProgress?.(0, { bps: 0 });
         return urlsByTs;
     }
@@ -114,7 +114,7 @@ export const fetchModels = async(params: LoadModelsParams): Promise<TimelineGLBM
     let lastSampleTime = performance.now();
     let lastSampleBytes = 0;
 
-    const emitProgress = () =>{
+    const emitProgress = () => {
         const now = performance.now();
         const dt = Math.max(1, now - lastSampleTime);
         const dBytes = totalLoaded - lastSampleBytes;
@@ -129,9 +129,9 @@ export const fetchModels = async(params: LoadModelsParams): Promise<TimelineGLBM
     };
 
     const queue = [...framesToPreload];
-    const workers = Array.from({ length: Math.min(concurrency, framesToPreload.length) }, () => (async() => {
-        while(queue.length){
-            if(signal?.aborted) return;
+    const workers = Array.from({ length: Math.min(concurrency, framesToPreload.length) }, () => (async () => {
+        while (queue.length) {
+            if (signal?.aborted) return;
             const ts = queue.shift() as number;
             const url = urlsByTs[ts];
             const res = await fetch(endpoint(url), {
@@ -143,21 +143,21 @@ export const fetchModels = async(params: LoadModelsParams): Promise<TimelineGLBM
             const reader = res.body?.getReader();
             const start = performance.now();
             let loadedThis = 0;
-            if(!reader){
+            if (!reader) {
                 completedFiles++;
                 partials.delete(ts);
                 emitProgress();
                 continue;
-            }while(true){
+            } while (true) {
                 const { done, value } = await reader.read();
-                if(done) break;
-                if(value && value.byteLength){
+                if (done) break;
+                if (value && value.byteLength) {
                     loadedThis += value.byteLength;
                     totalLoaded += value.byteLength;
-                    if(len > 0){
+                    if (len > 0) {
                         const frac = Math.min(0.95, loadedThis / len * 0.95);
                         partials.set(ts, frac);
-                    }else{
+                    } else {
                         const t = performance.now() - start;
                         const frac = Math.min(0.9, 1 - Math.exp(-t / 900));
                         partials.set(ts, frac);
@@ -183,14 +183,14 @@ export const getOptimizedMaterial = (
     clippingPlanes: THREE.Plane[]
 ): THREE.MeshStandardMaterial => {
     const key = `${baseMaterial.uuid}-${clippingPlanes.length}`;
-    if(cache.has(key)) {
+    if (cache.has(key)) {
         const cached = cache.get(key)!;
         // @ts-ignore
         cached.clippingPlanes = clippingPlanes;
         return cached;
     }
 
-    if(baseMaterial instanceof THREE.MeshStandardMaterial){
+    if (baseMaterial instanceof THREE.MeshStandardMaterial) {
         baseMaterial = new THREE.MeshStandardMaterial({
             color: baseMaterial.color,
             map: baseMaterial.map,
@@ -210,7 +210,7 @@ export const getOptimizedMaterial = (
             depthWrite: true,
             depthTest: true,
         });
-    }else if(baseMaterial instanceof THREE.MeshBasicMaterial){
+    } else if (baseMaterial instanceof THREE.MeshBasicMaterial) {
         baseMaterial = new THREE.MeshStandardMaterial({
             color: baseMaterial.color,
             map: baseMaterial.map,
@@ -223,12 +223,12 @@ export const getOptimizedMaterial = (
             depthWrite: true,
             depthTest: true,
         });
-    }else{
+    } else {
         baseMaterial = baseMaterial.clone();
     }
 
     // @ts-ignore
-    if(clippingPlanes.length > 0) baseMaterial.clippingPlanes = clippingPlanes;
+    if (clippingPlanes.length > 0) baseMaterial.clippingPlanes = clippingPlanes;
     // @ts-ignore(baseMaterial as any).clipIntersection = true;
     // @ts-ignore
     baseMaterial.precision = 'highp';

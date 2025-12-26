@@ -1,9 +1,6 @@
 import React, { useMemo, forwardRef, useImperativeHandle } from 'react';
-import CameraManager from '@/components/atoms/scene/CameraManager';
-import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
-import useGlbScene from '@/hooks/canvas/use-glb-scene';
-import { createTrajectoryGLBs } from '@/utilities/glb/modelUtils';
 import useModelStore from '@/stores/editor/model';
+import SingleModelViewer from '@/components/molecules/scene/SingleModelViewer';
 
 interface TimestepViewerProps {
     /** Trajectory ID - required for computing GLB URL */
@@ -31,48 +28,19 @@ interface TimestepViewerProps {
     enableSlice?: boolean;
     enableInstancing?: boolean;
     updateThrottle?: number;
+    /** Spacing between models when multiple are displayed */
+    spacing?: number;
 }
 
 export interface TimestepViewerRef {
     loadModel: () => void;
 }
 
-/**
- * Compute the GLB URL based on scene configuration.
- * This is the SINGLE SOURCE OF TRUTH for URL - no global store involved.
- */
-const computeGlbUrl = (
-    trajectoryId: string,
-    currentTimestep: number | undefined,
-    analysisId: string,
-    activeScene?: TimestepViewerProps['activeScene']
-): string | null => {
-    if(!trajectoryId || currentTimestep === undefined) return null;
-
-    // Handle different scene sources
-    if(activeScene?.source === 'plugin'){
-        const { analysisId: sceneAnalysisId, exposureId } = activeScene;
-        if(!sceneAnalysisId || !exposureId) return null;
-        return `/plugins/glb/${trajectoryId}/${sceneAnalysisId}/${exposureId}/${currentTimestep}`;
-    }
-
-    if(activeScene?.source === 'color-coding'){
-        const { property, startValue, endValue, gradient, analysisId: sceneAnalysisId, exposureId } = activeScene;
-        let url = `/color-coding/${trajectoryId}/${sceneAnalysisId}/?property=${property}&startValue=${startValue}&endValue=${endValue}&gradient=${gradient}&timestep=${currentTimestep}`;
-        if(exposureId) url += `&exposureId=${exposureId}`;
-        return url;
-    }
-
-    // Default: use trajectory GLB
-    const glbs = createTrajectoryGLBs(trajectoryId, currentTimestep, analysisId || 'default');
-    return glbs[activeScene?.sceneType as keyof typeof glbs] || glbs.trajectory;
-};
-
 const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     trajectoryId,
     currentTimestep,
     analysisId = 'default',
-    activeScene,
+    activeScene, // Legacy/Props override
     rotation = {},
     position = { x: 0, y: 0, z: 0 },
     scale = 1,
@@ -81,54 +49,96 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     enableSlice = true,
     enableInstancing = true,
     updateThrottle = 16,
+    spacing = 0.5
 }, ref) => {
-    const sliceClippingPlanes = useSlicingPlanes(enableSlice);
+    // Get activeScenes from store
+    const storeActiveScenes = useModelStore((state) => state.activeScenes);
 
-    // Compute URL LOCALLY - this is the key change!
-    // URL is derived from props, NOT from global stores
-    const url = useMemo(() =>
-        computeGlbUrl(trajectoryId, currentTimestep, analysisId, activeScene),
-        [trajectoryId, currentTimestep, analysisId, activeScene]
-    );
+    // Determine scenes to render: props override > store activeScenes
+    const scenesToRender = useMemo(() => {
+        if (activeScene) {
+            return [activeScene];
+        }
+        return storeActiveScenes.length > 0 ? storeActiveScenes : [];
+    }, [activeScene, storeActiveScenes]);
 
-    // Use useGlbScene with the computed URL
-    const { modelBounds, resetModel } = useGlbScene({
-        url,  // Pass URL directly - overrides store-derived URL
-        sliceClippingPlanes,
-        position: {
-            x: position.x || 0,
-            y: position.y || 0,
-            z: position.z || 0
-        },
-        rotation: {
-            x: rotation.x || 0,
-            y: rotation.y || 0,
-            z: rotation.z || 0
-        },
-        scale,
-        enableInstancing,
-        updateThrottle,
-    });
+    // Track the Y-dimensions of loaded models to position them correctly
+    const [modelHeights, setModelHeights] = React.useState<Record<number, number>>({});
+    // Track selected model index to enforce exclusive selection
+    const [selectedModelIndex, setSelectedModelIndex] = React.useState<number | null>(null);
+
+    const handleModelLoaded = React.useCallback((index: number, bounds: any) => {
+        if (bounds?.size?.y) {
+            setModelHeights(prev => {
+                // Avoid unnecessary state updates
+                if (Math.abs(prev[index] - bounds.size.y) < 0.01) return prev;
+                return { ...prev, [index]: bounds.size.y };
+            });
+        }
+    }, []);
 
     useImperativeHandle(ref, () => ({
         loadModel: () => {
-            resetModel();
+            // Trigger reload if needed, though declarative updates should handle it
+            // useGlbScene usually handles reload on URL change
         }
-    }), [resetModel]);
+    }), []);
 
-    const shouldRenderCamera = useMemo(() =>
-        autoFit && modelBounds,
-        [autoFit, modelBounds]
-    );
+    if (scenesToRender.length === 0) return null;
 
-    if(!shouldRenderCamera) return null;
+    let previousCenter = position.y || 0;
+    let previousHalfHeight = 0;
 
     return (
-        <CameraManager
-            modelBounds={modelBounds || undefined}
-            orbitControlsRef={orbitControlsRef}
-            face='ny'
-        />
+        <>
+            {scenesToRender.map((scene, index) => {
+                const height = modelHeights[index] || 12; // Default to 12
+                const halfHeight = height / 2;
+                const padding = spacing;
+
+                let currentY;
+                if (index === 0) {
+                    currentY = position.y || 0;
+                    previousHalfHeight = halfHeight;
+                } else {
+                    currentY = previousCenter + previousHalfHeight + padding + halfHeight;
+                    previousCenter = currentY;
+                    previousHalfHeight = halfHeight;
+                }
+
+                if (index === 0) {
+                    previousCenter = currentY;
+                }
+
+                const scenePosition = {
+                    ...position,
+                    y: currentY
+                };
+
+                return (
+                    <SingleModelViewer
+                        key={`${scene.source}-${scene.sceneType}-${(scene as any).exposureId || ''}-${index}`}
+                        trajectoryId={trajectoryId}
+                        currentTimestep={currentTimestep}
+                        analysisId={analysisId}
+                        sceneConfig={scene as any}
+                        rotation={rotation}
+                        position={scenePosition}
+                        scale={scale}
+                        autoFit={autoFit}
+                        orbitControlsRef={orbitControlsRef}
+                        enableSlice={enableSlice}
+                        enableInstancing={enableInstancing}
+                        updateThrottle={updateThrottle}
+                        // Only the first scene (or the one matching legacy activeScene) drives the camera
+                        isPrimary={index === scenesToRender.length - 1}
+                        onModelLoaded={(bounds) => handleModelLoaded(index, bounds)}
+                        onSelect={() => setSelectedModelIndex(index)}
+                        isSelected={selectedModelIndex === index}
+                    />
+                );
+            })}
+        </>
     );
 });
 
