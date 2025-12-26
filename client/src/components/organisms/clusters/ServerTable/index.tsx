@@ -9,41 +9,51 @@ import Button from '@/components/primitives/Button'
 import './ServerTable.css'
 import Title from '@/components/primitives/Title'
 
-export function ServerTable(){
-  const { metrics, isHistoryLoaded } = useServerMetrics()
+interface ServerTableProps {
+  clusters: any[];
+  selectedClusterId: string;
+}
+
+export function ServerTable({ clusters, selectedClusterId }: ServerTableProps) {
   const [selectedServer, setSelectedServer] = useState<any | null>(null)
 
-  const isLoading = !metrics || !isHistoryLoaded
+  const isLoading = !clusters
+  // If we want to show ALL clusters, we map over `clusters` prop.
+  // The logic inside `server` memo was transforming a single metric object into a table row format.
+  // We need to adapt it to handle an array of clusters metrics.
 
-  const server = useMemo(() => {
-    if(!metrics) return null
+  const activeClusters = useMemo(() => {
+    if (!clusters || !clusters.length) return []
 
-    // Calculate real CPU usage from cores
-    const cpuUsage = metrics.cpu.coresUsage && metrics.cpu.coresUsage.length > 0
-      ? Math.round(metrics.cpu.coresUsage.reduce((sum, val) => sum + val, 0) / metrics.cpu.coresUsage.length)
-      : Math.round(metrics.cpu.usage)
+    return clusters.map(metrics => {
+      // Calculate real CPU usage from cores
+      const cpuUsage = metrics.cpu.coresUsage && metrics.cpu.coresUsage.length > 0
+        ? Math.round(metrics.cpu.coresUsage.reduce((sum: number, val: number) => sum + val, 0) / metrics.cpu.coresUsage.length)
+        : Math.round(metrics.cpu.usage)
 
-    // Calculate uptime in days, hours, minutes
-    const uptimeSeconds = metrics.uptime;
-    const uptimeDays = Math.floor(uptimeSeconds / 86400);
-    const uptimeHours = Math.floor((uptimeSeconds % 86400) / 3600);
-    const uptimeMinutes = Math.floor((uptimeSeconds % 3600) / 60);
+      // Calculate uptime in days, hours, minutes
+      const uptimeSeconds = metrics.uptime;
+      const uptimeDays = Math.floor(uptimeSeconds / 86400);
+      const uptimeHours = Math.floor((uptimeSeconds % 86400) / 3600);
+      const uptimeMinutes = Math.floor((uptimeSeconds % 3600) / 60);
 
-    return {
-      id: 'backend-01',
-      region: 'US',
-      status: metrics.status,
-      statusColor: metrics.status === 'Healthy' ? 'text-emerald-500' : metrics.status === 'Warning' ? 'text-amber-500' : 'text-red-500',
-      cpu: cpuUsage,
-      memory: Math.round(metrics.memory.usagePercent),
-      disk: Math.round(metrics.disk.free),
-      diskUsed: Math.round(metrics.disk.used),
-      diskUsagePercent: Math.round(metrics.disk.usagePercent),
-      network: formatNetworkSpeed(metrics.network.incoming + metrics.network.outgoing),
-      uptime: uptimeDays > 0 ? `${uptimeDays}d ${uptimeHours}h` : `${uptimeHours}h ${uptimeMinutes}m`,
-      metrics // Pass full metrics for details modal
-    }
-  }, [metrics])
+      return {
+        id: metrics.clusterId || metrics.serverId, // Use clusterId or fallback
+        region: 'US', // Hardcoded or from env
+        status: metrics.status,
+        statusColor: metrics.status === 'Healthy' ? 'text-emerald-500' : metrics.status === 'Warning' ? 'text-amber-500' : 'text-red-500',
+        cpu: cpuUsage,
+        memory: Math.round(metrics.memory.usagePercent),
+        disk: Math.round(metrics.disk.free),
+        diskUsed: Math.round(metrics.disk.used),
+        diskUsagePercent: Math.round(metrics.disk.usagePercent),
+        network: formatNetworkSpeed(metrics.network.incoming + metrics.network.outgoing),
+        uptime: uptimeDays > 0 ? `${uptimeDays}d ${uptimeHours}h` : `${uptimeHours}h ${uptimeMinutes}m`,
+        analysisCount: metrics.analysisCount || 0,
+        metrics // Pass full metrics for details modal
+      }
+    })
+  }, [clusters])
 
   return (
     <>
@@ -86,6 +96,7 @@ export function ServerTable(){
                 <th>Memory</th>
                 <th>Disk</th>
                 <th>Network</th>
+                <th>Jobs</th>
                 <th>Uptime</th>
               </tr>
             </thead>
@@ -109,8 +120,15 @@ export function ServerTable(){
                     </Container>
                   </td>
                 </tr>
-              ) : server && (
-                <tr key={server.id} onClick={() => setSelectedServer(server)} style={{ cursor: 'pointer' }}>
+              ) : activeClusters.map((server) => (
+                <tr
+                  key={server.id}
+                  onClick={() => setSelectedServer(server)}
+                  style={{
+                    cursor: 'pointer',
+                    background: server.id === selectedClusterId ? 'var(--bg-tertiary)' : undefined
+                  }}
+                >
                   <td>
                     <Container className="d-flex items-center gap-05">
                       <Container className="server-table-status-dot" />
@@ -166,10 +184,13 @@ export function ServerTable(){
                     <span className="server-table-network font-size-2">{server.network}</span>
                   </td>
                   <td>
+                    <span className="server-table-network font-size-2">{server.analysisCount}</span>
+                  </td>
+                  <td>
                     <span className="server-table-uptime font-size-2 font-weight-5">{server.uptime}</span>
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </Container>

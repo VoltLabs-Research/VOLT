@@ -29,6 +29,7 @@ import logger from '@/logger';
 
 export interface IAnalysis extends Document {
     plugin: string;
+    clusterId?: string;
     config: any;
     trajectory: mongoose.Types.ObjectId;
     totalFrames?: number;
@@ -43,6 +44,10 @@ const AnalysisSchema: Schema<IAnalysis> = new Schema({
         type: String,
         required: true,
         lowercase: true
+    },
+    clusterId: {
+        type: String,
+        index: true
     },
     config: {
         type: Schema.Types.Mixed,
@@ -75,10 +80,10 @@ const AnalysisSchema: Schema<IAnalysis> = new Schema({
 AnalysisSchema.plugin(useInverseRelations);
 AnalysisSchema.plugin(useCascadeDelete);
 
-const deletePluginArtifacts = async(analysis: IAnalysis | null) => {
-    if(!analysis) return;
+const deletePluginArtifacts = async (analysis: IAnalysis | null) => {
+    if (!analysis) return;
     const analysisId = analysis._id?.toString();
-    if(!analysisId) return;
+    if (!analysisId) return;
 
     const trajectoryValue: any = analysis.trajectory;
     const trajectoryId =
@@ -86,7 +91,7 @@ const deletePluginArtifacts = async(analysis: IAnalysis | null) => {
             ? trajectoryValue
             : (trajectoryValue?._id?.toString?.() ?? trajectoryValue?.toString?.());
 
-    if(!trajectoryId) return;
+    if (!trajectoryId) return;
 
     const prefix = [
         'plugins',
@@ -94,27 +99,27 @@ const deletePluginArtifacts = async(analysis: IAnalysis | null) => {
         `analysis-${analysisId}`
     ].join('/');
 
-    try{
+    try {
         await storage.deleteByPrefix(SYS_BUCKETS.PLUGINS, prefix);
-    }catch(err){
+    } catch (err) {
         logger.error(`[Analysis] Failed to delete plugin artifacts for analysis ${analysisId}: ${err}`);
     }
 };
 
-AnalysisSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
+AnalysisSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
     await deletePluginArtifacts(this as unknown as IAnalysis);
     next();
 });
 
-AnalysisSchema.pre('findOneAndDelete', { document: false, query: true }, async function(next) {
+AnalysisSchema.pre('findOneAndDelete', { document: false, query: true }, async function (next) {
     const doc = await this.model.findOne(this.getFilter());
-    if(doc){
+    if (doc) {
         await deletePluginArtifacts(doc as unknown as IAnalysis);
     }
     next();
 });
 
-AnalysisSchema.pre('deleteMany', { document: false, query: true }, async function(next) {
+AnalysisSchema.pre('deleteMany', { document: false, query: true }, async function (next) {
     const docs = await this.model.find(this.getFilter());
     await Promise.all(docs.map((doc: any) => deletePluginArtifacts(doc)));
     next();

@@ -35,17 +35,17 @@ const execPromise = promisify(exec);
 
 type ServerStatus = 'Healthy' | 'Warning' | 'Critical';
 
-interface NetworkCheck{
+interface NetworkCheck {
     bytes: { received: number; sent: number };
     timestamp: number;
 };
 
-interface CPUTimes{
+interface CPUTimes {
     idle: number;
     total: number;
 };
 
-interface DiskIOCheck{
+interface DiskIOCheck {
     reads: number;
     writes: number;
     timestamp: number;
@@ -53,7 +53,7 @@ interface DiskIOCheck{
     writeSectors: number;
 };
 
-export default class MetricsCollector{
+export default class MetricsCollector {
     private lastNetworkCheck: NetworkCheck | null = null;
     private lastCPUTimes: CPUTimes[] | null = null;
     private lastDiskIO: DiskIOCheck | null = null;
@@ -63,7 +63,7 @@ export default class MetricsCollector{
     constructor(
         metricsKey: string = 'metrics-history',
         ttl: number = 24 * 60 * 60
-    ){
+    ) {
         this.redisMetricsKey = useClusterId(metricsKey);
         this.metricsTTL = ttl;
     }
@@ -71,13 +71,13 @@ export default class MetricsCollector{
     /**
      * Get CPU usage percentage
      */
-    private getCPUUsage(): number{
+    private getCPUUsage(): number {
         const cpus = os.cpus();
         let totalIdle = 0;
         let totalTick = 0;
 
         cpus.forEach((cpu) => {
-            for(const type in cpu.times){
+            for (const type in cpu.times) {
                 totalTick += (cpu.times as any)[type];
             }
             totalIdle += cpu.times.idle;
@@ -93,14 +93,14 @@ export default class MetricsCollector{
     /**
      * Get individual CPU core usage percentages
      */
-    private getCPUCoresUsage(): number[]{
+    private getCPUCoresUsage(): number[] {
         const cpus = os.cpus();
 
         // Calculate current time for each core
         // TODO: Duplicated code
         const currentTimes = cpus.map((cpu) => {
             let total = 0;
-            for(const type in cpu.times){
+            for (const type in cpu.times) {
                 total += (cpu.times as any)[type];
             }
             return {
@@ -110,7 +110,7 @@ export default class MetricsCollector{
         });
 
         // If no previous data, initialize and return zeros
-        if(!this.lastCPUTimes){
+        if (!this.lastCPUTimes) {
             this.lastCPUTimes = currentTimes;
             return cpus.map(() => 0);
         }
@@ -122,7 +122,7 @@ export default class MetricsCollector{
             const idleDelta = current.idle - last.idle;
             const totalDelta = current.total - last.total;
 
-            if(totalDelta === 0) return 0;
+            if (totalDelta === 0) return 0;
 
             const usage = 100 - (100 * idleDelta / totalDelta);
             return Math.min(100, Math.max(0, Math.round(usage)));
@@ -137,7 +137,7 @@ export default class MetricsCollector{
     /**
      * Get memory metrics
      */
-    private getMemoryMetrics(){
+    private getMemoryMetrics() {
         const total = os.totalmem();
         const free = os.freemem();
         const used = total - free;
@@ -155,8 +155,8 @@ export default class MetricsCollector{
     /**
      * Get disk metrics
      */
-    private async getDiskMetrics(){
-        try{
+    private async getDiskMetrics() {
+        try {
             const { stdout } = await execPromise('df -B1 / | tail -1');
             const parts = stdout.trim().split(/\s+/);
 
@@ -171,7 +171,7 @@ export default class MetricsCollector{
                 free: Math.round((available / (1024 ** 3)) * 100) / 100,
                 usagePercent
             };
-        }catch(error: any){
+        } catch (error: any) {
             logger.error(`Error getting disk metrics: ${error}`);
             return { total: 0, used: 0, free: 0, usagePercent: 0 };
         }
@@ -180,7 +180,7 @@ export default class MetricsCollector{
     /**
      * Ping a host and return latency in ms
      */
-    private async pingHost(host: string): Promise<number>{
+    private async pingHost(host: string): Promise<number> {
         return new Promise((resolve) => {
             const start = Date.now();
             const protocol = host.startsWith('https') ? https : http;
@@ -208,7 +208,7 @@ export default class MetricsCollector{
     /**
      * Get response time from multiple sources
      */
-    private async getResponseTimes(){
+    private async getResponseTimes() {
         const mongooseLatency = await this.pingMongoose();
         const redisLatency = await this.pingRedis();
         const minioLatency = await this.pingMinIO();
@@ -223,37 +223,37 @@ export default class MetricsCollector{
         }
     }
 
-    private async pingMongoose(): Promise<number>{
-        try{
+    private async pingMongoose(): Promise<number> {
+        try {
             const start = Date.now();
             await mongoose.connection.db?.admin().ping();
             return Date.now() - start;
-        }catch{
+        } catch {
             return 0;
         }
     }
 
-    private async pingMinIO(): Promise<number>{
-        try{
+    private async pingMinIO(): Promise<number> {
+        try {
             const { getMinioClient } = await import('@/config/minio');
             const client = getMinioClient();
             const start = Date.now();
             // List buckets is a lightweight operation to test MinIO connectivity
             await client.listBuckets();
             return Date.now() - start;
-        }catch{
+        } catch {
             return 0;
         }
     }
 
-    private async pingRedis(): Promise<number>{
-        try{
-            if(!redis) return 0;
+    private async pingRedis(): Promise<number> {
+        try {
+            if (!redis) return 0;
             // TODO: Duplicated code
             const start = Date.now();
             await redis.ping();
             return Date.now() - start;
-        }catch{
+        } catch {
             return 0;
         }
     }
@@ -261,8 +261,8 @@ export default class MetricsCollector{
     /**
      * Get network metrics from /proc/net/dev
      */
-    private async getNetworkMetrics(){
-        try{
+    private async getNetworkMetrics() {
+        try {
             const data = await fs.readFile('/proc/net/dev', 'utf8');
             const lines = data.split('\n');
 
@@ -270,15 +270,15 @@ export default class MetricsCollector{
             let totalTx = 0;
 
             // Parse network interfaces(skip header lines)
-            for(let i = 2; i < lines.length; i++){
+            for (let i = 2; i < lines.length; i++) {
                 const line = lines[i].trim();
-                if(!line) continue;
+                if (!line) continue;
 
                 const parts = line.split(/\s+/);
                 const iface = parts[0].replace(':', '');
 
                 // Skip loopback interface
-                if(iface === 'lo') continue;
+                if (iface === 'lo') continue;
 
                 // Bytes received is column 1, bytes transmitted is column 9
                 const rxBytes = parseInt(parts[1]) || 0;
@@ -289,7 +289,7 @@ export default class MetricsCollector{
             }
 
             const currentTime = Date.now();
-            if(!this.lastNetworkCheck){
+            if (!this.lastNetworkCheck) {
                 // First call, initialize
                 this.lastNetworkCheck = {
                     bytes: {
@@ -331,7 +331,7 @@ export default class MetricsCollector{
                 outgoing: Math.round(outgoing * 10) / 10,
                 total: Math.round((incoming + outgoing) * 10) / 10
             };
-        }catch(error: any){
+        } catch (error: any) {
             logger.error(`Error reading network stats: ${error}`);
             // Fallback to minimal values
             return {
@@ -345,10 +345,10 @@ export default class MetricsCollector{
     /**
      * Get MongoDB metrics
      */
-    private async getMongoDBMetrics(){
-        try{
+    private async getMongoDBMetrics() {
+        try {
             const db = mongoose.connection.db;
-            if(!db) return null;
+            if (!db) return null;
 
             const adminDb = db.admin();
             const serverStatus = await adminDb.serverStatus();
@@ -363,12 +363,12 @@ export default class MetricsCollector{
                 ? Math.round(readLatency.latency / readLatency.ops / 1000)
                 : 0;
 
-            return{
+            return {
                 connections: serverStatus.connections?.current || 0,
                 queries,
                 latency: Math.max(0, latencyMs)
             };
-        }catch(error: any){
+        } catch (error: any) {
             logger.error(`Error collecting MongoDB metrics: ${error}`);
             return null;
         }
@@ -377,8 +377,8 @@ export default class MetricsCollector{
     /**
      * Get disk operations metrics
      */
-    private async getDiskOperations(){
-        try{
+    private async getDiskOperations() {
+        try {
             const data = await fs.readFile('/proc/diskstats', 'utf8');
             const lines = data.split('\n');
             const currentTime = Date.now();
@@ -388,17 +388,17 @@ export default class MetricsCollector{
             let totalReadSectors = 0;
             let totalWriteSectors = 0;
 
-            for(const line of lines){
+            for (const line of lines) {
                 const parts = line.trim().split(/\s+/);
-                if(parts.length < 14) continue;
+                if (parts.length < 14) continue;
 
                 const deviceName = parts[2];
 
                 // Only physical disks(not partitions)
-                if(!/^(sd[a-z]|nvme\d+n\d+|vd[a-z]|hd[a-z])$/.test(deviceName)) continue;
+                if (!/^(sd[a-z]|nvme\d+n\d+|vd[a-z]|hd[a-z])$/.test(deviceName)) continue;
 
                 // Skip ALL partitions(nvme0n1p1, sda1, vda2, etc.)
-                if(/\d+$/.test(deviceName) && !/^nvme\d+n\d+$/.test(deviceName)) continue;
+                if (/\d+$/.test(deviceName) && !/^nvme\d+n\d+$/.test(deviceName)) continue;
 
                 // /proc/diskstats columns:
                 // [3] reads completed
@@ -412,7 +412,7 @@ export default class MetricsCollector{
             }
 
             // First call: initialize baseline
-            if(!this.lastDiskIO){
+            if (!this.lastDiskIO) {
                 this.lastDiskIO = {
                     reads: totalReadOps,
                     writes: totalWriteOps,
@@ -430,7 +430,7 @@ export default class MetricsCollector{
             const timeDiff = (currentTime - this.lastDiskIO.timestamp) / 1000;
 
             // Prevent division by zero
-            if(timeDiff <= 0){
+            if (timeDiff <= 0) {
                 return { read: 0, write: 0, speed: 0 };
             }
 
@@ -468,7 +468,7 @@ export default class MetricsCollector{
                 readIOPS,
                 writeIOPS
             };
-        }catch(error: any){
+        } catch (error: any) {
             logger.error(`Error reading disk operations: ${error}`);
             return {
                 read: 0,
@@ -483,17 +483,17 @@ export default class MetricsCollector{
     /**
      * Determine server status based on metrics
      */
-    private determineStatus(cpu: number, memory: number, disk: number): ServerStatus{
-        if(cpu >= 90 || memory >= 90 || disk >= 90) return 'Critical';
-        if(cpu >= 75 || memory >= 75 || disk >= 85) return 'Warning';
+    private determineStatus(cpu: number, memory: number, disk: number): ServerStatus {
+        if (cpu >= 90 || memory >= 90 || disk >= 90) return 'Critical';
+        if (cpu >= 75 || memory >= 75 || disk >= 85) return 'Warning';
         return 'Healthy';
     }
 
     /**
      * Collect all metrics
      */
-    async collect(){
-        try{
+    async collect() {
+        try {
             const cpu = {
                 usage: this.getCPUUsage(),
                 cores: os.cpus().length,
@@ -528,7 +528,7 @@ export default class MetricsCollector{
             // Save to Redis for real-time access
             await this.saveToRedis(metrics);
             return metrics;
-        }catch(error: any){
+        } catch (error: any) {
             logger.error(`Error collecting metrics: ${error}`);
             throw error;
         }
@@ -537,9 +537,9 @@ export default class MetricsCollector{
     /**
      * Save metrics to Redis with timestamp as score in sorted set
      */
-    private async saveToRedis(metrics: any){
-        try{
-            if(!redis){
+    private async saveToRedis(metrics: any) {
+        try {
+            if (!redis) {
                 logger.warn('Redis not available, skipping Redis storage');
                 return;
             }
@@ -549,7 +549,7 @@ export default class MetricsCollector{
 
             // Add to sorted set with timestamp as score
             await redis.zadd(this.redisMetricsKey, timestamp, metricsJson);
-        }catch(error: any){
+        } catch (error: any) {
             logger.error(`Error saving to Redis: ${error}`);
         }
     }
@@ -557,9 +557,9 @@ export default class MetricsCollector{
     /**
      * Get metrics from Redis for the last N hours
      */
-    async getMetricsFromRedis(hours: number = 24): Promise<any[]>{
-        try{
-            if(!redis){
+    async getMetricsFromRedis(hours: number = 24): Promise<any[]> {
+        try {
+            if (!redis) {
                 logger.warn('Redis not available');
                 return [];
             }
@@ -574,7 +574,7 @@ export default class MetricsCollector{
             );
 
             return metricsData.map((data: string) => JSON.parse(data));
-        }catch(error: any){
+        } catch (error: any) {
             logger.error(`Error reading from Redis: ${error}`);
             return [];
         }
@@ -583,9 +583,9 @@ export default class MetricsCollector{
     /**
      * Get latest metrics from Redis
      */
-    async getLatestFromRedis(): Promise<any | null>{
-        try{
-            if(!redis){
+    async getLatestFromRedis(): Promise<any | null> {
+        try {
+            if (!redis) {
                 logger.warn('Redis not available');
                 return null;
             }
@@ -593,12 +593,12 @@ export default class MetricsCollector{
             // Get the most recent metrics(highest score)
             const metrics = await redis.zrevrange(this.redisMetricsKey, 0, 0);
 
-            if(metrics && metrics.length > 0){
+            if (metrics && metrics.length > 0) {
                 return JSON.parse(metrics[0]);
             }
 
             return null;
-        }catch(error: any){
+        } catch (error: any) {
             logger.error(`Error reading latest from Redis: ${error}`);
             return null;
         }
@@ -607,20 +607,86 @@ export default class MetricsCollector{
     /**
      * Clean old metrics from Redis(older than TTL)
      */
-    async cleanOldMetrics(): Promise<number>{
-        try{
-            if(!redis) return 0;
+    async cleanOldMetrics(): Promise<number> {
+        try {
+            if (!redis) return 0;
             // Calculate cutoff timestamp(current time - TTL)
             const cutoffTime = Date.now() - (this.metricsTTL * 1000);
             // Remove all metrics with score(timestamp) less than cutoffTime
             const removed = await redis.zremrangebyscore(this.redisMetricsKey, '-inf', cutoffTime);
-            if(removed > 0){
+            if (removed > 0) {
                 logger.info(`Cleaned ${removed} old metrics from Redis`);
             }
             return removed;
-        }catch(error: any){
+        } catch (error: any) {
             logger.error(`Error cleaning old metrics: ${error}`);
             return 0;
+        }
+    }
+
+    /**
+     * Get processed analysis counts per cluster from DB aggregation
+     */
+    async getClusterAnalysisCounts(): Promise<Record<string, number>> {
+        try {
+            const { default: Analysis } = await import('@/models/analysis');
+            const aggregation = await Analysis.aggregate([
+                { $group: { _id: '$clusterId', count: { $sum: 1 } } }
+            ]);
+
+            const counts: Record<string, number> = {};
+            aggregation.forEach((item: any) => {
+                const clusterId = item._id || 'main-cluster'; // Handle legacy records as 'unknown' or 'default'
+                counts[clusterId] = item.count;
+            });
+            return counts;
+        } catch (error) {
+            logger.error(`Error aggregating analysis counts: ${error}`);
+            return {};
+        }
+    }
+
+    /**
+     * Get aggregated metrics from all active clusters
+     */
+    async getAllClustersMetrics(): Promise<any[]> {
+        try {
+            if (!redis) return [];
+
+            // Get list of active clusters
+            const clusters = await redis.smembers('active_clusters');
+            if (!clusters.length) return [];
+
+            const analysisCounts = await this.getClusterAnalysisCounts();
+            const allMetrics: any[] = [];
+
+            for (const clusterId of clusters) {
+                // Construct the key for this cluster's metrics history
+                const clusterMetricsKey = `${clusterId}/metrics-history`; // Replicate internal logic of `useClusterId` manually or by context
+                // Or better: construct a transient collector or just query redis directly
+                // Logic from `saveToRedis` uses `this.redisMetricsKey` which is `useClusterId(metricsKey)`
+
+                // Fetch latest metric for this cluster
+                const metricsData = await redis.zrevrange(clusterMetricsKey, 0, 0);
+                if (metricsData && metricsData.length > 0) {
+                    const metric = JSON.parse(metricsData[0]);
+
+                    // Inject analysis count
+                    metric.analysisCount = analysisCounts[clusterId] || 0;
+                    // Inject actual clusterId just in case
+                    metric.clusterId = clusterId;
+
+                    allMetrics.push(metric);
+                } else {
+                    // Cluster is active but has no current metrics? 
+                    // Maybe we push a skeleton or just skip
+                }
+            }
+
+            return allMetrics;
+        } catch (error) {
+            logger.error(`Error collecting multi-cluster metrics: ${error}`);
+            return [];
         }
     }
 }

@@ -18,6 +18,8 @@ import {
     getSSHImportQueue
 } from '@/queues';
 
+import { redis } from '@/config/redis';
+
 const CLUSTER_ID = process.env.CLUSTER_ID || 'default';
 
 const main = async () => {
@@ -26,6 +28,12 @@ const main = async () => {
     try {
         await initializeRedis();
         logger.info('[Worker] Redis initialized');
+
+        // Register this worker in the active clusters set
+        if (redis) {
+            await redis.sadd('active_clusters', CLUSTER_ID);
+        }
+        logger.info(`[Worker] Registered ${CLUSTER_ID} to active_clusters`);
 
         await initializeMinio();
         logger.info('[Worker] MinIO initialized');

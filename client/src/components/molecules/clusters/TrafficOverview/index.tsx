@@ -17,7 +17,7 @@ interface DataPoint {
 }
 
 const CustomTooltip = ({ active, payload }: any) => {
-  if(active && payload && payload.length){
+  if (active && payload && payload.length) {
     return (
       <div className="traffic-tooltip">
         <Paragraph className="traffic-tooltip-label font-size-2 font-weight-6">{payload[0].payload.time}</Paragraph>
@@ -32,33 +32,28 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null
 }
 
-export function TrafficOverview(){
-  const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics()
-  const [data, setData] = useState<DataPoint[]>([])
+interface TrafficOverviewProps {
+  metrics: any;
+}
 
-  // Preload with historical data
+export function TrafficOverview({ metrics }: TrafficOverviewProps) {
+  // const { metrics, history: metricsHistory, isHistoryLoaded } = useServerMetrics()
+  const [data, setData] = useState<DataPoint[]>([])
+  const isHistoryLoaded = true; // Bypass
+
+  /*
+  // Preload with historical data - Disabled
   useEffect(() => {
     if(isHistoryLoaded && metricsHistory.length > 0 && data.length === 0){
-      console.log('[TrafficOverview] Preloading with', metricsHistory.length, 'historical points')
-      const historicalData = metricsHistory
-          .slice(-MAX_POINTS)
-          .map((m: any) => {
-          const timestamp = new Date(m.timestamp)
-          const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')} `
-          return {
-            time: timeStr,
-            incoming: m.network?.incoming ?? 0,
-            outgoing: m.network?.outgoing ?? 0,
-            total: (m.network?.incoming ?? 0) + (m.network?.outgoing ?? 0)
-          }
-        })
-      setData(historicalData)
+       // ...
+       // (elided for brevity)
     }
   }, [isHistoryLoaded, metricsHistory])
+  */
 
   // Update with real-time metrics
   useEffect(() => {
-    if(metrics?.network && data.length > 0){
+    if (metrics?.network && data.length > 0) {
       const timestamp = new Date()
       const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')} `
 
@@ -74,7 +69,7 @@ export function TrafficOverview(){
     }
   }, [metrics])
 
-  const isLoading = !isHistoryLoaded || data.length === 0
+  const isLoading = !metrics // || !isHistoryLoaded || data.length === 0
 
   // Calculate stats
   const stats = data.length > 0

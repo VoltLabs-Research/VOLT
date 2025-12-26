@@ -55,17 +55,32 @@ let metricsCollector: MetricsCollector;
 let collectionInterval: NodeJS.Timeout;
 let cleanupInterval: NodeJS.Timeout;
 
-const shutodwn = async() => {
+const shutodwn = async () => {
     // Stop metrics collection
-    if(collectionInterval) clearInterval(collectionInterval);
-    if(cleanupInterval) clearInterval(cleanupInterval);
+    if (collectionInterval) clearInterval(collectionInterval);
+    if (cleanupInterval) clearInterval(cleanupInterval);
 
     await gateway.close();
     process.exit(0);
 };
 
-server.listen(SERVER_PORT as number, SERVER_HOST, async() => {
+server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
     await initializeRedis();
+    const { redis } = await import('@/config/redis');
+
+    // Register the main server as a cluster node
+    // Using a distinct ID or 'main-cluster' if CLUSTER_ID is not set 
+    // (though server handles API requests, it also reports metrics)
+    const serverClusterId = process.env.CLUSTER_ID || 'main-cluster';
+    try {
+        if (redis) {
+            await redis.sadd('active_clusters', serverClusterId);
+            logger.info(`[Server] Registered ${serverClusterId} to active_clusters`);
+        }
+    } catch (err) {
+        logger.error(`[Server] Failed to register to active_clusters: ${err}`);
+    }
+
     await initializeMinio();
     await mongoConnector();
 
@@ -73,20 +88,20 @@ server.listen(SERVER_PORT as number, SERVER_HOST, async() => {
     metricsCollector = new MetricsCollector();
 
     // Start collecting metrics every second in background
-    collectionInterval = setInterval(async() => {
-        try{
+    collectionInterval = setInterval(async () => {
+        try {
             await metricsCollector.collect();
-        }catch(error){
+        } catch (error) {
             logger.error(`[Server] Metrics collection error: ${error}`);
         }
     }, 1000);
 
     // Clean old metrics from Redis every 24 hours
-    cleanupInterval = setInterval(async() => {
-        try{
+    cleanupInterval = setInterval(async () => {
+        try {
             await metricsCollector.cleanOldMetrics();
             logger.info('[Server] Cleaned old metrics from Redis');
-        }catch(error){
+        } catch (error) {
             logger.error(`[Server] Metrics cleanup error: ${error}`);
         }
     }, 24 * 60 * 60 * 1000);
