@@ -1,6 +1,6 @@
 .is-editing {
     cursor: text;
-    border-radius: 0;
+    border-radius: var(--radius-xs);
     width: fit-content;
-    outline: 1px solid #0284c7; 
+    outline: 1px solid var(--accent-blue);
 }

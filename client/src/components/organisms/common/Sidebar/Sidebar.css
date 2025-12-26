@@ -9,14 +9,14 @@
 
 .editor-sidebar-container {
     background-color: rgba(29, 29, 29, 0.1) !important;
-    border-radius: 1rem;
+    border-radius: var(--radius-lg);
     padding: 0;
     gap: 0;
 
 }
 
 .editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-container {
-    border-radius: 1rem;
+    border-radius: var(--radius-lg);
 }
 
 /** COLLAPSED **/
@@ -40,7 +40,7 @@
     width: 40px;
     min-height: 40px;
     min-width: 40px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     padding: 0;
     display: grid;
     place-items: center;
@@ -82,7 +82,7 @@
 
 .editor-sidebar-toggle-btn {
     z-index: 5;
-    border-radius: 9999px;
+    border-radius: var(--radius-full);
     background: transparent;
     color: #dadada;
     transition: background 120ms ease, border-color 120ms ease;
@@ -108,7 +108,7 @@
 
 .editor-sidebar-options-container {
     background-color: rgba(49, 49, 49, 0.2);
-    border-radius: 5rem;
+    border-radius: var(--radius-full);
 }
 
 @media screen and (max-width: 768px) {
@@ -138,7 +138,7 @@
 
     .editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-container,
     .editor-sidebar-container {
-        border-radius: 0;
+        border-radius: var(--radius-xs);
     }
 
     .editor-sidebar-wrapper[data-collapsed="true"] .editor-sidebar-container {

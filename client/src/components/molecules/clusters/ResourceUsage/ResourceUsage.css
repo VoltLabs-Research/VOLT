@@ -3,7 +3,7 @@
   background: var(--card);
   border: 1px solid var(--border);
   backdrop-filter: blur(80px);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
 }
 
@@ -50,7 +50,7 @@
 .resource-usage-bar {
   height: 0.5rem;
   background-color: var(--muted);
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   overflow: visible;
   padding: 0.125rem;
 }

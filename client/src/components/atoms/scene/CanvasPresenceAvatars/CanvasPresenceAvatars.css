@@ -7,7 +7,7 @@
 
 .canvas-presence-avatars {
     gap: -0.75rem;
-    border-radius: 2rem;
+    border-radius: var(--radius-2xl);
 }
 
 .canvas-presence-avatar-wrapper {
@@ -70,7 +70,7 @@
     background: rgba(0, 0, 0, 0.8);
     color: white;
     padding: 0.5rem 0.75rem;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-xs);
     font-size: 0.8rem;
     white-space: nowrap;
     opacity: 0;

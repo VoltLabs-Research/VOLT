@@ -1,8 +1,15 @@
 .volt-popover {
-    border-radius: 0.5rem;
+    border-radius: var(--radius-lg);
     min-width: 180px;
     max-width: 320px;
     z-index: 9999;
+
+    /* Apple-style glassmorphism */
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-elevated);
 
     /* Override any utility classes (like d-flex) when closed */
     &:not(:popover-open) {

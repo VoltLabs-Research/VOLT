@@ -48,7 +48,7 @@
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     border: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.12));
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding: 6px;
     z-index: 50;
     min-width: 220px;
@@ -63,7 +63,7 @@
     color: var(--color-text-primary, #fff);
     border: none;
     cursor: pointer;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
 }
 
 .raster-scene-download-menu button[disabled] {

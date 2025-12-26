@@ -4,7 +4,7 @@
 }
 
 .editor-top-centered-options-container .editor-sidebar-scene-option-icon-container:hover {
-    background-color: #212121;
+    background-color: var(--color-surface-2);
 }
 
 .editor-top-centered-options-container {

@@ -10,7 +10,7 @@
 
 .create-container-modal {
     background: var(--bg-secondary);
-    border-radius: 16px;
+    border-radius: var(--radius-lg);
     max-width: 600px;
     max-height: 90vh;
     border: 1px solid var(--border-color);
@@ -33,7 +33,7 @@
     border: none;
     color: var(--text-secondary);
     padding: 4px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
 }
 
 .close-btn:hover {
@@ -54,7 +54,7 @@
 .form-group input,
 .team-select {
     padding: 10px 12px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     background: var(--bg-tertiary);
     color: var(--text-primary);
@@ -79,7 +79,7 @@
     border: 1px solid var(--border-color);
     color: var(--primary-color);
     padding: 4px 10px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     font-size: 12px;
 }
 
@@ -90,7 +90,7 @@
 .env-row input {
     flex: 1;
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     background: var(--bg-tertiary);
     color: var(--text-primary);
@@ -99,7 +99,7 @@
 .port-row {
     background: var(--bg-tertiary);
     padding: 8px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
 }
 
 .port-input {
@@ -114,7 +114,7 @@
 .port-input input {
     width: 100%;
     padding: 6px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     border: 1px solid var(--border-color);
     background: var(--bg-secondary);
     color: var(--text-primary);
@@ -130,7 +130,7 @@
     border: none;
     color: #f44336;
     padding: 8px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
 }
 
 .remove-btn:hover {
@@ -144,7 +144,7 @@
 
 .cancel-btn {
     padding: 10px 20px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border-color);
     background: transparent;
     color: var(--text-primary);
@@ -156,7 +156,7 @@
 
 .submit-btn {
     padding: 10px 20px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     border: none;
     background: var(--primary-color);
     color: white;

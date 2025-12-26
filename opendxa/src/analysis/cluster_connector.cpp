@@ -191,11 +191,10 @@ Cluster* ClusterConnector::getParentGrain(Cluster* c){
 }
 
 void ClusterConnector::connectClusters(){
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, _context.atomCount()), [&](const tbb::blocked_range<size_t>& r){
-        for(size_t atomIndex = r.begin(); atomIndex != r.end(); ++atomIndex){
-            processAtomConnections(atomIndex);
-        }
-    });
+    // Process atoms sequentially for deterministic cluster transition creation order
+    for(size_t atomIndex = 0; atomIndex < _context.atomCount(); ++atomIndex){
+        processAtomConnections(atomIndex);
+    }
     spdlog::info("Number of cluster transitions: {}", _sa.clusterGraph().clusterTransitions().size());
 }
 

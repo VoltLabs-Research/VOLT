@@ -1,6 +1,6 @@
 .dashboard-stats-container {
     border-radius: 1rem;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-border-soft);
     box-shadow: var(--shadow-glass);
     background: var(--card);
     backdrop-filter: blur(20px);
@@ -8,9 +8,7 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.dashboard-stats-wrapper {
-    /* Container for stats */
-}
+.dashboard-stats-wrapper {}
 
 /* Flex-based layout for better sidebar compatibility */
 .dashboard-body-left-container {
@@ -78,7 +76,7 @@
 }
 
 .dashboard-stat-container:not(:last-child) {
-    border-right: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border-soft);
 }
 
 .dashboard-stat-analytic-container {
@@ -210,7 +208,7 @@ body.jobs-history-expanded {
     max-width: 380px;
 }
 
-.scene-preview-container{
+.scene-preview-container {
     border: 1px solid var(--color-border-soft);
 }
 

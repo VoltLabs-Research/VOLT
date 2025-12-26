@@ -2,7 +2,7 @@
 .storage-usage-container {
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(80px);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   padding: 1.5rem;
   max-height: 400px;
 
@@ -39,7 +39,7 @@
 .storage-tooltip {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 0.5rem;
+  border-radius: var(--radius-sm);
   padding: 0.75rem;
   box-shadow: var(--shadow-lg);
 }

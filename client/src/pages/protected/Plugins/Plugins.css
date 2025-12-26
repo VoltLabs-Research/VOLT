@@ -1,10 +1,8 @@
 .plugin-name-link {
-    color: var(--color-primary, #3b82f6);
     transition: color 0.2s ease;
 }
 
 .plugin-name-link:hover {
-    color: var(--color-primary-hover, #2563eb);
     text-decoration: underline;
 }
 

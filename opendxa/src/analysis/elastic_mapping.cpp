@@ -106,42 +106,37 @@ void ElasticMapping::generateTessellationEdges(){
 void ElasticMapping::assignVerticesToClusters(){
     const size_t vertex_count = _vertexClusters.size();
     
+    // Initial assignment (can be parallel since each vertex is independent)
     #pragma omp parallel for schedule(static) 
     for(size_t i = 0; i < vertex_count; ++i){
         _vertexClusters[i] = structureAnalysis().atomCluster(int(i));
     }
 
+    // Propagate cluster assignments sequentially for determinism
     bool changed;
     do{
-        std::atomic<bool> any_changed{false};
-        
-        tbb::parallel_for(tbb::blocked_range<int>(0, static_cast<int>(vertex_count)), [&](const tbb::blocked_range<int>& r){
-            bool local_changed = false;
-            for(int idx = r.begin(); idx != r.end(); ++idx){
-                if(clusterOfVertex(idx)->id != 0) continue;
+        changed = false;
+        for(size_t idx = 0; idx < vertex_count; ++idx){
+            if(clusterOfVertex(idx)->id != 0) continue;
 
-                for(auto* e = _vertexEdges[idx].first; e; e = e->nextLeavingEdge){
-                    if(clusterOfVertex(e->vertex2)->id != 0){
-                        _vertexClusters[idx] = _vertexClusters[e->vertex2];
-                        local_changed = true;
-                        break;
-                    }
-                }
-
-                if(clusterOfVertex(idx)->id != 0) continue;
-
-                for(auto* e = _vertexEdges[idx].second; e; e = e->nextArrivingEdge){
-                    if(clusterOfVertex(e->vertex1)->id != 0){
-                        _vertexClusters[idx] = _vertexClusters[e->vertex1];
-                        local_changed = true;
-                        break;
-                    }
+            for(auto* e = _vertexEdges[idx].first; e; e = e->nextLeavingEdge){
+                if(clusterOfVertex(e->vertex2)->id != 0){
+                    _vertexClusters[idx] = _vertexClusters[e->vertex2];
+                    changed = true;
+                    break;
                 }
             }
-            if(local_changed) any_changed = true;
-        });
-        
-        changed = any_changed.load();
+
+            if(clusterOfVertex(idx)->id != 0) continue;
+
+            for(auto* e = _vertexEdges[idx].second; e; e = e->nextArrivingEdge){
+                if(clusterOfVertex(e->vertex1)->id != 0){
+                    _vertexClusters[idx] = _vertexClusters[e->vertex1];
+                    changed = true;
+                    break;
+                }
+            }
+        }
     }while(changed);
 }
 

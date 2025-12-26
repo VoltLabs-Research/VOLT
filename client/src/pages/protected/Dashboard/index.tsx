@@ -28,7 +28,7 @@ const DashboardPage: React.FC = memo(() => {
     const setBackgroundColor = useEnvironmentConfigStore((state) => state.setBackgroundColor);
 
     const firstTrajectoryId = useMemo(() => {
-        if(!trajectories.length) return;
+        if (!trajectories.length) return;
         return trajectories[0]._id;
     }, [trajectories?.[0]?._id]);
 
@@ -49,7 +49,7 @@ const DashboardPage: React.FC = memo(() => {
 
     // When processing, show last completed trajectory. Otherwise show first trajectory
     const displayTrajectory = useMemo(() => {
-        if(isProcessing && lastCompletedTrajectory){
+        if (isProcessing && lastCompletedTrajectory) {
             return lastCompletedTrajectory;
         }
 
@@ -64,12 +64,12 @@ const DashboardPage: React.FC = memo(() => {
 
     // Update background color in environment config when theme changes
     useEffect(() => {
-        if(typeof document === 'undefined') return;
+        if (typeof document === 'undefined') return;
         const root = document.documentElement;
         const update = () => {
             const isLightTheme = root.getAttribute('data-theme') === 'light';
             setIsLight(isLightTheme);
-            setBackgroundColor(isLightTheme ? '#f8f8f8' : '#1E1E1E');
+            setBackgroundColor(isLightTheme ? '#f8f8f8' : '#0a0a0a');
         };
         update();
         const observer = new MutationObserver(update);
@@ -112,7 +112,7 @@ const DashboardPage: React.FC = memo(() => {
                         <Scene3D
                             showGizmo={false}
                             ref={scene3DRef}
-                            background='#000000'
+                            background='#0a0a0a'
                             showCanvasGrid={false}
                             orbitControlsConfig={{
                                 enablePan: false,

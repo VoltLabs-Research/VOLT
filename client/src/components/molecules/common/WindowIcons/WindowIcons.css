@@ -8,7 +8,7 @@
     left: .8rem;
     background-color: rgba(255, 255, 255, .5);
     padding: .5rem 1rem;
-    border-radius: 5rem;
+    border-radius: var(--radius-full);
 }
 
 .window-icon-circle {

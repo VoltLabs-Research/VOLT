@@ -7,7 +7,7 @@
     padding: 0.4rem 0.65rem;
     background: var(--gray-100);
     border: 1px solid var(--gray-200);
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     font-size: 0.7rem;
     color: var(--gray-700);
     transition: all 0.15s ease;
@@ -26,14 +26,14 @@
     padding: 0.5rem;
     background: var(--gray-50);
     border: 1px solid var(--gray-200);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
 }
 
 .schema-template-item {
     padding: 0.35rem 0.6rem;
     background: var(--primary-50);
     border: 1px solid var(--primary-200);
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     font-size: 0.7rem;
     color: var(--primary-700);
     transition: all 0.15s ease;
@@ -47,6 +47,6 @@
     padding: 0.5rem 0.75rem;
     background: var(--green-50);
     border: 1px solid var(--green-200);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     color: var(--green-600);
 }

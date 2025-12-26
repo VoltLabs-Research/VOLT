@@ -14,21 +14,18 @@
 
 /* Error state */
 .form-input-container.form-input-error {
-    border-color: #9f1239 !important;
-    /* Rose 800 - Dark Cherry */
+    border-color: var(--status-error) !important;
 }
 
 .form-input-container.form-input-error:focus,
 .form-input-container.form-input-error:has(.form-input:focus) {
-    border-color: #be123c !important;
-    /* Rose 700 */
-    box-shadow: 0 0 0 4px rgba(190, 18, 60, 0.1);
+    border-color: var(--status-error) !important;
+    box-shadow: 0 0 0 4px var(--status-error-bg);
 }
 
 .form-error-message {
     margin-top: 0.25rem;
-    color: #f43f5e;
-    /* Rose 500 */
+    color: var(--status-error);
     animation: fadeInError 0.2s ease-in-out;
 }
 
@@ -47,34 +44,31 @@
 /* Auth variant - matches SignIn form styles */
 .form-input-container.form-input-auth {
     background-color: transparent;
-    border: 1px solid #27272a;
-    /* var(--color-zinc-800) equivalent */
-    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
     height: 3.25rem;
 }
 
 .form-input-container.form-input-auth:hover {
-    border-color: #3f3f46;
-    /* var(--color-zinc-700) equivalent */
+    border-color: var(--color-border-strong);
 }
 
 .form-input-container.form-input-auth:has(.form-input:focus),
 .form-input-container.form-input-auth:focus-within {
-    border-color: #ffffff;
-    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
-    background-color: #18181b;
-    /* var(--color-zinc-900) equivalent */
+    border-color: var(--color-contrast-high);
+    box-shadow: 0 0 0 4px var(--hover-bg);
+    background-color: var(--color-surface-2);
 }
 
 /* Auth variant error state */
 .form-input-container.form-input-auth.form-input-error {
-    border-color: #9f1239 !important;
+    border-color: var(--status-error) !important;
 }
 
 .form-input-container.form-input-auth.form-input-error:focus,
 .form-input-container.form-input-auth.form-input-error:has(.form-input:focus) {
-    border-color: #be123c !important;
-    box-shadow: 0 0 0 4px rgba(190, 18, 60, 0.1);
+    border-color: var(--status-error) !important;
+    box-shadow: 0 0 0 4px var(--status-error-bg);
 }
 
 .form-input-label {

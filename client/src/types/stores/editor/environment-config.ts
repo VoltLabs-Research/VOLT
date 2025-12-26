@@ -1,18 +1,18 @@
-export interface FogConfig{
+export interface FogConfig {
     enableFog: boolean;
     fogColor: string;
     fogNear: number;
     fogFar: number;
 }
 
-export interface EnvironmentConfigState extends FogConfig{
+export interface EnvironmentConfigState extends FogConfig {
     backgroundColor: string;
     backgroundType: 'color' | 'environment';
     environmentPreset: string;
     toneMappingExposure: number;
 }
 
-export interface EnvironmentConfigActions{
+export interface EnvironmentConfigActions {
     setBackgroundColor: (color: string) => void;
     setBackgroundType: (type: 'color' | 'environment') => void;
     setEnvironmentPreset: (preset: string) => void;
@@ -24,7 +24,7 @@ export interface EnvironmentConfigActions{
 export type EnvironmentConfigStore = EnvironmentConfigState & EnvironmentConfigActions;
 
 export const ENVIRONMENT_DEFAULT_CONFIG: EnvironmentConfigState = {
-    backgroundColor: '#000',
+    backgroundColor: '#0a0a0a',
     backgroundType: 'color',
     environmentPreset: 'studio',
     enableFog: false,

@@ -20,7 +20,6 @@ public:
 		_network(new DislocationNetwork(clusterGraph)),
 		_unusedCircuit(nullptr),
 		_markCoreAtoms(markCoreAtoms),
-		_edgeStartIndex(0),
 		_maxBurgersCircuitSize(maxTrialCircuitSize),
 		_maxExtendedBurgersCircuitSize(maxTrialCircuitSize + maxCircuitElongation){}
 
@@ -111,7 +110,6 @@ private:
 	std::mt19937 rng;
 	std::vector<DislocationNode*> _danglingNodes;
 	BurgersCircuit* _unusedCircuit;
-	mutable size_t _edgeStartIndex;  
     mutable std::mutex _builderMutex;
 };
 

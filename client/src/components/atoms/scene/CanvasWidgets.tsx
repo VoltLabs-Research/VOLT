@@ -28,7 +28,6 @@ import TrajectoryVisibilityStatusFloatIcon from '@/components/atoms/scene/Trajec
 import SceneTopCenteredOptions from '@/components/atoms/scene/SceneTopCenteredOptions';
 import SlicePlane from '@/components/organisms/scene/SlicePlane';
 import TimestepControls from '@/components/organisms/scene/TimestepControls';
-import AnalysisConfigSelection from '@/components/molecules/common/AnalysisConfigSelection';
 import ModifierConfiguration from '@/components/organisms/form/ModifierConfiguration';
 import ChartViewer from '@/components/organisms/common/ChartViewer';
 import Draggable from '@/components/atoms/common/Draggable';
@@ -103,7 +102,6 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
             <EditorSidebar />
             <TrajectoryVisibilityStatusFloatIcon />
             <SceneTopCenteredOptions scene3DRef={scene3DRef} />
-            <AnalysisConfigSelection />
             {(trajectory && currentTimestep !== undefined) && <TimestepControls />}
 
             {isChart && showChart && (

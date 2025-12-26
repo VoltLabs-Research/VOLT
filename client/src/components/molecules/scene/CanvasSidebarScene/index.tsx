@@ -303,7 +303,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                                     {isExpanded ? <MdKeyboardArrowDown /> : <MdKeyboardArrowRight />}
                                 </i>
                                 <Paragraph
-                                    className={`analysis-section-title font-size-2 ${section.isCurrentAnalysis ? 'color-accent' : 'color-secondary'}`}
+                                    className={`analysis-section-title font-size-2 ${section.isCurrentAnalysis ? 'color-gray' : 'color-secondary'}`}
                                 >
                                     {section.pluginName}
                                     {section.isCurrentAnalysis && ' (Active)'}

@@ -30,7 +30,7 @@ const useEnvironmentConfigStore = create<EnvironmentConfigStore>()(persist((set)
         set(ENVIRONMENT_DEFAULT_CONFIG);
     }
 }), {
-    name: 'environment-config-storage',
+    name: 'environment-config-storage-v2',
     partialize: (state) => ({
         backgroundColor: state.backgroundColor,
         backgroundType: state.backgroundType,

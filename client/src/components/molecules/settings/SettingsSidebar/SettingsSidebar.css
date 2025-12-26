@@ -15,7 +15,7 @@
 .back-button {
     width: 40px;
     height: 40px;
-    border-radius: 0.8rem;
+    border-radius: var(--radius-md);
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
     transition: all 0.2s ease;
@@ -43,7 +43,7 @@
     transition: all 0.2s ease;
     text-align: left;
     margin: 0 0.5rem;
-    border-radius: 0.8rem;
+    border-radius: var(--radius-md);
 }
 
 .nav-item:hover {

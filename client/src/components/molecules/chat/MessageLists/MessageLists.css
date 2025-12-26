@@ -19,7 +19,7 @@
 
 .chat-box-messages-container::-webkit-scrollbar-thumb {
     background: var(--color-border-soft);
-    border-radius: 3px;
+    border-radius: var(--radius-xs);
 }
 
 .chat-box-messages-container::-webkit-scrollbar-thumb:hover {

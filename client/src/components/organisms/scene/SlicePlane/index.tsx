@@ -25,6 +25,7 @@ import useConfigurationStore from '@/stores/editor/configuration';
 import Container from '@/components/primitives/Container';
 import './SlicePlane.css';
 import Title from '@/components/primitives/Title';
+import FormField from '@/components/molecules/form/FormField';
 
 const SlicePlane = () => {
     const slicePlaneConfig = useConfigurationStore((state) => state.slicePlaneConfig);
@@ -36,7 +37,7 @@ const SlicePlane = () => {
     };
 
     return(
-        <EditorWidget className='slice-plane-container overflow-hidden' draggable={false}>
+        <EditorWidget className='slice-plane-container d-flex column overflow-hidden' draggable={false}>
             <Container className='d-flex content-between items-center'>
                 <Title className='font-weight-5-5'>Slice Modifier</Title>
             </Container>
@@ -80,16 +81,12 @@ const SlicePlane = () => {
                             </Container>
                         </Container>
                     ))}
-                    <Container>
+                    <Container className='d-flex content-between items-center'>
                         <span>Reverse Orientation</span>
-                        <Container className='d-flex items-center gap-1 slice-plane-normal-input-container'>
-                            <input
-                                type='checkbox'
-                                className='slice-plane-toggle-extended'
-                                checked={slicePlaneConfig.reverseOrientation}
-                                onChange={(e) => setSlicePlaneConfig({ reverseOrientation: e.currentTarget.checked })}
-                            />
-                        </Container>
+                        <FormField
+                            fieldType='checkbox'
+                            fieldValue={slicePlaneConfig.reverseOrientation}
+                            onFieldChange={(_, v) => setSlicePlaneConfig({ reverseOrientation: v })} />
                     </Container>
                 </Container>
             </Container>

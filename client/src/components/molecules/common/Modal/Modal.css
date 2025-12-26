@@ -1,6 +1,6 @@
 dialog.volt-modal {
     border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     padding: 0;
     width: 100%;
     max-width: 500px;
@@ -61,7 +61,7 @@ dialog.volt-modal[open]::backdrop {
     background: transparent;
     border: none;
     padding: 4px;
-    border-radius: 4px;
+    border-radius: var(--radius-xs);
     transition: color 0.15s, background 0.15s;
 }
 

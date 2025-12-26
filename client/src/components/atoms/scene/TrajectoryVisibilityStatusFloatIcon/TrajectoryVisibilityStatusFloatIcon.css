@@ -12,9 +12,14 @@
     right: 1rem;
     width: auto;
     padding: 1rem;
-    border-radius: 5rem;
+    border-radius: var(--radius-full);
     top: 2rem;
     z-index: 200;
+}
+
+.trajectory-share-status-container .share-btn{
+    height: unset !important;
+    width: unset !important;
 }
 
 .trajectory-share-status-container.is-disabled{

@@ -43,6 +43,7 @@ const TrajectoryVisibilityStatusFloatIcon = () => {
             <Button
                 variant='ghost'
                 intent='neutral'
+                className='share-btn'
                 iconOnly
                 onClick={onToggle}
                 title={isPublic ? 'Public · Click to make Private' : 'Private · Click to make Public'}

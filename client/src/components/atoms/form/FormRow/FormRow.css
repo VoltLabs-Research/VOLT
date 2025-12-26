@@ -1,6 +1,6 @@
-.form-control-value{
+.form-control-value {
     font-size: 11px;
-    color: #8a8a8a;
+    color: var(--color-text-muted);
     min-width: 40px;
     text-align: right;
 }

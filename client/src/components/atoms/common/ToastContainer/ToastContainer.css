@@ -9,7 +9,7 @@
 /** TODO: Unused? **/
 .toast {
   padding: 1rem;
-  border-radius: 0.75rem;
+  border-radius: var(--radius-md);
   backdrop-filter: blur(5px);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-elevated);
@@ -30,23 +30,20 @@
   }
 }
 
-.toast-error .toast-icon {
-  color: #ef4444;
+.toast-error .toast-icon-error {
+  color: var(--status-error);
 }
 
-.toast-success .toast-icon {
-  color: #22c55e;
+.toast-icon-success {
+  color: var(--status-success);
 }
 
-.toast-warning .toast-icon {
-  color: #f59e0b;
+.toast-icon-warning {
+  color: var(--status-warning);
 }
 
-.toast-info .toast-icon {
-  color: #3b82f6;
-}
-
-.toast-icon {
+.toast-icon-info {
+  color: var(--status-info);
 }
 
 .toast-message {
@@ -61,11 +58,11 @@
   background: transparent;
   border: none;
   transition: all 0.2s;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-sm);
 }
 
 .toast-close-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--hover-bg);
   color: var(--color-text-primary);
 }
 

@@ -1,13 +1,13 @@
 .editor-sidebar-option-container.selected {
-    background-color: rgba(49, 49, 49, 0.8);
+    background-color: var(--color-surface-3);
 }
 
 .editor-sidebar-option-container:not(.selected):hover {
-    background-color: rgba(49, 49, 49, 0.3);
+    background-color: var(--hover-bg);
 }
 
 .editor-sidebar-option-container {
-    border-radius: 5rem;
+    border-radius: var(--radius-full);
     width: 48%;
     transition: .1s;
     height: 45px;

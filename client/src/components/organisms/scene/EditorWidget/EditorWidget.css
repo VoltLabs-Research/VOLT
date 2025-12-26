@@ -1,11 +1,10 @@
 .editor-floating-container {
     background-color: rgba(30, 30, 30, 0.3);
-    border: 1px solid #212121;
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     z-index: 200;
     padding: 1rem;
-    border-radius: 1rem;
+    border-radius: var(--radius-lg);
     color: #cacaca;
     line-height: 1.6rem;
     width: 400px;

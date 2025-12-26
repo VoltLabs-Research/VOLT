@@ -15,7 +15,7 @@
   width: 3px;
   height: 1.5rem;
   background: var(--muted-foreground);
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
 }
 
 .server-table-title {
@@ -30,7 +30,7 @@
   border: 1px solid var(--border);
   background: transparent;
   color: var(--foreground);
-  border-radius: 0.375rem;
+  border-radius: var(--radius-xs);
   transition: background-color 0.2s;
 }
 
@@ -41,7 +41,7 @@
 .server-table-icon-btn {
   width: 2rem;
   height: 2rem;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-xs);
   transition: background-color 0.2s;
   background: none;
   border: none;
@@ -100,7 +100,7 @@
 .server-table-status-dot {
   width: 0.5rem;
   height: 0.5rem;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   background-color: rgba(52, 199, 89, 1);
 }
 
@@ -110,7 +110,7 @@
 
 .server-table-region-badge {
   padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
+  border-radius: var(--radius-xs);
   background-color: var(--secondary);
   display: inline-block;
 }

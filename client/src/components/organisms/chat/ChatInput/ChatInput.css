@@ -14,7 +14,7 @@
     background: var(--color-surface-1);
     backdrop-filter: blur(20px);
     border: 1px solid var(--color-border-soft);
-    border-radius: 1.5rem;
+    border-radius: var(--radius-xl);
     padding: 0.75rem 1rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow:
@@ -32,7 +32,7 @@
     background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
     opacity: 0;
     transition: opacity 0.2s ease;
-    border-radius: 1.5rem;
+    border-radius: var(--radius-xl);
     z-index: -1;
 }
 
@@ -160,7 +160,7 @@
     background: var(--color-surface-2);
     overflow: scroll;
     border: 1px solid var(--color-border-soft);
-    border-radius: 0.8rem;
+    border-radius: var(--radius-md);
     margin: 0.5rem 1rem;
     padding: 1rem;
     animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -186,7 +186,7 @@
 .chat-clear-files {
     background: var(--color-surface-3);
     border: 1px solid var(--color-border-soft);
-    border-radius: 0.4rem;
+    border-radius: var(--radius-xs);
     padding: 0.25rem;
     transition: all 0.2s ease;
 }
@@ -205,7 +205,7 @@
 .chat-file-preview-item {
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-soft);
-    border-radius: 0.6rem;
+    border-radius: var(--radius-sm);
     padding: 0.5rem;
     transition: all 0.2s ease;
 }
@@ -218,7 +218,7 @@
 .chat-file-preview-image {
     height: 80px;
     object-fit: cover;
-    border-radius: 0.4rem;
+    border-radius: var(--radius-xs);
     margin-bottom: 0.5rem;
 }
 

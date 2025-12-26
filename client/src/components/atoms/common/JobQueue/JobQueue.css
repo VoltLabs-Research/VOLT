@@ -5,7 +5,7 @@
 .job-icon-container {
     min-width: 1.8rem;
     min-height: 1.8rem;
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     display: grid;
     place-items: center;
     background: color-mix(in srgb, var(--color-text-primary) 5%, transparent);
@@ -14,7 +14,7 @@
 
 .job-status-badge {
     padding: .45rem .9rem;
-    border-radius: 999px;
+    border-radius: var(--radius-full);
     font-size: 12px;
     text-transform: capitalize;
     background: color-mix(in srgb, var(--color-text-primary) 4%, transparent);
@@ -31,144 +31,143 @@
 }
 
 /* Completed */
-/* Softer, pastel-ish accents with subtle tints */
 .job-container.completed path {
-    stroke: #2ecc71;
+    stroke: var(--status-success);
 }
 
 .job-container.completed .job-icon-container {
-    border-color: rgba(46, 204, 113, .35);
+    border-color: var(--status-success-border);
 }
 
 .job-container.completed .job-status-badge,
 .job-container.completed .job-icon-container,
 .job-container.completed .job-message {
-    color: #9ae6b4;
+    color: var(--status-success);
 }
 
 .job-container.completed .job-status-badge,
 .job-container.completed .job-icon-container {
-    background-color: rgba(46, 204, 113, .08);
+    background-color: var(--status-success-bg);
 }
 
 /* Running */
 .job-container.running path {
-    stroke: #60a5fa;
+    stroke: var(--status-info);
 }
 
 .job-container.running .job-icon-container {
-    border-color: rgba(96, 165, 250, .35);
+    border-color: var(--status-info-border);
 }
 
 .job-container.running .job-status-badge,
 .job-container.running .job-icon-container,
 .job-container.running .job-message {
-    color: #bfdbfe;
+    color: var(--status-info);
 }
 
 .job-container.running .job-status-badge,
 .job-container.running .job-icon-container {
-    background-color: rgba(96, 165, 250, .08);
+    background-color: var(--status-info-bg);
 }
 
 /* Queued */
 .job-container.queued path {
-    stroke: #fbbf24;
+    stroke: var(--status-warning);
 }
 
 .job-container.queued .job-icon-container {
-    border-color: rgba(251, 191, 36, .35);
+    border-color: var(--status-warning-border);
 }
 
 .job-container.queued .job-status-badge,
 .job-container.queued .job-icon-container,
 .job-container.queued .job-message {
-    color: #fde68a;
+    color: var(--status-warning);
 }
 
 .job-container.queued .job-status-badge,
 .job-container.queued .job-icon-container {
-    background-color: rgba(251, 191, 36, .08);
+    background-color: var(--status-warning-bg);
 }
 
 /* Retrying */
 .job-container.retrying path {
-    stroke: #fb923c;
+    stroke: var(--accent-orange);
 }
 
 .job-container.retrying .job-icon-container {
-    border-color: rgba(251, 146, 60, .35);
+    border-color: color-mix(in srgb, var(--accent-orange) 35%, transparent);
 }
 
 .job-container.retrying .job-status-badge,
 .job-container.retrying .job-icon-container,
 .job-container.retrying .job-message {
-    color: #fed7aa;
+    color: var(--accent-orange);
 }
 
 .job-container.retrying .job-status-badge,
 .job-container.retrying .job-icon-container {
-    background-color: rgba(251, 146, 60, .08);
+    background-color: color-mix(in srgb, var(--accent-orange) 8%, transparent);
 }
 
 /* Queued After Failure */
 .job-container.queued_after_failure path {
-    stroke: #ef4444;
+    stroke: var(--status-error);
 }
 
 .job-container.queued_after_failure .job-icon-container {
-    border-color: rgba(239, 68, 68, .35);
+    border-color: var(--status-error-border);
 }
 
 .job-container.queued_after_failure .job-status-badge,
 .job-container.queued_after_failure .job-icon-container,
 .job-container.queued_after_failure .job-message {
-    color: #fecaca;
+    color: var(--status-error);
 }
 
 .job-container.queued_after_failure .job-status-badge,
 .job-container.queued_after_failure .job-icon-container {
-    background-color: rgba(239, 68, 68, .08);
+    background-color: var(--status-error-bg);
 }
 
 /* Failed */
 .job-container.failed path {
-    stroke: #f87171;
+    stroke: var(--status-error);
 }
 
 .job-container.failed .job-icon-container {
-    border-color: rgba(248, 113, 113, .35);
+    border-color: var(--status-error-border);
 }
 
 .job-container.failed .job-status-badge,
 .job-container.failed .job-icon-container,
 .job-container.failed .job-message {
-    color: #fecaca;
+    color: var(--status-error);
 }
 
 .job-container.failed .job-status-badge,
 .job-container.failed .job-icon-container {
-    background-color: rgba(248, 113, 113, .08);
+    background-color: var(--status-error-bg);
 }
 
 /* Unknown */
 .job-container.unknown path {
-    stroke: #9ca3af;
+    stroke: var(--color-text-muted);
 }
 
 .job-container.unknown .job-icon-container {
-    border-color: rgba(156, 163, 175, .35);
+    border-color: var(--color-border);
 }
 
 .job-container.unknown .job-status-badge,
 .job-container.unknown .job-icon-container,
 .job-container.unknown .job-message {
-    color: #e5e7eb;
+    color: var(--color-text-secondary);
 }
 
 .job-container.unknown .job-status-badge,
 .job-container.unknown .job-icon-container {
-    background-color: rgba(156, 163, 175, .08);
+    background-color: var(--hover-bg);
 }
 
 .job-progress {

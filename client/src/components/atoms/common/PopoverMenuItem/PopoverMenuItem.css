@@ -2,7 +2,7 @@
     padding: 0.5rem 0.75rem;
     background: none;
     border: none;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-xs);
     text-align: left;
     transition: all 0.15s ease;
     white-space: nowrap;
@@ -22,16 +22,10 @@
 }
 
 .popover-menu-item.danger:hover:not(.disabled) {
-    background-color: rgba(239, 68, 68, 0.1);
+    background-color: var(--status-error-bg);
 }
 
 .popover-menu-item.disabled {
     opacity: 0.5;
     cursor: not-allowed;
-}
-
-.popover-menu-item-icon {
-}
-
-.popover-menu-item-label {
 }

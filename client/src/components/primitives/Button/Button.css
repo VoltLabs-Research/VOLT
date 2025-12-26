@@ -49,15 +49,15 @@
 
 /* --- Shapes --- */
 .button.shape-rounded {
-    border-radius: 0.5rem;
+    border-radius: var(--radius-md);
 }
 
 .button.shape-pill {
-    border-radius: 9999px;
+    border-radius: var(--radius-full);
 }
 
 .button.shape-square {
-    border-radius: 0;
+    border-radius: var(--radius-xs);
 }
 
 .button.shape-circle {

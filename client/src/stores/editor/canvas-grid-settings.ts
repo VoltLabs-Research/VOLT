@@ -43,8 +43,8 @@ const INITIAL: CanvasGridSettingsState = {
     sectionThickness: 1,
     fadeDistance: 100,
     fadeStrength: 2,
-    sectionColor: '#2b2b2b',
-    cellColor: '#3d3d3d',
+    sectionColor: '#262626',
+    cellColor: '#161616',
     position: [0, 0, 0],
     rotation: [Math.PI / 2, 0, 0]
 };
@@ -68,7 +68,7 @@ const useCanvasGridSettings = create<CanvasGridSettingsStore>()(
             reset: () => set(() => INITIAL)
         }),
         {
-            name: 'canvas-grid-settings',
+            name: 'canvas-grid-settings-v2',
             partialize: (s) => ({
                 enabled: s.enabled,
                 infiniteGrid: s.infiniteGrid,

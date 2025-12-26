@@ -74,71 +74,48 @@ private:
 			cells.push_back(cell);
 		}
 
-		tbb::mutex space_filling_mutex;
-		std::atomic<int> numSolidCells{0};
+        // Process cells sequentially for deterministic classification order
+		for(size_t i = 0; i < cells.size(); ++i){
+            auto cell = cells[i];
+            
+            bool isFilled = false;
+            if(_tessellation.isValidCell(cell)){
+                if (auto res = _tessellation.alphaTest(cell, _alpha)){
+                    isFilled = *res;
+                }else{
+                    // sliver test
+                    int f = 0;
+                    for(; f < 4; ++f){
+                        auto nbr = _tessellation.mirrorFacet(cell, f).first;
+                        if(!_tessellation.isValidCell(nbr)) break;
+                        auto nr = _tessellation.alphaTest(nbr, _alpha);
+                        if(nr.has_value() && !nr.value()) break;
+                    }
+                    if (f == 4) isFilled = true;
+                }
+            }
 
-		tbb::parallel_for(
-			tbb::blocked_range<size_t>(0, cells.size()),
-			[&](const tbb::blocked_range<size_t>& range) {
-				int localSpaceFillingRegion = -2;
-				int localSolidCells = 0;
+            if(!isFilled){
+                _tessellation.setUserField(cell, 0);
+            }else{
+                _tessellation.setUserField(cell, determineCellRegion(cell));
+            }
 
-				for(size_t i = range.begin(); i != range.end(); ++i){
-					auto cell = cells[i];
-					
-					bool isFilled = false;
-					if(_tessellation.isValidCell(cell)){
-						if (auto res = _tessellation.alphaTest(cell, _alpha)){
-							isFilled = *res;
-						}else{
-							// sliver test
-							int f = 0;
-							for(; f < 4; ++f){
-								auto nbr = _tessellation.mirrorFacet(cell, f).first;
-								if(!_tessellation.isValidCell(nbr)) break;
-								auto nr = _tessellation.alphaTest(nbr, _alpha);
-								if(nr.has_value() && !nr.value()) break;
-							}
-							if (f == 4) isFilled = true;
-						}
-					}
+            if(!_tessellation.isGhostCell(cell)){
+                int reg = _tessellation.getUserField(cell);
+                if(_spaceFillingRegion == -2){
+                    _spaceFillingRegion = reg;
+                }else if(_spaceFillingRegion != reg){
+                    _spaceFillingRegion = -1;
+                }
+            }
 
-					if(!isFilled){
-						_tessellation.setUserField(cell, 0);
-					}else{
-						_tessellation.setUserField(cell, determineCellRegion(cell));
-					}
-
-					if(!_tessellation.isGhostCell(cell)){
-						int reg = _tessellation.getUserField(cell);
-						if(localSpaceFillingRegion == -2){
-							localSpaceFillingRegion = reg;
-						}else if(localSpaceFillingRegion != reg){
-							localSpaceFillingRegion = -1;
-						}
-					}
-
-					if(_tessellation.getUserField(cell) != 0 && !_tessellation.isGhostCell(cell)){
-						localSolidCells++;
-					}else{
-						_tessellation.setCellIndex(cell, -1);
-					}
-				}
-
-				{
-					tbb::mutex::scoped_lock lock(space_filling_mutex);
-					if(_spaceFillingRegion == -2){
-						_spaceFillingRegion = localSpaceFillingRegion;
-					}else if(localSpaceFillingRegion != -2 && _spaceFillingRegion != localSpaceFillingRegion){
-						_spaceFillingRegion = -1;
-					}
-				}
-
-				numSolidCells += localSolidCells;
-			}
-		);
-
-		_numSolidCells = numSolidCells.load();
+            if(_tessellation.getUserField(cell) != 0 && !_tessellation.isGhostCell(cell)){
+                _numSolidCells++;
+            }else{
+                _tessellation.setCellIndex(cell, -1);
+            }
+        }
 		
 		int cellIndex = 0;
 		for(auto cell : cells){
@@ -156,55 +133,47 @@ private:
 
 	template<typename PrepareMeshFaceFunc>
 	bool createInterfaceFacets(PrepareMeshFaceFunc&& prepareMeshFaceFunc){
-		std::vector<std::atomic<typename HalfEdgeStructureType::Vertex*>> vertexMap(_positions->size());
-        for(size_t i = 0; i < vertexMap.size(); ++i) vertexMap[i].store(nullptr);
+		std::vector<typename HalfEdgeStructureType::Vertex*> vertexMap(_positions->size(), nullptr);
 
 		_tetrahedraFaceList.clear();
         _tetrahedraFaceList.resize(_numSolidCells, { nullptr, nullptr, nullptr, nullptr });
 		_faceLookupMap.clear();
 
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, _tessellation.numberOfTetrahedra()), [&](const tbb::blocked_range<size_t>& r){
-            for(size_t cellIdx = r.begin(); cellIdx != r.end(); ++cellIdx){
-                auto cell = static_cast<DelaunayTessellation::CellHandle>(cellIdx);
-                int internalIdx = _tessellation.getCellIndex(cell);
-                if(internalIdx == -1) continue;
-                int solidRegion = _tessellation.getUserField(cell);
-                
-                for(int f = 0; f < 4; f++){
-                    auto mirrorFacet = _tessellation.mirrorFacet(cell, f);
-                    auto adjacentCell = mirrorFacet.first;
-                    if(_tessellation.getUserField(adjacentCell) == solidRegion) continue;
+        // Process cells sequentially for deterministic face creation order
+        for(size_t cellIdx = 0; cellIdx < _tessellation.numberOfTetrahedra(); ++cellIdx){
+            auto cell = static_cast<DelaunayTessellation::CellHandle>(cellIdx);
+            int internalIdx = _tessellation.getCellIndex(cell);
+            if(internalIdx == -1) continue;
+            int solidRegion = _tessellation.getUserField(cell);
+            
+            for(int f = 0; f < 4; f++){
+                auto mirrorFacet = _tessellation.mirrorFacet(cell, f);
+                auto adjacentCell = mirrorFacet.first;
+                if(_tessellation.getUserField(adjacentCell) == solidRegion) continue;
 
-                    std::array<typename HalfEdgeStructureType::Vertex*,3> facetVertices;
-                    std::array<DelaunayTessellation::VertexHandle,3> vertexHandles;
-                    std::array<int,3> vertexIndices;
-                    for(int v = 0; v < 3; v++){
-                        vertexHandles[v] = _tessellation.cellVertex(cell, DelaunayTessellation::cellFacetVertexIndex(f, FlipOrientation ? (2-v) : v));
-                        int idx = vertexIndices[v] = _tessellation.vertexIndex(vertexHandles[v]);
-                        
-                        auto* existingVertex = vertexMap[idx].load(std::memory_order_relaxed);
-                        if(existingVertex == nullptr){
-                            tbb::spin_mutex::scoped_lock lock(_mutex);
-                            existingVertex = vertexMap[idx].load(std::memory_order_relaxed);
-                            if(existingVertex == nullptr){
-                                existingVertex = _mesh.createVertex(_positions->getPoint3(idx));
-                                vertexMap[idx].store(existingVertex, std::memory_order_release);
-                            }
-                        }
-                        facetVertices[v] = existingVertex;
+                std::array<typename HalfEdgeStructureType::Vertex*,3> facetVertices;
+                std::array<DelaunayTessellation::VertexHandle,3> vertexHandles;
+                std::array<int,3> vertexIndices;
+                for(int v = 0; v < 3; v++){
+                    vertexHandles[v] = _tessellation.cellVertex(cell, DelaunayTessellation::cellFacetVertexIndex(f, FlipOrientation ? (2-v) : v));
+                    int idx = vertexIndices[v] = _tessellation.vertexIndex(vertexHandles[v]);
+                    
+                    if(vertexMap[idx] == nullptr){
+                        vertexMap[idx] = _mesh.createVertex(_positions->getPoint3(idx));
                     }
-
-                    auto* face = _mesh.createFace(facetVertices.begin(), facetVertices.end());
-                    if constexpr(!std::is_same_v<PrepareMeshFaceFunc, std::nullptr_t>){
-                        prepareMeshFaceFunc(face, vertexIndices, vertexHandles, cell);
-                    }
-
-                    reorderFaceVertices(vertexIndices);
-                    _faceLookupMap.insert({vertexIndices, face});
-                    _tetrahedraFaceList[internalIdx][f] = face;
+                    facetVertices[v] = vertexMap[idx];
                 }
+
+                auto* face = _mesh.createFace(facetVertices.begin(), facetVertices.end());
+                if constexpr(!std::is_same_v<PrepareMeshFaceFunc, std::nullptr_t>){
+                    prepareMeshFaceFunc(face, vertexIndices, vertexHandles, cell);
+                }
+
+                reorderFaceVertices(vertexIndices);
+                _faceLookupMap.insert({vertexIndices, face});
+                _tetrahedraFaceList[internalIdx][f] = face;
             }
-        });
+        }
 
 		return true;
 	}

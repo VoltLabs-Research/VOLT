@@ -214,69 +214,69 @@ struct BurgersCircuitSearchStruct{
 // to detect the first set of closed loops ("primary" Burgers circuit). 
 // When two search frontiers collide with matching transformation matrices, 
 // form a new loop.
+// NOTE: Vertices are processed sequentially to ensure deterministic circuit creation order.
 void BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
     const int searchDepth = (maxBurgersCircuitSize - 1) / 2;
 
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, mesh().vertexCount()), [&](const tbb::blocked_range<size_t>& r){
-        MemoryPool<SearchNode> pool(1024);
-        std::vector<SearchNode*> queue;
-        std::unordered_map<InterfaceMesh::Vertex*, SearchNode*> visited_map;
+    // Process vertices sequentially for deterministic ordering
+    MemoryPool<SearchNode> pool(1024);
+    std::vector<SearchNode*> queue;
+    std::unordered_map<InterfaceMesh::Vertex*, SearchNode*> visited_map;
 
-        for(size_t i = r.begin(); i < r.end(); ++i){
-            auto* startVert = mesh().vertex(i);
-            queue.clear();
-            visited_map.clear();
-            pool.clear(true);
+    for(size_t i = 0; i < mesh().vertexCount(); ++i){
+        auto* startVert = mesh().vertex(i);
+        queue.clear();
+        visited_map.clear();
+        pool.clear(true);
 
-            auto* root = pool.construct();
-            root->node = startVert;
-            root->coord = Point3::Origin();
-            root->tm.setIdentity();
-            root->depth = 0;
-            root->viaEdge = nullptr;
-            visited_map[startVert] = root;
-            queue.push_back(root);
+        auto* root = pool.construct();
+        root->node = startVert;
+        root->coord = Point3::Origin();
+        root->tm.setIdentity();
+        root->depth = 0;
+        root->viaEdge = nullptr;
+        visited_map[startVert] = root;
+        queue.push_back(root);
 
-            bool found = false;
-            for(int qi = 0; qi < queue.size() && !found; ++qi){
-                auto* cur = queue[qi];
+        bool found = false;
+        for(size_t qi = 0; qi < queue.size() && !found; ++qi){
+            auto* cur = queue[qi];
 
-                for(auto* edge = cur->node->edges(); edge != nullptr && !found; edge = edge->nextVertexEdge()){
-                    if(edge->nextCircuitEdge || (edge->face() && edge->face()->circuit)) continue;
+            for(auto* edge = cur->node->edges(); edge != nullptr && !found; edge = edge->nextVertexEdge()){
+                if(edge->nextCircuitEdge || (edge->face() && edge->face()->circuit)) continue;
 
-                    auto* nbVert = edge->vertex2();
-                    Point3 nbCoord = cur->coord + cur->tm * edge->clusterVector;
+                auto* nbVert = edge->vertex2();
+                Point3 nbCoord = cur->coord + cur->tm * edge->clusterVector;
 
-                    auto it = visited_map.find(nbVert);
-                    if(it != visited_map.end()){
-                        auto* prevStruct = it->second;
-                        Vector3 b = prevStruct->coord - nbCoord;
-                        if(!b.isZero(CA_LATTICE_VECTOR_EPSILON)){
-                            Matrix3 R = cur->tm * edge->clusterTransition->reverse->tm;
-                            if(R.equals(prevStruct->tm, CA_TRANSITION_MATRIX_EPSILON)){
-                                std::lock_guard<std::mutex> lock(_builderMutex);
-                                if (!edge->nextCircuitEdge && !edge->face()->circuit) {
-                                    found = createBurgersCircuit(edge, maxBurgersCircuitSize, visited_map);
-                                }
+                auto it = visited_map.find(nbVert);
+                if(it != visited_map.end()){
+                    auto* prevStruct = it->second;
+                    Vector3 b = prevStruct->coord - nbCoord;
+                    if(!b.isZero(CA_LATTICE_VECTOR_EPSILON)){
+                        Matrix3 R = cur->tm * edge->clusterTransition->reverse->tm;
+                        if(R.equals(prevStruct->tm, CA_TRANSITION_MATRIX_EPSILON)){
+                            if (!edge->nextCircuitEdge && !(edge->face() && edge->face()->circuit)) {
+                                found = createBurgersCircuit(edge, maxBurgersCircuitSize, visited_map);
                             }
                         }
-                    }else if(cur->depth < searchDepth){
-                        auto* nb = pool.construct();
-                        nb->node = nbVert;
-                        nb->coord = nbCoord;
-                        nb->depth = cur->depth + 1;
-                        nb->viaEdge = edge;
-                        nb->tm = edge->clusterTransition->isSelfTransition()
-                            ? cur->tm
-                            : cur->tm * edge->clusterTransition->reverse->tm;
-                        visited_map[nbVert] = nb;
-                        queue.push_back(nb);
                     }
+                }else if(cur->depth < searchDepth){
+                    auto* nb = pool.construct();
+                    nb->node = nbVert;
+                    nb->coord = nbCoord;
+                    nb->depth = cur->depth + 1;
+                    nb->viaEdge = edge;
+                    nb->tm = edge->clusterTransition->isSelfTransition()
+                        ? cur->tm
+                        : cur->tm * edge->clusterTransition->reverse->tm;
+                    visited_map[nbVert] = nb;
+                    queue.push_back(nb);
                 }
             }
         }
-    });
+    }
 }
+
 
 // Starts at the point where two partial paths of the mesh have collided-two paths that lead to 
 // the same atom-and joins them together to form a true “Burgers loop.” To do this, it follows 
@@ -584,12 +584,10 @@ void BurgersLoopBuilder::traceSegment(DislocationSegment& segment, DislocationNo
         // Pick a deterministic start edge to ensure reproducible results
         // Use a rotating counter instead of random selection
         // Ensure we don't exceed circuit bounds
-        int edgeIndex = (_edgeStartIndex % circuit.edgeCount);
-        _edgeStartIndex++;
-
-        InterfaceMesh::Edge* firstEdge = circuit.getEdge(edgeIndex);
+        // Always start from edge 0 for deterministic results
+        InterfaceMesh::Edge* firstEdge = circuit.firstEdge;
         if(!firstEdge){
-            spdlog::error("traceSegment: getEdge returned NULL for idx {}", edgeIndex);
+            spdlog::error("traceSegment: circuit.firstEdge is NULL");
             return;
         }
 
@@ -664,14 +662,8 @@ void BurgersLoopBuilder::traceSegment(DislocationSegment& segment, DislocationNo
         // In the second step, extend circuit by inserting an edge if possible.
         bool wasExtended = false;
 
-        // Pick a deterministic start edge to ensure reproducible results
-        // Use a rotating counter instead of random selection  
-        // Ensure we don't exceed circuit bounds
-        edgeIndex = (_edgeStartIndex % circuit.edgeCount);
-        _edgeStartIndex++;
-
-        firstEdge = circuit.getEdge(edgeIndex);
-
+        // Always start from first edge for deterministic results
+        firstEdge = circuit.firstEdge;
         edge0 = firstEdge;
         edge1 = firstEdge->nextCircuitEdge;
         do{
@@ -1154,6 +1146,15 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 		}
 		return false;
 	});
+
+	// Sort danglingNodes for deterministic processing order
+	std::sort(_danglingNodes.begin(), _danglingNodes.end(),
+		[](DislocationNode* a, DislocationNode* b){
+			if(!a) return false;
+			if(!b) return true;
+			return a->segment < b->segment;
+		});
+
 	// First iteration over all dangling circuits.
 	// Try to create secondary dislocation segments in the adjacent regions of the
 	// interface mesh.

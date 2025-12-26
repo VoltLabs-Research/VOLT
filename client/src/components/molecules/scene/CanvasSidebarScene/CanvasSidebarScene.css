@@ -1,12 +1,12 @@
 .analysis-section {
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
     overflow: hidden;
 }
 
 .analysis-section-header {
     padding: 0.5rem 0.25rem;
     transition: background-color 0.15s ease;
-    border-radius: 0.375rem;
+    border-radius: var(--radius-xs);
 }
 
 .analysis-section-header:hover {
@@ -62,7 +62,7 @@
 .analysis-search-input-wrapper {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
     padding: 0.5rem 0.75rem;
     transition: border-color 0.15s ease, background-color 0.15s ease;
 }

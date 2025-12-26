@@ -116,7 +116,7 @@
     --height: 30;
     height: calc(var(--height) * 1px);
     width: calc(var(--width) * 1px);
-    border-radius: 100px;
+    border-radius: var(--radius-full);
     border: 0;
     padding: 0;
     cursor: pointer;
@@ -141,7 +141,7 @@
   }
 
   .indicator {
-    border-radius: 100px;
+    border-radius: var(--radius-full);
     pointer-events: none;
     height: 100%;
     width: 100%;
@@ -156,7 +156,7 @@
   .knockout {
     height: calc(var(--height) * 1px);
     width: calc(var(--width) * 1px);
-    border-radius: 100px;
+    border-radius: var(--radius-full);
     filter: url(#remove-black);
     position: absolute;
     inset: 0;
@@ -180,20 +180,20 @@
     top: 50%;
     background: #000;
     left: var(--border);
-    border-radius: 100px;
+    border-radius: var(--radius-full);
   }
 
   .wrapper {
     position: absolute;
     inset: 0;
-    border-radius: 100px;
+    border-radius: var(--radius-full);
   }
 
   .liquids {
     position: absolute;
     inset: 0;
     transform: translate3d(0, 0, 0);
-    border-radius: 100px;
+    border-radius: var(--radius-full);
     overflow: hidden;
     filter: url(#goo);
   }
@@ -204,7 +204,7 @@
     box-shadow: inset 0px 0px 3px 4px var(--checked),
       inset calc(((var(--complete) / 100) * 8px) + -4px) 0px 3px 4px
         var(--checked);
-    border-radius: 100px;
+    border-radius: var(--radius-full);
   }
 
   .liquid__track {
@@ -212,7 +212,7 @@
     height: calc((var(--height) * 1px) - (0 * var(--border)));
     width: calc((var(--width) * 1px) - (0 * var(--border)));
     background: var(--checked);
-    border-radius: 100px;
+    border-radius: var(--radius-full);
     position: absolute;
     top: 50%;
   }
@@ -226,7 +226,7 @@
     /* only apply a background if you don't want to see underneath */
     background: #0000;
     left: var(--border);
-    border-radius: 100px;
+    border-radius: var(--radius-full);
   }
 
   .indicator__liquid .shadow {
@@ -234,7 +234,7 @@
     content: '';
     position: absolute;
     inset: 0;
-    border-radius: 100px;
+    border-radius: var(--radius-full);
     box-shadow: 1px -1px 2px hsl(0 0% 100% / 0.5) inset,
       0px -1px 2px hsl(0 0% 100% / 0.5) inset,
       -1px -1px 2px hsl(0 0% 100% / 0.5) inset,
@@ -253,7 +253,7 @@
     position: absolute;
     inset: 0;
     background: white;
-    border-radius: 100px;
+    border-radius: var(--radius-full);
   }
 }
 

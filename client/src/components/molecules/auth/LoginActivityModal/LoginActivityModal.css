@@ -35,7 +35,7 @@
 .login-activity-modal {
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-soft);
-    border-radius: 1rem;
+    border-radius: var(--radius-lg);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     max-width: 800px;
     max-height: 80vh;
@@ -64,21 +64,21 @@
     padding: 1rem;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
-    border-radius: 0.75rem;
+    border-radius: var(--radius-md);
 }
 
 .activity-skeleton-icon {
     width: 2.5rem;
     height: 2.5rem;
     background: var(--color-surface-3);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
     animation: pulse 1.5s ease-in-out infinite;
 }
 
 .activity-skeleton-line {
     height: 1rem;
     background: var(--color-surface-3);
-    border-radius: 0.25rem;
+    border-radius: var(--radius-xs);
     animation: pulse 1.5s ease-in-out infinite;
 }
 
@@ -113,7 +113,7 @@
     padding: 1.25rem;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
-    border-radius: 0.75rem;
+    border-radius: var(--radius-md);
     transition: all 0.2s ease;
 }
 
@@ -133,7 +133,7 @@
 .activity-icon {
     width: 2.5rem;
     height: 2.5rem;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
 }
 
 .activity-item.success .activity-icon {
@@ -167,7 +167,7 @@
 .action-button {
     padding: 0.5rem 1rem;
     border: none;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
     transition: all 0.2s ease;
     background: var(--color-surface-3);
     border: 1px solid var(--color-border-soft);

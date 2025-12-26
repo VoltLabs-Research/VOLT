@@ -10,7 +10,7 @@
     padding: 0.75rem;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
-    border-radius: 0.8rem;
+    border-radius: var(--radius-md);
 }
 
 :root[data-theme='light'] {

@@ -1,7 +1,7 @@
 .chat-image-preview {
     max-width: 300px;
     max-height: 300px;
-    border-radius: 0.8rem;
+    border-radius: var(--radius-md);
     object-fit: cover;
     border: 1px solid var(--color-border-soft);
     transition: all 0.2s ease;
@@ -15,14 +15,14 @@
 .chat-image-loading {
     height: 200px;
     background: var(--color-surface-3);
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
 }
 
 .chat-file-info {
     padding: 0.75rem;
     background: var(--color-surface-2);
     border: none;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
 }
 
 .chat-file-icon {
@@ -46,7 +46,7 @@
 
 .chat-file-download {
     padding: 0.5rem;
-    border-radius: 0.4rem;
+    border-radius: var(--radius-xs);
     transition: all 0.2s ease;
     text-decoration: none;
 }

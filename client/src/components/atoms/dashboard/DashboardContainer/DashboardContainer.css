@@ -11,7 +11,7 @@
     background-color: var(--color-surface-2);
     height: 2.7rem;
     padding: 0 1.5rem;
-    border-radius: 5rem;
+    border-radius: var(--radius-full);
     width: 500px;
     transition: .2s;
 }

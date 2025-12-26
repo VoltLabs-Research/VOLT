@@ -2,7 +2,7 @@
 .chart-container {
   background: var(--card);
   backdrop-filter: blur(80px);
-  border-radius: 20px;
+  border-radius: var(--radius-xl);
   max-height: 400px;
   border: 1px solid var(--border);
 }

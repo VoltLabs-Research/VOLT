@@ -51,7 +51,7 @@ export function ResourceUsage(){
   return (
     <div className="d-flex column resource-usage h-max">
       <div className="d-flex items-start content-between resource-usage-header mb-1-5 f-shrink-0">
-        <Title className='font-size-3 resource-usage-title font-weight-6'>Resource Usage(Real-time)</Title>
+        <Title className='font-size-3 resource-usage-title font-weight-6'>Resource Usage</Title>
         <Button variant='ghost' intent='neutral' iconOnly size='sm'>
           <MoreVertical className="resource-usage-icon" />
         </Button>

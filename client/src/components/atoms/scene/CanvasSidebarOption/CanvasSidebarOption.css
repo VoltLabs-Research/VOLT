@@ -12,7 +12,7 @@
 }
 
 .editor-sidebar-scene-option-container:hover {
-    background-color: rgb(85 85 85 / 18%);
+    background-color: var(--hover-bg);
 }
 
 .editor-sidebar-scene-option-container:hover .editor-sidebar-scene-option-more-icon-container {
@@ -24,14 +24,14 @@
 }
 
 .editor-sidebar-scene-option-icon-container {
-    background-color: #212121;
+    background-color: var(--color-surface-2);
     padding: .8rem;
     font-size: 1.3rem;
-    border-radius: .5rem;
+    border-radius: var(--radius-sm);
 }
 
 .editor-sidebar-scene-option-container {
     padding: .5rem;
-    border-radius: .5rem;
+    border-radius: var(--radius-md);
     will-change: transform;
 }

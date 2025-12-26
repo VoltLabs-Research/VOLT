@@ -6,7 +6,7 @@
 
 .slice-plane-normal-input-container {
     background-color: rgba(49, 49, 49, 0.8);
-    border-radius: 5rem;
+    border-radius: var(--radius-full);
     padding: 0 .8rem;
     height: 35px;
 }

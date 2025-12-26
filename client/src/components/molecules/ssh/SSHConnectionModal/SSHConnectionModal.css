@@ -21,7 +21,7 @@
 
 .ssh-connection-modal {
     background: var(--primary-surface);
-    border-radius: 12px;
+    border-radius: var(--radius-md);
     width: 90%;
     max-width: 500px;
     max-height: 90vh;
@@ -57,7 +57,7 @@
     border: none;
     color: inherit;
     padding: 0.5rem;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
 
     transition: background-color 0.2s;
 }
@@ -91,7 +91,7 @@
     padding: 0.75rem;
     background-color: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     color: inherit;
     font-size: 0.875rem;
     transition: border-color 0.2s;
@@ -114,7 +114,7 @@
     padding: 0.75rem;
     background-color: rgba(239, 68, 68, 0.1);
     border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     color: #ef4444;
     margin-bottom: 1rem;
 }
