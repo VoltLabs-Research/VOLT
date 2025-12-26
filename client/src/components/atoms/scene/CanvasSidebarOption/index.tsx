@@ -19,15 +19,25 @@ interface CanvasSidebarOptionProps {
         }]
     };
     isLoading: boolean;
+    secondaryAction?: React.ReactNode;
 }
 
-const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSelect, activeOption, isLoading }) => {
+const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps & React.HTMLAttributes<HTMLDivElement>> = ({
+    option,
+    onSelect,
+    activeOption,
+    isLoading,
+    secondaryAction,
+    className,
+    ...rest
+}) => {
 
     return (
         <>
             <div
-                className={`d-flex content-between items-center editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''} cursor-pointer`}
+                className={`d-flex content-between items-center editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''} cursor-pointer ${className || ''}`}
                 onClick={() => onSelect(option)}
+                {...rest}
             >
                 <div className='d-flex items-center gap-1 editor-sidebar-scene-option-left-container'>
                     <i className='editor-sidebar-scene-option-icon-container'>
@@ -35,6 +45,12 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps> = ({ option, onSel
                     </i>
                     <Title className='font-size-3-5 editor-sidebar-scene-option-title'>{option.title}</Title>
                 </div>
+
+                {secondaryAction && (
+                    <div className='editor-sidebar-scene-option-right-container' onClick={(e) => e.stopPropagation()}>
+                        {secondaryAction}
+                    </div>
+                )}
 
                 {option.options && (
                     <div className='editor-sidebar-scene-option-right-container'>

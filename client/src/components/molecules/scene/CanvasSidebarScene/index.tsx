@@ -8,9 +8,12 @@ import usePluginStore, { type RenderableExposure } from '@/stores/plugins/plugin
 import './CanvasSidebarScene.css';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import useAnalysisConfigStore from '@/stores/analysis-config';
-import { Skeleton, Popover, MenuItem, MenuList, Paper } from '@mui/material';
+import { Skeleton } from '@mui/material';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
+import Popover from '@/components/molecules/common/Popover';
+import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
+import { RiMore2Fill } from 'react-icons/ri';
 
 interface CanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
@@ -41,13 +44,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Context Menu State
-    const [contextMenu, setContextMenu] = useState<{
-        mouseX: number;
-        mouseY: number;
-        option: any;
-        analysis?: any;
-    } | null>(null);
+
 
     const analysisConfigId = analysisConfig?._id;
     const activeSceneRef = useRef(activeScene);
@@ -204,24 +201,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         setActiveScene(option.sceneType);
     };
 
-    // Context Menu Handlers
-    const handleContextMenu = (event: React.MouseEvent, option: any, analysis?: any) => {
-        event.preventDefault();
-        setContextMenu(
-            contextMenu === null
-                ? {
-                    mouseX: event.clientX + 2,
-                    mouseY: event.clientY - 6,
-                    option,
-                    analysis
-                }
-                : null,
-        );
-    };
 
-    const handleCloseContextMenu = () => {
-        setContextMenu(null);
-    };
 
     const getSceneObjectFromOption = (option: any) => {
         return option.sceneType || {
@@ -231,24 +211,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
             exposureId: option.exposureId
         };
     };
-
-    const handleAddToScene = () => {
-        if (contextMenu) {
-            const { option, analysis } = contextMenu;
-            if (analysis) updateAnalysisConfig(analysis);
-
-            addScene(getSceneObjectFromOption(option));
-            handleCloseContextMenu();
-        }
-    };
-
-    const handleRemoveFromScene = () => {
-        if (contextMenu) {
-            const { option } = contextMenu;
-            removeScene(getSceneObjectFromOption(option));
-            handleCloseContextMenu();
-        }
-    }
 
     const isOptionInScene = (option: any) => {
         const target = getSceneObjectFromOption(option);
@@ -264,7 +226,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     const defaultOptions = [{
         Icon: TbObjectScan,
         title: 'Frame Atoms',
-        sceneType: { sceneType: 'trajectory', source: 'default' }
+        sceneType: { sceneType: 'trajectory', source: 'default' as const }
     }];
 
     const totalAnalyses = trajectory?.analysis?.length || 0;
@@ -276,18 +238,36 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                 {defaultOptions.map((option, index) => (
                     <div
                         key={`${option.sceneType.source}-${option.sceneType.sceneType}-${index}`}
-                        onContextMenu={(e) => handleContextMenu(e, option)}
                     >
-                        <CanvasSidebarOption
-                            onSelect={() => onSelect(option)}
-                            activeOption={isOptionInScene(option)}
-                            isLoading={false}
-                            option={{
-                                Icon: option.Icon,
-                                title: option.title,
-                                modifierId: ''
-                            }}
-                        />
+                        <Popover
+                            id={`default-option-menu-${index}`}
+                            triggerAction="contextmenu"
+                            trigger={
+                                <CanvasSidebarOption
+                                    onSelect={() => onSelect(option)}
+                                    activeOption={isOptionInScene(option)}
+                                    isLoading={false}
+                                    option={{
+                                        Icon: option.Icon,
+                                        title: option.title,
+                                        modifierId: ''
+                                    }}
+                                />
+                            }
+                        >
+                            <PopoverMenuItem
+                                onClick={() => addScene(option.sceneType)}
+                                disabled={isOptionInScene(option)}
+                            >
+                                Add to scene
+                            </PopoverMenuItem>
+                            <PopoverMenuItem
+                                onClick={() => removeScene(option.sceneType)}
+                                disabled={!isOptionInScene(option)}
+                            >
+                                Remove from scene
+                            </PopoverMenuItem>
+                        </Popover>
                     </div>
                 ))}
 
@@ -338,44 +318,56 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
 
                             {isExpanded && !isLoading && section.exposures.length > 0 && (
                                 <Container className='analysis-section-content d-flex column gap-05'>
-                                    {section.exposures.map((exposure, index) => (
-                                        <div
-                                            key={`${exposure.exposureId}-${index}`}
-                                            onContextMenu={(e) => handleContextMenu(e, {
-                                                sceneType: {
-                                                    sceneType: exposure.exposureId,
-                                                    source: 'plugin',
-                                                    analysisId: exposure.analysisId,
-                                                    exposureId: exposure.exposureId
-                                                }
-                                            }, analysis)}
-                                        >
-                                            <CanvasSidebarOption
-                                                onSelect={() => onSelect({
-                                                    sceneType: {
-                                                        sceneType: exposure.exposureId,
-                                                        source: 'plugin',
-                                                        analysisId: exposure.analysisId,
-                                                        exposureId: exposure.exposureId
+                                    {section.exposures.map((exposure, index) => {
+                                        const optionObj = {
+                                            sceneType: {
+                                                sceneType: exposure.exposureId,
+                                                source: 'plugin' as const,
+                                                analysisId: exposure.analysisId,
+                                                exposureId: exposure.exposureId
+                                            }
+                                        };
+                                        const sceneObject = optionObj.sceneType;
+
+                                        return (
+                                            <div
+                                                key={`${exposure.exposureId}-${index}`}
+                                            >
+                                                <Popover
+                                                    id={`exposure-option-menu-${section.analysisId}-${index}`}
+                                                    triggerAction="contextmenu"
+                                                    trigger={
+                                                        <CanvasSidebarOption
+                                                            onSelect={() => onSelect(optionObj, analysis)}
+                                                            activeOption={isOptionInScene(optionObj)}
+                                                            isLoading={false}
+                                                            option={{
+                                                                Icon: () => <DynamicIcon iconName={exposure.icon!} />,
+                                                                title: exposure.name || exposure.exposureId,
+                                                                modifierId: exposure.modifierId || ''
+                                                            }}
+                                                        />
                                                     }
-                                                }, analysis)}
-                                                activeOption={isOptionInScene({
-                                                    sceneType: {
-                                                        sceneType: exposure.exposureId,
-                                                        source: 'plugin',
-                                                        analysisId: exposure.analysisId,
-                                                        exposureId: exposure.exposureId
-                                                    }
-                                                })}
-                                                isLoading={false}
-                                                option={{
-                                                    Icon: () => <DynamicIcon iconName={exposure.icon!} />,
-                                                    title: exposure.name || exposure.exposureId,
-                                                    modifierId: exposure.modifierId || ''
-                                                }}
-                                            />
-                                        </div>
-                                    ))}
+                                                >
+                                                    <PopoverMenuItem
+                                                        onClick={() => {
+                                                            if (analysis) updateAnalysisConfig(analysis);
+                                                            addScene(sceneObject);
+                                                        }}
+                                                        disabled={isOptionInScene(optionObj)}
+                                                    >
+                                                        Add to scene
+                                                    </PopoverMenuItem>
+                                                    <PopoverMenuItem
+                                                        onClick={() => removeScene(sceneObject)}
+                                                        disabled={!isOptionInScene(optionObj)}
+                                                    >
+                                                        Remove from scene
+                                                    </PopoverMenuItem>
+                                                </Popover>
+                                            </div>
+                                        )
+                                    })}
                                 </Container>
                             )}
 
@@ -396,31 +388,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                 )}
             </div>
 
-            <Popover
-                open={contextMenu !== null}
-                onClose={handleCloseContextMenu}
-                anchorReference="anchorPosition"
-                anchorPosition={
-                    contextMenu !== null
-                        ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
-                        : undefined
-                }
-                transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'left',
-                }}
-            >
-                <Paper>
-                    <MenuList>
-                        <MenuItem onClick={handleAddToScene} disabled={contextMenu ? isOptionInScene(contextMenu.option) : false}>
-                            Add to scene
-                        </MenuItem>
-                        <MenuItem onClick={handleRemoveFromScene} disabled={contextMenu ? !isOptionInScene(contextMenu.option) : true}>
-                            Remove from scene
-                        </MenuItem>
-                    </MenuList>
-                </Paper>
-            </Popover>
+
         </div>
     );
 };

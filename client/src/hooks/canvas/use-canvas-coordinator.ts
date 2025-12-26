@@ -54,9 +54,9 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
 
     // Load trajectory when hook is initialized - only if trajectoryId is provided
     useEffect(() => {
-        if(!trajectoryId) return;
+        if (!trajectoryId) return;
 
-        if(!trajectory || trajectory?._id !== trajectoryId){
+        if (!trajectory || trajectory?._id !== trajectoryId) {
             logger.log(`Loading trajectory with ID: ${trajectoryId}`);
             getTrajectoryById(trajectoryId);
         }
@@ -67,10 +67,10 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         logger.log(`Canvas coordinator effect: trajectory=${!!trajectory}, currentTimestep=${currentTimestep}, frames=${trajectory?.frames?.length || 0}`);
 
         // Only run this effect if we have a trajectory but no current timestep
-        if(!trajectory || currentTimestep !== undefined) return;
+        if (!trajectory || currentTimestep !== undefined) return;
 
         // Make sure we have frames to work with
-        if(!trajectory.frames || trajectory.frames.length === 0){
+        if (!trajectory.frames || trajectory.frames.length === 0) {
             logger.log('No frames available in trajectory');
             return;
         }
@@ -84,42 +84,60 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         // Sort numerically to ensure we get the lowest value
         const sortedTimesteps = [...timesteps].sort((a: number, b: number) => a - b);
 
-        if(sortedTimesteps.length > 0){
+        if (sortedTimesteps.length > 0) {
             const firstTimestep = sortedTimesteps[0];
             logger.log(`Setting initial timestep: ${firstTimestep}`);
             setCurrentTimestep(firstTimestep);
 
             // If trajectory has analysis configs, then select the most recent
-            if((trajectory.analysis ?? []).length >= 1){
+            if ((trajectory.analysis ?? []).length >= 1) {
                 const config = trajectory.analysis[trajectory.analysis.length - 1];
                 updateAnalysisConfig(config);
             }
         }
     }, [trajectory, currentTimestep, setCurrentTimestep, updateAnalysisConfig, logger]);
 
+    const prevAnalysisIdRef = useRef<string | undefined>(undefined);
+
     // Separate effect for analysis config changes to avoid unnecessary re-renders
     useEffect(() => {
-        if(trajectory?._id && currentTimestep !== undefined && analysisConfig?._id){
-            // Reset model when analysis config changes to force reload
-            resetModel();
-            // Force recompute timestep data to reload GLB with new analysis config
-            // Use a small delay to ensure model reset is processed first
-            setTimeout(() => {
-                computeTimestepData(trajectory, currentTimestep, Date.now());
-            }, 50);
+        if (trajectory?._id && currentTimestep !== undefined && analysisConfig?._id) {
+            // Only reset if analysis ID has explicitly changed
+            if (analysisConfig._id !== prevAnalysisIdRef.current) {
+                prevAnalysisIdRef.current = analysisConfig._id;
+
+                // Reset model when analysis config changes to force reload
+                resetModel();
+
+                // Force recompute timestep data to reload GLB with new analysis config
+                // Use a small delay to ensure model reset is processed first
+                setTimeout(() => {
+                    computeTimestepData(trajectory, currentTimestep, Date.now());
+                }, 50);
+            }
         }
     }, [analysisConfig?._id, trajectory?._id, currentTimestep, resetModel, computeTimestepData, trajectory]);
 
+    const prevTrajectoryStatusRef = useRef<string | undefined>(undefined);
+
     // When trajectory.status changes to 'completed', force a GLB reload by resetting and recomputing
     useEffect(() => {
-        if(trajectory?._id && currentTimestep !== undefined && trajectory.status === 'completed'){
-            logger.log(`Trajectory rendering completed, forcing GLB reload for ${trajectory._id}`);
-            // Reset model to clear cache
-            resetModel();
-            // Then recompute to reload the GLB with cache buster(timestamp to break cache)
-            setTimeout(() => {
-                computeTimestepData(trajectory, currentTimestep, Date.now());
-            }, 100);
+        if (trajectory?._id && trajectory.status) {
+            // Only trigger if status changed TO completed from something else
+            if (trajectory.status === 'completed' && prevTrajectoryStatusRef.current !== 'completed') {
+                logger.log(`Trajectory rendering completed, forcing GLB reload for ${trajectory._id}`);
+
+                // Reset model to clear cache
+                resetModel();
+
+                if (currentTimestep !== undefined) {
+                    // Then recompute to reload the GLB with cache buster(timestamp to break cache)
+                    setTimeout(() => {
+                        computeTimestepData(trajectory, currentTimestep, Date.now());
+                    }, 100);
+                }
+            }
+            prevTrajectoryStatusRef.current = trajectory.status;
         }
     }, [trajectory?.status, trajectory?._id, currentTimestep, computeTimestepData, resetModel, logger]);
 
@@ -128,18 +146,18 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
         const now = Date.now();
 
         // Only log every 1000ms to avoid flooding the console
-        if(now - lastLogTimeRef.current > 1000){
+        if (now - lastLogTimeRef.current > 1000) {
             lastLogTimeRef.current = now;
         }
 
-        if(trajectory?._id && currentTimestep !== undefined){
+        if (trajectory?._id && currentTimestep !== undefined) {
             // Only log when computing, which is less frequent than render cycles
             computeTimestepData(trajectory, currentTimestep);
         }
     }, [trajectory?._id, currentTimestep, computeTimestepData]);
 
     useEffect(() => {
-        return() => {
+        return () => {
             resetPlayback();
             resetTimestep();
             clearCurrentTrajectory();
