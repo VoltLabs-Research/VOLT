@@ -24,7 +24,7 @@ export interface EnvironmentConfigActions{
 export type EnvironmentConfigStore = EnvironmentConfigState & EnvironmentConfigActions;
 
 export const ENVIRONMENT_DEFAULT_CONFIG: EnvironmentConfigState = {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#000',
     backgroundType: 'color',
     environmentPreset: 'studio',
     enableFog: false,

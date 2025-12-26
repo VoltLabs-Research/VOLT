@@ -5,7 +5,7 @@ import { getAnalysisQueue } from '@/queues';
 import { Analysis, PluginListingRow } from '@/models';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import { SYS_BUCKETS } from '@/config/minio';
-import { decode as decodeMsgpack } from '@msgpack/msgpack';
+import { decodeMultiStream } from '@/utilities/msgpack/msgpack-stream';
 import { IWorkflowNode, IPlugin } from '@/types/models/modifier';
 import { NodeType, PluginStatus } from '@/types/models/plugin';
 import { v4 as uuidv4 } from 'uuid';
@@ -412,29 +412,39 @@ export default class PluginsController extends BaseController<IPlugin> {
 
             const exposureNode = plugin.workflow.nodes.find((node: IWorkflowNode) => node.type === NodeType.EXPOSURE && node.id === exposureId);
             const iterableKey = exposureNode?.data?.exposure?.iterable || 'data';
-            const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, objectName);
-            const payload = decodeMsgpack(buffer) as any;
+            const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, objectName);
+            const offset = (page - 1) * limit;
 
-            let items: any[] = [];
-            if (Array.isArray(payload)) {
-                items = payload;
-            } else if (payload[iterableKey] && Array.isArray(payload[iterableKey])) {
-                items = payload[iterableKey];
-            } else if (payload.data && Array.isArray(payload.data)) {
-                items = payload.data;
-            } else {
-                // auto-detect
+            let total = 0;
+            let pagedItems: any[] = [];
+
+            const resolveIterable = (payload: any): any[] => {
+                if (Array.isArray(payload)) return payload;
+                if (payload?.[iterableKey] && Array.isArray(payload[iterableKey])) return payload[iterableKey];
+                if (payload?.data && Array.isArray(payload.data)) return payload.data;
                 for (const key in payload) {
-                    if (Array.isArray(payload[key])) {
-                        items = payload[key];
-                        break;
+                    if (Array.isArray(payload[key])) return payload[key];
+                }
+                return [];
+            };
+
+            for await (const msg of decodeMultiStream(stream as AsyncIterable<Uint8Array>)){
+                const items = resolveIterable(msg as any);
+                if (!items.length) continue;
+
+                const chunkStart = total;
+                const chunkEnd = total + items.length;
+                total = chunkEnd;
+
+                if (pagedItems.length < limit && chunkEnd > offset) {
+                    const start = Math.max(0, offset - chunkStart);
+                    const remaining = limit - pagedItems.length;
+                    const end = Math.min(items.length, start + remaining);
+                    if (start < end) {
+                        pagedItems = pagedItems.concat(items.slice(start, end));
                     }
                 }
             }
-
-            const total = items.length;
-            const offset = (page - 1) * limit;
-            const pagedItems = items.slice(offset, offset + limit);
 
             res.status(200).json({
                 status: 'success',

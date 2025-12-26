@@ -93,6 +93,7 @@ export interface IExposureData {
     name: string;
     results: string;
     iterable?: string;
+    iterableChunkSize?: number;
 };
 
 export interface ISchemaData {

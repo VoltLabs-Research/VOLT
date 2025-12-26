@@ -112,6 +112,7 @@ const DashboardPage: React.FC = memo(() => {
                         <Scene3D
                             showGizmo={false}
                             ref={scene3DRef}
+                            background='#000000'
                             showCanvasGrid={false}
                             orbitControlsConfig={{
                                 enablePan: false,

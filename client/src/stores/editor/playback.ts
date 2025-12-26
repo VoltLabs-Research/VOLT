@@ -37,9 +37,8 @@ const usePlaybackStore = create<PlaybackStore>()((set, get) => ({
                 if(!didPreload){
                     set({ isPreloading: true, preloadProgress: 0 });
                     try{
-                        // Determinar límite inteligente de precarga
                         const frameCount = timesteps.length;
-                        const maxFramesToPreload = frameCount > 30 ? 20 : undefined; // Solo precargar 20 frames si hay más de 30
+                        const maxFramesToPreload = frameCount > 30 ? 20 : undefined;
                         const currentFrameIndex = get().currentTimestep !== undefined
                             ? timesteps.indexOf(get().currentTimestep!)
                             : 0;

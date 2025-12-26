@@ -134,6 +134,10 @@ const ExposureDataSchema = new Schema({
     },
     iterable: {
         type: String
+    },
+    iterableChunkSize: {
+        type: Number,
+        min: 1
     }
 });
 

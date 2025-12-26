@@ -1,7 +1,7 @@
 import { Analysis, Plugin } from '@/models';
 import { NodeType } from '@/types/models/plugin';
 import { SYS_BUCKETS } from '@/config/minio';
-import { decode } from '@msgpack/msgpack';
+import { decodeMultiStream } from '@/utilities/msgpack/msgpack-stream';
 import storage from '@/services/storage';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
@@ -34,8 +34,6 @@ export const getModifierAnalysis = async(
     timestep: string
 ): Promise<string[]> =>{
     const key = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
-    const buffer = await storage.getBuffer(SYS_BUCKETS.PLUGINS, key);
-    let data: any = decode(buffer);
 
     // check if we need to unwrap an iterable key
     const analysis = await Analysis.findById(analysisId);
@@ -44,9 +42,54 @@ export const getModifierAnalysis = async(
         if(plugin){
             const exposureNode = plugin.workflow.nodes.find((node: any) => node.type === NodeType.EXPOSURE && node.id === exposureId);
             const iterableKey = exposureNode?.data?.exposure?.iterable;
-            if(iterableKey && data[iterableKey]){
-                data = data[iterableKey];
+            const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, key);
+            let data: any = null;
+
+            const mergeChunkedValue = (target: any, incoming: any): any => {
+                if(incoming === undefined || incoming === null) return target;
+                if(target === undefined || target === null) return incoming;
+
+                if(Array.isArray(target) && Array.isArray(incoming)){
+                    target.push(...incoming);
+                    return target;
+                }
+
+                if(target && incoming && typeof target === 'object' && typeof incoming === 'object'){
+                    for(const [k, v] of Object.entries(incoming)){
+                        const existing = (target as any)[k];
+                        if(Array.isArray(existing) && Array.isArray(v)){
+                            existing.push(...v);
+                        }else if(existing && v && typeof existing === 'object' && typeof v === 'object'){
+                            (target as any)[k] = mergeChunkedValue(existing, v);
+                        }else{
+                            (target as any)[k] = v;
+                        }
+                    }
+                    return target;
+                }
+
+                return incoming;
+            };
+
+            for await (const msg of decodeMultiStream(stream as AsyncIterable<Uint8Array>)){
+                let chunkData: any = msg;
+                if(iterableKey && (chunkData as any)?.[iterableKey] !== undefined){
+                    chunkData = (chunkData as any)[iterableKey];
+                }
+                data = mergeChunkedValue(data, chunkData);
             }
+
+            return data;
+        }
+    }
+
+    const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, key);
+    let data: any = null;
+    for await (const msg of decodeMultiStream(stream as AsyncIterable<Uint8Array>)){
+        if(Array.isArray(data) && Array.isArray(msg)){
+            data.push(...msg);
+        }else if(data == null){
+            data = msg;
         }
     }
     return data;

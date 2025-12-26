@@ -54,6 +54,14 @@ const ExposureEditor: React.FC<ExposureEditorProps> = ({ node }) => {
                 expressionEnabled
                 expressionNodeId={nodeId}
             />
+            <FormField
+                label='Iterable Chunk Size'
+                fieldKey='iterableChunkSize'
+                fieldType='input'
+                fieldValue={exposure.iterableChunkSize ?? ''}
+                onFieldChange={updateField}
+                inputProps={{ placeholder: '50000', type: 'number', min: 1 }}
+            />
         </CollapsibleSection>
     );
 };

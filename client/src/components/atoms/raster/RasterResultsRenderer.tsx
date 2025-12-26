@@ -6,6 +6,7 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import type { RenderableExposure } from '@/stores/plugins';
 import pluginApi from '@/services/api/plugin';
+import { decodeMsgpackBuffer } from '@/utilities/msgpack';
 
 // Component registry - maps component names to lazy-loaded components
 const RASTER_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {
@@ -58,9 +59,7 @@ const RasterResultsRenderer: React.FC<RasterResultsRendererProps> = ({
                     timestep
                 );
 
-                // Decode MessagePack data
-                const { decode } = await import('@msgpack/msgpack');
-                const decodedData = decode(new Uint8Array(response.data));
+                const decodedData = await decodeMsgpackBuffer(response);
 
                 console.log('Decoded raster data:', decodedData);
                 console.log('First item sample:', decodedData?.data?.[0] || decodedData?.dislocations?.[0]);

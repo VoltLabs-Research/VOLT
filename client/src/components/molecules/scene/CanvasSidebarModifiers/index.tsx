@@ -11,6 +11,7 @@ import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import useEditorUIStore, { type ActiveModifier } from '@/stores/ui/editor';
 import usePluginStore from '@/stores/plugins/plugin';
 import './CanvasSidebarModifiers.css';
+import { RiSliceFill } from 'react-icons/ri';
 
 const CanvasSidebarModifiers = () => {
     const logger = useLogger('canvas-sidebar-modifiers');
@@ -62,6 +63,12 @@ const CanvasSidebarModifiers = () => {
             Icon: IoColorPalette,
             title: 'Color Coding',
             modifierId: 'color-coding',
+            isPlugin: false
+        },
+        {
+            Icon: RiSliceFill,
+            title: 'Slice Plane',
+            modifierId: 'slice-plane',
             isPlugin: false
         },
         {

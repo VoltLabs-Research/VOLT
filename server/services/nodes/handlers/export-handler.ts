@@ -2,12 +2,15 @@ import { Exporter, NodeType } from '@/types/models/plugin';
 import { IWorkflowNode } from '@/types/models/modifier';
 import { NodeHandler, ExecutionContext } from '@/services/nodes/node-registry';
 import { T, NodeOutputSchema } from '@/services/nodes/schema-types';
-import { findAncestorByType } from '@/utilities/plugins/workflow-utils';
+import { findAncestorByType, getNestedValue } from '@/utilities/plugins/workflow-utils';
+import { decodeMultiStream, decodeMultiStreamFromFile } from '@/utilities/msgpack/msgpack-stream';
+import { SYS_BUCKETS } from '@/config/minio';
 import { slugify } from '@/utilities/runtime/runtime';
 import AtomisticExporter from '@/utilities/export/atoms';
 import DislocationExporter from '@/utilities/export/dislocations';
 import MeshExporter from '@/utilities/export/mesh';
 import logger from '@/logger';
+import storage from '@/services/storage';
 
 class ExportHandler implements NodeHandler {
     readonly type = NodeType.EXPORT;
@@ -25,6 +28,60 @@ class ExportHandler implements NodeHandler {
         }
     };
 
+    private mergeChunkedValue(target: any, incoming: any): any{
+        if(incoming === undefined || incoming === null) return target;
+        if(target === undefined || target === null) return incoming;
+
+        if(Array.isArray(target) && Array.isArray(incoming)){
+            target.push(...incoming);
+            return target;
+        }
+
+        if(target && incoming && typeof target === 'object' && typeof incoming === 'object'){
+            for(const [key, value] of Object.entries(incoming)){
+                const existing = (target as any)[key];
+                if(Array.isArray(existing) && Array.isArray(value)){
+                    existing.push(...value);
+                }else if(existing && value && typeof existing === 'object' && typeof value === 'object'){
+                    (target as any)[key] = this.mergeChunkedValue(existing, value);
+                }else{
+                    (target as any)[key] = value;
+                }
+            }
+            return target;
+        }
+
+        return incoming;
+    }
+
+    private async readChunkedData(
+        iterable: AsyncIterable<unknown>,
+        iterableKey?: string
+    ): Promise<any>{
+        let data: any = null;
+        for await (const msg of iterable){
+            const chunkData = iterableKey ? getNestedValue(msg as any, iterableKey) : msg;
+            data = this.mergeChunkedValue(data, chunkData);
+        }
+        return data;
+    }
+
+    private async loadExposureData(
+        item: any,
+        iterableKey?: string
+    ): Promise<any>{
+        if(item?.localPath){
+            return this.readChunkedData(decodeMultiStreamFromFile(item.localPath), iterableKey);
+        }
+
+        if(item?.storageKey){
+            const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, item.storageKey);
+            return this.readChunkedData(decodeMultiStream(stream as AsyncIterable<Uint8Array>), iterableKey);
+        }
+
+        return null;
+    }
+
     async execute(node: IWorkflowNode, context: ExecutionContext): Promise<Record<string, any>> {
         const config = node.data.export!;
         const exposureNode = findAncestorByType(node.id, context.workflow, NodeType.EXPOSURE);
@@ -35,13 +92,20 @@ class ExportHandler implements NodeHandler {
 
         const exposureResults = exposureOutput.results as any[];
         const exportResults: any[] = [];
+        const iterableKey = exposureNode.data?.exposure?.iterable;
 
         for (const item of exposureResults) {
-            if (item.error || !item.data) {
+            let data = item.data;
+
+            if (!item.error && (data === undefined || data === null)) {
+                data = await this.loadExposureData(item, iterableKey);
+            }
+
+            if (item.error || !data) {
                 exportResults.push({
                     index: item.index,
                     success: false,
-                    error: 'Exposure item had error'
+                    error: item.error || 'Exposure item had no data'
                 });
                 continue;
             }
@@ -51,7 +115,7 @@ class ExportHandler implements NodeHandler {
             try {
                 await this.exportItem(
                     config.exporter as Exporter,
-                    item.data,
+                    data,
                     objectName,
                     config.options || {}
                 );

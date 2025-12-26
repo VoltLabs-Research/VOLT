@@ -92,6 +92,7 @@ export interface IExposureData {
     icon?: string;
     results: string;
     iterable?: string;
+    iterableChunkSize?: number;
 };
 
 export interface ISchemaData {

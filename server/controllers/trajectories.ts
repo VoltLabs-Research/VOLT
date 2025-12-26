@@ -16,7 +16,7 @@ import { SYS_BUCKETS } from '@/config/minio';
 import { getAnyTrajectoryPreview, sendImage } from '@/utilities/raster';
 import { NodeType } from '@/types/models/modifier';
 import { findDescendantByType } from '@/utilities/plugins/workflow-utils';
-import { decode } from '@msgpack/msgpack';
+import { decodeMultiStream } from '@/utilities/msgpack/msgpack-stream';
 
 export default class TrajectoryController extends BaseController<any> {
     constructor(){
@@ -148,10 +148,10 @@ export default class TrajectoryController extends BaseController<any> {
         const perAtomProperties: string[] = visualizerNode?.data?.visualizers?.perAtomProperties || [];
 
         const pluginDataPromise = (perAtomProperties.length > 0)
-            ? storage.getBuffer(SYS_BUCKETS.PLUGINS, `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`)
+            ? storage.getStream(SYS_BUCKETS.PLUGINS, `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`)
             : Promise.resolve(null);
 
-        const [parsed, pluginBuffer] = await Promise.all([
+        const [parsed, pluginStream] = await Promise.all([
             TrajectoryParserFactory.parse(dumpPath, { includeIds: true }),
             pluginDataPromise
         ]);
@@ -172,17 +172,38 @@ export default class TrajectoryController extends BaseController<any> {
             });
         }
 
+        const { positions, types, ids } = parsed;
+
         // Build plugin data index
         let pluginIndex: Map<number, any> | null = null;
-        if(pluginBuffer){
-            let pluginData = decode(pluginBuffer) as any;
+        if(pluginStream){
+            const targetIds = new Set<number>();
+            for(let idx = 0; idx < rowCount; idx++){
+                const i = startIndex + idx;
+                const atomId = ids ? ids[i] : i + 1;
+                targetIds.add(atomId);
+            }
 
-            if(iterableKey && pluginData[iterableKey]) pluginData = pluginData[iterableKey];
-            if(Array.isArray(pluginData)){
-                pluginIndex = new Map();
-                for(let i = 0, len = pluginData.length; i < len; i++){
-                    const item = pluginData[i];
-                    if(item.id !== undefined) pluginIndex.set(item.id, item);
+            pluginIndex = new Map();
+            const stream = pluginStream as unknown as AsyncIterable<Uint8Array>;
+
+            for await (const msg of decodeMultiStream(stream)){
+                let pluginData = msg as any;
+                if(iterableKey && pluginData?.[iterableKey]) pluginData = pluginData[iterableKey];
+                if(!Array.isArray(pluginData)) continue;
+
+                for(const item of pluginData){
+                    if(item?.id === undefined) continue;
+                    if(targetIds.has(item.id)){
+                        pluginIndex.set(item.id, item);
+                    }
+                }
+
+                if(pluginIndex.size >= targetIds.size){
+                    if(typeof (pluginStream as any).destroy === 'function'){
+                        (pluginStream as any).destroy();
+                    }
+                    break;
                 }
             }
         }
@@ -198,7 +219,6 @@ export default class TrajectoryController extends BaseController<any> {
         }
 
         // Build rows
-        const { positions, types, ids } = parsed;
         const rows = new Array(rowCount);
         const discoveredProps = new Set<string>();
 

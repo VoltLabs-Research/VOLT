@@ -11,7 +11,7 @@ import {
     Area,
     AreaChart
 } from 'recharts';
-import { decode } from '@msgpack/msgpack';
+import { decodeMsgpackBuffer } from '@/utilities/msgpack';
 import Loader from '@/components/atoms/common/Loader';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import pluginApi from '@/services/api/plugin';
@@ -59,7 +59,7 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
                     timestep,
                     filename
                 );
-                const decoded = decode(new Uint8Array(response));
+                const decoded = await decodeMsgpackBuffer(response);
                 if(mounted){
                     setData(decoded);
                 }

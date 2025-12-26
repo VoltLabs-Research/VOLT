@@ -43,8 +43,8 @@ const INITIAL: CanvasGridSettingsState = {
     sectionThickness: 1,
     fadeDistance: 100,
     fadeStrength: 2,
-    sectionColor: '#636363',
-    cellColor: '#404040',
+    sectionColor: '#2b2b2b',
+    cellColor: '#3d3d3d',
     position: [0, 0, 0],
     rotation: [Math.PI / 2, 0, 0]
 };
