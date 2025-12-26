@@ -6,7 +6,7 @@ import useAnimationPresence from '@/hooks/ui/animation/use-animation-presence';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import Container from '@/components/primitives/Container';
 import './SimulationGrid.css';
-    
+
 const SimulationGrid = memo(() => {
     const [parent] = useAnimationPresence();
 
@@ -20,17 +20,17 @@ const SimulationGrid = memo(() => {
     }, [toggleTrajectorySelectionStore]);
     const isLoading = useTrajectoryStore((state) => state.isLoadingTrajectories);
     const activeUploads = useTrajectoryStore((state) => state.activeUploads);
-    const hasActiveUploads = Object.keys(activeUploads).length > 0;
-    const hasEmptyState = !isLoading && trajectories.length === 0 && !hasActiveUploads;
+    const activeUploadEntries = Object.entries(activeUploads);
+    const hasEmptyState = !isLoading && trajectories.length === 0 && activeUploadEntries.length === 0;
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if(selectedTrajectories.length === 0){
+            if (selectedTrajectories.length === 0) {
                 return;
             }
 
             const isDeleteShortcut = (event.ctrlKey || event.metaKey) && (event.key === 'Backspace' || event.key === 'Delete');
-            if(isDeleteShortcut){
+            if (isDeleteShortcut) {
                 event.preventDefault();
                 deleteSelectedTrajectories();
             }
@@ -43,29 +43,29 @@ const SimulationGrid = memo(() => {
         };
     }, [selectedTrajectories.length, deleteSelectedTrajectories]);
 
-    if(hasEmptyState){
+    if (hasEmptyState) {
         return <EmptyState
             title='No Trajectories Yet'
             description='Get started by uploading your first simulation trajectory file to visualize and analyze atomic structures.' />
     }
 
-    if(isLoading){
+    if (isLoading) {
         return (
             <Container className='trajectories-container gap-1-5 w-max y-auto'>
                 <SimulationSkeletonCard n={8} />
             </Container>
         )
     }
+
     return (
         <Container className='trajectories-container gap-1-5 w-max y-auto' ref={parent as React.RefObject<HTMLDivElement | null>}>
-            {Object.values(activeUploads).map((upload) => (
+            {activeUploadEntries.map(([id, progress]) => (
                 <SimulationSkeletonCard
-                    key={upload.id}
-                    progress={upload.status === 'processing' ? upload.processingProgress : upload.uploadProgress}
-                    status={upload.status}
+                    key={id}
+                    progress={progress}
+                    status='uploading'
                 />
             ))}
-
             {trajectories.map((trajectory) => (
                 <SimulationCard
                     key={trajectory._id}

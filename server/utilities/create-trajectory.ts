@@ -20,7 +20,7 @@ interface CreateTrajectoryOptions {
     onProgress?: (progress: number) => void;
 };
 
-const processTrajectoryFile = async(
+const processTrajectoryFile = async (
     trajectoryId: string,
     updateProgress: any,
     workingDir: string,
@@ -30,18 +30,18 @@ const processTrajectoryFile = async(
     let tempPath = file.path;
 
     // If we only have a buffer, write to disk briefly to let the parser read it.
-    if(!tempPath && file.buffer){
+    if (!tempPath && file.buffer) {
         tempPath = path.join(workingDir, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
         await fs.writeFile(tempPath, file.buffer);
     }
 
     // Parse and validate
     let frameInfo;
-    try{
+    try {
         const parsed = await TrajectoryParserFactory.parse(tempPath);
         frameInfo = parsed.metadata;
-    }catch(err){
-        if(!file.path) await fs.rm(tempPath).catch(() => {});
+    } catch (err) {
+        if (!file.path) await fs.rm(tempPath).catch(() => { });
         return null;
     }
 
@@ -52,7 +52,7 @@ const processTrajectoryFile = async(
         updateProgress(i, progress * fileSize);
     });
 
-    if(!file.path) await fs.rm(tempPath).catch(() => {});
+    if (!file.path) await fs.rm(tempPath).catch(() => { });
 
     return {
         frameInfo,
@@ -62,14 +62,14 @@ const processTrajectoryFile = async(
     };
 };
 
-const dispatchTrajectoryJobs = async(validFiles: any[], trajectory: ITrajectory, teamId: string) => {
+const dispatchTrajectoryJobs = async (validFiles: any[], trajectory: ITrajectory, teamId: string) => {
     const queue = getTrajectoryProcessingQueue();
     const CHUNK_SIZE = Number(process.env.TRAJECTORY_QUEUE_JOB_CHUNK_SIZE);
     const jobs: any[] = [];
     const sessionId = v4();
 
     const totalChunks = Math.ceil(validFiles.length / CHUNK_SIZE);
-    for(let i = 0; i < validFiles.length; i += CHUNK_SIZE){
+    for (let i = 0; i < validFiles.length; i += CHUNK_SIZE) {
         const jobId = v4();
         const chunk = validFiles.slice(i, i + CHUNK_SIZE);
         const chunkIndex = Math.floor(i / CHUNK_SIZE);
@@ -99,79 +99,105 @@ const dispatchTrajectoryJobs = async(validFiles: any[], trajectory: ITrajectory,
  * Processes incoming raw files, uploads them to Object Storge(MinIO),
  * and dispatches jobs to the processing queue.
  */
-const createTrajectory = async({
+const createTrajectory = async ({
     files,
     teamId,
     userId,
     trajectoryName,
     onProgress
-}: CreateTrajectoryOptions): Promise<InstanceType<typeof Trajectory>> =>{
+}: CreateTrajectoryOptions): Promise<InstanceType<typeof Trajectory>> => {
     const trajectoryId = new Types.ObjectId();
     const trajectoryIdStr = trajectoryId.toString();
 
-    // Setup temporary directory for initial validation/parsing only.
-    const tempBaseDir = path.join(os.tmpdir(), 'volterra-trajectories');
-    const workingDir = path.join(tempBaseDir, trajectoryIdStr);
-
-    await fs.mkdir(workingDir, { recursive: true });
-
-    // Pre-calculate total size for progress if possible
-    let totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
-
-    // Track bytes processed per file index
-    const processedBytesMap: Record<number, number> = {};
-
-    const updateProgress = (index: number, bytes: number) => {
-        processedBytesMap[index] = bytes;
-        if(totalSize > 0 && onProgress){
-            const totallyProcessed = Object.values(processedBytesMap).reduce((a, b) => a + b, 0);
-            onProgress(Math.min(1, totallyProcessed / totalSize));
-        }
-    };
-
-    // Process files. Validate -> Upload to MinIO -> Prepare Job Data.
-    const BATCH_SIZE = 8;
-    const allResults: any[] = [];
-
-    for(let i = 0; i < files.length; i += BATCH_SIZE){
-        const batch = files.slice(i, i + BATCH_SIZE);
-        const batchPromises = batch.map((file, batchIndex) =>
-            processTrajectoryFile(trajectoryIdStr, updateProgress, workingDir, file, i + batchIndex));
-        const batchResults = await Promise.all(batchPromises);
-        allResults.push(...batchResults);
-    }
-
-    const validFiles = allResults.filter(Boolean);
-    if(validFiles.length === 0){
-        throw new RuntimeError(ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES, 400);
-    }
-
-    const validTotalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
-    const frames = validFiles.map((f) => f.frameInfo);
-
+    // Create trajectory immediately with waiting_for_proccess status
     const newTrajectory = await Trajectory.create({
         _id: trajectoryId,
         name: trajectoryName,
         team: teamId,
         createdBy: userId,
-        frames,
-        status: 'processing',
+        frames: [],
+        status: 'waiting_for_proccess',
         stats: {
-            totalFiles: validFiles.length,
-            totalSize: validTotalSize
+            totalFiles: files.length,
+            totalSize: files.reduce((acc, f) => acc + (f.size || 0), 0)
         }
     });
 
-    await dispatchTrajectoryJobs(validFiles, newTrajectory, teamId);
-
-    // The file upload was completed in previous steps; however, we'll wait
-    // until the jobs are queued before marking it as complete.
-    // Otherwise, the path card will briefly appear and disappear from the front end.
-    if(onProgress) onProgress(1);
-
-    await fs.rm(workingDir, { recursive: true, force: true }).catch(() => { });
+    // Process files in background (fire-and-forget)
+    processFilesInBackground(trajectoryIdStr, files, teamId, onProgress).catch((err) => {
+        console.error(`[createTrajectory] Background processing failed for ${trajectoryIdStr}:`, err);
+        Trajectory.findByIdAndUpdate(trajectoryId, { status: 'failed' }).catch(() => { });
+    });
 
     return newTrajectory;
+};
+
+const processFilesInBackground = async (
+    trajectoryIdStr: string,
+    files: any[],
+    teamId: string,
+    onProgress?: (progress: number) => void
+) => {
+    const tempBaseDir = path.join(os.tmpdir(), 'volterra-trajectories');
+    const workingDir = path.join(tempBaseDir, trajectoryIdStr);
+
+    try {
+        await fs.mkdir(workingDir, { recursive: true });
+
+        let totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
+        const processedBytesMap: Record<number, number> = {};
+
+        const updateProgress = (index: number, bytes: number) => {
+            processedBytesMap[index] = bytes;
+            if (totalSize > 0 && onProgress) {
+                const totallyProcessed = Object.values(processedBytesMap).reduce((a, b) => a + b, 0);
+                onProgress(Math.min(1, totallyProcessed / totalSize));
+            }
+        };
+
+        const BATCH_SIZE = 8;
+        const allResults: any[] = [];
+
+        for (let i = 0; i < files.length; i += BATCH_SIZE) {
+            const batch = files.slice(i, i + BATCH_SIZE);
+            const batchPromises = batch.map((file, batchIndex) =>
+                processTrajectoryFile(trajectoryIdStr, updateProgress, workingDir, file, i + batchIndex));
+            const batchResults = await Promise.all(batchPromises);
+            allResults.push(...batchResults);
+        }
+
+        const validFiles = allResults.filter(Boolean);
+        if (validFiles.length === 0) {
+            await Trajectory.findByIdAndUpdate(trajectoryIdStr, { status: 'failed' });
+            throw new RuntimeError(ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES, 400);
+        }
+
+        const validTotalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
+        const frames = validFiles.map((f) => f.frameInfo);
+
+        const trajectory = await Trajectory.findByIdAndUpdate(
+            trajectoryIdStr,
+            {
+                frames,
+                status: 'processing',
+                stats: {
+                    totalFiles: validFiles.length,
+                    totalSize: validTotalSize
+                }
+            },
+            { new: true }
+        );
+
+        if (onProgress) onProgress(1);
+        if (trajectory) await dispatchTrajectoryJobs(validFiles, trajectory, teamId);
+    } finally {
+        if (files && Array.isArray(files)) {
+            await Promise.all(files.map(f =>
+                require('fs').promises.unlink(f.path).catch(() => { })
+            ));
+        }
+        await fs.rm(workingDir, { recursive: true, force: true }).catch(() => { });
+    }
 };
 
 export default createTrajectory;

@@ -71,7 +71,7 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     status: {
         type: String,
         lowercase: true,
-        enum: ['queued', 'processing', 'rendering', 'completed', 'analyzing', 'failed'],
+        enum: ['queued', 'waiting_for_proccess', 'processing', 'rendering', 'completed', 'analyzing', 'failed'],
         default: 'queued'
     },
     isPublic: {

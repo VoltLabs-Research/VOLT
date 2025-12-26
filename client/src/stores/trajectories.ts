@@ -50,26 +50,26 @@ const initialState: TrajectoryState = {
     trajectoryMetrics: {},
     selectedTrajectories: [],
     isLoadingTrajectories: true,
-} as any;
+};
 
-export function dataURLToBlob(dataURL: string): Blob{
+export function dataURLToBlob(dataURL: string): Blob {
     const [header, data] = dataURL.split(',');
     const isBase64 = /;base64/i.test(header);
     const mimeMatch = header.match(/data:([^;]+)/i);
     const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
 
-    if(isBase64){
+    if (isBase64) {
         const byteString = atob(data);
         const len = byteString.length;
         const u8 = new Uint8Array(len);
-        for(let i = 0; i < len; i++) u8[i] = byteString.charCodeAt(i);
+        for (let i = 0; i < len; i++) u8[i] = byteString.charCodeAt(i);
         return new Blob([u8], { type: mime });
-    }else{
+    } else {
         return new Blob([decodeURIComponent(data)], { type: mime });
     }
 }
 
-export function dataURLToObjectURL(dataURL: string): string{
+export function dataURLToObjectURL(dataURL: string): string {
     const blob = dataURLToBlob(dataURL);
     return URL.createObjectURL(blob);
 }
@@ -82,7 +82,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
 
     const upsertIntoList = (list: any[], item: any) => {
         const id = item?._id;
-        if(!id) return list;
+        if (!id) return list;
 
         return [
             { ...(list.find((t: any) => t._id === id) || {}), ...item },
@@ -94,10 +94,10 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         const seen = new Set<string>();
         const out: any[] = [];
 
-        for(const t of list){
+        for (const t of list) {
             const id = t?._id;
-            if(!id) continue;
-            if(seen.has(id)) continue;
+            if (!id) continue;
+            if (seen.has(id)) continue;
             seen.add(id);
             out.push(t);
         }
@@ -137,10 +137,10 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         getTrajectories: (teamId?: string, opts = {}) => {
             const { page = 1, limit = 20, search = '', append = false } = opts;
 
-            if(append){
-                if(get().isFetchingMore) return Promise.resolve();
+            if (append) {
+                if (get().isFetchingMore) return Promise.resolve();
                 set({ isFetchingMore: true });
-            }else{
+            } else {
                 set({ isLoadingTrajectories: true });
             }
 
@@ -199,52 +199,34 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             }
         }),
 
-        createTrajectory: async(
-            formData: FormData,
-            _teamId?: string,
-            onProgress?: (progress: number) => void,
-            existingUploadId?: string
-        ) => {
-            const uploadId = existingUploadId || uuidv4();
-
+        createTrajectory: async (formData: FormData) => {
+            const uploadId = uuidv4();
             set(state => ({
-                activeUploads: {
-                    ...state.activeUploads,
-                    [uploadId]: { id: uploadId, uploadProgress: 0, processingProgress: 0, status: 'uploading' }
-                }
+                activeUploads: { ...state.activeUploads, [uploadId]: 0 }
             }));
 
-            try{
+            try {
                 const newTrajectory = await trajectoryApi.create(formData, (progress) => {
                     set(state => ({
-                        activeUploads: {
-                            ...state.activeUploads,
-                            [uploadId]: {
-                                ...state.activeUploads[uploadId],
-                                uploadProgress: progress,
-                                status: progress === 1 ? 'processing' : 'uploading'
-                            }
-                        }
+                        activeUploads: { ...state.activeUploads, [uploadId]: progress }
                     }));
-                    if(onProgress) onProgress(progress);
                 });
 
                 set(state => {
-                    const { [uploadId]: _, ...remainingUploads } = state.activeUploads;
+                    const { [uploadId]: _, ...remaining } = state.activeUploads;
                     return {
-                        activeUploads: remainingUploads,
-                        trajectories: upsertIntoList(state.trajectories, newTrajectory),
+                        activeUploads: remaining,
+                        trajectories: upsertIntoList(state.trajectories, newTrajectory as Trajectory) as Trajectory[],
                         error: null
                     };
                 });
-
                 return newTrajectory;
-            }catch(error: any){
+            } catch (error: any) {
                 const errorMessage = extractErrorMessage(error, 'Error uploading trajectory');
                 set(state => {
-                    const { [uploadId]: _, ...remainingUploads } = state.activeUploads;
+                    const { [uploadId]: _, ...remaining } = state.activeUploads;
                     return {
-                        activeUploads: remainingUploads,
+                        activeUploads: remaining,
                         error: errorMessage
                     };
                 });
@@ -252,42 +234,17 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             }
         },
 
-        dismissUpload: (uploadId: string) => {
-            set(state => {
-                const { [uploadId]: _, ...remainingUploads } = state.activeUploads;
-                return { activeUploads: remainingUploads };
-            });
-        },
-
-        updateUploadProgress: (uploadId: string, progress: number, type: 'upload' | 'processing') => {
-            set(state => {
-                const upload = state.activeUploads[uploadId];
-                if(!upload) return state;
-
-                return {
-                    activeUploads: {
-                        ...state.activeUploads,
-                        [uploadId]: {
-                            ...upload,
-                            [type === 'upload' ? 'uploadProgress' : 'processingProgress']: progress,
-                            status: type === 'upload' && progress < 1 ? 'uploading' : 'processing'
-                        }
-                    }
-                };
-            });
-        },
-
-        updateTrajectoryById: async(id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => {
+        updateTrajectoryById: async (id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => {
             const originalState = {
                 trajectories: get().trajectories,
                 trajectory: get().trajectory
             };
 
-            set(updateTrajectoryInList(id, data));
+            set(updateTrajectoryInList(id, data) as any);
 
-            try{
+            try {
                 await trajectoryApi.update(id, data);
-            }catch(error: any){
+            } catch (error: any) {
                 set(originalState);
                 const errorMessage = extractErrorMessage(error, 'Failed to update trajectory');
                 set({ error: errorMessage });
@@ -295,9 +252,9 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             }
         },
 
-        deleteSelectedTrajectories: async() => {
+        deleteSelectedTrajectories: async () => {
             const ids = get().selectedTrajectories;
-            if(ids.length === 0) return;
+            if (ids.length === 0) return;
 
             const originalState = {
                 trajectories: get().trajectories,
@@ -311,15 +268,15 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
                 selectedTrajectories: []
             }));
 
-            try{
+            try {
                 await Promise.all(ids.map((id) => trajectoryApi.delete(id)));
-            }catch(e: any){
+            } catch (e: any) {
                 set(originalState);
                 throw e;
             }
         },
 
-        deleteTrajectoryById: async(id: string, _teamId?: string) => {
+        deleteTrajectoryById: async (id: string, _teamId?: string) => {
             const originalState = {
                 trajectories: get().trajectories,
                 trajectory: get().trajectory
@@ -328,9 +285,9 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             set(removeTrajectoryFromList(id));
             clearTrajectoryPreviewCache(id);
 
-            try{
+            try {
                 await trajectoryApi.delete(id);
-            }catch(error: any){
+            } catch (error: any) {
                 set(originalState);
                 set({ error: extractErrorMessage(error, 'Failed to delete trajectory') });
                 throw error;
@@ -351,10 +308,11 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const page = opts?.page ?? 1;
             const pageSize = opts?.pageSize ?? 100000;
 
-            try{
-                const payload = await trajectoryApi.getAtoms(trajectoryId, timestep, { page, pageSize });
-                return payload || null;
-            }catch(e: any){
+            try {
+                // Casting to any to bypass strict type mismatch between mismatched API/Store definitions
+                const payload = await trajectoryApi.getAtoms(trajectoryId, 'default', { timestep, exposureId: 'default', page, pageSize });
+                return payload as any;
+            } catch (e: any) {
                 const errorMessage = extractErrorMessage(e, 'Error loading frame atoms');
                 console.error('Failed to load frame atoms:', errorMessage);
                 return null;
@@ -364,7 +322,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
         getMetrics: (id: string, opts?: { force?: boolean }) => {
             const force = !!opts?.force;
             const current = get().trajectoryMetrics as any;
-            if(current && current?.trajectory?._id === id && !force){
+            if (current && current?.trajectory?._id === id && !force) {
                 return Promise.resolve();
             }
 

@@ -28,7 +28,7 @@ interface SimulationCardProps {
 type ProcessingStage = 'idle' | 'queued' | 'processing' | 'rendering' | 'completed' | 'failed' | 'analyzing';
 
 const getMessageForStage = (stage: ProcessingStage): string => {
-    switch(stage){
+    switch (stage) {
         case 'idle':
             return '';
         case 'queued':
@@ -47,13 +47,13 @@ const getMessageForStage = (stage: ProcessingStage): string => {
 };
 
 const getInitialsFromUser = (user: Trajectory['createdBy']): string => {
-    if(!user || typeof user === 'string') return '?';
-    if(user.firstName && user.lastName){
+    if (!user || typeof user === 'string') return '?';
+    if (user.firstName && user.lastName) {
         return (user.firstName[0] + user.lastName[0]).toUpperCase();
     }
-    if(user.email){
+    if (user.email) {
         const parts = user.email.split('@')[0].split('.');
-        if(parts.length >= 2){
+        if (parts.length >= 2) {
             return (parts[0][0] + parts[1][0]).toUpperCase();
         }
         return user.email[0].toUpperCase();
@@ -62,11 +62,11 @@ const getInitialsFromUser = (user: Trajectory['createdBy']): string => {
 };
 
 const getUserDisplayName = (user: Trajectory['createdBy']): string => {
-    if(!user || typeof user === 'string') return 'Unknown';
-    if(user.firstName && user.lastName){
+    if (!user || typeof user === 'string') return 'Unknown';
+    if (user.firstName && user.lastName) {
         return `${user.firstName} ${user.lastName}`;
     }
-    if(user.email){
+    if (user.email) {
         return user.email.split('@')[0];
     }
     return 'Unknown';
@@ -91,12 +91,6 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
     const navigate = useNavigate();
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const rasterize = useRasterStore((state) => state.rasterize);
-    const activeUploads = useTrajectoryStore((state) => state.activeUploads);
-
-    // If this trajectory corresponds to an active upload, don't show it yet
-    // to avoid "double loaders" (one skeleton, one processing card)
-    // We show the skeleton until the upload processing is fully done and acknowledged by the store logic
-    if(trajectory.uploadId && activeUploads[trajectory.uploadId]) return null;
 
     const {
         previewBlobUrl,
@@ -120,7 +114,19 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
         processingStatus.isProcessing
     );
 
-    const containerClasses = `simulation-container ${processingStatus.isProcessing ? 'has-jobs' : ''} ${isDeleting ? 'is-deleting' : ''} ${isSelected ? 'is-selected' : ''}`;
+    const handleRasterize = useCallback(async () => {
+        try {
+            if (rasterize) {
+                await rasterize(trajectory._id);
+            }
+        } catch (error: any) {
+            console.error('Rasterize failed:', error);
+        }
+    }, [trajectory._id, rasterize]);
+
+    const isWaitingForProcess = trajectory.status === 'waiting_for_proccess';
+    const showProcessingLoader = processingStatus.isProcessing || isWaitingForProcess;
+    const containerClasses = `simulation-container ${showProcessingLoader ? 'has-jobs' : ''} ${isDeleting ? 'is-deleting' : ''} ${isSelected ? 'is-selected' : ''}`;
 
     const onDelete = (): void => {
         handleDelete(trajectory._id, deleteTrajectoryById, () => {
@@ -135,19 +141,8 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
     const handleShare = (): void => {
     };
 
-    const handleRasterize = useCallback(async() => {
-        try{
-            if(rasterize){
-                await rasterize(trajectory._id);
-            }
-        }catch(error: any){
-            console.error('Rasterize failed:', error);
-        }
-    }, [trajectory._id, rasterize]);
-
     const shouldShowPreview = previewBlobUrl && !previewError;
     const shouldShowPlaceholder = !shouldShowPreview || previewLoading;
-    const showProcessingLoader = processingStatus.isProcessing;
 
     return (
         <>

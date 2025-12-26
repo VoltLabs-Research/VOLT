@@ -12,7 +12,7 @@ export interface TrajectoryState {
     isLoading: boolean;
     isFetchingMore: boolean;
     uploadingFileCount: number;
-    activeUploads: Record<string, { id: string; uploadProgress: number; processingProgress: number; status: 'uploading' | 'processing' }>;
+    activeUploads: Record<string, number>;
     error: string | null;
     isLoadingTrajectories: boolean;
     selectedTrajectories: string[];
@@ -23,7 +23,7 @@ export interface TrajectoryState {
 export interface TrajectoryActions {
     getTrajectories: (teamId?: string, opts?: { force?: boolean; page?: number; limit?: number; search?: string; append?: boolean }) => Promise<void>;
     getTrajectoryById: (id: string) => Promise<void>;
-    createTrajectory: (formData: FormData, teamId?: string, onProgress?: (progress: number) => void, existingUploadId?: string) => Promise<void>;
+    createTrajectory: (formData: FormData) => Promise<Trajectory>;
     updateTrajectoryById: (id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>) => Promise<void>;
     deleteTrajectoryById: (id: string, teamId?: string) => Promise<void>;
     toggleTrajectorySelection: (id: string) => void;
@@ -38,8 +38,6 @@ export interface TrajectoryActions {
     clearError: () => void;
     reset: () => void;
     clearCurrentTrajectory: () => void;
-    dismissUpload: (uploadId: string) => void;
-    updateUploadProgress: (uploadId: string, progress: number, type: 'upload' | 'processing') => void;
 }
 
 export type TrajectoryStore = TrajectoryState & TrajectoryActions;

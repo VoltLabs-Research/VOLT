@@ -343,7 +343,7 @@ const PluginSchema = new Schema({
 PluginSchema.plugin(useInverseRelations);
 PluginSchema.plugin(useCascadeDelete);
 
-PluginSchema.index({ slug: 1 }, { unique: true });
+
 PluginSchema.index({ status: 1 });
 PluginSchema.index({ createdBy: 1 });
 PluginSchema.index({ createdAt: -1 });

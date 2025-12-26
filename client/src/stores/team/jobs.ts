@@ -45,10 +45,10 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
             logger.log('Socket connection status:', connected);
             set({ isConnected: connected });
 
-            if(!connected) return;
+            if (!connected) return;
 
             const { currentTeamId } = get();
-            if(currentTeamId){
+            if (currentTeamId) {
                 logger.log('Reconnected, re-subscribing to team:', currentTeamId);
                 socketService.subscribeToTeam(currentTeamId);
             }
@@ -65,7 +65,7 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
         _handleJobUpdate: (updatedJob: any) => {
             const { currentTeamId, jobs, expiredSessions } = get();
 
-            if(updatedJob.type === 'session_expired'){
+            if (updatedJob.type === 'session_expired') {
                 logger.log(`Session ${updatedJob.sessionId} expired for trajectory ${updatedJob.trajectoryId}`);
                 const newExpiredSessions = new Set(expiredSessions);
                 newExpiredSessions.add(updatedJob.sessionId);
@@ -78,10 +78,10 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
             const jobExists = jobs.some((job) => job.jobId === updatedJob.jobId);
             let newJobs: Job[];
 
-            if(jobExists){
+            if (jobExists) {
                 logger.log(`Updating existing job ${updatedJob.jobId}`);
                 newJobs = jobs.map((job) => job.jobId === updatedJob.jobId ? { ...job, ...updatedJob } : job);
-            }else{
+            } else {
                 logger.log(`Adding new job ${updatedJob.jobId}`);
                 newJobs = [...jobs, updatedJob];
             }
@@ -94,21 +94,21 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
             const { _handleConnect, _handleTeamJobs, _handleJobUpdate } = get();
             logger.log('Initializing socket listeners...');
 
-            if(connectionUnsubscribe) connectionUnsubscribe();
-            if(teamJobsUnsubscribe) teamJobsUnsubscribe();
-            if(jobUpdateUnsubscribe) jobUpdateUnsubscribe();
+            if (connectionUnsubscribe) connectionUnsubscribe();
+            if (teamJobsUnsubscribe) teamJobsUnsubscribe();
+            if (jobUpdateUnsubscribe) jobUpdateUnsubscribe();
 
             connectionUnsubscribe = socketService.onConnectionChange(_handleConnect);
             teamJobsUnsubscribe = socketService.on('team_jobs', _handleTeamJobs);
             jobUpdateUnsubscribe = socketService.on('job_update', _handleJobUpdate);
 
-            if(!socketService.isConnected()){
+            if (!socketService.isConnected()) {
                 socketService.connect()
                     .catch((error) => {
                         logger.error('Failed to connect socket:', error);
                         set({ isLoading: false });
                     });
-            }else{
+            } else {
                 set({ isConnected: true });
             }
         },
@@ -116,7 +116,7 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
         subscribeToTeam: (teamId: string, previousTeamId: string | null = null) => {
             const { currentTeamId, _initializeSocket } = get();
 
-            if(currentTeamId === teamId){
+            if (currentTeamId === teamId) {
                 logger.log(`Already subscribed to team ${teamId}`);
                 return;
             }
@@ -131,23 +131,23 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
                 isLoading: true
             });
 
-            if(!socketService.isConnected()) {
+            if (!socketService.isConnected()) {
                 socketService.connect()
                     .then(() => {
                         socketService.subscribeToTeam(teamId, previousTeamId || currentTeamId!);
                     })
-                        .catch((error) => {
+                    .catch((error) => {
                         logger.error('Failed to connect and subscribe', error);
                         set({ isLoading: false });
                     });
-            }else{
+            } else {
                 socketService.subscribeToTeam(teamId, previousTeamId || currentTeamId!);
             }
         },
 
         unsubscribeFromTeam: () => {
             const { currentTeamId } = get();
-            if(currentTeamId){
+            if (currentTeamId) {
                 logger.log(`Unsubscribing from team: ${currentTeamId}`);
                 set({
                     currentTeamId: null,
@@ -160,18 +160,19 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
 
         disconnect: () => {
             logger.log('Disconnecting socket...');
-            if(connectionUnsubscribe){
+            if (connectionUnsubscribe) {
                 connectionUnsubscribe();
                 connectionUnsubscribe = null;
             }
-            if(teamJobsUnsubscribe){
+            if (teamJobsUnsubscribe) {
                 teamJobsUnsubscribe();
                 teamJobsUnsubscribe = null;
             }
-            if(jobUpdateUnsubscribe){
+            if (jobUpdateUnsubscribe) {
                 jobUpdateUnsubscribe();
                 jobUpdateUnsubscribe = null;
             }
+
             socketService.disconnect();
             set({
                 isConnected: false,
@@ -180,7 +181,7 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
                 expiredSessions: new Set(),
                 isLoading: true
             });
-        },
+        }
     }
 });
 

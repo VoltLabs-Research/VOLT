@@ -19,7 +19,7 @@ import { findDescendantByType } from '@/utilities/plugins/workflow-utils';
 import { decodeMultiStream } from '@/utilities/msgpack/msgpack-stream';
 
 export default class TrajectoryController extends BaseController<any> {
-    constructor(){
+    constructor() {
         super(Trajectory, {
             resourceName: 'Trajectory',
             fields: ['name', 'preview', 'isPublic', 'createdBy'],
@@ -34,20 +34,20 @@ export default class TrajectoryController extends BaseController<any> {
     /**
      * Users can only see trajectories in teams they belong to.
      */
-    protected async getFilter(req: Request): Promise<any>{
+    protected async getFilter(req: Request): Promise<any> {
         const userId = (req as any).user.id;
         const { teamId } = req.query;
 
         let teamQuery: any = { members: userId };
-        if(teamId && typeof teamId === 'string'){
-            if(!isValidObjectId(teamId)) throw new RuntimeError(ErrorCodes.VALIDATION_INVALID_TEAM_ID, 400);
+        if (teamId && typeof teamId === 'string') {
+            if (!isValidObjectId(teamId)) throw new RuntimeError(ErrorCodes.VALIDATION_INVALID_TEAM_ID, 400);
             teamQuery._id = teamId;
         }
 
         const userTeams = await Team.find(teamQuery).select('_id');
 
         // If filtering by specific team ID and user isn't in it, return impossible query
-        if(teamId && userTeams.length === 0) return { _id: { $in: [] } };
+        if (teamId && userTeams.length === 0) return { _id: { $in: [] } };
 
         const teamIds = userTeams.map((team) => team._id);
         return { team: { $in: teamIds } };
@@ -56,21 +56,21 @@ export default class TrajectoryController extends BaseController<any> {
     /**
      * Cleanup resources(Dump, Temp Files) before deleting the DB record
      */
-    protected async onBeforeDelete(doc: any, req: Request): Promise<void>{
+    protected async onBeforeDelete(doc: any, req: Request): Promise<void> {
         const trajectoryId = doc._id.toString();
         await DumpStorage.deleteDumps(trajectoryId);
     }
 
-    public getTeamMetrics = catchAsync(async(req: Request, res: Response) => {
+    public getTeamMetrics = catchAsync(async (req: Request, res: Response) => {
         const { teamId } = req.query;
-        if(!teamId || typeof teamId !== 'string'){
+        if (!teamId || typeof teamId !== 'string') {
             throw new RuntimeError(ErrorCodes.TRAJECTORY_TEAM_ID_REQUIRED, 400);
         }
         const metrics = await getMetricsByTeamId(teamId);
         res.status(200).json({ status: 'success', data: metrics });
     });
 
-    public getSingleMetrics = catchAsync(async(req: Request, res: Response) => {
+    public getSingleMetrics = catchAsync(async (req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
         const vfs = new TrajectoryVFS(trajectoryId);
@@ -94,28 +94,28 @@ export default class TrajectoryController extends BaseController<any> {
         });
     });
 
-    public getPreview = catchAsync(async(req: Request, res: Response) => {
+    public getPreview = catchAsync(async (req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
         const result = await getAnyTrajectoryPreview(trajectory._id.toString());
 
-        if(!result){
+        if (!result) {
             throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
         }
 
         return sendImage(res, result.etag, result.buffer);
     });
 
-    public getAtoms = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public getAtoms = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { analysisId } = req.params;
         const { timestep, exposureId, page: pageStr, pageSize: pageSizeStr } = req.query;
         const trajectoryId = res.locals.trajectory._id.toString();
 
-        if(!timestep || !exposureId){
+        if (!timestep || !exposureId) {
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
         }
 
         const trajectory = res.locals.trajectory;
-        if(!trajectory){
+        if (!trajectory) {
             return next(new RuntimeError(ErrorCodes.TRAJECTORY_NOT_FOUND, 404));
         }
 
@@ -128,22 +128,22 @@ export default class TrajectoryController extends BaseController<any> {
             DumpStorage.getDump(trajectoryId, String(timestep))
         ]);
 
-        if(!analysis) return next(new RuntimeError(ErrorCodes.ANALYSIS_NOT_FOUND, 404));
-        if(!dumpPath) return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));
+        if (!analysis) return next(new RuntimeError(ErrorCodes.ANALYSIS_NOT_FOUND, 404));
+        if (!dumpPath) return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));
 
         const plugin = await Plugin.findOne({ slug: analysis.plugin }).lean();
-        if(!plugin) return next(new RuntimeError(ErrorCodes.PLUGIN_NOT_FOUND, 404));
+        if (!plugin) return next(new RuntimeError(ErrorCodes.PLUGIN_NOT_FOUND, 404));
 
         const exposureNode = plugin.workflow.nodes.find((node: any) => node.type === NodeType.EXPOSURE && node.id === exposureId);
-        if(!exposureNode) return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
+        if (!exposureNode) return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
 
         // Find schema and visualizer nodes connected to this specific exposure
         const schemaNode = findDescendantByType(String(exposureId), plugin.workflow, NodeType.SCHEMA);
         const visualizerNode = findDescendantByType(String(exposureId), plugin.workflow, NodeType.VISUALIZERS);
 
         // The visualizer node is not necessary, but the schema node is.
-        if(!schemaNode) return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
-        
+        if (!schemaNode) return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
+
         const iterableKey = exposureNode?.data?.exposure?.iterable;
         const perAtomProperties: string[] = visualizerNode?.data?.visualizers?.perAtomProperties || [];
 
@@ -160,7 +160,7 @@ export default class TrajectoryController extends BaseController<any> {
         const endIndex = Math.min(startIndex + pageSize, totalAtoms);
         const rowCount = endIndex - startIndex;
 
-        if(rowCount <= 0){
+        if (rowCount <= 0) {
             return res.status(200).json({
                 status: 'success',
                 data: [],
@@ -176,9 +176,9 @@ export default class TrajectoryController extends BaseController<any> {
 
         // Build plugin data index
         let pluginIndex: Map<number, any> | null = null;
-        if(pluginStream){
+        if (pluginStream) {
             const targetIds = new Set<number>();
-            for(let idx = 0; idx < rowCount; idx++){
+            for (let idx = 0; idx < rowCount; idx++) {
                 const i = startIndex + idx;
                 const atomId = ids ? ids[i] : i + 1;
                 targetIds.add(atomId);
@@ -187,20 +187,20 @@ export default class TrajectoryController extends BaseController<any> {
             pluginIndex = new Map();
             const stream = pluginStream as unknown as AsyncIterable<Uint8Array>;
 
-            for await (const msg of decodeMultiStream(stream)){
+            for await (const msg of decodeMultiStream(stream)) {
                 let pluginData = msg as any;
-                if(iterableKey && pluginData?.[iterableKey]) pluginData = pluginData[iterableKey];
-                if(!Array.isArray(pluginData)) continue;
+                if (iterableKey && pluginData?.[iterableKey]) pluginData = pluginData[iterableKey];
+                if (!Array.isArray(pluginData)) continue;
 
-                for(const item of pluginData){
-                    if(item?.id === undefined) continue;
-                    if(targetIds.has(item.id)){
+                for (const item of pluginData) {
+                    if (item?.id === undefined) continue;
+                    if (targetIds.has(item.id)) {
                         pluginIndex.set(item.id, item);
                     }
                 }
 
-                if(pluginIndex.size >= targetIds.size){
-                    if(typeof (pluginStream as any).destroy === 'function'){
+                if (pluginIndex.size >= targetIds.size) {
+                    if (typeof (pluginStream as any).destroy === 'function') {
                         (pluginStream as any).destroy();
                     }
                     break;
@@ -211,10 +211,10 @@ export default class TrajectoryController extends BaseController<any> {
         // Pre-cache schema keys
         const schemaDefinition = schemaNode?.data?.schema?.definition?.data?.items;
         const schemaKeysMap = new Map<string, string[]>();
-        if(schemaDefinition){
-            for(const prop of perAtomProperties){
+        if (schemaDefinition) {
+            for (const prop of perAtomProperties) {
                 const propDef = schemaDefinition[prop];
-                if(propDef?.keys) schemaKeysMap.set(prop, propDef.keys);
+                if (propDef?.keys) schemaKeysMap.set(prop, propDef.keys);
             }
         }
 
@@ -222,7 +222,7 @@ export default class TrajectoryController extends BaseController<any> {
         const rows = new Array(rowCount);
         const discoveredProps = new Set<string>();
 
-        for(let idx = 0; idx < rowCount; idx++){
+        for (let idx = 0; idx < rowCount; idx++) {
             const i = startIndex + idx;
             const base = i * 3;
             const atomId = ids ? ids[i] : i + 1;
@@ -234,24 +234,24 @@ export default class TrajectoryController extends BaseController<any> {
                 z: positions[base + 2]
             };
 
-            if(pluginIndex){
+            if (pluginIndex) {
                 const item = pluginIndex.get(atomId);
-                if(item){
-                    for(const prop of perAtomProperties){
+                if (item) {
+                    for (const prop of perAtomProperties) {
                         const value = item[prop];
-                        if(value === undefined) continue;
+                        if (value === undefined) continue;
 
                         // If the property value is an array (e.g., deformationGradient), 
                         // each i-th element of the array has a corresponding title in keys.
-                        if(Array.isArray(value)){
+                        if (Array.isArray(value)) {
                             const keys = schemaKeysMap.get(prop);
-                            if(!keys?.length) continue;
-                            for(const k in keys){
+                            if (!keys?.length) continue;
+                            for (const k in keys) {
                                 const columnTitle = `${prop} ${keys[k]}`;
                                 row[columnTitle] = value[k];
                                 discoveredProps.add(columnTitle);
                             }
-                        }else{
+                        } else {
                             row[prop] = value;
                             discoveredProps.add(prop);
                         }
@@ -273,19 +273,19 @@ export default class TrajectoryController extends BaseController<any> {
         })
     });
 
-    public getGLB = catchAsync(async(req: Request, res: Response) => {
+    public getGLB = catchAsync(async (req: Request, res: Response) => {
         const { timestep, analysisId } = req.params;
         const { type } = req.query as { type?: string };
         const trajectoryId = res.locals.trajectory._id.toString();
         const vfs = new TrajectoryVFS(trajectoryId);
 
         let virtualPath = '';
-        if(analysisId === 'default' || !type){
+        if (analysisId === 'default' || !type) {
             virtualPath = `trajectory-${trajectoryId}/previews/timestep-${timestep}.glb`;
-        }else{
+        } else {
             const glbFiles = await vfs.list(`trajectory-${trajectoryId}/analysis-${analysisId}/glb`);
             const match = glbFiles.find(f => f.name.includes(type) && f.name.includes(timestep));
-            if(!match) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
+            if (!match) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
             virtualPath = match.relPath;
         }
 
@@ -293,11 +293,11 @@ export default class TrajectoryController extends BaseController<any> {
         res.setHeader('Content-Type', 'model/gltf-binary');
         res.setHeader('Content-Length', size);
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-        if(analysisId === 'default') res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        if (analysisId === 'default') res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
         stream.pipe(res);
     });
 
-    public downloadGLBArchive = catchAsync(async(req: Request, res: Response) => {
+    public downloadGLBArchive = catchAsync(async (req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
         const trajectoryId = trajectory._id.toString();
         const { analysisId } = req.params;
@@ -307,12 +307,12 @@ export default class TrajectoryController extends BaseController<any> {
         const frameFilter = req.query.frame ? String(req.query.frame) : null;
 
         const filesToZip = entries.filter((entry) => {
-            if(entry.type !== 'file') return false;
-            if(frameFilter && !entry.name.includes(frameFilter)) return false;
+            if (entry.type !== 'file') return false;
+            if (frameFilter && !entry.name.includes(frameFilter)) return false;
             return true;
         });
 
-        if(!filesToZip.length) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILES_NOT_FOUND, 404);
+        if (!filesToZip.length) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILES_NOT_FOUND, 404);
 
         const filename = String(trajectory.name || trajectoryId).replace(/[^a-z0-9_\-]+/gi, '_');
         res.setHeader('Content-Type', 'application/zip');
@@ -321,12 +321,12 @@ export default class TrajectoryController extends BaseController<any> {
         const archive = archiver('zip', { zlib: { level: 0 } });
 
         archive.on('error', () => {
-            if(!res.headersSent) res.status(500).end();
+            if (!res.headersSent) res.status(500).end();
         });
 
         archive.pipe(res);
 
-        for(const file of filesToZip){
+        for (const file of filesToZip) {
             const { stream } = await vfs.getReadStream(file.relPath);
             archive.append(stream, { name: `glb/${file.name}` });
         }
@@ -334,18 +334,18 @@ export default class TrajectoryController extends BaseController<any> {
         await archive.finalize();
     });
 
-    public create = catchAsync(async(req: Request, res: Response) => {
+    public create = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id;
         const { teamId, originalFolderName, uploadId } = req.body;
 
         let trajectoryName = req.body.name;
-        if(!trajectoryName && originalFolderName && originalFolderName.length >= 4){
+        if (!trajectoryName && originalFolderName && originalFolderName.length >= 4) {
             trajectoryName = originalFolderName;
         }
-        if(!trajectoryName) trajectoryName = 'Untitled Trajectory';
+        if (!trajectoryName) trajectoryName = 'Untitled Trajectory';
 
         let trajectory;
-        try{
+        try {
             trajectory = await processAndCreateTrajectory({
                 files: req.files as any[],
                 teamId,
@@ -353,7 +353,7 @@ export default class TrajectoryController extends BaseController<any> {
                 trajectoryName,
                 originalFolderName: req.body.originalFolderName,
                 onProgress: (progress) => {
-                    if(uploadId){
+                    if (uploadId) {
                         const io = req.app.get('io');
                         io.to(`upload:${uploadId}`).emit('trajectory:upload-progress', {
                             uploadId,
@@ -366,16 +366,13 @@ export default class TrajectoryController extends BaseController<any> {
                     }
                 }
             });
+            console.log(trajectory);
             res.status(201).json({
                 status: 'success',
                 data: trajectory
             });
-        }finally{
-            if(req.files && Array.isArray(req.files)) {
-                await Promise.all((req.files as any[]).map(f =>
-                    require('fs').promises.unlink(f.path).catch(() => { })
-                ));
-            }
+        } catch (error) {
+            throw error;
         }
     });
 };

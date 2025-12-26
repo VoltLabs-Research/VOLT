@@ -1,6 +1,6 @@
 import type { Job } from '@/types/jobs';
 
-export interface TeamJobsState{
+export interface TeamJobsState {
     jobs: Job[];
     isConnected: boolean;
     isLoading: boolean;
@@ -8,7 +8,7 @@ export interface TeamJobsState{
     currentTeamId: string | null;
 }
 
-export interface TeamJobsActions{
+export interface TeamJobsActions {
     subscribeToTeam: (teamId: string, previousTeamId?: string | null) => void;
     unsubscribeFromTeam: () => void;
     disconnect: () => void;

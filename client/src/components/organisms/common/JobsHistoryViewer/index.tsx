@@ -27,23 +27,19 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo(({
     const setCurrentTimestep = usePlaybackStore((state) => state.setCurrentTimestep);
     const { showSuccess } = useToast();
 
-    // Track if we've ever had active jobs (to know when to show toast)
     const hadActiveJobsRef = useRef(false);
     const hasShownCompletionToastRef = useRef(false);
 
-    // Track jobs for auto-select: store jobIds that were active (non-completed)
     const trackedJobIdsRef = useRef<Set<string>>(new Set());
     const hasAutoSelectedAnalysisRef = useRef(false);
 
-    // Filter jobs based on trajectoryId if provided
     const relevantJobs = useMemo(() => {
         if (!trajectoryId) return jobs;
         return jobs.filter((job) => job.trajectoryId === trajectoryId);
     }, [jobs, trajectoryId]);
 
-    // Check if there are any active (non-completed, non-failed) jobs
     const hasActiveJobs = useMemo(() => {
-        if (!isConnected || isLoading) return false; // Don't show while loading
+        if (!isConnected || isLoading) return false;
         if (relevantJobs.length === 0) return false;
         return relevantJobs.some((job) => job.status !== 'completed' && job.status !== 'failed');
     }, [relevantJobs, isConnected, isLoading]);
