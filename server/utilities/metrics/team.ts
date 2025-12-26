@@ -31,9 +31,9 @@ type Pointer = {
     createdAt?: string;
 };
 
-export const getMetricsByTeamId = async(teamId: string) => {
+export const getMetricsByTeamId = async (teamId: string) => {
     const trajectoryDocs = await Trajectory.find({ team: teamId }).select('_id').lean();
-    if(!trajectoryDocs.length){
+    if (!trajectoryDocs.length) {
         return { totals: {}, lastMonth: {}, weekly: { labels: [] } };
     }
 
@@ -59,42 +59,42 @@ export const getMetricsByTeamId = async(teamId: string) => {
         .lean();
 
     const pointersByPlugin = new Map<string, Pointer[]>();
-    for(const analysis of analyses){
-        if(!analysis.plugin || !analysis.trajectory) continue;
+    for (const analysis of analyses) {
+        if (!analysis.plugin || !analysis.trajectory) continue;
         const pluginSlug = String(analysis.plugin);
         const trajectoryId = String(analysis.trajectory);
         const analysisId = String(analysis._id);
-        if(!trajectoryId || !analysisId) continue;
+        if (!trajectoryId || !analysisId) continue;
 
         const arr = pointersByPlugin.get(pluginSlug);
-        const createdAt = analysis.createdAt ? new Date(analysis.createdAt as any).toISOString() : undefined;
-        if(arr){
+        const createdAt = (analysis as any).createdAt ? new Date((analysis as any).createdAt).toISOString() : undefined;
+        if (arr) {
             arr.push({ trajectoryId, analysisId, createdAt });
-        }else{
+        } else {
             pointersByPlugin.set(pluginSlug, [{ trajectoryId, analysisId, createdAt }]);
         }
     }
 
     const pluginSlugs = [...pointersByPlugin.keys()];
-    if(!pluginSlugs.length){
+    if (!pluginSlugs.length) {
         return MongoListingCountAggregator.merge(aggregators);
     }
 
     const plugins = await Plugin.find({ slug: { $in: pluginSlugs } }).lean();
     const pluginBySlug = new Map(plugins.map((plugin) => [String(plugin.slug), plugin]));
 
-    for(const slug of pluginSlugs){
+    for (const slug of pluginSlugs) {
         const plugin = pluginBySlug.get(slug);
-        if(!plugin) continue;
+        if (!plugin) continue;
 
         const analysisPointers = pointersByPlugin.get(slug) ?? [];
-        if(!analysisPointers.length) continue;
+        if (!analysisPointers.length) continue;
 
         const exposureNodes = plugin.workflow?.nodes?.filter((node: IWorkflowNode) => node.type === NodeType.EXPOSURE) ?? [];
-        if(!exposureNodes.length) continue;
+        if (!exposureNodes.length) continue;
 
         const first = analysisPointers[0];
-        for(const exposureNode of exposureNodes){
+        for (const exposureNode of exposureNodes) {
             const listingKey = exposureNode.id;
             const displayName = exposureNode.data?.exposure?.name || exposureNode.id;
             const listingUrl = first

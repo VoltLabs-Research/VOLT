@@ -187,7 +187,7 @@ export default class PluginsController extends BaseController<IPlugin> {
         );
 
         if (!forEachResult || !forEachResult.items.length) {
-            return next(new RuntimeError('Plugin::ForEach::NoItems', 400));
+            return next(new RuntimeError('Plugin::ForEach::NoItems' as any, 400));
         }
 
         const { items } = forEachResult;
@@ -218,6 +218,7 @@ export default class PluginsController extends BaseController<IPlugin> {
             modifierId: plugin.slug,
             plugin: plugin.slug,
             name: plugin.modifier?.name || plugin.slug,
+            // @ts-ignore
             message: `${trajectory.name} - Item ${index + 1}/${items.length}`,
             forEachItem: item,
             forEachIndex: index
@@ -314,14 +315,14 @@ export default class PluginsController extends BaseController<IPlugin> {
         const after = String(req.query.after ?? '');
         let afterTimestep: number | null = null;
         let afterId: string | null = null;
-        if(after.includes(':')){
+        if (after.includes(':')) {
             const [timestep, id] = after.split(':');
             afterTimestep = Number(timestep);
             afterId = id;
         }
 
         const plugin = await Plugin.findOne({ slug: pluginSlug }).select('_id').lean();
-        if(!plugin) throw new RuntimeError('Plugin::NotFound', 404);
+        if (!plugin) throw new RuntimeError('Plugin::NotFound', 404);
 
         const base: any = {
             plugin: plugin._id,
@@ -329,14 +330,14 @@ export default class PluginsController extends BaseController<IPlugin> {
             team: teamId
         };
 
-        if(trajectory){
+        if (trajectory) {
             base.trajectory = trajectory._id;
-        }else{
-            if(!teamId) throw new RuntimeError('Team::IdRequired', 400);
+        } else {
+            if (!teamId) throw new RuntimeError('Team::IdRequired', 400);
         }
 
-        if(afterTimestep != null && afterId){
-            base.$or = sortAsc 
+        if (afterTimestep != null && afterId) {
+            base.$or = sortAsc
                 ? [
                     { timestep: { $gt: afterTimestep } },
                     { timestep: afterTimestep, _id: { $gt: afterId } }
@@ -354,7 +355,7 @@ export default class PluginsController extends BaseController<IPlugin> {
             .lean();
 
         const hasMore = docs.length > limit;
-        const slice= hasMore ? docs.slice(0, limit) : docs;
+        const slice = hasMore ? docs.slice(0, limit) : docs;
 
         const rows = slice.map((doc: any) => ({
             _id: String(doc._id),
@@ -428,7 +429,7 @@ export default class PluginsController extends BaseController<IPlugin> {
                 return [];
             };
 
-            for await (const msg of decodeMultiStream(stream as AsyncIterable<Uint8Array>)){
+            for await (const msg of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
                 const items = resolveIterable(msg as any);
                 if (!items.length) continue;
 
@@ -604,7 +605,7 @@ export default class PluginsController extends BaseController<IPlugin> {
 
     public importPlugin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         if (!req.file) {
-            return next(new RuntimeError('Plugin::Import::FileRequired', 400));
+            return next(new RuntimeError('Plugin::Import::FileRequired' as any, 400));
         }
 
         const teamId = req.body.teamId || req.query.teamId;
@@ -615,14 +616,14 @@ export default class PluginsController extends BaseController<IPlugin> {
         // Find plugin.json
         const pluginJsonFile = directory.files.find((f: any) => f.path === 'plugin.json');
         if (!pluginJsonFile) {
-            return next(new RuntimeError('Plugin::Import::InvalidZip', 400));
+            return next(new RuntimeError('Plugin::Import::InvalidZip' as any, 400));
         }
 
         const pluginJsonBuffer = await pluginJsonFile.buffer();
         const importData = JSON.parse(pluginJsonBuffer.toString('utf-8'));
 
         if (!importData.workflow) {
-            return next(new RuntimeError('Plugin::Import::InvalidFormat', 400));
+            return next(new RuntimeError('Plugin::Import::InvalidFormat' as any, 400));
         }
 
         // Generate unique slug

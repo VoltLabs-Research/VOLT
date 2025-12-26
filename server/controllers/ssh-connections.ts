@@ -28,136 +28,61 @@ import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import logger from '@/logger';
 
-export default class SSHConnectionsController{
-    public getUserSSHConnections = catchAsync(async(req: Request, res: Response) => {
+export default class SSHConnectionsController {
+    public getUserSSHConnections = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id || (req as any).user.id;
+        const connections = await SSHConnection.find({ user: userId })
+            .select('-encryptedPassword')
+            .sort({ createdAt: -1 })
+            .lean();
 
-        try{
-            const connections = await SSHConnection.find({ user: userId })
-                .select('-encryptedPassword')
-                .sort({ createdAt: -1 })
-                .lean();
-
-            res.status(200).json({
-                status: 'success',
-                data: {
-                    connections
-                }
-            });
-        }catch(err: any){
-            logger.error(`Failed to fetch SSH connections: ${err.message}`);
-            throw new RuntimeError(ErrorCodes.SSH_CONNECTION_FETCH_ERROR, 500);
-        }
+        res.status(200).json({ status: 'success', data: { connections } });
     });
 
-    public createSSHConnection = catchAsync(async(req: Request, res: Response) => {
+    public createSSHConnection = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id || (req as any).user.id;
         const { name, host, port, username, password } = req.body;
 
-        try{
-            const connection = new SSHConnection({
-                name,
-                host,
-                port: port || 22,
-                username,
-                user: userId
-            });
+        const connection = new SSHConnection({
+            name,
+            host,
+            port: port || 22,
+            username,
+            user: userId
+        });
+        connection.setPassword(password);
+        await connection.save();
 
-            connection.setPassword(password);
-
-            await connection.save();
-
-            const connectionData = connection.toJSON();
-
-            res.status(201).json({
-                status: 'success',
-                data: {
-                    connection: connectionData
-                }
-            });
-        }catch(err: any){
-            if(err.message === 'SSHConnection::Name::Duplicate'){
-                throw new RuntimeError(ErrorCodes.SSH_CONNECTION_NAME_DUPLICATE, 400);
-            }
-            logger.error(`Failed to create SSH connection: ${err.message}`);
-            throw new RuntimeError(ErrorCodes.SSH_CONNECTION_CREATE_ERROR, 500);
-        }
+        res.status(201).json({ status: 'success', data: { connection: connection.toJSON() } });
     });
 
-    public updateSSHConnection = catchAsync(async(req: Request, res: Response) => {
+    public updateSSHConnection = catchAsync(async (req: Request, res: Response) => {
         const { name, host, port, username, password } = req.body;
         const connection = res.locals.sshConnection;
 
-        try{
+        if (name) connection.name = name;
+        if (host) connection.host = host;
+        if (port) connection.port = port;
+        if (username) connection.username = username;
+        if (password) connection.setPassword(password);
 
-            if(name) connection.name = name;
-            if(host) connection.host = host;
-            if(port) connection.port = port;
-            if(username) connection.username = username;
-            if(password) connection.setPassword(password);
-
-            await connection.save();
-
-            const connectionData = connection.toJSON();
-
-            res.status(200).json({
-                status: 'success',
-                data: {
-                    connection: connectionData
-                }
-            });
-        }catch(err: any){
-            if(err instanceof RuntimeError){
-                throw err;
-            }
-            logger.error(`Failed to update SSH connection: ${err.message}`);
-            throw new RuntimeError(ErrorCodes.SSH_CONNECTION_UPDATE_ERROR, 500);
-        }
+        await connection.save();
+        res.status(200).json({ status: 'success', data: { connection: connection.toJSON() } });
     });
 
-    public deleteSSHConnection = catchAsync(async(req: Request, res: Response) => {
+    public deleteSSHConnection = catchAsync(async (req: Request, res: Response) => {
         const connection = res.locals.sshConnection;
-
-        try{
-
-            res.status(200).json({
-                status: 'success',
-                data: null
-            });
-        }catch(err: any){
-            if(err instanceof RuntimeError){
-                throw err;
-            }
-            logger.error(`Failed to delete SSH connection: ${err.message}`);
-            throw new RuntimeError(ErrorCodes.SSH_CONNECTION_DELETE_ERROR, 500);
-        }
+        await connection.deleteOne();
+        res.status(204).json({ status: 'success', data: null });
     });
 
-    public testSSHConnection = catchAsync(async(req: Request, res: Response) => {
+    public testSSHConnection = catchAsync(async (req: Request, res: Response) => {
         const connection = res.locals.sshConnection;
-
-        try{
+        try {
             const isValid = await SSHService.testConnection(connection);
-
-            res.status(200).json({
-                status: 'success',
-                data: {
-                    valid: isValid
-                }
-            });
-        }catch(err: any){
-            if(err instanceof RuntimeError){
-                throw err;
-            }
-            logger.error(`SSH connection test failed: ${err.message}`);
-
-            res.status(200).json({
-                status: 'success',
-                data: {
-                    valid: false,
-                    error: err.message
-                }
-            });
+            res.status(200).json({ status: 'success', data: { valid: isValid } });
+        } catch (err: any) {
+            res.status(200).json({ status: 'success', data: { valid: false, error: err.message } });
         }
     });
 }

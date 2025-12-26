@@ -27,9 +27,10 @@ import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import mongoose from 'mongoose';
 import { uploadSingleFile, getFileUrl, uploadToMinIO } from '@/middlewares/file-upload';
+import { CHAT_POPULATES, POPULATE_FIELDS, populateChatDoc } from '@/middlewares/validation';
 
-export default class ChatController{
-    public getChats = catchAsync(async(req: Request, res: Response) => {
+export default class ChatController {
+    public getChats = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
 
         const userTeams = await Team.find({
@@ -45,50 +46,34 @@ export default class ChatController{
             team: { $in: teamIds },
             isActive: true
         })
-            .populate('participants', 'firstName lastName email')
-            .populate('admins', 'firstName lastName email')
-            .populate('createdBy', 'firstName lastName email')
-            .populate('lastMessage')
-            .populate('team', 'name')
+            .populate(CHAT_POPULATES as any)
             .sort({ lastMessageAt: -1 });
 
-        res.status(200).json({
-            status: 'success',
-            data: chats
-        });
+        res.status(200).json({ status: 'success', data: chats });
     });
 
-    public getOrCreateChat = catchAsync(async(req: Request, res: Response) => {
+    public getOrCreateChat = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         const { participantId, teamId } = req.params;
 
         let chat = await Chat.findOne({
             participants: { $all: [user._id, participantId] },
             team: teamId
-        })
-            .populate('participants', 'firstName lastName email')
-            .populate('admins', 'firstName lastName email')
-            .populate('createdBy', 'firstName lastName email')
-            .populate('lastMessage')
-            .populate('team', 'name');
+        }).populate(CHAT_POPULATES as any);
 
-        if(!chat){
+        if (!chat) {
             chat = await Chat.create({
                 participants: [user._id, participantId],
                 team: teamId,
                 isActive: true
             });
-
-            await chat.populate('participants', 'firstName lastName email');
-            await chat.populate('admins', 'firstName lastName email');
-            await chat.populate('createdBy', 'firstName lastName email');
-            await chat.populate('team', 'name');
+            await populateChatDoc(chat);
         }
 
         res.status(200).json({ status: 'success', data: chat });
     });
 
-    public getChatMessages = catchAsync(async(req: Request, res: Response) => {
+    public getChatMessages = catchAsync(async (req: Request, res: Response) => {
         const { chatId } = req.params;
         const { page = 1, limit = 50 } = req.query;
 
@@ -106,7 +91,7 @@ export default class ChatController{
         });
     });
 
-    public sendMessage = catchAsync(async(req: Request, res: Response) => {
+    public sendMessage = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         const { chatId } = req.params;
         const { content, messageType = 'text', metadata } = req.body;
@@ -129,7 +114,7 @@ export default class ChatController{
         res.status(201).json({ status: 'success', data: message });
     });
 
-    public editMessage = catchAsync(async(req: Request, res: Response) => {
+    public editMessage = catchAsync(async (req: Request, res: Response) => {
         const { content } = req.body as any;
         const { message } = req as any;
 
@@ -141,7 +126,7 @@ export default class ChatController{
         res.status(200).json({ status: 'success', data: message });
     });
 
-    public deleteMessage = catchAsync(async(req: Request, res: Response) => {
+    public deleteMessage = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         const { message } = req as any;
 
@@ -154,7 +139,7 @@ export default class ChatController{
         res.status(200).json({ status: 'success', data: { _id: message._id, deleted: true } });
     });
 
-    public markMessagesAsRead = catchAsync(async(req: Request, res: Response) => {
+    public markMessagesAsRead = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         const { chatId } = req.params;
 
@@ -170,7 +155,7 @@ export default class ChatController{
         });
     });
 
-    public getTeamMembers = catchAsync(async(req: Request, res: Response) => {
+    public getTeamMembers = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         const { teamId } = req.params;
 
@@ -182,7 +167,7 @@ export default class ChatController{
             ]
         }).populate('owner members', 'firstName lastName email');
 
-        if(!team){
+        if (!team) {
             throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
         }
 
@@ -194,17 +179,17 @@ export default class ChatController{
         res.status(200).json({ status: 'success', data: allMembers });
     });
 
-    public uploadFile = catchAsync(async(req: Request, res: Response) => {
-        uploadSingleFile(req, res, async(err) => {
-            if(err){
+    public uploadFile = catchAsync(async (req: Request, res: Response) => {
+        uploadSingleFile(req, res, async (err) => {
+            if (err) {
                 return res.status(400).json({ status: 'error', message: err.message });
             }
 
-            if(!req.file){
+            if (!req.file) {
                 return res.status(400).json({ status: 'error', message: 'No file uploaded' });
             }
 
-            try{
+            try {
                 const filename = await uploadToMinIO(req.file.buffer, req.file.originalname, req.file.mimetype);
                 const fileUrl = getFileUrl(filename);
 
@@ -218,7 +203,7 @@ export default class ChatController{
                         url: fileUrl
                     }
                 });
-            }catch(uploadErr: any){
+            } catch (uploadErr: any) {
                 return res.status(500).json({
                     status: 'error',
                     message: `Failed to upload file: ${uploadErr.message}`
@@ -227,7 +212,7 @@ export default class ChatController{
         });
     });
 
-    public sendFileMessage = catchAsync(async(req: Request, res: Response) => {
+    public sendFileMessage = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         const { chatId } = req.params;
         const { filename, originalName, size, mimetype, url } = req.body;

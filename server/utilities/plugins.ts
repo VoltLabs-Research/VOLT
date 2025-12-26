@@ -8,60 +8,62 @@ import { ErrorCodes } from '@/constants/error-codes';
 import { findAncestorByType } from './plugins/workflow-utils';
 import { getMinMaxNative, computeMagnitudesNative } from '@/parsers/lammps/native-stats';
 
-export const getModifierPerAtomProps = async(analysisId: string): Promise<Record<string, string[]>> =>{
+export const getModifierPerAtomProps = async (analysisId: string): Promise<Record<string, string[]>> => {
     const props: Record<string, string[]> = {};
     const analysis = await Analysis.findById(analysisId);
-    if(!analysis) throw new RuntimeError(ErrorCodes.ANALYSIS_NOT_FOUND, 404);
+    if (!analysis) throw new RuntimeError(ErrorCodes.ANALYSIS_NOT_FOUND, 404);
 
     const plugin = await Plugin.findOne({ slug: analysis.plugin });
-    if(!plugin) throw new RuntimeError(ErrorCodes.PLUGIN_NOT_FOUND, 404);
+    if (!plugin) throw new RuntimeError(ErrorCodes.PLUGIN_NOT_FOUND, 404);
 
     const visualizerNodes = plugin.workflow.nodes.filter((node) => node.type === NodeType.VISUALIZERS);
-    for(const visualizerNode of visualizerNodes){
+    for (const visualizerNode of visualizerNodes) {
         const visualizersData = visualizerNode.data?.visualizers;
-        if(visualizersData && visualizersData.perAtomProperties?.length){
+        if (visualizersData && visualizersData.perAtomProperties?.length) {
             const exposureNode = findAncestorByType(visualizerNode.id, plugin.workflow, NodeType.EXPOSURE);
-            props[exposureNode?.id] = visualizersData.perAtomProperties;
+            if (exposureNode?.id) {
+                props[exposureNode.id] = visualizersData.perAtomProperties;
+            }
         }
     }
     return props;
 };
 
-export const getModifierAnalysis = async(
+export const getModifierAnalysis = async (
     trajectoryId: string,
     analysisId: string,
     exposureId: string,
     timestep: string
-): Promise<string[]> =>{
+): Promise<string[]> => {
     const key = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/timestep-${timestep}.msgpack`;
 
     // check if we need to unwrap an iterable key
     const analysis = await Analysis.findById(analysisId);
-    if(analysis){
+    if (analysis) {
         const plugin = await Plugin.findOne({ slug: analysis.plugin });
-        if(plugin){
+        if (plugin) {
             const exposureNode = plugin.workflow.nodes.find((node: any) => node.type === NodeType.EXPOSURE && node.id === exposureId);
             const iterableKey = exposureNode?.data?.exposure?.iterable;
             const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, key);
             let data: any = null;
 
             const mergeChunkedValue = (target: any, incoming: any): any => {
-                if(incoming === undefined || incoming === null) return target;
-                if(target === undefined || target === null) return incoming;
+                if (incoming === undefined || incoming === null) return target;
+                if (target === undefined || target === null) return incoming;
 
-                if(Array.isArray(target) && Array.isArray(incoming)){
+                if (Array.isArray(target) && Array.isArray(incoming)) {
                     target.push(...incoming);
                     return target;
                 }
 
-                if(target && incoming && typeof target === 'object' && typeof incoming === 'object'){
-                    for(const [k, v] of Object.entries(incoming)){
+                if (target && incoming && typeof target === 'object' && typeof incoming === 'object') {
+                    for (const [k, v] of Object.entries(incoming)) {
                         const existing = (target as any)[k];
-                        if(Array.isArray(existing) && Array.isArray(v)){
+                        if (Array.isArray(existing) && Array.isArray(v)) {
                             existing.push(...v);
-                        }else if(existing && v && typeof existing === 'object' && typeof v === 'object'){
+                        } else if (existing && v && typeof existing === 'object' && typeof v === 'object') {
                             (target as any)[k] = mergeChunkedValue(existing, v);
-                        }else{
+                        } else {
                             (target as any)[k] = v;
                         }
                     }
@@ -71,9 +73,9 @@ export const getModifierAnalysis = async(
                 return incoming;
             };
 
-            for await (const msg of decodeMultiStream(stream as AsyncIterable<Uint8Array>)){
+            for await (const msg of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
                 let chunkData: any = msg;
-                if(iterableKey && (chunkData as any)?.[iterableKey] !== undefined){
+                if (iterableKey && (chunkData as any)?.[iterableKey] !== undefined) {
                     chunkData = (chunkData as any)[iterableKey];
                 }
                 data = mergeChunkedValue(data, chunkData);
@@ -85,10 +87,10 @@ export const getModifierAnalysis = async(
 
     const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, key);
     let data: any = null;
-    for await (const msg of decodeMultiStream(stream as AsyncIterable<Uint8Array>)){
-        if(Array.isArray(data) && Array.isArray(msg)){
+    for await (const msg of decodeMultiStream(stream as AsyncIterable<Uint8Array>)) {
+        if (Array.isArray(data) && Array.isArray(msg)) {
             data.push(...msg);
-        }else if(data == null){
+        } else if (data == null) {
             data = msg;
         }
     }
@@ -96,50 +98,50 @@ export const getModifierAnalysis = async(
 };
 
 export const getPropertyByAtoms = (data: any, property: string): Float32Array | undefined => {
-    if(data[property] instanceof Float32Array){
+    if (data[property] instanceof Float32Array) {
         return data[property];
     }
 
-    if(data[property] && Array.isArray(data[property])) {
+    if (data[property] && Array.isArray(data[property])) {
         return new Float32Array(data[property]);
     }
 
     // Array of objects with id/property structure
-    if(Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data) && data.length > 0) {
         const len = data.length;
         const firstItem = data[0];
         const isVector = Array.isArray(firstItem?.[property]);
 
         // Find max ID for sparse array allocation
         let maxId = 0;
-        for(let i = 0; i < len; i++){
+        for (let i = 0; i < len; i++) {
             const id = data[i].id;
-            if(id > maxId) maxId = id;
+            if (id > maxId) maxId = id;
         }
 
         const values = new Float32Array(maxId + 1);
 
-        if(isVector){
+        if (isVector) {
             // Extract vectors for C++ magnitude calculation
             const vectors: any[] = new Array(len);
             const ids: number[] = new Array(len);
-            for(let i = 0; i < len; i++){
+            for (let i = 0; i < len; i++) {
                 vectors[i] = data[i][property];
                 ids[i] = data[i].id;
             }
 
             // Use C++ for magnitude calculation
             const magnitudes = computeMagnitudesNative(vectors);
-            if(magnitudes){
-                for(let i = 0; i < len; i++){
+            if (magnitudes) {
+                for (let i = 0; i < len; i++) {
                     values[ids[i]] = magnitudes[i];
                 }
                 return values;
             }
 
-        }else{
+        } else {
             // Scalar values, direct extraction
-            for(let i = 0; i < len; i++){
+            for (let i = 0; i < len; i++) {
                 values[data[i].id] = Number(data[i][property]) || 0;
             }
         }
@@ -152,49 +154,49 @@ export const getPropertyByAtoms = (data: any, property: string): Float32Array | 
 
 export const getMinMaxFromData = (data: any, property: string): { min: number, max: number } | undefined => {
     // 1. Direct Float32Array/Float64Array - use native C++ for maximum performance
-    if(data && (data[property] instanceof Float32Array || data[property] instanceof Float64Array)) {
+    if (data && (data[property] instanceof Float32Array || data[property] instanceof Float64Array)) {
         const result = getMinMaxNative(data[property]);
-        if(result) return result;
+        if (result) return result;
     }
 
     // 2. Regular Array on object property - convert to Float32Array and use native
-    if(data && Array.isArray(data[property])) {
+    if (data && Array.isArray(data[property])) {
         const arr = new Float32Array(data[property]);
         const result = getMinMaxNative(arr);
-        if(result) return result;
+        if (result) return result;
     }
 
     // 3. Array of objects(e.g. [{id: 1, c_energy: -2.5}, ...])
-    if(Array.isArray(data)) {
-        if(data.length === 0) return { min: 0, max: 0 };
+    if (Array.isArray(data)) {
+        if (data.length === 0) return { min: 0, max: 0 };
 
         const firstItem = data[0];
         const isVector = Array.isArray(firstItem[property]);
         const len = data.length;
 
         // For scalar properties, extract values to Float32Array for native processing
-        if(!isVector){
+        if (!isVector) {
             const values = new Float32Array(len);
-            for(let i = 0; i < len; i++){
+            for (let i = 0; i < len; i++) {
                 values[i] = Number(data[i][property]) || 0;
             }
             const result = getMinMaxNative(values);
-            if(result) return result;
+            if (result) return result;
         }
 
         // For vector properties, compute magnitude then use native
         const magnitudes = new Float32Array(len);
-        for(let i = 0; i < len; i++){
+        for (let i = 0; i < len; i++) {
             const arr = data[i][property] as number[];
-            if(!arr) continue;
+            if (!arr) continue;
             let sum = 0;
-            for(let k = 0; k < arr.length; k++){
+            for (let k = 0; k < arr.length; k++) {
                 sum += arr[k] * arr[k];
             }
             magnitudes[i] = Math.sqrt(sum);
         }
         const result = getMinMaxNative(magnitudes);
-        if(result) return result;
+        if (result) return result;
     }
 
     return undefined;

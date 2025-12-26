@@ -27,7 +27,7 @@ import { Server, Socket } from 'socket.io';
  * Base class for SocketIO feature modules.
  * Each module can hook into the lifecycle and register its own handlers.
  */
-abstract class BaseSocketModule{
+abstract class BaseSocketModule {
     /**
      * Optional name used for logging/metrics.
      */
@@ -38,7 +38,7 @@ abstract class BaseSocketModule{
      */
     protected io?: Server;
 
-    constructor(name: string){
+    constructor(name: string) {
         this.name = name;
     }
 
@@ -48,7 +48,7 @@ abstract class BaseSocketModule{
      *
      * @param io The initialized SocketIO server.
      */
-    onInit(io: Server): void{
+    onInit(io: Server): void {
         this.io = io;
     }
 
@@ -58,20 +58,20 @@ abstract class BaseSocketModule{
      *
      * @param socket Connected socket.
      */
-    onConnection(socket: Socket): void{ }
+    onConnection(socket: Socket): void { }
 
     /**
      * Called during graceful shutdown.
      * Clean up timers, external subscriptions, etc.
      */
-    async onShutdown(): Promise<void>{ }
+    async onShutdown(): Promise<void> { }
 
     /**
      * Join a room!
      */
-    protected joinRoom(socket: Socket, room: string): void{
+    protected joinRoom(socket: Socket, room: string): void {
         // Check if socket is already in the room to prevent duplicate joins
-        if(socket.rooms.has(room)) {
+        if (socket.rooms.has(room)) {
             return;
         }
         socket.join(room);
@@ -81,7 +81,7 @@ abstract class BaseSocketModule{
     /**
      * Leave room!
      */
-    protected leaveRoom(socket: Socket, room: string): void{
+    protected leaveRoom(socket: Socket, room: string): void {
         socket.leave(room);
         logger.info(`[${this.name}] Socket ${socket.id} left room: ${room}`);
     }
@@ -115,15 +115,15 @@ abstract class BaseSocketModule{
             userFromSocket?: (socket: Socket) => any
         }
     ) {
-        socket.on(cfg.event, async(payload: TPayload) => {
+        socket.on(cfg.event, async (payload: TPayload) => {
             const prev = cfg.previousOf?.(payload);
-            if(prev){
+            if (prev) {
                 this.leaveRoom(socket, prev);
                 await this.broadcastPresence(prev, cfg.updateEvent, cfg.userFromSocket);
             }
 
             const room = cfg.roomOf(payload);
-            if(!room) return;
+            if (!room) return;
 
             cfg.setContext(socket, payload);
             this.joinRoom(socket, room);
@@ -147,9 +147,9 @@ abstract class BaseSocketModule{
         updateEvent: string,
         userFromSocket?: (socket: Socket) => any
     ) {
-        socket.on('disconnect', async() => {
+        socket.on('disconnect', async () => {
             const room = getRoomFromSocket(socket);
-            if(room){
+            if (room) {
                 await this.broadcastPresence(room, updateEvent, userFromSocket);
             }
         });
@@ -168,7 +168,7 @@ abstract class BaseSocketModule{
         updateEvent: string,
         userFromSocket?: (socket: Socket) => any
     ) {
-        if(!this.io){
+        if (!this.io) {
             return;
         }
 
@@ -178,7 +178,7 @@ abstract class BaseSocketModule{
 
         // Also broadcast to observer rooms with trajectory-specific event
         const observerRoom = room.replace(/^(canvas|raster):/, '$1-observer:');
-        if(observerRoom !== room){
+        if (observerRoom !== room) {
             // Extract trajectoryId from room name(e.g., "canvas:123" -> "123")
             const trajectoryId = room.split(':')[1];
             const trajectorySpecificEvent = `${updateEvent}:${trajectoryId}`;
@@ -200,17 +200,17 @@ abstract class BaseSocketModule{
         room: string,
         userFromSocket?: (socket: Socket) => any
     ): Promise<any[]> {
-        if(!this.io) return [];
+        if (!this.io) return [];
 
-        try{
+        try {
             const sockets = await this.io.in(room).fetchSockets();
             const byId = new Map<string, any>();
 
-            for(const socket of sockets){
+            for (const socket of sockets) {
                 // Use custom extractor if provided, otherwise fall back to default
                 const presenceUser = userFromSocket
-                    ? userFromSocket(socket)
-                    : (() =>{
+                    ? userFromSocket(socket as any)
+                    : (() => {
                         const user: any = (socket as any).user;
                         const isAnonymous = !user || !user._id;
                         return {
@@ -223,15 +223,15 @@ abstract class BaseSocketModule{
                     })();
 
                 const uid = presenceUser.id || socket.id;
-                if(!uid) continue;
+                if (!uid) continue;
 
-                if(!byId.has(uid)) {
+                if (!byId.has(uid)) {
                     byId.set(uid, presenceUser);
                 }
             }
 
             return Array.from(byId.values());
-        }catch(error){
+        } catch (error) {
             logger.error(`[${this.name}] Error fetching sockets for room ${room}: ${error}`);
             return [];
         }

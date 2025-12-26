@@ -1,6 +1,7 @@
 {
   "scripts": {
     "start": "export NODE_OPTIONS='--max-old-space-size=8192' && npx tsx server.ts",
+    "start:worker": "export NODE_OPTIONS='--max-old-space-size=8192' && npx tsx worker.ts",
     "build": "tsc -p tsconfig.json",
     "start:pm2:ts": "pm2 start ecosystem.config.js --env production",
     "reload:pm2": "pm2 reload api",

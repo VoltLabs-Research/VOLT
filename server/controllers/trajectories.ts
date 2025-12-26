@@ -138,8 +138,8 @@ export default class TrajectoryController extends BaseController<any> {
         if (!exposureNode) return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
 
         // Find schema and visualizer nodes connected to this specific exposure
-        const schemaNode = findDescendantByType(String(exposureId), plugin.workflow, NodeType.SCHEMA);
-        const visualizerNode = findDescendantByType(String(exposureId), plugin.workflow, NodeType.VISUALIZERS);
+        const schemaNode = findDescendantByType(String(exposureId), plugin.workflow, NodeType.SCHEMA as any);
+        const visualizerNode = findDescendantByType(String(exposureId), plugin.workflow, NodeType.VISUALIZERS as any);
 
         // The visualizer node is not necessary, but the schema node is.
         if (!schemaNode) return next(new RuntimeError(ErrorCodes.PLUGIN_NODE_NOT_FOUND, 404));
@@ -366,7 +366,6 @@ export default class TrajectoryController extends BaseController<any> {
                     }
                 }
             });
-            console.log(trajectory);
             res.status(201).json({
                 status: 'success',
                 data: trajectory

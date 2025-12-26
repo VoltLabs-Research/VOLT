@@ -120,7 +120,6 @@ export default class ColorCodingController {
         const { trajectoryId, analysisId } = req.params;
         const { property, startValue, endValue, gradient, timestep, exposureId } = req.query;
         const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${startValue}-${endValue}/${gradient}.glb`;
-        console.log(objectName);
         if (!await storage.exists(SYS_BUCKETS.MODELS, objectName)) {
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));
         }

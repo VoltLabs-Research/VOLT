@@ -40,7 +40,7 @@ type ModelMode = {
     buildQuery(): Record<string, any>;
 };
 
-type ListingMode ={
+type ListingMode = {
     kind: 'listing';
     listingKey: string;
     pluginId: string;
@@ -65,7 +65,7 @@ export type ListingMetrics = {
     meta?: Record<string, { displayName?: string; listingUrl?: string }>;
 };
 
-export default class MongoListingCountAggregator extends BaseListingAggregator{
+export default class MongoListingCountAggregator extends BaseListingAggregator {
     private totals = 0;
     private currMonth = 0;
     private prevMonth = 0;
@@ -74,21 +74,21 @@ export default class MongoListingCountAggregator extends BaseListingAggregator{
     constructor(
         private mode: AggregatorMode,
         config?: AggregatorConfig
-    ){
+    ) {
         super(config);
     }
 
     private async getListingDefinition() {
-        if(this.mode.kind !== 'listing') return null;
+        if (this.mode.kind !== 'listing') return null;
 
         const plugin = await Plugin.findOne({ slug: this.mode.pluginId });
-        if(!plugin) return null;
+        if (!plugin) return null;
 
         // Find the exposure node matching the listing key(TODO: workflow-utils)
         const exposureNode = plugin.workflow.nodes.find((node: any) =>
-            node.type === NodeType.EXPOSURE && node.name === this.mode.listingKey);
+            node.type === NodeType.EXPOSURE && node.name === (this.mode as any).listingKey);
 
-        if(!exposureNode) return null;
+        if (!exposureNode) return null;
         const exposureSlug = slugify(this.mode.listingKey);
 
         return { exposureSlug };
@@ -97,20 +97,20 @@ export default class MongoListingCountAggregator extends BaseListingAggregator{
     private updateBuckets(createdAt: Date) {
         this.totals += 1;
 
-        if(createdAt >= this.monthStart && createdAt < this.now){
+        if (createdAt >= this.monthStart && createdAt < this.now) {
             this.currMonth += 1;
-        }else if(createdAt >= this.prevMonthStart && createdAt < this.monthStart){
+        } else if (createdAt >= this.prevMonthStart && createdAt < this.monthStart) {
             this.prevMonth += 1;
         }
 
-        if(createdAt >= this.sinceDate){
+        if (createdAt >= this.sinceDate) {
             const key = this.toWeekKey(createdAt);
             this.weeklyCounts.set(key, (this.weeklyCounts.get(key) ?? 0) + 1);
         }
     }
 
     private async collectFromModel() {
-        if(this.mode.kind !== 'model'){
+        if (this.mode.kind !== 'model') {
             throw new Error('collectFromModel() only if kind === "model"');
         }
 
@@ -118,27 +118,27 @@ export default class MongoListingCountAggregator extends BaseListingAggregator{
         const cursor = this.mode.model.find(query).select('createdAt').cursor();
         for await (const doc of cursor as any) {
             const createdAt = (doc as any)?.createdAt as Date | undefined;
-            if(createdAt){
+            if (createdAt) {
                 this.updateBuckets(createdAt);
             }
         }
     }
 
     private async collectFromListing() {
-        if(this.mode.kind !== 'listing'){
+        if (this.mode.kind !== 'listing') {
             throw new Error('collectFromListing() only if kind === "listing"');
         }
 
-        if(!this.mode.analysisPointers?.length){
+        if (!this.mode.analysisPointers?.length) {
             return;
         }
 
         const definition = await this.getListingDefinition();
-        if(!definition){
+        if (!definition) {
             return;
         }
 
-        for(const pointer of this.mode.analysisPointers){
+        for (const pointer of this.mode.analysisPointers) {
             const prefix = [
                 'plugins',
                 `trajectory-${pointer.trajectoryId}`,
@@ -147,16 +147,16 @@ export default class MongoListingCountAggregator extends BaseListingAggregator{
             ].join('/');
 
             const createdAt = pointer.createdAt ? new Date(pointer.createdAt) : new Date();
-            for await (const _key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, prefix)){
+            for await (const _key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, prefix)) {
                 this.updateBuckets(createdAt);
             }
         }
     }
 
     async collect(metricKey?: string) {
-        if(this.mode.kind === 'model'){
+        if (this.mode.kind === 'model') {
             await this.collectFromModel();
-        }else{
+        } else {
             await this.collectFromListing();
         }
 
@@ -184,31 +184,31 @@ export default class MongoListingCountAggregator extends BaseListingAggregator{
         };
     }
 
-    static async merge(aggregators: Array<{ agg: MongoListingCountAggregator; key: string }>): Promise<ListingMetrics>{
+    static async merge(aggregators: Array<{ agg: MongoListingCountAggregator; key: string }>): Promise<ListingMetrics> {
         const totals: Record<string, number> = {};
         const lastMonth: Record<string, number> = {};
         const labelsSet = new Set<string>();
         const series: Record<string, Map<string, number>> = {};
 
         const mergeTotals = (source: Record<string, number>) => {
-            for(const [key, value] of Object.entries(source)) {
+            for (const [key, value] of Object.entries(source)) {
                 totals[key] = (totals[key] ?? 0) + value;
             }
         };
 
         const mergeLastMonth = (source: Record<string, number>) => {
-            for(const [key, value] of Object.entries(source)) {
+            for (const [key, value] of Object.entries(source)) {
                 lastMonth[key] = (lastMonth[key] ?? 0) + value;
             }
         };
 
         const meta: Record<string, { displayName?: string; listingUrl?: string }> = {};
-        for(const { agg, key } of aggregators){
+        for (const { agg, key } of aggregators) {
             const metrics = await agg.collect(key);
             mergeTotals(metrics.totals);
             mergeLastMonth(metrics.lastMonth);
 
-            if(metrics.meta){
+            if (metrics.meta) {
                 Object.assign(meta, metrics.meta);
             }
 
@@ -226,7 +226,7 @@ export default class MongoListingCountAggregator extends BaseListingAggregator{
 
         const sortedLabels = Array.from(labelsSet).sort();
         const weekly: ListingMetrics['weekly'] = { labels: sortedLabels };
-        for(const [key, map] of Object.entries(series)) {
+        for (const [key, map] of Object.entries(series)) {
             weekly[key] = sortedLabels.map((label) => map.get(label) ?? 0);
         }
 
