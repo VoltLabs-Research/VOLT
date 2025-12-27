@@ -28,7 +28,6 @@ import * as authMiddleware from '@/middlewares/authentication';
 const router = Router();
 const controller = new RasterController();
 
-// Usar autenticación opcional para permitir acceso público a rutas GET
 router.get(
     '/:id/metadata',
     authMiddleware.optionalAuth,
@@ -50,7 +49,6 @@ router.get(
     controller.downloadRasterImagesArchive
 );
 
-// Para rutas POST, seguir requiriendo autenticación completa
 router.post(
     '/:id/glb/',
     authMiddleware.protect,

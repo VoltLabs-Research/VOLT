@@ -25,11 +25,23 @@ import { Chat, Message, Team, User } from '@/models/index';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
-import mongoose from 'mongoose';
 import { uploadSingleFile, getFileUrl, uploadToMinIO } from '@/middlewares/file-upload';
-import { CHAT_POPULATES, POPULATE_FIELDS, populateChatDoc } from '@/middlewares/validation';
 
 export default class ChatController {
+    private static readonly POPULATE_FIELDS = {
+        user: 'firstName lastName email avatar',
+        team: 'name description',
+        teamWithMembers: 'name description members owner'
+    };
+
+    private static readonly CHAT_POPULATES = [
+        { path: 'participants', select: this.POPULATE_FIELDS.user },
+        { path: 'admins', select: this.POPULATE_FIELDS.user },
+        { path: 'createdBy', select: this.POPULATE_FIELDS.user },
+        { path: 'lastMessage' },
+        { path: 'team', select: 'name' }
+    ];
+
     public getChats = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
 
@@ -46,7 +58,7 @@ export default class ChatController {
             team: { $in: teamIds },
             isActive: true
         })
-            .populate(CHAT_POPULATES as any)
+            .populate(ChatController.CHAT_POPULATES)
             .sort({ lastMessageAt: -1 });
 
         res.status(200).json({ status: 'success', data: chats });
@@ -59,7 +71,7 @@ export default class ChatController {
         let chat = await Chat.findOne({
             participants: { $all: [user._id, participantId] },
             team: teamId
-        }).populate(CHAT_POPULATES as any);
+        }).populate(ChatController.CHAT_POPULATES);
 
         if (!chat) {
             chat = await Chat.create({
@@ -67,7 +79,7 @@ export default class ChatController {
                 team: teamId,
                 isActive: true
             });
-            await populateChatDoc(chat);
+            await chat.populate(ChatController.CHAT_POPULATES);
         }
 
         res.status(200).json({ status: 'success', data: chat });

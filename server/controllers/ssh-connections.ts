@@ -22,11 +22,8 @@
 
 import { Request, Response } from 'express';
 import SSHConnection from '@/models/ssh-connection';
-import RuntimeError from '@/utilities/runtime/runtime-error';
 import SSHService from '@/services/ssh';
-import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
-import logger from '@/logger';
 
 export default class SSHConnectionsController {
     public getUserSSHConnections = catchAsync(async (req: Request, res: Response) => {

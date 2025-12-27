@@ -20,31 +20,16 @@
  * SOFTWARE.
  */
 
-import express from 'express';
-import TeamController from '@/controllers/team';
-import * as authMiddleware from '@middlewares/authentication';
-import * as middleware from '@middlewares/team';
+import { Router } from 'express';
+import DailyActivityController from '@/controllers/daily-activity';
+import * as teamMiddleware from '@/middlewares/team';
+import * as authMiddleware from '@/middlewares/authentication';
 
-const router = express.Router();
-const teamController = new TeamController();
+const router = Router();
+const controller = new DailyActivityController();
 
 router.use(authMiddleware.protect);
-router.route('/')
-    .get(teamController.getAll)
-    .post(teamController.createOne);
 
-router.route('/:id')
-    .get(middleware.checkTeamMembership, teamController.getOne)
-    .patch(middleware.checkTeamOwnership, teamController.updateOne)
-    .delete(middleware.checkTeamOwnership, teamController.deleteOne);
-
-router.post('/:id/leave', middleware.checkTeamMembership, teamController.leaveTeam);
-
-router.get('/:id/members', middleware.checkTeamMembership, teamController.getMembers);
-
-router.post('/:id/members/remove', middleware.checkTeamMembership, teamController.removeMember);
-
-router.patch('/:id/members/promote', middleware.checkTeamMembership, teamController.promoteToAdmin);
-router.patch('/:id/members/demote', middleware.checkTeamMembership, teamController.demoteFromAdmin);
+router.get('/team/:id', teamMiddleware.checkTeamMembership, controller.getTeamActivity);
 
 export default router;

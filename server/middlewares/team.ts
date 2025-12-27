@@ -24,9 +24,10 @@ import { Request, Response, NextFunction } from 'express';
 import { Team } from '@models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
+import { Types } from 'mongoose';
 
 export const checkTeamMembership = async(req: Request, res: Response, next: NextFunction): Promise<void> =>{
-    const teamId = req.params.id;
+    const teamId = new Types.ObjectId(req.params.id);
     const userId = (req as any).user._id;
 
     const team = await Team.findOne({ _id: teamId, members: userId });

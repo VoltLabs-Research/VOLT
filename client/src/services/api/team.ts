@@ -62,12 +62,6 @@ const teamApi = {
         await api.delete(`/teams/${id}`);
     },
 
-    async getActivity(teamId: string, range: number = 365): Promise<ActivityData[]> {
-        const response = await api.get<{ status: string; data: ActivityData[] }>(`/teams/${teamId}/activity?range=${range}`);
-        console.log(response);
-        return response.data.data;
-    },
-
     async leave(id: string): Promise<void> {
         await api.post(`/teams/${id}/leave`);
     },

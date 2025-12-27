@@ -10,11 +10,12 @@ import { IoChatbubbleOutline, IoPersonRemoveOutline, IoShieldCheckmarkOutline, I
 import EditableTag from '@/components/atoms/common/EditableTag';
 import { formatDistanceToNow } from 'date-fns';
 import useToast from '@/hooks/ui/use-toast';
-import './MyTeam.css';
 import ActivityHeatmap from '@/components/molecules/common/ActivityHeatmap';
 import teamApi, { type ActivityData } from '@/services/api/team';
 import { useState } from 'react';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
+import './MyTeam.css';
+import dailyActivityApi from '@/services/api/daily-activity';
 
 const MyTeam: React.FC = () => {
     const navigate = useNavigate();
@@ -24,14 +25,10 @@ const MyTeam: React.FC = () => {
     const [activityData, setActivityData] = useState<ActivityData[]>([]);
 
     useEffect(() => {
-        if (selectedTeam) {
-            teamApi.getActivity(selectedTeam._id).then(setActivityData).catch(console.error);
+        if(selectedTeam){
+            dailyActivityApi.getTeamActivity(selectedTeam._id).then(setActivityData);
         }
     }, [selectedTeam]);
-
-    useEffect(() => {
-        console.log(activityData);
-    }, [activityData]);
 
     const currentIsOwner = currentUser && owner?._id === currentUser._id;
     const currentIsAdmin = currentUser && admins.some(a => a._id === currentUser._id);
@@ -110,7 +107,7 @@ const MyTeam: React.FC = () => {
                 <div className="d-flex items-center gap-1">
                     <div className="member-avatar p-relative">
                         <img
-                            src={member.avatar || `https://ui-avatars.com/api/?name=${member.username}&background=random`}
+                            src={member.avatar}
                             alt={member.username}
                             className="avatar-sm object-cover"
                         />

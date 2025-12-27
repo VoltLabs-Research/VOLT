@@ -591,7 +591,7 @@ export default class PluginsController extends BaseController<IPlugin> {
         const exportData = {
             slug: plugin.slug,
             workflow: plugin.workflow,
-            status: PluginStatus.DRAFT, // Always export as draft
+            status: PluginStatus.PUBLISHED, 
             validated: plugin.validated,
             exportedAt: new Date().toISOString(),
             version: '1.0'

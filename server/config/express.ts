@@ -25,9 +25,9 @@ import helmet from 'helmet';
 import bodyParser from 'body-parser';
 import compression from 'compression';
 import cors from 'cors';
-import '@config/env'; // Load env variables FIRST
-import passport from '@config/passport'; // Import passport config after env is loaded
+import '@config/env';
 
+import passport from '@config/passport';
 import { configureApp } from '@utilities/bootstrap';
 import { apiTracker } from '@/middlewares/api-tracker';
 import { globalErrorHandler } from '@/middlewares/global-error-handler';
@@ -86,6 +86,7 @@ configureApp({
         'teams',
         'team-invitations',
         'analysis-config',
+        'daily-activity',
         'raster',
         'trajectories',
         'notifications',
@@ -124,7 +125,7 @@ configureApp({
         }),
         bodyParser.json(),
         bodyParser.urlencoded({ extended: true }),
-        passport.initialize() // Initialize Passport for OAuth
+        passport.initialize()
     ],
     errorHandler: globalErrorHandler
 });
