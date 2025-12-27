@@ -74,7 +74,7 @@ server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
     const serverClusterId = process.env.CLUSTER_ID || 'main-cluster';
     try {
         if (redis) {
-            await redis.sadd('active_clusters', serverClusterId);
+            await redis.zadd('active_clusters', Date.now(), serverClusterId);
             logger.info(`[Server] Registered ${serverClusterId} to active_clusters`);
         }
     } catch (err) {
@@ -91,6 +91,10 @@ server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
     collectionInterval = setInterval(async () => {
         try {
             await metricsCollector.collect();
+            // Heartbeat: re-register cluster with fresh timestamp to avoid stale detection
+            if (redis) {
+                await redis.zadd('active_clusters', Date.now(), serverClusterId);
+            }
         } catch (error) {
             logger.error(`[Server] Metrics collection error: ${error}`);
         }

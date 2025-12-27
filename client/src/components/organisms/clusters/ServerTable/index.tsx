@@ -1,7 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { ChevronDown, RefreshCw, Download } from 'lucide-react'
-import { ServerDetails } from '../ServerDetails'
-import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
 import { formatNetworkSpeed } from '@/utilities/network'
 import Container from '@/components/primitives/Container'
@@ -15,7 +13,6 @@ interface ServerTableProps {
 }
 
 export function ServerTable({ clusters, selectedClusterId }: ServerTableProps) {
-  const [selectedServer, setSelectedServer] = useState<any | null>(null)
 
   const isLoading = !clusters
   // If we want to show ALL clusters, we map over `clusters` prop.
@@ -39,7 +36,6 @@ export function ServerTable({ clusters, selectedClusterId }: ServerTableProps) {
 
       return {
         id: metrics.clusterId || metrics.serverId, // Use clusterId or fallback
-        region: 'US', // Hardcoded or from env
         status: metrics.status,
         statusColor: metrics.status === 'Healthy' ? 'text-emerald-500' : metrics.status === 'Warning' ? 'text-amber-500' : 'text-red-500',
         cpu: cpuUsage,
@@ -49,17 +45,13 @@ export function ServerTable({ clusters, selectedClusterId }: ServerTableProps) {
         diskUsagePercent: Math.round(metrics.disk.usagePercent),
         network: formatNetworkSpeed(metrics.network.incoming + metrics.network.outgoing),
         uptime: uptimeDays > 0 ? `${uptimeDays}d ${uptimeHours}h` : `${uptimeHours}h ${uptimeMinutes}m`,
-        analysisCount: metrics.analysisCount || 0,
-        metrics // Pass full metrics for details modal
+        analysisCount: metrics.analysisCount || 0
       }
     })
   }, [clusters])
 
   return (
     <>
-      {selectedServer && (
-        <ServerDetails server={selectedServer} onClose={() => setSelectedServer(null)} />
-      )}
       <Container className="server-table-container">
         <Container className="d-flex items-center content-between server-table-header mb-1-5">
           <Container className="d-flex items-center gap-075">
@@ -67,9 +59,6 @@ export function ServerTable({ clusters, selectedClusterId }: ServerTableProps) {
             <Title className='font-size-3 server-table-title font-weight-6'>Server Summary</Title>
           </Container>
           <Container className="d-flex items-center gap-05">
-            <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown className="server-table-icon-sm" />}>
-              Region
-            </Button>
             <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown className="server-table-icon-sm" />}>
               Status
             </Button>
@@ -90,13 +79,12 @@ export function ServerTable({ clusters, selectedClusterId }: ServerTableProps) {
             <thead>
               <tr>
                 <th>Server ID</th>
-                <th>Region</th>
                 <th>Status</th>
                 <th>CPU</th>
                 <th>Memory</th>
                 <th>Disk</th>
                 <th>Network</th>
-                <th>Jobs</th>
+                <th>Computed Analyzes</th>
                 <th>Uptime</th>
               </tr>
             </thead>
@@ -123,7 +111,6 @@ export function ServerTable({ clusters, selectedClusterId }: ServerTableProps) {
               ) : activeClusters.map((server) => (
                 <tr
                   key={server.id}
-                  onClick={() => setSelectedServer(server)}
                   style={{
                     cursor: 'pointer',
                     background: server.id === selectedClusterId ? 'var(--bg-tertiary)' : undefined
@@ -134,9 +121,6 @@ export function ServerTable({ clusters, selectedClusterId }: ServerTableProps) {
                       <Container className="server-table-status-dot" />
                       <span className="server-table-id font-size-2">{server.id}</span>
                     </Container>
-                  </td>
-                  <td>
-                    <span className="server-table-region-badge font-size-1">{server.region}</span>
                   </td>
                   <td>
                     <span className={`server-table-status ${server.statusColor === 'text-emerald-500' ? 'server-table-status-healthy' : server.statusColor === 'text-red-500' ? 'server-table-status-critical' : 'server-table-status-warning'} font-size-2 font-weight-5`}>{server.status}</span>

@@ -29,9 +29,9 @@ const main = async () => {
         await initializeRedis();
         logger.info('[Worker] Redis initialized');
 
-        // Register this worker in the active clusters set
+        // Register this worker in the active clusters sorted set (with timestamp for stale detection)
         if (redis) {
-            await redis.sadd('active_clusters', CLUSTER_ID);
+            await redis.zadd('active_clusters', Date.now(), CLUSTER_ID);
         }
         logger.info(`[Worker] Registered ${CLUSTER_ID} to active_clusters`);
 

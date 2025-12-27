@@ -141,7 +141,10 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
         // Increment completed frames counter
         const updated = await Analysis.findOneAndUpdate(
             { _id: job.analysisId },
-            { $inc: { completedFrames: 1 } },
+            {
+                $inc: { completedFrames: 1 },
+                $set: { clusterId: process.env.CLUSTER_ID || 'default' }
+            },
             { new: true }
         ).lean();
 

@@ -1,65 +1,39 @@
-/* Server Table Styles */
-.server-table-container {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.5rem;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
+/* Server Table - Apple UI Design */
 
-.server-table-header {
+.server-table-container {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-card);
 }
 
 .server-table-title-bar {
   width: 3px;
   height: 1.5rem;
-  background: var(--muted-foreground);
+  background: var(--accent-blue);
   border-radius: var(--radius-full);
 }
 
 .server-table-title {
   font-size: 1.125rem;
   margin: 0;
-  color: var(--foreground);
+  color: var(--color-text-primary);
   letter-spacing: -0.01em;
-}
-
-.server-table-btn {
-  padding: 0.375rem 0.75rem;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--foreground);
-  border-radius: var(--radius-xs);
-  transition: background-color 0.2s;
-}
-
-.server-table-btn:hover {
-  background-color: var(--secondary);
-}
-
-.server-table-icon-btn {
-  width: 2rem;
-  height: 2rem;
-  border-radius: var(--radius-xs);
-  transition: background-color 0.2s;
-  background: none;
-  border: none;
-  color: var(--foreground);
-}
-
-.server-table-icon-btn:hover {
-  background-color: var(--secondary);
 }
 
 .server-table-icon {
   width: 1rem;
   height: 1rem;
+  color: var(--color-text-secondary);
 }
 
 .server-table-icon-sm {
   width: 0.75rem;
   height: 0.75rem;
+  color: var(--color-text-muted);
 }
 
 .server-table-wrapper {
@@ -71,7 +45,7 @@
 }
 
 .server-table thead tr {
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--color-border-soft);
 }
 
 .server-table th {
@@ -79,73 +53,91 @@
   padding: 0.75rem 1rem;
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--muted-foreground);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .server-table tbody tr {
-  border-bottom: 1px solid var(--border);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 1px solid var(--color-border-soft);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.server-table tbody tr:last-child {
+  border-bottom: none;
 }
 
 .server-table tbody tr:hover {
-  background: var(--secondary);
+  background: var(--hover-bg);
 }
 
 .server-table td {
   padding: 1rem;
 }
 
+/* Server ID column */
 .server-table-status-dot {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 8px;
+  height: 8px;
   border-radius: var(--radius-full);
-  background-color: rgba(52, 199, 89, 1);
+  background-color: var(--status-success);
+  box-shadow: 0 0 8px var(--status-success);
 }
 
 .server-table-id {
-  font-family: monospace;
+  font-family: 'SF Mono', ui-monospace, monospace;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
 }
 
-.server-table-region-badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-xs);
-  background-color: var(--secondary);
-  display: inline-block;
-}
-
+/* Status badges */
 .server-table-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .server-table-status-healthy {
-  color: #10b981;
+  color: var(--status-success);
+  background: var(--status-success-bg);
+  border: 1px solid var(--status-success-border);
 }
 
 .server-table-status-critical {
-  color: #ef4444;
+  color: var(--status-error);
+  background: var(--status-error-bg);
+  border: 1px solid var(--status-error-border);
 }
 
 .server-table-status-warning {
-  color: #f59e0b;
+  color: var(--status-warning);
+  background: var(--status-warning-bg);
+  border: 1px solid var(--status-warning-border);
 }
 
+/* Metric bars (CPU, Memory, Disk) */
 .server-table-bar {
-  width: 0.25rem;
-  height: 1.5rem;
-  border-radius: 0.125rem;
-  background-color: var(--secondary);
+  width: 4px;
+  height: 1.25rem;
+  border-radius: var(--radius-xs);
+  background-color: var(--color-border-soft);
+  transition: background-color 0.2s ease;
 }
 
 .server-table-bar-active {
-  background-color: var(--primary);
+  background-color: var(--accent-blue);
 }
 
 .server-table-metric-value {
+  min-width: 40px;
 }
 
-.server-table-network {
-}
-
+/* Network & uptime text */
+.server-table-network,
 .server-table-uptime {
+  color: var(--color-text-secondary);
 }

@@ -17,6 +17,19 @@ function getLoadGlow(value: number): string {
   return '0 0 20px rgba(50, 215, 75, 0.4)'
 }
 
+// Inverted logic for Available Space (100% = good, 0% = bad)
+function getAvailableSpaceColor(value: number): string {
+  if (value <= 20) return '#FF453A' // Rojo - Poco espacio
+  if (value <= 40) return '#FF9F0A' // Naranja - Moderado
+  return '#32D74B' // Verde - Buen espacio
+}
+
+function getAvailableSpaceGlow(value: number): string {
+  if (value <= 20) return '0 0 20px rgba(255, 69, 58, 0.4)'
+  if (value <= 40) return '0 0 20px rgba(255, 159, 10, 0.4)'
+  return '0 0 20px rgba(50, 215, 75, 0.4)'
+}
+
 interface ResourceUsageProps {
   metrics: any;
 }
@@ -76,8 +89,9 @@ export function ResourceUsage({ metrics }: ResourceUsageProps) {
       ) : (
         <div className="d-flex column gap-1-5 resource-usage-list flex-1">
           {resources.map((resource) => {
-            const color = getLoadColor(resource.value)
-            const glow = getLoadGlow(resource.value)
+            const isAvailableSpace = resource.name === 'Available Space'
+            const color = isAvailableSpace ? getAvailableSpaceColor(resource.value) : getLoadColor(resource.value)
+            const glow = isAvailableSpace ? getAvailableSpaceGlow(resource.value) : getLoadGlow(resource.value)
             const filledSegments = Math.floor((resource.value / 100) * 40)
 
             return (

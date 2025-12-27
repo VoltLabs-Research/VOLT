@@ -1,18 +1,23 @@
-/* Database Performance Styles */
+/* Database Performance - Apple UI Design */
 
 .db-tooltip {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
   padding: 0.75rem;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-elevated);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .db-tooltip-label {
   margin-bottom: 0.5rem;
-  color: var(--foreground);
+  color: var(--color-text-primary);
+  font-weight: 500;
 }
 
 .db-tooltip-item {
   margin: 0.25rem 0;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
 }

@@ -53,7 +53,7 @@ export function TrafficOverview({ metrics }: TrafficOverviewProps) {
 
   // Update with real-time metrics
   useEffect(() => {
-    if (metrics?.network && data.length > 0) {
+    if (metrics?.network) {
       const timestamp = new Date()
       const timeStr = `${timestamp.getHours()}:${timestamp.getMinutes().toString().padStart(2, '0')}:${timestamp.getSeconds().toString().padStart(2, '0')} `
 
@@ -92,15 +92,15 @@ export function TrafficOverview({ metrics }: TrafficOverviewProps) {
             <stop offset="95%" stopColor="#30D158" stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-soft)" />
         <YAxis
-          stroke="var(--muted-foreground)"
-          style={{ fontSize: '12px', color: 'var(--muted-foreground)' }}
+          stroke="var(--color-text-muted)"
+          style={{ fontSize: '12px', color: 'var(--color-text-muted)' }}
           tickFormatter={(value) => `${value} M`}
         />
         <Tooltip content={<CustomTooltip />} />
         <Legend
-          wrapperStyle={{ fontSize: '12px', paddingTop: '20px', color: 'var(--foreground)' }}
+          wrapperStyle={{ fontSize: '12px', paddingTop: '20px', color: 'var(--color-text-primary)' }}
           iconType="circle"
         />
         <Area

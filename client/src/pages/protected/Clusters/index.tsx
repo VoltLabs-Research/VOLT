@@ -46,7 +46,7 @@ export default function DashboardPage() {
             >
               {clusters.map((c) => (
                 <option key={c.clusterId} value={c.clusterId}>
-                  {c.clusterId} ({c.analysisCount || 0} jobs)
+                  {c.clusterId} ({c.analysisCount || 0} analyzes)
                 </option>
               ))}
               {!clusters.length && <option value="main-cluster">Main Cluster</option>}

@@ -132,7 +132,7 @@ export function ResponseTimeChart({ metrics }: ResponseTimeChartProps) {
               y1={y}
               x2={chartWidth}
               y2={y}
-              stroke="var(--border)"
+              stroke="var(--color-border-soft)"
               strokeWidth="0.2"
               strokeDasharray="1,1"
             />

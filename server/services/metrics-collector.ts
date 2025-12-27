@@ -625,19 +625,19 @@ export default class MetricsCollector {
     }
 
     /**
-     * Get processed analysis counts per cluster from DB aggregation
+     * Get computed analysis counts per cluster (sum of completed frames, not documents)
      */
     async getClusterAnalysisCounts(): Promise<Record<string, number>> {
         try {
             const { default: Analysis } = await import('@/models/analysis');
             const aggregation = await Analysis.aggregate([
-                { $group: { _id: '$clusterId', count: { $sum: 1 } } }
+                { $group: { _id: '$clusterId', count: { $sum: '$completedFrames' } } }
             ]);
 
             const counts: Record<string, number> = {};
             aggregation.forEach((item: any) => {
-                const clusterId = item._id || 'main-cluster'; // Handle legacy records as 'unknown' or 'default'
-                counts[clusterId] = item.count;
+                const clusterId = item._id || 'main-cluster';
+                counts[clusterId] = item.count || 0;
             });
             return counts;
         } catch (error) {
@@ -653,8 +653,24 @@ export default class MetricsCollector {
         try {
             if (!redis) return [];
 
+            // Clean up stale workers (older than 15 seconds)
+            const cutoffTime = Date.now() - 15000;
+
+            try {
+                await redis.zremrangebyscore('active_clusters', '-inf', cutoffTime);
+            } catch (error: any) {
+                if (error.message && error.message.includes('WRONGTYPE')) {
+                    logger.warn('Detected legacy active_clusters Set type. Resetting to Sorted Set.');
+                    await redis.del('active_clusters');
+                    // Retry cleanup (optional, or just wait for next tick)
+                } else {
+                    throw error;
+                }
+            }
+
             // Get list of active clusters
-            const clusters = await redis.smembers('active_clusters');
+            // If we just deleted it, this returns empty, which is fine
+            const clusters = await redis.zrange('active_clusters', 0, -1);
             if (!clusters.length) return [];
 
             const analysisCounts = await this.getClusterAnalysisCounts();

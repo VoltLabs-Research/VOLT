@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { socketService } from '@/services/socketio';
 import useLogger from '@/hooks/core/use-logger';
 
 export const useServerMetrics = () => {
-    const [metrics, setMetrics] = useState(null);
+    // const [metrics, setMetrics] = useState(null); // Derived now
     const [clusters, setClusters] = useState<any[]>([]); // New state for all clusters
     const [selectedClusterId, setSelectedClusterId] = useState<string>('main-cluster');
     const [isConnected, setIsConnected] = useState(socketService.isConnected());
@@ -18,20 +18,17 @@ export const useServerMetrics = () => {
             setIsConnected(connected);
         });
 
-        // Subscribe to metrics event
-        const unsubscribeInitial = socketService.on('metrics:initial', (data) => {
-            setMetrics(data);
-        });
+        // Disable single-update listeners to rely on metrics:all for consistency in multi-cluster view
+        // const unsubscribeInitial = socketService.on('metrics:initial', (data) => {
+        //     setMetrics(data);
+        // });
 
-        const unsubscribeUpdate = socketService.on('metrics:update', (data) => {
-            setMetrics(data);
-        });
+        // const unsubscribeUpdate = socketService.on('metrics:update', (data) => {
+        //     setMetrics(data);
+        // });
 
         const unsubscribeAll = socketService.on('metrics:all', (data) => {
             setClusters(data);
-            // Auto-update selected metrics if it matches
-            const selected = data.find((c: any) => c.clusterId === selectedClusterId);
-            if (selected) setMetrics(selected);
         });
 
         const unsubscribeError = socketService.on('metrics:error', (error) => {
@@ -45,8 +42,8 @@ export const useServerMetrics = () => {
 
         return () => {
             unsubscribeConnection();
-            unsubscribeInitial();
-            unsubscribeUpdate();
+            // unsubscribeInitial();
+            // unsubscribeUpdate();
             unsubscribeAll();
             unsubscribeError();
             unsubscribeHistory();
@@ -61,6 +58,21 @@ export const useServerMetrics = () => {
             logger.log('error requesting history:', error);
         });
     }, [isConnected, isHistoryLoaded]);
+
+    const metrics = useMemo(() => {
+        if (!clusters.length) return null;
+        return clusters.find(c => c.clusterId === selectedClusterId) || null;
+    }, [clusters, selectedClusterId]);
+
+    // Auto-select first cluster if none selected or current selection invalid
+    useEffect(() => {
+        if (clusters.length > 0) {
+            const currentExists = clusters.some(c => c.clusterId === selectedClusterId);
+            if (!currentExists || selectedClusterId === 'main-cluster') {
+                setSelectedClusterId(clusters[0].clusterId);
+            }
+        }
+    }, [clusters, selectedClusterId]);
 
     return {
         metrics,

@@ -1,54 +1,56 @@
-/* Storage Usage Styles */
+/* Storage Usage - Apple UI Design */
 .storage-usage-container {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(80px);
-  border-radius: var(--radius-xl);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-lg);
   padding: 1.5rem;
   max-height: 400px;
-
-}
-
-.storage-usage-header {
-
+  box-shadow: var(--shadow-card);
 }
 
 .storage-usage-icon {
   width: 20px;
   height: 20px;
-  color: #0A84FF;
+  color: var(--accent-blue);
 }
 
 .storage-usage-title {
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--color-text-primary);
   margin: 0;
 }
 
 .storage-total-value {
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--color-text-primary);
   line-height: 1;
 }
 
 .storage-total-label {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .storage-tooltip {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
   padding: 0.75rem;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-elevated);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
 }
 
 .storage-tooltip-label {
   margin-bottom: 0.5rem;
-  color: var(--foreground);
+  color: var(--color-text-primary);
+  font-weight: 500;
 }
 
 .storage-tooltip-item {
   margin: 0.25rem 0;
+  color: var(--color-text-secondary);
 }
