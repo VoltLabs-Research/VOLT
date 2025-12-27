@@ -1,0 +1,60 @@
+.activity-heatmap-container {
+    width: auto;
+    min-width: 850px;
+    /* Ensure enough space for 365 days (~53 columns) */
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.activity-heatmap-container svg {
+    height: 100%;
+    width: 100%;
+}
+
+/* Fallback fill to prevent black squares */
+.react-calendar-heatmap rect {
+    fill: rgba(255, 255, 255, 0.1);
+}
+
+.react-calendar-heatmap .color-empty {
+    fill: rgba(255, 255, 255, 0.1);
+    /* Dark theme background for empty */
+    rx: 2px;
+}
+
+/* IBM Blue Scale: Light to Dark */
+.react-calendar-heatmap .color-scale-1 {
+    fill: #d0e2ff;
+    /* Lightest Blue */
+    rx: 2px;
+}
+
+.react-calendar-heatmap .color-scale-2 {
+    fill: #78a9ff;
+    rx: 2px;
+}
+
+.react-calendar-heatmap .color-scale-3 {
+    fill: #0f62fe;
+    /* IBM Blue */
+    rx: 2px;
+}
+
+.react-calendar-heatmap .color-scale-4 {
+    fill: #0043ce;
+    /* Darker Blue */
+    rx: 2px;
+}
+
+.react-calendar-heatmap text {
+    font-size: 11px;
+    fill: var(--color-text-secondary);
+}
+
+/* Adjust size rects directly via css if needed but library handles it */
+.react-calendar-heatmap rect {
+    shape-rendering: geometricPrecision;
+    /* width: 12px !important; Removed to allow SVG scaling */
+    /* height: 12px !important; Removed to allow SVG scaling */
+}

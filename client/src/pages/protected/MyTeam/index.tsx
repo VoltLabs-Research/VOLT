@@ -11,12 +11,23 @@ import EditableTag from '@/components/atoms/common/EditableTag';
 import { formatDistanceToNow } from 'date-fns';
 import useToast from '@/hooks/ui/use-toast';
 import './MyTeam.css';
+import ActivityHeatmap from '@/components/molecules/common/ActivityHeatmap';
+import teamApi, { type ActivityData } from '@/services/api/team';
+import { useState } from 'react';
+import formatTimeAgo from '@/utilities/formatTimeAgo';
 
 const MyTeam: React.FC = () => {
     const navigate = useNavigate();
     const { selectedTeam, members, admins, owner, onlineUsers, fetchMembers, initializeSocket, promoteMember, demoteMember, removeMember, updateTeam, isLoading } = useTeamStore();
     const { user: currentUser } = useAuthStore();
     const { showSuccess, showError } = useToast();
+    const [activityData, setActivityData] = useState<ActivityData[]>([]);
+
+    useEffect(() => {
+        if (selectedTeam) {
+            teamApi.getActivity(selectedTeam._id).then(setActivityData).catch(console.error);
+        }
+    }, [selectedTeam]);
 
     const currentIsOwner = currentUser && owner?._id === currentUser._id;
     const currentIsAdmin = currentUser && admins.some(a => a._id === currentUser._id);
@@ -73,7 +84,7 @@ const MyTeam: React.FC = () => {
             isOnline: isOnline(member._id),
             isOwner: isOwner(member._id),
             isAdmin: isAdmin(member._id),
-            rawJoined: member.createdAt
+            rawJoined: member.joinedAt || member.createdAt
         }));
 
         return data.sort((a, b) => {
@@ -143,9 +154,33 @@ const MyTeam: React.FC = () => {
             )
         },
         {
-            key: 'createdAt',
+            key: 'trajectoriesCount',
+            title: 'Trajectories',
+            render: (val: number) => <span className="color-secondary font-size-sm">{val || 0}</span>
+        },
+        {
+            key: 'analysesCount',
+            title: 'Analyses',
+            render: (val: number) => <span className="color-secondary font-size-sm">{val || 0}</span>
+        },
+        {
+            key: 'timeSpentLast7Days',
+            title: 'Time (7d)',
+            render: (val: number) => {
+                if (!val) return <span className="color-secondary font-size-sm">0m</span>;
+                const hours = Math.floor(val / 60);
+                const minutes = val % 60;
+                return (
+                    <span className="color-secondary font-size-sm">
+                        {hours > 0 ? `${hours}h ` : ''}{minutes}m
+                    </span>
+                );
+            }
+        },
+        {
+            key: 'rawJoined',
             title: 'Joined',
-            render: (val: string) => <span className="color-secondary font-size-sm">{val ? new Date(val).toLocaleDateString() : '-'}</span>
+            render: (val: string) => <span className="color-secondary font-size-sm">{val ? formatTimeAgo(val) : '-'}</span>
         }
     ];
 
@@ -201,6 +236,10 @@ const MyTeam: React.FC = () => {
                 getMenuOptions={getMenuOptions}
                 emptyMessage="No members found in this team."
                 keyExtractor={(item) => item._id}
+                headerActions={
+                    <ActivityHeatmap data={activityData} />
+                }
+                gap=""
             />
         </Container>
     );

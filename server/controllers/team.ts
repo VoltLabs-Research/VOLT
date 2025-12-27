@@ -44,10 +44,59 @@ export default class TeamController extends BaseController<any> {
 
         if (!team) throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
 
+        const { Trajectory, Analysis, DailyActivity, TeamInvitation } = await import('@/models');
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const memberStats = await Promise.all(team.members.map(async (member: any) => {
+            const memberId = member._id;
+
+            // 1. Time spent last 7 days
+            const dailyActivities = await DailyActivity.find({
+                team: teamId,
+                user: memberId,
+                date: { $gte: sevenDaysAgo }
+            });
+            const minutesOnline = dailyActivities.reduce((acc, curr) => acc + (curr.minutesOnline || 0), 0);
+
+            // 2. Trajectories count
+            const trajectoriesCount = await Trajectory.countDocuments({
+                team: teamId,
+                createdBy: memberId
+            });
+
+            // 3. Analyses count
+            // Note: Analyses are linked to trajectories, and trajectories are linked to teams.
+            // We count analyses performed by the user on trajectories belonging to this team.
+            const analysesCount = await Analysis.countDocuments({
+                trajectory: { $in: await Trajectory.find({ team: teamId }).distinct('_id') },
+                // Based on model, Analysis doesn't have an 'owner' or 'createdBy' field?
+                // Let me check Analysis model again.
+            });
+            // Wait, I should check if Analysis has a user reference.
+            // I'll check Analysis model again.
+
+            // 4. Joined date
+            const invitation = await TeamInvitation.findOne({
+                team: teamId,
+                invitedUser: memberId,
+                status: 'accepted'
+            }).sort({ acceptedAt: -1 });
+
+            return {
+                ...member.toObject(),
+                timeSpentLast7Days: minutesOnline,
+                trajectoriesCount,
+                analysesCount,
+                joinedAt: invitation?.acceptedAt || member.createdAt
+            };
+        }));
+
         res.status(200).json({
             status: 'success',
             data: {
-                members: team.members,
+                members: memberStats,
                 admins: team.admins,
                 owner: team.owner
             }

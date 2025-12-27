@@ -20,35 +20,38 @@
  * SOFTWARE.
  */
 
-import { Router } from 'express';
-import TeamController from '@controllers/team';
+import express, { Router } from 'express';
+import TeamController from '@/controllers/team';
 import * as authMiddleware from '@middlewares/authentication';
 import * as middleware from '@middlewares/team';
+import ActivityController from '@/controllers/activity';
 
-const router = Router();
-const controller = new TeamController();
+const router = express.Router();
+const teamController = new TeamController();
+const activityController = new ActivityController();
 
 router.use(authMiddleware.protect);
 router.route('/')
-    .get(controller.getAll)
-    .post(controller.createOne);
+    .get(teamController.getAll)
+    .post(teamController.createOne);
 
 router.route('/:id')
-    .get(middleware.checkTeamMembership, controller.getOne)
-    .patch(middleware.checkTeamOwnership, controller.updateOne)
-    .delete(middleware.checkTeamOwnership, controller.deleteOne);
+    .get(middleware.checkTeamMembership, teamController.getOne)
+    .patch(middleware.checkTeamOwnership, teamController.updateOne)
+    .delete(middleware.checkTeamOwnership, teamController.deleteOne);
 
 // Leave team endpoint
-router.post('/:id/leave', middleware.checkTeamMembership, controller.leaveTeam);
+router.post('/:id/leave', middleware.checkTeamMembership, teamController.leaveTeam);
 
 // Get team members
-router.get('/:id/members', middleware.checkTeamMembership, controller.getMembers);
+router.get('/:id/members', middleware.checkTeamMembership, teamController.getMembers);
 
 // Remove member from team
-router.post('/:id/members/remove', middleware.checkTeamMembership, controller.removeMember);
+router.post('/:id/members/remove', middleware.checkTeamMembership, teamController.removeMember);
 
 // Promote/Demote admins
-router.patch('/:id/members/promote', middleware.checkTeamMembership, controller.promoteToAdmin);
-router.patch('/:id/members/demote', middleware.checkTeamMembership, controller.demoteFromAdmin);
+router.patch('/:id/members/promote', middleware.checkTeamMembership, teamController.promoteToAdmin);
+router.patch('/:id/members/demote', middleware.checkTeamMembership, teamController.demoteFromAdmin);
+router.get('/:teamId/activity', activityController.getTeamActivity);
 
 export default router;

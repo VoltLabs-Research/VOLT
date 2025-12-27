@@ -11,7 +11,8 @@ import processAndCreateTrajectory from '@/utilities/create-trajectory';
 import archiver from 'archiver';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { getMetricsByTeamId } from '@/utilities/metrics/team';
-import { Trajectory, Team, Analysis, Plugin } from '@/models';
+import { Trajectory, Team, Analysis, Plugin, DailyActivity, User } from '@/models';
+import { TeamActivityType } from '@/models/daily-activity';
 import { SYS_BUCKETS } from '@/config/minio';
 import { getAnyTrajectoryPreview, sendImage } from '@/utilities/raster';
 import { NodeType } from '@/types/models/modifier';
@@ -370,6 +371,27 @@ export default class TrajectoryController extends BaseController<any> {
                 status: 'success',
                 data: trajectory
             });
+
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+
+            const user = await User.findById(userId).select('firstName lastName').lean();
+            const userName = user ? `${user.firstName} ${user.lastName}` : 'Someone';
+
+            await DailyActivity.updateOne(
+                { team: teamId, user: userId, date: startOfDay },
+                {
+                    $push: {
+                        activity: {
+                            type: TeamActivityType.TRAJECTORY_UPLOAD,
+                            user: userId,
+                            description: `${userName} has loaded a trajectory (${trajectoryName})`,
+                            createdAt: new Date()
+                        }
+                    }
+                },
+                { upsert: true }
+            );
         } catch (error) {
             throw error;
         }

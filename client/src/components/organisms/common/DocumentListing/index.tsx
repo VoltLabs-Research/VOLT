@@ -151,6 +151,7 @@ type DocumentListingProps = {
         onCreate: () => void
     }
     headerActions?: React.ReactNode
+    gap?: string
 }
 
 const DocumentListing = ({
@@ -167,7 +168,8 @@ const DocumentListing = ({
     isFetchingMore,
     onLoadMore,
     createNew,
-    headerActions
+    headerActions,
+    gap = 'gap-3'
 }: DocumentListingProps) => {
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
     const [optimisticallyDeletedIds, setOptimisticallyDeletedIds] = useState(new Set<string>());
@@ -258,7 +260,7 @@ const DocumentListing = ({
 
     return (
         <Container className='d-flex column h-max document-listing-container color-primary'>
-            <Container className='d-flex column gap-3'>
+            <Container className={`d-flex column ${gap}`}>
                 <Container className='d-flex column gap-1-5 document-listing-header-top-container'>
                     <Container className='d-flex content-between items-center'>
                         <Container className='d-flex gap-1-5 items-center'>

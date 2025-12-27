@@ -22,6 +22,10 @@ export interface TeamMember {
     avatar?: string;
     lastLoginAt?: string;
     createdAt?: string;
+    timeSpentLast7Days?: number;
+    trajectoriesCount?: number;
+    analysesCount?: number;
+    joinedAt?: string;
 }
 
 export interface TeamActions {

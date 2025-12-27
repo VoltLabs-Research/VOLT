@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 import { NextFunction, Request, Response } from 'express';
 import { catchAsync, slugify } from '@/utilities/runtime/runtime';
 import { getAnalysisQueue } from '@/queues';
-import { Analysis, PluginListingRow, User } from '@/models';
+import { Analysis, PluginListingRow, User, DailyActivity } from '@/models';
+import { TeamActivityType } from '@/models/daily-activity';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import { SYS_BUCKETS } from '@/config/minio';
 import { decodeMultiStream } from '@/utilities/msgpack/msgpack-stream';
@@ -207,9 +208,34 @@ export default class PluginsController extends BaseController<IPlugin> {
             $push: { analyses: analysisId }
         });
 
+
+
         const teamId = (trajectory.team && typeof trajectory.team !== 'string')
             ? trajectory.team.toString()
             : String(trajectory.team);
+
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const user = await User.findById(userId).select('firstName lastName').lean();
+        const userName = user ? `${user.firstName} ${user.lastName}` : 'Someone';
+        const pluginName = plugin.modifier?.name || plugin.slug;
+        const trajectoryName = trajectory.name || 'Untitled Trajectory';
+
+        await DailyActivity.updateOne(
+            { team: teamId, user: userId, date: startOfDay },
+            {
+                $push: {
+                    activity: {
+                        type: TeamActivityType.ANALYSIS_PERFORMED,
+                        user: userId,
+                        description: `${userName} has executed the "${pluginName}" plugin for the trajectory (${trajectoryName})`,
+                        createdAt: new Date()
+                    }
+                }
+            },
+            { upsert: true }
+        );
 
         // Create one job per forEach item - each job processes a single item
         const jobs: AnalysisJob[] = items.map((item: any, index: number) => ({

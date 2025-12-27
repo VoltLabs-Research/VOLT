@@ -2,8 +2,11 @@
 import { Socket } from 'socket.io';
 import BaseSocketModule from '@/socket/base-socket-module';
 import { IUser } from '@/types/models/user';
+import { DailyActivity } from '@/models';
 
 class TeamPresenceModule extends BaseSocketModule {
+    private connectionTimes: Map<string, number> = new Map();
+
     constructor() {
         super('TeamPresenceModule');
     }
@@ -11,6 +14,8 @@ class TeamPresenceModule extends BaseSocketModule {
     onConnection(socket: Socket): void {
         const user = (socket as any).user as IUser;
         if (!user || !user.teams) return;
+
+        this.connectionTimes.set(socket.id, Date.now());
 
         // Join team rooms and notify online status
         user.teams.forEach((teamId) => {
@@ -33,8 +38,38 @@ class TeamPresenceModule extends BaseSocketModule {
         });
 
         // Handle disconnect
-        socket.on('disconnect', () => {
+        socket.on('disconnect', async () => {
             if (!user || !user.teams) return;
+
+            const startTime = this.connectionTimes.get(socket.id);
+            if (startTime) {
+                const durationMinutes = (Date.now() - startTime) / 1000 / 60;
+                this.connectionTimes.delete(socket.id);
+
+                if (durationMinutes > 0) {
+                    const startOfDay = new Date();
+                    startOfDay.setHours(0, 0, 0, 0);
+
+                    // Update metrics for all teams this user is part of
+                    // Or realistically, we should split the time or track per-team focus.
+                    // For simplicity as per req "amount of time connected to the platform", 
+                    // we'll attribute it to all their teams or just aggregate.
+                    // The prompt implies "user activity by day... time connected".
+                    // We'll update for each team since the chart is per-team.
+
+                    const operations = user.teams.map(teamId => ({
+                        updateOne: {
+                            filter: { team: teamId, user: user._id, date: startOfDay },
+                            update: { $inc: { minutesOnline: Math.ceil(durationMinutes) } },
+                            upsert: true
+                        }
+                    }));
+
+                    if (operations.length > 0) {
+                        await DailyActivity.bulkWrite(operations);
+                    }
+                }
+            }
             user.teams.forEach((teamId) => {
                 const room = `team:${teamId}`;
                 socket.to(room).emit('team_user_offline', {

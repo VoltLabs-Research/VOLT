@@ -13,3 +13,4 @@ export { default as Container } from '@/models/container';
 export { default as Plugin } from '@/models/plugin';
 export { default as PluginListingRow } from '@/models/plugin-listing-row';
 export { default as PluginExposureMeta } from '@/models/plugin-exposure-meta';
+export { default as DailyActivity } from '@/models/daily-activity';

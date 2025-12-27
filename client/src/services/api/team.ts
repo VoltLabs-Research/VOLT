@@ -18,12 +18,29 @@ interface TeamMember {
     avatar?: string;
     lastLoginAt?: string;
     createdAt?: string;
+    timeSpentLast7Days?: number;
+    trajectoriesCount?: number;
+    analysesCount?: number;
+    joinedAt?: string;
 }
 
 interface TeamMembersResponse {
     members: TeamMember[];
     admins: TeamMember[];
     owner: TeamMember;
+}
+
+export interface ActivityItem {
+    type: 'TRAJECTORY_UPLOAD' | 'TRAJECTORY_DELETION' | 'ANALYSIS_PERFORMED';
+    user: string;
+    createdAt: string;
+    description: string;
+}
+
+export interface ActivityData {
+    date: string;
+    activity: ActivityItem[];
+    minutesOnline: number;
 }
 
 const teamApi = {
@@ -44,6 +61,11 @@ const teamApi = {
 
     async delete(id: string): Promise<void> {
         await api.delete(`/teams/${id}`);
+    },
+
+    async getActivity(teamId: string, range: number = 365): Promise<ActivityData[]> {
+        const response = await api.get<{ status: string; data: ActivityData[] }>(`/teams/${teamId}/activity?range=${range}`);
+        return response.data.data;
     },
 
     async leave(id: string): Promise<void> {
