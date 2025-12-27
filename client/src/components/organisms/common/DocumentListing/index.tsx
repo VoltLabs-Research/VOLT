@@ -16,42 +16,42 @@ const sortDataWorker = (
     sortConfig: { key: string; direction: 'asc' | 'desc' } | null
 ): any[] => {
     const getValueByPath = (obj: any, path: string) => {
-        if(!obj || !path) return undefined
-        if(path.indexOf('.') === -1) return obj?.[path]
+        if (!obj || !path) return undefined
+        if (path.indexOf('.') === -1) return obj?.[path]
         return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj)
     }
 
     const toSearchString = (val: any): string => {
-        if(val == null) return ''
+        if (val == null) return ''
         const t = typeof val
-        if(t === 'string' || t === 'number' || t === 'boolean') return String(val)
-        if(Array.isArray(val)) return val.map((v) => toSearchString(v)).join(' ')
-        if(t === 'object'){
+        if (t === 'string' || t === 'number' || t === 'boolean') return String(val)
+        if (Array.isArray(val)) return val.map((v) => toSearchString(v)).join(' ')
+        if (t === 'object') {
             const preferredKeys = ['name', 'title', 'identificationMode', 'crystalStructure', 'method', '_id', 'id']
             const parts: string[] = []
-            try{
-                for(const k of preferredKeys){
-                    if(k in val && val[k] != null) parts.push(String(val[k]))
+            try {
+                for (const k of preferredKeys) {
+                    if (k in val && val[k] != null) parts.push(String(val[k]))
                 }
-                if(parts.length) return parts.join(' ')
+                if (parts.length) return parts.join(' ')
                 return Object.values(val).map((v) => toSearchString(v)).join(' ')
-            }catch(_e){
+            } catch (_e) {
                 return ''
             }
         }
         return ''
     }
 
-    if(!sortConfig) return data
+    if (!sortConfig) return data
 
     const workingData = [...data]
     workingData.sort((a, b) => {
         const aVal = getValueByPath(a, sortConfig.key)
         const bVal = getValueByPath(b, sortConfig.key)
 
-        if(aVal == null && bVal == null) return 0
-        if(aVal == null) return sortConfig.direction === 'asc' ? -1 : 1
-        if(bVal == null) return sortConfig.direction === 'asc' ? 1 : -1
+        if (aVal == null && bVal == null) return 0
+        if (aVal == null) return sortConfig.direction === 'asc' ? -1 : 1
+        if (bVal == null) return sortConfig.direction === 'asc' ? 1 : -1
 
         const aStr = toSearchString(aVal)
         const bStr = toSearchString(bVal)
@@ -60,7 +60,7 @@ const sortDataWorker = (
         const bNum = Number(bStr)
         const bothNumeric = !Number.isNaN(aNum) && !Number.isNaN(bNum)
 
-        if(bothNumeric){
+        if (bothNumeric) {
             return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum
         }
 
@@ -81,16 +81,16 @@ export type ColumnConfig = {
 }
 
 export const formatNumber = (num: number) => {
-    if(num === 0) return '0'
+    if (num === 0) return '0'
     const absNum = Math.abs(num)
     const sign = num < 0 ? '-' : ''
-    if(absNum >= 1000000000){
+    if (absNum >= 1000000000) {
         return sign + (absNum / 1000000000).toFixed(2).replace(/\.?0+$/, '') + 'B'
     }
-    if(absNum >= 1000000){
+    if (absNum >= 1000000) {
         return sign + (absNum / 1000000).toFixed(2).replace(/\.?0+$/, '') + 'M'
     }
-    if(absNum >= 1000){
+    if (absNum >= 1000) {
         return sign + (absNum / 1000).toFixed(2).replace(/\.?0+$/, '') + 'K'
     }
     return sign + absNum.toString()
@@ -110,11 +110,11 @@ export const MethodBadge = ({ method }: { method: string }) => {
 
 export const RateBadge = ({ rate }: { rate: number }) => {
     let className = 'rate-badge rate-badge-gray'
-    if(rate >= 90) className = 'rate-badge rate-badge-green'
-    else if(rate >= 75) className = 'rate-badge rate-badge-blue'
-    else if(rate >= 60) className = 'rate-badge rate-badge-yellow'
-    else if(rate >= 40) className = 'rate-badge rate-badge-orange'
-    else if(rate >= 20) className = 'rate-badge rate-badge-red'
+    if (rate >= 90) className = 'rate-badge rate-badge-green'
+    else if (rate >= 75) className = 'rate-badge rate-badge-blue'
+    else if (rate >= 60) className = 'rate-badge rate-badge-yellow'
+    else if (rate >= 40) className = 'rate-badge rate-badge-orange'
+    else if (rate >= 20) className = 'rate-badge rate-badge-red'
 
     return <span className={className}>{rate.toFixed(2)}%</span>
 }
@@ -134,7 +134,7 @@ export const StatusBadge = ({ status }: { status: string }) => {
 }
 
 type DocumentListingProps = {
-    title: string
+    title: string | React.ReactNode
     columns: ColumnConfig[]
     data: any[]
     isLoading?: boolean
@@ -173,25 +173,25 @@ const DocumentListing = ({
     const [optimisticallyDeletedIds, setOptimisticallyDeletedIds] = useState(new Set<string>());
 
     const wrappedGetMenuOptions = useCallback((item: any) => {
-        if(!getMenuOptions) return [];
+        if (!getMenuOptions) return [];
         const options = getMenuOptions(item);
 
         return options.map((opt: any) => {
             let label, Icon, onClick, destructive;
             let isArray = false;
 
-            if(Array.isArray(opt)) {
+            if (Array.isArray(opt)) {
                 [label, Icon, onClick] = opt;
                 isArray = true;
-            }else{
+            } else {
                 ({ label, icon: Icon, onClick, destructive } = opt);
                 isArray = false;
             }
 
             // Check for delete intent via label or destructive flag + standard naming
-            if(label === 'Delete' || label === 'Remove' || (destructive && /delete|remove/i.test(String(label)))) {
+            if (label === 'Delete' || label === 'Remove' || (destructive && /delete|remove/i.test(String(label)))) {
                 const originalOnClick = onClick;
-                const wrappedOnClick = async(e: any) => {
+                const wrappedOnClick = async (e: any) => {
                     // Get ID using keyExtractor
                     // We pass index 0 but it might rely on index. Hopefully _id is present.
                     const id = String(_keyExtractor(item, 0));
@@ -203,9 +203,9 @@ const DocumentListing = ({
                         return next;
                     });
 
-                    try{
+                    try {
                         await originalOnClick(e);
-                    }catch(err){
+                    } catch (err) {
                         // Revert on failure
                         setOptimisticallyDeletedIds(prev => {
                             const next = new Set(prev);
@@ -218,7 +218,7 @@ const DocumentListing = ({
                     }
                 };
 
-                if(isArray) return [label, Icon, wrappedOnClick];
+                if (isArray) return [label, Icon, wrappedOnClick];
                 return { ...opt, onClick: wrappedOnClick };
             }
 
@@ -235,9 +235,9 @@ const DocumentListing = ({
     }, [visibleData, sortConfig]);
 
     const handleSort = useCallback((col: ColumnConfig) => {
-        if(!col.sortable) return
+        if (!col.sortable) return
         setSortConfig((prev) => {
-            if(prev && prev.key === col.key){
+            if (prev && prev.key === col.key) {
                 return { key: col.key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
             }
             return { key: col.key, direction: 'asc' }
@@ -245,8 +245,8 @@ const DocumentListing = ({
     }, [])
 
     const getSortIndicator = useCallback((col: ColumnConfig) => {
-        if(!col.sortable) return null
-        if(!sortConfig || sortConfig.key !== col.key) return <span className='sort-indicator'>⇅</span>
+        if (!col.sortable) return null
+        if (!sortConfig || sortConfig.key !== col.key) return <span className='sort-indicator'>⇅</span>
         return sortConfig.direction === 'asc' ? (
             <span className='sort-indicator'>↑</span>
         ) : (
@@ -265,7 +265,11 @@ const DocumentListing = ({
                             {isLoading && !data.length ? (
                                 <Skeleton variant='text' width={220} height={32} />
                             ) : (
-                                <Title className='font-size-6 font-weight-5 sm:font-size-4'>{title}</Title>
+                                typeof title === 'string' ? (
+                                    <Title className='font-size-6 font-weight-5 sm:font-size-4'>{title}</Title>
+                                ) : (
+                                    title
+                                )
                             )}
                             <i>
                                 <RxDotsHorizontal />
@@ -300,7 +304,7 @@ const DocumentListing = ({
                 </Container>
             </Container>
 
-            <Container className='document-listing-body-container overflow-auto flex-1' ref={bodyRef}>
+            <Container className='document-listing-body-container overflow-auto flex-1' ref={bodyRef as any}>
                 <DocumentListingTable
                     columns={columns}
                     data={sortedData}
@@ -314,7 +318,7 @@ const DocumentListing = ({
                     isFetchingMore={isFetchingMore}
                     onLoadMore={onLoadMore}
                     keyExtractor={_keyExtractor}
-                    scrollContainerRef={bodyRef}
+                    scrollContainerRef={bodyRef as any}
                 />
             </Container>
         </Container>

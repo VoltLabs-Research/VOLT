@@ -7,13 +7,53 @@ import Container from '@/components/primitives/Container';
 import DocumentListing from '@/components/organisms/common/DocumentListing';
 import type { ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import { IoChatbubbleOutline, IoPersonRemoveOutline, IoShieldCheckmarkOutline, IoShieldOutline } from 'react-icons/io5';
+import EditableTag from '@/components/atoms/common/EditableTag';
 import { formatDistanceToNow } from 'date-fns';
+import useToast from '@/hooks/ui/use-toast';
 import './MyTeam.css';
 
 const MyTeam: React.FC = () => {
     const navigate = useNavigate();
-    const { selectedTeam, members, admins, owner, onlineUsers, fetchMembers, initializeSocket, promoteMember, demoteMember, removeMember, isLoading } = useTeamStore();
+    const { selectedTeam, members, admins, owner, onlineUsers, fetchMembers, initializeSocket, promoteMember, demoteMember, removeMember, updateTeam, isLoading } = useTeamStore();
     const { user: currentUser } = useAuthStore();
+    const { showSuccess, showError } = useToast();
+
+    const currentIsOwner = currentUser && owner?._id === currentUser._id;
+    const currentIsAdmin = currentUser && admins.some(a => a._id === currentUser._id);
+    const canManage = currentIsOwner || currentIsAdmin;
+
+    const handleSaveTeamName = async (newName: string) => {
+        if (!selectedTeam || !newName.trim() || newName === selectedTeam.name) return;
+
+        try {
+            await updateTeam(selectedTeam._id, { name: newName });
+            showSuccess('Team name updated');
+        } catch (err) {
+            showError('Failed to update team name');
+        }
+    };
+
+    const headerContent = useMemo(() => {
+        if (!selectedTeam) return null;
+
+        return (
+            <div className="d-flex items-center gap-1">
+                {canManage ? (
+                    <>
+                        <EditableTag
+                            as="h1"
+                            className="font-size-6 font-weight-5 sm:font-size-4 color-primary"
+                            onSave={handleSaveTeamName}
+                        >
+                            {selectedTeam.name}
+                        </EditableTag>
+                    </>
+                ) : (
+                    <h1 className="font-size-6 font-weight-5 sm:font-size-4 color-primary">{selectedTeam.name}</h1>
+                )}
+            </div>
+        );
+    }, [selectedTeam, canManage]);
 
     useEffect(() => {
         if (selectedTeam) {
@@ -26,10 +66,6 @@ const MyTeam: React.FC = () => {
     const isOnline = (userId: string) => onlineUsers.includes(userId);
     const isOwner = (userId: string) => owner?._id === userId;
     const isAdmin = (userId: string) => admins.some(a => a._id === userId);
-
-    const currentIsOwner = currentUser && owner?._id === currentUser._id;
-    const currentIsAdmin = currentUser && admins.some(a => a._id === currentUser._id);
-    const canManage = currentIsOwner || currentIsAdmin;
 
     const tableData = useMemo(() => {
         const data = members.map(member => ({
@@ -158,7 +194,7 @@ const MyTeam: React.FC = () => {
     return (
         <Container className="my-team-page dashboard-content-padding h-100">
             <DocumentListing
-                title="My Team"
+                title={headerContent || 'My Team'}
                 columns={columns}
                 data={tableData}
                 isLoading={isLoading}
