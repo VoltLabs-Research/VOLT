@@ -1,4 +1,4 @@
-.node-editor-container{
+.node-editor-container {
     max-height: 90vh;
-    overflow-y: scroll;
+    overflow-y: auto;
 }

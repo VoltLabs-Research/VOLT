@@ -1,240 +1,172 @@
-import React, { type ReactNode } from 'react';
+import React, { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import './Popover.css';
-
-declare global {
-    namespace React {
-        interface HTMLAttributes<T> {
-            popover?: '' | 'auto' | 'manual' | 'hint';
-            popovertarget?: string;
-            popovertargetaction?: 'toggle' | 'show' | 'hide';
-            commandfor?: string;
-            command?: string;
-        }
-    }
-}
 
 interface PopoverProps {
     id: string;
     trigger: ReactNode;
     children: ReactNode;
-    type?: 'auto' | 'manual';
     className?: string;
     noPadding?: boolean;
     triggerAction?: 'click' | 'contextmenu';
 }
 
-const hideAllOtherPopovers = (keepId: string) => {
-    const open = document.querySelectorAll<HTMLElement>('[popover]:popover-open');
-    open.forEach((el) => {
-        if (el.id !== keepId) {
-            try {
-                (el as any).hidePopover();
-            } catch {}
-        }
-    });
-};
-
 const Popover = ({
     id,
     trigger,
     children,
-    type = 'auto',
     className = '',
     noPadding = false,
     triggerAction = 'click'
 }: PopoverProps) => {
-    const clickPosRef = React.useRef<{ x: number; y: number } | null>(null);
-    const triggerRectRef = React.useRef<DOMRect | null>(null);
-    const ignoreNextOutsideRef = React.useRef(false);
+    const [isOpen, setIsOpen] = useState(false);
+    const [style, setStyle] = useState<React.CSSProperties>({});
+    const triggerRef = useRef<HTMLElement | null>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
+    const cursorPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-    const getPopover = React.useCallback(() => document.getElementById(id), [id]);
-
-    const positionPopover = React.useCallback(() => {
-        const popover = getPopover();
-        if (!popover) return;
+    const calculatePosition = useCallback(() => {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const padding = 16;
 
         requestAnimationFrame(() => {
-            const rect = popover.getBoundingClientRect();
-            const vw = window.innerWidth;
-            const vh = window.innerHeight;
-            const padding = 16;
-            const gap = 8;
+            if (!popoverRef.current) return;
 
-            let left = padding;
-            let top = padding;
+            const rect = popoverRef.current.getBoundingClientRect();
+            const { x, y } = cursorPosRef.current;
 
-            if (triggerAction === 'click' && triggerRectRef.current) {
-                const tr = triggerRectRef.current;
+            let left = x;
+            let top = y;
 
-                left = tr.left;
-                top = tr.bottom + gap;
-
-                if (left + rect.width > vw - padding) {
-                    left = tr.right - rect.width;
-                }
-
-                if (top + rect.height > vh - padding) {
-                    top = tr.top - rect.height - gap;
-                }
-            } else if (clickPosRef.current) {
-                const { x, y } = clickPosRef.current;
-
-                left = x;
-                top = y;
-
-                if (left + rect.width > vw - padding) {
-                    left = x - rect.width;
-                }
-
-                if (top + rect.height > vh - padding) {
-                    top = y - rect.height;
-                }
+            // Adjust if overflows right
+            if (left + rect.width > vw - padding) {
+                left = x - rect.width;
             }
 
+            // Adjust if overflows bottom
+            if (top + rect.height > vh - padding) {
+                top = y - rect.height;
+            }
+
+            // Ensure not negative
             if (left < padding) left = padding;
             if (top < padding) top = padding;
 
-            popover.style.top = `${top}px`;
-            popover.style.left = `${left}px`;
-            popover.style.margin = '0';
-            popover.style.maxWidth = `calc(100vw - ${padding * 2}px)`;
+            setStyle({
+                position: 'fixed',
+                top: `${top}px`,
+                left: `${left}px`,
+                margin: 0,
+                maxWidth: `calc(100vw - ${padding * 2}px)`,
+                zIndex: 9999
+            });
         });
-    }, [getPopover, triggerAction]);
+    }, []);
 
-    const toggleOpen = React.useCallback((source: 'click' | 'contextmenu', e: MouseEvent, triggerEl: HTMLElement) => {
-        const popover = getPopover();
-        if (!popover) return;
+    const close = useCallback(() => {
+        setIsOpen(false);
+    }, []);
 
-        hideAllOtherPopovers(id);
+    const toggle = useCallback((e: React.MouseEvent) => {
+        // Always store cursor position
+        cursorPosRef.current = { x: e.clientX, y: e.clientY };
 
-        const isOpen = popover.matches(':popover-open');
+        setIsOpen((prev) => !prev);
+    }, []);
+
+    // Position the popover when it opens
+    useEffect(() => {
         if (isOpen) {
-            try {
-                (popover as any).hidePopover();
-            } catch {}
-            return;
+            calculatePosition();
         }
+    }, [isOpen, calculatePosition]);
 
-        ignoreNextOutsideRef.current = true;
+    // Close on outside click
+    useEffect(() => {
+        if (!isOpen) return;
 
-        if (source === 'click') {
-            triggerRectRef.current = triggerEl.getBoundingClientRect();
-            clickPosRef.current = null;
-        } else {
-            clickPosRef.current = { x: e.clientX, y: e.clientY };
-            triggerRectRef.current = null;
-        }
-
-        try {
-            (popover as any).showPopover();
-        } catch {}
-
-        setTimeout(positionPopover, 0);
-    }, [getPopover, id, positionPopover]);
-
-    React.useEffect(() => {
-        const handler = (e: MouseEvent) => {
+        const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
-            const triggerEl = target.closest(`[data-popover-trigger="${id}"]`) as HTMLElement | null;
-            if (!triggerEl) return;
 
-            if (triggerAction === 'click' && e.type === 'click') {
-                toggleOpen('click', e, triggerEl);
+            if (popoverRef.current?.contains(target)) {
                 return;
             }
 
-            if (triggerAction === 'contextmenu' && e.type === 'contextmenu') {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleOpen('contextmenu', e, triggerEl);
-            }
-        };
-
-        if (triggerAction === 'click') {
-            document.addEventListener('click', handler, true);
-        } else {
-            document.addEventListener('contextmenu', handler, true);
-        }
-
-        return () => {
-            if (triggerAction === 'click') {
-                document.removeEventListener('click', handler, true);
-            } else {
-                document.removeEventListener('contextmenu', handler, true);
-            }
-        };
-    }, [id, triggerAction, toggleOpen]);
-
-    React.useEffect(() => {
-        const popover = getPopover();
-        if (!popover) return;
-
-        const onToggle = (e: any) => {
-            if (e.newState === 'open') setTimeout(positionPopover, 0);
-        };
-
-        popover.addEventListener('toggle', onToggle);
-        return () => popover.removeEventListener('toggle', onToggle);
-    }, [getPopover, positionPopover]);
-
-    React.useEffect(() => {
-        const onPointerDown = (e: PointerEvent) => {
-            const popover = getPopover();
-            if (!popover) return;
-            if (!popover.matches(':popover-open')) return;
-
-            if (ignoreNextOutsideRef.current) {
-                ignoreNextOutsideRef.current = false;
+            if (triggerRef.current?.contains(target)) {
                 return;
             }
 
-            const t = e.target as HTMLElement;
-            const insidePopover = t.closest(`#${CSS.escape(id)}`);
-            const insideAnyTrigger = t.closest('[data-popover-trigger]');
+            close();
+        };
 
-            if (!insidePopover && !insideAnyTrigger) {
-                try {
-                    (popover as any).hidePopover();
-                } catch {}
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                close();
             }
         };
 
-        const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key !== 'Escape') return;
-            const popover = getPopover();
-            if (!popover) return;
-            try {
-                (popover as any).hidePopover();
-            } catch {}
-        };
-
-        document.addEventListener('pointerdown', onPointerDown, true);
-        document.addEventListener('keydown', onKeyDown, true);
+        const timeoutId = setTimeout(() => {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('keydown', handleEscape);
+        }, 0);
 
         return () => {
-            document.removeEventListener('pointerdown', onPointerDown, true);
-            document.removeEventListener('keydown', onKeyDown, true);
+            clearTimeout(timeoutId);
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('keydown', handleEscape);
         };
-    }, [id, getPopover]);
+    }, [isOpen, close]);
 
-    const effectiveType: 'auto' | 'manual' = triggerAction === 'contextmenu' ? 'manual' : type;
+    const handleTriggerClick = useCallback((e: React.MouseEvent) => {
+        if (triggerAction !== 'click') return;
+        e.stopPropagation();
+        toggle(e);
+    }, [triggerAction, toggle]);
+
+    const handleContextMenu = useCallback((e: React.MouseEvent) => {
+        if (triggerAction !== 'contextmenu') return;
+        e.preventDefault();
+        e.stopPropagation();
+        toggle(e);
+    }, [triggerAction, toggle]);
+
+    const triggerElement = trigger && React.isValidElement(trigger)
+        ? React.cloneElement(trigger as React.ReactElement<any>, {
+            ref: (el: HTMLElement) => {
+                triggerRef.current = el;
+            },
+            onClick: (e: React.MouseEvent) => {
+                const originalOnClick = (trigger as React.ReactElement<any>).props.onClick;
+                originalOnClick?.(e);
+                handleTriggerClick(e);
+            },
+            onContextMenu: (e: React.MouseEvent) => {
+                const originalOnContextMenu = (trigger as React.ReactElement<any>).props.onContextMenu;
+                originalOnContextMenu?.(e);
+                handleContextMenu(e);
+            },
+            'data-popover-trigger': id
+        })
+        : null;
+
+    const popoverContent = isOpen ? createPortal(
+        <div
+            ref={popoverRef}
+            id={id}
+            className={`volt-popover d-flex column glass-bg ${noPadding ? '' : 'p-05'} ${className} color-primary`}
+            style={style}
+            onClick={(e) => e.stopPropagation()}
+        >
+            {children}
+        </div>,
+        document.body
+    ) : null;
 
     return (
         <>
-            {trigger && React.isValidElement(trigger) ? (
-                React.cloneElement(trigger as React.ReactElement<any>, {
-                    'data-popover-trigger': id
-                })
-            ) : null}
-
-            <div
-                id={id}
-                popover={effectiveType}
-                className={`volt-popover d-flex column glass-bg p-fixed ${noPadding ? '' : 'p-05'} ${className} color-primary`}
-                onClick={(e) => e.stopPropagation()}
-            >
-                {children}
-            </div>
+            {triggerElement}
+            {popoverContent}
         </>
     );
 };

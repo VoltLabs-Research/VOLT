@@ -28,12 +28,12 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   const arrowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if(!bodyRef.current || !arrowRef.current) return;
+    if (!bodyRef.current || !arrowRef.current) return;
 
     const bodyElement = bodyRef.current;
     const arrowElement = arrowRef.current;
 
-    if(isExpanded){
+    if (isExpanded) {
       // Simple expand animation
       gsap.set(bodyElement, { height: 'auto' });
       const height = bodyElement.offsetHeight;
@@ -53,7 +53,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         duration: 0.25,
         ease: 'power2.out'
       });
-    }else{
+    } else {
       // Simple collapse animation
       const height = bodyElement.offsetHeight;
       gsap.set(bodyElement, { height: height });
@@ -74,7 +74,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
 
   // Set initial state for collapsed sections
   useEffect(() => {
-    if(!isExpanded && bodyRef.current){
+    if (!isExpanded && bodyRef.current) {
       gsap.set(bodyRef.current, { height: 0 });
     }
   }, []);

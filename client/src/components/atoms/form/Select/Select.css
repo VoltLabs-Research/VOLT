@@ -1,15 +1,3 @@
-.volt-select {
-    appearance: base-select;
-    padding: 0;
-    margin: 0;
-    background-color: transparent;
-    outline: none;
-}
-
-.volt-select.labeled-input {
-    width: 160px !important;
-}
-
 .volt-select-trigger {
     padding: .6rem .8rem;
     border-radius: var(--radius-full);
@@ -17,21 +5,35 @@
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
     border: 1px solid var(--color-border-soft);
     text-align: left;
-    width: 100%;
+    cursor: pointer;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.volt-select:focus-visible .volt-select-trigger {
+.volt-select-trigger:hover:not(:disabled) {
+    border-color: var(--color-border);
+}
+
+.volt-select-trigger:focus-visible {
+    outline: none;
     border-color: var(--accent-indigo);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-indigo) 25%, transparent);
 }
 
-.volt-select:disabled .volt-select-trigger {
+.volt-select-trigger:disabled {
     cursor: not-allowed;
     background: var(--color-surface-3);
     color: var(--color-text-muted);
+}
+
+.volt-select-trigger.on-dark {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.volt-select-trigger.on-dark:hover:not(:disabled) {
+    background-color: var(--hover-bg);
 }
 
 .volt-select-value {
@@ -44,52 +46,41 @@
 
 .volt-select-chevron {
     margin-left: auto;
+    flex-shrink: 0;
     transition: transform .15s ease;
 }
 
-.volt-select:open .volt-select-chevron {
+.volt-select-chevron.rotated {
     transform: rotate(180deg);
 }
 
-.volt-select-value .select-option-check,
-.volt-select-value .select-option-leave-wrapper {
-    display: none;
-}
-
-/** NOTE: .volt-select::picker(select) is the dropdown container **/
-/* 
- * The dropdown specific styling using ::picker(select)
- * We must explicitly handle display states to ensure it unmounts/hides correctly 
- * and doesn't remain clickable.
- */
-.volt-select::picker(select) {
-    appearance: base-select;
+/* Dropdown styling */
+.volt-select-dropdown {
     background: var(--color-surface-1);
     border: 1px solid var(--color-border);
     border-radius: .6rem;
     box-shadow: var(--shadow-elevated);
     padding: .35rem;
-    margin-top: 6px;
+    max-height: 300px;
+    overflow-y: auto;
 
-    /* Force hidden when not open */
-    display: none;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: display 0.2s allow-discrete, overlay 0.2s allow-discrete, opacity 0.2s, visibility 0.2s allow-discrete;
+    /* Animation */
+    animation: selectDropdownIn .15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Handle open state visibility */
-.volt-select::picker(select):open,
-.volt-select::picker(select):popover-open {
-    display: block;
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
+@keyframes selectDropdownIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
-option.select-option-container {
-    appearance: base-select;
+.volt-select-option {
     padding: .5rem .6rem;
     border-radius: .5rem;
     cursor: pointer;
@@ -99,49 +90,33 @@ option.select-option-container {
     background-color: transparent;
 }
 
-option.select-option-container:hover,
-option.select-option-container:checked {
+.volt-select-option:hover {
     background: color-mix(in srgb, var(--accent-indigo) 12%, transparent);
 }
 
-option.select-option-container:checked {
+.volt-select-option.selected {
+    background: color-mix(in srgb, var(--accent-indigo) 12%, transparent);
     font-weight: 600;
 }
 
-.select-option-check {
+.volt-select-option-check {
     color: var(--accent-indigo);
     margin-left: auto;
+    flex-shrink: 0;
 }
 
-.volt-select-selected-check {
-    color: var(--accent-indigo);
+.volt-select-option-description {
+    font-size: 0.75rem;
+    margin-top: 2px;
 }
 
-.select-option-leave-wrapper {
+.volt-select-option-leave {
     padding: 2px;
     margin-left: .5rem;
     border-radius: var(--radius-xs);
 }
 
-.select-option-leave-wrapper:hover {
+.volt-select-option-leave:hover {
     color: var(--accent-red, #ff6b6b);
     background: color-mix(in srgb, var(--accent-red) 10%, transparent);
-}
-
-.volt-select.on-dark .volt-select-trigger {
-    background-color: transparent;
-    border-color: transparent;
-}
-
-.volt-select.on-dark .volt-select-trigger:hover {
-    background-color: var(--hover-bg);
-}
-
-/*
- * These are icons that the browser provides natively (::checkmark and ::picker-icon)
- * for the selector. We already use our chevron, so we don't need them.
- **/
-option.select-option-container::checkmark,
-.volt-select::picker-icon {
-    display: none;
 }

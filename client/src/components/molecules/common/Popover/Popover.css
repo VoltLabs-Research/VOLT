@@ -2,7 +2,6 @@
     border-radius: var(--radius-lg);
     min-width: 180px;
     max-width: 320px;
-    z-index: 9999;
 
     /* Apple-style glassmorphism */
     background: var(--glass-bg);
@@ -11,37 +10,18 @@
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-elevated);
 
-    /* Override any utility classes (like d-flex) when closed */
-    &:not(:popover-open) {
-        display: none !important;
-    }
-
-    /* Remove default popover styles */
-    margin: 0;
-
     /* Animation */
-    opacity: 0;
-    transform: scale(0.95) translateY(-4px);
-    transition: opacity 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
-    overlay 0.15s allow-discrete,
-    display 0.15s allow-discrete;
+    animation: popoverIn .15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.volt-popover:popover-open {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-}
-
-/* Starting style for animation */
-@starting-style {
-    .volt-popover:popover-open {
+@keyframes popoverIn {
+    from {
         opacity: 0;
         transform: scale(0.95) translateY(-4px);
     }
-}
 
-/* Backdrop for auto popovers */
-.volt-popover::backdrop {
-    background-color: transparent;
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
