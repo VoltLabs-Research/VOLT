@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { Document } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
 import { ITeam } from '@models/team';
 
 export interface IUser extends Document {
@@ -28,10 +28,11 @@ export interface IUser extends Document {
     lastLoginAt?: Date;
     password?: string; // Optional for OAuth users
     role: 'user' | 'admin';
-    teams: ITeam[];
     passwordChangedAt?: Date;
     passwordResetToken?: string;
     passwordResetExpires?: Date;
+    teams: mongoose.Types.ObjectId[] | ITeam[];
+    analyses: mongoose.Types.ObjectId[];
     firstName: string;
     lastName: string;
     createdAt: Date;

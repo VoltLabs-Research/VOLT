@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { NextFunction, Request, Response } from 'express';
 import { catchAsync, slugify } from '@/utilities/runtime/runtime';
 import { getAnalysisQueue } from '@/queues';
-import { Analysis, PluginListingRow } from '@/models';
+import { Analysis, PluginListingRow, User } from '@/models';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import { SYS_BUCKETS } from '@/config/minio';
 import { decodeMultiStream } from '@/utilities/msgpack/msgpack-stream';
@@ -200,6 +200,11 @@ export default class PluginsController extends BaseController<IPlugin> {
             trajectory: trajectoryId,
             startedAt: new Date(),
             totalFrames: items.length
+        });
+
+        const userId = (req as any).user._id;
+        await User.findByIdAndUpdate(userId, {
+            $push: { analyses: analysisId }
         });
 
         const teamId = (trajectory.team && typeof trajectory.team !== 'string')

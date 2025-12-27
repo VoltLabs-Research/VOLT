@@ -22,7 +22,7 @@
 
 import mongoose, { Schema, Model } from 'mongoose';
 import validator from 'validator';
-import { Notification, Team } from '@/models/index';
+import { Notification, Team, Analysis } from '@/models/index';
 import bcrypt from 'bcryptjs';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 // @ts-ignore
@@ -76,6 +76,10 @@ const UserSchema: Schema<IUser> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Team',
         cascade: 'pull'
+    }],
+    analyses: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Analysis'
     }],
     // OAuth fields
     oauthProvider: {
