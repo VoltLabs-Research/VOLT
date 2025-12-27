@@ -4,6 +4,9 @@ import { ArgumentType, NodeType, ModifierContext, Exporter, ExportType, PluginSt
 import mongoose, { Schema } from 'mongoose';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
+import storage from '@/services/storage';
+import { SYS_BUCKETS } from '@/config/minio';
+import logger from '@/logger';
 
 const ArgumentOptionSchema = new Schema({
     key: {
@@ -343,6 +346,62 @@ const PluginSchema = new Schema({
 PluginSchema.plugin(useInverseRelations);
 PluginSchema.plugin(useCascadeDelete);
 
+/**
+ * Safely delete plugin binary from MinIO only if no other plugin shares the same binaryHash.
+ * This allows multiple teams to share the same binary file.
+ */
+const safelyDeletePluginBinary = async (plugin: any): Promise<void> => {
+    const entrypointNode = plugin.workflow?.nodes?.find(
+        (n: IWorkflowNode) => n.type === NodeType.ENTRYPOINT
+    );
+
+    const binaryObjectPath = entrypointNode?.data?.entrypoint?.binaryObjectPath;
+    const binaryHash = entrypointNode?.data?.entrypoint?.binaryHash;
+
+    if (!binaryObjectPath) return;
+
+    // If there's a hash, check if another plugin uses the same binary
+    if (binaryHash) {
+        const otherPluginsWithSameHash = await mongoose.model('Plugin').countDocuments({
+            _id: { $ne: plugin._id },
+            'workflow.nodes': {
+                $elemMatch: {
+                    type: NodeType.ENTRYPOINT,
+                    'data.entrypoint.binaryHash': binaryHash
+                }
+            }
+        });
+
+        if (otherPluginsWithSameHash > 0) {
+            logger.info(`[Plugin] Binary ${binaryObjectPath} is shared by ${otherPluginsWithSameHash} other plugin(s), skipping deletion`);
+            return;
+        }
+    }
+
+    // Delete binary from MinIO
+    try {
+        await storage.delete(SYS_BUCKETS.PLUGINS, binaryObjectPath);
+        logger.info(`[Plugin] Deleted binary: ${binaryObjectPath}`);
+    } catch (err) {
+        // Log but don't fail plugin deletion
+        logger.warn(`[Plugin] Could not delete binary ${binaryObjectPath}: ${err}`);
+    }
+};
+
+// Pre-delete hook for document.deleteOne()
+PluginSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
+    await safelyDeletePluginBinary(this);
+    next();
+});
+
+// Pre-delete hook for Model.findOneAndDelete()
+PluginSchema.pre('findOneAndDelete', { document: false, query: true }, async function (next) {
+    const doc = await this.model.findOne(this.getFilter());
+    if (doc) {
+        await safelyDeletePluginBinary(doc);
+    }
+    next();
+});
 
 PluginSchema.index({ status: 1 });
 PluginSchema.index({ createdBy: 1 });

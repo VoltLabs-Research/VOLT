@@ -12,7 +12,6 @@ interface TeamMember {
     _id: string;
     username: string;
     email: string;
-    // ... expanded fields
     firstName?: string;
     lastName?: string;
     avatar?: string;
@@ -65,6 +64,7 @@ const teamApi = {
 
     async getActivity(teamId: string, range: number = 365): Promise<ActivityData[]> {
         const response = await api.get<{ status: string; data: ActivityData[] }>(`/teams/${teamId}/activity?range=${range}`);
+        console.log(response);
         return response.data.data;
     },
 

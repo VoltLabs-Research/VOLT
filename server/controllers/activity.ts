@@ -9,6 +9,7 @@ import { DailyActivity } from '@/models';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { IDailyActivity } from '@/models/daily-activity';
+import { Types } from 'mongoose';
 
 export default class ActivityController extends BaseController<IDailyActivity> {
     constructor() {
@@ -26,7 +27,7 @@ export default class ActivityController extends BaseController<IDailyActivity> {
             throw new RuntimeError(ErrorCodes.VALIDATION_MISSING_REQUIRED_FIELDS, 400);
         }
 
-        const statsQuery: any = { team: teamId };
+        const statsQuery: any = { team: new Types.ObjectId(teamId) };
 
         // Default range 365 days
         const days = range ? parseInt(range as string) : 365;
@@ -62,6 +63,8 @@ export default class ActivityController extends BaseController<IDailyActivity> {
             },
             { $sort: { date: 1 } }
         ]);
+
+        console.log(activities);
 
         res.status(200).json({
             status: 'success',

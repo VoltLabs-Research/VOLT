@@ -29,6 +29,10 @@ const MyTeam: React.FC = () => {
         }
     }, [selectedTeam]);
 
+    useEffect(() => {
+        console.log(activityData);
+    }, [activityData]);
+
     const currentIsOwner = currentUser && owner?._id === currentUser._id;
     const currentIsAdmin = currentUser && admins.some(a => a._id === currentUser._id);
     const canManage = currentIsOwner || currentIsAdmin;
@@ -103,21 +107,21 @@ const MyTeam: React.FC = () => {
             key: 'user',
             title: 'User',
             render: (_: any, member: any) => (
-                <div className="d-flex items-center gap-2">
+                <div className="d-flex items-center gap-1">
                     <div className="member-avatar p-relative">
                         <img
                             src={member.avatar || `https://ui-avatars.com/api/?name=${member.username}&background=random`}
                             alt={member.username}
-                            className="avatar-sm circle object-cover"
+                            className="avatar-sm object-cover"
                         />
                         {member.isOnline && <span className="status-dot online p-absolute border-white"></span>}
                     </div>
                     <div className="d-flex column">
-                        <span className="font-weight-6 color-primary">
+                        <span className="font-weight-6 color-primary d-flex gap-02 font-size-2">
                             {member.firstName} {member.lastName}
-                            {member._id === currentUser?._id && <span className="color-secondary font-size-xs ml-1">(You)</span>}
+                            {member._id === currentUser?._id && <span className="color-secondary">(You)</span>}
                         </span>
-                        <span className="font-size-xs color-secondary">{member.email}</span>
+                        <span className="font-size-2 color-secondary">{member.email}</span>
                     </div>
                 </div>
             )
@@ -139,10 +143,10 @@ const MyTeam: React.FC = () => {
             render: (_: any, member: any) => (
                 <>
                     {member.isOnline ? (
-                        <span className="color-success font-size-sm font-weight-5">Online</span>
+                        <span className="color-success font-size-2 font-weight-5">Online</span>
                     ) : (
                         <div className="d-flex column">
-                            <span className="color-secondary font-size-sm">Offline</span>
+                            <span className="color-secondary font-size-2">Offline</span>
                             {member.lastLoginAt && (
                                 <span className="color-tertiary font-size-xs">
                                     Seen {formatDistanceToNow(new Date(member.lastLoginAt))} ago
@@ -156,22 +160,22 @@ const MyTeam: React.FC = () => {
         {
             key: 'trajectoriesCount',
             title: 'Trajectories',
-            render: (val: number) => <span className="color-secondary font-size-sm">{val || 0}</span>
+            render: (val: number) => <span className="color-secondary font-size-2">{val || 0}</span>
         },
         {
             key: 'analysesCount',
             title: 'Analyses',
-            render: (val: number) => <span className="color-secondary font-size-sm">{val || 0}</span>
+            render: (val: number) => <span className="color-secondary font-size-2">{val || 0}</span>
         },
         {
             key: 'timeSpentLast7Days',
             title: 'Time (7d)',
             render: (val: number) => {
-                if (!val) return <span className="color-secondary font-size-sm">0m</span>;
+                if (!val) return <span className="color-secondary font-size-2">0m</span>;
                 const hours = Math.floor(val / 60);
                 const minutes = val % 60;
                 return (
-                    <span className="color-secondary font-size-sm">
+                    <span className="color-secondary font-size-2">
                         {hours > 0 ? `${hours}h ` : ''}{minutes}m
                     </span>
                 );
@@ -180,7 +184,7 @@ const MyTeam: React.FC = () => {
         {
             key: 'rawJoined',
             title: 'Joined',
-            render: (val: string) => <span className="color-secondary font-size-sm">{val ? formatTimeAgo(val) : '-'}</span>
+            render: (val: string) => <span className="color-secondary font-size-2">{val ? formatTimeAgo(val) : '-'}</span>
         }
     ];
 

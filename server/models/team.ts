@@ -75,7 +75,7 @@ const TeamSchema = new Schema({
     plugins: [{
         type: Schema.Types.ObjectId,
         ref: 'Plugin',
-        cascade: 'pull',
+        cascade: 'delete',
         inverse: { path: 'team', behavior: 'set' }
     }]
 }, {

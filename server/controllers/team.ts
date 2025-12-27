@@ -58,6 +58,7 @@ export default class TeamController extends BaseController<any> {
                 user: memberId,
                 date: { $gte: sevenDaysAgo }
             });
+
             const minutesOnline = dailyActivities.reduce((acc, curr) => acc + (curr.minutesOnline || 0), 0);
 
             // 2. Trajectories count
@@ -67,15 +68,10 @@ export default class TeamController extends BaseController<any> {
             });
 
             // 3. Analyses count
-            // Note: Analyses are linked to trajectories, and trajectories are linked to teams.
             // We count analyses performed by the user on trajectories belonging to this team.
             const analysesCount = await Analysis.countDocuments({
                 trajectory: { $in: await Trajectory.find({ team: teamId }).distinct('_id') },
-                // Based on model, Analysis doesn't have an 'owner' or 'createdBy' field?
-                // Let me check Analysis model again.
             });
-            // Wait, I should check if Analysis has a user reference.
-            // I'll check Analysis model again.
 
             // 4. Joined date
             const invitation = await TeamInvitation.findOne({
@@ -93,6 +89,8 @@ export default class TeamController extends BaseController<any> {
             };
         }));
 
+        console.log(memberStats);
+
         res.status(200).json({
             status: 'success',
             data: {
@@ -106,22 +104,10 @@ export default class TeamController extends BaseController<any> {
     public promoteToAdmin = catchAsync(async (req: Request, res: Response) => {
         const teamId = req.params.id;
         const { userId } = req.body;
-        const team = res.locals.team; // Assumes middleware sets this, but need to check if owner/admin check is done before. 
-        // Actually BaseController usually doesn't set locals.team. We need to fetch or rely on middleware.
-        // Assuming there is a middleware regarding team permissions or I should fetch it.
-        // The user request said "solo y solo si el usuario es administrador: asignar como Administrator Permissions".
-        // Let's assume protect middleware gives us user. User must be checking against team.
-
-        // However, I need to fetch the team to check permissions if not done by router. 
-        // Let's fetch it to be safe or assuming the route uses a middleware that puts team in locals. 
-        // Looking at `removeMember`, it uses `res.locals.team`. This implies a middleware.
-
-        // Logic: Only Owner or Admin can promote? Usually only Owner can make Admins or Admins can make Admins?
-        // Let's assume Owner and Admins can promote.
+        const team = res.locals.team;
 
         const currentUserId = (req as any).user._id;
 
-        // We need to re-fetch to ensure we have admins list if res.locals.team doesn't have it populated or updated
         const teamFetched = await Team.findById(teamId);
         if (!teamFetched) throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
 

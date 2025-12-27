@@ -1,6 +1,7 @@
 .my-team-page .avatar-sm {
     width: 32px;
     height: 32px;
+    border-radius: 50%;
 }
 
 .my-team-page .status-dot {
@@ -24,8 +25,8 @@
 }
 
 .my-team-page .badge-primary {
-    background-color: var(--color-primary);
-    color: var(--color-bg);
+    background-color: var(--color-bg);
+    color: var(--color-primary);
 }
 
 .my-team-page .badge-secondary {

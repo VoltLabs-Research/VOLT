@@ -29,4 +29,5 @@ export interface ITeam extends Document {
     admins: mongoose.Types.ObjectId[];
     members: mongoose.Types.ObjectId[];
     trajectories: mongoose.Types.ObjectId[];
+    plugins: mongoose.Types.ObjectId[];
 }

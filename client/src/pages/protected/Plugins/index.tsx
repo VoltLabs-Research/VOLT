@@ -8,6 +8,7 @@ import { PluginStatus } from '@/types/plugin';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import usePluginStore from '@/stores/plugins/plugin';
 import useTeamStore from '@/stores/team/team';
+import useToast from '@/hooks/ui/use-toast';
 import './Plugins.css';
 
 const PluginsListing = () => {
@@ -18,6 +19,7 @@ const PluginsListing = () => {
     const isFetchingMore = usePluginStore((s) => s.isFetchingMore);
     const listingMeta = usePluginStore((s) => s.listingMeta);
     const selectedTeam = useTeamStore((s) => s.selectedTeam);
+    const { showSuccess } = useToast();
     const [isImporting, setIsImporting] = useState(false);
     const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -133,7 +135,8 @@ const PluginsListing = () => {
         try {
             const importedPlugin = await pluginApi.importPlugin(file, selectedTeam?._id);
             fetchPlugins({ page: 1, force: true });
-            navigate(`/dashboard/plugins/builder?id=${importedPlugin._id}`);
+            // navigate(`/dashboard/plugins/builder?id=${importedPlugin._id}`);
+            showSuccess(`Plugin imported successfully!`);
         } catch (err) {
             console.error('Failed to import plugin:', err);
         } finally {

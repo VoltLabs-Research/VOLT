@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import './ActivityHeatmap.css';
@@ -9,7 +9,7 @@ import Container from '@/components/primitives/Container';
 
 interface ActivityHeatmapProps {
     data: ActivityData[];
-    range?: number; // Days to show, default 365
+    range?: number;
 }
 
 const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, range = 365 }) => {
@@ -20,6 +20,10 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, range = 365 }) 
     const [tooltipOpen, setTooltipOpen] = React.useState(false);
     const [tooltipPos, setTooltipPos] = React.useState({ x: 0, y: 0 });
     const [tooltipContent, setTooltipContent] = React.useState<React.ReactNode>(null);
+
+    useEffect(() => {
+        console.log('data', data);
+    }, []);
 
     const chartData = useMemo(() => {
         const dataMap = new Map<string, ActivityData>();
