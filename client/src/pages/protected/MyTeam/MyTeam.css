@@ -1,0 +1,39 @@
+.my-team-page .avatar-sm {
+    width: 32px;
+    height: 32px;
+}
+
+.my-team-page .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    bottom: 0;
+    right: 0;
+    border: 2px solid white;
+}
+
+.my-team-page .status-dot.online {
+    background-color: #22c55e;
+}
+
+.my-team-page .badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.my-team-page .badge-primary {
+    background-color: var(--color-primary);
+    color: var(--color-bg);
+}
+
+.my-team-page .badge-secondary {
+    background-color: var(--color-surface-3);
+    color: var(--color-text-primary);
+}
+
+.my-team-page .badge-outline {
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+}

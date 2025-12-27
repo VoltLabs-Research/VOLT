@@ -25,6 +25,7 @@ import { ITeam } from '@models/team';
 
 export interface IUser extends Document {
     email: string;
+    lastLoginAt?: Date;
     password?: string; // Optional for OAuth users
     role: 'user' | 'admin';
     teams: ITeam[];

@@ -45,6 +45,10 @@ router.post('/:id/leave', middleware.checkTeamMembership, controller.leaveTeam);
 router.get('/:id/members', middleware.checkTeamMembership, controller.getMembers);
 
 // Remove member from team
-router.post('/:id/members/remove', middleware.checkTeamOwnership, controller.removeMember);
+router.post('/:id/members/remove', middleware.checkTeamMembership, controller.removeMember);
+
+// Promote/Demote admins
+router.patch('/:id/members/promote', middleware.checkTeamMembership, controller.promoteToAdmin);
+router.patch('/:id/members/demote', middleware.checkTeamMembership, controller.demoteFromAdmin);
 
 export default router;

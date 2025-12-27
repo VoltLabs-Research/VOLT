@@ -22,7 +22,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Outlet, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { IoSettingsOutline, IoCubeOutline, IoSearchOutline, IoCloseOutline, IoMenuOutline, IoChevronDown, IoAnalytics } from 'react-icons/io5';
+import { IoSettingsOutline, IoCubeOutline, IoSearchOutline, IoCloseOutline, IoMenuOutline, IoChevronDown, IoAnalytics, IoPeopleOutline } from 'react-icons/io5';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { IoNotificationsOutline } from "react-icons/io5";
 import { CiChat1 } from 'react-icons/ci';
@@ -198,7 +198,8 @@ const DashboardLayout = () => {
         ['Messages', CiChat1, '/dashboard/messages'],
         ['Clusters', HiOutlineServer, '/dashboard/clusters'],
         ['File Explorer', BsFiles, '/dashboard/file-explorer'],
-        ['Import', MdImportExport, '/dashboard/ssh-connections']
+        ['Import', MdImportExport, '/dashboard/ssh-connections'],
+        ['My Team', IoPeopleOutline, '/dashboard/my-team']
     ]), []);
 
     // Settings sub-items for collapsible section

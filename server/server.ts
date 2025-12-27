@@ -30,6 +30,7 @@ import TrajectoryModule from '@/socket/modules/trajectory';
 import ChatModule from '@/socket/modules/chat';
 import NotificationsModule from '@/socket/modules/notifications';
 import CanvasPresenceModule from '@/socket/modules/canvas-presence';
+import TeamPresenceModule from '@/socket/modules/team-presence';
 import { initializeRedis } from '@config/redis';
 import { initializeMinio } from '@/config/minio';
 import MetricsModule from '@/socket/modules/metrics';
@@ -48,6 +49,7 @@ const gateway = new SocketGateway()
     .register(new ChatModule())
     .register(new NotificationsModule())
     .register(new CanvasPresenceModule())
+    .register(new TeamPresenceModule())
     .register(new MetricsModule());
 
 // Background metrics collector

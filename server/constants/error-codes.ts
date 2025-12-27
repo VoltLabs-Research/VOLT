@@ -48,6 +48,8 @@ export const ErrorCodes = {
     TEAM_OWNERSHIP_FORBIDDEN: 'Team::Ownership::Forbidden',
     TEAM_CANNOT_REMOVE_OWNER: 'Team::CannotRemoveOwner',
     TEAM_USER_NOT_MEMBER: 'Team::UserNotAMember',
+    TEAM_NOT_AUTHORIZED: 'Team::NotAuthorized',
+    TEAM_INSUFFICIENT_PERMISSIONS: 'Team::InsufficientPermissions',
 
     CONTAINER_NOT_FOUND: 'Container::NotFound',
     CONTAINER_ACCESS_DENIED: 'Container::AccessDenied',

@@ -55,6 +55,7 @@ const UserSchema: Schema<IUser> = new Schema({
         default: 'user'
     },
     passwordChangedAt: Date,
+    lastLoginAt: Date,
     firstName: {
         type: String,
         minlength: [4, ValidationCodes.USER_FIRST_NAME_MINLEN],

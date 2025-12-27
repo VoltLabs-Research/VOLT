@@ -5,6 +5,23 @@ export interface TeamState {
     selectedTeam: Team | null;
     isLoading: boolean;
     error: string | null;
+
+    // Members & Presence
+    members: TeamMember[];
+    admins: TeamMember[];
+    owner: TeamMember | null;
+    onlineUsers: string[]; // User IDs
+}
+
+export interface TeamMember {
+    _id: string;
+    username: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    avatar?: string;
+    lastLoginAt?: string;
+    createdAt?: string;
 }
 
 export interface TeamActions {
@@ -16,6 +33,18 @@ export interface TeamActions {
     leaveTeam: (teamId: string) => Promise<void>;
     clearError: () => void;
     reset: () => void;
+
+    // Member Actions
+    fetchMembers: (teamId: string) => Promise<void>;
+    promoteMember: (teamId: string, userId: string) => Promise<void>;
+    demoteMember: (teamId: string, userId: string) => Promise<void>;
+    removeMember: (teamId: string, userId: string) => Promise<void>;
+
+    // Presence
+    setOnlineUsers: (userIds: string[]) => void;
+    addOnlineUser: (userId: string) => void;
+    removeOnlineUser: (userId: string) => void;
+    initializeSocket: (teamId: string) => () => void;
 }
 
 export interface CreateTeamData {

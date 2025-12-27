@@ -45,6 +45,11 @@ const TeamSchema = new Schema({
         required: [true, ValidationCodes.TEAM_OWNER_REQUIRED],
         cascade: 'delete'
     },
+    admins: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        cascade: 'pull'
+    }],
     members: [{
         type: Schema.Types.ObjectId,
         ref: 'User',
