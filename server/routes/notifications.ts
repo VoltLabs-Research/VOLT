@@ -33,6 +33,8 @@ router
     .route('/')
     .get(controller.getUserNotifications);
 
+router.patch('/read-all', controller.markAllRead);
+
 router
     .route('/:id')
     .patch(controller.markNotificationRead)

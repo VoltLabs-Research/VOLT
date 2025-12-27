@@ -95,12 +95,12 @@
     --color-surface-3: #d1d1d6;
 
     --color-text-primary: #1d1d1f;
-    --color-text-secondary: #6e6e73;
+    --color-text-secondary: #4f4f4f;
     --color-text-muted: #8e8e93;
 
     --color-border-strong: #c7c7cc;
     --color-border: #d1d1d6;
-    --color-border-soft: rgba(0, 0, 0, 0.06);
+    --color-border-soft: rgb(0 0 0 / 8%);
 
     --material-regular: rgba(255, 255, 255, 0.72);
     --material-regular-border: rgba(0, 0, 0, 0.05);

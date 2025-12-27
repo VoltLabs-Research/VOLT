@@ -44,13 +44,8 @@
 /* Auth variant - matches SignIn form styles */
 .form-input-container.form-input-auth {
     background-color: transparent;
-    border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     height: 3.25rem;
-}
-
-.form-input-container.form-input-auth:hover {
-    border-color: var(--color-border-strong);
 }
 
 .form-input-container.form-input-auth:has(.form-input:focus),

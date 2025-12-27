@@ -106,6 +106,9 @@ const DashboardLayout = () => {
     const notificationBodyRef = useRef<HTMLDivElement | null>(null);
     const observedNotificationsRef = useRef<Set<string>>(new Set());
 
+    const fetchNotifications = useNotificationStore((state) => state.fetch);
+    const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
+    const notificationsInitialized = useRef(false);
     const fetchPlugins = usePluginStore(state => state.fetchPlugins);
     const fetchContainers = useContainerStore(state => state.fetchContainers);
     const getAnalysisConfigs = useAnalysisConfigStore((state) => state.getAnalysisConfigs);
@@ -718,11 +721,11 @@ const DashboardLayout = () => {
                             className="team-invite-panel glass-bg d-flex column overflow-hidden"
                             noPadding
                         >
-                            {selectedTeam && (
+                            {(closePopover) => selectedTeam && (
                                 <TeamInvitePanel
                                     teamName={selectedTeam.name}
                                     teamId={selectedTeam._id}
-                                    popoverId="team-invite-popover"
+                                    onClose={closePopover}
                                 />
                             )}
                         </Popover>
@@ -743,45 +746,53 @@ const DashboardLayout = () => {
                                 }
                                 className="dashboard-notifications-dropdown glass-bg p-0 overflow-auto"
                                 noPadding
+                                onOpenChange={(isOpen) => {
+                                    if (isOpen) markAllAsRead();
+                                }}
                             >
-                                <Container className='d-flex items-center content-between color-primary font-weight-6 dashboard-notifications-header'>
-                                    <span>Notifications</span>
-                                    <button
-                                        className='dashboard-notifications-close color-secondary cursor-pointer'
-                                        commandfor="notifications-popover"
-                                        command="hide-popover"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >×</button>
-                                </Container>
-                                <Container ref={notificationBodyRef} className='dashboard-notifications-body'>
-                                    {loading ? (
-                                        Array.from({ length: 5 }).map((_, i) => (
-                                            <div key={`notif-skel-${i}`} className='dashboard-notification-item'>
-                                                <Skeleton variant='text' width='60%' height={20} />
-                                                <Skeleton variant='text' width='90%' height={16} />
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <>
-                                            {notificationList.length === 0 && (
-                                                <div className='dashboard-notifications-empty text-center color-secondary'>No notifications</div>
+                                {(closePopover) => (
+                                    <>
+                                        <Container className='d-flex items-center content-between color-primary font-weight-6 dashboard-notifications-header'>
+                                            <span>Notifications</span>
+                                            <button
+                                                className='dashboard-notifications-close color-secondary cursor-pointer'
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    closePopover();
+                                                }}
+                                            >×</button>
+                                        </Container>
+                                        <Container ref={notificationBodyRef} className='dashboard-notifications-body'>
+                                            {loading ? (
+                                                Array.from({ length: 5 }).map((_, i) => (
+                                                    <div key={`notif-skel-${i}`} className='dashboard-notification-item'>
+                                                        <Skeleton variant='text' width='60%' height={20} />
+                                                        <Skeleton variant='text' width='90%' height={16} />
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <>
+                                                    {notificationList.length === 0 && (
+                                                        <div className='dashboard-notifications-empty text-center color-secondary'>No notifications</div>
+                                                    )}
+                                                    {notificationList.map((n) => (
+                                                        <div
+                                                            key={n._id}
+                                                            className={`dashboard-notification-item ${n.read ? 'is-read' : ''} cursor-pointer`}
+                                                            onClick={() => {
+                                                                if (n.link) navigate(n.link);
+                                                                closePopover();
+                                                            }}
+                                                        >
+                                                            <div className='dashboard-notification-title font-weight-6 color-primary'>{n.title}</div>
+                                                            <div className='dashboard-notification-content color-secondary'>{n.content}</div>
+                                                        </div>
+                                                    ))}
+                                                </>
                                             )}
-                                            {notificationList.map((n) => (
-                                                <div
-                                                    key={n._id}
-                                                    className={`dashboard-notification-item ${n.read ? 'is-read' : ''} cursor-pointer`}
-                                                    onClick={() => {
-                                                        if (n.link) navigate(n.link);
-                                                        document.getElementById('notifications-popover')?.hidePopover();
-                                                    }}
-                                                >
-                                                    <div className='dashboard-notification-title font-weight-6 color-primary'>{n.title}</div>
-                                                    <div className='dashboard-notification-content color-secondary'>{n.content}</div>
-                                                </div>
-                                            ))}
-                                        </>
-                                    )}
-                                </Container>
+                                        </Container>
+                                    </>
+                                )}
                             </Popover>
                         </Container>
                     </Container>

@@ -5,10 +5,11 @@ import './Popover.css';
 interface PopoverProps {
     id: string;
     trigger: ReactNode;
-    children: ReactNode;
+    children: ReactNode | ((close: () => void) => ReactNode);
     className?: string;
     noPadding?: boolean;
     triggerAction?: 'click' | 'contextmenu';
+    onOpenChange?: (isOpen: boolean) => void;
 }
 
 const Popover = ({
@@ -17,7 +18,8 @@ const Popover = ({
     children,
     className = '',
     noPadding = false,
-    triggerAction = 'click'
+    triggerAction = 'click',
+    onOpenChange
 }: PopoverProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [style, setStyle] = useState<React.CSSProperties>({});
@@ -69,9 +71,7 @@ const Popover = ({
     }, []);
 
     const toggle = useCallback((e: React.MouseEvent) => {
-        // Always store cursor position
         cursorPosRef.current = { x: e.clientX, y: e.clientY };
-
         setIsOpen((prev) => !prev);
     }, []);
 
@@ -80,7 +80,8 @@ const Popover = ({
         if (isOpen) {
             calculatePosition();
         }
-    }, [isOpen, calculatePosition]);
+        onOpenChange?.(isOpen);
+    }, [isOpen, calculatePosition, onOpenChange]);
 
     // Close on outside click
     useEffect(() => {
@@ -150,6 +151,14 @@ const Popover = ({
         })
         : null;
 
+    // Render children - support both ReactNode and render prop
+    const renderChildren = () => {
+        if (typeof children === 'function') {
+            return children(close);
+        }
+        return children;
+    };
+
     const popoverContent = isOpen ? createPortal(
         <div
             ref={popoverRef}
@@ -158,7 +167,7 @@ const Popover = ({
             style={style}
             onClick={(e) => e.stopPropagation()}
         >
-            {children}
+            {renderChildren()}
         </div>,
         document.body
     ) : null;

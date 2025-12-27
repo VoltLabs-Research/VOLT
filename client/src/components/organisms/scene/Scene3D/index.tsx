@@ -260,7 +260,6 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	const canvasStyle = useMemo(() => ({
 		width: '100%',
 		height: '100%',
-		...(cssBackground ? { background: cssBackground } : { backgroundColor }),
 		touchAction: 'none',
 		willChange: 'transform',
 		transform: 'translateZ(0)'

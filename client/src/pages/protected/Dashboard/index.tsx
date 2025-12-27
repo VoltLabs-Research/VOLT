@@ -103,7 +103,7 @@ const DashboardPage: React.FC = memo(() => {
                                     </Paragraph>
                                 </Container>
 
-                                <Container className='badge-container scene-preview-navigate-icon primary-surface p-absolute font-size-5'>
+                                <Container className='badge-container scene-preview-navigate-icon primary-surface p-absolute font-size-5 d-flex flex-center '>
                                     <GoArrowRight />
                                 </Container>
                             </>
@@ -112,7 +112,6 @@ const DashboardPage: React.FC = memo(() => {
                         <Scene3D
                             showGizmo={false}
                             ref={scene3DRef}
-                            background='#0a0a0a'
                             showCanvasGrid={false}
                             orbitControlsConfig={{
                                 enablePan: false,
