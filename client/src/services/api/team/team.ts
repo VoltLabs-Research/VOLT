@@ -5,6 +5,7 @@ import type { CreateTeamPayload } from './types';
 import VoltClient from '@/api';
 
 const client = new VoltClient('/teams');
+const invitationClient = new VoltClient('/team-invitations', { useRBAC: true });
 
 const teamApi = {
     async getAll(): Promise<Team[]> {
@@ -38,20 +39,20 @@ const teamApi = {
 
     invitations: {
         async getDetails(token: string): Promise<TeamInvitation> {
-            const response = await client.request<{ status: string; data: { invitation: TeamInvitation } }>('get', `/team-invitations/details/${token}`);
+            const response = await invitationClient.request<{ status: string; data: { invitation: TeamInvitation } }>('get', `/team-invitations/details/${token}`);
             return response.data.data.invitation;
         },
 
         async send(teamId: string, email: string, role?: string): Promise<void> {
-            await client.request('post', `/team-invitations/${teamId}/invite`, { data: { email, role } });
+            await invitationClient.request('post', `/invite`, { data: { email, role } });
         },
 
         async accept(token: string): Promise<void> {
-            await client.request('post', `/team-invitations/accept/${token}`);
+            await invitationClient.request('post', `/accept/${token}`);
         },
 
         async reject(token: string): Promise<void> {
-            await client.request('post', `/team-invitations/reject/${token}`);
+            await invitationClient.request('post', `/reject/${token}`);
         }
     }
 };

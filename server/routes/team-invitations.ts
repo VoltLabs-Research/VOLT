@@ -23,40 +23,25 @@
 import { Router } from 'express';
 import TeamInvitationController from '@controllers/team-invitation';
 import * as authMiddleware from '@middlewares/authentication';
-import * as invitationMiddleware from '@middlewares/team-invitation';
+import * as middleware from '@middlewares/team-invitation';
+import RBACMiddleware from '@/middlewares/rbac';
+import { Action } from '@/constants/permissions';
 
 const router = Router();
 const controller = new TeamInvitationController();
+const rbac = new RBACMiddleware(controller, router);
 
-router.get(
-    '/details/:token',
-    invitationMiddleware.loadInvitationByToken,
-    controller.getInvitationDetails
-);
+rbac.groupBy(Action.READ, middleware.loadInvitationByToken)
+    .route('/details/:token', controller.getInvitationDetails);
 
-router.use(authMiddleware.protect);
+rbac.groupBy(Action.READ, authMiddleware.protect)
+    .route('/pending', controller.getPendingInvitations);
 
-router.get('/pending', controller.getPendingInvitations);
+rbac.groupBy(Action.CREATE, authMiddleware.protect, middleware.loadInvitationByToken, middleware.verifyInvitationRecipient)
+    .route('/accept/:token', controller.acceptTeamInvitation)
+    .route('/reject/:token', controller.rejectTeamInvitation);
 
-router.post(
-    '/accept/:token',
-    invitationMiddleware.loadInvitationByToken,
-    invitationMiddleware.verifyInvitationRecipient,
-    controller.acceptTeamInvitation
-);
-
-router.post(
-    '/reject/:token',
-    invitationMiddleware.loadInvitationByToken,
-    invitationMiddleware.verifyInvitationRecipient,
-    controller.rejectTeamInvitation
-);
-
-router.post(
-    '/:teamId/invite',
-    invitationMiddleware.verifyTeamOwnership,
-    invitationMiddleware.validateInvitationBody,
-    controller.sendTeamInvitation
-);
+rbac.groupBy(Action.CREATE, authMiddleware.protect, middleware.verifyTeamOwnership, middleware.validateInvitationBody)
+    .route('/invite', controller.sendTeamInvitation);
 
 export default router;

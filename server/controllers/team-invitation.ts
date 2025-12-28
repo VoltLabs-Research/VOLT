@@ -26,8 +26,16 @@ import { catchAsync } from '@/utilities/runtime/runtime';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { publishNotificationCreated } from '@/events/notification-events';
+import BaseController from '@/controllers/base-controller';
+import { Resource } from '@/constants/resources';
 
-export default class TeamInvitationController {
+export default class TeamInvitationController extends BaseController<any>{
+    constructor(){
+        super(TeamInvitation, {
+            resource: Resource.TEAM_INVITATION
+        });
+    }
+
     /**
      * Send a team invitation.
      */
