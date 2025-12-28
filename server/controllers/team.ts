@@ -77,10 +77,7 @@ export default class TeamController extends BaseController<any>{
             });
 
             return {
-                ...member.user,
-                _id: member.user._id,
-                role: member.role,
-                teamMemberId: member._id,
+                ...member,
                 timeSpentLast7Days: minutesOnline,
                 trajectoriesCount,
                 analysesCount: analysesCount,

@@ -24,20 +24,6 @@ const teamRoleApi = {
     async delete(roleId: string): Promise<void> {
         await client.request('delete', `/${roleId}`);
     },
-
-    async getMembers(): Promise<TeamMemberWithRole[]> {
-        const response = await client.request<ApiResponse<TeamMemberWithRole[]>>('get', `/members`);
-        return response.data.data;
-    },
-
-    async assignRole(memberId: string, roleId: string): Promise<TeamMemberWithRole> {
-        const response = await client.request<ApiResponse<TeamMemberWithRole>>(
-            'patch',
-            `/members/${memberId}/role`,
-            { data: { roleId } }
-        );
-        return response.data.data;
-    }
 };
 
 export default teamRoleApi;

@@ -160,7 +160,7 @@ export default abstract class BaseController<T extends Document> {
         const idFilter = checkIfSlugOrId(req.params.id);
         const securityFilter = await this.getFilter(req);
         const docToUpdate = await this.model.findOne({ ...idFilter, ...securityFilter });
-
+        console.log({ ...idFilter, ...securityFilter })
         if (!docToUpdate) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
 
         const teamId = await this.getTeamId(req, docToUpdate);

@@ -1,4 +1,4 @@
-import  { Router } from 'express';
+import { Router } from 'express';
 import TeamRoleController from '@/controllers/team-role';
 import * as authMiddleware from '@middlewares/authentication';
 import * as teamMiddleware from '@middlewares/team';
@@ -12,15 +12,13 @@ const rbac = new RBACMiddleware(controller, router);
 router.use(authMiddleware.protect);
 
 rbac.groupBy(Action.READ, teamMiddleware.checkTeamMembership)
-    .route('/', controller.getRoles)
-    .route('/members', controller.getMembers);
+    .route('/', controller.getAll);
 
 rbac.groupBy(Action.CREATE, teamMiddleware.checkTeamMembership)
     .route('/', controller.createRole);
 
 rbac.groupBy(Action.UPDATE, teamMiddleware.checkTeamMembership)
-    .route('/:roleId', controller.updateRole)
-    .route('/members/:memberId/role', controller.assignRole);
+    .route('/:roleId', controller.updateRole);
 
 rbac.groupBy(Action.DELETE, teamMiddleware.checkTeamMembership)
     .route('/:roleId', controller.deleteRole);

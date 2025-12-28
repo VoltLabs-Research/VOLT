@@ -22,7 +22,6 @@
 
 import { Router } from 'express';
 import TrajectoryController from '@controllers/trajectories';
-import multer, { FileFilterCallback } from 'multer';
 import * as middleware from '@middlewares/trajectory';
 import * as authMiddleware from '@middlewares/authentication';
 import RBACMiddleware from '@/middlewares/rbac';
@@ -32,28 +31,13 @@ const router = Router();
 const controller = new TrajectoryController();
 const rbac = new RBACMiddleware(controller, router);
 
-const upload = multer({
-    storage: multer.diskStorage({
-        destination: (req, file, cb) => {
-            cb(null, require('os').tmpdir());
-        },
-        filename: (req, file, cb) => {
-            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-            cb(null, file.fieldname + '-' + uniqueSuffix);
-        }
-    }),
-    fileFilter: (req, file, cb: FileFilterCallback) => {
-        cb(null, true);
-    }
-});
-
 rbac.groupBy(Action.READ, authMiddleware.protect)
     .route('/', controller.getAll)
     .route('/metrics', controller.getTeamMetrics)
     .route('/:id/analysis/:analysisId', middleware.checkTeamMembershipForTrajectory, controller.getAtoms);
 
 rbac.groupBy(Action.CREATE, authMiddleware.protect)
-    .route('/', upload.array('trajectoryFiles'), middleware.processAndValidateUpload, controller.createOne);
+    .route('/', middleware.upload.array('trajectoryFiles'), middleware.processAndValidateUpload, controller.createOne);
 
 rbac.groupBy(Action.UPDATE, authMiddleware.protect)
     .route('/:id', middleware.requireTeamMembershipForTrajectory, controller.updateOne);

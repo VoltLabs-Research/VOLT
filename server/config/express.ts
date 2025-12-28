@@ -88,6 +88,7 @@ configureApp({
         'analysis-config',
         'daily-activity',
         'team-roles',
+        'team-member',
         'raster',
         'trajectories',
         'notifications',

@@ -5,7 +5,7 @@ import { ErrorCodes } from '@/constants/error-codes';
 import { Types } from 'mongoose';
 
 export const checkTeamMembership = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const teamIdParam = req.params.id || req.params.teamId;
+    const teamIdParam = req.params.teamId || req.params.id;
     if (!teamIdParam || !Types.ObjectId.isValid(teamIdParam)) {
         return next(new RuntimeError(ErrorCodes.TEAM_ID_REQUIRED, 400));
     }

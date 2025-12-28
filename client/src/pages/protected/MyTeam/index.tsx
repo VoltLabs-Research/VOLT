@@ -21,7 +21,7 @@ import dailyActivityApi from '@/services/api/daily-activity';
 const MyTeam: React.FC = () => {
     const navigate = useNavigate();
     const { selectedTeam, members, admins, owner, onlineUsers, fetchMembers, initializeSocket, removeMember, updateTeam, isLoading } = useTeamStore();
-    const { roles, fetchRoles, assignRole, fetchMembers: fetchMembersWithRoles, members: membersWithRoles } = useTeamRoleStore();
+    const { roles, fetchRoles, assignRole, members: membersWithRoles } = useTeamRoleStore();
     const { user: currentUser } = useAuthStore();
     const { showSuccess, showError } = useToast();
     const [activityData, setActivityData] = useState<ActivityData[]>([]);
@@ -31,27 +31,15 @@ const MyTeam: React.FC = () => {
             dailyActivityApi.getTeamActivity(selectedTeam._id).then(setActivityData);
             fetchRoles(selectedTeam._id);
             fetchMembers(selectedTeam._id);
-            fetchMembersWithRoles(selectedTeam._id);
             const cleanup = initializeSocket(selectedTeam._id);
             return cleanup;
         }
-    }, [selectedTeam, fetchRoles, fetchMembers, fetchMembersWithRoles, initializeSocket]);
+    }, [selectedTeam, fetchRoles, fetchMembers, initializeSocket]);
 
-    const getOwnerId = (): string | null => {
-        if (owner?._id) return owner._id;
-        if (selectedTeam?.owner) {
-            return typeof selectedTeam.owner === 'string'
-                ? selectedTeam.owner
-                : selectedTeam.owner._id;
-        }
-        return null;
-    };
-
-    const ownerId = getOwnerId();
+    const ownerId = selectedTeam?.owner?._id.toString();
     const currentIsOwner = !!(currentUser && ownerId && ownerId === currentUser._id);
-    const currentIsAdmin = !!(currentUser && admins.some(a => a._id === currentUser._id));
+    const currentIsAdmin = !!(currentUser && admins?.some?.(a => a._id === currentUser._id));
     const canManage = currentIsOwner || currentIsAdmin;
-
 
     const handleSaveTeamName = async (newName: string) => {
         if (!selectedTeam || !newName.trim() || newName === selectedTeam.name) return;
@@ -103,7 +91,7 @@ const MyTeam: React.FC = () => {
 
     const isOnline = (userId: string) => onlineUsers.includes(userId);
     const isOwnerCheck = (userId: string) => ownerId === userId;
-    const isAdmin = (userId: string) => admins.some(a => a._id === userId);
+    const isAdmin = (userId: string) => admins?.some?.(a => a._id === userId);
 
     const memberRoleMap = useMemo(() => {
         const map = new Map<string, { memberId: string; roleId: string; roleName: string; isSystem: boolean }>();
@@ -130,12 +118,13 @@ const MyTeam: React.FC = () => {
     const tableData = useMemo(() => {
         const data = members.map(member => {
             const roleInfo = memberRoleMap.get(member._id);
+            console.log(member);
             return {
                 ...member,
                 isOnline: isOnline(member._id),
                 isOwner: isOwnerCheck(member._id),
                 isAdmin: isAdmin(member._id),
-                rawJoined: member.joinedAt || member.createdAt,
+                rawJoined: member.joinedAt,
                 teamMemberId: roleInfo?.memberId,
                 currentRoleId: roleInfo?.roleId,
                 currentRoleName: roleInfo?.roleName || (isOwnerCheck(member._id) ? 'Owner' : isAdmin(member._id) ? 'Admin' : 'Member'),
@@ -162,18 +151,18 @@ const MyTeam: React.FC = () => {
                 <div className="d-flex items-center gap-1">
                     <div className="member-avatar p-relative">
                         <img
-                            src={member.avatar}
-                            alt={member.username}
+                            src={member.user.avatar}
+                            alt={member.email}
                             className="avatar-sm object-cover"
                         />
                         {member.isOnline && <span className="status-dot online p-absolute border-white"></span>}
                     </div>
                     <div className="d-flex column">
                         <span className="font-weight-6 color-primary d-flex gap-02 font-size-2">
-                            {member.firstName} {member.lastName}
-                            {member._id === currentUser?._id && <span className="color-secondary">(You)</span>}
+                            {member.user.firstName} {member.user.lastName}
+                            {member.user._id === currentUser?._id && <span className="color-secondary">(You)</span>}
                         </span>
-                        <span className="font-size-2 color-secondary">{member.email}</span>
+                        <span className="font-size-2 color-secondary">{member.user.email}</span>
                     </div>
                 </div>
             )
@@ -182,23 +171,23 @@ const MyTeam: React.FC = () => {
             key: 'role',
             title: 'Role',
             render: (_: any, member: any) => {
-                if (member.isOwner) {
+                if (member.isOwner) {   
                     return <span className="badge badge-primary">Owner</span>;
                 }
-
-                if (canManage && member.teamMemberId && member._id !== currentUser?._id && roleOptions.length > 0) {
+                console.log(member.user._id !== currentUser?._id, canManage)
+                if (canManage && member.user._id !== currentUser?._id && roleOptions.length > 0) {
                     return (
                         <Select
                             options={roleOptions}
-                            value={member.currentRoleId || null}
-                            onChange={(roleId) => handleRoleChange(member.teamMemberId, roleId)}
+                            value={member.role._id || null}
+                            onChange={(roleId) => handleRoleChange(member._id, roleId)}
                             placeholder="Select role..."
                             className="role-select-compact"
                         />
                     );
                 }
 
-                return <span className="badge badge-outline">{member.currentRoleName}</span>;
+                return <span className="badge badge-outline">{member.role?.name}</span>;
             }
         },
         {
@@ -211,9 +200,9 @@ const MyTeam: React.FC = () => {
                     ) : (
                         <div className="d-flex column">
                             <span className="color-secondary font-size-2">Offline</span>
-                            {member.lastLoginAt && (
+                            {member.user.lastLoginAt && (
                                 <span className="color-tertiary font-size-2">
-                                    Seen {formatDistanceToNow(new Date(member.lastLoginAt))} ago
+                                    Seen {formatDistanceToNow(new Date(member.user.lastLoginAt))} ago
                                 </span>
                             )}
                         </div>

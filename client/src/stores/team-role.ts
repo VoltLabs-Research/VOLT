@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import type { TeamRole, TeamRolePayload, TeamMemberWithRole } from '@/types/team-role';
 import teamRoleApi from '@/services/api/team-role';
+import teamMemberApi from '@/services/api/team-member';
 
 interface TeamRoleState {
     roles: TeamRole[];
@@ -17,7 +18,6 @@ interface TeamRoleStore extends TeamRoleState {
     createRole: (teamId: string, data: TeamRolePayload) => Promise<TeamRole>;
     updateRole: (teamId: string, roleId: string, data: Partial<TeamRolePayload>) => Promise<TeamRole>;
     deleteRole: (teamId: string, roleId: string) => Promise<void>;
-    fetchMembers: (teamId: string) => Promise<void>;
     assignRole: (teamId: string, memberId: string, roleId: string) => Promise<TeamMemberWithRole>;
     setSelectedRole: (role: TeamRole | null) => void;
     clearSelectedRole: () => void;
@@ -103,22 +103,10 @@ const useTeamRoleStore = create<TeamRoleStore>((set, get) => ({
         }
     },
 
-    fetchMembers: async (teamId: string) => {
-        set({ isLoading: true, error: null });
-        try {
-            const members = await teamRoleApi.getMembers(teamId);
-            set({ members, error: null, isLoading: false });
-        } catch (error: any) {
-            const errorMessage = error?.message || 'Failed to fetch members';
-            set({ isLoading: false, error: errorMessage });
-            throw errorMessage;
-        }
-    },
-
     assignRole: async (teamId: string, memberId: string, roleId: string) => {
         set({ isSaving: true, error: null });
         try {
-            const updatedMember = await teamRoleApi.assignRole(teamId, memberId, roleId);
+            const updatedMember = await teamMemberApi.update(memberId, { role: roleId });
             const currentMembers = get().members;
             set({
                 members: currentMembers.map(m => m._id === memberId ? updatedMember : m),

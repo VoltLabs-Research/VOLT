@@ -22,6 +22,22 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { Trajectory, Team } from '@/models/index';
+import multer, { FileFilterCallback } from 'multer';
+
+export const upload = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, require('os').tmpdir());
+        },
+        filename: (req, file, cb) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, file.fieldname + '-' + uniqueSuffix);
+        }
+    }),
+    fileFilter: (req, file, cb: FileFilterCallback) => {
+        cb(null, true);
+    }
+});
 
 // Strict variant for write operations: always require team membership, regardless of public status
 export const requireTeamMembershipForTrajectory = async(req: Request, res: Response, next: NextFunction) => {

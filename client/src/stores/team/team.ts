@@ -187,6 +187,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
 
             try{
                 const data = await teamApi.members.getAll(teamId);
+                console.log(data);
                 set({
                     members: data.members,
                     admins: data.admins,
