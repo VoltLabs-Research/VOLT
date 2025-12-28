@@ -1,4 +1,4 @@
-import api from '@/api';
+import VoltClient from '@/api';
 
 interface RasterMetadata {
     trajectoryId: string;
@@ -28,14 +28,16 @@ interface ColorCodingPayload {
     exposureId?: string;
 }
 
+const client = new VoltClient('', { useRBAC: true });
+
 const rasterApi = {
-    async generateGLB(id: string): Promise<any>{
-        const response = await api.post<{ status: string; data: any }>(`/raster/${id}/glb/`);
+    async generateGLB(id: string): Promise<any> {
+        const response = await client.request<{ status: string; data: any }>('post', `/raster/${id}/glb/`);
         return response.data.data;
     },
 
-    async getMetadata(id: string): Promise<RasterMetadata>{
-        const response = await api.get<{ status: string; data: RasterMetadata }>(`/raster/${id}/metadata`);
+    async getMetadata(id: string): Promise<RasterMetadata> {
+        const response = await client.request<{ status: string; data: RasterMetadata }>('get', `/raster/${id}/metadata`);
         return response.data.data;
     },
 
@@ -44,8 +46,9 @@ const rasterApi = {
         timestep: number,
         analysisId: string,
         model: string
-    ): Promise<RasterFrameData>{
-        const response = await api.get<{ status: string; data: RasterFrameData }>(
+    ): Promise<RasterFrameData> {
+        const response = await client.request<{ status: string; data: RasterFrameData }>(
+            'get',
             `/raster/${trajectoryId}/frame-data/${timestep}/${analysisId}/${model}`
         );
         return response.data.data;
@@ -57,10 +60,11 @@ const rasterApi = {
             analysisId: string,
             timestep: number,
             payload: ColorCodingPayload
-        ): Promise<void>{
-            await api.post(
+        ): Promise<void> {
+            await client.request(
+                'post',
                 `/color-coding/${trajectoryId}/${analysisId}?timestep=${timestep}`,
-                payload
+                { data: payload }
             );
         },
 
@@ -68,10 +72,11 @@ const rasterApi = {
             trajectoryId: string,
             analysisId: string,
             params?: { timestep?: number; property?: string; type?: string; exposureId?: string }
-        ): Promise<ColorCodingStats>{
-            const response = await api.get<{ status: string; data: ColorCodingStats }>(
+        ): Promise<ColorCodingStats> {
+            const response = await client.request<{ status: string; data: ColorCodingStats }>(
+                'get',
                 `/color-coding/stats/${trajectoryId}/${analysisId}`,
-                { params }
+                { query: params }
             );
             return response.data.data;
         },
@@ -81,9 +86,10 @@ const rasterApi = {
             analysisId: string,
             timestep: number
         ): Promise<{ base: string[]; modifiers: Record<string, string[]> }> {
-            const response = await api.get<{ status: string; data: { base: string[]; modifiers: Record<string, string[]> } }>(
+            const response = await client.request<{ status: string; data: { base: string[]; modifiers: Record<string, string[]> } }>(
+                'get',
                 `/color-coding/properties/${trajectoryId}/${analysisId}`,
-                { params: { timestep } }
+                { query: { timestep } }
             );
             return response.data.data;
         }

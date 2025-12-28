@@ -25,9 +25,12 @@ import TrajectoryController from '@controllers/trajectories';
 import multer, { FileFilterCallback } from 'multer';
 import * as middleware from '@middlewares/trajectory';
 import * as authMiddleware from '@middlewares/authentication';
+import RBACMiddleware from '@/middlewares/rbac';
+import { Action } from '@/constants/permissions';
 
 const router = Router();
 const controller = new TrajectoryController();
+const rbac = new RBACMiddleware(controller, router);
 
 const upload = multer({
     storage: multer.diskStorage({
@@ -44,67 +47,25 @@ const upload = multer({
     }
 });
 
-router.use(authMiddleware.protect);
+rbac.groupBy(Action.READ, authMiddleware.protect)
+    .route('/', controller.getAll)
+    .route('/metrics', controller.getTeamMetrics)
+    .route('/metrics/:id', middleware.checkTeamMembershipForTrajectory, controller.getSingleMetrics)
+    .route('/:id/analysis/:analysisId', middleware.checkTeamMembershipForTrajectory, controller.getAtoms);
 
-router.get(
-    '/metrics',
-    controller.getTeamMetrics
-);
+rbac.groupBy(Action.CREATE, authMiddleware.protect)
+    .route('/', upload.array('trajectoryFiles'), middleware.processAndValidateUpload, controller.createOne);
 
-router.get(
-    '/metrics/:id',
-    middleware.checkTeamMembershipForTrajectory,
-    controller.getSingleMetrics
-)
+rbac.groupBy(Action.UPDATE, authMiddleware.protect)
+    .route('/:id', middleware.requireTeamMembershipForTrajectory, controller.updateOne);
 
-router.route('/')
-    .get(controller.getAll)
-    .post(
-        upload.array('trajectoryFiles'), 
-        middleware.processAndValidateUpload, 
-        controller.createOne
-    );
+rbac.groupBy(Action.DELETE, authMiddleware.protect)
+    .route('/:id', middleware.requireTeamMembershipForTrajectory, controller.deleteOne);
 
-router.get(
-    '/:id/analysis/:analysisId',
-    middleware.checkTeamMembershipForTrajectory,
-    controller.getAtoms
-);
-
-router.route('/:id')
-    .patch(
-        middleware.requireTeamMembershipForTrajectory,
-        controller.updateOne
-    )
-    .delete(
-        middleware.requireTeamMembershipForTrajectory,
-        controller.deleteOne
-    );
-
-router.use(authMiddleware.optionalAuth);
-router.get(
-    '/:id/:timestep/:analysisId',
-    middleware.checkTeamMembershipForTrajectory,
-    controller.getGLB
-);
-
-router.get(
-    '/:id/preview',
-    middleware.checkTeamMembershipForTrajectory,
-    controller.getPreview
-);
-
-router.get(
-    '/:id/glb-archive',
-    middleware.checkTeamMembershipForTrajectory,
-    controller.downloadGLBArchive
-);
-
-router.get(
-    '/:id/',
-    middleware.checkTeamMembershipForTrajectory,
-    controller.getOne
-);
+rbac.groupBy(Action.READ, authMiddleware.optionalAuth, middleware.checkTeamMembershipForTrajectory)
+    .route('/:id/:timestep/:analysisId', controller.getGLB)
+    .route('/:id/preview', controller.getPreview)
+    .route('/:id/glb-archive', controller.downloadGLBArchive)
+    .route('/:id', controller.getOne);
 
 export default router;
-export const opts = { requiresTeamId: true };

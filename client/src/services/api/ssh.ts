@@ -1,14 +1,8 @@
-import api from '@/api';
-import getQueryParam from '@/utilities/get-query-param';
+import VoltClient from '@/api';
+import { getCurrentTeamId as getTeamId } from '@/stores/team/team';
 
-interface SSHConnection {
-    _id: string;
-    name: string;
-    host: string;
-    port: number;
-    username: string;
-    [key: string]: any;
-}
+const client = new VoltClient('/ssh-connections', { useRBAC: true, getTeamId });
+const explorerClient = new VoltClient('/ssh-file-explorer', { useRBAC: true, getTeamId });
 
 interface CreateSSHConnectionPayload {
     name: string;
@@ -33,33 +27,38 @@ interface SSHFileListResponse {
 const sshApi = {
     connections: {
         async getAll(): Promise<SSHConnection[]> {
-            const response = await api.get<{ status: 'success'; data: { connections: SSHConnection[] } }>(`/ssh-connections/${getQueryParam('team')}`);
+            const response = await client.request<{ status: 'success'; data: { connections: SSHConnection[] } }>('get', '/');
             return response.data.data.connections;
         },
 
         async create(data: CreateSSHConnectionPayload): Promise<SSHConnection> {
-            const response = await api.post<{ status: 'success'; data: { connection: SSHConnection } }>(`/ssh-connections/${getQueryParam('team')}`, data);
+            const response = await client.request<{ status: 'success'; data: { connection: SSHConnection } }>('post', '/', { data });
+            return response.data.data.connection;
+        },
+
+        async update(id: string, data: Partial<CreateSSHConnectionPayload>): Promise<SSHConnection> {
+            const response = await client.request<{ status: 'success'; data: { connection: SSHConnection } }>('patch', `/${id}`, { data });
             return response.data.data.connection;
         },
 
         async delete(id: string): Promise<void> {
-            await api.delete(`/ssh-connections/${id}`);
+            await client.request('delete', `/${id}`);
         },
 
         async test(id: string): Promise<{ valid: boolean; error?: string }> {
-            const response = await api.post<{ status: 'success'; data: { valid: boolean; error?: string } }>(`/ssh-connections/${getQueryParam('team')}/${id}/test`);
+            const response = await client.request<{ status: 'success'; data: { valid: boolean; error?: string } }>('post', `/${id}/test`);
             return response.data.data;
         }
     },
 
     fileExplorer: {
         async list(params: { connectionId: string; path: string }): Promise<SSHFileListResponse> {
-            const response = await api.get<{ status: 'success'; data: SSHFileListResponse }>(`/ssh-file-explorer/${getQueryParam('team')}/list`, { params });
+            const response = await explorerClient.request<{ status: 'success'; data: SSHFileListResponse }>('get', `/list`, { config: { params } });
             return response.data.data;
         },
 
         async import(data: { connectionId: string; remotePath: string; teamId: string; trajectoryName?: string }): Promise<void> {
-            await api.post(`/ssh-file-explorer/${getQueryParam('team')}/import`, data);
+            await explorerClient.request('post', `/import`, { data });
         }
     }
 };

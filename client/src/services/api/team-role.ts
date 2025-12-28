@@ -1,36 +1,40 @@
-import api from '@/api';
 import type { TeamRole, TeamRolePayload, TeamMemberWithRole } from '@/types/team-role';
 import type { ApiResponse } from '@/types/api';
+import { getCurrentTeamId as getTeamId } from '@/stores/team/team';
+import VoltClient from '@/api';
+
+const client = new VoltClient('/team-roles', { useRBAC: true, getTeamId });
 
 const teamRoleApi = {
-    async getAll(teamId: string): Promise<TeamRole[]> {
-        const response = await api.get<ApiResponse<TeamRole[]>>(`/teams/${teamId}/roles`);
+    async getAll(): Promise<TeamRole[]> {
+        const response = await client.request<ApiResponse<TeamRole[]>>('get', '/');
         return response.data.data;
     },
 
-    async create(teamId: string, data: TeamRolePayload): Promise<TeamRole> {
-        const response = await api.post<ApiResponse<TeamRole>>(`/teams/${teamId}/roles`, data);
+    async create(data: TeamRolePayload): Promise<TeamRole> {
+        const response = await client.request<ApiResponse<TeamRole>>('post', '/', { data });
         return response.data.data;
     },
 
-    async update(teamId: string, roleId: string, data: Partial<TeamRolePayload>): Promise<TeamRole> {
-        const response = await api.patch<ApiResponse<TeamRole>>(`/teams/${teamId}/roles/${roleId}`, data);
+    async update(roleId: string, data: Partial<TeamRolePayload>): Promise<TeamRole> {
+        const response = await client.request<ApiResponse<TeamRole>>('patch', `/${roleId}`, { data });
         return response.data.data;
     },
 
-    async delete(teamId: string, roleId: string): Promise<void> {
-        await api.delete(`/teams/${teamId}/roles/${roleId}`);
+    async delete(roleId: string): Promise<void> {
+        await client.request('delete', `/${roleId}`);
     },
 
-    async getMembers(teamId: string): Promise<TeamMemberWithRole[]> {
-        const response = await api.get<ApiResponse<TeamMemberWithRole[]>>(`/teams/${teamId}/roles/members`);
+    async getMembers(): Promise<TeamMemberWithRole[]> {
+        const response = await client.request<ApiResponse<TeamMemberWithRole[]>>('get', `/members`);
         return response.data.data;
     },
 
-    async assignRole(teamId: string, memberId: string, roleId: string): Promise<TeamMemberWithRole> {
-        const response = await api.patch<ApiResponse<TeamMemberWithRole>>(
-            `/teams/${teamId}/roles/members/${memberId}/role`,
-            { roleId }
+    async assignRole(memberId: string, roleId: string): Promise<TeamMemberWithRole> {
+        const response = await client.request<ApiResponse<TeamMemberWithRole>>(
+            'patch',
+            `/members/${memberId}/role`,
+            { data: { roleId } }
         );
         return response.data.data;
     }

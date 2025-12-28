@@ -20,7 +20,7 @@ export default abstract class BaseController<T extends Document> {
     protected readonly allowedFields: string[];
     protected readonly defaultPopulate?: PopulateOptions | string | (PopulateOptions | string)[];
     protected readonly resourceName: string;
-    protected readonly resource?: Resource;
+    public readonly resource: Resource;
 
     constructor(model: Model<T>, config: BaseControllerConfig = {}) {
         this.model = model;

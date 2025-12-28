@@ -21,7 +21,7 @@
  */
 
 import { create } from 'zustand';
-import { api } from '@/api';
+import trajectoryApi, { type TrajectoryInfo } from '@/services/api/trajectory';
 
 type EntryType = 'file' | 'dir';
 
@@ -33,26 +33,6 @@ export interface FsEntry {
     mtime?: string;
     ext?: string | null;
     mime?: string | false;
-}
-
-export interface TrajectoryInfo {
-    id: string;
-    name: string;
-    status: string;
-    team: {
-        id: string;
-        name: string;
-    };
-    createdAt: string;
-    updatedAt: string;
-}
-
-interface FsListResponse {
-    trajectory: { id: string; name: string } | null;
-    cwd: string;
-    selected: string | null;
-    breadcrumbs: Array<{ name: string; relPath: string }>;
-    entries: FsEntry[];
 }
 
 interface HistoryItem { cwd: string }
@@ -106,23 +86,15 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
     historyIndex: 0,
 
     async _fetchFsList(path = '', showHidden = false) {
-        const res = await api.get<{ status: 'success', data: FsListResponse }>('/trajectory-vfs/', {
-            params: { path, hidden: showHidden }
-        });
-        return res.data.data;
+        return await trajectoryApi.vfs.list({ connectionId: get().currentTrajectoryId || 'root', path });
     },
 
     async _downloadFsFile(relPath: string) {
-        const res = await api.get('/trajectory-vfs/download', {
-            params: { path: relPath },
-            responseType: 'blob'
-        });
-        return res.data;
+        return await trajectoryApi.vfs.download({ connectionId: get().currentTrajectoryId || 'root', path: relPath });
     },
 
     async _fetchTrajectories() {
-        const res = await api.get<{ status: 'success', data: { trajectories: TrajectoryInfo[] } }>('/trajectory-vfs/trajectories');
-        return res.data.data.trajectories;
+        return await trajectoryApi.vfs.getTrajectories();
     },
 
     async init() {
@@ -143,8 +115,8 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
     async open(relPath: string = '') {
         const { showHidden } = get();
         set({ loading: true, error: null });
-        try{
-            const data = await get()._fetchFsList(relPath, showHidden);
+        try {
+            const data = await trajectoryApi.vfs.list({ connectionId: get().currentTrajectoryId || 'root', path: relPath });
             set((state) => {
                 const newHist = state.history.slice(0, state.historyIndex + 1);
                 newHist.push({ cwd: data.cwd });
@@ -160,9 +132,9 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
                     historyIndex: newHist.length - 1
                 };
             });
-        }catch(e: any){
+        } catch (e: any) {
             const errorMessage = (e?.context?.serverMessage || e?.response?.data?.data?.error || e?.message) ?? 'Error loading files';
-            if(e?.context){
+            if (e?.context) {
                 e.context.operation = 'listFiles';
             }
             set({ loading: false, error: errorMessage });
@@ -177,14 +149,14 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
 
     async up() {
         const { cwd } = get();
-        if(!cwd) return;
+        if (!cwd) return;
         const parent = cwd.split('/').slice(0, -1).join('/');
         await get().open(parent);
     },
 
     async back() {
         const { historyIndex, history } = get();
-        if(historyIndex <= 0) return;
+        if (historyIndex <= 0) return;
         const nextIndex = historyIndex - 1;
         const target = history[nextIndex].cwd;
         set({ historyIndex: nextIndex });
@@ -193,7 +165,7 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
 
     async forward() {
         const { historyIndex, history } = get();
-        if(historyIndex >= history.length - 1) return;
+        if (historyIndex >= history.length - 1) return;
         const nextIndex = historyIndex + 1;
         const target = history[nextIndex].cwd;
         set({ historyIndex: nextIndex });
@@ -232,10 +204,10 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
 
     async fetchTrajectories() {
         set({ loadingTrajectories: true });
-        try{
+        try {
             const trajectories = await get()._fetchTrajectories();
             set({ trajectories, loadingTrajectories: false });
-        }catch(e: any){
+        } catch (e: any) {
             console.error('Error fetching trajectories:', e);
             set({ trajectories: [], loadingTrajectories: false });
         }
@@ -249,7 +221,7 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
     async _gotoWithoutPush(cwd: string) {
         const { showHidden } = get();
         set({ loading: true, error: null });
-        try{
+        try {
             const data = await get()._fetchFsList(cwd, showHidden);
             set({
                 cwd: data.cwd,
@@ -259,7 +231,7 @@ const useTrajectoryFS = create<FileExplorerState>((set, get) => ({
                 loading: false,
                 error: null
             })
-        }catch(e: any){
+        } catch (e: any) {
             set({ loading: false, error: e?.response?.data?.data?.error || e?.message || 'Error loading files' });
         }
     }

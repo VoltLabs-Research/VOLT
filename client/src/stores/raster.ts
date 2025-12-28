@@ -21,7 +21,7 @@
  */
 
 import { create } from 'zustand';
-import { createAsyncAction } from '@/utilities/asyncAction';
+
 import type { PreloadTask, RasterStore, RasterState } from '@/types/stores/raster';
 import rasterApi from '@/services/api/raster';
 
@@ -40,16 +40,21 @@ const initialState: RasterState = {
 };
 
 const useRasterStore = create<RasterStore>((set, get) => {
-    const asyncAction = createAsyncAction(set, get);
+
 
     return {
         ...initialState,
 
-        rasterize(id: string) {
-            return asyncAction(() => rasterApi.generateGLB(id), {
-                loadingKey: 'isAnalysisLoading',
-                onSuccess: (analyses) => ({ analyses })
-            });
+        async rasterize(id: string) {
+            set({ isAnalysisLoading: true, error: null });
+            try {
+                const analyses = await rasterApi.generateGLB(id);
+                set({ analyses, isAnalysisLoading: false });
+            } catch (error: any) {
+                const errorMessage = error?.response?.data?.message || error?.message || 'An unknown error occurred';
+                set({ isAnalysisLoading: false, error: errorMessage });
+                throw errorMessage;
+            }
         },
 
         async getRasterFrames(id: string) {

@@ -31,10 +31,7 @@ export const configureApp = async({ app, routes, suffix, middlewares, errorHandl
                 const routerModule = require(`@routes/${route}`);
                 const router = routerModule.default;
                 if(router){
-                    let routePath = suffix + module;
-                    if(routerModule?.opts?.requiresTeamId){
-                        routePath += '/:teamId';
-                    }
+                    const routePath = suffix + module;
                     app.use(routePath, router);
                 }else{
                     logger.error(`The module imported from '@routes/${route}' does not have a default export.`);

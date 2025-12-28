@@ -1,6 +1,6 @@
-import { api } from '@/api';
 import Logger from '@/services/logger';
 import getQueryParam from '@/utilities/get-query-param';
+import trajectoryApi from '@/services/api/trajectory';
 
 class PreviewCacheService{
     private cache = new Map<string, string>();
@@ -89,11 +89,11 @@ class PreviewCacheService{
         this.loadingSet.add(id);
 
         try{
-            const response = await api.get(`/trajectories/${getQueryParam('team')}/${id}/preview`, {
-                responseType: 'blob'
+            const response = await trajectoryApi.getPreview(id, {
+                headers: { responseType: 'blob' }
             });
 
-            const imageUrl = URL.createObjectURL(response.data);
+            const imageUrl = URL.createObjectURL(response);
             this.set(id, imageUrl);
             this.loadingSet.delete(id);
 

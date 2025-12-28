@@ -21,7 +21,6 @@
 */
 
 import { create } from 'zustand';
-import { createAsyncAction } from '@/utilities/asyncAction';
 import { calculatePaginationState } from '@/utilities/pagination-utils';
 import { extractErrorMessage } from '@/utilities/error-extractor';
 import type { Trajectory } from '@/types/models';
@@ -78,9 +77,6 @@ export function dataURLToObjectURL(dataURL: string): string {
 const previewCache = new PreviewCacheService();
 
 const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
-    const asyncAction = createAsyncAction(set, get);
-    const logger = new Logger('use-trajectory-store');
-
     const upsertIntoList = (list: any[], item: any) => {
         const id = item?._id;
         if (!id) return list;
@@ -135,69 +131,64 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
     return {
         ...initialState,
 
-        getTrajectories: (teamId?: string, opts = {}) => {
+        getTrajectories: async (teamId?: string, opts = {}) => {
             const { page = 1, limit = 20, search = '', append = false } = opts;
 
-            if (append) {
-                if (get().isFetchingMore) return Promise.resolve();
+            if(append){
+                if(get().isFetchingMore) return;
                 set({ isFetchingMore: true });
-            } else {
+            }else{
                 set({ isLoadingTrajectories: true });
             }
 
-            return asyncAction(
-                () =>
-                    trajectoryApi.getAllPaginated({
-                        populate: 'analysis,createdBy',
-                        page,
-                        limit,
-                        q: search
-                    }),
-                {
-                    loadingKey: append ? 'isFetchingMore' : 'isLoadingTrajectories',
-                    onSuccess: (response) => {
-                        const { data: nextList, listingMeta } = calculatePaginationState({
-                            newData: response.data || [],
-                            currentData: get().trajectories,
-                            page,
-                            limit,
-                            append,
-                            totalFromApi: response.total,
-                            previousTotal: get().listingMeta.total
-                        });
+            try{
+                const response = await trajectoryApi.getAllPaginated({
+                    populate: 'analysis,createdBy',
+                    page,
+                    limit,
+                    q: search
+                });
 
-                        return {
-                            trajectories: dedupePreserveOrder(nextList),
-                            listingMeta,
-                            error: null,
-                            isFetchingMore: false,
-                            isLoadingTrajectories: false
-                        };
-                    },
-                    onError: (error) => {
-                        const errorMessage = extractErrorMessage(error, 'Failed to load trajectories');
-                        return {
-                            error: errorMessage,
-                            isFetchingMore: false,
-                            isLoadingTrajectories: false
-                        };
-                    }
+                const { data: nextList, listingMeta } = calculatePaginationState({
+                    newData: response.data || [],
+                    currentData: get().trajectories,
+                    page,
+                    limit,
+                    append,
+                    totalFromApi: response.total,
+                    previousTotal: get().listingMeta.total
+                });
+
+                set({
+                    trajectories: dedupePreserveOrder(nextList),
+                    listingMeta,
+                    error: null
+                });
+            }catch(error: any){
+                const errorMessage = extractErrorMessage(error, 'Failed to load trajectories');
+                set({ error: errorMessage });
+            }finally{
+                if(append){
+                    set({ isFetchingMore: false });
+                }else{
+                    set({ isLoadingTrajectories: false });
                 }
-            );
+            }
         },
 
-        getTrajectoryById: (id: string) => asyncAction(() => trajectoryApi.getOne(id, 'team,analysis'), {
-            loadingKey: 'isLoading',
-            onSuccess: (trajectory) => ({
-                trajectory,
-                error: null
-            }),
+        getTrajectoryById: async (id: string) => {
+            set({ isLoading: true });
 
-            onError: (error) => {
+            try{
+                const trajectory = await trajectoryApi.getOne(id, 'team,analysis');
+                set({ trajectory, error: null });
+            }catch(error: any){
                 const errorMessage = extractErrorMessage(error, 'Failed to load trajectory');
-                return { error: errorMessage };
+                set({ error: errorMessage });
+            }finally{
+                set({ isLoading: false });
             }
-        }),
+        },
 
         createTrajectory: async (formData: FormData) => {
             const uploadId = uuidv4();
@@ -318,26 +309,24 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             }
         },
 
-        getMetrics: (id: string, opts?: { force?: boolean }) => {
+        getMetrics: async (id: string, opts?: { force?: boolean }) => {
             const force = !!opts?.force;
             const current = get().trajectoryMetrics as any;
-            if (current && current?.trajectory?._id === id && !force) {
-                return Promise.resolve();
+
+            if(current && current?.trajectory?._id === id && !force){
+                return;
             }
 
-            return asyncAction(
-                () => trajectoryApi.getMetrics(id),
-                {
-                    loadingKey: 'isMetricsLoading',
-                    onSuccess: (trajectoryMetrics) => ({
-                        trajectoryMetrics,
-                        error: null
-                    }),
-                    onError: (error) => ({
-                        error: extractErrorMessage(error, 'Failed to load trajectory metrics')
-                    })
-                }
-            );
+            set({ isMetricsLoading: true });
+
+            try{
+                const trajectoryMetrics = await trajectoryApi.getMetrics(id);
+                set({ trajectoryMetrics, error: null });
+            }catch(error: any){
+                set({ error: extractErrorMessage(error, 'Failed to load trajectory metrics') });
+            }finally{
+                set({ isMetricsLoading: false });
+            }
         },
 
         setTrajectory: (trajectory: Trajectory | null) => set({ trajectory }),

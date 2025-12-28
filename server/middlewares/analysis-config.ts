@@ -25,7 +25,7 @@ import { Analysis, Team, Trajectory } from '@/models/index';
 import { ErrorCodes } from '@/constants/error-codes';
 
 // TODO:
-export const checkTeamMembershipForAnalysisTrajectory = async(
+export const checkTeamMembership = async(
     req: Request,
     res: Response,
     next: NextFunction

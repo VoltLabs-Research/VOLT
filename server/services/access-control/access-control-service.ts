@@ -22,7 +22,6 @@ class AccessControlService {
 
         const hasWildcard = permissions.includes('*');
         const hasExactPermission = permissions.includes(requiredPermission);
-
         if (!hasWildcard && !hasExactPermission) {
             throw new RuntimeError(ErrorCodes.ACCESS_CONTROL_MISSING_PERMISSION, 403);
         }

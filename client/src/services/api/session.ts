@@ -1,4 +1,6 @@
-import api from '@/api';
+import VoltClient from '@/api';
+
+const client = new VoltClient('/session');
 
 interface Session {
     _id: string;
@@ -27,16 +29,16 @@ interface GetLoginActivityParams {
 
 const sessionApi = {
     async getAll(): Promise<Session[]>{
-        const response = await api.get<{ status: string; data: Session[] }>('/sessions');
+        const response = await client.request<{ status: string; data: Session[] }>('get', '/');
         return response.data.data;
     },
 
     async delete(id: string): Promise<void>{
-        await api.delete(`/sessions/${id}`);
+        await client.request('delete', `/${id}`);
     },
 
     async deleteOthers(): Promise<void>{
-        await api.delete('/sessions/all/others');
+        await client.request('delete', '/all/others');
     },
 
     async getLoginActivity(params?: GetLoginActivityParams): Promise<LoginActivity[]>{
@@ -44,7 +46,7 @@ const sessionApi = {
             ? `?${new URLSearchParams(params as any).toString()}`
             : '';
 
-        const response = await api.get<{ status: string; data: LoginActivity[] }>(`/sessions/activity${queryString}`);
+        const response = await client.request<{ status: string; data: LoginActivity[] }>('get', `/activity${queryString}`);
         return response.data.data;
     }
 };

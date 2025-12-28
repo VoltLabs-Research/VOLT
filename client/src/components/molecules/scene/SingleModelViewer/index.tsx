@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import CameraManager from '@/components/atoms/scene/CameraManager';
 import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
 import useGlbScene from '@/hooks/canvas/use-glb-scene';
+import trajectoryApi from '@/services/api/trajectory';
+import { getCurrentTeamId } from '@/stores/team/team';
 
 interface SingleModelViewerProps {
     trajectoryId: string;
@@ -51,6 +53,8 @@ const computeGlbUrl = (
         if (exposureId) url += `&exposureId=${exposureId}`;
         return url;
     }
+
+    return `/trajectories/${getCurrentTeamId()}/${trajectoryId}/${currentTimestep}/${analysisId}`;
 };
 
 const SingleModelViewer: React.FC<SingleModelViewerProps> = ({

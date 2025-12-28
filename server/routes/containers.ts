@@ -24,34 +24,35 @@ import express from 'express';
 import ContainerController from '@/controllers/container';
 import { protect } from '@/middlewares/authentication';
 import * as middleware from '@/middlewares/container';
+import RBACMiddleware from '@/middlewares/rbac';
+import { Action } from '@/constants/permissions';
 
 const router = express.Router();
-const containerController = new ContainerController();
+const controller = new ContainerController();
+const rbac = new RBACMiddleware(controller, router);
 
 router.use(protect);
 
-router.get('/', containerController.getAllContainers);
-router.post(
-    '/',
-    middleware.verifyTeamForContainerCreation,
-    containerController.createContainer
-);
+rbac.groupBy(Action.READ)
+    .route('/', controller.getAllContainers);
+
+rbac.groupBy(Action.CREATE, middleware.verifyTeamForContainerCreation)
+    .route('/', controller.createContainer);
 
 router.use(middleware.loadAndVerifyContainerAccess);
 
-router.post(
-    '/:id/control',
-    middleware.validateContainerAction,
-    containerController.controlContainer
-);
+rbac.groupBy(Action.UPDATE)
+    .route('/:id/control', middleware.validateContainerAction, controller.controlContainer)
+    .route('/:id/restart', controller.restartContainer)
+    .route('/:id', controller.updateContainer);
 
-router.delete('/:id', containerController.deleteContainer);
-router.get('/:id/stats', containerController.getContainerStats);
-router.post('/:id/restart', containerController.restartContainer);
-router.patch('/:id', containerController.updateContainer);
-router.get('/:id/files', containerController.getContainerFiles);
-router.get('/:id/read', containerController.readContainerFile);
-router.get('/:id/top', containerController.getContainerProcesses);
+rbac.groupBy(Action.READ)
+    .route('/:id/stats', controller.getContainerStats)
+    .route('/:id/files', controller.getContainerFiles)
+    .route('/:id/read', controller.readContainerFile)
+    .route('/:id/top', controller.getContainerProcesses);
 
+rbac.groupBy(Action.DELETE)
+    .route('/:id', controller.deleteContainer);
+    
 export default router;
-export const opts = { requiresTeamId: true };

@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { useEffect, useState } from 'react';
 import useTrajectoryFS, { type FsEntry } from '@/stores/trajectory-vfs';
+import trajectoryApi from '@/services/api/trajectory';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
 import {
@@ -104,21 +105,11 @@ const TrajectoryFileExplorer = ({ onFileOpen }: TrajectoryFileExplorerProps) => 
         setPreviewFileName(entry.name);
 
         try {
-            const token = localStorage.getItem('authToken');
-            const API_BASE_URL = import.meta.env.VITE_API_URL + '/api';
-
-            const response = await fetch(`${API_BASE_URL}/trajectory-vfs/download?path=${encodeURIComponent(entry.relPath)}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const blob = await trajectoryApi.vfs.download({
+                connectionId: currentTrajectoryId || 'root',
+                path: entry.relPath
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const blob = await response.blob();
             const reader = new FileReader();
             reader.onloadend = () => {
                 const base64String = reader.result as string;

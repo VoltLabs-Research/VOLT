@@ -25,39 +25,45 @@ import PluginsController from '@/controllers/plugins';
 import * as authMiddleware from '@/middlewares/authentication';
 import * as trajMiddleware from '@/middlewares/trajectory';
 import * as pluginMiddleware from '@/middlewares/plugins';
+import { Action } from '@/constants/permissions';
+import RBACMiddleware from '@/middlewares/rbac';
 
 const router = Router();
 const controller = new PluginsController();
+const rbac = new RBACMiddleware(controller, router);
 
 router.use(authMiddleware.protect);
 
-router.get('/', controller.getAll);
-router.get('/published', controller.getPublishedPlugins);
-router.get('/schemas', controller.getNodeSchemas);
-router.post('/validate', controller.validateWorkflow);
-router.post('/', controller.createOne);
-router.get('/:id', controller.getOne);
-router.put('/:id', controller.updateOne);
-router.delete('/:id', controller.deleteOne);
-router.post('/:id/publish', controller.publishPlugin);
-router.post('/:id/binary', pluginMiddleware.loadPlugin, controller.uploadBinaryMiddleware, controller.uploadBinary);
-router.delete('/:id/binary', pluginMiddleware.loadPlugin, controller.deleteBinary);
-router.get('/:id/export', controller.exportPlugin);
-router.post('/import', controller.importPluginMiddleware, controller.importPlugin);
+rbac.groupBy(Action.READ)
+    .route('/', controller.getAll)
+    .route('/published', controller.getPublishedPlugins)
+    .route('/schemas', controller.getNodeSchemas)
+    .route('/listing/:pluginSlug/:listingSlug', controller.getPluginListingDocuments)
+    .route('/:id', controller.getOne)
+    .route('/:id/export', controller.exportPlugin);
 
-// Listing without specific trajectory(all trajectories for team)
-router.get(
-    '/listing/:pluginSlug/:listingSlug',
-    controller.getPluginListingDocuments
-);
+rbac.groupBy(Action.UPDATE)
+    .route('/:id', controller.updateOne)
+    .route('/:id/publish', controller.publishPlugin)
+    .route('/validate', controller.validateWorkflow)
+    .route('/:id/binary', pluginMiddleware.loadPlugin, controller.uploadBinaryMiddleware, controller.uploadBinary);
+
+rbac.groupBy(Action.CREATE)
+    .route('/', controller.createOne)
+    .route('/import', controller.importPluginMiddleware, controller.importPlugin);
+
+rbac.groupBy(Action.DELETE)
+    .route('/:id', controller.deleteOne)
+    .route('/:id/binary', pluginMiddleware.loadPlugin, controller.deleteBinary);
 
 router.use(trajMiddleware.checkTeamMembershipForTrajectory);
-router.post('/:pluginSlug/modifier/:modifierSlug/trajectory/:id', controller.evaluatePlugin);
-router.get('/glb/:id/:analysisId/:exposureId/:timestep', controller.getPluginExposureGLB);
-router.get('/file/:id/:analysisId/:exposureId/:timestep/:filename', controller.getPluginExposureFile);
+rbac.groupBy(Action.READ)
+    .route('/glb/:id/:analysisId/:exposureId/:timestep', controller.getPluginExposureGLB)
+    .route('/file/:id/:analysisId/:exposureId/:timestep/:filename', controller.getPluginExposureFile)
+    .route('/listing/:pluginSlug/:listingSlug/:id', controller.getPluginListingDocuments)
+    .route('/per-frame-listing/:id/:analysisId/:exposureId/:timestep', controller.getPerFrameListing);
 
-router.get('/listing/:pluginSlug/:listingSlug/:id', controller.getPluginListingDocuments);
-router.get('/per-frame-listing/:id/:analysisId/:exposureId/:timestep', controller.getPerFrameListing);
+rbac.groupBy(Action.CREATE)
+    .route('/:pluginSlug/modifier/:modifierSlug/trajectory/:id', controller.evaluatePlugin);
 
 export default router;
-export const opts = { requiresTeamId: true };

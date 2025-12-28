@@ -20,9 +20,11 @@
  * SOFTWARE.
  */
 
-import api from '@/api/';
+import VoltClient from '@/api';
 import type { Chat, Message } from '@/types/chat';
 import type { User } from '@/types/models';
+
+const api = new VoltClient('/chat', { useRBAC: false });
 
 export interface GetChatsResponse {
     status: string;
@@ -46,120 +48,139 @@ export interface SendMessageResponse {
 
 export const chatApi = {
     // Get all chats for the current user's teams
-    getChats: async(): Promise<Chat[]> =>{
-        const response = await api.get<GetChatsResponse>('/chat');
+    getChats: async (): Promise<Chat[]> => {
+        const response = await api.request<GetChatsResponse>('get', '/');
         return response.data.data;
     },
 
     // Get team members for chat initialization
-    getTeamMembers: async(teamId: string): Promise<User[]> =>{
-        const response = await api.get<GetTeamMembersResponse>(`/chat/teams/${teamId}/members`);
+    getTeamMembers: async (teamId: string): Promise<User[]> => {
+        const response = await api.request<GetTeamMembersResponse>('get', `/teams/${teamId}/members`);
         return response.data.data;
     },
 
     // Get or create a chat between two users
-    getOrCreateChat: async(teamId: string, participantId: string): Promise<Chat> =>{
-        const response = await api.get<{ status: string; data: Chat }>(`/chat/teams/${teamId}/participants/${participantId}`);
+    getOrCreateChat: async (teamId: string, participantId: string): Promise<Chat> => {
+        const response = await api.request<{ status: string; data: Chat }>('get', `/teams/${teamId}/participants/${participantId}`);
         return response.data.data;
     },
 
     // Get messages for a specific chat
-    getChatMessages: async(chatId: string, page = 1, limit = 50): Promise<Message[]> =>{
-        const response = await api.get<GetChatMessagesResponse>(`/chat/${chatId}/messages`, {
-            params: { page, limit }
+    getChatMessages: async (chatId: string, page = 1, limit = 50): Promise<Message[]> => {
+        const response = await api.request<GetChatMessagesResponse>('get', `/${chatId}/messages`, {
+            query: { page, limit }
         });
         return response.data.data;
     },
 
     // Send a message to a chat
-    sendMessage: async(chatId: string, content: string, messageType = 'text', metadata?: any): Promise<Message> =>{
-        const response = await api.post<SendMessageResponse>(`/chat/${chatId}/messages`, {
-            content,
-            messageType,
-            metadata
+    sendMessage: async (chatId: string, content: string, messageType = 'text', metadata?: any): Promise<Message> => {
+        const response = await api.request<SendMessageResponse>('post', `/${chatId}/messages`, {
+            data: {
+                content,
+                messageType,
+                metadata
+            }
         });
         return response.data.data;
     },
 
     // Mark messages as read
-    markMessagesAsRead: async(chatId: string): Promise<void> =>{
-        await api.patch(`/chat/${chatId}/read`);
+    markMessagesAsRead: async (chatId: string): Promise<void> => {
+        await api.request('patch', `/${chatId}/read`);
     },
 
     // Edit a message
-    editMessage: async(chatId: string, messageId: string, content: string): Promise<Message> =>{
-        const response = await api.patch<{ status: string; data: Message }>(`/chat/${chatId}/messages/${messageId}`, { content });
+    editMessage: async (chatId: string, messageId: string, content: string): Promise<Message> => {
+        const response = await api.request<{ status: string; data: Message }>('patch', `/${chatId}/messages/${messageId}`, {
+            data: { content }
+        });
         return response.data.data;
     },
 
     // Delete a message
-    deleteMessage: async(chatId: string, messageId: string): Promise<void> =>{
-        await api.delete(`/chat/${chatId}/messages/${messageId}`);
+    deleteMessage: async (chatId: string, messageId: string): Promise<void> => {
+        await api.request('delete', `/${chatId}/messages/${messageId}`);
     },
 
     // Get file as base64 for preview
-    getFilePreview: async(chatId: string, messageId: string): Promise<{ dataUrl: string; fileName: string; fileType: string; fileSize: number }> => {
-        const response = await api.get<{ status: string; data: any }>(`/chat/${chatId}/messages/${messageId}/preview`);
+    getFilePreview: async (chatId: string, messageId: string): Promise<{ dataUrl: string; fileName: string; fileType: string; fileSize: number }> => {
+        const response = await api.request<{ status: string; data: any }>('get', `/${chatId}/messages/${messageId}/preview`);
         return response.data.data;
     },
 
     // Upload file
-    uploadFile: async(chatId: string, file: File): Promise<{ filename: string; originalName: string; size: number; mimetype: string; url: string }> => {
+    uploadFile: async (chatId: string, file: File): Promise<{ filename: string; originalName: string; size: number; mimetype: string; url: string }> => {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await api.post<{ status: string; data: any }>(`/chat/${chatId}/upload`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
+        const response = await api.request<{ status: string; data: any }>('post', `/${chatId}/upload`, {
+            data: formData,
+            config: {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
             }
         });
         return response.data.data;
     },
 
     // Send file message
-    sendFileMessage: async(chatId: string, fileData: { filename: string; originalName: string; size: number; mimetype: string; url: string }): Promise<Message> =>{
-        const response = await api.post<{ status: string; data: Message }>(`/chat/${chatId}/send-file`, fileData);
+    sendFileMessage: async (chatId: string, fileData: { filename: string; originalName: string; size: number; mimetype: string; url: string }): Promise<Message> => {
+        const response = await api.request<{ status: string; data: Message }>('post', `/${chatId}/send-file`, {
+            data: fileData
+        });
         return response.data.data;
     },
 
     // Group chat management
-    createGroupChat: async(teamId: string, groupName: string, groupDescription: string, participantIds: string[]): Promise<Chat> =>{
-        const response = await api.post<{ status: string; data: Chat }>('/chat/groups', {
-            teamId,
-            groupName,
-            groupDescription,
-            participantIds
+    createGroupChat: async (teamId: string, groupName: string, groupDescription: string, participantIds: string[]): Promise<Chat> => {
+        const response = await api.request<{ status: string; data: Chat }>('post', '/groups', {
+            data: {
+                teamId,
+                groupName,
+                groupDescription,
+                participantIds
+            }
         });
         return response.data.data;
     },
 
-    addUsersToGroup: async(chatId: string, userIds: string[]): Promise<Chat> =>{
-        const response = await api.post<{ status: string; data: Chat }>(`/chat/${chatId}/groups/add-users`, { userIds });
-        return response.data.data;
-    },
-
-    removeUsersFromGroup: async(chatId: string, userIds: string[]): Promise<Chat> =>{
-        const response = await api.post<{ status: string; data: Chat }>(`/chat/${chatId}/groups/remove-users`, { userIds });
-        return response.data.data;
-    },
-
-    updateGroupInfo: async(chatId: string, groupName?: string, groupDescription?: string): Promise<Chat> =>{
-        const response = await api.patch<{ status: string; data: Chat }>(`/chat/${chatId}/groups/info`, {
-            groupName,
-            groupDescription
+    addUsersToGroup: async (chatId: string, userIds: string[]): Promise<Chat> => {
+        const response = await api.request<{ status: string; data: Chat }>('post', `/${chatId}/groups/add-users`, {
+            data: { userIds }
         });
         return response.data.data;
     },
 
-    updateGroupAdmins: async(chatId: string, userIds: string[], action: 'add' | 'remove'): Promise<Chat> =>{
-        const response = await api.patch<{ status: string; data: Chat }>(`/chat/${chatId}/groups/admins`, {
-            userIds,
-            action
+    removeUsersFromGroup: async (chatId: string, userIds: string[]): Promise<Chat> => {
+        const response = await api.request<{ status: string; data: Chat }>('post', `/${chatId}/groups/remove-users`, {
+            data: { userIds }
         });
         return response.data.data;
     },
 
-    leaveGroup: async(chatId: string): Promise<void> =>{
-        await api.post(`/chat/${chatId}/groups/leave`);
+    updateGroupInfo: async (chatId: string, groupName?: string, groupDescription?: string): Promise<Chat> => {
+        const response = await api.request<{ status: string; data: Chat }>('patch', `/${chatId}/groups/info`, {
+            data: {
+                groupName,
+                groupDescription
+            }
+        });
+        return response.data.data;
+    },
+
+    updateGroupAdmins: async (chatId: string, userIds: string[], action: 'add' | 'remove'): Promise<Chat> => {
+        const response = await api.request<{ status: string; data: Chat }>('patch', `/${chatId}/groups/admins`, {
+            data: {
+                userIds,
+                action
+            }
+        });
+        return response.data.data;
+    },
+
+    leaveGroup: async (chatId: string): Promise<void> => {
+        await api.request('post', `/${chatId}/groups/leave`);
     }
 };

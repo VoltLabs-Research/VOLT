@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { createAsyncAction } from '@/utilities/asyncAction';
+
 import type { TeamRole, TeamRolePayload, TeamMemberWithRole } from '@/types/team-role';
 import teamRoleApi from '@/services/api/team-role';
 
@@ -33,105 +33,111 @@ const initialState: TeamRoleState = {
     error: null
 };
 
-const useTeamRoleStore = create<TeamRoleStore>((set, get) => {
-    const asyncAction = createAsyncAction(set, get);
+const useTeamRoleStore = create<TeamRoleStore>((set, get) => ({
+    ...initialState,
 
-    return {
-        ...initialState,
+    fetchRoles: async (teamId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const roles = await teamRoleApi.getAll(teamId);
+            set({ roles, error: null, isLoading: false });
+        } catch (error: any) {
+            const errorMessage = error?.message || 'Failed to fetch roles';
+            set({ isLoading: false, error: errorMessage });
+            throw errorMessage;
+        }
+    },
 
-        fetchRoles: (teamId: string) => asyncAction(
-            () => teamRoleApi.getAll(teamId),
-            {
-                loadingKey: 'isLoading',
-                onSuccess: (roles) => ({ roles, error: null }),
-                onError: (error) => ({ error: error?.message || 'Failed to fetch roles' })
-            }
-        ),
+    createRole: async (teamId: string, data: TeamRolePayload) => {
+        set({ isSaving: true, error: null });
+        try {
+            const newRole = await teamRoleApi.create(teamId, data);
+            const currentRoles = get().roles;
+            set({
+                roles: [...currentRoles, newRole],
+                error: null,
+                isSaving: false
+            });
+            return newRole;
+        } catch (error: any) {
+            const errorMessage = error?.message || 'Failed to create role';
+            set({ isSaving: false, error: errorMessage });
+            throw errorMessage;
+        }
+    },
 
-        createRole: (teamId: string, data: TeamRolePayload) => asyncAction(
-            () => teamRoleApi.create(teamId, data),
-            {
-                loadingKey: 'isSaving',
-                onSuccess: (newRole) => {
-                    const currentRoles = get().roles;
-                    return {
-                        roles: [...currentRoles, newRole],
-                        error: null
-                    };
-                },
-                onError: (error) => ({ error: error?.message || 'Failed to create role' })
-            }
-        ).then(() => {
-            const roles = get().roles;
-            return roles[roles.length - 1];
-        }),
+    updateRole: async (teamId: string, roleId: string, data: Partial<TeamRolePayload>) => {
+        set({ isSaving: true, error: null });
+        try {
+            const updatedRole = await teamRoleApi.update(teamId, roleId, data);
+            const currentRoles = get().roles;
+            set({
+                roles: currentRoles.map(r => r._id === roleId ? updatedRole : r),
+                selectedRole: get().selectedRole?._id === roleId ? updatedRole : get().selectedRole,
+                error: null,
+                isSaving: false
+            });
+            return updatedRole;
+        } catch (error: any) {
+            const errorMessage = error?.message || 'Failed to update role';
+            set({ isSaving: false, error: errorMessage });
+            throw errorMessage;
+        }
+    },
 
-        updateRole: (teamId: string, roleId: string, data: Partial<TeamRolePayload>) => asyncAction(
-            () => teamRoleApi.update(teamId, roleId, data),
-            {
-                loadingKey: 'isSaving',
-                onSuccess: (updatedRole) => {
-                    const currentRoles = get().roles;
-                    return {
-                        roles: currentRoles.map(r => r._id === roleId ? updatedRole : r),
-                        selectedRole: get().selectedRole?._id === roleId ? updatedRole : get().selectedRole,
-                        error: null
-                    };
-                },
-                onError: (error) => ({ error: error?.message || 'Failed to update role' })
-            }
-        ).then(() => {
-            return get().roles.find(r => r._id === roleId)!;
-        }),
+    deleteRole: async (teamId: string, roleId: string) => {
+        set({ isSaving: true, error: null });
+        try {
+            await teamRoleApi.delete(teamId, roleId);
+            const currentRoles = get().roles;
+            set({
+                roles: currentRoles.filter(r => r._id !== roleId),
+                selectedRole: get().selectedRole?._id === roleId ? null : get().selectedRole,
+                error: null,
+                isSaving: false
+            });
+        } catch (error: any) {
+            const errorMessage = error?.message || 'Failed to delete role';
+            set({ isSaving: false, error: errorMessage });
+            throw errorMessage;
+        }
+    },
 
-        deleteRole: (teamId: string, roleId: string) => asyncAction(
-            () => teamRoleApi.delete(teamId, roleId),
-            {
-                loadingKey: 'isSaving',
-                onSuccess: () => {
-                    const currentRoles = get().roles;
-                    return {
-                        roles: currentRoles.filter(r => r._id !== roleId),
-                        selectedRole: get().selectedRole?._id === roleId ? null : get().selectedRole,
-                        error: null
-                    };
-                },
-                onError: (error) => ({ error: error?.message || 'Failed to delete role' })
-            }
-        ),
+    fetchMembers: async (teamId: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const members = await teamRoleApi.getMembers(teamId);
+            set({ members, error: null, isLoading: false });
+        } catch (error: any) {
+            const errorMessage = error?.message || 'Failed to fetch members';
+            set({ isLoading: false, error: errorMessage });
+            throw errorMessage;
+        }
+    },
 
-        fetchMembers: (teamId: string) => asyncAction(
-            () => teamRoleApi.getMembers(teamId),
-            {
-                loadingKey: 'isLoading',
-                onSuccess: (members) => ({ members, error: null }),
-                onError: (error) => ({ error: error?.message || 'Failed to fetch members' })
-            }
-        ),
+    assignRole: async (teamId: string, memberId: string, roleId: string) => {
+        set({ isSaving: true, error: null });
+        try {
+            const updatedMember = await teamRoleApi.assignRole(teamId, memberId, roleId);
+            const currentMembers = get().members;
+            set({
+                members: currentMembers.map(m => m._id === memberId ? updatedMember : m),
+                error: null,
+                isSaving: false
+            });
+            return updatedMember;
+        } catch (error: any) {
+            const errorMessage = error?.message || 'Failed to assign role';
+            set({ isSaving: false, error: errorMessage });
+            throw errorMessage;
+        }
+    },
 
-        assignRole: (teamId: string, memberId: string, roleId: string) => asyncAction(
-            () => teamRoleApi.assignRole(teamId, memberId, roleId),
-            {
-                loadingKey: 'isSaving',
-                onSuccess: (updatedMember) => {
-                    const currentMembers = get().members;
-                    return {
-                        members: currentMembers.map(m => m._id === memberId ? updatedMember : m),
-                        error: null
-                    };
-                },
-                onError: (error) => ({ error: error?.message || 'Failed to assign role' })
-            }
-        ).then(() => {
-            return get().members.find(m => m._id === memberId)!;
-        }),
+    setSelectedRole: (role: TeamRole | null) => set({ selectedRole: role }),
 
-        setSelectedRole: (role: TeamRole | null) => set({ selectedRole: role }),
+    clearSelectedRole: () => set({ selectedRole: null }),
 
-        clearSelectedRole: () => set({ selectedRole: null }),
-
-        reset: () => set(initialState)
-    };
-});
+    reset: () => set(initialState)
+}));
 
 export default useTeamRoleStore;

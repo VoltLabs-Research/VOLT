@@ -1,5 +1,7 @@
-import api from '@/api';
-import getQueryParam from '@/utilities/get-query-param';
+import VoltClient from '@/api';
+import { getCurrentTeamId as getTeamId } from '@/stores/team/team';
+
+const client = new VoltClient('/analysis-config', { useRBAC: true, getTeamId });
 
 interface AnalysisConfig {
     _id: string;
@@ -10,13 +12,6 @@ interface AnalysisConfig {
     [key: string]: any;
 }
 
-interface GetAnalysisConfigsParams {
-    page?: number;
-    limit?: number;
-    search?: string;
-    trajectoryId?: string;
-}
-
 interface GetAnalysisConfigsResponse {
     configs: AnalysisConfig[];
     total: number;
@@ -24,18 +19,13 @@ interface GetAnalysisConfigsResponse {
     limit: number;
 }
 
-const analysisConfigApi = {
-    async getByTeamId(teamId: string, params?: { page?: number; limit?: number; q?: string }): Promise<GetAnalysisConfigsResponse>{
-        const response = await api.get<{ status: string; data: GetAnalysisConfigsResponse }>(
-            `/analysis-config/${teamId}`,
-            { params }
-        );
+export default {
+    async getByTeamId(params?: { page?: number; limit?: number; q?: string }): Promise<GetAnalysisConfigsResponse>{
+        const response = await client.request<{ status: string; data: GetAnalysisConfigsResponse }>('get', { params });
         return response.data.data;
     },
 
     async delete(id: string): Promise<void>{
-        await api.delete(`/analysis-config/${getQueryParam('team')}/${id}`);
+        await client.request('delete', `/${id}`);
     }
 };
-
-export default analysisConfigApi;

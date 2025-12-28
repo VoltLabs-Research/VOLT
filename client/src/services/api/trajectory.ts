@@ -1,7 +1,32 @@
-import api from '@/api';
+/**
+ * Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files(the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ **/
+
 import type { Trajectory } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
-import getQueryParam from '@/utilities/get-query-param';
+import { getCurrentTeamId as getTeamId } from '@/stores/team/team';
+import VoltClient from '@/api';
+
+const client = new VoltClient('/trajectories', { useRBAC: true, getTeamId });
+const vfsClient = new VoltClient('/trajectory-vfs', { useRBAC: true, getTeamId });
 
 interface GetTrajectoriesParams {
     page?: number;
@@ -20,7 +45,7 @@ interface FsListResponse {
     currentPath: string;
 }
 
-interface TrajectoryInfo {
+export interface TrajectoryInfo {
     name: string;
     path: string;
     id: string;
@@ -28,65 +53,112 @@ interface TrajectoryInfo {
 }
 
 const trajectoryApi = {
-    async getAll(params: GetTrajectoriesParams): Promise<Trajectory[]>{
-        const queryParams = new URLSearchParams();
-        if(params?.page) queryParams.append('page', params.page.toString());
-        if(params?.limit) queryParams.append('limit', params.limit.toString());
-        if(params?.search) queryParams.append('search', params.search);
-        if(params?.populate) queryParams.append('populate', params.populate);
-
-        const url = `/trajectories/${getQueryParam('team')}/${queryParams.toString() ? `?${queryParams}` : ''}`;
-        const response = await api.get<ApiResponse<Trajectory[]>>(url);
+    async getAll(params: GetTrajectoriesParams): Promise<Trajectory[]> {
+        const response = await client.request<ApiResponse<Trajectory[]>>('get', '/', {
+            query: params
+        });
         return response.data.data;
     },
 
-    async getOne(id: string, populate?: string): Promise<Trajectory>{
-        const url = populate ? `/trajectories/${getQueryParam('team')}/${id}?populate=${populate}` : `/trajectories/${id}`;
-        const response = await api.get<ApiResponse<Trajectory>>(url);
+    async getOne(id: string, populate?: string): Promise<Trajectory> {
+        const response = await client.request<ApiResponse<Trajectory>>('get', `/${id}`, {
+            query: populate ? { populate } : undefined
+        });
         return response.data.data;
     },
 
     async create(formData: FormData, onProgress?: (progress: number) => void): Promise<Trajectory> {
-        const response = await api.post<ApiResponse<Trajectory>>(`/trajectories/${getQueryParam('team')}`, formData, {
-            onUploadProgress: (evt) => {
-                const total = evt.total ?? 0;
-                if(total > 0 && onProgress){
-                    onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
+        const response = await client.request<ApiResponse<Trajectory>>('post', '/', {
+            data: formData,
+            config: {
+                headers: {
+                    // axios normalmente lo setea solo, pero esto evita problemas
+                    'Content-Type': 'multipart/form-data'
+                },
+                onUploadProgress: (evt) => {
+                    const total = evt.total ?? 0;
+                    if (total > 0 && onProgress) {
+                        onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
+                    }
                 }
             }
         });
         return response.data.data;
     },
 
-    async update(id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>): Promise<Trajectory>{
-        const response = await api.patch<ApiResponse<Trajectory>>(`/trajectories/${getQueryParam('team')}/${id}`, data);
+    async update(
+        id: string,
+        data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>
+    ): Promise<Trajectory> {
+        const response = await client.request<ApiResponse<Trajectory>>('patch', `/${id}`, {
+            data
+        });
         return response.data.data;
     },
 
-    async delete(id: string): Promise<void>{
-        await api.delete(`/trajectories/${getQueryParam('team')}/${id}`);
+    async delete(id: string): Promise<void> {
+        await client.request('delete', `/${id}`);
     },
 
-    async getPreview(trajectoryId: string, options?: { headers?: Record<string, string>; timeout?: number }): Promise<string>{
+    async getPreview(
+        trajectoryId: string,
+        options?: { headers?: Record<string, string>; timeout?: number }
+    ): Promise<string> {
         const cacheBuster = new URLSearchParams({
             t: Date.now().toString(),
             r: Math.random().toString(36)
         }).toString();
-        const response = await api.get<ApiResponse<string>>(
-            `/trajectories/${getQueryParam('team')}/${trajectoryId}/preview?${cacheBuster}`,
-            {
+
+        const response = await client.request<ApiResponse<string>>('get', `/${trajectoryId}/preview?${cacheBuster}`, {
+            config: {
                 headers: options?.headers,
                 timeout: options?.timeout ?? 15000
-            }
-        );
+            },
+            dedupe: false
+        });
+
         return response.data.data;
     },
 
-    async getAllPaginated(params?: GetTrajectoriesParams & { sort?: string; q?: string }): Promise<{ data: Trajectory[]; page: number; limit: number; total: number }> {
-        const response = await api.get<{ status: string; data: Trajectory[]; page: number; limit: number; total: number }>(
-            `/trajectories/${getQueryParam('team')}`,
-            { params }
-        );
+    async getGLB(
+        trajectoryId: string,
+        timestep: number | string,
+        analysisId: string,
+        opts?: { type?: string; onProgress?: (progress: number) => void }
+    ): Promise<ArrayBuffer> {
+        const response = await client.request<ArrayBuffer>('get', `/${trajectoryId}/${timestep}/${analysisId}`, {
+            query: opts?.type ? { type: opts.type } : undefined,
+            config: {
+                responseType: 'arraybuffer',
+                onDownloadProgress: (evt) => {
+                    const total = evt.total ?? 0;
+                    if (total > 0 && opts?.onProgress) {
+                        opts.onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
+                    }
+                }
+            },
+            dedupe: false
+        });
+
+        return response.data;
+    },
+
+    async getAllPaginated(params?: GetTrajectoriesParams & { sort?: string; q?: string }): Promise<{
+        data: Trajectory[];
+        page: number;
+        limit: number;
+        total: number;
+    }> {
+        const response = await client.request<{
+            status: string;
+            data: Trajectory[];
+            page: number;
+            limit: number;
+            total: number;
+        }>('get', '/', {
+            query: params
+        });
+
         return {
             data: response.data.data,
             page: response.data.page,
@@ -95,8 +167,8 @@ const trajectoryApi = {
         };
     },
 
-    async getMetrics(): Promise<any>{
-        const response = await api.get<ApiResponse<any>>(`/trajectories/${getQueryParam('team')}/metrics`);
+    async getMetrics(): Promise<any> {
+        const response = await client.request<ApiResponse<any>>('get', '/metrics');
         return response.data.data;
     },
 
@@ -112,20 +184,17 @@ const trajectoryApi = {
         total: number;
         hasMore: boolean;
     } | null> {
-        const response = await api.get(
-            `/trajectories/${getQueryParam('team')}/${trajectoryId}/analysis/${analysisId}`,
-            {
-                params: {
-                    timestep: params.timestep,
-                    exposureId: params.exposureId,
-                    page: params?.page ?? 1,
-                    pageSize: params?.pageSize ?? 1000
-                }
+        const response = await client.request<any>('get', `/${trajectoryId}/analysis/${analysisId}`, {
+            query: {
+                timestep: params.timestep,
+                exposureId: params.exposureId,
+                page: params?.page ?? 1,
+                pageSize: params?.pageSize ?? 1000
             }
-        );
+        });
 
         const result = response.data;
-        if(!result || result.status !== 'success'){
+        if (!result || result.status !== 'success') {
             return null;
         }
 
@@ -140,21 +209,32 @@ const trajectoryApi = {
     },
 
     vfs: {
-        async list(params: { connectionId: string; path: string }): Promise<FsListResponse>{
-            const response = await api.get<{ status: 'success'; data: FsListResponse }>('/trajectory-vfs/', { params });
+        async list(params: { connectionId: string; path: string }): Promise<FsListResponse> {
+            const response = await vfsClient.request<{ status: 'success'; data: FsListResponse }>('get', '/', {
+                query: params
+            });
+
             return response.data.data;
         },
 
-        async download(params: { connectionId: string; path: string }): Promise<Blob>{
-            const response = await api.get('/trajectory-vfs/download', {
-                params,
-                responseType: 'blob'
+        async download(params: { connectionId: string; path: string }): Promise<Blob> {
+            const response = await vfsClient.request<Blob>('get', '/download', {
+                query: params,
+                config: {
+                    responseType: 'blob'
+                },
+                dedupe: false
             });
+
             return response.data;
         },
 
-        async getTrajectories(): Promise<TrajectoryInfo[]>{
-            const response = await api.get<{ status: 'success'; data: { trajectories: TrajectoryInfo[] } }>('/trajectory-vfs/trajectories');
+        async getTrajectories(): Promise<TrajectoryInfo[]> {
+            const response = await vfsClient.request<{ status: 'success'; data: { trajectories: TrajectoryInfo[] } }>(
+                'get',
+                '/trajectories'
+            );
+
             return response.data.data.trajectories;
         }
     }

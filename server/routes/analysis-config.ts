@@ -24,17 +24,23 @@ import { Router } from 'express';
 import AnalysisConfigController from '@/controllers/analysis-config';
 import * as middleware from '@/middlewares/analysis-config';
 import * as authMiddleware from '@/middlewares/authentication';
+import RBACMiddleware from '@/middlewares/rbac';
+import { Action } from '@/constants/permissions';
 
 const router = Router();
 const controller = new AnalysisConfigController();
+const rbac = new RBACMiddleware(controller, router);
 
-router.get('/', authMiddleware.protect, controller.listByTeam);
+rbac.groupBy(Action.READ)
+    .route('/', authMiddleware.protect, controller.listByTeam);
 
 router.use(authMiddleware.optionalAuth);
-router.use(middleware.checkTeamMembershipForAnalysisTrajectory);
-router.route('/:id')
-    .get(controller.getOne)
-    .delete(controller.deleteOne);
+router.use(middleware.checkTeamMembership);
+
+rbac.groupBy(Action.READ)
+    .route('/:id', controller.getOne);
+
+rbac.groupBy(Action.DELETE)
+    .route('/:id', controller.deleteOne);
 
 export default router;
-export const opts = { requiresTeamId: true };

@@ -4,6 +4,8 @@ import { ErrorCodes } from '@/constants/error-codes';
 import TrajectoryVFS from '@/services/trajectory-vfs';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { Trajectory, User } from '@/models';
+import BaseController from '@/controllers/base-controller';
+import { Resource } from '@/constants/permissions';
 
 const breadcrumbsOf = (rel: string) => {
     const parts = rel.split('/').filter(Boolean);
@@ -16,7 +18,13 @@ const breadcrumbsOf = (rel: string) => {
     return crumbs;
 };
 
-export default class TrajectoryVfsController {
+export default class TrajectoryVfsController extends BaseController<any> {
+    constructor(){
+        super(Trajectory, {
+            resource: Resource.TRAJECTORY
+        });
+    }
+    
     public listTrajectoryFs = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
         if (!user) {

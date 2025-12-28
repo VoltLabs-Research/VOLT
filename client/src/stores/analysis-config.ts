@@ -24,117 +24,122 @@ import { create } from 'zustand';
 import type { Analysis } from '@/types/models';
 import type { AnalysisConfigStore } from '@/types/stores/analysis-config';
 import analysisConfigApi from '@/services/api/analysis-config';
-import { createAsyncAction } from '@/utilities/asyncAction';
 import { calculatePaginationState, initialListingMeta } from '@/utilities/pagination-utils';
 
 const initialState = {
-  analysisConfig: null as Analysis | null,
-  analysisConfigs: [] as Analysis[],
-  listingMeta: initialListingMeta,
-  isLoading: true,
-  isFetchingMore: false,
-  isListingLoading: false,
-  error: null as string | null,
-  dislocationsLoading: false,
-  analysisDislocationsById: {} as Record<string, any[]>,
-  dislocationsLoadingById: {} as Record<string, boolean>
+    analysisConfig: null as Analysis | null,
+    analysisConfigs: [] as Analysis[],
+    listingMeta: initialListingMeta,
+    isLoading: true,
+    isFetchingMore: false,
+    isListingLoading: false,
+    error: null as string | null,
+    dislocationsLoading: false,
+    analysisDislocationsById: {} as Record<string, any[]>,
+    dislocationsLoadingById: {} as Record<string, boolean>
 };
 
 const useAnalysisConfigStore = create<AnalysisConfigStore & {
-  analysisDislocationsById: Record<string, any[]>;
-  dislocationsLoadingById: Record<string, boolean>;
-  getDislocationsByAnalysisId: (analysisId: string) => Promise<void>;
+    analysisDislocationsById: Record<string, any[]>;
+    dislocationsLoadingById: Record<string, boolean>;
+    getDislocationsByAnalysisId: (analysisId: string) => Promise<void>;
 }>((set, get) => {
-  const asyncAction = createAsyncAction(set, get);
+    return {
+        ...initialState,
 
-  return {
-      ...initialState,
+        getAnalysisConfigs: async (teamId: string, opts = {}) => {
+            const { page = 1, limit = 20, search = '', append = false } = opts;
+            if(!teamId) throw new Error('No team ID provided');
 
-    getAnalysisConfigs: (teamId: string, opts = {}) => {
-      const { page = 1, limit = 20, search = '', append = false } = opts;
-      if(!teamId) return Promise.reject("No team ID provided");
-
-      return asyncAction(() => analysisConfigApi.getByTeamId(teamId, { page, limit, q: search }), {
-        loadingKey: 'isListingLoading',
-        onSuccess: (data, state) => {
-          const { data: analysisConfigs, listingMeta } = calculatePaginationState({
-            newData: (data.configs || []) as unknown as Analysis[],
-            currentData: state.analysisConfigs,
-            page,
-            limit,
-            append,
-            totalFromApi: data.total,
-            previousTotal: state.listingMeta.total
-          });
-
-          return {
-            analysisConfigs,
-            listingMeta,
-            error: null
-          };
-        },
-        onError: (error) => ({
-          error: error?.message || 'Failed to load analysis configs'
-        })
-      });
-    },
-
-    async getDislocationsByAnalysisId(analysisId: string) {
-      const req = analysisConfigApi.getDislocations(analysisId);
-      set((state) => ({
-        dislocationsLoadingById: {
-            ...state.dislocationsLoadingById,
-          [analysisId]: true
-        }
-      }));
-
-      return asyncAction(() => req, {
-        loadingKey: 'dislocationsLoading',
-        onSuccess: (res: any, state) => {
-          const current = state.analysisDislocationsById || {};
-          const currentLoading = state.dislocationsLoadingById || {};
-          return {
-            analysisDislocationsById: {
-                ...current,
-              [analysisId]: res ?? []
-            },
-            dislocationsLoadingById: {
-                ...currentLoading,
-              [analysisId]: false
+            if(append){
+                if(get().isFetchingMore) return;
+                set({ isFetchingMore: true });
+            }else{
+                set({ isListingLoading: true });
             }
-          };
-        },
-        onError: (_error, state) => {
-          const current = state.analysisDislocationsById || {};
-          const currentLoading = state.dislocationsLoadingById || {};
-          return {
-            analysisDislocationsById: {
-                ...current,
-              [analysisId]: []
-            },
-            dislocationsLoadingById: {
-                ...currentLoading,
-              [analysisId]: false
+
+            try{
+                const data = await analysisConfigApi.getByTeamId(teamId, { page, limit, q: search });
+
+                const { data: analysisConfigs, listingMeta } = calculatePaginationState({
+                    newData: (data.configs || []) as unknown as Analysis[],
+                    currentData: get().analysisConfigs,
+                    page,
+                    limit,
+                    append,
+                    totalFromApi: data.total,
+                    previousTotal: get().listingMeta.total
+                });
+
+                set({
+                    analysisConfigs,
+                    listingMeta,
+                    error: null
+                });
+            }catch(error: any){
+                set({
+                    error: error?.message || 'Failed to load analysis configs'
+                });
+            }finally{
+                if(append){
+                    set({ isFetchingMore: false });
+                }else{
+                    set({ isListingLoading: false });
+                }
             }
-          };
+        },
+
+        getDislocationsByAnalysisId: async (analysisId: string) => {
+            set((state) => ({
+                dislocationsLoading: true,
+                dislocationsLoadingById: {
+                    ...state.dislocationsLoadingById,
+                    [analysisId]: true
+                }
+            }));
+
+            try{
+                const res: any = await analysisConfigApi.getDislocations(analysisId);
+                set((state) => ({
+                    analysisDislocationsById: {
+                        ...state.analysisDislocationsById,
+                        [analysisId]: res ?? []
+                    },
+                    dislocationsLoadingById: {
+                        ...state.dislocationsLoadingById,
+                        [analysisId]: false
+                    },
+                    dislocationsLoading: false
+                }));
+            }catch(_error: any){
+                set((state) => ({
+                    analysisDislocationsById: {
+                        ...state.analysisDislocationsById,
+                        [analysisId]: []
+                    },
+                    dislocationsLoadingById: {
+                        ...state.dislocationsLoadingById,
+                        [analysisId]: false
+                    },
+                    dislocationsLoading: false
+                }));
+            }
+        },
+
+        updateAnalysisConfig: (config?: Analysis | null) => {
+            set({
+                analysisConfig: config ?? null
+            });
+        },
+
+        resetAnalysisConfig: () => {
+            set({ analysisConfig: null });
+        },
+
+        setIsLoading: (loading: boolean) => {
+            set({ isLoading: loading });
         }
-      });
-    },
-
-    updateAnalysisConfig(config?: Analysis | null) {
-      set({
-        analysisConfig: config ?? null
-      });
-    },
-
-    resetAnalysisConfig() {
-      set({ analysisConfig: null });
-    },
-
-    setIsLoading(loading: boolean) {
-      set({ isLoading: loading });
-    },
-  }
+    };
 });
 
 export default useAnalysisConfigStore;

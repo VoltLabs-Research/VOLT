@@ -23,25 +23,29 @@
 import { Router } from 'express';
 import SSHConnectionsController from '@/controllers/ssh-connections';
 import * as authMiddleware from '@/middlewares/authentication';
-import * as sshMiddleware from '@/middlewares/ssh-connection';
+import * as middleware from '@/middlewares/ssh-connection';
+import RBACMiddleware from '@/middlewares/rbac';
+import { Action } from '@/constants/permissions';
 
 const router = Router();
 const controller = new SSHConnectionsController();
+const rbac = new RBACMiddleware(controller, router);
 
 router.use(authMiddleware.protect);
 
-router.route('/')
-    .get(controller.getUserSSHConnections)
-    .post(sshMiddleware.validateSSHConnectionFields, controller.createSSHConnection);
+rbac.groupBy(Action.READ)
+    .route('/', controller.getUserSSHConnections);
 
-router.use(sshMiddleware.loadAndVerifySSHConnection);
+rbac.groupBy(Action.CREATE)
+    .route('/', middleware.validateSSHConnectionFields, controller.createSSHConnection);
 
-router.route('/:id')
-    .patch(controller.updateSSHConnection)
-    .delete(controller.deleteSSHConnection);
+router.use(middleware.loadAndVerifySSHConnection);
 
+rbac.groupBy(Action.UPDATE)
+    .route('/:id', controller.updateSSHConnection)
+    .route('/:id/test', controller.testSSHConnection);
 
-router.post('/:id/test', controller.testSSHConnection);
+rbac.groupBy(Action.DELETE)
+    .route('/:id', controller.deleteSSHConnection);
 
 export default router;
-export const opts = { requiresTeamId: true };

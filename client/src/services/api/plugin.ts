@@ -1,8 +1,10 @@
-import api from '@/api';
+import type { AxiosRequestConfig } from 'axios';
 import type { IWorkflow, PluginStatus } from '@/types/plugin';
-import getQueryParam from '@/utilities/get-query-param';
+import type { ApiResponse } from '@/types/api';
+import { getCurrentTeamId as getTeamId } from '@/stores/team/team';
+import VoltClient from '@/api';
 
-export interface IPluginRecord {
+export interface IPluginRecord{
     _id: string;
     slug: string;
     workflow: IWorkflow;
@@ -13,19 +15,19 @@ export interface IPluginRecord {
     updatedAt: string;
 };
 
-export interface GetPluginsResponse {
+export interface GetPluginsResponse{
     status: string;
     data: IPluginRecord[];
     page?: { current: number; total: number };
     results?: { skipped: number; total: number; paginated: number };
 };
 
-export interface GetPluginResponse {
+export interface GetPluginResponse{
     status: string;
     data: IPluginRecord;
 };
 
-export interface ValidateWorkflowResponse {
+export interface ValidateWorkflowResponse{
     status: string;
     data: {
         valid: boolean;
@@ -33,161 +35,152 @@ export interface ValidateWorkflowResponse {
     }
 };
 
-export interface ExecutePluginResponse {
+export interface ExecutePluginResponse{
     status: string;
     data: {
         analysisId: string
     };
 };
 
+const client = new VoltClient('/plugins', { useRBAC: true, getTeamId });
+
 const pluginApi = {
-    /**
-     * Get all plugins with optional filtering
-     */
-    getPlugins: async (params?: {
+    async getPlugins(params?: {
         status?: PluginStatus;
         page?: number;
         limit?: number;
         search?: string
-    }): Promise<GetPluginsResponse> => {
-        const response = await api.get<GetPluginResponse>(`/plugins/${getQueryParam('team')}`, { params });
+    }): Promise<GetPluginsResponse>{
+        const response = await client.request<GetPluginsResponse>('get', '/', {
+            query: params
+        });
         return response.data;
     },
 
-    /**
-     * Get available arguments for a plugin
-     */
-    getAvailableArguments: async (pluginSlug: string): Promise<any> => {
-        const response = await api.get<any>(`/plugins/${getQueryParam('team')}/${pluginSlug}/arguments`);
+    async getPublishedPlugins(): Promise<IPluginRecord[]>{
+        const response = await client.request<GetPluginsResponse>('get', '/published');
         return response.data.data;
     },
 
-    /**
-     * Get plugin file data(MessagePack)
-     */
-    getFile: async (trajectoryId: string, analysisId: string, exposureId: string, timestep: number, filename: string): Promise<ArrayBuffer> => {
-        const response = await api.get(
-            `/plugins/${getQueryParam('team')}/file/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/${filename}`,
-            { responseType: 'arraybuffer' }
+    async getAvailableArguments(pluginSlug: string): Promise<any>{
+        const response = await client.request<{ status: string; data: any }>('get', `/${pluginSlug}/arguments`);
+        return response.data.data;
+    },
+
+    async getFile(
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string,
+        timestep: number,
+        filename: string
+    ): Promise<ArrayBuffer>{
+        const response = await client.request<ArrayBuffer>(
+            'get',
+            `/file/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/${filename}`,
+            {
+                config: { responseType: 'arraybuffer' as AxiosRequestConfig['responseType'] },
+                dedupe: false
+            }
         );
         return response.data;
     },
 
-    /**
-     * Get exposure data(MessagePack)
-     */
-    getExposureData: async (pluginId: string, trajectoryId: string, analysisId: string, exposureId: string, timestep: number): Promise<ArrayBuffer> => {
-        const response = await api.get(
-            `/plugins/${getQueryParam('team')}/${pluginId}/trajectory/${trajectoryId}/analysis/${analysisId}/exposure/${exposureId}/timestep/${timestep}/file.msgpack`,
-            { responseType: 'arraybuffer' }
+    async getExposureData(
+        _pluginId: string,
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string,
+        timestep: number
+    ): Promise<ArrayBuffer>{
+        const response = await client.request<ArrayBuffer>(
+            'get',
+            `/file/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/file.msgpack`,
+            {
+                config: { responseType: 'arraybuffer' as AxiosRequestConfig['responseType'] },
+                dedupe: false
+            }
         );
         return response.data;
     },
 
-    /**
-     * Get a single plugin by ID or slug
-     */
-    getPlugin: async (idOrSlug: string): Promise<IPluginRecord> => {
-        const response = await api.get<GetPluginResponse>(`/plugins/${getQueryParam('team')}/${idOrSlug}`);
+    async getPlugin(idOrSlug: string): Promise<IPluginRecord>{
+        const response = await client.request<GetPluginResponse>('get', `/${idOrSlug}`);
         return response.data.data;
     },
 
-    /**
-     * Create a new plugin
-     */
-    createPlugin: async (data: {
+    async createPlugin(data: {
         slug?: string,
         workflow: IWorkflow,
         status?: PluginStatus,
         team?: string
-    }): Promise<IPluginRecord> => {
-        const response = await api.post<GetPluginResponse>(`/plugins/${getQueryParam('team')}`, data);
+    }): Promise<IPluginRecord>{
+        const response = await client.request<GetPluginResponse>('post', '/', { data });
         return response.data.data;
     },
 
-    /**
-     * Update an existing plugin
-     */
-    updatePlugin: async (idOrSlug: string, data: {
+    async updatePlugin(idOrSlug: string, data: {
         slug?: string,
         workflow?: IWorkflow,
         status?: PluginStatus
-    }): Promise<IPluginRecord> => {
-        const response = await api.put<GetPluginResponse>(`/plugins/${getQueryParam('team')}/${idOrSlug}`, data);
+    }): Promise<IPluginRecord>{
+        const response = await client.request<GetPluginResponse>('patch', `/${idOrSlug}`, { data });
         return response.data.data;
     },
 
-    /**
-     * Delete a plugin
-     */
-    deletePlugin: async (idOrSlug: string): Promise<void> => {
-        await api.delete(`/plugins/${getQueryParam('team')}/${idOrSlug}`);
+    async deletePlugin(idOrSlug: string): Promise<void>{
+        await client.request('delete', `/${idOrSlug}`);
     },
 
-    /**
-     * Validate a workflow without saving
-     */
-    validateWorkflow: async (workflow: IWorkflow): Promise<ValidateWorkflowResponse['data']> => {
-        const response = await api.post<ValidateWorkflowResponse>(`/plugins/${getQueryParam('team')}/validate`, { workflow });
+    async validateWorkflow(workflow: IWorkflow): Promise<ValidateWorkflowResponse['data']>{
+        const response = await client.request<ValidateWorkflowResponse>('patch', '/validate', { data: { workflow } });
         return response.data.data;
     },
 
-    /**
-     * Publish a plugin(change status from draft to published)
-     */
-    publishPlugin: async (idOrSlug: string): Promise<IPluginRecord> => {
-        const response = await api.post<GetPluginResponse>(`/plugins/${getQueryParam('team')}/${idOrSlug}/publish`);
+    async publishPlugin(idOrSlug: string): Promise<IPluginRecord>{
+        const response = await client.request<GetPluginResponse>('patch', `/${idOrSlug}/publish`);
         return response.data.data;
     },
 
-    /**
-     * Execute a plugin on a trajectory
-     */
-    executePlugin: async (
+    async executePlugin(
         pluginSlug: string,
         trajectoryId: string,
         config: Record<string, any>,
         timestep?: number
-    ): Promise<string> => {
-        const response = await api.post<ExecutePluginResponse>(
-            `/plugins/${getQueryParam('team')}/${pluginSlug}/trajectory/${trajectoryId}/execute`,
-            { config, timestep });
+    ): Promise<string>{
+        const response = await client.request<ExecutePluginResponse>(
+            'post',
+            `/${pluginSlug}/trajectory/${trajectoryId}/execute`,
+            { data: { config, timestep } }
+        );
         return response.data.data.analysisId;
     },
 
-    /**
-     * Save or update a workflow
-     */
-    saveWorkflow: async (
-        workflow: IWorkflow,
-        existingId?: string,
-        teamId?: string
-    ): Promise<IPluginRecord> => {
-        if (existingId) {
+    async saveWorkflow(workflow: IWorkflow, existingId?: string, teamId?: string): Promise<IPluginRecord>{
+        if(existingId){
             return pluginApi.updatePlugin(existingId, { workflow });
         }
         return pluginApi.createPlugin({ workflow, team: teamId });
     },
 
-    /**
-     * Upload a binary file for a plugin
-     */
-    uploadBinary: async (
+    async uploadBinary(
         pluginId: string,
         file: File,
         onProgress?: (progess: number) => void
-    ): Promise<{ objectPath: string; fileName: string; size: number }> => {
+    ): Promise<{ objectPath: string; fileName: string; size: number }>{
         const formData = new FormData();
         formData.append('binary', file);
 
-        const response = await api.post<{
+        const response = await client.request<{
             status: string;
             data: { objectPath: string; fileName: string; size: number };
-        }>(`/plugins/${getQueryParam('team')}/${pluginId}/binary`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-            onUploadProgress: (progressEvent) => {
-                if (onProgress && progressEvent.total) {
-                    onProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
+        }>('patch', `/${pluginId}/binary`, {
+            data: formData,
+            config: {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                onUploadProgress: (progressEvent) => {
+                    if(onProgress && progressEvent.total){
+                        onProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
+                    }
                 }
             }
         });
@@ -195,93 +188,82 @@ const pluginApi = {
         return response.data.data;
     },
 
-    /**
-     * Delete a binary file from plugin
-     */
-    deleteBinary: async (pluginId: string): Promise<void> => {
-        await api.delete(`/plugins/${getQueryParam('team')}/${pluginId}/binary`);
+    async deleteBinary(pluginId: string): Promise<void>{
+        await client.request('delete', `/${pluginId}/binary`);
     },
 
-    /**
-     * Get node output schemas for template autocomplete
-     */
-    getNodeSchemas: async (): Promise<Record<string, any>> => {
-        const response = await api.get<{ status: string; data: Record<string, any> }>(`/plugins/${getQueryParam('team')}/schemas`);
+    async getNodeSchemas(): Promise<Record<string, any>>{
+        const response = await client.request<{ status: string; data: Record<string, any> }>('get', '/schemas');
         return response.data.data;
     },
 
-    /**
-     * Get plugin listing data
-     */
-    getListing: async (
-        pluginId: string,
-        listingKey: string,
+    async getListing(
+        pluginSlug: string,
+        listingSlug: string,
         trajectoryId?: string,
         params?: { page?: number; limit?: number; teamId?: string }
-    ): Promise<any> => {
-        const url = trajectoryId
-            ? `/plugins/${getQueryParam('team')}/listing/${pluginId}/${listingKey}/${trajectoryId}`
-            : `/plugins/${getQueryParam('team')}/listing/${pluginId}/${listingKey}`;
-        const response = await api.get<{ status: string; data: any }>(url, { params });
+    ): Promise<any>{
+        const path = trajectoryId
+            ? `/listing/${pluginSlug}/${listingSlug}/${trajectoryId}`
+            : `/listing/${pluginSlug}/${listingSlug}`;
+
+        const response = await client.request<{ status: string; data: any }>('get', path, {
+            query: params
+        });
+
         return response.data.data;
     },
 
-    /**
-     * Get per-frame listing data
-     */
-    getPerFrameListing: async (
+    async getPerFrameListing(
         trajectoryId: string,
         analysisId: string,
         exposureId: string,
         timestep: string | number,
         params?: { page?: number; limit?: number }
-    ): Promise<any> => {
-        const response = await api.get<{ status: string; data: any }>(
-            `/plugins/${getQueryParam('team')}/per-frame-listing/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`,
-            { params }
+    ): Promise<any>{
+        const response = await client.request<{ status: string; data: any }>(
+            'get',
+            `/per-frame-listing/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`,
+            { query: params }
         );
+
         return response.data.data;
     },
 
-    /**
-     * Execute a modifier on a trajectory
-     */
-    executeModifier: async (
-        pluginId: string,
-        modifierId: string,
+    async executeModifier(
+        pluginSlug: string,
+        modifierSlug: string,
         trajectoryId: string,
         payload: { config: Record<string, any>; selectedFrameOnly?: boolean; timestep?: number }
-    ): Promise<string> => {
-        const response = await api.post<{ status: string; data: { analysisId: string } }>(
-            `/plugins/${getQueryParam('team')}/${pluginId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
-            payload
+    ): Promise<string>{
+        const response = await client.request<{ status: string; data: { analysisId: string } }>(
+            'post',
+            `/${pluginSlug}/modifier/${modifierSlug}/trajectory/${trajectoryId}`,
+            { data: payload }
         );
         return response.data.data.analysisId;
     },
 
-    /**
-     * Export a plugin as a ZIP file
-     */
-    exportPlugin: async (idOrSlug: string): Promise<Blob> => {
-        const response = await api.get(`/plugins/${getQueryParam('team')}/${idOrSlug}/export`, {
-            responseType: 'blob'
+    async exportPlugin(idOrSlug: string): Promise<Blob>{
+        const response = await client.request<Blob>('get', `/${idOrSlug}/export`, {
+            config: { responseType: 'blob' as AxiosRequestConfig['responseType'] },
+            dedupe: false
         });
         return response.data;
     },
 
-    /**
-     * Import a plugin from a ZIP file
-     */
-    importPlugin: async (file: File, teamId?: string): Promise<IPluginRecord> => {
+    async importPlugin(file: File, teamId?: string): Promise<IPluginRecord>{
         const formData = new FormData();
         formData.append('plugin', file);
-        if (teamId) {
+        if(teamId){
             formData.append('teamId', teamId);
         }
 
-        const response = await api.post<GetPluginResponse>(`/plugins/${getQueryParam('team')}/import`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+        const response = await client.request<GetPluginResponse>('post', '/import', {
+            data: formData,
+            config: { headers: { 'Content-Type': 'multipart/form-data' } }
         });
+
         return response.data.data;
     }
 };

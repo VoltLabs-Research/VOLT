@@ -1,4 +1,6 @@
-import api from '@/api';
+import VoltClient from '@/api';
+
+const client = new VoltClient('/system');
 
 interface SystemStats {
     cpu: {
@@ -20,7 +22,7 @@ interface SystemStats {
 
 const systemApi = {
     async getStats(): Promise<SystemStats>{
-        const response = await api.get<{ status: string; data: { stats: SystemStats } }>('/system/stats');
+        const response = await client.request<{ status: string; data: { stats: SystemStats } }>('get', '/stats');
         return response.data.data.stats;
     }
 };

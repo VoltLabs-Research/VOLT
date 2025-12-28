@@ -44,7 +44,6 @@ export default class ModelLoader{
         this.state.isLoadingUrl = true;
         this.setIsModelLoading(true);
         this.onLoadingStateChange({ isLoading: true, progress: 0, error: null });
-
         try{
             const loadedModel = await loadGLB(url, (progress) => {
                 this.onLoadingStateChange((prev: any) => ({

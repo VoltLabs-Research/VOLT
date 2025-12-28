@@ -8,7 +8,6 @@ export enum Resource {
     PLUGIN = 'plugin',
     MESSAGE = 'message',
     CONTAINER = 'container',
-    CHAT = 'chat',
     ANALYSIS = 'analysis'
 }
 

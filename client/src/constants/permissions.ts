@@ -1,8 +1,3 @@
-/**
- * Frontend mirror of backend permission constants.
- * Used for the permissions matrix in role management.
- */
-
 export const RESOURCES = [
     { key: 'team', label: 'Team' },
     { key: 'trajectory', label: 'Trajectories' },
@@ -13,7 +8,6 @@ export const RESOURCES = [
     { key: 'plugin', label: 'Plugins' },
     { key: 'message', label: 'Messages' },
     { key: 'container', label: 'Containers' },
-    { key: 'chat', label: 'Chats' },
     { key: 'analysis', label: 'Analysis' }
 ] as const;
 

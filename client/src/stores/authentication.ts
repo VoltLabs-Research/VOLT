@@ -22,11 +22,11 @@
 
 import { create } from 'zustand';
 import { TokenStorage } from '@/utilities/storage';
-import { createAsyncAction } from '@/utilities/asyncAction';
 import { clearErrorHistory } from '@/api/error-notification';
 import type { User } from '@/types/models';
 import type { AuthState, AuthStore } from '@/types/stores/authentication';
 import authApi from '@/services/api/auth';
+import { extractErrorMessage } from '@/utilities/error-extractor';
 
 const initialState: AuthState = {
     user: null,
@@ -34,82 +34,120 @@ const initialState: AuthState = {
     error: null,
     passwordInfo: undefined,
     isChangingPassword: false,
-    isLoadingPasswordInfo: false,
+    isLoadingPasswordInfo: false
 };
 
 const useAuthStore = create<AuthStore>()((set, get) => {
-    const asyncAction = createAsyncAction(set, get);
-
     const handleAuthSuccess = (authData: { user: User; token: string }) => {
         const { token, user } = authData;
         TokenStorage.setToken(token);
-
+        set({ user, error: null });
         return { user };
     };
 
     return {
         ...initialState,
 
-        initializeAuth() {
+        initializeAuth: async () => {
             const token = TokenStorage.getToken();
             if(!token){
-                return Promise.resolve({ user: null });
+                set({ user: null });
+                return { user: null };
             }
 
-            return asyncAction(() => authApi.getMe(), {
-                loadingKey: 'isLoading',
-                onSuccess: (user) => ({ user }),
-                onError: () => {
-                    TokenStorage.removeToken();
-                    return { user: null };
-                }
-            });
+            set({ isLoading: true });
+
+            try{
+                const user = await authApi.getMe();
+                set({ user, error: null });
+                return { user };
+            }catch(_error: any){
+                TokenStorage.removeToken();
+                set({ user: null });
+                return { user: null };
+            }finally{
+                set({ isLoading: false });
+            }
         },
 
-        signIn(credentials) {
-            return asyncAction(() => authApi.signIn(credentials), {
-                loadingKey: 'isLoading',
-                onSuccess: handleAuthSuccess,
-            });
+        signIn: async (credentials) => {
+            set({ isLoading: true, error: null });
+
+            try{
+                const authData = await authApi.signIn(credentials);
+                return handleAuthSuccess(authData);
+            }catch(error: any){
+                const errorMessage = extractErrorMessage(error, 'Failed to sign in');
+                set({ error: errorMessage });
+                throw error;
+            }finally{
+                set({ isLoading: false });
+            }
         },
 
-        signUp(details) {
-            return asyncAction(() => authApi.signUp(details), {
-                loadingKey: 'isLoading',
-                onSuccess: handleAuthSuccess,
-            });
+        signUp: async (details) => {
+            set({ isLoading: true, error: null });
+
+            try{
+                const authData = await authApi.signUp(details);
+                return handleAuthSuccess(authData);
+            }catch(error: any){
+                const errorMessage = extractErrorMessage(error, 'Failed to sign up');
+                set({ error: errorMessage });
+                throw error;
+            }finally{
+                set({ isLoading: false });
+            }
         },
 
-        signOut() {
+        signOut: () => {
             TokenStorage.removeToken();
-            clearErrorHistory(); // Clear error history when user signs out
+            clearErrorHistory();
             set({ user: null, error: null });
-
-            // Reload page to reset all stores and redirect to sign-in
             window.location.href = '/auth/sign-in';
         },
 
-        clearError() {
+        clearError: () => {
             set({ error: null });
         },
 
-        async changePassword(passwordData: { currentPassword: string; newPassword: string; confirmPassword: string }) {
-            return asyncAction(() => authApi.password.change({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword }), {
-                loadingKey: 'isChangingPassword',
-                onSuccess: () => ({})
-            });
+        changePassword: async (passwordData: { currentPassword: string; newPassword: string; confirmPassword: string }) => {
+            set({ isChangingPassword: true });
+
+            try{
+                await authApi.password.change({
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                });
+                set({ error: null });
+                return {};
+            }catch(error: any){
+                const errorMessage = extractErrorMessage(error, 'Failed to change password');
+                set({ error: errorMessage });
+                throw error;
+            }finally{
+                set({ isChangingPassword: false });
+            }
         },
 
-        async getPasswordInfo() {
-            return asyncAction(() => authApi.password.getInfo(), {
-                loadingKey: 'isLoadingPasswordInfo',
-                onSuccess: (passwordInfo) => ({ passwordInfo })
-            });
+        getPasswordInfo: async () => {
+            set({ isLoadingPasswordInfo: true });
+
+            try{
+                const passwordInfo = await authApi.password.getInfo();
+                set({ passwordInfo, error: null });
+                return { passwordInfo };
+            }catch(error: any){
+                const errorMessage = extractErrorMessage(error, 'Failed to load password info');
+                set({ error: errorMessage });
+                throw error;
+            }finally{
+                set({ isLoadingPasswordInfo: false });
+            }
         }
     };
 });
 
-// Initial call to load user state from token
 useAuthStore.getState().initializeAuth();
 
 export default useAuthStore;

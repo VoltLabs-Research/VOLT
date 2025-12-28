@@ -23,26 +23,18 @@
 import { Router } from 'express';
 import TrajectoryVfsController from '@/controllers/trajectory-vfs';
 import * as authMiddleware from '@/middlewares/authentication';
+import RBACMiddleware from '@/middlewares/rbac';
+import { Action } from '@/constants/permissions';
 
 const router = Router();
 const controller = new TrajectoryVfsController();
+const rbac = new RBACMiddleware(controller, router);
 
-router.get(
-    '/',
-    authMiddleware.protect,
-    controller.listTrajectoryFs
-);
+router.use(authMiddleware.protect);
 
-router.get(
-    '/download',
-    authMiddleware.protect,
-    controller.downloadTrajectoryFs
-);
-
-router.get(
-    '/trajectories',
-    authMiddleware.protect,
-    controller.listUserTrajectories
-);
+rbac.groupBy(Action.READ)
+    .route('/', controller.listTrajectoryFs)
+    .route('/download', controller.downloadTrajectoryFs)
+    .route('/trajectories', controller.listUserTrajectories);
 
 export default router;
