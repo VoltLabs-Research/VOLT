@@ -5,7 +5,7 @@ import TrajectoryVFS from '@/services/trajectory-vfs';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { Trajectory, User } from '@/models';
 import BaseController from '@/controllers/base-controller';
-import { Resource } from '@/constants/permissions';
+import { Resource } from '@/constants/resources';
 
 const breadcrumbsOf = (rel: string) => {
     const parts = rel.split('/').filter(Boolean);

@@ -1,11 +1,12 @@
-import { Resource, Action } from '@/constants/permissions';
+import { RBACResource, Action } from '@/constants/permissions';
+import { Resource } from '@/constants/resources';
 
-const allActionsFor = (resource: Resource): string[] =>
+const allActionsFor = (resource: RBACResource): string[] =>
     Object.values(Action).map(action => `${resource}:${action}`);
 
-const readOnlyFor = (resource: Resource): string => `${resource}:${Action.READ}`;
+const readOnlyFor = (resource: RBACResource): string => `${resource}:${Action.READ}`;
 
-const crudFor = (resource: Resource): string[] => [
+const crudFor = (resource: RBACResource): string[] => [
     `${resource}:${Action.READ}`,
     `${resource}:${Action.CREATE}`,
     `${resource}:${Action.UPDATE}`,
@@ -32,8 +33,6 @@ export const SystemRoles = {
             ...allActionsFor(Resource.ANALYSIS),
             ...allActionsFor(Resource.PLUGIN),
             ...allActionsFor(Resource.CONTAINER),
-            ...allActionsFor(Resource.CHAT),
-            ...allActionsFor(Resource.MESSAGE),
             ...allActionsFor(Resource.SSH_CONNECTION),
             ...allActionsFor(Resource.TEAM_INVITATION),
             ...allActionsFor(Resource.TEAM_MEMBER),
@@ -49,8 +48,6 @@ export const SystemRoles = {
             readOnlyFor(Resource.PLUGIN),
             `${Resource.PLUGIN}:${Action.CREATE}`,
             ...crudFor(Resource.CONTAINER),
-            ...crudFor(Resource.CHAT),
-            ...crudFor(Resource.MESSAGE),
             ...crudFor(Resource.SSH_CONNECTION)
         ],
         isSystem: true
@@ -62,8 +59,6 @@ export const SystemRoles = {
             readOnlyFor(Resource.ANALYSIS),
             readOnlyFor(Resource.PLUGIN),
             readOnlyFor(Resource.CONTAINER),
-            readOnlyFor(Resource.CHAT),
-            readOnlyFor(Resource.MESSAGE)
         ],
         isSystem: true
     }

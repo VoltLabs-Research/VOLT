@@ -4,7 +4,7 @@ import { slugify } from '@/utilities/runtime/runtime';
 import { Team } from '@/models';
 import { IWorkflowNode, IPlugin } from '@/types/models/modifier';
 import { NodeType, PluginStatus } from '@/types/models/plugin';
-import { Resource } from '@/constants/permissions';
+import { Resource } from '@/constants/resources';
 import Plugin from '@/models/plugin';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import BaseController from './base-controller';
@@ -29,7 +29,6 @@ export default class PluginsController extends BaseController<IPlugin> {
     constructor() {
         super(Plugin, {
             fields: ['slug', 'workflow', 'status', 'team'],
-            resourceName: 'Plugin',
             resource: Resource.PLUGIN,
             populate: [{ path: 'team', select: 'name description' }]
         });

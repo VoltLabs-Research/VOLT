@@ -3,14 +3,13 @@ import SSHConnection, { ISSHConnection } from '@/models/ssh-connection';
 import SSHService from '@/services/ssh';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import BaseController from '@/controllers/base-controller';
-import { Resource } from '@/constants/permissions';
+import { Resource } from '@/constants/resources';
 import { FilterQuery } from 'mongoose';
 
 export default class SSHConnectionsController extends BaseController<ISSHConnection> {
     constructor() {
         super(SSHConnection, {
             resource: Resource.SSH_CONNECTION,
-            resourceName: 'SSHConnection',
             fields: ['name', 'host', 'port', 'username']
         });
     }

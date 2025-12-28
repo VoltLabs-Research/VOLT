@@ -25,11 +25,12 @@ import { FilterQuery } from 'mongoose';
 import { ApiTracker } from '@/models/index';
 import type { IApiTracker } from '@/models/api-tracker';
 import BaseController from '@/controllers/base-controller';
+import { Resource } from '@/constants/resources';
 
 export default class ApiTrackerController extends BaseController<IApiTracker> {
     constructor() {
         super(ApiTracker, {
-            resourceName: 'ApiTracker',
+            resource: Resource.API_TRACKER,
             fields: ['method', 'url', 'ip', 'userAgent', 'statusCode', 'responseTime', 'requestBody', 'queryParams', 'headers', 'createdAt']
         });
     }

@@ -26,11 +26,12 @@ import { Session } from '@/models/index';
 import { ISession } from '@/models/session';
 import BaseController from '@/controllers/base-controller';
 import { catchAsync } from '@/utilities/runtime/runtime';
+import { Resource } from '@/constants/resources';
 
 export default class SessionController extends BaseController<ISession> {
     constructor() {
         super(Session, {
-            resourceName: 'Session',
+            resource: Resource.SESSION,
             fields: ['isActive']
         });
     }

@@ -1,16 +1,16 @@
 import { Request, Response } from 'express';
-import { Analysis, DailyActivity, Team, TeamMember, Trajectory, User } from '@/models';
+import { Team, TeamMember, User } from '@/models';
 import { FilterQuery } from 'mongoose';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { ErrorCodes } from '@/constants/error-codes';
-import { Resource, Action } from '@/constants/permissions';
+import { Action } from '@/constants/permissions';
+import { Resource } from '@/constants/resources';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import BaseController from '@/controllers/base-controller';
 
 export default class TeamController extends BaseController<any>{
     constructor(){
         super(Team, {
-            resourceName: 'Team',
             resource: Resource.TEAM,
             fields: ['name', 'description'],
             populate: {

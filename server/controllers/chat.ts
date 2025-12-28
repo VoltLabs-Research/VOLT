@@ -26,13 +26,13 @@ import { catchAsync } from '@/utilities/runtime/runtime';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { uploadSingleFile, getFileUrl, uploadToMinIO } from '@/middlewares/file-upload';
-import { Action, Resource } from '@/constants/permissions';
+import { Action } from '@/constants/permissions';
+import { Resource } from '@/constants/resources';
 import BaseController from '@/controllers/base-controller';
 
 export default class ChatController extends BaseController<any> {
     constructor() {
         super(Chat, {
-            resourceName: 'Chat',
             resource: Resource.CHAT
         });
     }

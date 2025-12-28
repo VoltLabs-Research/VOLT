@@ -5,7 +5,8 @@ import { catchAsync } from '@/utilities/runtime/runtime';
 import { v4 } from 'uuid';
 import logger from '@/logger';
 import { ErrorCodes } from '@/constants/error-codes';
-import { Action, Resource } from '@/constants/permissions';
+import { Action } from '@/constants/permissions';
+import { Resource } from '@/constants/resources';
 import { getSSHImportQueue } from '@/queues';
 import { Trajectory } from '@/models';
 import BaseController from '@/controllers/base-controller';
@@ -13,8 +14,7 @@ import BaseController from '@/controllers/base-controller';
 export default class SSHFileExplorerController extends BaseController<any> {
     constructor() {
         super(Trajectory, {
-            resourceName: 'SSHFileExplorer',
-            resource: Resource.TRAJECTORY
+            resource: Resource.SSH_FILE_EXPLORER
         });
     }
 

@@ -1,16 +1,16 @@
-export enum Resource {
-    TEAM = 'team',
-    TRAJECTORY = 'trajectory',
-    TEAM_INVITATION = 'team-invitation',
-    TEAM_MEMBER = 'team-member',
-    TEAM_ROLE = 'team-role',
-    SSH_CONNECTION = 'ssh-connection',
-    PLUGIN = 'plugin',
-    MESSAGE = 'message',
-    CONTAINER = 'container',
-    ANALYSIS = 'analysis'
-}
+import { Resource } from '@/constants/resources';
 
+export type RBACResource = 
+    | Resource.TEAM 
+    | Resource.TRAJECTORY
+    | Resource.TEAM_INVITATION
+    | Resource.TEAM_MEMBER 
+    | Resource.TEAM_ROLE
+    | Resource.SSH_CONNECTION
+    | Resource.PLUGIN
+    | Resource.CONTAINER
+    | Resource.ANALYSIS;
+    
 export enum Action {
     READ = 'read',
     CREATE = 'create',

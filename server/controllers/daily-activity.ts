@@ -4,11 +4,12 @@ import { DailyActivity } from '@/models';
 import { IDailyActivity } from '@/models/daily-activity';
 import BaseController from '@/controllers/base-controller';
 import { NextFunction } from 'express-serve-static-core';
+import { Resource } from '@/constants/resources';
 
 export default class DailyActivityController extends BaseController<IDailyActivity> {
     constructor() {
         super(DailyActivity, {
-            resourceName: 'DailyActivity',
+            resource: Resource.DAILY_ACTIVITY,
             fields: ['date']
         });
     }

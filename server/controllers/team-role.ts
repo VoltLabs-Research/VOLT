@@ -1,7 +1,7 @@
 import { Request } from 'express';
 import { TeamRole, TeamMember } from '@/models';
 import { ErrorCodes } from '@/constants/error-codes';
-import { Resource } from '@/constants/permissions';
+import { Resource } from '@/constants/resources';
 import { ITeamRole } from '@/models/team-role';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import BaseController from '@/controllers/base-controller';
@@ -10,7 +10,6 @@ import { FilterQuery } from 'mongoose';
 export default class TeamRoleController extends BaseController<ITeamRole> {
     constructor() {
         super(TeamRole, {
-            resourceName: 'TeamRole',
             resource: Resource.TEAM_ROLE,
             fields: ['name', 'permissions']
         });

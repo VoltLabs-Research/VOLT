@@ -7,11 +7,12 @@ import { FilterQuery } from 'mongoose';
 import BaseController from '@/controllers/base-controller';
 import { Notification } from '@/models/index';
 import type { INotification } from '@/types/models/notification';
+import { Resource } from '@/constants/resources';
 
 export default class NotificationController extends BaseController<INotification> {
     constructor() {
         super(Notification, {
-            resourceName: 'Notification',
+            resource: Resource.NOTIFICATION,
             fields: ['title', 'content', 'read', 'link']
         });
     }

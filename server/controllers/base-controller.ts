@@ -3,38 +3,35 @@ import { Model, Document, FilterQuery, PopulateOptions } from 'mongoose';
 import { catchAsync, filterObject, checkIfSlugOrId } from '@/utilities/runtime/runtime';
 import { ErrorCodes } from '@/constants/error-codes';
 import { IAccessControlSubject } from '@/services/access-control/interfaces';
-import { Resource, Action, getPermission } from '@/constants/permissions';
+import { Action, getPermission } from '@/constants/permissions';
 import APIFeatures from '@/utilities/api-features';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import accessControlService from '@/services/access-control/access-control-service';
+import { Resource } from '@/constants/resources';
 
 export interface BaseControllerConfig {
     fields?: string[];
     populate?: PopulateOptions | string | (PopulateOptions | string)[];
-    resourceName?: string;
-    resource?: Resource;
+    resource: Resource;
 }
 
 export default abstract class BaseController<T extends Document> {
     protected readonly model: Model<T>;
     protected readonly allowedFields: string[];
     protected readonly defaultPopulate?: PopulateOptions | string | (PopulateOptions | string)[];
-    protected readonly resourceName: string;
     public readonly resource: Resource;
 
-    constructor(model: Model<T>, config: BaseControllerConfig = {}) {
+    constructor(model: Model<T>, config: BaseControllerConfig) {
         this.model = model;
         this.allowedFields = config.fields || [];
         this.defaultPopulate = config.populate;
-        this.resourceName = config.resourceName || model.modelName;
         this.resource = config.resource;
     }
 
     protected async authorize(
         req: Request,
         teamId: string,
-        action: Action,
-        resource?: Resource
+        action: Action
     ): Promise<void> {
         const user = (req as any).user;
 
@@ -43,7 +40,7 @@ export default abstract class BaseController<T extends Document> {
             type: 'user'
         };
 
-        const targetResource = resource || this.resource || (this.resourceName.toLowerCase() as Resource);
+        const targetResource = this.resource;
         const permission = getPermission(targetResource, action);
 
         await accessControlService.enforce(subject, teamId, permission);

@@ -3,14 +3,14 @@ import { Analysis, Team, Trajectory } from '@/models';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
-import { Action, Resource } from '@/constants/permissions';
+import { Action } from '@/constants/permissions';
+import { Resource } from '@/constants/resources';
 import BaseController from '@/controllers/base-controller';
 import logger from '@/logger';
 
 export default class AnalysisConfigController extends BaseController<any> {
     constructor() {
         super(Analysis, {
-            resourceName: 'AnalysisConfig',
             resource: Resource.ANALYSIS,
             fields: []
         });

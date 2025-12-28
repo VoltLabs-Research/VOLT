@@ -4,7 +4,8 @@ import { Chat, User, Team } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { ErrorCodes } from '@/constants/error-codes';
-import { Action, Resource } from '@/constants/permissions';
+import { Action } from '@/constants/permissions';
+import { Resource } from '@/constants/resources';
 import BaseController from '@/controllers/base-controller';
 
 const CHAT_POPULATES = [
@@ -22,8 +23,7 @@ const populateChatDoc = async (chat: any) => {
 export default class GroupChatController extends BaseController<any> {
     constructor() {
         super(Chat, {
-            resourceName: 'GroupChat',
-            resource: Resource.CHAT
+            resource: Resource.GROUP_CHAT
         });
     }
 

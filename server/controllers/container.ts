@@ -1,10 +1,11 @@
 import { execSync } from 'child_process';
 import { Request, Response, NextFunction } from 'express';
 import { Socket } from 'socket.io';
-import { Container, Team } from '@/models/index';
+import { Container } from '@/models/index';
 import { dockerService } from '@/services/docker';
 import { terminalManager } from '@/services/terminal';
-import { Action, Resource } from '@/constants/permissions';
+import { Resource } from '@/constants/resources';
+import { Action } from '@/constants/permissions';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
@@ -13,7 +14,6 @@ import BaseController from '@/controllers/base-controller';
 export default class ContainerController extends BaseController<any> {
     constructor() {
         super(Container, {
-            resourceName: 'Container',
             resource: Resource.CONTAINER,
             fields: ['name', 'image', 'status', 'team', 'env', 'ports', 'memory', 'cpus']
         });

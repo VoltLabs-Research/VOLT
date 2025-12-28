@@ -5,11 +5,12 @@ import { FilterQuery, Types } from 'mongoose';
 import { ErrorCodes } from '@/constants/error-codes';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import BaseController from '@/controllers/base-controller';
+import { Resource } from '@/constants/resources';
 
 export default class TeamMemberController extends BaseController<ITeamMember>{
     constructor(){
         super(TeamMember, {
-            resourceName: 'TeamMember',
+            resource: Resource.TEAM_MEMBER,
             fields: ['role'],
             populate: [
                 { path: 'role', select: 'name permissions isSystem' },

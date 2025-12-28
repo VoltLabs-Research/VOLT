@@ -8,11 +8,12 @@ import { ErrorCodes } from '@/constants/error-codes';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { AvatarService } from '@/services/avatar';
 import { generateRandomName } from '@/utilities/runtime/name-generator';
+import { Resource } from '@/constants/resources';
 
 export default class AuthController extends BaseController<IUser> {
     constructor() {
         super(User, {
-            resourceName: 'User',
+            resource: Resource.AUTH,
             fields: ['firstName', 'lastName', 'email', 'avatar']
         });
     }
