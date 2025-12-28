@@ -5,7 +5,6 @@ import { Container } from '@/models/index';
 import { dockerService } from '@/services/docker';
 import { terminalManager } from '@/services/terminal';
 import { Resource } from '@/constants/resources';
-import { Action } from '@/constants/permissions';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
@@ -15,7 +14,7 @@ export default class ContainerController extends BaseController<any> {
     constructor() {
         super(Container, {
             resource: Resource.CONTAINER,
-            fields: ['name', 'image', 'status', 'team', 'env', 'ports', 'memory', 'cpus']
+            fields: ['name', 'image', 'status', 'team', 'env', 'ports', 'memory', 'cpus', 'internalIp']
         });
     }
 
@@ -50,8 +49,13 @@ export default class ContainerController extends BaseController<any> {
             NanoCpus: (req.body.cpus || 1) * 1_000_000_000
         };
 
+        // Create named volume for data persistence
+        const volumeName = `volterra-${name.replace(/\s+/g, '-').toLowerCase()}-data`;
+        HostConfig.Binds = HostConfig.Binds || [];
+        HostConfig.Binds.push(`${volumeName}:/data`);
+
         if (mountDockerSocket) {
-            HostConfig.Binds = ['/var/run/docker.sock:/var/run/docker.sock'];
+            HostConfig.Binds.push('/var/run/docker.sock:/var/run/docker.sock');
             try {
                 const dockerGid = execSync("getent group docker | cut -d: -f3").toString().trim();
                 if (dockerGid) HostConfig.GroupAdd = [dockerGid];
@@ -71,12 +75,43 @@ export default class ContainerController extends BaseController<any> {
         } as any;
 
         const dockerContainer = await dockerService.createContainer(dockerConfig);
+        await dockerContainer.start();
+
+        // Create Docker network for container
+        const networkName = `volterra-${name.replace(/\s+/g, '-').toLowerCase()}-net`;
+        const network = await dockerService.createNetwork(networkName);
+
+        const volume = await dockerService.createVolume(volumeName);
+
+        // Connect container to network
+        await dockerService.connectContainerToNetwork(dockerContainer.id, network.id);
+
+        // Re-inspect to get IP after network connection
         const containerInfo = await dockerContainer.inspect();
+        const internalIp = containerInfo.NetworkSettings?.Networks?.[networkName]?.IPAddress || null;
+
+        // Create MongoDB network document (will be linked after container is created)
+        const { DockerNetwork, DockerVolume } = await import('@/models');
+        const networkDoc = await DockerNetwork.create({
+            networkId: network.id,
+            name: networkName,
+            driver: 'bridge'
+        });
+
+        // Create MongoDB volume document
+        const volumeDoc = await DockerVolume.create({
+            volumeId: volume.id,
+            name: volumeName,
+            driver: 'local'
+        });
 
         return {
             ...data,
             team: await this.getTeamId(req),
             containerId: containerInfo.Id,
+            internalIp,
+            network: networkDoc._id,
+            volume: volumeDoc._id,
             status: containerInfo.State.Status,
             createdBy: (req as any).user._id
         };
@@ -99,7 +134,19 @@ export default class ContainerController extends BaseController<any> {
             return { ...data, status: info.State.Status };
         }
 
-        // Stop and remove old container
+        // Commit current container to temporary image to preserve filesystem changes
+        const tempImageName = `volterra-temp-${currentDoc.name.replace(/\s+/g, '-').toLowerCase()}:${Date.now()}`;
+        try {
+            const oldContainer = dockerService.getContainer(currentDoc.containerId);
+            await oldContainer.commit({
+                repo: tempImageName.split(':')[0],
+                tag: tempImageName.split(':')[1]
+            });
+        } catch (e) {
+            console.warn('Could not commit container, using original image:', e);
+        }
+
+        // Stop and remove old container (volumes are preserved)
         try {
             await dockerService.stopContainer(currentDoc.containerId);
             await dockerService.removeContainer(currentDoc.containerId);
@@ -117,25 +164,43 @@ export default class ContainerController extends BaseController<any> {
             });
         }
 
+        // Reuse volume to preserve data
+        const volumeName = `volterra-${currentDoc.name.replace(/\s+/g, '-').toLowerCase()}-data`;
+
         const dockerConfig = {
-            Image: currentDoc.image,
+            Image: tempImageName || currentDoc.image,
             name: `${currentDoc.name.replace(/\s+/g, '-')}-${Date.now()}`,
             Env,
             ExposedPorts,
             HostConfig: {
                 PortBindings,
                 Memory: currentDoc.memory * 1024 * 1024,
-                NanoCpus: currentDoc.cpus * 1_000_000_000
+                NanoCpus: currentDoc.cpus * 1_000_000_000,
+                Binds: [`${volumeName}:/data`]
             },
             Tty: true
         } as any;
 
         const dockerContainer = await dockerService.createContainer(dockerConfig);
+        await dockerContainer.start();
+
+        // Reconnect to network
+        if (currentDoc.network) {
+            const { DockerNetwork } = await import('@/models');
+            const networkDoc = await DockerNetwork.findById(currentDoc.network);
+            if (networkDoc?.networkId) {
+                await dockerService.connectContainerToNetwork(dockerContainer.id, networkDoc.networkId);
+            }
+        }
+
         const containerInfo = await dockerContainer.inspect();
+        const networkName = currentDoc.network ? `volterra-${currentDoc.name.replace(/\s+/g, '-').toLowerCase()}-net` : undefined;
+        const internalIp = networkName && containerInfo.NetworkSettings?.Networks?.[networkName]?.IPAddress || null;
 
         return {
             ...data,
             containerId: containerInfo.Id,
+            internalIp,
             status: containerInfo.State.Status
         };
     }
@@ -144,6 +209,15 @@ export default class ContainerController extends BaseController<any> {
         try {
             await dockerService.stopContainer(doc.containerId);
             await dockerService.removeContainer(doc.containerId);
+
+            // Delete Docker network (cascade delete will handle MongoDB cleanup)
+            if (doc.network) {
+                const { DockerNetwork } = await import('@/models');
+                const networkDoc = await DockerNetwork.findById(doc.network);
+                if (networkDoc?.networkId) {
+                    await dockerService.removeNetwork(networkDoc.networkId);
+                }
+            }
         } catch (e) {
             /* ignore if already removed */
         }

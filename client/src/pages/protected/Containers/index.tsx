@@ -151,6 +151,19 @@ const Containers: React.FC = () => {
             skeleton: { variant: 'text', width: 150 }
         },
         {
+            title: 'Internal IP',
+            key: 'internalIp',
+            render: (value) => {
+                if (!value) return <span className='text-muted font-size-2 color-muted'>-</span>;
+                return (
+                    <span className='font-size-2 color-secondary font-family-mono'>
+                        {value}
+                    </span>
+                );
+            },
+            skeleton: { variant: 'text', width: 120 }
+        },
+        {
             title: 'Ports',
             key: 'ports',
             render: (value) => {

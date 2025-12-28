@@ -36,6 +36,12 @@ export const ValidationCodes = {
     CONTAINER_ID_REQUIRED: 'Container::ContainerId::Required',
     CONTAINER_CREATED_BY_REQUIRED: 'Container::CreatedBy::Required',
 
+    DOCKER_NETWORK_ID_REQUIRED: 'DockerNetwork::NetworkId::Required',
+    DOCKER_NETWORK_NAME_REQUIRED: 'DockerNetwork::Name::Required',
+
+    DOCKER_VOLUME_ID_REQUIRED: 'DockerVolume::VolumeId::Required',
+    DOCKER_VOLUME_NAME_REQUIRED: 'DockerVolume::Name::Required',
+
     MESSAGE_CONTENT_REQUIRED: 'Message::Content::Required',
     MESSAGE_CONTENT_MAXLEN: 'Message::Content::MaxLength',
 

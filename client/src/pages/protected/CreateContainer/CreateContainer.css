@@ -39,7 +39,7 @@
 }
 
 .step-item.active .step-number {
-    background: var(--accent-orange);
+    background: var(--accent-blue);
     color: white;
 }
 
@@ -61,7 +61,7 @@
 }
 
 .step-line.active {
-    background: var(--accent-orange);
+    background: var(--accent-blue);
 }
 
 /* Content Area */
@@ -102,13 +102,12 @@
 }
 
 .template-card:hover {
-    border-color: var(--accent-orange);
-    transform: translateY(-2px);
+    border-color: var(--accent-blue);
 }
 
 .template-card.selected {
-    border-color: var(--accent-orange);
-    box-shadow: 0 0 0 2px var(--accent-orange);
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px var(--accent-blue);
 }
 
 .template-icon {
@@ -129,7 +128,7 @@
     right: 8px;
     width: 22px;
     height: 22px;
-    background: var(--accent-orange);
+    background: var(--accent-blue);
     color: white;
     border-radius: 50%;
 }
@@ -204,7 +203,7 @@
 
 .field-input:focus {
     outline: none;
-    border-color: var(--accent-orange);
+    border-color: var(--accent-blue);
 }
 
 /* Resource Sliders */
@@ -236,7 +235,7 @@
 }
 
 .resource-value {
-    background: var(--accent-orange);
+    background: var(--accent-blue);
     color: white;
     padding: 0.2rem 0.6rem;
     border-radius: 16px;

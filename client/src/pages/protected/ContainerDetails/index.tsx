@@ -18,13 +18,13 @@ import useToast from '@/hooks/ui/use-toast';
 import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
 import ContainerFileExplorer from '@/components/organisms/containers/ContainerFileExplorer';
 import ContainerProcesses from '@/components/organisms/containers/ContainerProcesses';
-import EditContainerModal from '@/components/organisms/containers/EditContainerModal';
 import containerApi from '@/services/api/container/container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';
 import './ContainerDetails.css';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { IoAdd, IoTrash } from 'react-icons/io5';
 
 const ContainerDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -34,40 +34,46 @@ const ContainerDetails: React.FC = () => {
     const [container, setContainer] = useState<any>(null);
     const [statsHistory, setStatsHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'overview' | 'processes' | 'logs' | 'storage' | 'settings'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'processes' | 'logs' | 'storage'>('overview');
     const [actionLoading, setActionLoading] = useState(false);
+    const [editingEnv, setEditingEnv] = useState(false);
+    const [editingPorts, setEditingPorts] = useState(false);
+    const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>([]);
+    const [ports, setPorts] = useState<{ private: number; public: number }[]>([]);
 
     useEffect(() => {
         fetchContainer();
     }, [id]);
 
     useEffect(() => {
-        if(container && container.status === 'running'){
+        if (container && container.status === 'running') {
             const interval = setInterval(() => fetchStats(container._id), 2000);
             return () => clearInterval(interval);
         }
     }, [container]);
 
-    const fetchContainer = async() => {
-        try{
+    const fetchContainer = async () => {
+        try {
             const containers = await containerApi.getAll();
             const found = containers.find((c: any) => c._id === id);
-            if(found){
+            if (found) {
                 setContainer(found);
-            }else{
+                setEnvVars(found.env || []);
+                setPorts(found.ports || []);
+            } else {
                 showError('Container not found');
                 navigate('/dashboard/containers');
             }
-        }catch(error){
+        } catch (error) {
             showError('Failed to fetch container details');
             navigate('/dashboard/containers');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
 
-    const fetchStats = async(containerId: string) => {
-        try{
+    const fetchStats = async (containerId: string) => {
+        try {
             const newStats = await containerApi.getStats(containerId);
 
             let cpuPercent = 0;
@@ -75,7 +81,7 @@ const ContainerDetails: React.FC = () => {
             const systemDelta = newStats.cpu_stats.system_cpu_usage - newStats.precpu_stats.system_cpu_usage;
             const onlineCpus = newStats.cpu_stats.online_cpus || newStats.cpu_stats.cpu_usage.percpu_usage?.length || 1;
 
-            if(systemDelta > 0 && cpuDelta > 0){
+            if (systemDelta > 0 && cpuDelta > 0) {
                 cpuPercent = (cpuDelta / systemDelta) * onlineCpus * 100;
             }
 
@@ -90,17 +96,17 @@ const ContainerDetails: React.FC = () => {
                 return updated.slice(-30);
             });
 
-        }catch(error){
+        } catch (error) {
             console.error('Failed to fetch stats', error);
         }
     };
 
-    const handleAction = async(action: 'start' | 'stop' | 'restart' | 'delete') => {
-        if(!container) return;
+    const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete') => {
+        if (!container) return;
         setActionLoading(true);
-        try{
-            if(action === 'delete'){
-                if(!window.confirm('Are you sure you want to delete this container?')) {
+        try {
+            if (action === 'delete') {
+                if (!window.confirm('Are you sure you want to delete this container?')) {
                     setActionLoading(false);
                     return;
                 }
@@ -110,23 +116,48 @@ const ContainerDetails: React.FC = () => {
                 return;
             }
 
-            if(action === 'restart'){
+            if (action === 'restart') {
                 await containerApi.restart(container._id);
-            }else{
+            } else {
                 await containerApi.control(container._id, action);
             }
 
             showSuccess(`Container ${action}ed successfully`);
             fetchContainer();
-        }catch(error: any){
+        } catch (error: any) {
             showError(error.response?.data?.message || `Failed to ${action} container`);
-        }finally{
+        } finally {
             setActionLoading(false);
         }
     };
 
-    if(loading) return <div className="loading-spinner">Loading...</div>;
-    if(!container) return null;
+    const handleSaveEnv = async () => {
+        if (!container) return;
+        try {
+            await containerApi.update(container._id, { env: envVars });
+            showSuccess('Environment variables updated');
+            setEditingEnv(false);
+            fetchContainer();
+        } catch (error: any) {
+            showError(error.response?.data?.message || 'Failed to update environment variables');
+        }
+    };
+
+    const handleSavePorts = async () => {
+        if (!container) return;
+        try {
+            await containerApi.update(container._id, { ports });
+            showSuccess('Port bindings updated - container will be recreated');
+            setEditingPorts(false);
+            fetchContainer();
+        } catch (error: any) {
+            showError(error.response?.data?.message || 'Failed to update ports');
+        }
+    };
+
+
+    if (loading) return <div className="loading-spinner">Loading...</div>;
+    if (!container) return null;
 
     return (
         <div className="details-page-layout d-flex overflow-hidden">
@@ -181,15 +212,6 @@ const ContainerDetails: React.FC = () => {
                         leftIcon={<Folder size={18} />}
                         onClick={() => setActiveTab('storage')}
                     >Files & Storage</Button>
-                    <Button
-                        variant={activeTab === 'settings' ? 'soft' : 'ghost'}
-                        intent={activeTab === 'settings' ? 'brand' : 'neutral'}
-                        size='md'
-                        block
-                        align='start'
-                        leftIcon={<Settings size={18} />}
-                        onClick={() => setActiveTab('settings')}
-                    >Settings</Button>
                 </nav>
 
                 <div className="sidebar-actions d-flex column gap-075">
@@ -345,33 +367,137 @@ const ContainerDetails: React.FC = () => {
 
                         <div className="config-grid gap-2">
                             <div className="config-card">
-                                <Title className="d-flex items-center gap-05 font-size-3 font-weight-6">Environment Variables</Title>
+                                <div className="d-flex content-between items-center mb-1">
+                                    <Title className="font-size-3 font-weight-6">Environment Variables</Title>
+                                    <div className="d-flex gap-05">
+                                        {editingEnv ? (
+                                            <>
+                                                <Button variant='solid' intent='brand' size='sm' onClick={handleSaveEnv}>Save</Button>
+                                                <Button variant='ghost' intent='neutral' size='sm' onClick={() => { setEditingEnv(false); setEnvVars(container.env || []); }}>Cancel</Button>
+                                            </>
+                                        ) : (
+                                            <button className="icon-btn-edit" onClick={() => setEditingEnv(true)}>
+                                                <Settings size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                                 <div className="env-list d-flex column gap-075">
-                                    {container.env && container.env.length > 0 ? (
-                                        container.env.map((e: any, i: number) => (
-                                            <div key={i} className="d-flex content-between env-row">
-                                                <span className="env-key font-weight-6">{e.key}</span>
-                                                <span className="env-val color-muted-foreground">{e.value}</span>
-                                            </div>
-                                        ))
+                                    {editingEnv ? (
+                                        <>
+                                            {envVars.map((e, i) => (
+                                                <div key={i} className="d-flex items-center gap-075 row-inputs">
+                                                    <input
+                                                        placeholder="Key"
+                                                        value={e.key}
+                                                        className="config-input"
+                                                        onChange={(ev) => {
+                                                            const newEnv = [...envVars];
+                                                            newEnv[i].key = ev.target.value;
+                                                            setEnvVars(newEnv);
+                                                        }}
+                                                    />
+                                                    <input
+                                                        placeholder="Value"
+                                                        value={e.value}
+                                                        className="config-input"
+                                                        onChange={(ev) => {
+                                                            const newEnv = [...envVars];
+                                                            newEnv[i].value = ev.target.value;
+                                                            setEnvVars(newEnv);
+                                                        }}
+                                                    />
+                                                    <button className="icon-btn-delete" onClick={() => setEnvVars(envVars.filter((_, idx) => idx !== i))}>
+                                                        <IoTrash size={18} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <button className="add-row-btn" onClick={() => setEnvVars([...envVars, { key: '', value: '' }])}>
+                                                <IoAdd size={16} /> Add Variable
+                                            </button>
+                                        </>
                                     ) : (
-                                        <Paragraph className="color-muted font-size-2">No environment variables</Paragraph>
+                                        <>
+                                            {container.env && container.env.length > 0 ? (
+                                                container.env.map((e: any, i: number) => (
+                                                    <div key={i} className="d-flex content-between env-row">
+                                                        <span className="env-key font-weight-6">{e.key}</span>
+                                                        <span className="env-val color-muted-foreground">{e.value}</span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <Paragraph className="color-muted font-size-2">No environment variables</Paragraph>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
                             <div className="config-card">
-                                <Title className="d-flex items-center gap-05 font-size-3 font-weight-6">Port Bindings</Title>
+                                <div className="d-flex content-between items-center mb-1">
+                                    <Title className="font-size-3 font-weight-6">Port Bindings</Title>
+                                    <div className="d-flex gap-05">
+                                        {editingPorts ? (
+                                            <>
+                                                <Button variant='solid' intent='brand' size='sm' onClick={handleSavePorts}>Save</Button>
+                                                <Button variant='ghost' intent='neutral' size='sm' onClick={() => { setEditingPorts(false); setPorts(container.ports || []); }}>Cancel</Button>
+                                            </>
+                                        ) : (
+                                            <button className="icon-btn-edit" onClick={() => setEditingPorts(true)}>
+                                                <Settings size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                                 <div className="port-list d-flex column gap-075">
-                                    {container.ports && container.ports.length > 0 ? (
-                                        container.ports.map((p: any, i: number) => (
-                                            <div key={i} className="d-flex content-between port-row">
-                                                <span className="port-private font-weight-6">{p.private}/tcp</span>
-                                                <span className="arrow color-muted-foreground">→</span>
-                                                <span className="port-public">localhost:{p.public}</span>
-                                            </div>
-                                        ))
+                                    {editingPorts ? (
+                                        <>
+                                            {ports.map((p, i) => (
+                                                <div key={i} className="d-flex items-center gap-075 row-inputs">
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Container Port"
+                                                        value={p.private}
+                                                        className="config-input"
+                                                        onChange={(ev) => {
+                                                            const newPorts = [...ports];
+                                                            newPorts[i].private = parseInt(ev.target.value) || 0;
+                                                            setPorts(newPorts);
+                                                        }}
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Host Port"
+                                                        value={p.public}
+                                                        className="config-input"
+                                                        onChange={(ev) => {
+                                                            const newPorts = [...ports];
+                                                            newPorts[i].public = parseInt(ev.target.value) || 0;
+                                                            setPorts(newPorts);
+                                                        }}
+                                                    />
+                                                    <button className="icon-btn-delete" onClick={() => setPorts(ports.filter((_, idx) => idx !== i))}>
+                                                        <IoTrash size={18} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <button className="add-row-btn" onClick={() => setPorts([...ports, { private: 0, public: 0 }])}>
+                                                <IoAdd size={16} /> Add Port
+                                            </button>
+                                        </>
                                     ) : (
-                                        <Paragraph className="color-muted font-size-2">No ports exposed</Paragraph>
+                                        <>
+                                            {container.ports && container.ports.length > 0 ? (
+                                                container.ports.map((p: any, i: number) => (
+                                                    <div key={i} className="d-flex content-between port-row">
+                                                        <span className="port-private font-weight-6">{p.private}/tcp</span>
+                                                        <span className="arrow color-muted-foreground">→</span>
+                                                        <span className="port-public">localhost:{p.public}</span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <Paragraph className="color-muted font-size-2">No ports exposed</Paragraph>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -421,51 +547,7 @@ const ContainerDetails: React.FC = () => {
                         )}
                     </div>
                 )}
-
-                {activeTab === 'settings' && (
-                    <div className="content-pane settings-pane h-max">
-                        <Title className="font-size-4 font-weight-6">Settings</Title>
-                        <div className="container-settings-card overflow-hidden">
-                            <div className="card-header">
-                                <Title className="font-size-3 font-weight-6">Configuration & Resources</Title>
-                                <Paragraph className="color-muted">Update environment variables, ports, and resource limits(CPU/RAM).</Paragraph>
-                            </div>
-                            <div className="d-flex content-end card-body">
-                                <Button
-                                    variant='outline'
-                                    intent='neutral'
-                                    leftIcon={<Settings size={16} />}
-                                    onClick={() => (document.getElementById('edit-container-modal') as HTMLDialogElement)?.showModal()}
-                                >
-                                    Edit Configuration
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="container-settings-card danger overflow-hidden">
-                            <div className="card-header">
-                                <Title className="font-size-3 font-weight-6">Delete Container</Title>
-                                <Paragraph className="color-muted">Permanently remove this container and all its data.</Paragraph>
-                            </div>
-                            <div className="d-flex content-end card-body">
-                                <Button
-                                    variant='solid'
-                                    intent='danger'
-                                    leftIcon={<Trash2 size={16} />}
-                                    onClick={() => handleAction('delete')}
-                                >
-                                    Delete Container
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
-
-            <EditContainerModal
-                container={container}
-                onSuccess={fetchContainer}
-            />
         </div>
     );
 };

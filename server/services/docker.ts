@@ -184,6 +184,63 @@ class DockerService {
             throw new RuntimeError(ErrorCodes.DOCKER_EXEC_ERROR, 500);
         }
     }
+
+    async createNetwork(name: string): Promise<{ id: string; name: string }> {
+        try {
+            const network = await this.docker.createNetwork({
+                Name: name,
+                Driver: 'bridge',
+                CheckDuplicate: true
+            });
+            const info = await network.inspect();
+            return { id: info.Id, name: info.Name };
+        } catch (error: any) {
+            throw new RuntimeError(ErrorCodes.DOCKER_NETWORK_CREATE_ERROR, 500);
+        }
+    }
+
+    async removeNetwork(networkId: string): Promise<void> {
+        try {
+            const network = this.docker.getNetwork(networkId);
+            await network.remove();
+        } catch (error: any) {
+            if (error.statusCode !== 404) {
+                throw new RuntimeError(ErrorCodes.DOCKER_NETWORK_REMOVE_ERROR, 500);
+            }
+        }
+    }
+
+    async connectContainerToNetwork(containerId: string, networkId: string): Promise<void> {
+        try {
+            const network = this.docker.getNetwork(networkId);
+            await network.connect({ Container: containerId });
+        } catch (error: any) {
+            throw new RuntimeError(ErrorCodes.DOCKER_NETWORK_CONNECT_ERROR, 500);
+        }
+    }
+
+    async createVolume(name: string): Promise<{ id: string; name: string }> {
+        try {
+            const volume = await this.docker.createVolume({
+                Name: name,
+                Driver: 'local'
+            });
+            return { id: volume.Name || name, name: volume.Name || name };
+        } catch (error: any) {
+            throw new RuntimeError(ErrorCodes.DOCKER_VOLUME_CREATE_ERROR, 500);
+        }
+    }
+
+    async removeVolume(volumeName: string): Promise<void> {
+        try {
+            const volume = this.docker.getVolume(volumeName);
+            await volume.remove();
+        } catch (error: any) {
+            if (error.statusCode !== 404) {
+                throw new RuntimeError(ErrorCodes.DOCKER_VOLUME_REMOVE_ERROR, 500);
+            }
+        }
+    }
 };
 
 export const dockerService = new DockerService();

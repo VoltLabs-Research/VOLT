@@ -21,7 +21,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
     const { showSuccess, showError } = useToast();
 
     useEffect(() => {
-        if(container){
+        if (container) {
             setEnv(container.env || []);
             setPorts(container.ports || []);
             setMemory(container.memory || 512);
@@ -29,7 +29,7 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
         }
     }, [container]);
 
-    if(!container) return null;
+    if (!container) return null;
 
     const handleAddEnv = () => setEnv([...env, { key: '', value: '' }]);
     const handleRemoveEnv = (index: number) => setEnv(env.filter((_, i) => i !== index));
@@ -51,10 +51,10 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
         (document.getElementById('edit-container-modal') as HTMLDialogElement)?.close();
     };
 
-    const handleSubmit = async(e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        try{
+        try {
             await containerApi.update(container._id, {
                 environment: Object.fromEntries(env.filter(e => e.key).map(e => [e.key, e.value])),
                 ports: Object.fromEntries(ports.map(p => [p.private.toString(), p.public])),
@@ -64,9 +64,9 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
             showSuccess('Container updated successfully');
             onSuccess();
             closeModal();
-        }catch(error: any){
+        } catch (error: any) {
             showError(error.response?.data?.message || 'Failed to update container');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
@@ -82,8 +82,11 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                 <div className="d-flex column form-section p-relative gap-1 vh-max">
                     <div className="section-header d-flex items-center content-between">
                         <label>Environment Variables</label>
-                        <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddEnv}>Add</Button>
+                        <button type="button" className="icon-btn-add" onClick={handleAddEnv}>
+                            <IoAdd size={20} />
+                        </button>
                     </div>
+                    {env.length === 0 && <div className="empty-message color-muted font-size-2">No environment variables</div>}
                     {env.map((e, i) => (
                         <div key={i} className="d-flex items-center gap-075 row-inputs">
                             <input
@@ -96,7 +99,9 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                                 value={e.value}
                                 onChange={(ev) => handleEnvChange(i, 'value', ev.target.value)}
                             />
-                            <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => handleRemoveEnv(i)}><IoTrash /></Button>
+                            <button type="button" className="icon-btn-delete" onClick={() => handleRemoveEnv(i)}>
+                                <IoTrash size={18} />
+                            </button>
                         </div>
                     ))}
                 </div>
@@ -104,8 +109,11 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                 <div className="d-flex column form-section p-relative gap-1 vh-max">
                     <div className="section-header d-flex items-center content-between">
                         <label>Port Bindings</label>
-                        <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddPort}>Add</Button>
+                        <button type="button" className="icon-btn-add" onClick={handleAddPort}>
+                            <IoAdd size={20} />
+                        </button>
                     </div>
+                    {ports.length === 0 && <div className="empty-message color-muted font-size-2">No ports exposed</div>}
                     {ports.map((p, i) => (
                         <div key={i} className="d-flex items-center gap-075 row-inputs">
                             <input
@@ -120,7 +128,9 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                                 value={p.public}
                                 onChange={(ev) => handlePortChange(i, 'public', ev.target.value)}
                             />
-                            <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => handleRemovePort(i)}><IoTrash /></Button>
+                            <button type="button" className="icon-btn-delete" onClick={() => handleRemovePort(i)}>
+                                <IoTrash size={18} />
+                            </button>
                         </div>
                     ))}
                 </div>

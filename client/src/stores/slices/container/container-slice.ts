@@ -39,7 +39,7 @@ export const createContainerSlice: SliceCreator<ContainerSlice> = (set, get) => 
             errorFallback: 'Failed to load containers',
             onSuccess: (response) => {
                 const { data, listingMeta } = calculatePaginationState({
-                    newData: response.data || [],
+                    newData: response || [],
                     currentData: state.containers,
                     page, limit, append,
                     totalFromApi: response.total,

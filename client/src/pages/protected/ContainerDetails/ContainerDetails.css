@@ -275,9 +275,7 @@
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
 }
 
-.card-header-row {
-
-}
+.card-header-row {}
 
 .card-header-row h3 {
     margin: 0;
@@ -454,4 +452,97 @@
 .danger-btn:hover {
     background: #dc2626;
     box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+}
+
+/* Inline Editing Styles */
+.icon-btn-edit {
+    background: transparent;
+    border: none;
+    color: var(--muted-foreground);
+    padding: 0.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-btn-edit:hover {
+    background: var(--background-secondary);
+    color: var(--foreground);
+}
+
+.icon-btn-delete {
+    background: transparent;
+    border: none;
+    color: var(--destructive);
+    padding: 0.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.icon-btn-delete:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.config-input {
+    flex: 1;
+    background: var(--background);
+    border: 1px solid var(--border);
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    color: var(--foreground);
+    font-size: 0.875rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.config-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.1);
+}
+
+.add-row-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
+    background: var(--background-secondary);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--muted-foreground);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.add-row-btn:hover {
+    background: var(--background);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.row-inputs {
+    animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

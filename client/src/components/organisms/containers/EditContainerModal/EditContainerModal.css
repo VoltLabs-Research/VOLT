@@ -48,11 +48,9 @@
     padding: 1.5rem;
 }
 
-.form-section {
-}
+.form-section {}
 
-.section-header {
-}
+.section-header {}
 
 .section-header label {
     font-weight: 500;
@@ -100,6 +98,50 @@
 
 .remove-btn:hover {
     background: rgba(239, 68, 68, 0.1);
+}
+
+.icon-btn-add {
+    background: transparent;
+    border: none;
+    color: var(--primary);
+    padding: 0.4rem;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-btn-add:hover {
+    background: var(--primary-alpha-10);
+    color: var(--primary-hover);
+}
+
+.icon-btn-delete {
+    background: transparent;
+    border: none;
+    color: var(--danger);
+    padding: 0.4rem;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.icon-btn-delete:hover {
+    background: var(--danger-alpha-10);
+    color: var(--danger-hover);
+}
+
+.empty-message {
+    padding: 1rem;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-xs);
 }
 
 .modal-actions {

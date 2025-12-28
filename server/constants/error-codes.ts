@@ -145,6 +145,11 @@ export const ErrorCodes = {
     DOCKER_TOP_ERROR: 'Docker::Top::Error',
     DOCKER_EXEC_ERROR: 'Docker::Exec::Error',
     DOCKER_STREAM_ERROR: 'Docker::Stream::Error',
+    DOCKER_NETWORK_CREATE_ERROR: 'Docker::Network::CreateError',
+    DOCKER_NETWORK_REMOVE_ERROR: 'Docker::Network::RemoveError',
+    DOCKER_NETWORK_CONNECT_ERROR: 'Docker::Network::ConnectError',
+    DOCKER_VOLUME_CREATE_ERROR: 'Docker::Volume::CreateError',
+    DOCKER_VOLUME_REMOVE_ERROR: 'Docker::Volume::RemoveError',
 
     CORE_API_FEATURES_QUERY_FAILED: 'Core::APIFeatures::QueryExecutionFailed',
     CORE_PAGE_OUT_OF_RANGE: 'Core::PageOutOfRange',

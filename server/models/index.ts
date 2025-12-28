@@ -12,6 +12,8 @@ export { default as TeamMember } from '@/models/team-member';
 export { default as Trajectory } from '@/models/trajectory';
 export { default as Notification } from '@/models/notification';
 export { default as Container } from '@/models/container';
+export { default as DockerNetwork } from '@/models/docker-network';
+export { default as DockerVolume } from '@/models/docker-volume';
 export { default as Plugin } from '@/models/plugin';
 export { default as PluginListingRow } from '@/models/plugin-listing-row';
 export { default as PluginExposureMeta } from '@/models/plugin-exposure-meta';

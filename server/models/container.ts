@@ -8,6 +8,9 @@ export interface IContainer extends Document {
     name: string;
     image: string;
     containerId: string;
+    internalIp?: string;
+    network?: mongoose.Types.ObjectId;
+    volume?: mongoose.Types.ObjectId;
     team?: mongoose.Types.ObjectId;
     status: string;
     memory: number;
@@ -34,6 +37,22 @@ const ContainerSchema = new Schema<IContainer>({
         type: String,
         required: [true, ValidationCodes.CONTAINER_ID_REQUIRED],
         unique: true
+    },
+    internalIp: {
+        type: String,
+        required: false
+    },
+    network: {
+        type: Schema.Types.ObjectId,
+        ref: 'DockerNetwork',
+        required: false,
+        cascade: 'delete'
+    },
+    volume: {
+        type: Schema.Types.ObjectId,
+        ref: 'DockerVolume',
+        required: false,
+        cascade: 'delete'
     },
     team: {
         type: Schema.Types.ObjectId,
