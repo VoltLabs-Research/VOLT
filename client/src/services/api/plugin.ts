@@ -2,7 +2,7 @@ import type { AxiosRequestConfig } from 'axios';
 import type { IWorkflow, PluginStatus } from '@/types/plugin';
 import VoltClient from '@/api';
 
-export interface IPluginRecord{
+export interface IPluginRecord {
     _id: string;
     slug: string;
     workflow: IWorkflow;
@@ -13,19 +13,19 @@ export interface IPluginRecord{
     updatedAt: string;
 };
 
-export interface GetPluginsResponse{
+export interface GetPluginsResponse {
     status: string;
     data: IPluginRecord[];
     page?: { current: number; total: number };
     results?: { skipped: number; total: number; paginated: number };
 };
 
-export interface GetPluginResponse{
+export interface GetPluginResponse {
     status: string;
     data: IPluginRecord;
 };
 
-export interface ValidateWorkflowResponse{
+export interface ValidateWorkflowResponse {
     status: string;
     data: {
         valid: boolean;
@@ -33,7 +33,7 @@ export interface ValidateWorkflowResponse{
     }
 };
 
-export interface ExecutePluginResponse{
+export interface ExecutePluginResponse {
     status: string;
     data: {
         analysisId: string
@@ -48,19 +48,19 @@ const pluginApi = {
         page?: number;
         limit?: number;
         search?: string
-    }): Promise<GetPluginsResponse>{
+    }): Promise<GetPluginsResponse> {
         const response = await client.request<GetPluginsResponse>('get', '/', {
             query: params
         });
         return response.data;
     },
 
-    async getPublishedPlugins(): Promise<IPluginRecord[]>{
-        const response = await client.request<GetPluginsResponse>('get', '/published');
-        return response.data.data;
+    async getPublishedPlugins(): Promise<IPluginRecord[]> {
+        const response = await pluginApi.getPlugins({ status: 'published' as PluginStatus });
+        return response.data;
     },
 
-    async getAvailableArguments(pluginSlug: string): Promise<any>{
+    async getAvailableArguments(pluginSlug: string): Promise<any> {
         const response = await client.request<{ status: string; data: any }>('get', `/${pluginSlug}/arguments`);
         return response.data.data;
     },
@@ -71,7 +71,7 @@ const pluginApi = {
         exposureId: string,
         timestep: number,
         filename: string
-    ): Promise<ArrayBuffer>{
+    ): Promise<ArrayBuffer> {
         const response = await client.request<ArrayBuffer>(
             'get',
             `/file/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/${filename}`,
@@ -89,7 +89,7 @@ const pluginApi = {
         analysisId: string,
         exposureId: string,
         timestep: number
-    ): Promise<ArrayBuffer>{
+    ): Promise<ArrayBuffer> {
         const response = await client.request<ArrayBuffer>(
             'get',
             `/file/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/file.msgpack`,
@@ -101,7 +101,7 @@ const pluginApi = {
         return response.data;
     },
 
-    async getPlugin(idOrSlug: string): Promise<IPluginRecord>{
+    async getPlugin(idOrSlug: string): Promise<IPluginRecord> {
         const response = await client.request<GetPluginResponse>('get', `/${idOrSlug}`);
         return response.data.data;
     },
@@ -111,7 +111,7 @@ const pluginApi = {
         workflow: IWorkflow,
         status?: PluginStatus,
         team?: string
-    }): Promise<IPluginRecord>{
+    }): Promise<IPluginRecord> {
         const response = await client.request<GetPluginResponse>('post', '/', { data });
         return response.data.data;
     },
@@ -120,23 +120,23 @@ const pluginApi = {
         slug?: string,
         workflow?: IWorkflow,
         status?: PluginStatus
-    }): Promise<IPluginRecord>{
+    }): Promise<IPluginRecord> {
         const response = await client.request<GetPluginResponse>('patch', `/${idOrSlug}`, { data });
         return response.data.data;
     },
 
-    async deletePlugin(idOrSlug: string): Promise<void>{
+    async deletePlugin(idOrSlug: string): Promise<void> {
         await client.request('delete', `/${idOrSlug}`);
     },
 
-    async validateWorkflow(workflow: IWorkflow): Promise<ValidateWorkflowResponse['data']>{
+    async validateWorkflow(workflow: IWorkflow): Promise<ValidateWorkflowResponse['data']> {
         const response = await client.request<ValidateWorkflowResponse>('patch', '/validate', { data: { workflow } });
         return response.data.data;
     },
 
-    async publishPlugin(idOrSlug: string): Promise<IPluginRecord>{
-        const response = await client.request<GetPluginResponse>('patch', `/${idOrSlug}/publish`);
-        return response.data.data;
+    async publishPlugin(idOrSlug: string): Promise<IPluginRecord> {
+        const response = await pluginApi.updatePlugin(idOrSlug, { status: 'published' as PluginStatus });
+        return response as any;
     },
 
     async executePlugin(
@@ -144,7 +144,7 @@ const pluginApi = {
         trajectoryId: string,
         config: Record<string, any>,
         timestep?: number
-    ): Promise<string>{
+    ): Promise<string> {
         const response = await client.request<ExecutePluginResponse>(
             'post',
             `/${pluginSlug}/trajectory/${trajectoryId}/execute`,
@@ -153,8 +153,8 @@ const pluginApi = {
         return response.data.data.analysisId;
     },
 
-    async saveWorkflow(workflow: IWorkflow, existingId?: string, teamId?: string): Promise<IPluginRecord>{
-        if(existingId){
+    async saveWorkflow(workflow: IWorkflow, existingId?: string, teamId?: string): Promise<IPluginRecord> {
+        if (existingId) {
             return pluginApi.updatePlugin(existingId, { workflow });
         }
         return pluginApi.createPlugin({ workflow, team: teamId });
@@ -164,7 +164,7 @@ const pluginApi = {
         pluginId: string,
         file: File,
         onProgress?: (progess: number) => void
-    ): Promise<{ objectPath: string; fileName: string; size: number }>{
+    ): Promise<{ objectPath: string; fileName: string; size: number }> {
         const formData = new FormData();
         formData.append('binary', file);
 
@@ -176,7 +176,7 @@ const pluginApi = {
             config: {
                 headers: { 'Content-Type': 'multipart/form-data' },
                 onUploadProgress: (progressEvent) => {
-                    if(onProgress && progressEvent.total){
+                    if (onProgress && progressEvent.total) {
                         onProgress(Math.round((progressEvent.loaded * 100) / progressEvent.total));
                     }
                 }
@@ -186,11 +186,11 @@ const pluginApi = {
         return response.data.data;
     },
 
-    async deleteBinary(pluginId: string): Promise<void>{
+    async deleteBinary(pluginId: string): Promise<void> {
         await client.request('delete', `/${pluginId}/binary`);
     },
 
-    async getNodeSchemas(): Promise<Record<string, any>>{
+    async getNodeSchemas(): Promise<Record<string, any>> {
         const response = await client.request<{ status: string; data: Record<string, any> }>('get', '/schemas');
         return response.data.data;
     },
@@ -200,7 +200,7 @@ const pluginApi = {
         listingSlug: string,
         trajectoryId?: string,
         params?: { page?: number; limit?: number; teamId?: string }
-    ): Promise<any>{
+    ): Promise<any> {
         const path = trajectoryId
             ? `/listing/${pluginSlug}/${listingSlug}/${trajectoryId}`
             : `/listing/${pluginSlug}/${listingSlug}`;
@@ -218,7 +218,7 @@ const pluginApi = {
         exposureId: string,
         timestep: string | number,
         params?: { page?: number; limit?: number }
-    ): Promise<any>{
+    ): Promise<any> {
         const response = await client.request<{ status: string; data: any }>(
             'get',
             `/per-frame-listing/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`,
@@ -233,7 +233,7 @@ const pluginApi = {
         modifierSlug: string,
         trajectoryId: string,
         payload: { config: Record<string, any>; selectedFrameOnly?: boolean; timestep?: number }
-    ): Promise<string>{
+    ): Promise<string> {
         const response = await client.request<{ status: string; data: { analysisId: string } }>(
             'post',
             `/${pluginSlug}/modifier/${modifierSlug}/trajectory/${trajectoryId}`,
@@ -242,7 +242,7 @@ const pluginApi = {
         return response.data.data.analysisId;
     },
 
-    async exportPlugin(idOrSlug: string): Promise<Blob>{
+    async exportPlugin(idOrSlug: string): Promise<Blob> {
         const response = await client.request<Blob>('get', `/${idOrSlug}/export`, {
             config: { responseType: 'blob' as AxiosRequestConfig['responseType'] },
             dedupe: false
@@ -250,10 +250,10 @@ const pluginApi = {
         return response.data;
     },
 
-    async importPlugin(file: File, teamId?: string): Promise<IPluginRecord>{
+    async importPlugin(file: File, teamId?: string): Promise<IPluginRecord> {
         const formData = new FormData();
         formData.append('plugin', file);
-        if(teamId){
+        if (teamId) {
             formData.append('teamId', teamId);
         }
 

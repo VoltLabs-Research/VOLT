@@ -36,7 +36,6 @@ router.use(authMiddleware.protect);
 
 rbac.groupBy(Action.READ)
     .route('/', controller.getAll)
-    .route('/published', controller.getPublishedPlugins)
     .route('/schemas', controller.getNodeSchemas)
     .route('/listing/:pluginSlug/:listingSlug', controller.getPluginListingDocuments)
     .route('/:id', controller.getOne)
@@ -44,7 +43,6 @@ rbac.groupBy(Action.READ)
 
 rbac.groupBy(Action.UPDATE)
     .route('/:id', controller.updateOne)
-    .route('/:id/publish', controller.publishPlugin)
     .route('/validate', controller.validateWorkflow)
     .route('/:id/binary', pluginMiddleware.loadPlugin, controller.uploadBinaryMiddleware, controller.uploadBinary);
 
