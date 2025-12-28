@@ -191,20 +191,6 @@ const pluginApi = {
         return response.data.data;
     },
 
-    async executeModifier(
-        pluginSlug: string,
-        modifierSlug: string,
-        trajectoryId: string,
-        payload: { config: Record<string, any>; selectedFrameOnly?: boolean; timestep?: number }
-    ): Promise<string> {
-        const response = await client.request<{ status: string; data: { analysisId: string } }>(
-            'post',
-            `/${pluginSlug}/modifier/${modifierSlug}/trajectory/${trajectoryId}`,
-            { data: payload }
-        );
-        return response.data.data.analysisId;
-    },
-
     async exportPlugin(idOrSlug: string): Promise<Blob> {
         const response = await client.request<Blob>('get', `/${idOrSlug}/export`, {
             config: { responseType: 'blob' as AxiosRequestConfig['responseType'] },

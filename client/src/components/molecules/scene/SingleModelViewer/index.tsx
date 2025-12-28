@@ -39,11 +39,12 @@ const computeGlbUrl = (
     activeScene?: SingleModelViewerProps['sceneConfig']
 ): string | null => {
     if (!trajectoryId || currentTimestep === undefined) return null;
+    const teamId = useTeamStore.getState().selectedTeam?._id;
 
     if (activeScene?.source === 'plugin') {
         const { analysisId: sceneAnalysisId, exposureId } = activeScene;
         if (!sceneAnalysisId || !exposureId) return null;
-        return `/plugins/glb/${trajectoryId}/${sceneAnalysisId}/${exposureId}/${currentTimestep}`;
+        return `/plugins/${teamId}/glb/${trajectoryId}/${sceneAnalysisId}/${exposureId}/${currentTimestep}`;
     }
 
     if (activeScene?.source === 'color-coding') {
@@ -53,7 +54,7 @@ const computeGlbUrl = (
         return url;
     }
 
-    return `/trajectories/${useTeamStore.getState().selectedTeam?._id}/${trajectoryId}/${currentTimestep}/${analysisId}`;
+    return `/trajectories/${teamId}/${trajectoryId}/${currentTimestep}/${analysisId}`;
 };
 
 const SingleModelViewer: React.FC<SingleModelViewerProps> = ({

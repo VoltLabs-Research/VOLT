@@ -32,6 +32,7 @@ export interface IAnalysis extends Document {
     clusterId?: string;
     config: any;
     trajectory: mongoose.Types.ObjectId;
+    createdBy: mongoose.Types.ObjectId;
     totalFrames?: number;
     completedFrames?: number;
     startedAt?: Date;
@@ -72,6 +73,11 @@ const AnalysisSchema: Schema<IAnalysis> = new Schema({
         required: true,
         cascade: 'delete',
         inverse: { path: 'analysis', behavior: 'addToSet' }
+    },
+    createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     }
 }, {
     timestamps: true

@@ -79,7 +79,7 @@ export const catchAsync = <T extends AsyncRequestHandler>(asyncFn: T): RequestHa
 */
 export const filterObject = <T extends object>(
     obj: T,
-        ...allowedFields: readonly string[]
+    ...allowedFields: readonly string[]
 ): Partial<T> => {
     // Input validation
     if(!obj || typeof obj !== 'object'){

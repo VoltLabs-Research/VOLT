@@ -118,7 +118,6 @@ const MyTeam: React.FC = () => {
     const tableData = useMemo(() => {
         const data = members.map(member => {
             const roleInfo = memberRoleMap.get(member._id);
-            console.log(member);
             return {
                 ...member,
                 isOnline: isOnline(member._id),

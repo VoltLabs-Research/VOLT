@@ -9,7 +9,6 @@ import { getMetricsByTeamId } from '@/utilities/metrics/team';
 import { Trajectory, Team, DailyActivity } from '@/models';
 import { TeamActivityType } from '@/models/daily-activity';
 import { getAnyTrajectoryPreview, sendImage } from '@/utilities/raster';
-import { Action } from '@/constants/permissions';
 import { Resource } from '@/constants/resources';
 import getPopulatedFrameAtoms from '@/utilities/trajectory/get-populated-frame-atoms';
 import getFrameGlbReadStream from '@/utilities/trajectory/get-glb-read-stream';

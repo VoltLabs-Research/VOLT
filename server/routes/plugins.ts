@@ -54,14 +54,13 @@ rbac.groupBy(Action.DELETE)
     .route('/:id', controller.deleteOne)
     .route('/:id/binary', pluginMiddleware.loadPlugin, controller.deleteBinary);
 
-router.use(trajMiddleware.checkTeamMembershipForTrajectory);
-rbac.groupBy(Action.READ)
+rbac.groupBy(Action.READ, trajMiddleware.checkTeamMembershipForTrajectory)
     .route('/glb/:id/:analysisId/:exposureId/:timestep', controller.getPluginExposureGLB)
     .route('/file/:id/:analysisId/:exposureId/:timestep/:filename', controller.getPluginExposureFile)
     .route('/listing/:pluginSlug/:listingSlug/:id', controller.getPluginListingDocuments)
     .route('/per-frame-listing/:id/:analysisId/:exposureId/:timestep', controller.getPerFrameListing);
 
-rbac.groupBy(Action.CREATE)
-    .route('/:pluginSlug/modifier/:modifierSlug/trajectory/:id', controller.evaluatePlugin);
+rbac.groupBy(Action.CREATE, trajMiddleware.checkTeamMembershipForTrajectory)
+    .route('/:pluginSlug/trajectory/:id/execute', controller.evaluatePlugin);
 
 export default router;

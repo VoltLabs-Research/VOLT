@@ -17,7 +17,7 @@ const CanvasSidebarModifiers = () => {
     const logger = useLogger('canvas-sidebar-modifiers');
     const activeModifiers = useUIStore((state) => state.activeModifiers);
     const toggleModifier = useUIStore((state) => state.toggleModifier);
-    const modifiers = usePluginStore((state) => state.getModifiers());
+    const modifiers = usePluginStore((state) => state.modifiers);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const setShowRenderConfig = useUIStore((state) => state.setShowRenderConfig);
     const idRateSeries = useTrajectoryStore((state) => state.idRateSeries);

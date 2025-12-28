@@ -5,7 +5,7 @@ const client = new VoltClient('/analysis-config', { useRBAC: true });
 
 export default {
     async getByTeamId(params?: { page?: number; limit?: number; q?: string }): Promise<GetAnalysisConfigsResponse>{
-        const response = await client.request<{ status: string; data: GetAnalysisConfigsResponse }>('get', { params });
+        const response = await client.request<{ status: string; data: GetAnalysisConfigsResponse }>('get', '/', { query: params });
         return response.data.data;
     },
 

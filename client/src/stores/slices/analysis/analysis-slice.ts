@@ -33,7 +33,7 @@ export const createAnalysisConfigSlice: SliceCreator<ExtendedAnalysisStore> = (s
         const s = get() as ExtendedAnalysisStore;
         if (append && s.isFetchingMore) return;
 
-        await runRequest(set, get, () => analysisConfigApi.getByTeamId(teamId, { page, limit, q: search }), {
+        await runRequest(set, get, () => analysisConfigApi.getByTeamId({ page, limit, q: search }), {
             loadingKey: append ? 'isFetchingMore' : 'isListingLoading',
             errorFallback: 'Failed to load analysis configs',
             onSuccess: (data) => {

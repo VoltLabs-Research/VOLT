@@ -71,6 +71,7 @@ class PluginExecutionService {
             plugin: plugin.slug,
             config: options.config,
             trajectory: trajectoryId,
+            createdBy: userId,
             startedAt: new Date(),
             totalFrames: items.length
         });

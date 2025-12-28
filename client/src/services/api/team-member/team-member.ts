@@ -1,6 +1,7 @@
 import VoltClient from '@/api';
 import dailyActivityApi from '../daily-activity/daily-activity';
 import trajectoryApi from '../trajectory/trajectory';
+import analysis from '../analysis/analysis';
 
 const client = new VoltClient('/team-member', { useRBAC: true });
 
@@ -25,12 +26,11 @@ export default {
         const memberStats = await Promise.all(response.data.data.map(async (member: any) => {
             const userId = member.user._id;
             
-            const [dailyActivities, trajectoriesCount] = await Promise.all([
+            const [dailyActivities, trajectoriesCount, analysesCount] = await Promise.all([
                 dailyActivityApi.getTeamActivity(7),
-                trajectoryApi.getAllPaginated({ createdBy: userId, countDocuments: true })
+                trajectoryApi.getAllPaginated({ createdBy: userId, countDocuments: true }),
+                analysis.getByTeamId({ createdBy: userId, countDocuments: true })
             ]);
-
-            console.log(dailyActivities);
 
             const minutesOnline = dailyActivities.reduce((acc, curr) => acc + (curr.minutesOnline || 0), 0);
             
@@ -38,7 +38,7 @@ export default {
                 ...member,
                 timeSpentLast7Days: minutesOnline,
                 trajectoriesCount: trajectoriesCount.data.total,
-                analysesCount: 0
+                analysesCount: analysesCount.total
             };
         }));
 

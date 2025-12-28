@@ -31,16 +31,13 @@ const router = Router();
 const controller = new AnalysisConfigController();
 const rbac = new RBACMiddleware(controller, router);
 
-rbac.groupBy(Action.READ)
-    .route('/', authMiddleware.protect, controller.listByTeam);
+rbac.groupBy(Action.READ, authMiddleware.protect)
+    .route('/', controller.getAll);
 
-router.use(authMiddleware.optionalAuth);
-router.use(middleware.checkTeamMembership);
-
-rbac.groupBy(Action.READ)
+rbac.groupBy(Action.READ, authMiddleware.optionalAuth, middleware.checkTeamMembership)
     .route('/:id', controller.getOne);
 
-rbac.groupBy(Action.DELETE)
+rbac.groupBy(Action.DELETE, authMiddleware.protect)
     .route('/:id', controller.deleteOne);
 
 export default router;

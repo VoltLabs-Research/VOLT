@@ -158,8 +158,7 @@ const ModifierConfiguration = ({
         setIsLoading(true);
         onAnalysisStart?.();
         try {
-            const response = await pluginApi.executeModifier(
-                modifierId,
+            const response = await pluginApi.executePlugin(
                 modifierId,
                 trajectoryId,
                 {
@@ -189,11 +188,14 @@ const ModifierConfiguration = ({
                 setIsLoading(true);
                 onAnalysisStart?.();
                 try {
-                    const response = await pluginApi.executeModifier(
-                        modifierId,
+                    const response = await pluginApi.executePlugin(
                         modifierId,
                         trajectoryId,
-                        { config: configRef.current }
+                        {
+                            config,
+                            selectedFrameOnly,
+                            timestep: selectedFrameOnly ? currentTimestep : undefined
+                        }
                     );
                     const analysisId = (response as any)?.analysisId;
                     onAnalysisSuccess?.(analysisId);

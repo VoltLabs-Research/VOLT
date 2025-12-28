@@ -58,6 +58,7 @@ type WorkflowIndex = {
 export interface PluginState {
     plugins: IPluginRecord[];
     pluginsBySlug: Record<string, IPluginRecord>;
+    modifiers: ResolvedModifier[];
     loading: boolean;
     isFetchingMore: boolean;
     error: string | null;
@@ -112,6 +113,7 @@ function extractVisualizerFlags(node: WorkflowNode | undefined): { canvas: boole
 export const usePluginStore = create<PluginState>((set, get) => ({
     plugins: [],
     pluginsBySlug: {},
+    modifiers: [],
     loading: false,
     isFetchingMore: false,
     error: null,
@@ -144,7 +146,24 @@ export const usePluginStore = create<PluginState>((set, get) => ({
                 const pluginsBySlug = { ...state.pluginsBySlug };
                 for (const p of newPlugins) pluginsBySlug[p.slug] = p;
 
-                set({ plugins: data, pluginsBySlug, listingMeta });
+                // Compute modifiers immediately when plugins change
+                const modifiers = data.map(plugin => {
+                    const idx = getWorkflowIndex(plugin);
+                    const modifierId = (idx.nodesByType.get(NodeType.MODIFIER) ?? [])[0];
+                    const node = modifierId ? idx.nodeById.get(modifierId) : undefined;
+                    const modData = (node?.data?.modifier || {}) as IModifierData;
+
+                    return {
+                        pluginId: plugin._id,
+                        pluginSlug: plugin.slug,
+                        name: modData.name || plugin.slug,
+                        icon: modData.icon,
+                        description: modData.description,
+                        version: modData.version
+                    };
+                });
+
+                set({ plugins: data, pluginsBySlug, modifiers, listingMeta });
                 if (!append && page === 1) lastFetchAt = Date.now();
             }
         });

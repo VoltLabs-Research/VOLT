@@ -55,6 +55,8 @@ export const globalErrorHandler = (
     let message = 'An unexpected error occurred';
     let details: any = undefined;
 
+    console.log(err);
+
     // Handle RuntimeError
     if(err instanceof RuntimeError){
         statusCode = err.statusCode;
