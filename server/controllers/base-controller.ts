@@ -123,6 +123,13 @@ export default abstract class BaseController<T extends Document> {
             baseFilter: securityFilter
         });
 
+        const wantsCountOnly = typeof req.query.countDocuments !== 'undefined';
+        if(wantsCountOnly){
+            features.filter().search();
+            const total = await features.countDocuments();
+            return res.status(200).json({ status: 'success', data: { total }});
+        }
+
         await features.filter().sort().limitFields().search().paginate();
         const result = await features.perform();
 

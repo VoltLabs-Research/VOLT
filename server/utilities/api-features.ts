@@ -34,6 +34,7 @@ interface RequestQueryString {
     readonly search?: string;
     readonly q?: string;
 
+    readonly countDocuments?: string;
     readonly page?: string;
     readonly sort?: string;
     readonly limit?: string;
@@ -90,7 +91,16 @@ const DEFAULT_CONFIG = {
     DEFAULT_PAGE: 1,
     DEFAULT_SORT: '-createdAt',
     UNLIMITED_RESULTS: -1,
-    EXCLUDED_QUERY_FIELDS: ['page', 'sort', 'limit', 'fields', 'populate', 'q'] as const
+    EXCLUDED_QUERY_FIELDS: [
+        'page',
+        'sort',
+        'limit',
+        'fields',
+        'populate',
+        'q',
+        'search',
+        'countDocuments'
+    ] as const
 } as const;
 
 /**
@@ -143,7 +153,6 @@ class APIFeatures<T extends Document = Document> {
     */
     public async perform(): Promise<QueryResult<T>>{
         const { find, sort, select, skip, limit, totalResults, skippedResults, page, totalPages } = this.buffer;
-        console.log(find);
         try{
             let query: Query<T[], T> = this.model
                 .find(find)
@@ -294,6 +303,10 @@ class APIFeatures<T extends Document = Document> {
         return this;
     }
 
+    public async countDocuments(){
+        return await this.model.countDocuments(this.buffer.find);
+    }
+
     /**
      * Applies pagination with comprehensive validation and error handling.
      * @returns Promise resolving to the current instance
@@ -323,7 +336,7 @@ class APIFeatures<T extends Document = Document> {
 
         try{
             // Get total count for pagination calculations
-            const totalCount = await this.model.countDocuments(this.buffer.find);
+            const totalCount = await this.countDocuments();
             this.buffer.totalResults = totalCount;
             this.buffer.totalPages = Math.ceil(totalCount / limit) || 1;
 

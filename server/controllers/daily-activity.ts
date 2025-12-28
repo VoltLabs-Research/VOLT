@@ -2,9 +2,10 @@ import { Request, Response } from 'express';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { DailyActivity } from '@/models';
 import { IDailyActivity } from '@/models/daily-activity';
-import BaseController from '@/controllers/base-controller';
 import { NextFunction } from 'express-serve-static-core';
 import { Resource } from '@/constants/resources';
+import { Types } from 'mongoose';
+import BaseController from '@/controllers/base-controller';
 
 export default class DailyActivityController extends BaseController<IDailyActivity> {
     constructor() {
@@ -18,9 +19,9 @@ export default class DailyActivityController extends BaseController<IDailyActivi
         const { range } = req.query;
         const teamId = await this.getTeamId(req);
 
-        const statsQuery: any = { team: teamId };
+        const statsQuery: any = { team: new Types.ObjectId(teamId) };
 
-        const days = range ? parseInt(range as string) : 365;
+        const days = range ? parseInt(range as string) : 365;   
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
         startDate.setHours(0, 0, 0, 0);
@@ -39,7 +40,7 @@ export default class DailyActivityController extends BaseController<IDailyActivi
             },
             {
                 $project: {
-                    _id: 0,
+                    _id: 0, 
                     date: 1,
                     minutesOnline: 1,
                     activity: {

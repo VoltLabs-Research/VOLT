@@ -25,14 +25,19 @@ export default {
         const memberStats = await Promise.all(response.data.data.map(async (member: any) => {
             const userId = member.user._id;
             
-            const dailyActivities = await dailyActivityApi.getTeamActivity(7);
+            const [dailyActivities, trajectoriesCount] = await Promise.all([
+                dailyActivityApi.getTeamActivity(7),
+                trajectoryApi.getAllPaginated({ createdBy: userId, countDocuments: true })
+            ]);
+
+            console.log(dailyActivities);
+
             const minutesOnline = dailyActivities.reduce((acc, curr) => acc + (curr.minutesOnline || 0), 0);
-            const trajectories = await trajectoryApi.getAllPaginated({ createdBy: userId, limit: 0 });
-            console.log('DAily Activities', dailyActivities)
+            
             return {
                 ...member,
                 timeSpentLast7Days: minutesOnline,
-                trajectoriesCount: trajectories.results.total,
+                trajectoriesCount: trajectoriesCount.data.total,
                 analysesCount: 0
             };
         }));
