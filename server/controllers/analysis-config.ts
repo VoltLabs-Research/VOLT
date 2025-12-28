@@ -3,24 +3,28 @@ import { Analysis, Team, Trajectory } from '@/models';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
+import { Action, Resource } from '@/constants/permissions';
 import BaseController from '@/controllers/base-controller';
 import logger from '@/logger';
 
 export default class AnalysisConfigController extends BaseController<any> {
-    constructor(){
+    constructor() {
         super(Analysis, {
             resourceName: 'AnalysisConfig',
+            resource: Resource.ANALYSIS,
             fields: []
         });
     }
 
-    public listByTeam = catchAsync(async(req: Request, res: Response) => {
-        const userId = (req as any).user?.id;
+    protected async getTeamId(req: Request): Promise<string | null> {
+        return req.params.teamId || null;
+    }
+
+    public listByTeam = catchAsync(async (req: Request, res: Response) => {
         const { teamId } = req.params;
         const { page = '1', limit = '20', q = '' } = req.query as Record<string, string>;
 
-        const team = await Team.findOne({ _id: teamId, members: userId }).select('_id');
-        if(!team) throw new RuntimeError(ErrorCodes.TEAM_ACCESS_DENIED, 403);
+        await this.authorize(req, teamId, Action.READ);
 
         const trajectories = await Trajectory.find({ team: teamId }).select('_id name').lean();
         const trajectoryIds = trajectories.map((t: any) => t._id);
@@ -31,14 +35,14 @@ export default class AnalysisConfigController extends BaseController<any> {
 
         const query = typeof q === 'string' ? q.trim() : '';
         const regex = query ?
-         { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' }
+            { $regex: query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' }
             : null;
 
         const pipeline: any[] = [{
             $match: { trajectory: { $in: trajectoryIds } }
         }];
 
-        if(regex){
+        if (regex) {
             pipeline.push({
                 $lookup: { from: 'trajectories', localField: 'trajectory', foreignField: '_id', as: 'trajectoryDoc' }
             }, {
@@ -78,8 +82,8 @@ export default class AnalysisConfigController extends BaseController<any> {
         let configs: any[] = [];
         let total = 0;
 
-        try{
-            if(regex){
+        try {
+            if (regex) {
                 const countPipeline = [...pipeline.slice(0, 4), { $count: 'total' }];
                 const [rows, countRows] = await Promise.all([
                     Analysis.aggregate(pipeline),
@@ -87,7 +91,7 @@ export default class AnalysisConfigController extends BaseController<any> {
                 ]);
                 configs = rows;
                 total = countRows[0]?.total || 0;
-            }else{
+            } else {
                 const [rows, count] = await Promise.all([
                     Analysis.aggregate(pipeline),
                     Analysis.countDocuments({ trajectory: { $in: trajectoryIds } })
@@ -100,7 +104,7 @@ export default class AnalysisConfigController extends BaseController<any> {
                 status: 'success',
                 data: { configs, total, page: pageNum, limit: limitNum }
             });
-        }catch(err: any){
+        } catch (err: any) {
             logger.error(`listAnalysisConfigsByTeam error: ${err}`);
             throw new RuntimeError(ErrorCodes.ANALYSIS_EXECUTION_FAILED, 500);
         }

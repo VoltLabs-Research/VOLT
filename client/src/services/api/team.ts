@@ -72,14 +72,6 @@ const teamApi = {
             return response.data.data;
         },
 
-        async promote(teamId: string, userId: string): Promise<void> {
-            await api.patch(`/teams/${teamId}/members/promote`, { userId });
-        },
-
-        async demote(teamId: string, userId: string): Promise<void> {
-            await api.patch(`/teams/${teamId}/members/demote`, { userId });
-        },
-
         async remove(teamId: string, identifier: { userId?: string; email?: string }): Promise<void> {
             await api.post(`/teams/${teamId}/members/remove`, identifier);
         }

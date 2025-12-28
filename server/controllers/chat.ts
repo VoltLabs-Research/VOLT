@@ -20,14 +20,31 @@
  * SOFTWARE.
  */
 
-import { Request, Response, NextFunction } from 'express';
-import { Chat, Message, Team, User } from '@/models/index';
+import { Request, Response } from 'express';
+import { Chat, Message, Team } from '@/models/index';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { uploadSingleFile, getFileUrl, uploadToMinIO } from '@/middlewares/file-upload';
+import { Action, Resource } from '@/constants/permissions';
+import BaseController from '@/controllers/base-controller';
 
-export default class ChatController {
+export default class ChatController extends BaseController<any> {
+    constructor() {
+        super(Chat, {
+            resourceName: 'Chat',
+            resource: Resource.CHAT
+        });
+    }
+
+    protected async getTeamId(req: Request, doc?: any): Promise<string | null> {
+        if (doc?.team) {
+            return typeof doc.team === 'string' ? doc.team : doc.team._id?.toString() || doc.team.toString();
+        }
+        const teamId = req.params?.teamId || req.body?.teamId;
+        return teamId ? String(teamId) : null;
+    }
+
     private static readonly POPULATE_FIELDS = {
         user: 'firstName lastName email avatar',
         team: 'name description',
@@ -74,6 +91,7 @@ export default class ChatController {
         }).populate(ChatController.CHAT_POPULATES);
 
         if (!chat) {
+            await this.authorize(req, teamId, Action.CREATE, Resource.CHAT);
             chat = await Chat.create({
                 participants: [user._id, participantId],
                 team: teamId,

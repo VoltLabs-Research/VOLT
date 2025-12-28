@@ -1,25 +1,3 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files(the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import mongoose, { Schema, Model } from 'mongoose';
 import { ITeam } from '@/types/models/team';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
@@ -85,6 +63,50 @@ const TeamSchema = new Schema({
 TeamSchema.plugin(useCascadeDelete);
 TeamSchema.plugin(useInverseRelations);
 
+TeamSchema.post('save', async function (doc) {
+    const isNewTeam = this.createdAt.getTime() === this.updatedAt.getTime();
+    if (!isNewTeam) return;
+
+    const { SystemRoles } = await import('@/constants/system-roles');
+    const TeamRoleModel = mongoose.model('TeamRole');
+    const TeamMemberModel = mongoose.model('TeamMember');
+
+    const existingRoles = await TeamRoleModel.countDocuments({ team: doc._id });
+    if (existingRoles > 0) return;
+
+    const roles = Object.values(SystemRoles).map(role => ({
+        team: doc._id,
+        name: role.name,
+        permissions: [...role.permissions],
+        isSystem: true
+    }));
+    await TeamRoleModel.insertMany(roles);
+
+    const ownerRole = await TeamRoleModel.findOne({
+        team: doc._id,
+        name: 'Owner',
+        isSystem: true
+    });
+
+    if (ownerRole) {
+        await TeamMemberModel.create({
+            team: doc._id,
+            user: doc.owner,
+            role: ownerRole._id,
+            joinedAt: new Date()
+        });
+    }
+});
+
+TeamSchema.pre('deleteOne', { document: true, query: false }, async function () {
+    const TeamRole = mongoose.model('TeamRole');
+    const TeamMember = mongoose.model('TeamMember');
+
+    await TeamRole.deleteMany({ team: this._id });
+    await TeamMember.deleteMany({ team: this._id });
+});
+
 const Team: Model<ITeam> = mongoose.model<ITeam>('Team', TeamSchema);
 
 export default Team;
+

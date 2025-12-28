@@ -171,6 +171,18 @@ export const ErrorCodes = {
 
     TRAJECTORY_NOT_FOUND: 'Trajectory::NotFound',
     TRAJECTORY_DUMP_NOT_FOUND: 'Trajectory::Dump::NotFound',
+
+    ACCESS_CONTROL_STRATEGY_NOT_FOUND: 'AccessControlService::Strategy::NotFound',
+    ACCESS_CONTROL_MISSING_PERMISSION: 'AccessControlService::Access::MissingPermissions',
+
+    TEAM_ROLE_NOT_FOUND: 'TeamRole::NotFound',
+    TEAM_ROLE_IS_SYSTEM: 'TeamRole::IsSystem',
+    TEAM_ROLE_IN_USE: 'TeamRole::InUse',
+    TEAM_ROLE_NAME_REQUIRED: 'TeamRole::NameRequired',
+
+    TEAM_MEMBER_NOT_FOUND: 'TeamMember::NotFound',
+    TEAM_MEMBER_ALREADY_EXISTS: 'TeamMember::AlreadyExists',
+    TEAM_MEMBER_ROLE_REQUIRED: 'TeamMember::RoleRequired'
 } as const;
 
 export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];

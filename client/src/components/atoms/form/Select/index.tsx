@@ -85,7 +85,10 @@ const Select = ({
         });
     }, [options.length]);
 
-    const handleToggle = useCallback(() => {
+    const handleToggle = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
         if (disabled) return;
 
         if (!isOpen) {
@@ -94,7 +97,9 @@ const Select = ({
         setIsOpen((prev) => !prev);
     }, [disabled, isOpen, calculatePosition]);
 
-    const handleSelect = useCallback((optValue: string) => {
+    const handleSelect = useCallback((e: React.MouseEvent, optValue: string) => {
+        e.preventDefault();
+        e.stopPropagation();
         onChange(optValue);
         setIsOpen(false);
     }, [onChange]);
@@ -166,7 +171,7 @@ const Select = ({
                     <div
                         key={opt.value}
                         className={`volt-select-option d-flex items-center content-between gap-05 ${optionClassName} ${isSelected ? 'selected' : ''}`}
-                        onClick={() => handleSelect(opt.value)}
+                        onClick={(e) => handleSelect(e, opt.value)}
                     >
                         <Container className='d-flex column'>
                             <Paragraph className='font-size-2'>

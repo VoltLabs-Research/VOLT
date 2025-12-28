@@ -18,11 +18,13 @@ import { getAnyTrajectoryPreview, sendImage } from '@/utilities/raster';
 import { NodeType } from '@/types/models/modifier';
 import { findDescendantByType } from '@/utilities/plugins/workflow-utils';
 import { decodeMultiStream } from '@/utilities/msgpack/msgpack-stream';
+import { Action, Resource } from '@/constants/permissions';
 
 export default class TrajectoryController extends BaseController<any> {
     constructor() {
         super(Trajectory, {
             resourceName: 'Trajectory',
+            resource: Resource.TRAJECTORY,
             fields: ['name', 'preview', 'isPublic', 'createdBy'],
             populate: [
                 { path: 'createdBy', select: 'email firstName lastName' },
@@ -30,6 +32,15 @@ export default class TrajectoryController extends BaseController<any> {
                 { path: 'team', select: '_id name' }
             ]
         });
+    }
+
+    protected async getTeamId(req: Request, doc?: any): Promise<string | null> {
+        if (doc?.team) {
+            return typeof doc.team === 'string' ? doc.team : doc.team._id?.toString() || doc.team.toString();
+        }
+
+        const teamId = req.body?.teamId || req.query?.teamId;
+        return teamId ? String(teamId) : null;
     }
 
     /**
@@ -59,6 +70,8 @@ export default class TrajectoryController extends BaseController<any> {
      */
     protected async onBeforeDelete(doc: any, req: Request): Promise<void> {
         const trajectoryId = doc._id.toString();
+        const teamId = doc.team.toString();
+        await this.authorize(req, teamId, Action.DELETE, Resource.TRAJECTORY);
         await DumpStorage.deleteDumps(trajectoryId);
     }
 
@@ -119,6 +132,9 @@ export default class TrajectoryController extends BaseController<any> {
         if (!trajectory) {
             return next(new RuntimeError(ErrorCodes.TRAJECTORY_NOT_FOUND, 404));
         }
+
+        const teamId = trajectory.team.toString();
+        await this.authorize(req, teamId, Action.READ, Resource.TRAJECTORY);
 
         const page = Math.max(1, parseInt(String(pageStr) || '1', 10));
         const pageSize = Math.max(1, Math.min(10000, parseInt(String(pageSizeStr) || '1000', 10)));
@@ -338,6 +354,9 @@ export default class TrajectoryController extends BaseController<any> {
     public create = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id;
         const { teamId, originalFolderName, uploadId } = req.body;
+
+        // TODO: check for missing params in req.body
+        await this.authorize(req, teamId, Action.CREATE, Resource.TRAJECTORY);
 
         let trajectoryName = req.body.name;
         if (!trajectoryName && originalFolderName && originalFolderName.length >= 4) {

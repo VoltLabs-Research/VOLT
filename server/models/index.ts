@@ -7,6 +7,8 @@ export { default as SSHConnection } from '@/models/ssh-connection';
 export { default as User } from '@/models/user';
 export { default as Team } from '@/models/team';
 export { default as TeamInvitation } from '@/models/team-invitation';
+export { default as TeamRole } from '@/models/team-role';
+export { default as TeamMember } from '@/models/team-member';
 export { default as Trajectory } from '@/models/trajectory';
 export { default as Notification } from '@/models/notification';
 export { default as Container } from '@/models/container';

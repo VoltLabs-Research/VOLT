@@ -1,67 +1,62 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files(the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { Chat, User, Team } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { ErrorCodes } from '@/constants/error-codes';
-import { CHAT_POPULATES, populateChatDoc } from '@/middlewares/validation';
+import { Action, Resource } from '@/constants/permissions';
+import BaseController from '@/controllers/base-controller';
 
-export default class GroupChatController {
+const CHAT_POPULATES = [
+    { path: 'participants', select: 'firstName lastName email avatar' },
+    { path: 'admins', select: 'firstName lastName email avatar' },
+    { path: 'createdBy', select: 'firstName lastName email avatar' },
+    { path: 'lastMessage' },
+    { path: 'team', select: 'name' }
+];
+
+const populateChatDoc = async (chat: any) => {
+    return chat.populate(CHAT_POPULATES);
+};
+
+export default class GroupChatController extends BaseController<any> {
+    constructor() {
+        super(Chat, {
+            resourceName: 'GroupChat',
+            resource: Resource.CHAT
+        });
+    }
+
+    protected async getTeamId(req: Request, doc?: any): Promise<string | null> {
+        if (doc?.team) {
+            return typeof doc.team === 'string' ? doc.team : doc.team._id?.toString() || doc.team.toString();
+        }
+        return req.body?.teamId || null;
+    }
+
     public createGroupChat = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const user = (req as any).user;
         const { teamId, groupName, groupDescription, participantIds } = req.body;
 
         if (!teamId || teamId.trim() === '') {
-            return res.status(400).json({ status: 'error', message: 'Team ID is required' });
+            throw new RuntimeError(ErrorCodes.TEAM_ID_REQUIRED, 400);
         }
 
         if (!mongoose.Types.ObjectId.isValid(teamId)) {
-            return res.status(400).json({ status: 'error', message: 'Invalid Team ID format' });
+            throw new RuntimeError(ErrorCodes.VALIDATION_INVALID_TEAM_ID, 400);
         }
 
         if (!groupName || groupName.trim() === '') {
-            return res.status(400).json({ status: 'error', message: 'Group name is required' });
+            throw new RuntimeError(ErrorCodes.CHAT_INVALID_ACTION, 400);
         }
 
         if (!participantIds || !Array.isArray(participantIds) || participantIds.length === 0) {
-            return res.status(400).json({ status: 'error', message: 'At least one participant is required' });
+            throw new RuntimeError(ErrorCodes.CHAT_GROUP_MIN_PARTICIPANTS, 400);
         }
 
-        const invalidParticipantIds = participantIds.filter(id => !mongoose.Types.ObjectId.isValid(id));
-        if (invalidParticipantIds.length > 0) {
-            return res.status(400).json({ status: 'error', message: 'Invalid participant ID format' });
-        }
+        await this.authorize(req, teamId, Action.CREATE);
 
-        const team = await Team.findOne({
-            _id: teamId,
-            $or: [
-                { owner: user._id },
-                { members: user._id }
-            ]
-        });
-
+        const team = await Team.findById(teamId);
         if (!team) throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
 
         const participants = await User.find({

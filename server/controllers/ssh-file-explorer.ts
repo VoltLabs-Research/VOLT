@@ -1,25 +1,3 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files(the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import { Request, Response } from 'express';
 import SSHService from '@/services/ssh';
 import RuntimeError from '@/utilities/runtime/runtime-error';
@@ -27,14 +5,28 @@ import { catchAsync } from '@/utilities/runtime/runtime';
 import { v4 } from 'uuid';
 import logger from '@/logger';
 import { ErrorCodes } from '@/constants/error-codes';
+import { Action, Resource } from '@/constants/permissions';
 import { getSSHImportQueue } from '@/queues';
+import { Trajectory } from '@/models';
+import BaseController from '@/controllers/base-controller';
 
-export default class SSHFileExplorerController{
-    public listSSHFiles = catchAsync(async(req: Request, res: Response) => {
+export default class SSHFileExplorerController extends BaseController<any> {
+    constructor() {
+        super(Trajectory, {
+            resourceName: 'SSHFileExplorer',
+            resource: Resource.TRAJECTORY
+        });
+    }
+
+    protected async getTeamId(req: Request): Promise<string | null> {
+        return req.body?.teamId || null;
+    }
+
+    public listSSHFiles = catchAsync(async (req: Request, res: Response) => {
         const { path } = req.query;
         const connection = res.locals.sshConnection;
 
-        try{
+        try {
             const remotePath = typeof path === 'string' ? path : '.';
             const files = await SSHService.listFiles(connection, remotePath);
 
@@ -51,10 +43,8 @@ export default class SSHFileExplorerController{
                     }))
                 }
             });
-        }catch(err: any){
-            if(err instanceof RuntimeError){
-                throw err;
-            }
+        } catch (err: any) {
+            if (err instanceof RuntimeError) throw err;
             logger.error(`Failed to list SSH files: ${err.message}`);
             throw new RuntimeError(ErrorCodes.SSH_LIST_FILES_ERROR, 500);
         }
@@ -64,6 +54,12 @@ export default class SSHFileExplorerController{
         const userId = (req as any).user._id;
         const { connectionId, remotePath, teamId } = req.body;
         const { sshConnection } = res.locals;
+
+        if (!teamId) {
+            throw new RuntimeError(ErrorCodes.TEAM_ID_REQUIRED, 400);
+        }
+
+        await this.authorize(req, teamId, Action.CREATE);
 
         const queueService = getSSHImportQueue();
         queueService.addJobs([{
@@ -76,5 +72,10 @@ export default class SSHFileExplorerController{
             remotePath,
             userId
         }]);
+
+        res.status(202).json({
+            status: 'success',
+            message: 'Import job queued'
+        });
     });
 }

@@ -1,18 +1,31 @@
 import { Request, Response } from 'express';
-import { Team, User } from '@/models';
+import { Analysis, DailyActivity, Team, TeamMember, Trajectory, User } from '@/models';
 import { FilterQuery } from 'mongoose';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { ErrorCodes } from '@/constants/error-codes';
+import { Resource, Action } from '@/constants/permissions';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import BaseController from '@/controllers/base-controller';
 
-export default class TeamController extends BaseController<any> {
-    constructor() {
+export default class TeamController extends BaseController<any>{
+    constructor(){
         super(Team, {
             resourceName: 'Team',
+            resource: Resource.TEAM,
             fields: ['name', 'description'],
-            populate: { path: 'members owner admins', select: 'email username avatar firstName lastName lastLoginAt createdAt' }
-        })
+            populate: {
+                path: 'members owner admins',
+                select: 'email username avatar firstName lastName lastLoginAt createdAt'
+            }
+        });
+    }
+
+    protected async getTeamId(req: Request, doc?: any): Promise<string | null>{
+        if(doc?._id){
+            return doc._id.toString();
+        }
+
+        return req.params.id || null;
     }
 
     /**
@@ -37,114 +50,58 @@ export default class TeamController extends BaseController<any> {
 
     public getMembers = catchAsync(async (req: Request, res: Response) => {
         const teamId = req.params.id;
-        const team = await Team.findById(teamId)
-            .populate('members', 'email username avatar firstName lastName lastLoginAt createdAt')
-            .populate('admins', 'email username avatar firstName lastName')
-            .populate('owner', 'email username avatar firstName lastName');
+        await this.authorize(req, teamId, Action.READ, Resource.TEAM_MEMBER);
 
-        if (!team) throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
-
-        const { Trajectory, Analysis, DailyActivity, TeamInvitation } = await import('@/models');
-
+        const members = await TeamMember.find({ team: teamId })
+            .populate('user', 'email avatar firstName lastName lastLoginAt createdAt')
+            .populate('role', 'name permissions isSystem')
+            .lean();
+        
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-        const memberStats = await Promise.all(team.members.map(async (member: any) => {
-            const memberId = member._id;
+        const memberStats = await Promise.all(members.map(async (member: any) => {
+            const userId = member.user._id;
 
-            // 1. Time spent last 7 days
+            // Time spent last 7 days
             const dailyActivities = await DailyActivity.find({
                 team: teamId,
-                user: memberId,
+                user: userId,
                 date: { $gte: sevenDaysAgo }
             });
 
+            // TODO: mongo aggregation maybe?
             const minutesOnline = dailyActivities.reduce((acc, curr) => acc + (curr.minutesOnline || 0), 0);
 
-            // 2. Trajectories count
-            const trajectoriesCount = await Trajectory.countDocuments({
-                team: teamId,
-                createdBy: memberId
-            });
-
-            // 3. Analyses count
-            // We count analyses performed by the user on trajectories belonging to this team.
+            const trajectoriesCount = await Trajectory.countDocuments({ team: teamId, createdBy: userId });
             const analysesCount = await Analysis.countDocuments({
                 trajectory: { $in: await Trajectory.find({ team: teamId }).distinct('_id') },
+                createdBy: userId
             });
 
-            // 4. Joined date
-            const invitation = await TeamInvitation.findOne({
-                team: teamId,
-                invitedUser: memberId,
-                status: 'accepted'
-            }).sort({ acceptedAt: -1 });
-
             return {
-                ...member.toObject(),
+                ...member.user,
+                _id: member.user._id,
+                role: member.role,
+                teamMemberId: member._id,
                 timeSpentLast7Days: minutesOnline,
                 trajectoriesCount,
-                analysesCount,
-                joinedAt: invitation?.acceptedAt || member.createdAt
+                analysesCount: analysesCount,
+                joinedAt: member.joinedAt || member.createdAt
             };
         }));
+
+        const ownerMember = memberStats.find((member: any) => member.role?.name === 'Owner');
+        const adminMembers = memberStats.find((member: any) => member.role?.name === 'Admin') ?? [];
 
         res.status(200).json({
             status: 'success',
             data: {
                 members: memberStats,
-                admins: team.admins,
-                owner: team.owner
+                admins: adminMembers,
+                owner: ownerMember
             }
-        });
-    });
-
-    public promoteToAdmin = catchAsync(async (req: Request, res: Response) => {
-        const teamId = req.params.id;
-        const { userId } = req.body;
-        const team = res.locals.team;
-
-        const currentUserId = (req as any).user._id;
-
-        const teamFetched = await Team.findById(teamId);
-        if (!teamFetched) throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
-
-        const isOwner = teamFetched.owner.toString() === currentUserId.toString();
-        const isAdmin = teamFetched.admins.some((a: any) => a.toString() === currentUserId.toString());
-
-        if (!isOwner && !isAdmin) throw new RuntimeError(ErrorCodes.TEAM_NOT_AUTHORIZED, 403);
-
-        if (teamFetched.admins.some((a: any) => a.toString() === userId)) {
-            return res.status(400).json({ status: 'fail', message: 'User is already an admin' });
-        }
-
-        teamFetched.admins.push(userId);
-        await teamFetched.save();
-
-        res.status(200).json({ status: 'success', data: null });
-    });
-
-    public demoteFromAdmin = catchAsync(async (req: Request, res: Response) => {
-        const teamId = req.params.id;
-        const { userId } = req.body;
-        const currentUserId = (req as any).user._id;
-
-        const teamFetched = await Team.findById(teamId);
-        if (!teamFetched) throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
-
-        const isOwner = teamFetched.owner.toString() === currentUserId.toString();
-        // Admins can demote other admins? Usually only Owner can demote admins.
-        // Let's restrict demotion to Owner or self-demotion?
-        // For now, allow Owner and Admins to remove other Admins (except themselves? or logic...)
-        // Let's say Owner can demote anyone. Admins can demote (maybe?)
-        // Safest: Only Owner can demote admins.
-
-        if (!isOwner) throw new RuntimeError(ErrorCodes.TEAM_NOT_AUTHORIZED, 403);
-
-        teamFetched.admins = teamFetched.admins.filter((a: any) => a.toString() !== userId);
-        await teamFetched.save();
-
-        res.status(200).json({ status: 'success', data: null });
+        })
     });
 
     public leaveTeam = catchAsync(async (req: Request, res: Response) => {
@@ -152,20 +109,20 @@ export default class TeamController extends BaseController<any> {
         const team = res.locals.team;
         const teamId = team._id;
 
-        // If owner, delete team
-        if (team.owner.toString() === userId.toString()) {
+        // Check if owner
+        if(team.owner.toString() === userId.toString()){
             await Team.findByIdAndDelete(teamId);
-            return res.status(200).json({
-                status: 'success',
-                message: 'Team deleted successfully'
-            });
+            return res.status(200).json({ status: 'success' });
         }
 
-        // Remove members
-        team.members = team.members.filter((m: any) => m.toString() !== userId.toString());
-        await team.save();
+        await TeamMember.deleteOne({ team: teamId, user: userId });
+        await Team.findByIdAndUpdate(teamId, {
+            $pull: {
+                members: userId,
+                admins: userId
+            }
+        });
 
-        // Remove from user's team list
         await User.findByIdAndUpdate(userId, { $pull: { teams: teamId } });
 
         res.status(200).json({ status: 'success' });
@@ -173,38 +130,25 @@ export default class TeamController extends BaseController<any> {
 
     public removeMember = catchAsync(async (req: Request, res: Response) => {
         const teamId = req.params.id;
-        const { email } = req.body;
         const team = res.locals.team;
+        const { email } = req.body;
 
         const userToRemove = await User.findOne({ email });
-        if (!userToRemove) throw new RuntimeError(ErrorCodes.USER_NOT_FOUND, 404);
+        if(!userToRemove) throw new RuntimeError(ErrorCodes.USER_NOT_FOUND, 404);
 
-        if (team.owner.toString() === userToRemove._id.toString()) {
+        if(team.owner.toString() === userToRemove._id.toString()){
             throw new RuntimeError(ErrorCodes.TEAM_CANNOT_REMOVE_OWNER, 403);
         }
 
-        // Check if current user has permission to remove
         const currentUserId = (req as any).user._id;
-        const isOwner = team.owner.toString() === currentUserId.toString();
-        // Check if current user is admin
-        // Note: res.locals.team from middleware might not be up to date with admins if we didn't populate or if it was simple find. 
-        // We should rely on DB or if the middleware fetched it. 
-        // Assuming team.admins exists if we added it to schema.
-        const isAdmin = team.admins?.some((a: any) => a.toString() === currentUserId.toString());
+        await this.authorize(req, teamId, Action.DELETE, Resource.TEAM_MEMBER);
 
-        if (!isOwner && !isAdmin) {
-            throw new RuntimeError(ErrorCodes.TEAM_NOT_AUTHORIZED, 403);
-        }
-
-        // Admins cannot remove other Admins or Owner
-        const targetIsAdmin = team.admins?.some((a: any) => a.toString() === userToRemove._id.toString());
-        if (targetIsAdmin && !isOwner) {
-            throw new RuntimeError(ErrorCodes.TEAM_INSUFFICIENT_PERMISSIONS, 403);
-        }
-
-        if (!team.members.some((m: any) => m.toString() === userToRemove._id.toString())) {
+        const member = await TeamMember.findOne({ team: teamId, user: userToRemove._id });
+        if(!member){
             throw new RuntimeError(ErrorCodes.TEAM_USER_NOT_MEMBER, 400);
         }
+
+        await member.deleteOne();
 
         await Team.findByIdAndUpdate(teamId, {
             $pull: {

@@ -55,7 +55,7 @@ const Modal = ({
                     const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
                         rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
                     if(!isInDialog){
-                        dialog.close(); // Built-in method
+                        dialog.close(); 
                     }
                 }}
             >

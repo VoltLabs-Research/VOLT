@@ -1,17 +1,18 @@
-
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useTeamStore from '@/stores/team/team';
+import useTeamRoleStore from '@/stores/team-role';
 import useAuthStore from '@/stores/authentication';
 import Container from '@/components/primitives/Container';
 import DocumentListing from '@/components/organisms/common/DocumentListing';
 import type { ColumnConfig } from '@/components/organisms/common/DocumentListing';
-import { IoChatbubbleOutline, IoPersonRemoveOutline, IoShieldCheckmarkOutline, IoShieldOutline } from 'react-icons/io5';
+import Select from '@/components/atoms/form/Select';
+import { IoChatbubbleOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import EditableTag from '@/components/atoms/common/EditableTag';
 import { formatDistanceToNow } from 'date-fns';
 import useToast from '@/hooks/ui/use-toast';
 import ActivityHeatmap from '@/components/molecules/common/ActivityHeatmap';
-import teamApi, { type ActivityData } from '@/services/api/team';
+import type { ActivityData } from '@/services/api/team';
 import { useState } from 'react';
 import formatTimeAgo from '@/utilities/formatTimeAgo';
 import './MyTeam.css';
@@ -19,20 +20,38 @@ import dailyActivityApi from '@/services/api/daily-activity';
 
 const MyTeam: React.FC = () => {
     const navigate = useNavigate();
-    const { selectedTeam, members, admins, owner, onlineUsers, fetchMembers, initializeSocket, promoteMember, demoteMember, removeMember, updateTeam, isLoading } = useTeamStore();
+    const { selectedTeam, members, admins, owner, onlineUsers, fetchMembers, initializeSocket, removeMember, updateTeam, isLoading } = useTeamStore();
+    const { roles, fetchRoles, assignRole, fetchMembers: fetchMembersWithRoles, members: membersWithRoles } = useTeamRoleStore();
     const { user: currentUser } = useAuthStore();
     const { showSuccess, showError } = useToast();
     const [activityData, setActivityData] = useState<ActivityData[]>([]);
 
     useEffect(() => {
-        if(selectedTeam){
+        if (selectedTeam) {
             dailyActivityApi.getTeamActivity(selectedTeam._id).then(setActivityData);
+            fetchRoles(selectedTeam._id);
+            fetchMembers(selectedTeam._id);
+            fetchMembersWithRoles(selectedTeam._id);
+            const cleanup = initializeSocket(selectedTeam._id);
+            return cleanup;
         }
-    }, [selectedTeam]);
+    }, [selectedTeam, fetchRoles, fetchMembers, fetchMembersWithRoles, initializeSocket]);
 
-    const currentIsOwner = currentUser && owner?._id === currentUser._id;
-    const currentIsAdmin = currentUser && admins.some(a => a._id === currentUser._id);
+    const getOwnerId = (): string | null => {
+        if (owner?._id) return owner._id;
+        if (selectedTeam?.owner) {
+            return typeof selectedTeam.owner === 'string'
+                ? selectedTeam.owner
+                : selectedTeam.owner._id;
+        }
+        return null;
+    };
+
+    const ownerId = getOwnerId();
+    const currentIsOwner = !!(currentUser && ownerId && ownerId === currentUser._id);
+    const currentIsAdmin = !!(currentUser && admins.some(a => a._id === currentUser._id));
     const canManage = currentIsOwner || currentIsAdmin;
+
 
     const handleSaveTeamName = async (newName: string) => {
         if (!selectedTeam || !newName.trim() || newName === selectedTeam.name) return;
@@ -44,6 +63,19 @@ const MyTeam: React.FC = () => {
             showError('Failed to update team name');
         }
     };
+
+    const handleRoleChange = useCallback(async (memberId: string, roleId: string) => {
+        if (!selectedTeam?._id) return;
+
+        try {
+            await assignRole(selectedTeam._id, memberId, roleId);
+            showSuccess('Role updated successfully');
+            // Refresh members data
+            fetchMembers(selectedTeam._id);
+        } catch (err: any) {
+            showError(err?.message || 'Failed to update role');
+        }
+    }, [selectedTeam?._id, assignRole, fetchMembers, showSuccess, showError]);
 
     const headerContent = useMemo(() => {
         if (!selectedTeam) return null;
@@ -67,26 +99,49 @@ const MyTeam: React.FC = () => {
         );
     }, [selectedTeam, canManage]);
 
-    useEffect(() => {
-        if (selectedTeam) {
-            fetchMembers(selectedTeam._id);
-            const cleanup = initializeSocket(selectedTeam._id);
-            return cleanup;
-        }
-    }, [selectedTeam, fetchMembers, initializeSocket]);
+
 
     const isOnline = (userId: string) => onlineUsers.includes(userId);
-    const isOwner = (userId: string) => owner?._id === userId;
+    const isOwnerCheck = (userId: string) => ownerId === userId;
     const isAdmin = (userId: string) => admins.some(a => a._id === userId);
 
-    const tableData = useMemo(() => {
-        const data = members.map(member => ({
-            ...member,
-            isOnline: isOnline(member._id),
-            isOwner: isOwner(member._id),
-            isAdmin: isAdmin(member._id),
-            rawJoined: member.joinedAt || member.createdAt
+    const memberRoleMap = useMemo(() => {
+        const map = new Map<string, { memberId: string; roleId: string; roleName: string; isSystem: boolean }>();
+        membersWithRoles.forEach(m => {
+            const userId = typeof m.user === 'object' ? m.user._id : m.user;
+            map.set(userId, {
+                memberId: m._id,
+                roleId: m.role?._id || '',
+                roleName: m.role?.name || 'Member',
+                isSystem: m.role?.isSystem || false
+            });
+        });
+        return map;
+    }, [membersWithRoles]);
+
+    const roleOptions = useMemo(() => {
+        return roles.map(role => ({
+            value: role._id,
+            title: role.name,
+            description: role.isSystem ? 'System role' : `${role.permissions.length} permissions`
         }));
+    }, [roles]);
+
+    const tableData = useMemo(() => {
+        const data = members.map(member => {
+            const roleInfo = memberRoleMap.get(member._id);
+            return {
+                ...member,
+                isOnline: isOnline(member._id),
+                isOwner: isOwnerCheck(member._id),
+                isAdmin: isAdmin(member._id),
+                rawJoined: member.joinedAt || member.createdAt,
+                teamMemberId: roleInfo?.memberId,
+                currentRoleId: roleInfo?.roleId,
+                currentRoleName: roleInfo?.roleName || (isOwnerCheck(member._id) ? 'Owner' : isAdmin(member._id) ? 'Admin' : 'Member'),
+                roleIsSystem: roleInfo?.isSystem
+            };
+        });
 
         return data.sort((a, b) => {
             if (a.isOwner) return -1;
@@ -97,9 +152,9 @@ const MyTeam: React.FC = () => {
             if (!a.isOnline && b.isOnline) return 1;
             return 0;
         });
-    }, [members, admins, owner, onlineUsers]);
+    }, [members, admins, owner, onlineUsers, memberRoleMap]);
 
-    const columns: ColumnConfig[] = [
+    const columns: ColumnConfig[] = useMemo(() => [
         {
             key: 'user',
             title: 'User',
@@ -126,13 +181,25 @@ const MyTeam: React.FC = () => {
         {
             key: 'role',
             title: 'Role',
-            render: (_: any, member: any) => (
-                <>
-                    {member.isOwner && <span className="badge badge-primary">Owner</span>}
-                    {!member.isOwner && member.isAdmin && <span className="badge badge-secondary">Admin</span>}
-                    {!member.isOwner && !member.isAdmin && <span className="badge badge-outline">Member</span>}
-                </>
-            )
+            render: (_: any, member: any) => {
+                if (member.isOwner) {
+                    return <span className="badge badge-primary">Owner</span>;
+                }
+
+                if (canManage && member.teamMemberId && member._id !== currentUser?._id && roleOptions.length > 0) {
+                    return (
+                        <Select
+                            options={roleOptions}
+                            value={member.currentRoleId || null}
+                            onChange={(roleId) => handleRoleChange(member.teamMemberId, roleId)}
+                            placeholder="Select role..."
+                            className="role-select-compact"
+                        />
+                    );
+                }
+
+                return <span className="badge badge-outline">{member.currentRoleName}</span>;
+            }
         },
         {
             key: 'status',
@@ -145,7 +212,7 @@ const MyTeam: React.FC = () => {
                         <div className="d-flex column">
                             <span className="color-secondary font-size-2">Offline</span>
                             {member.lastLoginAt && (
-                                <span className="color-tertiary font-size-xs">
+                                <span className="color-tertiary font-size-2">
                                     Seen {formatDistanceToNow(new Date(member.lastLoginAt))} ago
                                 </span>
                             )}
@@ -183,7 +250,7 @@ const MyTeam: React.FC = () => {
             title: 'Joined',
             render: (val: string) => <span className="color-secondary font-size-2">{val ? formatTimeAgo(val) : '-'}</span>
         }
-    ];
+    ], [canManage, currentUser, roleOptions, handleRoleChange]);
 
     const getMenuOptions = (member: any) => {
         const options = [];
@@ -195,20 +262,6 @@ const MyTeam: React.FC = () => {
         });
 
         if (canManage && !member.isOwner && member._id !== currentUser?._id && selectedTeam) {
-            if (!member.isAdmin) {
-                options.push({
-                    label: 'Make Admin',
-                    icon: IoShieldCheckmarkOutline,
-                    onClick: () => promoteMember(selectedTeam._id, member._id)
-                });
-            } else {
-                options.push({
-                    label: 'Remove Admin',
-                    icon: IoShieldOutline,
-                    onClick: () => demoteMember(selectedTeam._id, member._id)
-                });
-            }
-
             if ((currentIsOwner) || (currentIsAdmin && !member.isAdmin)) {
                 options.push({
                     label: 'Remove from Team',

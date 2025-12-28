@@ -1,27 +1,6 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files(the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import express from 'express';
 import TeamController from '@/controllers/team';
+import teamRolesRouter from '@/routes/team-roles';
 import * as authMiddleware from '@middlewares/authentication';
 import * as middleware from '@middlewares/team';
 
@@ -29,9 +8,12 @@ const router = express.Router();
 const teamController = new TeamController();
 
 router.use(authMiddleware.protect);
+
 router.route('/')
     .get(teamController.getAll)
     .post(teamController.createOne);
+
+router.use('/:id/roles', teamRolesRouter);
 
 router.route('/:id')
     .get(middleware.checkTeamMembership, teamController.getOne)
@@ -44,7 +26,5 @@ router.get('/:id/members', middleware.checkTeamMembership, teamController.getMem
 
 router.post('/:id/members/remove', middleware.checkTeamMembership, teamController.removeMember);
 
-router.patch('/:id/members/promote', middleware.checkTeamMembership, teamController.promoteToAdmin);
-router.patch('/:id/members/demote', middleware.checkTeamMembership, teamController.demoteFromAdmin);
-
 export default router;
+

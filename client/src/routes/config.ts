@@ -52,6 +52,7 @@ import ContainerDetails from '@/pages/protected/ContainerDetails';
 import CreateContainer from '@/pages/protected/CreateContainer';
 import PluginBuilder from '@/pages/protected/PluginBuilder';
 import PerAtomViewer from '@/pages/protected/PerAtomViewer';
+import ManageRoles from '@/pages/protected/ManageRoles';
 
 export const routesConfig: RouteGroup = {
     public: [
@@ -87,6 +88,11 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/my-team',
             component: MyTeam,
+            requiresLayout: true,
+        },
+        {
+            path: '/dashboard/manage-roles',
+            component: ManageRoles,
             requiresLayout: true,
         },
         {

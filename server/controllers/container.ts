@@ -1,16 +1,32 @@
 import { execSync } from 'child_process';
-import { Request, Response, NextFunction, RequestHandler } from 'express';
-
+import { Request, Response, NextFunction } from 'express';
 import { Socket } from 'socket.io';
 import { Container, Team } from '@/models/index';
 import { dockerService } from '@/services/docker';
 import { terminalManager } from '@/services/terminal';
+import { Action, Resource } from '@/constants/permissions';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { catchAsync } from '@/utilities/runtime/runtime';
+import BaseController from '@/controllers/base-controller';
 
-export default class ContainerController{
-    public getAllContainers = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+export default class ContainerController extends BaseController<any> {
+    constructor() {
+        super(Container, {
+            resourceName: 'Container',
+            resource: Resource.CONTAINER,
+            fields: ['name', 'image', 'status', 'team']
+        });
+    }
+
+    protected async getTeamId(req: Request, doc?: any): Promise<string | null> {
+        if (doc?.team) {
+            return typeof doc.team === 'string' ? doc.team : doc.team._id?.toString() || doc.team.toString();
+        }
+        return req.body?.teamId || null;
+    }
+
+    public getAllContainers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const userTeams = await Team.find({ members: (req.user as any)._id });
         const teamIds = userTeams.map((t) => t._id);
 
@@ -24,14 +40,14 @@ export default class ContainerController{
             .populate('team', 'name')
             .populate('createdBy', 'firstName lastName email');
 
-        const syncedContainers = await Promise.all(containers.map(async(doc) => {
-            try{
+        const syncedContainers = await Promise.all(containers.map(async (doc) => {
+            try {
                 const info = await dockerService.inspectContainer(doc.containerId);
-                if(info.State.Status !== doc.status){
+                if (info.State.Status !== doc.status) {
                     doc.status = info.State.Status;
                     await doc.save();
                 }
-            }catch(e){
+            } catch (e) {
                 doc.status = 'missing';
                 await doc.save();
             }
@@ -41,15 +57,17 @@ export default class ContainerController{
         res.status(200).json({ status: 'success', data: { containers: syncedContainers } });
     });
 
-    public createContainer = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public createContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd } = req.body;
         const team = res.locals.team;
+
+        await this.authorize(req, team._id.toString(), Action.CREATE);
 
         const Env = env ? env.map((e: any) => `${e.key}=${e.value}`) : [];
         const PortBindings: Record<string, any> = {};
         const ExposedPorts: Record<string, any> = {};
 
-        if(ports){
+        if (ports) {
             ports.forEach((p: any) => {
                 const portKey = `${p.private}/tcp`;
                 ExposedPorts[portKey] = {};
@@ -57,11 +75,8 @@ export default class ContainerController{
             });
         }
 
-        // Determine container command
         let containerCmd = cmd && Array.isArray(cmd) && cmd.length > 0 ? cmd : undefined;
-
-        // Only fallback to tail -f /dev/null if not using image default command
-        if(!containerCmd && !useImageCmd){
+        if (!containerCmd && !useImageCmd) {
             containerCmd = ['tail', '-f', '/dev/null'];
         }
 
@@ -71,17 +86,15 @@ export default class ContainerController{
             NanoCpus: (req.body.cpus || 1) * 1_000_000_000
         };
 
-        if(mountDockerSocket){
+        if (mountDockerSocket) {
             HostConfig.Binds = ['/var/run/docker.sock:/var/run/docker.sock'];
-            try{
-                // Determine the docker group ID on the host
+            try {
                 const dockerGid = execSync("getent group docker | cut -d: -f3").toString().trim();
-                // Add the group to the container so the user has access to the socket
-                if(dockerGid){
+                if (dockerGid) {
                     HostConfig.GroupAdd = [dockerGid];
                 }
-            }catch(e){
-                console.warn('Could not detect docker group ID to create permissions for socket mount. Container might fail to access docker.sock:', e);
+            } catch (e) {
+                console.warn('Could not detect docker group ID:', e);
             }
         }
 
@@ -92,10 +105,7 @@ export default class ContainerController{
             ExposedPorts,
             HostConfig,
             Tty: true,
-            Cmd: containerCmd,
-            // For Coder/sysbox scenarios we might need creating container with specific user/group
-            // but standard docker socket mount is usually sufficient for "dind" like usage if user is root inside
-            // or docker group matches.
+            Cmd: containerCmd
         } as any;
 
         const dockerContainer = await dockerService.createContainer(dockerConfig);
@@ -119,15 +129,17 @@ export default class ContainerController{
         res.status(201).json({ status: 'success', data: { container: newContainer } });
     });
 
-    public controlContainer = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public controlContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { action } = req.body;
         const container = res.locals.container;
 
-        if(action === 'start'){
+        await this.authorize(req, container.team.toString(), Action.UPDATE);
+
+        if (action === 'start') {
             await dockerService.startContainer(container.containerId);
-        }else if(action === 'stop'){
+        } else if (action === 'stop') {
             await dockerService.stopContainer(container.containerId);
-        }else{
+        } else {
             return next(new RuntimeError(ErrorCodes.CONTAINER_INVALID_ACTION, 400));
         }
 
@@ -138,8 +150,10 @@ export default class ContainerController{
         res.status(200).json({ status: 'success', data: { container } });
     });
 
-    public deleteContainer = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public deleteContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const container = res.locals.container;
+
+        await this.authorize(req, container.team.toString(), Action.DELETE);
 
         await dockerService.stopContainer(container.containerId);
         await dockerService.removeContainer(container.containerId);
@@ -148,8 +162,10 @@ export default class ContainerController{
         res.status(204).json({ status: 'success', data: null });
     });
 
-    public getContainerStats = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public getContainerStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const container = res.locals.container;
+
+        await this.authorize(req, container.team.toString(), Action.READ);
 
         const stats = await dockerService.getContainerStats(container.containerId);
         const limits = {
@@ -160,8 +176,10 @@ export default class ContainerController{
         res.status(200).json({ status: 'success', data: { stats, limits } });
     });
 
-    public restartContainer = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public restartContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const container = res.locals.container;
+
+        await this.authorize(req, container.team.toString(), Action.UPDATE);
 
         await dockerService.stopContainer(container.containerId);
         await dockerService.startContainer(container.containerId);
@@ -172,19 +190,21 @@ export default class ContainerController{
         res.status(200).json({ status: 'success', data: { container } });
     });
 
-    public getContainerFiles = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public getContainerFiles = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { path = '/' } = req.query;
         const container = res.locals.container;
+
+        await this.authorize(req, container.team.toString(), Action.READ);
 
         const output = await dockerService.execCommand(container.containerId, ['ls', '-la', String(path)]);
         const lines = output.split('\n').slice(1);
         const files = lines.map((line: string) => {
             const parts = line.trim().split(/\s+/);
-            if(parts.length < 9) return null;
+            if (parts.length < 9) return null;
 
             const isDir = parts[0].startsWith('d');
             const name = parts.slice(8).join(' ');
-            if(name === '.' || name === '..') return null;
+            if (name === '.' || name === '..') return null;
 
             return {
                 name,
@@ -198,35 +218,43 @@ export default class ContainerController{
         res.status(200).json({ status: 'success', data: { files } });
     });
 
-    public readContainerFile = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public readContainerFile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { path } = req.query;
-        if(!path || typeof path !== 'string') return next(new RuntimeError(ErrorCodes.CONTAINER_FILE_PATH_REQUIRED, 400));
+        if (!path || typeof path !== 'string') return next(new RuntimeError(ErrorCodes.CONTAINER_FILE_PATH_REQUIRED, 400));
 
         const container = res.locals.container;
+
+        await this.authorize(req, container.team.toString(), Action.READ);
+
         const content = await dockerService.execCommand(container.containerId, ['cat', path]);
         res.status(200).json({ status: 'success', data: { content } });
     });
 
-    public getContainerProcesses = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public getContainerProcesses = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const container = res.locals.container;
+
+        await this.authorize(req, container.team.toString(), Action.READ);
+
         const processes = await dockerService.getContainerProcesses(container.containerId);
         res.status(200).json({ status: 'success', data: { processes } });
     });
 
     public handleContainerTerminal = (socket: Socket) => {
-        socket.on('container:terminal:attach', async(data: { containerId: string }) => {
+        socket.on('container:terminal:attach', async (data: { containerId: string }) => {
             await terminalManager.attach(socket, data.containerId);
         });
     };
 
-    public updateContainer = catchAsync(async(req: Request, res: Response, next: NextFunction) => {
+    public updateContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { env, ports } = req.body;
         const container = res.locals.container;
 
-        try{
+        await this.authorize(req, container.team.toString(), Action.UPDATE);
+
+        try {
             await dockerService.stopContainer(container.containerId);
             await dockerService.removeContainer(container.containerId);
-        }catch(e){
+        } catch (e) {
             /* container may already be gone */
         }
 
@@ -234,7 +262,7 @@ export default class ContainerController{
         const PortBindings: Record<string, any> = {};
         const ExposedPorts: Record<string, any> = {};
 
-        if(ports){
+        if (ports) {
             ports.forEach((p: any) => {
                 const portKey = `${p.private}/tcp`;
                 ExposedPorts[portKey] = {};
@@ -249,11 +277,10 @@ export default class ContainerController{
             ExposedPorts,
             HostConfig: {
                 PortBindings,
-                Memory: (req.body.memory || container.memory || 512) * 1024 * 1024,
-                NanoCpus: (req.body.cpus || container.cpus || 1) * 1_000_000_000
+                Memory: container.memory * 1024 * 1024,
+                NanoCpus: container.cpus * 1_000_000_000
             },
-            Tty: true,
-            Cmd: ['tail', '-f', '/dev/null']
+            Tty: true
         } as any;
 
         const dockerContainer = await dockerService.createContainer(dockerConfig);
@@ -261,10 +288,8 @@ export default class ContainerController{
 
         container.containerId = containerInfo.Id;
         container.status = containerInfo.State.Status;
-        container.env = env || [];
-        container.ports = ports || [];
-        if(req.body.memory) container.memory = req.body.memory;
-        if(req.body.cpus) container.cpus = req.body.cpus;
+        container.env = env || container.env;
+        container.ports = ports || container.ports;
         await container.save();
 
         res.status(200).json({ status: 'success', data: { container } });

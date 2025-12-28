@@ -27,18 +27,18 @@ import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { publishNotificationCreated } from '@/events/notification-events';
 
-export default class TeamInvitationController{
+export default class TeamInvitationController {
     /**
      * Send a team invitation.
      */
-    public sendTeamInvitation = catchAsync(async(req: Request, res: Response) => {
+    public sendTeamInvitation = catchAsync(async (req: Request, res: Response) => {
         const { email, role } = req.body;
         const userId = (req as any).user?._id;
         const team = res.locals.team;
 
         const user = await User.findOne({ email: email.toLowerCase() });
 
-        if(user && team.members.includes(user._id)) {
+        if (user && team.members.includes(user._id)) {
             throw new RuntimeError(ErrorCodes.TEAM_INVITATION_USER_ALREADY_MEMBER, 400);
         }
 
@@ -48,7 +48,7 @@ export default class TeamInvitationController{
             status: 'pending'
         });
 
-        if(existingInvitation){
+        if (existingInvitation) {
             throw new RuntimeError(ErrorCodes.TEAM_INVITATION_ALREADY_SENT, 400);
         }
 
@@ -65,7 +65,7 @@ export default class TeamInvitationController{
             expiresAt
         });
 
-        if(user){
+        if (user) {
             const notification = await Notification.create({
                 recipient: user._id,
                 title: 'Team Invitation',
@@ -86,7 +86,7 @@ export default class TeamInvitationController{
     /**
      * Get pending invitations for current user.
      */
-    public getPendingInvitations = catchAsync(async(req: Request, res: Response) => {
+    public getPendingInvitations = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user?._id;
 
         const invitations = await TeamInvitation.find({
@@ -106,7 +106,7 @@ export default class TeamInvitationController{
     /**
      * Accept a team invitation.
      */
-    public acceptTeamInvitation = catchAsync(async(req: Request, res: Response) => {
+    public acceptTeamInvitation = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user?._id;
         const invitation = res.locals.invitation;
 
@@ -116,7 +116,7 @@ export default class TeamInvitationController{
             { new: true }
         );
 
-        if(!team){
+        if (!team) {
             throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
         }
 
@@ -124,6 +124,40 @@ export default class TeamInvitationController{
             userId,
             { $addToSet: { teams: invitation.team } }
         );
+
+        const { TeamRole, TeamMember } = await import('@/models/index');
+
+        let roleToAssign = null;
+        if (invitation.role) {
+            roleToAssign = await TeamRole.findOne({
+                team: invitation.team,
+                name: invitation.role
+            });
+        }
+
+        if (!roleToAssign) {
+            roleToAssign = await TeamRole.findOne({
+                team: invitation.team,
+                name: 'Member',
+                isSystem: true
+            });
+        }
+
+        if (roleToAssign) {
+            const existingMember = await TeamMember.findOne({
+                team: invitation.team,
+                user: userId
+            });
+
+            if (!existingMember) {
+                await TeamMember.create({
+                    team: invitation.team,
+                    user: userId,
+                    role: roleToAssign._id,
+                    joinedAt: new Date()
+                });
+            }
+        }
 
         invitation.status = 'accepted';
         invitation.acceptedAt = new Date();
@@ -146,7 +180,7 @@ export default class TeamInvitationController{
     /**
      * Reject a team invitation.
      */
-    public rejectTeamInvitation = catchAsync(async(req: Request, res: Response) => {
+    public rejectTeamInvitation = catchAsync(async (req: Request, res: Response) => {
         const invitation = res.locals.invitation;
 
         invitation.status = 'rejected';
@@ -161,14 +195,14 @@ export default class TeamInvitationController{
     /**
      * Get invitation details(public route for email links).
      */
-    public getInvitationDetails = catchAsync(async(req: Request, res: Response) => {
+    public getInvitationDetails = catchAsync(async (req: Request, res: Response) => {
         const invitation = res.locals.invitation;
 
         const team = await Team.findById(invitation.team)
             .select('name description members')
             .lean();
 
-        if(!team){
+        if (!team) {
             throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
         }
 

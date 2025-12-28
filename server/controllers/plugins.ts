@@ -9,6 +9,7 @@ import { SYS_BUCKETS } from '@/config/minio';
 import { decodeMultiStream } from '@/utilities/msgpack/msgpack-stream';
 import { IWorkflowNode, IPlugin } from '@/types/models/modifier';
 import { NodeType, PluginStatus } from '@/types/models/plugin';
+import { Resource } from '@/constants/permissions';
 import { v4 as uuidv4 } from 'uuid';
 import Plugin from '@/models/plugin';
 import RuntimeError from '@/utilities/runtime/runtime-error';
@@ -42,10 +43,19 @@ export default class PluginsController extends BaseController<IPlugin> {
         super(Plugin, {
             fields: ['slug', 'workflow', 'status', 'team'],
             resourceName: 'Plugin',
+            resource: Resource.PLUGIN,
             populate: [
                 { path: 'team', select: 'name description' }
             ]
         });
+    }
+
+    protected async getTeamId(req: Request, doc?: any): Promise<string | null> {
+        if (doc?.team) {
+            return typeof doc.team === 'string' ? doc.team : doc.team._id?.toString() || doc.team.toString();
+        }
+        const teamId = req.body?.teamId || req.query?.teamId;
+        return teamId ? String(teamId) : null;
     }
 
     protected async onBeforeCreate(data: Partial<IPlugin>, req: Request): Promise<Partial<IPlugin>> {
@@ -591,7 +601,7 @@ export default class PluginsController extends BaseController<IPlugin> {
         const exportData = {
             slug: plugin.slug,
             workflow: plugin.workflow,
-            status: PluginStatus.PUBLISHED, 
+            status: PluginStatus.PUBLISHED,
             validated: plugin.validated,
             exportedAt: new Date().toISOString(),
             version: '1.0'

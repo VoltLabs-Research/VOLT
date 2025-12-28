@@ -1,25 +1,3 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files(the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import { Request, Response } from 'express';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
@@ -31,17 +9,17 @@ const breadcrumbsOf = (rel: string) => {
     const parts = rel.split('/').filter(Boolean);
     const crumbs = [{ name: 'root', relPath: '' }];
     let acc = '';
-    for(const part of parts){
+    for (const part of parts) {
         acc = acc ? `${acc}/${part}` : part;
         crumbs.push({ name: part, relPath: acc });
     }
     return crumbs;
 };
 
-export default class TrajectoryVfsController{
-    public listTrajectoryFs = catchAsync(async(req: Request, res: Response) => {
+export default class TrajectoryVfsController {
+    public listTrajectoryFs = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
-        if(!user){
+        if (!user) {
             throw new RuntimeError(ErrorCodes.AUTH_UNAUTHORIZED, 401);
         }
 
@@ -50,7 +28,7 @@ export default class TrajectoryVfsController{
 
         const trajFS = new TrajectoryVFS(userId);
 
-        try{
+        try {
             const entries = await trajFS.list(pathParam);
             const breadcrumbs = breadcrumbsOf(pathParam);
 
@@ -64,17 +42,17 @@ export default class TrajectoryVfsController{
                     entries
                 }
             });
-        }catch(err: any){
-            if(err instanceof RuntimeError){
+        } catch (err: any) {
+            if (err instanceof RuntimeError) {
                 throw err;
             }
             throw new RuntimeError(ErrorCodes.TRAJECTORY_VFS_FILE_SYSTEM_ERROR, 500);
         }
     });
 
-    public downloadTrajectoryFs = catchAsync(async(req: Request, res: Response) => {
+    public downloadTrajectoryFs = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
-        if(!user){
+        if (!user) {
             throw new RuntimeError(ErrorCodes.AUTH_UNAUTHORIZED, 401);
         }
 
@@ -83,7 +61,7 @@ export default class TrajectoryVfsController{
 
         const trajFS = new TrajectoryVFS(userId);
 
-        try{
+        try {
             const { stream, size, contentType, filename } = await trajFS.getReadStream(pathParam);
 
             res.setHeader('Content-Type', contentType);
@@ -91,26 +69,26 @@ export default class TrajectoryVfsController{
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
             stream.pipe(res);
-        }catch(err: any){
-            if(err instanceof RuntimeError){
+        } catch (err: any) {
+            if (err instanceof RuntimeError) {
                 throw err;
             }
             throw new RuntimeError(ErrorCodes.TRAJECTORY_VFS_DOWNLOAD_ERROR, 500);
         }
     });
 
-    public listUserTrajectories = catchAsync(async(req: Request, res: Response) => {
+    public listUserTrajectories = catchAsync(async (req: Request, res: Response) => {
         const user = (req as any).user;
-        if(!user){
+        if (!user) {
             throw new RuntimeError(ErrorCodes.AUTH_UNAUTHORIZED, 401);
         }
 
         const userId = user._id || user.id;
 
-        try{
+        try {
             const userWithTeams = await User.findById(userId).populate('teams').lean();
 
-            if(!userWithTeams || !userWithTeams.teams){
+            if (!userWithTeams || !userWithTeams.teams) {
                 return res.status(200).json({
                     status: 'success',
                     data: {
@@ -145,8 +123,8 @@ export default class TrajectoryVfsController{
                     }))
                 }
             });
-        }catch(err: any){
-            if(err instanceof RuntimeError){
+        } catch (err: any) {
+            if (err instanceof RuntimeError) {
                 throw err;
             }
             throw new RuntimeError(ErrorCodes.TRAJECTORY_VFS_FETCH_ERROR, 500);

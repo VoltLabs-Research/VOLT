@@ -1,80 +1,96 @@
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { Request, Response } from 'express';
 import { Model, Document, FilterQuery, PopulateOptions } from 'mongoose';
 import { catchAsync, filterObject, checkIfSlugOrId } from '@/utilities/runtime/runtime';
+import { ErrorCodes } from '@/constants/error-codes';
+import { IAccessControlSubject } from '@/services/access-control/interfaces';
+import { Resource, Action, getPermission } from '@/constants/permissions';
 import APIFeatures from '@/utilities/api-features';
 import RuntimeError from '@/utilities/runtime/runtime-error';
-import { ErrorCodes } from '@/constants/error-codes';
+import accessControlService from '@/services/access-control/access-control-service';
 
-/**
- * Configuration options passed to the BaseController constructor
- */
 export interface BaseControllerConfig {
-    /** Fields allowed to be filtered/selected */
     fields?: string[];
-    /** Default population configuration */
     populate?: PopulateOptions | string | (PopulateOptions | string)[];
-    /** Resource name for error messages(e.g, 'Trajectory', 'User') */
     resourceName?: string;
-};
+    resource?: Resource;
+}
 
-/**
- * Abstract Base Controller class.
- */
 export default abstract class BaseController<T extends Document> {
     protected readonly model: Model<T>;
     protected readonly allowedFields: string[];
     protected readonly defaultPopulate?: PopulateOptions | string | (PopulateOptions | string)[];
     protected readonly resourceName: string;
+    protected readonly resource?: Resource;
 
     constructor(model: Model<T>, config: BaseControllerConfig = {}) {
         this.model = model;
         this.allowedFields = config.fields || [];
         this.defaultPopulate = config.populate;
         this.resourceName = config.resourceName || model.modelName;
+        this.resource = config.resource;
     }
 
-    /**
-     * Return specific filter for GetOne/Update/Delete(e.g, limit to user ID)
-     */
+    protected async authorize(
+        req: Request,
+        teamId: string,
+        action: Action,
+        resource?: Resource
+    ): Promise<void> {
+        const user = (req as any).user;
+
+        const subject: IAccessControlSubject = {
+            id: user.id || user._id?.toString(),
+            type: 'user'
+        };
+
+        const targetResource = resource || this.resource || (this.resourceName.toLowerCase() as Resource);
+        const permission = getPermission(targetResource, action);
+
+        await accessControlService.enforce(subject, teamId, permission);
+    }
+
+    protected async getTeamId(req: Request, doc?: T): Promise<string | null> {
+        return null;
+    }
+
     protected async getFilter(req: Request): Promise<FilterQuery<T>> {
         return {};
     }
 
-    /** Modify data before creation. Return the data to be saved. */
     protected async onBeforeCreate(data: Partial<T>, req: Request): Promise<Partial<T>> {
         return data;
     }
 
-    /** Action after creation(e.g., logging, related updates) */
     protected async onAfterCreate(doc: T, req: Request): Promise<void> { }
 
-    /** Modify data before update. Return the data to be updated. */
     protected async onBeforeUpdate(data: Partial<T>, req: Request, currentDoc: T): Promise<Partial<T>> {
         return data;
     }
 
-    /** Action after update */
     protected async onAfterUpdate(doc: T, req: Request): Promise<void> { }
 
-    /** Action before delete(e.g., cleanup related resources) */
     protected async onBeforeDelete(doc: T, req: Request): Promise<void> { }
 
-    /** Resolve populate options dinamically from requests or defaults */
     protected getPopulate(req: Request): PopulateOptions | string | (PopulateOptions | string)[] | undefined {
         return this.defaultPopulate;
     }
 
     public createOne = catchAsync(async (req: Request, res: Response) => {
-        // Filter allowed fields from body
         let data = this.allowedFields.length > 0
             ? filterObject(req.body, ...this.allowedFields) as Partial<T>
             : req.body;
 
         data = await this.onBeforeCreate(data, req);
+
+        const teamId = await this.getTeamId(req);
+        if (teamId) {
+            await this.authorize(req, teamId, Action.CREATE);
+        }
+
         const doc = await this.model.create(data);
         await this.onAfterCreate(doc, req);
 
-        res.status(200).json({
+        res.status(201).json({
             status: 'success',
             data: doc
         });
@@ -82,18 +98,22 @@ export default abstract class BaseController<T extends Document> {
 
     public getOne = catchAsync(async (req: Request, res: Response) => {
         if (!req.params.id) throw new RuntimeError(ErrorCodes.VALIDATION_ID_REQUIRED, 400);
-        // Determine filter(ID/Slug + Custom Security Filter)
+
         const idFilter = checkIfSlugOrId(req.params.id);
         const securityFilter = await this.getFilter(req);
         const finalFilter = { ...idFilter, ...securityFilter };
 
-        // Query
         let query = this.model.findOne(finalFilter);
         const populate = this.getPopulate(req);
-        if (populate) query = query.populate(populate as any)
+        if (populate) query = query.populate(populate as any);
 
         const doc = await query.exec();
         if (!doc) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
+
+        const teamId = await this.getTeamId(req, doc);
+        if (teamId) {
+            await this.authorize(req, teamId, Action.READ);
+        }
 
         res.status(200).json({
             status: 'success',
@@ -116,7 +136,7 @@ export default abstract class BaseController<T extends Document> {
         const result = await features.perform();
 
         res.status(200).json({
-            status: 'successs',
+            status: 'success',
             page: {
                 current: result.page,
                 total: result.totalPages
@@ -139,6 +159,11 @@ export default abstract class BaseController<T extends Document> {
 
         if (!docToUpdate) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
 
+        const teamId = await this.getTeamId(req, docToUpdate);
+        if (teamId) {
+            await this.authorize(req, teamId, Action.UPDATE);
+        }
+
         let data = this.allowedFields.length > 0
             ? filterObject(req.body, ...this.allowedFields)
             : req.body;
@@ -147,7 +172,8 @@ export default abstract class BaseController<T extends Document> {
         const updatedDoc = await this.model.findOneAndUpdate(
             { _id: docToUpdate._id },
             data,
-            { new: true, runValidators: true });
+            { new: true, runValidators: true }
+        );
 
         if (updatedDoc) await this.onAfterUpdate(updatedDoc, req);
 
@@ -166,11 +192,18 @@ export default abstract class BaseController<T extends Document> {
 
         if (!doc) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
 
+        const teamId = await this.getTeamId(req, doc);
+        if (teamId) {
+            await this.authorize(req, teamId, Action.DELETE);
+        }
+
         await this.onBeforeDelete(doc, req);
         await this.model.deleteOne({ _id: doc._id });
+
         res.status(204).json({
             status: 'success',
             data: null
         });
     });
-};
+}
+
