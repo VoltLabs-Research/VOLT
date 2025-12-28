@@ -50,7 +50,6 @@ const upload = multer({
 rbac.groupBy(Action.READ, authMiddleware.protect)
     .route('/', controller.getAll)
     .route('/metrics', controller.getTeamMetrics)
-    .route('/metrics/:id', middleware.checkTeamMembershipForTrajectory, controller.getSingleMetrics)
     .route('/:id/analysis/:analysisId', middleware.checkTeamMembershipForTrajectory, controller.getAtoms);
 
 rbac.groupBy(Action.CREATE, authMiddleware.protect)

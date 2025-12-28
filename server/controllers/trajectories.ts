@@ -122,30 +122,6 @@ export default class TrajectoryController extends BaseController<any> {
         res.status(200).json({ status: 'success', data: metrics });
     });
 
-    public getSingleMetrics = catchAsync(async (req: Request, res: Response) => {
-        const trajectory = res.locals.trajectory;
-        const trajectoryId = trajectory._id.toString();
-        const vfs = new TrajectoryVFS(trajectoryId);
-
-        const rootEntries = await vfs.list(`trajectory-${trajectoryId}`);
-        const vfsTotalSize = rootEntries.reduce((acc, entry) => acc + (entry.size || 0), 0);
-
-        let pluginsSize = 0;
-        for await (const key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, `plugins/trajectory-${trajectoryId}/`)) {
-            const stat = await storage.getStat(SYS_BUCKETS.PLUGINS, key);
-            pluginsSize += stat.size;
-        }
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                frames: { totalFrames: trajectory.frames?.length || 0 },
-                files: { totalSizeBytes: vfsTotalSize + pluginsSize },
-                analyses: { totalAnalyses: rootEntries.filter((e) => e.name.startsWith('analysis-')).length }
-            }
-        });
-    });
-
     public getPreview = catchAsync(async (req: Request, res: Response) => {
         const trajectory = res.locals.trajectory;
         const result = await getAnyTrajectoryPreview(trajectory._id.toString());
