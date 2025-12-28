@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import useSSHFileExplorer from '@/stores/ssh-file-explorer';
-import useSSHConnections, { type SSHConnection } from '@/stores/ssh-connections';
-import useTeamStore from '@/stores/team/team';
+import { useSSHExplorerStore, useSSHConnectionStore, type SSHConnection } from '@/stores/slices/ssh';
+import { useTeamStore } from '@/stores/slices/team';
 import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
 import SSHConnectionModal from '@/components/molecules/ssh/SSHConnectionModal';
 import Draggable from '@/components/atoms/common/Draggable';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
+import formatTimeAgo from '@/utilities/api/formatTimeAgo';
 import {
     LuFolder,
     LuFile,
@@ -24,7 +23,7 @@ import {
 } from 'react-icons/lu';
 import { TbServer } from 'react-icons/tb';
 import { CircularProgress } from '@mui/material';
-import { formatSize } from '@/utilities/scene-utils';
+import { formatSize } from '@/utilities/glb/scene-utils';
 import useToast from '@/hooks/ui/use-toast';
 import './SSHFileExplorer.css';
 
@@ -40,7 +39,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const { showSuccess, showError } = useToast();
 
-    const { connections, fetchConnections, deleteConnection } = useSSHConnections();
+    const { connections, fetchConnections, deleteConnection } = useSSHConnectionStore();
     const {
         connectionId,
         cwd,
@@ -62,7 +61,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
         select,
         importTrajectory,
         reset
-    } = useSSHFileExplorer();
+    } = useSSHExplorerStore();
 
     const canBack = historyIndex > 0;
     const canForward = historyIndex < history.length - 1;

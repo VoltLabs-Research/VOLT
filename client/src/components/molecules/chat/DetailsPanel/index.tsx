@@ -1,5 +1,5 @@
 import type { Chat, Message, Participant } from '@/types/chat';
-import { getInitials } from '@/utilities/guest';
+import { getInitials } from '@/utilities/api/guest';
 import MessageSkeleton from '@/components/atoms/chat/MessageSkeleton';
 import { IoChatbubblesOutline, IoCallOutline, IoVideocamOutline, IoPeopleOutline, IoInformationCircleOutline } from 'react-icons/io5';
 import SharedFilesList from '@/components/molecules/chat/SharedFilesList';

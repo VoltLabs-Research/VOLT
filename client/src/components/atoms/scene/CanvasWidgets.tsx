@@ -22,7 +22,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import type { EditorWidgetsProps } from '@/types/canvas';
-import useEditorUIStore from '@/stores/ui/editor';
+import { useUIStore } from '@/stores/slices/ui';
 import EditorSidebar from '@/components/organisms/scene/EditorSidebar';
 import TrajectoryVisibilityStatusFloatIcon from '@/components/atoms/scene/TrajectoryVisibilityStatusFloatIcon';
 import SceneTopCenteredOptions from '@/components/atoms/scene/SceneTopCenteredOptions';
@@ -31,24 +31,24 @@ import TimestepControls from '@/components/organisms/scene/TimestepControls';
 import ModifierConfiguration from '@/components/organisms/form/ModifierConfiguration';
 import ChartViewer from '@/components/organisms/common/ChartViewer';
 import Draggable from '@/components/atoms/common/Draggable';
-import useModelStore from '@/stores/editor/model';
-import usePluginStore from '@/stores/plugins/plugin';
+import { useEditorStore } from '@/stores/slices/editor';
+import { usePluginStore } from '@/stores/slices/plugin';
 import ColorCoding from '@/components/organisms/scene/ColorCoding';
 
 const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimestep, scene3DRef }) => {
-    const showWidgets = useEditorUIStore((store) => store.showEditorWidgets);
-    const activeModifiers = useEditorUIStore((store) => store.activeModifiers);
-    const activeScene = useModelStore((state) => state.activeScene);
+    const showWidgets = useUIStore((store) => store.showEditorWidgets);
+    const activeModifiers = useUIStore((store) => store.activeModifiers);
+    const activeScene = useEditorStore((state) => state.activeScene);
     const plugins = usePluginStore((state) => state.plugins);
 
     const activeExposure = useMemo(() => {
-        if(activeScene.source !== 'plugin') return null;
+        if (activeScene.source !== 'plugin') return null;
         const { exposureId } = activeScene;
 
-        for(const plugin of plugins){
+        for (const plugin of plugins) {
             // Find exposure node
             const exposureNode = plugin.workflow.nodes.find((n: any) => n.id === exposureId);
-            if(!exposureNode) continue;
+            if (!exposureNode) continue;
 
             // Find connected export node
             const exportNode = plugin.workflow.nodes.find((n: any) =>
@@ -69,11 +69,11 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
         return null;
     }, [activeScene, plugins]);
 
-    const isChart = activeExposure?.export?.exporter === 'ChartExporter';
+    const isChart = (activeExposure?.export?.exporter as string) === 'ChartExporter';
     const [showChart, setShowChart] = useState(false);
 
     useEffect(() => {
-        if(isChart){
+        if (isChart) {
             setShowChart(true);
         }
     }, [isChart]);
@@ -95,9 +95,9 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
             .filter(([, C]) => !!C);
     }, [legacyModifiers, legacyModifiersMap]);
 
-    if(!showWidgets) return null;
+    if (!showWidgets) return null;
 
-    return(
+    return (
         <>
             <EditorSidebar />
             <TrajectoryVisibilityStatusFloatIcon />
@@ -122,8 +122,8 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
                             analysisId={(activeScene as any).analysisId}
                             exposureId={(activeScene as any).exposureId}
                             timestep={currentTimestep || 0}
-                            options={activeExposure?.export?.options}
-                            filename={activeExposure?.results}
+                            options={activeExposure?.export?.options as any}
+                            filename={activeExposure?.results || ''}
                             onClose={() => setShowChart(false)}
                         />
                     </div>
@@ -135,9 +135,9 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
             ))}
 
             {pluginModifiers.map((modifier) => {
-                if(!modifier.pluginId || !modifier.modifierId || !trajectory?._id) return null;
+                if (!modifier.pluginId || !modifier.modifierId || !trajectory?._id) return null;
 
-                return(
+                return (
                     <ModifierConfiguration
                         key={modifier.key}
                         pluginId={modifier.pluginId}

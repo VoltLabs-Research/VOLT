@@ -21,10 +21,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Logger from '@/services/logger';
+import Logger from '@/services/common/logger';
 import useLogger from '@/hooks/core/use-logger';
-import trajectoryApi from '@/services/api/trajectory';
-import getQueryParam from '@/utilities/get-query-param';
+import trajectoryApi from '@/services/api/trajectory/trajectory';
 
 interface UseTrajectoryPreviewOptions {
     trajectoryId: string;
@@ -112,9 +111,6 @@ const useTrajectoryPreview = ({
                     updated: new Date(updated).getTime().toString(),
                     r: Math.random().toString(36)
                 }).toString();
-
-                const endpoint = `/trajectories/${getQueryParam('team')}/${trajId}/preview?${cacheBuster}`;
-                logger.log('Requesting preview endpoint:', { endpoint, trajectoryId: trajId, updatedAt: updated });
 
                 const base64Data = await trajectoryApi.getPreview(trajId, {
                     headers: {

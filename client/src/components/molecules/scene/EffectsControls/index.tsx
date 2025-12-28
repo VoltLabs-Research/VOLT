@@ -1,5 +1,5 @@
 import FormField from '@/components/molecules/form/FormField';
-import useEffectsConfigStore from '@/stores/editor/effects-config';
+import { useEditorStore } from '@/stores/slices/editor';
 import Select from '@/components/atoms/form/Select';
 import FormRow from '@/components/atoms/form/FormRow';
 import FormSection from '@/components/atoms/form/FormSection';
@@ -24,7 +24,7 @@ const EffectsControls = () => {
         setDepthOfField,
         setNoise,
         setSepia
-    } = useEffectsConfigStore();
+    } = useEditorStore((s) => s.effects);
     const sections = [
         {
             key: 'ssao',
@@ -85,7 +85,7 @@ const EffectsControls = () => {
             ],
             extras: (
                 <Select
-                    value={bloom.kernelSize}
+                    value={String(bloom.kernelSize)}
                     onChange={(value) => setBloomEffect({ kernelSize: Number(value) })}
                     placeholder="Kernel size"
                     options={Array.from({ length: 6 }, (_, i) => ({ title: `${i}`, value: `${i}` }))}
@@ -223,7 +223,7 @@ const EffectsControls = () => {
         }
     ];
 
-    return(
+    return (
         <CollapsibleSection
             title="Post-Processing Effects"
             icon={<MdAutoFixHigh size={16} />}

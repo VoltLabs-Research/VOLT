@@ -21,7 +21,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useChatStore } from '@/stores/chat';
+import { useChatStore } from '@/stores/slices/chat';
 import { useChat } from '@/hooks/chat/useChat';
 import {
     IoPeopleOutline,
@@ -35,8 +35,8 @@ import {
     IoStarOutline,
     IoCheckmarkCircleOutline
 } from 'react-icons/io5';
-import { getInitials } from '@/utilities/guest';
-import useAuthStore from '@/stores/authentication';
+import { getInitials } from '@/utilities/api/guest';
+import { useAuthStore } from '@/stores/slices/auth';
 import Modal from '@/components/molecules/common/Modal';
 import Button from '@/components/primitives/Button';
 import FormInput from '@/components/atoms/form/FormInput';

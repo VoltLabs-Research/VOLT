@@ -7,13 +7,13 @@ import { IoCheckmark } from 'react-icons/io5';
 import { Skeleton } from '@mui/material';
 import useToast from '@/hooks/ui/use-toast';
 import Select from '@/components/atoms/form/Select';
-import teamApi from '@/services/api/team';
+import teamApi from '@/services/api/team/team';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import './TeamInvitePanel.css';
-import teamMember from '@/services/api/team-member';
+import teamMember from '@/services/api/team-member/team-member';
 
 interface TeamMember {
     email: string;

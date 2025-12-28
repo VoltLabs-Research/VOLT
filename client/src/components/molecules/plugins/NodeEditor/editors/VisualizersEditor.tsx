@@ -4,7 +4,7 @@ import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
 import KeyValueEditor from '@/components/molecules/plugins/KeyValueEditor';
 import ListEditor from '@/components/molecules/plugins/ListEditor';
-import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
+import { usePluginBuilderStore } from '@/stores/slices/plugin';
 import { useKeyValueHandlers } from '@/hooks/plugins/use-node-data';
 import type { IVisualizersData } from '@/types/plugin';
 

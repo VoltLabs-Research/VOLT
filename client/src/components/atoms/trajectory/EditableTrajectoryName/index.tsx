@@ -1,6 +1,6 @@
 import EditableTag from '@/components/atoms/common/EditableTag';
-import useTrajectoryStore from '@/stores/trajectories';
-import useAuthStore from '@/stores/authentication';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useAuthStore } from '@/stores/slices/auth';
 import Title from '@/components/primitives/Title';
 
 const EditableTrajectoryName = ({ trajectory, className }) => {

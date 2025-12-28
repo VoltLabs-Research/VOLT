@@ -22,7 +22,7 @@
 
 import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getLayoutKey, detectSameLayout } from '@/utilities/layout';
+import { getLayoutKey, detectSameLayout } from '@/utilities/common/layout';
 
 const useLayoutDetection = (storageKey: string = 'previousLayoutKey') => {
     const location = useLocation();

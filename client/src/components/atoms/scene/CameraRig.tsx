@@ -2,26 +2,26 @@ import React, { useEffect } from 'react';
 import { PerspectiveCamera, OrthographicCamera } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { PerspectiveCamera as ThreePerspective } from 'three';
-import useCameraSettings from '@/stores/editor/camera-config';
+import { useEditorStore } from '@/stores/slices/editor';
 
 type Props = { orbitRef?: React.RefObject<any> };
 
 const CameraRig: React.FC<Props> = ({ orbitRef }) => {
-    const type = useCameraSettings(s => s.type);
-    const position = useCameraSettings(s => s.position);
-    const up = useCameraSettings(s => s.up);
+    const type = useEditorStore(s => s.camera.type);
+    const position = useEditorStore(s => s.camera.position);
+    const up = useEditorStore(s => s.camera.up);
 
-    const pFov = useCameraSettings(s => s.perspective.fov);
-    const pNear = useCameraSettings(s => s.perspective.near);
-    const pFar = useCameraSettings(s => s.perspective.far);
-    const pZoom = useCameraSettings(s => s.perspective.zoom);
-    const pFocus = useCameraSettings(s => s.perspective.focus);
-    const pFilmGauge = useCameraSettings(s => s.perspective.filmGauge);
-    const pFilmOffset = useCameraSettings(s => s.perspective.filmOffset);
+    const pFov = useEditorStore(s => s.camera.perspective.fov);
+    const pNear = useEditorStore(s => s.camera.perspective.near);
+    const pFar = useEditorStore(s => s.camera.perspective.far);
+    const pZoom = useEditorStore(s => s.camera.perspective.zoom);
+    const pFocus = useEditorStore(s => s.camera.perspective.focus);
+    const pFilmGauge = useEditorStore(s => s.camera.perspective.filmGauge);
+    const pFilmOffset = useEditorStore(s => s.camera.perspective.filmOffset);
 
-    const oNear = useCameraSettings(s => s.orthographic.near);
-    const oFar = useCameraSettings(s => s.orthographic.far);
-    const oZoom = useCameraSettings(s => s.orthographic.zoom);
+    const oNear = useEditorStore(s => s.camera.orthographic.near);
+    const oFar = useEditorStore(s => s.camera.orthographic.far);
+    const oZoom = useEditorStore(s => s.camera.orthographic.zoom);
 
     const { scene } = useThree();
 

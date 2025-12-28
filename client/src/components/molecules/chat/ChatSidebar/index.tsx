@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { IoSearchOutline, IoPersonAddOutline, IoPeopleOutline } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
-import { useChatStore } from '@/stores/chat';
-import { getInitials } from '@/utilities/guest';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
+import { useChatStore } from '@/stores/slices/chat';
+import { getInitials } from '@/utilities/api/guest';
+import formatTimeAgo from '@/utilities/api/formatTimeAgo';
 import ChatListSkeleton from '@/components/atoms/chat/messages/ChatListSkeleton';
-import useAuthStore from '@/stores/authentication';
+import { useAuthStore } from '@/stores/slices/auth';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';

@@ -16,7 +16,7 @@ export interface PlaybackActions {
     setCurrentTimestep: (timestep: number) => void;
     playNextFrame: () => void;
     stopPlayback: () => void;
-    reset: () => void;
+    resetPlayback: () => void;
 }
 
 export type PlaybackStore = PlaybackState & PlaybackActions;

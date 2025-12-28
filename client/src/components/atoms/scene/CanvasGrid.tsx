@@ -22,16 +22,16 @@
 
 import React from 'react';
 import { Grid } from '@react-three/drei';
-import useCanvasGridSettings from '@/stores/editor/canvas-grid-settings';
+import { useEditorStore } from '@/stores/slices/editor';
 
 const CanvasGrid = () => {
-    const settings = useCanvasGridSettings();
+    const settings = useEditorStore((state) => state.grid);
 
-    if(!settings.enabled){
+    if (!settings.enabled) {
         return null;
     }
 
-    return(
+    return (
         <Grid
             infiniteGrid={settings.infiniteGrid}
             cellSize={settings.cellSize}

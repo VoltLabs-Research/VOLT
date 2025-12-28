@@ -2,12 +2,25 @@ import React from 'react';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/form/FormField';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
-import useCanvasGridSettings from '@/stores/editor/canvas-grid-settings';
+import { useEditorStore } from '@/stores/slices/editor';
 import { MdSettings, MdStraighten, MdOpacity, MdColorLens, MdTransform } from 'react-icons/md';
 import { IoGridOutline } from 'react-icons/io5';
 
 const CanvasGridControls: React.FC = () => {
-    const settings = useCanvasGridSettings();
+    const settings = useEditorStore((s) => s.grid);
+    const setEnabled = useEditorStore((s) => s.grid.setEnabled);
+    const setInfiniteGrid = useEditorStore((s) => s.grid.setInfiniteGrid);
+    const setCellSize = useEditorStore((s) => s.grid.setCellSize);
+    const setSectionSize = useEditorStore((s) => s.grid.setSectionSize);
+    const setCellThickness = useEditorStore((s) => s.grid.setCellThickness);
+    const setSectionThickness = useEditorStore((s) => s.grid.setSectionThickness);
+    const setFadeDistance = useEditorStore((s) => s.grid.setFadeDistance);
+    const setFadeStrength = useEditorStore((s) => s.grid.setFadeStrength);
+    const setSectionColor = useEditorStore((s) => s.grid.setSectionColor);
+    const setCellColor = useEditorStore((s) => s.grid.setCellColor);
+    const setPosition = useEditorStore((s) => s.grid.setPosition);
+    const setRotation = useEditorStore((s) => s.grid.setRotation);
+
     const {
         enabled,
         infiniteGrid,
@@ -27,7 +40,7 @@ const CanvasGridControls: React.FC = () => {
         key: 'general',
         title: 'General Settings',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
@@ -37,7 +50,7 @@ const CanvasGridControls: React.FC = () => {
                         label="Enabled"
                         fieldType="checkbox"
                         fieldValue={enabled}
-                        onFieldChange={(_, v) => settings.setEnabled(Boolean(v))}
+                        onFieldChange={(_, v) => setEnabled(Boolean(v))}
                     />
                     <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Show/hide the canvas grid</div>
                 </div>
@@ -47,7 +60,7 @@ const CanvasGridControls: React.FC = () => {
                         label="Infinite Grid"
                         fieldType="checkbox"
                         fieldValue={infiniteGrid}
-                        onFieldChange={(_, v) => settings.setInfiniteGrid(Boolean(v))}
+                        onFieldChange={(_, v) => setInfiniteGrid(Boolean(v))}
                     />
                     <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Extend grid infinitely in all directions</div>
                 </div>
@@ -59,7 +72,7 @@ const CanvasGridControls: React.FC = () => {
         key: 'size',
         title: 'Size & Spacing',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [
             {
                 label: 'Cell Size',
@@ -67,7 +80,7 @@ const CanvasGridControls: React.FC = () => {
                 max: 5,
                 step: 0.1,
                 get: () => cellSize,
-                set: (v: number) => settings.setCellSize(v),
+                set: (v: number) => setCellSize(v),
                 format: (v: number) => v.toFixed(1)
             },
             {
@@ -76,7 +89,7 @@ const CanvasGridControls: React.FC = () => {
                 max: 20,
                 step: 0.5,
                 get: () => sectionSize,
-                set: (v: number) => settings.setSectionSize(v),
+                set: (v: number) => setSectionSize(v),
                 format: (v: number) => v.toFixed(1)
             }
         ],
@@ -87,7 +100,7 @@ const CanvasGridControls: React.FC = () => {
         key: 'thickness',
         title: 'Line Thickness',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [
             {
                 label: 'Cell Thickness',
@@ -95,7 +108,7 @@ const CanvasGridControls: React.FC = () => {
                 max: 2,
                 step: 0.1,
                 get: () => cellThickness,
-                set: (v: number) => settings.setCellThickness(v),
+                set: (v: number) => setCellThickness(v),
                 format: (v: number) => v.toFixed(1)
             },
             {
@@ -104,7 +117,7 @@ const CanvasGridControls: React.FC = () => {
                 max: 3,
                 step: 0.1,
                 get: () => sectionThickness,
-                set: (v: number) => settings.setSectionThickness(v),
+                set: (v: number) => setSectionThickness(v),
                 format: (v: number) => v.toFixed(1)
             }
         ],
@@ -115,7 +128,7 @@ const CanvasGridControls: React.FC = () => {
         key: 'fade',
         title: 'Fade Settings',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [
             {
                 label: 'Fade Distance',
@@ -123,7 +136,7 @@ const CanvasGridControls: React.FC = () => {
                 max: 500,
                 step: 10,
                 get: () => fadeDistance,
-                set: (v: number) => settings.setFadeDistance(v),
+                set: (v: number) => setFadeDistance(v),
                 format: (v: number) => v.toFixed(0)
             },
             {
@@ -132,7 +145,7 @@ const CanvasGridControls: React.FC = () => {
                 max: 10,
                 step: 0.1,
                 get: () => fadeStrength,
-                set: (v: number) => settings.setFadeStrength(v),
+                set: (v: number) => setFadeStrength(v),
                 format: (v: number) => v.toFixed(1)
             }
         ],
@@ -143,7 +156,7 @@ const CanvasGridControls: React.FC = () => {
         key: 'color',
         title: 'Colors',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
@@ -153,7 +166,7 @@ const CanvasGridControls: React.FC = () => {
                         label="Section Color"
                         fieldType="color"
                         fieldValue={sectionColor}
-                        onFieldChange={(_, v) => settings.setSectionColor(String(v))}
+                        onFieldChange={(_, v) => setSectionColor(String(v))}
                     />
                     <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Color of major grid lines(sections)</div>
                 </div>
@@ -163,7 +176,7 @@ const CanvasGridControls: React.FC = () => {
                         label="Cell Color"
                         fieldType="color"
                         fieldValue={cellColor}
-                        onFieldChange={(_, v) => settings.setCellColor(String(v))}
+                        onFieldChange={(_, v) => setCellColor(String(v))}
                     />
                     <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Color of minor grid lines(cells)</div>
                 </div>
@@ -175,7 +188,7 @@ const CanvasGridControls: React.FC = () => {
         key: 'transform',
         title: 'Transform',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [
             {
                 label: 'Position X',
@@ -183,7 +196,7 @@ const CanvasGridControls: React.FC = () => {
                 max: 50,
                 step: 0.1,
                 get: () => position[0],
-                set: (v: number) => settings.setPosition([v, position[1], position[2]]),
+                set: (v: number) => setPosition([v, position[1], position[2]]),
                 format: (v: number) => v.toFixed(1)
             },
             {
@@ -192,7 +205,7 @@ const CanvasGridControls: React.FC = () => {
                 max: 50,
                 step: 0.1,
                 get: () => position[1],
-                set: (v: number) => settings.setPosition([position[0], v, position[2]]),
+                set: (v: number) => setPosition([position[0], v, position[2]]),
                 format: (v: number) => v.toFixed(1)
             },
             {
@@ -201,7 +214,7 @@ const CanvasGridControls: React.FC = () => {
                 max: 50,
                 step: 0.1,
                 get: () => position[2],
-                set: (v: number) => settings.setPosition([position[0], position[1], v]),
+                set: (v: number) => setPosition([position[0], position[1], v]),
                 format: (v: number) => v.toFixed(1)
             },
             {
@@ -210,7 +223,7 @@ const CanvasGridControls: React.FC = () => {
                 max: Math.PI,
                 step: 0.1,
                 get: () => rotation[0],
-                set: (v: number) => settings.setRotation([v, rotation[1], rotation[2]]),
+                set: (v: number) => setRotation([v, rotation[1], rotation[2]]),
                 format: (v: number) => v.toFixed(2)
             },
             {
@@ -219,7 +232,7 @@ const CanvasGridControls: React.FC = () => {
                 max: Math.PI,
                 step: 0.1,
                 get: () => rotation[1],
-                set: (v: number) => settings.setRotation([rotation[0], v, rotation[2]]),
+                set: (v: number) => setRotation([rotation[0], v, rotation[2]]),
                 format: (v: number) => v.toFixed(2)
             },
             {
@@ -228,14 +241,14 @@ const CanvasGridControls: React.FC = () => {
                 max: Math.PI,
                 step: 0.1,
                 get: () => rotation[2],
-                set: (v: number) => settings.setRotation([rotation[0], rotation[1], v]),
+                set: (v: number) => setRotation([rotation[0], rotation[1], v]),
                 format: (v: number) => v.toFixed(2)
             }
         ],
         extras: null
     };
 
-    return(
+    return (
         <CollapsibleSection
             title="Canvas Grid"
             icon={<IoGridOutline size={16} />}

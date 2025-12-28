@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ReactFlowProvider } from '@xyflow/react';
 import PluginBuilder from '@/components/organisms/plugins/PluginBuilder';
-import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
+import { usePluginBuilderStore } from '@/stores/slices/plugin';
 
 const PluginBuilderPage = () => {
     const [searchParams] = useSearchParams();

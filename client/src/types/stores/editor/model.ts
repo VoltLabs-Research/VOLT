@@ -49,7 +49,7 @@ export interface ModelState {
 export interface ModelActions {
     selectModel: (glbs: any) => void;
     setGlbsWithoutLoading: (glbs: any) => void;
-    reset: () => void;
+    resetModel: () => void;
     setIsModelLoading: (loading: boolean) => void;
     setModelBounds: (modelBounds: any) => void;
     setActiveScene: (scene: SceneObjectType) => void;

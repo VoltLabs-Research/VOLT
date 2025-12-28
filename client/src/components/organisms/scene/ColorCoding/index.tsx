@@ -1,13 +1,12 @@
-import useAnalysisConfigStore from '@/stores/analysis-config';
-import usePlaybackStore from '@/stores/editor/playback';
-import useTrajectoryStore from '@/stores/trajectories';
+import { useAnalysisConfigStore } from '@/stores/slices/analysis';
+import { useEditorStore } from '@/stores/slices/editor';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import useFrameProperties from '@/hooks/trajectory/use-frame-properties';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Button from '@/components/primitives/Button';
 import FormField from '@/components/molecules/form/FormField';
-import rasterApi from '@/services/api/raster';
+import rasterApi from '@/services/api/raster/raster';
 import { useState, useEffect } from 'react';
-import useModelStore from '@/stores/editor/model';
 import Title from '@/components/primitives/Title';
 import Container from '@/components/primitives/Container';
 import './ColorCoding.css';
@@ -21,9 +20,9 @@ const COLOR_GRADIENTS = [
 
 const ColorCoding = () => {
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
-    const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
+    const currentTimestep = useEditorStore((state) => state.currentTimestep);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const setActiveScene = useModelStore((state) => state.setActiveScene);
+    const setActiveScene = useEditorStore((state) => state.setActiveScene);
     const [property, setProperty] = useState('');
     const [exposureId, setExposureId] = useState<string | null>(null);
     const [startValue, setStartValue] = useState(0);
@@ -37,19 +36,19 @@ const ColorCoding = () => {
         frame: currentTimestep
     });
 
-    const applyColorCoding = async() => {
+    const applyColorCoding = async () => {
         await rasterApi.colorCoding.apply(trajectory!._id, analysisConfig!._id, currentTimestep!, {
             property, startValue, endValue, gradient, exposureId: exposureId || undefined
         });
         setActiveScene({
-            analysisId: analysisConfig?._id,
+            analysisId: analysisConfig?._id || '',
             endValue,
-            exposureId,
+            exposureId: exposureId || undefined,
             gradient,
             property,
             source: 'color-coding',
             startValue
-        });
+        } as any);
     };
 
     const propertyOptions = [
@@ -65,42 +64,42 @@ const ColorCoding = () => {
         setExposureId(selectedOption?.exposureId || null);
     };
 
-    const fetchStats = async() => {
-        if(!property || !trajectory?._id || !analysisConfig?._id) return;
+    const fetchStats = async () => {
+        if (!property || !trajectory?._id || !analysisConfig?._id) return;
 
         const selectedOption = propertyOptions.find(opt => opt.value === property);
         const type = selectedOption?.exposureId ? 'modifier' : 'base';
 
-        try{
+        try {
             const stats = await rasterApi.colorCoding.getStats(trajectory._id, analysisConfig._id, {
                 timestep: currentTimestep,
                 property,
                 type,
-                exposureId: selectedOption?.exposureId
+                exposureId: selectedOption?.exposureId || undefined
             });
             const { min, max } = stats;
 
-            if(symmetricRange){
+            if (symmetricRange) {
                 const limit = Math.max(Math.abs(min), Math.abs(max));
                 setStartValue(-limit);
                 setEndValue(limit);
-            }else{
+            } else {
                 setStartValue(min);
                 setEndValue(max);
             }
-        }catch(e){
+        } catch (e) {
             console.error(e);
         }
     };
 
     useEffect(() => {
-        if(automaticRange){
+        if (automaticRange) {
             fetchStats();
         }
     }, [automaticRange, currentTimestep, property, exposureId, symmetricRange]);
 
     useEffect(() => {
-        if(symmetricRange && !automaticRange){
+        if (symmetricRange && !automaticRange) {
             const limit = Math.max(Math.abs(startValue), Math.abs(endValue));
             setStartValue(-limit);
             setEndValue(limit);

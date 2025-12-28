@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import { useMemo } from 'react';
-import { getLayoutKey, detectSameLayout } from '@/utilities/layout';
-import { BALANCED_EASING } from '@/utilities/animation';
+import { getLayoutKey, detectSameLayout } from '@/utilities/common/layout';
+import { BALANCED_EASING } from '@/utilities/animations/animation';
 
 const GlobalTransitionOverlay = () => {
     const location = useLocation();

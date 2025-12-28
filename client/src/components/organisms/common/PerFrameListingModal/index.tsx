@@ -3,7 +3,7 @@ import DocumentListingTable from '@/components/molecules/common/DocumentListingT
 import type { ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import Draggable from '@/components/atoms/common/Draggable';
-import pluginApi from '@/services/api/plugin';
+import pluginApi from '@/services/api/plugin/plugin';
 import Container from '@/components/primitives/Container';
 import type { PerFrameListingConfig } from '@/types/scene';
 import './PerFrameListingModal.css';

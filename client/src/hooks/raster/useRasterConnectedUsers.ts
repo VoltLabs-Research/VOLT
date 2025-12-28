@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { socketService } from '@/services/socketio';
+import { socketService } from '@/services/websockets/socketio';
 import { type User } from '@/types/models';
 
 const useRasterConnectedUsers = (trajectoryId?: string) => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import useEnvironmentConfigStore from '@/stores/editor/environment-config';
+import { useEditorStore } from '@/stores/slices/editor';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/form/FormField';
 import Select from '@/components/atoms/form/Select';
@@ -20,14 +20,14 @@ const EnvironmentControls: React.FC = () => {
         setBackgroundType,
         setEnvironmentPreset,
         setFogConfig,
-        setToneMappingExposure,
-    } = useEnvironmentConfigStore();
+        setToneMappingExposure
+    } = useEditorStore((s) => s.environment);
 
     const backgroundSection = {
         key: 'background',
         title: 'Background & Environment',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [{
             label: 'Tone Mapping Exposure',
             min: 0,
@@ -57,7 +57,7 @@ const EnvironmentControls: React.FC = () => {
                         fieldValue={backgroundColor}
                         onFieldChange={(_, color) => setBackgroundColor(color as string)}
                     />
-                    ) : (
+                ) : (
                     <Select
                         value={environmentPreset}
                         onChange={(value) => setEnvironmentPreset(String(value))}
@@ -109,7 +109,7 @@ const EnvironmentControls: React.FC = () => {
         )
     };
 
-    return(
+    return (
         <CollapsibleSection
             title="Environment"
             icon={<MdNature size={16} />}

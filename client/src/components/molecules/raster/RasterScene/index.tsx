@@ -8,9 +8,9 @@ import RasterSceneSkeleton from '@/components/atoms/raster/RasterSceneSkeleton';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlaybackControls from '@/components/atoms/raster/PlaybackControls';
 import ModelRail from '@/components/atoms/raster/ModelRail';
-import analysisConfigApi from '@/services/api/analysis-config';
-import rasterApi from '@/services/api/raster';
-import trajectoryApi from '@/services/api/trajectory';
+import analysisConfigApi from '@/services/api/analysis/analysis';
+import rasterApi from '@/services/api/raster/raster';
+import trajectoryApi from '@/services/api/trajectory/trajectory';
 import { LuDownload } from 'react-icons/lu';
 import './RasterScene.css';
 

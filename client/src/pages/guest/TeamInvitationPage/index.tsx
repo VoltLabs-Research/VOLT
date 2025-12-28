@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Skeleton } from '@mui/material';
-import teamApi from '@/services/api/team';
+import teamApi from '@/services/api/team/team';
 import type { TeamInvitation } from '@/types/team-invitation';
 import Button from '@/components/primitives/Button';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import Container from '@/components/primitives/Container';
 import useToast from '@/hooks/ui/use-toast';
-import useAuthStore from '@/stores/authentication';
+import { useAuthStore } from '@/stores/slices/auth';
 import { CheckCircle, XCircle, Mail, Clock } from 'lucide-react';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';

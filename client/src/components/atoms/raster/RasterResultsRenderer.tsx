@@ -4,9 +4,9 @@
  */
 
 import React, { Suspense, lazy, useEffect, useState } from 'react';
-import type { RenderableExposure } from '@/stores/plugins';
-import pluginApi from '@/services/api/plugin';
-import { decodeMsgpackBuffer } from '@/utilities/msgpack';
+import type { RenderableExposure } from '@/stores/slices/plugin';
+import pluginApi from '@/services/api/plugin/plugin';
+import { decodeMsgpackBuffer } from '@/utilities/api/msgpack';
 
 // Component registry - maps component names to lazy-loaded components
 const RASTER_COMPONENTS: Record<string, React.LazyExoticComponent<any>> = {

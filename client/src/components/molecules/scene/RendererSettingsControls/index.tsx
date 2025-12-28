@@ -4,16 +4,16 @@ import Select from '@/components/atoms/form/Select';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/form/FormField';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
-import useRendererSettings from '@/stores/editor/renderer-settings';
+import { useEditorStore } from '@/stores/slices/editor';
 import Button from '@/components/primitives/Button';
 import { MdTune } from 'react-icons/md';
 
 const RendererSettingsControls: React.FC = () => {
-	const create = useRendererSettings((s) => s.create);
-	const runtime = useRendererSettings((s) => s.runtime);
-	const setCreate = useRendererSettings((s) => s.setCreate);
-	const setRuntime = useRendererSettings((s) => s.setRuntime);
-	const reset = useRendererSettings((s) => s.reset);
+	const create = useEditorStore((s) => s.rendererSettings.create);
+	const runtime = useEditorStore((s) => s.rendererSettings.runtime);
+	const setCreate = useEditorStore((s) => s.rendererSettings.setCreate);
+	const setRuntime = useEditorStore((s) => s.rendererSettings.setRuntime);
+	const reset = useEditorStore((s) => s.rendererSettings.reset);
 
 	const contextSection = {
 		key: 'context',

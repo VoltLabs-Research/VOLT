@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { socketService } from '@/services/socketio';
+import { socketService } from '@/services/websockets/socketio';
 import useLogger from '@/hooks/core/use-logger';
 
 export const useServerMetrics = () => {

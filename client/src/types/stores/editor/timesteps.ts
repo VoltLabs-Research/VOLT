@@ -21,7 +21,7 @@ export interface TimestepActions {
         maxFramesToPreload?: number,
         currentFrameIndex?: number
     ) => Promise<TimelineGLBMap>;
-    reset: () => void;
+    resetTimesteps: () => void;
 }
 
 export type TimestepStore = TimestepState & TimestepActions;

@@ -1,7 +1,7 @@
 import { type Node, type Edge } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
-import { getValueByPath } from '@/utilities/getValueByPath';
+import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { getValueByPath } from '@/utilities/common/getValueByPath';
 
 export type ColumnDef = {
     path: string;

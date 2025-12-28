@@ -18,6 +18,10 @@ export const SSAO_DEFAULT_CONFIG = {
     kernelRadius: 8,
     minDistance: 0.001,
     maxDistance: 0.1,
+    worldDistanceThreshold: 0.5,
+    worldDistanceFalloff: 0.3,
+    worldProximityThreshold: 0.5,
+    worldProximityFalloff: 0.3
 };
 
 export const GL_DEFAULT_CONFIG = {
@@ -29,3 +33,15 @@ export const GL_DEFAULT_CONFIG = {
     logarithmicDepthBuffer: false,
     preserveDrawingBuffer: false,
 };
+
+export interface RenderConfigState {
+    gl: typeof GL_DEFAULT_CONFIG;
+    orbitControls: typeof ORBIT_CONTROLS_DEFAULT_CONFIG;
+    SSAO: typeof SSAO_DEFAULT_CONFIG;
+}
+
+export interface RenderConfigActions {
+    reset: () => void;
+}
+
+export type RenderConfigStore = RenderConfigState & RenderConfigActions;

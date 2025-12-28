@@ -21,7 +21,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import sessionApi, { type Session } from '@/services/api/session';
+import sessionApi, { type Session } from '@/services/api/session/session';
 
 export type { Session };
 

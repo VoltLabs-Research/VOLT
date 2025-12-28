@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { nodeTypes } from '@/components/molecules/plugins/nodes';
 import { NodeType } from '@/types/plugin';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
-import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
+import { usePluginBuilderStore } from '@/stores/slices/plugin';
 import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
 import Sidebar from '@/components/organisms/common/Sidebar';
 import PaletteItem from '@/components/atoms/plugins/PaletetteItem';

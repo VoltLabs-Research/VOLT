@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import rasterApi from '@/services/api/raster';
+import rasterApi from '@/services/api/raster/raster';
 
 interface UseFramePropertiesProps {
     analysisId?: string;

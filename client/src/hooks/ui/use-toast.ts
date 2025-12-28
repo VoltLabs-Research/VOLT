@@ -1,8 +1,8 @@
-import useToastStore, { type ToastType } from '@/stores/ui/toast';
+import { useUIStore, type ToastType, type Toast } from '@/stores/slices/ui';
 
 export const useToast = () => {
-  const addToast = useToastStore((s) => s.addToast);
-  const updateToast = useToastStore((s) => s.updateToast);
+  const addToast = useUIStore((s) => s.addToast);
+  const updateToast = useUIStore((s) => s.updateToast);
 
   return {
     showError: (message: string, duration?: number) => addToast(message, 'error', duration),
@@ -10,8 +10,9 @@ export const useToast = () => {
     showWarning: (message: string, duration?: number) => addToast(message, 'warning', duration),
     showInfo: (message: string, duration?: number) => addToast(message, 'info', duration),
     show: (message: string, type: ToastType, duration?: number) => addToast(message, type, duration),
-    update: (id: string, updates: Partial<import('@/stores/ui/toast').Toast>) => updateToast(id, updates)
+    update: (id: string, updates: Partial<Toast>) => updateToast(id, updates)
   };
 };
 
 export default useToast;
+

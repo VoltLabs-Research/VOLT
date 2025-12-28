@@ -22,18 +22,18 @@
 
 import { useMemo } from 'react';
 import { Plane, Vector3 } from 'three';
-import useConfigurationStore from '@/stores/editor/configuration';
+import { useEditorStore } from '@/stores/slices/editor';
 
 const EPS = 1e-6;
 
 const useSlicingPlanes = (
     enableSlice: boolean,
 ): Plane[] => {
-    const origin = useConfigurationStore((s) => s.slicingOrigin);
-    const slicePlaneConfig = useConfigurationStore((s) => s.slicePlaneConfig);
+    const origin = useEditorStore((s) => s.configuration.slicingOrigin);
+    const slicePlaneConfig = useEditorStore((s) => s.configuration.slicePlaneConfig);
 
     return useMemo(() => {
-        if(!enableSlice) return [];
+        if (!enableSlice) return [];
 
         const n = new Vector3(
             Number(slicePlaneConfig.normal.x) || 0,
@@ -41,7 +41,7 @@ const useSlicingPlanes = (
             Number(slicePlaneConfig.normal.z) || 0
         );
 
-        if(n.lengthSq() < EPS) return [];
+        if (n.lengthSq() < EPS) return [];
 
         n.normalize();
 
@@ -49,7 +49,7 @@ const useSlicingPlanes = (
         const d = Number(slicePlaneConfig.distance) || 0;
         const w = Math.max(0, Number(slicePlaneConfig.slabWidth) || 0);
 
-        if(w > EPS){
+        if (w > EPS) {
             const upper = d + w * 0.5;
             const lower = d - w * 0.5;
 
@@ -60,13 +60,13 @@ const useSlicingPlanes = (
                 new Plane(n.clone(), c1),
                 new Plane(n.clone().negate(), c2),
             ];
-        }else{
-            if(!slicePlaneConfig.reverseOrientation){
+        } else {
+            if (!slicePlaneConfig.reverseOrientation) {
                 const c = n.dot(p0) - d;
-                return [ new Plane(n, c) ];
-            }else{
+                return [new Plane(n, c)];
+            } else {
                 const c = n.dot(p0) + d;
-                return [ new Plane(n.clone().negate(), c) ];
+                return [new Plane(n.clone().negate(), c)];
             }
         }
     }, [enableSlice, slicePlaneConfig, origin]);

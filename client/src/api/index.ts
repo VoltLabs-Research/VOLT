@@ -1,5 +1,5 @@
 import type { HttpMethod, RetryConfig, RequestArgs } from '@/api/api-core';
-import { objectToSearchParams, appendSearchParams } from '@/utilities/query';
+import { objectToSearchParams, appendSearchParams } from '@/utilities/api/query';
 import APICore from '@/api/api-core';
 
 type WithQuery<M extends HttpMethod> = RequestArgs<M> & {

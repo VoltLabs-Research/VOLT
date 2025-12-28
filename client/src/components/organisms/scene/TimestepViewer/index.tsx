@@ -1,5 +1,5 @@
 import React, { useMemo, forwardRef, useImperativeHandle } from 'react';
-import useModelStore from '@/stores/editor/model';
+import { useEditorStore } from '@/stores/slices/editor';
 import SingleModelViewer from '@/components/molecules/scene/SingleModelViewer';
 
 interface TimestepViewerProps {
@@ -51,7 +51,7 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     spacing = 0.5
 }, ref) => {
     // Get activeScenes from store
-    const storeActiveScenes = useModelStore((state) => state.activeScenes);
+    const storeActiveScenes = useEditorStore((state) => state.activeScenes);
 
     // Determine scenes to render: props override > store activeScenes
     const scenesToRender = useMemo(() => {

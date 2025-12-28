@@ -1,10 +1,10 @@
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
-import useRenderConfigStore from '@/stores/editor/render-config';
+import { useEditorStore } from '@/stores/slices/editor';
 
 const DefectLighting = () => {
-    const ssaoConfig = useRenderConfigStore((state) => state.SSAO);
+    const ssaoConfig = useEditorStore((state) => state.renderConfig.SSAO);
 
-    return(
+    return (
         <>
             <ambientLight intensity={0.15} />
             <directionalLight

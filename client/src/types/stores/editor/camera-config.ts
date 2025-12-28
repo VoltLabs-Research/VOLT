@@ -1,6 +1,6 @@
 export type CameraType = 'perspective' | 'orthographic';
 
-export interface PerspectiveSettings{
+export interface PerspectiveSettings {
     fov: number;
     near: number;
     far: number;
@@ -8,15 +8,20 @@ export interface PerspectiveSettings{
     focus: number;
     filmGauge: number;
     filmOffset: number;
+    aspect: number;
+    enableAutoFocus: boolean;
+    autoFocusSpeed: number;
+    bokehScale: number;
+    maxBlur: number;
 }
 
-export interface OrthographicSettings{
+export interface OrthographicSettings {
     near: number;
     far: number;
     zoom: number;
 }
 
-export interface CameraSettingsState{
+export interface CameraSettingsState {
     type: CameraType;
     position: [number, number, number];
     up: [number, number, number];
@@ -24,7 +29,7 @@ export interface CameraSettingsState{
     orthographic: OrthographicSettings;
 }
 
-export interface CameraSettingsActions{
+export interface CameraSettingsActions {
     setType: (type: CameraType) => void;
     setPosition: (position: [number, number, number]) => void;
     setUp: (up: [number, number, number]) => void;

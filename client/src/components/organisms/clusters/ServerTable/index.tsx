@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { ChevronDown, RefreshCw, Download } from 'lucide-react'
 import { Skeleton } from '@mui/material'
-import { formatNetworkSpeed } from '@/utilities/network'
+import { formatNetworkSpeed } from '@/utilities/common/network'
 import Container from '@/components/primitives/Container'
 import Button from '@/components/primitives/Button'
 import './ServerTable.css'

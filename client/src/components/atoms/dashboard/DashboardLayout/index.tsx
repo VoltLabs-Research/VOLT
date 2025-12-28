@@ -29,26 +29,22 @@ import { CiChat1 } from 'react-icons/ci';
 import { GoPersonAdd, GoWorkflow } from "react-icons/go";
 import { HiOutlineDotsVertical } from "react-icons/hi";
 import { TbHelp, TbCube3dSphere } from 'react-icons/tb';
-import useTeamStore from '@/stores/team/team';
-import useTrajectoryStore from '@/stores/trajectories';
-import useRasterStore from '@/stores/raster';
-import useAnalysisConfigStore from '@/stores/analysis-config';
-import useModelStore from '@/stores/editor/model';
-import useTimestepStore from '@/stores/editor/timesteps';
-import usePlaybackStore from '@/stores/editor/playback';
-import useEditorUIStore from '@/stores/ui/editor';
-import useRenderConfigStore from '@/stores/editor/render-config';
-import useNotificationStore from '@/stores/notifications';
-import useAuthStore from '@/stores/authentication';
+import { useTeamStore } from '@/stores/slices/team';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useRasterStore } from '@/stores/slices/raster';
+import { useAnalysisConfigStore } from '@/stores/slices/analysis';
+import { useEditorStore } from '@/stores/slices/editor';
+import { useUIStore } from '@/stores/slices/ui';
+import { useNotificationStore } from '@/stores/slices/notification';
+import { useAuthStore } from '@/stores/slices/auth';
 import Select from '@/components/atoms/form/Select';
 import useToast from '@/hooks/ui/use-toast';
 import { Skeleton } from '@mui/material';
 import type { IconType } from 'react-icons';
-import useDashboardSearchStore from '@/stores/ui/dashboard-search';
 import { IoIosAdd } from 'react-icons/io';
 import TeamCreator from '@/components/organisms/team/TeamCreator';
 import TeamInvitePanel from '@/components/organisms/team/TeamInvitePanel';
-import useContainerStore from '@/stores/container';
+import { useContainerStore } from '@/stores/slices/container';
 import Container from '@/components/primitives/Container';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
@@ -57,7 +53,7 @@ import Paragraph from '@/components/primitives/Paragraph';
 import { IoChevronForward } from 'react-icons/io5';
 import { HiOutlineServer } from 'react-icons/hi2';
 import { MdImportExport } from 'react-icons/md';
-import usePluginStore from '@/stores/plugins/plugin';
+import { usePluginStore } from '@/stores/slices/plugin';
 import { NodeType } from '@/types/plugin';
 import { BsFiles } from 'react-icons/bs';
 import './DashboardLayout.css';
@@ -215,7 +211,7 @@ const DashboardLayout = () => {
         { id: 'advanced', label: 'Advanced', icon: IoSettingsOutline }
     ]), []);
 
-    const searchQuery = useDashboardSearchStore((s) => s.query);
+    const searchQuery = useUIStore((s) => s.query);
     const [settingsExpanded, setSettingsExpanded] = useState(() => pathname.startsWith('/dashboard/settings'));
     const activeSettingsTab = searchParams.get('tab') || 'general';
 
@@ -298,7 +294,7 @@ const DashboardLayout = () => {
         setSidebarOpen(false);
     }, [pathname]);
 
-    const setSearchQuery = useDashboardSearchStore((s) => s.setQuery);
+    const setSearchQuery = useUIStore((s) => s.setQuery);
     const [localQuery, setLocalQuery] = useState(searchQuery);
 
     useEffect(() => { setLocalQuery(searchQuery); }, [searchQuery]);
@@ -322,11 +318,11 @@ const DashboardLayout = () => {
         const { reset: resetTrajectories } = useTrajectoryStore.getState();
         const { clearFrameCache } = useRasterStore.getState();
         const { resetAnalysisConfig } = useAnalysisConfigStore.getState();
-        const { reset: resetModel } = useModelStore.getState();
-        const { reset: resetTimesteps } = useTimestepStore.getState();
-        const { reset: resetPlayback } = usePlaybackStore.getState();
-        const { reset: resetEditorUI } = useEditorUIStore.getState();
-        const { reset: resetRenderConfig } = useRenderConfigStore.getState();
+        const { resetModel } = useEditorStore.getState();
+        const { resetTimesteps } = useEditorStore.getState();
+        const { resetPlayback } = useEditorStore.getState();
+        const { resetEditorUI } = useUIStore.getState();
+        const { reset: resetRenderConfig } = useEditorStore.getState().renderConfig;
 
         resetTrajectories();
         clearFrameCache();
@@ -356,11 +352,11 @@ const DashboardLayout = () => {
                 const { reset: resetTrajectories } = useTrajectoryStore.getState();
                 const { clearFrameCache } = useRasterStore.getState();
                 const { resetAnalysisConfig } = useAnalysisConfigStore.getState();
-                const { reset: resetModel } = useModelStore.getState();
-                const { reset: resetTimesteps } = useTimestepStore.getState();
-                const { reset: resetPlayback } = usePlaybackStore.getState();
-                const { reset: resetEditorUI } = useEditorUIStore.getState();
-                const { reset: resetRenderConfig } = useRenderConfigStore.getState();
+                const { resetModel } = useEditorStore.getState();
+                const { resetTimesteps } = useEditorStore.getState();
+                const { resetPlayback } = useEditorStore.getState();
+                const { resetEditorUI } = useUIStore.getState();
+                const { reset: resetRenderConfig } = useEditorStore.getState().renderConfig;
 
                 resetTrajectories();
                 clearFrameCache();

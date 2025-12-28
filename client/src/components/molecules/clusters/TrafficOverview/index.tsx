@@ -3,7 +3,7 @@ import { Activity } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { useState, useEffect } from 'react'
 import { ChartContainer } from '@/components/atoms/common/ChartContainer'
-import { formatNetworkSpeed } from '@/utilities/network'
+import { formatNetworkSpeed } from '@/utilities/common/network'
 import './TrafficOverview.css'
 import Paragraph from '@/components/primitives/Paragraph'
 

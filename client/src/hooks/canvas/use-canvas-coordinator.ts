@@ -21,12 +21,10 @@
  */
 
 import { useEffect, useRef } from 'react';
-import usePlaybackStore from '@/stores/editor/playback';
-import useTimestepStore from '@/stores/editor/timesteps';
-import useTrajectoryStore from '@/stores/trajectories';
+import { useEditorStore } from '@/stores/slices/editor';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import useLogger from '@/hooks/core/use-logger';
-import useAnalysisConfigStore from '@/stores/analysis-config';
-import useModelStore from '@/stores/editor/model';
+import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 
 const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     const logger = useLogger('use-canvas-coordinator');
@@ -41,16 +39,16 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
 
-    const currentTimestep = usePlaybackStore((state) => state.currentTimestep);
-    const setCurrentTimestep = usePlaybackStore((state) => state.setCurrentTimestep);
-    const resetPlayback = usePlaybackStore((state) => state.reset);
+    const currentTimestep = useEditorStore((state) => state.currentTimestep);
+    const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
+    const resetPlayback = useEditorStore((state) => state.resetPlayback);
 
-    const computeTimestepData = useTimestepStore((state) => state.computeTimestepData);
-    const timestepData = useTimestepStore((state) => state.timestepData);
-    const activeModel = useModelStore((state) => state.activeModel);
-    const resetTimestep = useTimestepStore((state) => state.reset);
+    const computeTimestepData = useEditorStore((state) => state.computeTimestepData);
+    const timestepData = useEditorStore((state) => state.timestepData);
+    const activeModel = useEditorStore((state) => state.activeModel);
+    const resetTimestep = useEditorStore((state) => state.resetTimesteps);
 
-    const resetModel = useModelStore((state) => state.reset);
+    const resetModel = useEditorStore((state) => state.resetModel);
 
     // Load trajectory when hook is initialized - only if trajectoryId is provided
     useEffect(() => {

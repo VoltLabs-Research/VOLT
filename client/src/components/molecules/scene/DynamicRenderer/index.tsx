@@ -1,37 +1,38 @@
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import {
-    ACESFilmicToneMapping,
-    CineonToneMapping,
-    LinearSRGBColorSpace,
-    LinearToneMapping,
-    NoToneMapping,
-    PCFShadowMap,
-    PCFSoftShadowMap,
-    ReinhardToneMapping,
-    SRGBColorSpace,
-    VSMShadowMap,
-    BasicShadowMap } from 'three';
-import { useRendererSettings } from '@/stores/editor/renderer-settings';
+	ACESFilmicToneMapping,
+	CineonToneMapping,
+	LinearSRGBColorSpace,
+	LinearToneMapping,
+	NoToneMapping,
+	PCFShadowMap,
+	PCFSoftShadowMap,
+	ReinhardToneMapping,
+	SRGBColorSpace,
+	VSMShadowMap,
+	BasicShadowMap
+} from 'three';
+import { useEditorStore } from '@/stores/slices/editor';
 
 const DynamicRenderer = () => {
 	const { gl } = useThree();
-	const toneMapping = useRendererSettings((s) => s.runtime.toneMapping);
-	const exposure = useRendererSettings((s) => s.runtime.toneMappingExposure);
-	const outputCS = useRendererSettings((s) => s.runtime.outputColorSpace);
-	const pcl = useRendererSettings((s) => s.runtime.physicallyCorrectLights);
-	const clipping = useRendererSettings((s) => s.runtime.localClippingEnabled);
-	const autoClear = useRendererSettings((s) => s.runtime.autoClear);
-	const shadowEnabled = useRendererSettings((s) => s.runtime.shadowEnabled);
-	const shadowType = useRendererSettings((s) => s.runtime.shadowType);
+	const toneMapping = useEditorStore((s) => s.rendererSettings.runtime.toneMapping);
+	const exposure = useEditorStore((s) => s.rendererSettings.runtime.toneMappingExposure);
+	const outputCS = useEditorStore((s) => s.rendererSettings.runtime.outputColorSpace);
+	const pcl = useEditorStore((s) => s.rendererSettings.runtime.physicallyCorrectLights);
+	const clipping = useEditorStore((s) => s.rendererSettings.runtime.localClippingEnabled);
+	const autoClear = useEditorStore((s) => s.rendererSettings.runtime.autoClear);
+	const shadowEnabled = useEditorStore((s) => s.rendererSettings.runtime.shadowEnabled);
+	const shadowType = useEditorStore((s) => s.rendererSettings.runtime.shadowType);
 
 	useEffect(() => {
 		const tm =
 			toneMapping === 'ACESFilmic' ? ACESFilmicToneMapping :
-			toneMapping === 'Cineon' ? CineonToneMapping :
-			toneMapping === 'Reinhard' ? ReinhardToneMapping :
-			toneMapping === 'Linear' ? LinearToneMapping :
-			NoToneMapping;
+				toneMapping === 'Cineon' ? CineonToneMapping :
+					toneMapping === 'Reinhard' ? ReinhardToneMapping :
+						toneMapping === 'Linear' ? LinearToneMapping :
+							NoToneMapping;
 		gl.toneMapping = tm;
 		gl.toneMappingExposure = exposure;
 	}, [gl, toneMapping, exposure]);
@@ -56,9 +57,9 @@ const DynamicRenderer = () => {
 		gl.shadowMap.enabled = shadowEnabled;
 		gl.shadowMap.type =
 			shadowType === 'PCF' ? PCFShadowMap :
-			shadowType === 'PCFSoft' ? PCFSoftShadowMap :
-			shadowType === 'VSM' ? VSMShadowMap :
-			BasicShadowMap;
+				shadowType === 'PCFSoft' ? PCFSoftShadowMap :
+					shadowType === 'VSM' ? VSMShadowMap :
+						BasicShadowMap;
 	}, [gl, shadowEnabled, shadowType]);
 
 	return null;

@@ -21,7 +21,7 @@
  */
 
 import { useEffect, useRef, useMemo } from 'react';
-import AnimationPresenceManager, { type AnimationConfig } from '@/utilities/animation-presence-manager';
+import AnimationPresenceManager, { type AnimationConfig } from '@/utilities/animations/animation-presence-manager';
 
 const DEFAULT_ANIMATION_DURATION = 300;
 const ANIMATION_EASING = 'ease-in-out';

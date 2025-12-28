@@ -11,10 +11,10 @@ import {
     Area,
     AreaChart
 } from 'recharts';
-import { decodeMsgpackBuffer } from '@/utilities/msgpack';
+import { decodeMsgpackBuffer } from '@/utilities/api/msgpack';
 import Loader from '@/components/atoms/common/Loader';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
-import pluginApi from '@/services/api/plugin';
+import pluginApi from '@/services/api/plugin/plugin';
 
 interface ChartViewerProps {
     trajectoryId: string;

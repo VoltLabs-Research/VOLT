@@ -1,8 +1,8 @@
 /// <reference types="vite/client" />
 import { useEffect, useState } from 'react';
-import useTrajectoryFS, { type FsEntry } from '@/stores/trajectory-vfs';
-import trajectoryApi from '@/services/api/trajectory';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
+import useTrajectoryFS, { type FsEntry } from '@/stores/slices/trajectory-vfs';
+import trajectoryApi from '@/services/api/trajectory/trajectory';
+import formatTimeAgo from '@/utilities/api/formatTimeAgo';
 import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
 import {
     LuLayoutList,
@@ -18,7 +18,7 @@ import {
     LuDownload
 } from 'react-icons/lu';
 import { CircularProgress } from '@mui/material';
-import { formatSize } from '@/utilities/scene-utils';
+import { formatSize } from '@/utilities/glb/scene-utils';
 import './TrajectoryFileExplorer.css';
 import Paragraph from '@/components/primitives/Paragraph';
 import { BreadcrumbsSkeleton, HeaderIconSkeleton, FileRowSkeleton } from '@/components/organisms/trajectory/FileExplorer/Skeletons';

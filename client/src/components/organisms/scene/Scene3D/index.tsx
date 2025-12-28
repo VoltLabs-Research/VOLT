@@ -7,6 +7,7 @@ import React, {
 	forwardRef,
 	useImperativeHandle
 } from 'react';
+import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, AdaptiveDpr, AdaptiveEvents, Bvh, Preload } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
@@ -20,12 +21,8 @@ import DynamicLights from '@/components/molecules/scene/DynamicLights';
 import DynamicBackground from '@/components/molecules/scene/DynamicBackground';
 import DynamicRenderer from '@/components/molecules/scene/DynamicRenderer';
 import CameraRig from '@/components/atoms/scene/CameraRig';
-import useEditorUIStore from '@/stores/ui/editor';
-import useModelStore from '@/stores/editor/model';
-import usePerformanceSettingsStore from '@/stores/editor/perfomance-settings';
-import useCameraSettings from '@/stores/editor/camera-config';
-import { useRendererSettings } from '@/stores/editor/renderer-settings';
-import useOrbitControlsSettings from '@/stores/editor/orbit-controls';
+import { useUIStore } from '@/stores/slices/ui';
+import { useEditorStore } from '@/stores/slices/editor';
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
 import './Scene3D.css';
 
@@ -78,46 +75,46 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 		waitForContentFrame: () => Promise<void>;
 	} | null>(null);
 
-	const activeScene = useModelStore((s) => s.activeScene);
-	const activeModel = useModelStore((s) => s.activeModel);
+	const activeScene = useEditorStore((s) => s.activeScene);
+	const activeModel = useEditorStore((s) => s.activeModel);
 
-	const toggleCanvasGrid = useEditorUIStore((s) => s.toggleCanvasGrid);
-	const toggleEditorWidgets = useEditorUIStore((s) => s.toggleEditorWidgets);
-	const showEditorWidgets = useEditorUIStore((s) => s.showEditorWidgets);
-	const setSceneInteracting = useEditorUIStore((s) => s.setSceneInteracting);
-	const isInteracting = useEditorUIStore((s) => s.sceneInteracting);
+	const toggleCanvasGrid = useUIStore((s) => s.toggleCanvasGrid);
+	const toggleEditorWidgets = useUIStore((s) => s.toggleEditorWidgets);
+	const showEditorWidgets = useUIStore((s) => s.showEditorWidgets);
+	const setSceneInteracting = useUIStore((s) => s.setSceneInteracting);
+	const isInteracting = useUIStore((s) => s.isSceneInteracting);
 
-	useCameraSettings((s) => s.type);
-	useCameraSettings((s) => s.position);
-	useCameraSettings((s) => s.up);
+	useEditorStore((s) => s.camera.type);
+	useEditorStore((s) => s.camera.position);
+	useEditorStore((s) => s.camera.up);
 
-	const dprCfg = usePerformanceSettingsStore((s) => s.dpr);
-	const perf = usePerformanceSettingsStore((s) => s.performance);
-	const interactionDegradeEnabled = usePerformanceSettingsStore((s) => s.interactionDegrade.enabled);
-	const powerPreference = usePerformanceSettingsStore((s) => s.canvas.powerPreference);
-	const adaptiveEventsEnabled = usePerformanceSettingsStore((s) => s.adaptiveEvents.enabled);
+	const dprCfg = useEditorStore((s) => s.performanceSettings.dpr);
+	const perf = useEditorStore((s) => s.performanceSettings.performance);
+	const interactionDegradeEnabled = useEditorStore((s) => s.performanceSettings.interactionDegrade.enabled);
+	const powerPreference = useEditorStore((s) => s.performanceSettings.canvas.powerPreference);
+	const adaptiveEventsEnabled = useEditorStore((s) => s.performanceSettings.adaptiveEvents.enabled);
 
-	const rCreate = useRendererSettings((s) => s.create);
+	const rCreate = useEditorStore((s) => s.rendererSettings.create);
 
-	const ocEnabled = useOrbitControlsSettings((s) => s.enabled);
-	const ocEnableDamping = useOrbitControlsSettings((s) => s.enableDamping);
-	const ocDampingFactor = useOrbitControlsSettings((s) => s.dampingFactor);
-	const ocEnableZoom = useOrbitControlsSettings((s) => s.enableZoom);
-	const ocZoomSpeed = useOrbitControlsSettings((s) => s.zoomSpeed);
-	const ocEnableRotate = useOrbitControlsSettings((s) => s.enableRotate);
-	const ocRotateSpeed = useOrbitControlsSettings((s) => s.rotateSpeed);
-	const ocEnablePan = useOrbitControlsSettings((s) => s.enablePan);
-	const ocPanSpeed = useOrbitControlsSettings((s) => s.panSpeed);
-	const ocScreenSpacePanning = useOrbitControlsSettings((s) => s.screenSpacePanning);
-	const ocAutoRotate = useOrbitControlsSettings((s) => s.autoRotate);
-	const ocAutoRotateSpeed = useOrbitControlsSettings((s) => s.autoRotateSpeed);
-	const ocMinDistance = useOrbitControlsSettings((s) => s.minDistance);
-	const ocMaxDistance = useOrbitControlsSettings((s) => s.maxDistance);
-	const ocMinPolar = useOrbitControlsSettings((s) => s.minPolarAngle);
-	const ocMaxPolar = useOrbitControlsSettings((s) => s.maxPolarAngle);
-	const ocMinAzimuth = useOrbitControlsSettings((s) => s.minAzimuthAngle);
-	const ocMaxAzimuth = useOrbitControlsSettings((s) => s.maxAzimuthAngle);
-	const ocTarget = useOrbitControlsSettings((s) => s.target);
+	const ocEnabled = useEditorStore((s) => s.orbitControls.enabled);
+	const ocEnableDamping = useEditorStore((s) => s.orbitControls.enableDamping);
+	const ocDampingFactor = useEditorStore((s) => s.orbitControls.dampingFactor);
+	const ocEnableZoom = useEditorStore((s) => s.orbitControls.enableZoom);
+	const ocZoomSpeed = useEditorStore((s) => s.orbitControls.zoomSpeed);
+	const ocEnableRotate = useEditorStore((s) => s.orbitControls.enableRotate);
+	const ocRotateSpeed = useEditorStore((s) => s.orbitControls.rotateSpeed);
+	const ocEnablePan = useEditorStore((s) => s.orbitControls.enablePan);
+	const ocPanSpeed = useEditorStore((s) => s.orbitControls.panSpeed);
+	const ocScreenSpacePanning = useEditorStore((s) => s.orbitControls.screenSpacePanning);
+	const ocAutoRotate = useEditorStore((s) => s.orbitControls.autoRotate);
+	const ocAutoRotateSpeed = useEditorStore((s) => s.orbitControls.autoRotateSpeed);
+	const ocMinDistance = useEditorStore((s) => s.orbitControls.minDistance);
+	const ocMaxDistance = useEditorStore((s) => s.orbitControls.maxDistance);
+	const ocMinPolar = useEditorStore((s) => s.orbitControls.minPolarAngle);
+	const ocMaxPolar = useEditorStore((s) => s.orbitControls.maxPolarAngle);
+	const ocMinAzimuth = useEditorStore((s) => s.orbitControls.minAzimuthAngle);
+	const ocMaxAzimuth = useEditorStore((s) => s.orbitControls.maxAzimuthAngle);
+	const ocTarget = useEditorStore((s) => s.orbitControls.target);
 
 	const dpr = useMemo(() => {
 		if (dprCfg.mode === 'fixed') return dprCfg.fixed;
@@ -277,7 +274,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 			if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'z') {
 				e.preventDefault();
 				if (orbitControlsRef.current) {
-					const optimal = calculateClosestCameraPositionZY(activeModel?.modelBounds.box, orbitControlsRef.current.object);
+					const optimal = calculateClosestCameraPositionZY(activeModel?.modelBounds?.box, orbitControlsRef.current.object);
 					orbitControlsRef.current.object.position.copy(optimal.position);
 					orbitControlsRef.current.target.copy(optimal.target);
 					orbitControlsRef.current.object.up.copy(optimal.up);
@@ -375,18 +372,13 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 				</Bvh>
 
 				<EffectComposer enableNormalPass={isDefectScene} multisampling={0} renderPriority={1}>
-					{isDefectScene && <SSAO {...useRenderConfigStoreShim().SSAO} />}
+					{isDefectScene && <SSAO {...useEditorStore.getState().renderConfig.SSAO} />}
 				</EffectComposer>
 			</Canvas>
 		</div>
 	);
 });
 
-const useRenderConfigStoreShim = () => {
-	return {
-		SSAO: { intensity: 5, radius: 0.1, luminanceInfluence: 0.5, worldDistanceThreshold: 0.5, worldDistanceFalloff: 0.3, worldProximityThreshold: 0.5, worldProximityFalloff: 0.3 }
-	};
-};
 
 Scene3D.displayName = 'Scene3D';
 export default React.memo(Scene3D);

@@ -21,7 +21,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import sessionApi from '@/services/api/session';
+import sessionApi from '@/services/api/session/session';
 
 export interface LoginActivity {
     _id: string;

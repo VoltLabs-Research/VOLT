@@ -1,24 +1,24 @@
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Fog } from 'three';
-import useEnvironmentConfigStore from '@/stores/editor/environment-config';
+import { useEditorStore } from '@/stores/slices/editor';
 
 const DynamicEnvironment = () => {
     const { scene, gl } = useThree();
-    const enableFog = useEnvironmentConfigStore((store) => store.enableFog);
-    const fogColor = useEnvironmentConfigStore((store) => store.fogColor);
-    const fogNear = useEnvironmentConfigStore((store) => store.fogNear);
-    const fogFar = useEnvironmentConfigStore((store) => store.fogFar);
-    const toneMappingExposure = useEnvironmentConfigStore((store) => store.toneMappingExposure);
+    const enableFog = useEditorStore((store) => store.environment.enableFog);
+    const fogColor = useEditorStore((store) => store.environment.fogColor);
+    const fogNear = useEditorStore((store) => store.environment.fogNear);
+    const fogFar = useEditorStore((store) => store.environment.fogFar);
+    const toneMappingExposure = useEditorStore((store) => store.environment.toneMappingExposure);
 
     useEffect(() => {
-        if(enableFog){
+        if (enableFog) {
             scene.fog = new Fog(fogColor, fogNear, fogFar);
-        }else{
+        } else {
             scene.fog = null;
         }
 
-        return() => {
+        return () => {
             scene.fog = null;
         };
     }, [scene, enableFog, fogColor, fogNear, fogFar]);

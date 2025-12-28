@@ -1,7 +1,7 @@
 import { useEffect, useCallback, memo } from 'react';
 import SimulationCard from '@/components/atoms/trajectory/SimulationCard';
 import SimulationSkeletonCard from '@/components/atoms/trajectory/SimulationSkeletonCard';
-import useTrajectoryStore from '@/stores/trajectories';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import useAnimationPresence from '@/hooks/ui/animation/use-animation-presence';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import Container from '@/components/primitives/Container';

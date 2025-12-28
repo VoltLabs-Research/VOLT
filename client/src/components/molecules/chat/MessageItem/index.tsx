@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Message } from '@/types/chat';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
+import formatTimeAgo from '@/utilities/api/formatTimeAgo';
 import TextMessage from '@/components/atoms/chat/TextMessage';
 import FileMessage from '@/components/atoms/chat/FileMessage';
 import MessageControls from '@/components/atoms/chat/MessageControls';

@@ -19,7 +19,7 @@ import ContainerTerminal from '@/components/organisms/containers/ContainerTermin
 import ContainerFileExplorer from '@/components/organisms/containers/ContainerFileExplorer';
 import ContainerProcesses from '@/components/organisms/containers/ContainerProcesses';
 import EditContainerModal from '@/components/organisms/containers/EditContainerModal';
-import containerApi from '@/services/api/container';
+import containerApi from '@/services/api/container/container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';

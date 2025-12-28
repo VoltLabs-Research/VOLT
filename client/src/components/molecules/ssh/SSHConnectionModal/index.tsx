@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TbX, TbServer, TbCheck, TbX as TbXIcon } from 'react-icons/tb';
-import useSSHConnections, { type CreateSSHConnectionData, type UpdateSSHConnectionData, type SSHConnection } from '@/stores/ssh-connections';
+import { useSSHConnectionStore, type CreateSSHConnectionData, type UpdateSSHConnectionData, type SSHConnection } from '@/stores/slices/ssh';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './SSHConnectionModal.css';
 import Title from '@/components/primitives/Title';
@@ -34,7 +34,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
     const [testResult, setTestResult] = useState<{ valid: boolean; error?: string } | null>(null);
     const [testing, setTesting] = useState(false);
 
-    const { createConnection, updateConnection, testConnection } = useSSHConnections();
+    const { createConnection, updateConnection, testConnection } = useSSHConnectionStore();
 
     const { errors, validate, checkField } = useFormValidation({
         name: { required: true, message: 'Connection name is required' },
@@ -54,7 +54,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
     });
 
     useEffect(() => {
-        if(mode === 'edit' && connection){
+        if (mode === 'edit' && connection) {
             setFormData({
                 name: connection.name,
                 host: connection.host,
@@ -62,7 +62,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                 username: connection.username,
                 password: ''
             });
-        }else{
+        } else {
             setFormData({
                 name: '',
                 host: '',
@@ -84,60 +84,60 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
         (document.getElementById('ssh-connection-modal') as HTMLDialogElement)?.close();
     };
 
-    const handleSubmit = async(e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if(!validate(formData)) {
+        if (!validate(formData)) {
             return;
         }
 
-        try{
+        try {
             setLoading(true);
             setError(null);
 
-            if(mode === 'create'){
+            if (mode === 'create') {
                 const createData: CreateSSHConnectionData = {
                     ...formData,
                     port: typeof formData.port === 'string' ? parseInt(formData.port) : formData.port
                 };
                 await createConnection(createData);
-            }else if(connection){
+            } else if (connection) {
                 const updateData: UpdateSSHConnectionData = {
                     name: formData.name,
                     host: formData.host,
                     port: typeof formData.port === 'string' ? parseInt(formData.port) : formData.port,
                     username: formData.username
                 };
-                if(formData.password.trim()) {
+                if (formData.password.trim()) {
                     updateData.password = formData.password;
                 }
                 await updateConnection(connection._id, updateData);
             }
 
             closeModal();
-        }catch(err: any){
+        } catch (err: any) {
             setError(err.message || 'Failed to save SSH connection');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
 
-    const handleTest = async() => {
-        if(!connection && mode === 'edit') return;
+    const handleTest = async () => {
+        if (!connection && mode === 'edit') return;
 
-        if(mode === 'create'){
+        if (mode === 'create') {
             setError('Please save the connection first before testing');
             return;
         }
 
-        try{
+        try {
             setTesting(true);
             setTestResult(null);
             const result = await testConnection(connection!._id);
             setTestResult(result);
-        }catch(err: any){
+        } catch (err: any) {
             setTestResult({ valid: false, error: err.message });
-        }finally{
+        } finally {
             setTesting(false);
         }
     };

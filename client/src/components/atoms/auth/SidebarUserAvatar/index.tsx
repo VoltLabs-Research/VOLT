@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import useAuthStore from '@/stores/authentication';
+import { useAuthStore } from '@/stores/slices/auth';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import { CiLogout, CiSettings } from 'react-icons/ci';

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { createOverlayVariants } from '@/utilities/animation';
+import { createOverlayVariants } from '@/utilities/animations/animation';
 
 interface PageOverlayProps {
     isSameLayout: boolean;

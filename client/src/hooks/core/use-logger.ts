@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import Logger from '@/services/logger';
+import Logger from '@/services/common/logger';
 
 const useLogger = (componentName: string) => {
     const loggerRef = useRef<Logger>(new Logger(componentName));

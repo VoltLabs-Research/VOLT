@@ -3,23 +3,23 @@ import React from 'react';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/form/FormField';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
-import useLightsStore from '@/stores/editor/lights-config';
+import { useEditorStore } from '@/stores/slices/editor';
 import { MdLightbulb } from 'react-icons/md';
 
 const LightsControls: React.FC = () => {
-    const st = useLightsStore();
-    const setGlobal = useLightsStore(v => v.setGlobal);
-    const setDirectional = useLightsStore(v => v.setDirectional);
-    const setPoint = useLightsStore(v => v.setPoint);
-    const setSpot = useLightsStore(v => v.setSpot);
-    const setHemisphere = useLightsStore(v => v.setHemisphere);
-    const setRectArea = useLightsStore(v => v.setRectArea);
+    const st = useEditorStore(s => s.lights);
+    const setGlobal = useEditorStore(s => s.lights.setGlobal);
+    const setDirectional = useEditorStore(s => s.lights.setDirectional);
+    const setPoint = useEditorStore(s => s.lights.setPoint);
+    const setSpot = useEditorStore(s => s.lights.setSpot);
+    const setHemisphere = useEditorStore(s => s.lights.setHemisphere);
+    const setRectArea = useEditorStore(s => s.lights.setRectArea);
 
     const global = {
         key: 'global',
         title: 'Global IBL',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [
             { label: 'Intensity', min: 0, max: 10, step: 0.01, get: () => st.global.envIntensity, set: (v: number) => setGlobal({ envIntensity: v }), format: (v: number) => v.toFixed(2) },
             { label: 'Yaw(rad)', min: -Math.PI, max: Math.PI, step: 0.01, get: () => st.global.envRotationYaw, set: (v: number) => setGlobal({ envRotationYaw: v }), format: (v: number) => v.toFixed(2) },
@@ -149,7 +149,7 @@ const LightsControls: React.FC = () => {
         )
     };
 
-    return(
+    return (
         <CollapsibleSection
             title="Lights"
             icon={<MdLightbulb size={16} />}

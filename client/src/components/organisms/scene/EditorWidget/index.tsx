@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle } from 'react';
-import useEditorUIStore from '@/stores/ui/editor';
+import { useUIStore } from '@/stores/slices/ui';
 import Draggable from '@/components/atoms/common/Draggable';
 import './EditorWidget.css';
 
@@ -20,7 +20,7 @@ export interface EditorWidgetRef {
 const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>((
     { children, className = '', style = {}, draggable = true }, ref
 ) => {
-    const isSceneInteracting = useEditorUIStore((s) => s.isSceneInteracting);
+    const isSceneInteracting = useUIStore((s) => s.isSceneInteracting);
     const innerRef = React.useRef<any | null>(null);
 
     useImperativeHandle(ref, () => ({

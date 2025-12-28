@@ -25,7 +25,7 @@ import { useThree, useFrame } from '@react-three/fiber';
 import { Raycaster, Plane, Vector3, Euler } from 'three';
 import type { ExtendedSceneState, UseGlbSceneParams } from '@/types/canvas';
 import useLogger from '@/hooks/core/use-logger';
-import useModelStore from '@/stores/editor/model';
+import { useEditorStore } from '@/stores/slices/editor';
 import ClippingManager from '@/utilities/glb/scene/clipping-manager';
 import ReferencePointManager from '@/utilities/glb/scene/reference-point-manager';
 import SelectionManager from '@/utilities/glb/scene/selection-manager';
@@ -42,9 +42,9 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     const { scene, camera, gl, invalidate } = useThree();
     const logger = useLogger('use-glb-scene');
 
-    const activeModel = useModelStore((s) => s.activeModel);
-    const setModelBounds = useModelStore((s) => s.setModelBounds);
-    const setIsModelLoading = useModelStore((s) => s.setIsModelLoading);
+    const activeModel = useEditorStore((s) => s.activeModel);
+    const setModelBounds = useEditorStore((s) => s.setModelBounds);
+    const setIsModelLoading = useEditorStore((s) => s.setIsModelLoading);
 
     const stateRef = useRef<ExtendedSceneState>({
         model: null,

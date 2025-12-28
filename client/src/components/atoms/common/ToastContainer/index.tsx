@@ -2,15 +2,15 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { IoCloseOutline } from 'react-icons/io5';
 import { MdError, MdCheckCircle, MdWarning, MdInfo } from 'react-icons/md';
-import useToastStore from '@/stores/ui/toast';
-import type { Toast, ToastType } from '@/stores/ui/toast';
+import { useUIStore, type Toast, type ToastType } from '@/stores/slices/ui';
 import './ToastContainer.css';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 
+
 const getIcon = (type: ToastType) => {
-  switch(type){
+  switch (type) {
     case 'error':
       return <MdError className='toast-icon f-shrink-0 font-size-4' />;
     case 'success':
@@ -25,7 +25,7 @@ const getIcon = (type: ToastType) => {
 };
 
 const Toast: React.FC<{ toast: Toast }> = ({ toast }) => {
-  const removeToast = useToastStore((s) => s.removeToast);
+  const removeToast = useUIStore((s) => s.removeToast);
 
   return (
     <div className={`d-flex items-center content-between gap-1 toast toast-${toast.type}`}>
@@ -48,10 +48,10 @@ const Toast: React.FC<{ toast: Toast }> = ({ toast }) => {
 };
 
 const ToastContainer: React.FC = () => {
-  const toasts = useToastStore((s) => s.toasts);
+  const toasts = useUIStore((s) => s.toasts);
   const rootElement = document.getElementById('root');
 
-  if(!rootElement || toasts.length === 0){
+  if (!rootElement || toasts.length === 0) {
     return null;
   }
 

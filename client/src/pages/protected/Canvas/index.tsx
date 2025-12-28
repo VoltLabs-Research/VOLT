@@ -8,10 +8,8 @@ import useCanvasPresence from '@/hooks/canvas/use-canvas-presence';
 import CanvasWidgets from '@/components/atoms/scene/CanvasWidgets';
 import CanvasPresenceAvatars from '@/components/atoms/scene/CanvasPresenceAvatars';
 import PreloadingOverlay from '@/components/atoms/common/PreloadingOverlay';
-import useEditorUIStore from '@/stores/ui/editor';
-import useModelStore from '@/stores/editor/model';
-import usePlaybackStore from '@/stores/editor/playback';
-import useAnalysisConfigStore from '@/stores/analysis-config';
+import { useEditorStore } from '@/stores/slices/editor';
+import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
 import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
 import Loader from '@/components/atoms/common/Loader';
@@ -40,22 +38,21 @@ const EditorPage: React.FC = () => {
     const { canvasUsers } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
 
     // Simple individual store subscriptions
-    const isModelLoading = useModelStore((s) => s.isModelLoading);
+    const isModelLoading = useEditorStore((s) => s.isModelLoading);
 
-    const reset = useModelStore((s) => s.reset);
-    const didPreload = usePlaybackStore((s) => s.didPreload ?? false);
-    const isPlaying = usePlaybackStore((s) => s.isPlaying);
-    const showCanvasGrid = useEditorUIStore((s) => s.showCanvasGrid);
+    const resetModel = useEditorStore((s) => s.resetModel);
+    const didPreload = useEditorStore((s) => s.didPreload ?? false);
+    const isPlaying = useEditorStore((s) => s.isPlaying);
+    const showCanvasGrid = useEditorStore((s) => s.grid.enabled);
     const analysisConfigId = useAnalysisConfigStore((s) => s.analysisConfig?._id);
 
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            reset();
-            usePlaybackStore.getState().reset();
-            useModelStore.getState().reset();
+            useEditorStore.getState().resetModel();
+            useEditorStore.getState().resetPlayback();
         };
-    }, [reset]);
+    }, []);
 
     // Memoize loading state calculation
     const showLoading = useMemo(() =>

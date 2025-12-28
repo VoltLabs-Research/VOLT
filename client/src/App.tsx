@@ -28,7 +28,7 @@ import GlobalTransitionOverlay from '@/components/atoms/animations/GlobalTransit
 import Loader from '@/components/atoms/common/Loader';
 import LoadingShimmer from '@/components/atoms/animations/LoadingShimmer';
 import ToastContainer from '@/components/atoms/common/ToastContainer';
-import useAuthStore from '@/stores/authentication';
+import { useAuthStore } from '@/stores/slices/auth';
 import useToast from '@/hooks/ui/use-toast';
 import { renderPublicRoutes, renderProtectedRoutes, renderGuestRoutes } from '@/routes';
 

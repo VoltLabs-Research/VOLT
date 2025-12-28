@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import trajectoryApi from '@/services/api/trajectory';
+import trajectoryApi from '@/services/api/trajectory/trajectory';
 
 export type MetricKey = 'trajectories' | 'analysis' | string;
 

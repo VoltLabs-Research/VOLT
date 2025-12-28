@@ -1,16 +1,16 @@
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Color } from 'three';
-import useEnvironmentConfigStore from '@/stores/editor/environment-config';
+import { useEditorStore } from '@/stores/slices/editor';
 
 const DynamicBackground = () => {
     const { scene } = useThree();
-    const { backgroundColor, backgroundType } = useEnvironmentConfigStore();
+    const { backgroundColor, backgroundType } = useEditorStore((s) => s.environment);
 
     useEffect(() => {
-        if(backgroundType === 'color'){
+        if (backgroundType === 'color') {
             scene.background = new Color(backgroundColor);
-        }else{
+        } else {
             scene.background = null;
         }
     }, [scene, backgroundColor, backgroundType]);

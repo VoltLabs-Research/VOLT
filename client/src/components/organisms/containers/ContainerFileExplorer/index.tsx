@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IoFolder, IoDocument, IoArrowBack } from 'react-icons/io5';
 import useToast from '@/hooks/ui/use-toast';
-import containerApi from '@/services/api/container';
+import containerApi from '@/services/api/container/container';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import './ContainerFileExplorer.css';

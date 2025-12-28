@@ -4,22 +4,22 @@ import { CiImageOn } from 'react-icons/ci';
 import { IoColorPalette } from 'react-icons/io5';
 import { useNavigate } from 'react-router';
 import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
-import useTrajectoryStore from '@/stores/trajectories';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import useLogger from '@/hooks/core/use-logger';
-import useAnalysisConfigStore from '@/stores/analysis-config';
+import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
-import useEditorUIStore, { type ActiveModifier } from '@/stores/ui/editor';
-import usePluginStore from '@/stores/plugins/plugin';
+import { useUIStore, type ActiveModifier } from '@/stores/slices/ui';
+import { usePluginStore } from '@/stores/slices/plugin';
 import './CanvasSidebarModifiers.css';
 import { RiSliceFill } from 'react-icons/ri';
 
 const CanvasSidebarModifiers = () => {
     const logger = useLogger('canvas-sidebar-modifiers');
-    const activeModifiers = useEditorUIStore((state) => state.activeModifiers);
-    const toggleModifier = useEditorUIStore((state) => state.toggleModifier);
+    const activeModifiers = useUIStore((state) => state.activeModifiers);
+    const toggleModifier = useUIStore((state) => state.toggleModifier);
     const modifiers = usePluginStore((state) => state.getModifiers());
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const setShowRenderConfig = useEditorUIStore((state) => state.setShowRenderConfig);
+    const setShowRenderConfig = useUIStore((state) => state.setShowRenderConfig);
     const idRateSeries = useTrajectoryStore((state) => state.idRateSeries);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const navigate = useNavigate();
@@ -28,7 +28,7 @@ const CanvasSidebarModifiers = () => {
     const prevActiveRef = useRef<ActiveModifier[]>(activeModifiers);
 
     useEffect(() => {
-        if(!trajectory?._id){
+        if (!trajectory?._id) {
             prevActiveRef.current = activeModifiers;
             return;
         }
@@ -37,12 +37,12 @@ const CanvasSidebarModifiers = () => {
         const current = activeModifiers.map(m => m.key);
         const justActivated = current.filter((key) => !prev.includes(key));
 
-        for(const modifierKey of justActivated){
+        for (const modifierKey of justActivated) {
             logger.log('Modifier activated:', modifierKey);
 
-            if(modifierKey === 'raster'){
+            if (modifierKey === 'raster') {
                 navigate('/raster/' + trajectory._id);
-            }else if(modifierKey === 'render-settings'){
+            } else if (modifierKey === 'render-settings') {
                 setShowRenderConfig(true);
             }
         }
@@ -85,9 +85,9 @@ const CanvasSidebarModifiers = () => {
     ]), [modifiers]);
 
     const handleToggle = (option: any) => {
-        if(option.isPlugin){
+        if (option.isPlugin) {
             toggleModifier(option.modifierId, option.pluginId, option.pluginModifierId);
-        }else{
+        } else {
             toggleModifier(option.modifierId);
         }
     };
@@ -96,7 +96,7 @@ const CanvasSidebarModifiers = () => {
         return activeModifiers.some(m => m.key === modifierId);
     };
 
-    return(
+    return (
         <div className='editor-sidebar-scene-container'>
             <div className='editor-sidebar-scene-options-container d-flex gap-1 column'>
                 {allModifiers.map((option) => (

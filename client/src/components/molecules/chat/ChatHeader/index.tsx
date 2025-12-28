@@ -1,7 +1,7 @@
 
 import Button from '@/components/primitives/Button';
 import type { Chat, Participant, Presence } from '@/types/chat';
-import { getInitials } from '@/utilities/guest';
+import { getInitials } from '@/utilities/api/guest';
 import {
     IoCallOutline,
     IoVideocamOutline,

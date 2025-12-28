@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import CameraManager from '@/components/atoms/scene/CameraManager';
 import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
 import useGlbScene from '@/hooks/canvas/use-glb-scene';
-import useTeamStore from '@/stores/team/team';
+import { useTeamStore } from '@/stores/slices/team';
 
 interface SingleModelViewerProps {
     trajectoryId: string;

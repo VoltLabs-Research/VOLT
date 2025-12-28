@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import useAuthStore from '@/stores/authentication';
+import { useAuthStore } from '@/stores/slices/auth';
 import AuthenticationSettings from '@/components/molecules/settings/AuthenticationSettings';
 import LoginActivityModal from '@/components/molecules/auth/LoginActivityModal';
 import useLoginActivity from '@/hooks/auth/use-login-activity';

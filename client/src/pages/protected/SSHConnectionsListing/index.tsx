@@ -1,10 +1,10 @@
 import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
-import useSSHConnections, { type SSHConnection } from '@/stores/ssh-connections';
+import { useSSHConnectionStore, type SSHConnection } from '@/stores/slices/ssh';
 import SSHConnectionModal from '@/components/molecules/ssh/SSHConnectionModal';
 import useToast from '@/hooks/ui/use-toast';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
+import formatTimeAgo from '@/utilities/api/formatTimeAgo';
 import { useState } from 'react';
 import { RiDeleteBin6Line, RiSettings3Line, RiWifiLine } from 'react-icons/ri';
 import { LuFolderOpen } from 'react-icons/lu';
@@ -49,7 +49,7 @@ const SSHConnectionsListing = () => {
     const [editingConnection, setEditingConnection] = useState<SSHConnection | null>(null);
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
 
-    const { connections, loading, fetchConnections, deleteConnection, testConnection } = useSSHConnections();
+    const { connections, loading, fetchConnections, deleteConnection, testConnection } = useSSHConnectionStore();
 
     useEffect(() => {
         fetchConnections();

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { createPageVariants, createContentVariants } from '@/utilities/animation';
+import { createPageVariants, createContentVariants } from '@/utilities/animations/animation';
 import useLayoutDetection from '@/hooks/ui/use-layout-detection';
 import PageOverlay from '@/components/atoms/animations/PageOverlay';
 import ShineEffect from '@/components/atoms/animations/ShineEffect';

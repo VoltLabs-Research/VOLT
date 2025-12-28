@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { IoImageOutline, IoDocumentOutline, IoDownloadOutline } from 'react-icons/io5';
 import type { Message } from '@/types/chat';
-import { formatSize } from '@/utilities/scene-utils';
-import { chatApi } from '@/services/api/chat';
+import { formatSize } from '@/utilities/glb/scene-utils';
+import { chatApi } from '@/services/api/chat/chat';
 import Paragraph from '@/components/primitives/Paragraph';
 import './FileMessage.css';
 

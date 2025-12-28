@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useTeamStore from '@/stores/team/team';
-import useTeamRoleStore from '@/stores/team-role';
-import useAuthStore from '@/stores/authentication';
+import { useTeamStore } from '@/stores/slices/team';
+import { useTeamRoleStore } from '@/stores/slices/team';
+import { useAuthStore } from '@/stores/slices/auth';
 import Container from '@/components/primitives/Container';
 import DocumentListing from '@/components/organisms/common/DocumentListing';
 import type { ColumnConfig } from '@/components/organisms/common/DocumentListing';
@@ -12,11 +12,11 @@ import EditableTag from '@/components/atoms/common/EditableTag';
 import { formatDistanceToNow } from 'date-fns';
 import useToast from '@/hooks/ui/use-toast';
 import ActivityHeatmap from '@/components/molecules/common/ActivityHeatmap';
-import type { ActivityData } from '@/services/api/team';
+import type { ActivityData } from '@/services/api/team/team';
 import { useState } from 'react';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
+import formatTimeAgo from '@/utilities/api/formatTimeAgo';
 import './MyTeam.css';
-import dailyActivityApi from '@/services/api/daily-activity';
+import dailyActivityApi from '@/services/api/daily-activity/daily-activity';
 
 const MyTeam: React.FC = () => {
     const navigate = useNavigate();

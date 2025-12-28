@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { BALANCED_EASING } from '@/utilities/animation';
+import { BALANCED_EASING } from '@/utilities/animations/animation';
 
 interface ShineEffectProps {
     isSameLayout: boolean;

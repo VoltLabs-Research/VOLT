@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { socketService } from '@/services/socketio';
+import { socketService } from '@/services/websockets/socketio';
 
 export interface CardPresenceUser {
     id: string;

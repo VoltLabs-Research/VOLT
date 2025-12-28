@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
-import trajectoryApi from '@/services/api/trajectory';
-import useTeamStore from '@/stores/team/team';
+import trajectoryApi from '@/services/api/trajectory/trajectory';
+import { useTeamStore } from '@/stores/slices/team';
 
 interface MergedAtomsRow {
     idx: number;

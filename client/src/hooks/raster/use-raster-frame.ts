@@ -21,7 +21,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import useRasterStore from '@/stores/raster';
+import { useRasterStore } from '@/stores/slices/raster';
 
 export interface UseRasterFrameResult {
     scene: {

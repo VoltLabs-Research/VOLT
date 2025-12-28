@@ -21,7 +21,7 @@
  */
 
 import { memo, useMemo } from 'react';
-import useTeamJobsStore from '@/stores/team/jobs';
+import { useTeamJobsStore } from '@/stores/slices/team';
 import JobSkeleton from '@/components/atoms/common/JobSkeleton';
 import JobQueue from '@/components/atoms/common/JobQueue';
 import Container from '@/components/primitives/Container';

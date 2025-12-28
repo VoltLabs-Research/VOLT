@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import useAuthStore from '@/stores/authentication';
-import { TokenStorage } from '@/utilities/storage';
+import { useAuthStore } from '@/stores/slices/auth';
+import { TokenStorage } from '@/utilities/auth/token-storage';
 import './OAuthCallback.css';
 
 export default function OAuthCallback(){

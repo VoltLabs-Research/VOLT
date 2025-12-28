@@ -21,8 +21,8 @@
  */
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { socketService } from '@/services/socketio';
-import { getOrCreateGuestUser } from '@/utilities/guest';
+import { socketService } from '@/services/websockets/socketio';
+import { getOrCreateGuestUser } from '@/utilities/api/guest';
 
 interface Cursor {
     id: string;

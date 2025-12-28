@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Terminal } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import { IoClose } from 'react-icons/io5';
-import { socketService } from '@/services/socketio';
+import { socketService } from '@/services/websockets/socketio';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import 'xterm/css/xterm.css';

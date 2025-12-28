@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
-import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
+import { usePluginBuilderStore } from '@/stores/slices/plugin';
 import Button from '@/components/primitives/Button';
 import Container from '@/components/primitives/Container';
 import { TbPlus } from 'react-icons/tb';

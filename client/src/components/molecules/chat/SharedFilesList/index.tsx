@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { IoImageOutline, IoDocumentOutline, IoDownloadOutline } from 'react-icons/io5';
 import type { Message } from '@/types/chat';
-import { formatSize } from '@/utilities/scene-utils';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
-import { chatApi } from '@/services/api/chat';
+import { formatSize } from '@/utilities/glb/scene-utils';
+import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { chatApi } from '@/services/api/chat/chat';
 import './SharedFilesList.css';
 
 type SharedFilesListProps = {

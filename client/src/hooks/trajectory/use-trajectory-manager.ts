@@ -22,7 +22,7 @@
 
 import { useCallback } from 'react';
 import type { TrajectoryData } from '@/types/canvas';
-import useTrajectoryStore from '@/stores/trajectories';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import useLogger from '@/hooks/core/use-logger';
 
 const useTrajectoryManager = () => {

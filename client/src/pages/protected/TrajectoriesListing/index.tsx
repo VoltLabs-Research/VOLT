@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { formatSize } from '@/utilities/scene-utils'
+import { formatSize } from '@/utilities/glb/scene-utils'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/common/DocumentListing'
-import useTrajectoryStore from '@/stores/trajectories'
-import useTeamStore from '@/stores/team/team'
-import formatTimeAgo from '@/utilities/formatTimeAgo'
-import trajectoryApi from '@/services/api/trajectory'
-import useDashboardSearchStore from '@/stores/ui/dashboard-search'
+import { useTrajectoryStore } from '@/stores/slices/trajectory'
+import { useTeamStore } from '@/stores/slices/team'
+import formatTimeAgo from '@/utilities/api/formatTimeAgo'
+import trajectoryApi from '@/services/api/trajectory/trajectory'
+import { useUIStore } from '@/stores/slices/ui';
 import { CiFileOn } from 'react-icons/ci'
 import { useNavigate } from 'react-router'
 
@@ -20,22 +20,22 @@ const TrajectoriesListing = () => {
     const listingMeta = useTrajectoryStore((s) => s.listingMeta)
     const navigate = useNavigate();
 
-    const searchQuery = useDashboardSearchStore((s) => s.query);
+    const searchQuery = useUIStore((s) => s.query);
 
     useEffect(() => {
-        if(!team?._id) return;
+        if (!team?._id) return;
         // Fetch handled by DashboardLayout prefetch, but ensure consistent state if missing
-        if(trajectories.length === 0){
+        if (trajectories.length === 0) {
             getTrajectories(team._id, { page: 1, limit: 20, search: searchQuery });
-        }else if(searchQuery){
+        } else if (searchQuery) {
             // If searching, we must fetch(store might cache non-search results)
             getTrajectories(team._id, { page: 1, limit: 20, search: searchQuery, force: true });
         }
     }, [team?._id, searchQuery, getTrajectories, trajectories.length])
 
-    const handleMenuAction = useCallback(async(action: string, item: any) => {
-        if(action === 'delete'){
-            if(window.confirm('Delete this trajectory?')) {
+    const handleMenuAction = useCallback(async (action: string, item: any) => {
+        if (action === 'delete') {
+            if (window.confirm('Delete this trajectory?')) {
                 await deleteTrajectoryById(item._id)
             }
         }
@@ -97,8 +97,8 @@ const TrajectoriesListing = () => {
         }
     ], [])
 
-    const handleLoadMore = useCallback(async() => {
-        if(!team?._id || !listingMeta.hasMore || isFetchingMore) return;
+    const handleLoadMore = useCallback(async () => {
+        if (!team?._id || !listingMeta.hasMore || isFetchingMore) return;
         await getTrajectories(team._id, {
             page: listingMeta.page + 1,
             limit: listingMeta.limit,

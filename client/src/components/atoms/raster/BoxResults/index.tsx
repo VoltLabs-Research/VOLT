@@ -2,7 +2,7 @@ import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import type { RasterConfig } from '@/types/stores/plugins';
 import './BoxResults.css';
 import Title from '@/components/primitives/Title';
-import { getValueByPath } from '@/utilities/getValueByPath';
+import { getValueByPath } from '@/utilities/common/getValueByPath';
 
 export interface BoxResultsProps {
     data: any;

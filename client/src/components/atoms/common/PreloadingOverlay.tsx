@@ -2,17 +2,17 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import TetrahedronLoader from './TetrahedronLoader';
-import usePlaybackStore from '@/stores/editor/playback';
+import { useEditorStore } from '@/stores/slices/editor';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
 import Title from '@/components/primitives/Title';
 
 // TODO: move to scene/
 const PreloadingOverlay: React.FC = () => {
-    const isPreloading = usePlaybackStore((state) => state.isPreloading ?? false);
-    const preloadProgress = usePlaybackStore((state) => state.preloadProgress ?? 0);
+    const isPreloading = useEditorStore((state) => state.isPreloading ?? false);
+    const preloadProgress = useEditorStore((state) => state.preloadProgress ?? 0);
 
-    if(!isPreloading) return null;
+    if (!isPreloading) return null;
 
     const ringVars = {
         ['--p' as any]: preloadProgress,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import useAuthStore from '@/stores/authentication';
-import authApi from '@/services/api/auth';
+import { useAuthStore } from '@/stores/slices/auth';
+import authApi from '@/services/api/auth/auth';
 import GeneralSettings from '@/components/molecules/settings/GeneralSettings';
 
 const GeneralPage: React.FC = () => {

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
-import useTeamStore from '@/stores/team/team';
-import analysisConfigApi from '@/services/api/analysis-config';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
-import useAnalysisConfigStore from '@/stores/analysis-config';
-import useDashboardSearchStore from '@/stores/ui/dashboard-search';
+import { useTeamStore } from '@/stores/slices/team';
+import analysisConfigApi from '@/services/api/analysis/analysis';
+import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { useAnalysisConfigStore } from '@/stores/slices/analysis';
+import { useUIStore } from '@/stores/slices/ui';
 
 const AnalysisConfigsListing = () => {
     const team = useTeamStore((state) => state.selectedTeam);
@@ -16,35 +16,35 @@ const AnalysisConfigsListing = () => {
     const isFetchingMore = useAnalysisConfigStore((state) => state.isFetchingMore);
     const listingMeta = useAnalysisConfigStore((state) => state.listingMeta);
 
-    const searchQuery = useDashboardSearchStore((s) => s.query);
+    const searchQuery = useUIStore((s) => s.query);
 
     // Initial fetch handled by DashboardLayout or here if missing
     useEffect(() => {
-        if(!team?._id) return;
+        if (!team?._id) return;
         // Only fetch if empty to avoid double fetch with DashboardLayout,
         // OR rely on DashboardLayout and just do nothing here?
         // To be safe against direct navigation, check if data exists.
-        if(analysisConfigs.length === 0){
+        if (analysisConfigs.length === 0) {
             getAnalysisConfigs(team._id, { page: 1, limit: 20 });
         }
     }, [team?._id, getAnalysisConfigs, analysisConfigs.length]);
 
-    const handleMenuAction = useCallback(async(action: string, item: any) => {
-        switch(action){
+    const handleMenuAction = useCallback(async (action: string, item: any) => {
+        switch (action) {
             case 'view':
                 break;
 
             case 'delete':
-                if(!window.confirm('Delete this analysis config? This cannot be undone.')) {
+                if (!window.confirm('Delete this analysis config? This cannot be undone.')) {
                     return;
                 }
 
-                try{
+                try {
                     await analysisConfigApi.delete(item._id);
                     // Refresh current list(re-fetch page 1 or current set?)
                     // Safest is to reset to page 1
-                    if(team?._id) getAnalysisConfigs(team._id, { page: 1, force: true });
-                }catch(e){
+                    if (team?._id) getAnalysisConfigs(team._id, { page: 1, force: true });
+                } catch (e) {
                     console.error('Failed to delete analysis config', e);
                 }
                 break;
@@ -105,8 +105,8 @@ const AnalysisConfigsListing = () => {
         }
     ], []);
 
-    const handleLoadMore = useCallback(async() => {
-        if(!team?._id || !listingMeta.hasMore || isFetchingMore) return;
+    const handleLoadMore = useCallback(async () => {
+        if (!team?._id || !listingMeta.hasMore || isFetchingMore) return;
         await getAnalysisConfigs(team._id, {
             page: listingMeta.page + 1,
             limit: listingMeta.limit,

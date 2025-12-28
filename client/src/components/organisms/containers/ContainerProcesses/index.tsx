@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import containerApi from '@/services/api/container';
+import containerApi from '@/services/api/container/container';
 import { RefreshCw, Activity } from 'lucide-react';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';

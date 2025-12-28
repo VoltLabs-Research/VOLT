@@ -1,7 +1,7 @@
 import { Server, Cpu, MemoryStick, Activity, TrendingUp, TrendingDown, MoreVertical } from 'lucide-react'
 import { useServerMetrics } from '@/hooks/metrics/use-server-metrics'
 import { Skeleton } from '@mui/material'
-import { formatNetworkSpeedWithUnit } from '@/utilities/network'
+import { formatNetworkSpeedWithUnit } from '@/utilities/common/network'
 import Container from '@/components/primitives/Container'
 import Button from '@/components/primitives/Button'
 import './MetricsCards.css'

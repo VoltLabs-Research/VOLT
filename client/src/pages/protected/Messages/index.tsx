@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { useChatStore } from '@/stores/chat';
+import { useChatStore } from '@/stores/slices/chat';
 import ChatSidebar from '@/components/molecules/chat/ChatSidebar';
 import CreateGroupModal from '@/components/molecules/chat/CreateGroupModal';
 import GroupManagementModal from '@/components/molecules/chat/GroupManagementModal';

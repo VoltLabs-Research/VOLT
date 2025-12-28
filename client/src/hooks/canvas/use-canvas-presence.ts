@@ -21,7 +21,7 @@
  **/
 
 import { useEffect, useRef, useCallback, useMemo } from 'react';
-import { socketService } from '@/services/socketio';
+import { socketService } from '@/services/websockets/socketio';
 import { useSyncExternalStore } from 'react';
 
 export interface CanvasPresenceUser {

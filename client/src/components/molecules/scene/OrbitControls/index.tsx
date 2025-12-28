@@ -2,33 +2,33 @@ import React from 'react';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/form/FormField';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
-import useOrbitControlsSettings from '@/stores/editor/orbit-controls';
+import { useEditorStore } from '@/stores/slices/editor';
 import Button from '@/components/primitives/Button';
 import { MdRotateLeft } from 'react-icons/md';
 
 const OrbitControls: React.FC = () => {
-	const enabled = useOrbitControlsSettings((s) => s.enabled);
-	const enableDamping = useOrbitControlsSettings((s) => s.enableDamping);
-	const dampingFactor = useOrbitControlsSettings((s) => s.dampingFactor);
-	const enableZoom = useOrbitControlsSettings((s) => s.enableZoom);
-	const zoomSpeed = useOrbitControlsSettings((s) => s.zoomSpeed);
-	const enableRotate = useOrbitControlsSettings((s) => s.enableRotate);
-	const rotateSpeed = useOrbitControlsSettings((s) => s.rotateSpeed);
-	const enablePan = useOrbitControlsSettings((s) => s.enablePan);
-	const panSpeed = useOrbitControlsSettings((s) => s.panSpeed);
-	const screenSpacePanning = useOrbitControlsSettings((s) => s.screenSpacePanning);
-	const autoRotate = useOrbitControlsSettings((s) => s.autoRotate);
-	const autoRotateSpeed = useOrbitControlsSettings((s) => s.autoRotateSpeed);
-	const minDistance = useOrbitControlsSettings((s) => s.minDistance);
-	const maxDistance = useOrbitControlsSettings((s) => s.maxDistance);
-	const minPolarAngle = useOrbitControlsSettings((s) => s.minPolarAngle);
-	const maxPolarAngle = useOrbitControlsSettings((s) => s.maxPolarAngle);
-	const minAzimuthAngle = useOrbitControlsSettings((s) => s.minAzimuthAngle);
-	const maxAzimuthAngle = useOrbitControlsSettings((s) => s.maxAzimuthAngle);
-	const target = useOrbitControlsSettings((s) => s.target);
-	const set = useOrbitControlsSettings((s) => s.set);
-	const setTarget = useOrbitControlsSettings((s) => s.setTarget);
-	const reset = useOrbitControlsSettings((s) => s.reset);
+	const enabled = useEditorStore((s) => s.orbitControls.enabled);
+	const enableDamping = useEditorStore((s) => s.orbitControls.enableDamping);
+	const dampingFactor = useEditorStore((s) => s.orbitControls.dampingFactor);
+	const enableZoom = useEditorStore((s) => s.orbitControls.enableZoom);
+	const zoomSpeed = useEditorStore((s) => s.orbitControls.zoomSpeed);
+	const enableRotate = useEditorStore((s) => s.orbitControls.enableRotate);
+	const rotateSpeed = useEditorStore((s) => s.orbitControls.rotateSpeed);
+	const enablePan = useEditorStore((s) => s.orbitControls.enablePan);
+	const panSpeed = useEditorStore((s) => s.orbitControls.panSpeed);
+	const screenSpacePanning = useEditorStore((s) => s.orbitControls.screenSpacePanning);
+	const autoRotate = useEditorStore((s) => s.orbitControls.autoRotate);
+	const autoRotateSpeed = useEditorStore((s) => s.orbitControls.autoRotateSpeed);
+	const minDistance = useEditorStore((s) => s.orbitControls.minDistance);
+	const maxDistance = useEditorStore((s) => s.orbitControls.maxDistance);
+	const minPolarAngle = useEditorStore((s) => s.orbitControls.minPolarAngle);
+	const maxPolarAngle = useEditorStore((s) => s.orbitControls.maxPolarAngle);
+	const minAzimuthAngle = useEditorStore((s) => s.orbitControls.minAzimuthAngle);
+	const maxAzimuthAngle = useEditorStore((s) => s.orbitControls.maxAzimuthAngle);
+	const target = useEditorStore((s) => s.orbitControls.target);
+	const set = useEditorStore((s) => s.orbitControls.set);
+	const setTarget = useEditorStore((s) => s.orbitControls.setTarget);
+	const reset = useEditorStore((s) => s.orbitControls.reset);
 
 	const general = {
 		key: 'general',

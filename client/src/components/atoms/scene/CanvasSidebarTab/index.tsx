@@ -1,4 +1,4 @@
-import useConfigurationStore from '@/stores/editor/configuration';
+import { useEditorStore } from '@/stores/slices/editor';
 import Container from '@/components/primitives/Container';
 import './CanvasSidebarTab.css';
 import Title from '@/components/primitives/Title';
@@ -8,8 +8,8 @@ interface CanvasSidebarTabProps {
 };
 
 const CanvasSidebarTab: React.FC<CanvasSidebarTabProps> = ({ option }) => {
-    const setActiveSidebarTag = useConfigurationStore((state) => state.setActiveSidebarTag);
-    const activeSidebarTab = useConfigurationStore((state) => state.activeSidebarTab);
+    const setActiveSidebarTag = useEditorStore((state) => state.configuration.setActiveSidebarTag);
+    const activeSidebarTab = useEditorStore((state) => state.configuration.activeSidebarTab);
 
     return (
         <div

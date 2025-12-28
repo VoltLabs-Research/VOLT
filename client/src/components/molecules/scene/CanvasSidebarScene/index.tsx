@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TbObjectScan, TbSearch } from 'react-icons/tb';
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md';
 import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
-import useModelStore from '@/stores/editor/model';
+import { useEditorStore } from '@/stores/slices/editor';
 import type { Trajectory } from '@/types/models';
-import usePluginStore, { type RenderableExposure } from '@/stores/plugins/plugin';
+import { usePluginStore, type RenderableExposure } from '@/stores/slices/plugin/plugin-slice';
 import './CanvasSidebarScene.css';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
-import useAnalysisConfigStore from '@/stores/analysis-config';
+import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import { Skeleton } from '@mui/material';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
@@ -28,11 +28,11 @@ interface AnalysisSection {
 }
 
 const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) => {
-    const setActiveScene = useModelStore((state) => state.setActiveScene);
-    const activeScene = useModelStore((state) => state.activeScene);
-    const addScene = useModelStore((state) => state.addScene);
-    const removeScene = useModelStore((state) => state.removeScene);
-    const activeScenes = useModelStore((state) => state.activeScenes);
+    const setActiveScene = useEditorStore((state) => state.setActiveScene);
+    const activeScene = useEditorStore((state) => state.activeScene);
+    const addScene = useEditorStore((state) => state.addScene);
+    const removeScene = useEditorStore((state) => state.removeScene);
+    const activeScenes = useEditorStore((state) => state.activeScenes);
 
     const getRenderableExposures = usePluginStore((state) => state.getRenderableExposures);
     const getModifiers = usePluginStore((state) => state.getModifiers);

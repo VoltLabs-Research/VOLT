@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
-import pluginApi from '@/services/api/plugin';
-import trajectoryApi from '@/services/api/trajectory';
-import analysisConfigApi from '@/services/api/analysis-config';
+import pluginApi from '@/services/api/plugin/plugin';
+import trajectoryApi from '@/services/api/trajectory/trajectory';
+import analysisConfigApi from '@/services/api/analysis/analysis';
 import { Skeleton } from '@mui/material';
-import usePluginStore from '@/stores/plugins/plugin';
-import useTeamStore from '@/stores/team/team';
+import { usePluginStore } from '@/stores/slices/plugin';
+import { useTeamStore } from '@/stores/slices/team';
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import PerFrameListingModal from '@/components/organisms/common/PerFrameListingModal';
 import { formatCellValue, normalizeRows, type ColumnDef } from '@/utilities/plugins/expression-utils';

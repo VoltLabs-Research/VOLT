@@ -3,7 +3,7 @@ import Select from '@/components/atoms/form/Select';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/form/FormField';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
-import useCameraSettings from '@/stores/editor/camera-config';
+import { useEditorStore } from '@/stores/slices/editor';
 import Button from '@/components/primitives/Button';
 import { MdCameraAlt, MdViewInAr, MdTransform } from 'react-icons/md';
 import { IoCameraOutline } from 'react-icons/io5';
@@ -11,17 +11,17 @@ import { IoCameraOutline } from 'react-icons/io5';
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 const CameraSettingsControls: React.FC = () => {
-    const type = useCameraSettings(s => s.type);
-    const position = useCameraSettings(s => s.position);
-    const up = useCameraSettings(s => s.up);
-    const persp = useCameraSettings(s => s.perspective as any);
-    const ortho = useCameraSettings(s => s.orthographic);
-    const setType = useCameraSettings(s => s.setType);
-    const setPosition = useCameraSettings(s => s.setPosition);
-    const setUp = useCameraSettings(s => s.setUp);
-    const setPerspective = useCameraSettings(s => s.setPerspective);
-    const setOrthographic = useCameraSettings(s => s.setOrthographic);
-    const reset = useCameraSettings(s => s.reset);
+    const type = useEditorStore(s => s.camera.type);
+    const position = useEditorStore(s => s.camera.position);
+    const up = useEditorStore(s => s.camera.up);
+    const persp = useEditorStore(s => s.camera.perspective as any);
+    const ortho = useEditorStore(s => s.camera.orthographic);
+    const setType = useEditorStore(s => s.camera.setType);
+    const setPosition = useEditorStore(s => s.camera.setPosition);
+    const setUp = useEditorStore(s => s.camera.setUp);
+    const setPerspective = useEditorStore(s => s.camera.setPerspective);
+    const setOrthographic = useEditorStore(s => s.camera.setOrthographic);
+    const reset = useEditorStore(s => s.camera.reset);
 
     const projectionSection = {
         key: 'projection',
@@ -271,8 +271,8 @@ const CameraSettingsControls: React.FC = () => {
 
     const sections = [
         projectionSection,
-            ...(type === 'perspective' ? [perspectiveSection] : []),
-            ...(type === 'orthographic' ? [orthographicSection] : []),
+        ...(type === 'perspective' ? [perspectiveSection] : []),
+        ...(type === 'orthographic' ? [orthographicSection] : []),
         transformSection
     ];
 

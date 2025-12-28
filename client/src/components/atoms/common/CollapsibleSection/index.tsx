@@ -12,6 +12,7 @@ interface CollapsibleSectionProps {
   className?: string;
   onDelete?: () => void;
   onAdd?: () => void;
+  icon?: React.ReactNode;
 }
 
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({

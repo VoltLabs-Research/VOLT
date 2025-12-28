@@ -4,7 +4,7 @@ import { NodeType } from '@/types/plugin';
 import { TbTrash } from 'react-icons/tb';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
-import usePluginBuilderStore from '@/stores/plugins/plugin-builder';
+import { usePluginBuilderStore } from '@/stores/slices/plugin';
 import {
     ModifierEditor,
     ArgumentsEditor,

@@ -69,7 +69,6 @@ export const renderProtectedRoutes = () => {
                         />
                     ))}
 
-                    {/* Settings routes nested within DashboardLayout and SettingsLayout */}
                     {routesWithSettingsLayout.length > 0 && (
                         <Route element={<SettingsLayout />}>
                             {routesWithSettingsLayout.map((route: RouteConfig) => (
@@ -87,9 +86,6 @@ export const renderProtectedRoutes = () => {
     );
 };
 
-/**
- * Renderiza rutas de invitado(solo accesibles sin autenticación)
- */
 export const renderGuestRoutes = () => {
     return (
         <Route element={<ProtectedRoute mode='guest' />}>

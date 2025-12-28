@@ -3,30 +3,30 @@ import Select from '@/components/atoms/form/Select';
 import FormSchema from '@/components/atoms/form/FormSchema';
 import FormField from '@/components/molecules/form/FormField';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
-import usePerformanceSettingsStore from '@/stores/editor/perfomance-settings';
+import { useEditorStore } from '@/stores/slices/editor';
 import { MdSpeed, MdHighQuality, MdTouchApp, MdTune } from 'react-icons/md';
 import { IoHardwareChipOutline } from 'react-icons/io5';
 
 const PerformanceSettingsControls: React.FC = () => {
-    const preset = usePerformanceSettingsStore(s => s.preset);
-    const dpr = usePerformanceSettingsStore(s => s.dpr);
-    const canvas = usePerformanceSettingsStore(s => s.canvas);
-    const performance = usePerformanceSettingsStore(s => s.performance);
-    const adaptiveEvents = usePerformanceSettingsStore(s => s.adaptiveEvents);
-    const interactionDegrade = usePerformanceSettingsStore(s => s.interactionDegrade);
+    const preset = useEditorStore(s => s.performanceSettings.preset);
+    const dpr = useEditorStore(s => s.performanceSettings.dpr);
+    const canvas = useEditorStore(s => s.performanceSettings.canvas);
+    const performance = useEditorStore(s => s.performanceSettings.performance);
+    const adaptiveEvents = useEditorStore(s => s.performanceSettings.adaptiveEvents);
+    const interactionDegrade = useEditorStore(s => s.performanceSettings.interactionDegrade);
 
-    const setPreset = usePerformanceSettingsStore(s => s.setPreset);
-    const setDpr = usePerformanceSettingsStore(s => s.setDpr);
-    const setCanvas = usePerformanceSettingsStore(s => s.setCanvas);
-    const setPerformance = usePerformanceSettingsStore(s => s.setPerformance);
-    const setAdaptiveEvents = usePerformanceSettingsStore(s => s.setAdaptiveEvents);
-    const setInteractionDegrade = usePerformanceSettingsStore(s => s.setInteractionDegrade);
+    const setPreset = useEditorStore(s => s.performanceSettings.setPreset);
+    const setDpr = useEditorStore(s => s.performanceSettings.setDpr);
+    const setCanvas = useEditorStore(s => s.performanceSettings.setCanvas);
+    const setPerformance = useEditorStore(s => s.performanceSettings.setPerformance);
+    const setAdaptiveEvents = useEditorStore(s => s.performanceSettings.setAdaptiveEvents);
+    const setInteractionDegrade = useEditorStore(s => s.performanceSettings.setInteractionDegrade);
 
     const presetSection = {
         key: 'preset',
         title: 'Performance Preset',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [],
         extras: (
             <Select
@@ -48,7 +48,7 @@ const PerformanceSettingsControls: React.FC = () => {
         key: 'dpr',
         title: 'DPR & Resolution',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [
             {
                 label: 'Min DPR',
@@ -122,7 +122,7 @@ const PerformanceSettingsControls: React.FC = () => {
         key: 'canvas',
         title: 'Canvas & Performance',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [
             {
                 label: 'Perf Current',
@@ -179,7 +179,7 @@ const PerformanceSettingsControls: React.FC = () => {
         key: 'adaptive',
         title: 'Adaptive & Interaction',
         enabled: true,
-        onToggle: () => {},
+        onToggle: () => { },
         rows: [
             {
                 label: 'Interaction Debounce(ms)',
@@ -211,7 +211,7 @@ const PerformanceSettingsControls: React.FC = () => {
         )
     };
 
-    return(
+    return (
         <CollapsibleSection
             title="Performance Settings"
             icon={<MdSpeed size={16} />}

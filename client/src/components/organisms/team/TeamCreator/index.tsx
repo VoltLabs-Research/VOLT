@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import FormInput from '@/components/atoms/form/FormInput';
 
 import Button from '@/components/primitives/Button';
-import useTeamStore from '@/stores/team/team';
+import { useTeamStore } from '@/stores/slices/team';
 import Loader from '@/components/atoms/common/Loader';
-import useWindowsStore from '@/stores/ui/windows';
+import { useUIStore } from '@/stores/slices/ui';
 import useToast from '@/hooks/ui/use-toast';
 import Modal from '@/components/molecules/common/Modal';
 import { useFormValidation } from '@/hooks/useFormValidation';
@@ -20,7 +20,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
     const [teamName, setTeamName] = useState('');
     const [teamDescription, setTeamDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const toggleTeamCreator = useWindowsStore((state) => state.toggleTeamCreator);
+    const toggleTeamCreator = useUIStore((state) => state.toggleTeamCreator);
     const { showError } = useToast();
 
     const { createTeam, isLoading, error, clearError } = useTeamStore();
@@ -39,7 +39,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
     });
 
     const handleClose = () => {
-        if(isRequired){
+        if (isRequired) {
             showError('You must create a team to continue.');
             return;
         }
@@ -47,17 +47,17 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
         onClose?.();
     };
 
-    const handleSubmit = async(e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if(!validate({ teamName, teamDescription })) {
+        if (!validate({ teamName, teamDescription })) {
             return;
         }
 
         setIsSubmitting(true);
         clearError();
 
-        try{
+        try {
             await createTeam({
                 name: teamName.trim(),
                 description: teamDescription.trim() || undefined
@@ -66,9 +66,9 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
             setTeamName('');
             setTeamDescription('');
             onClose?.();
-        }catch(err){
+        } catch (err) {
             console.error('Failed to create team:', err);
-        }finally{
+        } finally {
             setIsSubmitting(false);
             toggleTeamCreator();
         }
@@ -76,7 +76,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
 
     const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setTeamName(e.target.value);
-        if(error) clearError();
+        if (error) clearError();
         checkField('teamName', e.target.value);
     };
 

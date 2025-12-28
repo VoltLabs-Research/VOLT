@@ -21,7 +21,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import apiTrackerApi, { type ApiTrackerRequest } from '@/services/api/api-tracker';
+import apiTrackerApi, { type ApiTrackerRequest } from '@/services/api/api-tracker/api-tracker';
 
 export type { ApiTrackerRequest };
 

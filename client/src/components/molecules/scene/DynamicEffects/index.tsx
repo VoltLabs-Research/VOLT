@@ -10,7 +10,7 @@ import {
 } from '@react-three/postprocessing';
 import { useMemo } from 'react';
 import { Vector2 } from 'three';
-import useEffectsConfigStore from '@/stores/editor/effects-config';
+import { useEditorStore } from '@/stores/slices/editor';
 
 const DynamicEffects = () => {
     const {
@@ -21,17 +21,17 @@ const DynamicEffects = () => {
         depthOfField,
         sepia,
         noise
-    } = useEffectsConfigStore();
+    } = useEditorStore((s) => s.effects);
 
     const hasAnyEffect = ssao.enabled || bloom.enabled || chromaticAberration.enabled || vignette.enabled ||
-                    depthOfField.enabled || sepia.enabled || noise.enabled;
+        depthOfField.enabled || sepia.enabled || noise.enabled;
 
     const caOffsetVec = useMemo(() => new Vector2(
         chromaticAberration.offset[0],
         chromaticAberration.offset[1]
     ), [chromaticAberration.offset[0], chromaticAberration.offset[1]]);
 
-    return(
+    return (
         <>
             {hasAnyEffect && (
                 <EffectComposer
@@ -40,7 +40,7 @@ const DynamicEffects = () => {
                     multisampling={0}
                     renderPriority={1}
                 >
-                     {ssao.enabled && (
+                    {ssao.enabled && (
                         <SSAO
                             key={`ssao-${ssao.intensity}-${ssao.radius}`}
                             blendFunction={ssao.blendFunction}

@@ -20,7 +20,7 @@
 * SOFTWARE.
 */
 
-import useTrajectoryStore from '@/stores/trajectories';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
 
 export interface FileWithPath {
     file: File;

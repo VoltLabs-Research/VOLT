@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine } from 'react-icons/ri';
 import { TbRocket } from 'react-icons/tb';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
-import pluginApi, { type IPluginRecord } from '@/services/api/plugin';
+import pluginApi, { type IPluginRecord } from '@/services/api/plugin/plugin';
 import { PluginStatus } from '@/types/plugin';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
-import usePluginStore from '@/stores/plugins/plugin';
-import useTeamStore from '@/stores/team/team';
+import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { usePluginStore } from '@/stores/slices/plugin';
+import { useTeamStore } from '@/stores/slices/team';
 import useToast from '@/hooks/ui/use-toast';
 import './Plugins.css';
 

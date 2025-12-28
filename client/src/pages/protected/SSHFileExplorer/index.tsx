@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import useSSHFileExplorer from '@/stores/ssh-file-explorer';
-import useTeamStore from '@/stores/team/team';
+import { useSSHExplorerStore } from '@/stores/slices/ssh';
+import { useTeamStore } from '@/stores/slices/team';
 import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
 import Button from '@/components/primitives/Button';
-import formatTimeAgo from '@/utilities/formatTimeAgo';
+import formatTimeAgo from '@/utilities/api/formatTimeAgo';
 import {
     LuFolder,
     LuFile,
@@ -14,7 +14,7 @@ import {
     LuArrowUp,
     LuDownload
 } from 'react-icons/lu';
-import { formatSize } from '@/utilities/scene-utils';
+import { formatSize } from '@/utilities/glb/scene-utils';
 import useToast from '@/hooks/ui/use-toast';
 import { FileRowSkeleton, BreadcrumbsSkeleton } from '@/components/organisms/trajectory/FileExplorer/Skeletons';
 
@@ -44,7 +44,7 @@ const SSHFileExplorer = () => {
         select,
         importTrajectory,
         reset
-    } = useSSHFileExplorer();
+    } = useSSHExplorerStore();
 
     const canBack = historyIndex > 0;
     const canForward = historyIndex < history.length - 1;

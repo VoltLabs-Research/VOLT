@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import authApi from "@/services/api/auth";
-import useAuthStore from "@/stores/authentication";
+import authApi from "@/services/api/auth/auth";
+import useAuthStore from "@/stores/slices/auth";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import FormInput from "@/components/atoms/form/FormInput";
 import {

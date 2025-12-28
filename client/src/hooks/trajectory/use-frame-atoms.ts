@@ -21,7 +21,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import useTrajectoryStore from '@/stores/trajectories';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
 
 export type FrameAtoms = {
     timestep: number;

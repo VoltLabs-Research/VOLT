@@ -5,16 +5,16 @@ import useTeamJobs from '@/hooks/jobs/use-team-jobs';
 import useTrajectoryUpdates from '@/hooks/trajectory/use-trajectory-updates';
 import TimestepViewer from '@/components/organisms/scene/TimestepViewer';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/scene/Scene3D';
-import useTrajectoryStore from '@/stores/trajectories';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import { formatNumber } from '@/components/organisms/common/DocumentListing';
 import { GoArrowRight } from 'react-icons/go';
 import SimulationGrid from '@/components/molecules/trajectory/SimulationGrid';
-import useTeamStore from '@/stores/team/team';
+import { useTeamStore } from '@/stores/slices/team';
 import Container from '@/components/primitives/Container';
 import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
 import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';
-import useEnvironmentConfigStore from '@/stores/editor/environment-config';
+import { useEditorStore } from '@/stores/slices/editor';
 import DashboardStats from '@/components/atoms/dashboard/DashboardStats';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
@@ -25,7 +25,7 @@ const DashboardPage: React.FC = memo(() => {
     useTrajectoryUpdates();
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoadingTrajectories = useTrajectoryStore((state) => state.isLoadingTrajectories);
-    const setBackgroundColor = useEnvironmentConfigStore((state) => state.setBackgroundColor);
+    const setBackgroundColor = useEditorStore((state) => state.environment.setBackgroundColor);
 
     const firstTrajectoryId = useMemo(() => {
         if (!trajectories.length) return;

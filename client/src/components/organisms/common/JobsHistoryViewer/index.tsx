@@ -1,10 +1,10 @@
 import React, { memo, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import JobsHistory from '@/components/molecules/common/JobsHistory';
-import useTeamJobsStore from '@/stores/team/jobs';
-import useAnalysisConfigStore from '@/stores/analysis-config';
-import useTrajectoryStore from '@/stores/trajectories';
-import usePlaybackStore from '@/stores/editor/playback';
+import { useTeamJobsStore } from '@/stores/slices/team';
+import { useAnalysisConfigStore } from '@/stores/slices/analysis';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useEditorStore } from '@/stores/slices/editor';
 import useToast from '@/hooks/ui/use-toast';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
@@ -24,7 +24,7 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo(({
     const isLoading = useTeamJobsStore((state) => state.isLoading);
     const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
     const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
-    const setCurrentTimestep = usePlaybackStore((state) => state.setCurrentTimestep);
+    const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
     const { showSuccess } = useToast();
 
     const hadActiveJobsRef = useRef(false);
