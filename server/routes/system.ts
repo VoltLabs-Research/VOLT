@@ -30,5 +30,6 @@ const systemController = new SystemController();
 router.use(protect);
 
 router.get('/stats', systemController.getSystemStats);
+router.get('/rbac', systemController.getRBACConfig);
 
 export default router;

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, act } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { IoWarningOutline } from 'react-icons/io5';
-import { RESOURCES, ACTIONS, getPermission, hasPermission, type ResourceKey, type ActionKey } from '@/constants/permissions';
+import useRBACStore from '@/stores/slices/rbac';
 import type { TeamRole, TeamRolePayload } from '@/types/team-role';
 import Button from '@/components/primitives/Button';
 import Container from '@/components/primitives/Container';
@@ -19,9 +19,19 @@ const RoleEditor = ({ role, onSave, isSaving = false }: RoleEditorProps) => {
     const [name, setName] = useState('');
     const [permissions, setPermissions] = useState<Set<string>>(new Set());
 
+    // Get RBAC configuration from store
+    const { resources, actions, fetchRBACConfig, getPermission, hasPermission: checkPermission } = useRBACStore();
+
     const isEditing = !!role;
     const isSystemRole = role?.isSystem ?? false;
     const hasWildcard = role?.permissions.includes('*') ?? false;
+
+    // Fetch RBAC config on mount
+    useEffect(() => {
+        if (resources.length === 0 && actions.length === 0) {
+            fetchRBACConfig();
+        }
+    }, []);
 
     useEffect(() => {
         if (role) {
@@ -35,10 +45,10 @@ const RoleEditor = ({ role, onSave, isSaving = false }: RoleEditorProps) => {
         };
     }, [role]);
 
-    const handleTogglePermission = useCallback((resource: ResourceKey, action: ActionKey) => {
+    const handleTogglePermission = useCallback((resourceKey: string, actionKey: string) => {
         if (isSystemRole) return;
 
-        const permission = getPermission(resource, action);
+        const permission = getPermission(resourceKey, actionKey);
         setPermissions((prev) => {
             const next = new Set(prev);
             if (next.has(permission)) {
@@ -48,12 +58,12 @@ const RoleEditor = ({ role, onSave, isSaving = false }: RoleEditorProps) => {
             }
             return next;
         });
-    }, [isSystemRole]);
+    }, [isSystemRole, getPermission]);
 
-    const handleToggleResourceAll = useCallback((resource: ResourceKey) => {
+    const handleToggleResourceAll = useCallback((resourceKey: string) => {
         if (isSystemRole) return;
 
-        const resourcePermissions = ACTIONS.map((action) => getPermission(resource, action.key));
+        const resourcePermissions = actions.map((action) => getPermission(resourceKey, action.key));
         const allChecked = resourcePermissions.every((permission) => permissions.has(permission));
 
         setPermissions((prev) => {
@@ -65,7 +75,7 @@ const RoleEditor = ({ role, onSave, isSaving = false }: RoleEditorProps) => {
             }
             return next;
         });
-    }, [isSystemRole, permissions]);
+    }, [isSystemRole, permissions, actions, getPermission]);
 
     const closeModal = () => {
         (document.getElementById('role-editor-modal') as HTMLDialogElement)?.close();
@@ -82,10 +92,10 @@ const RoleEditor = ({ role, onSave, isSaving = false }: RoleEditorProps) => {
         closeModal();
     };
 
-    const isPermissionChecked = useCallback((resource: ResourceKey, action: ActionKey): boolean => {
+    const isPermissionChecked = useCallback((resourceKey: string, actionKey: string): boolean => {
         if (hasWildcard) return true;
-        return hasPermission(Array.from(permissions), resource, action);
-    }, [permissions, hasWildcard]);
+        return checkPermission(Array.from(permissions), resourceKey, actionKey);
+    }, [permissions, hasWildcard, checkPermission]);
 
     const footer = (
         <>
@@ -138,7 +148,7 @@ const RoleEditor = ({ role, onSave, isSaving = false }: RoleEditorProps) => {
                         autoFocus={!isEditing}
                     />
                 </Container>
-      
+
                 {/* Permissions Grid */}
                 <Container className="d-flex column gap-1">
                     <Title className="font-size-3 color-text-secondary font-weight-6">Permissions</Title>
@@ -146,14 +156,14 @@ const RoleEditor = ({ role, onSave, isSaving = false }: RoleEditorProps) => {
                     <Container className="role-editor-permissions-grid">
                         {/* Header Row */}
                         <div className="role-editor-grid-header">Resource</div>
-                        {ACTIONS.map(action => (
+                        {actions.map(action => (
                             <div key={action.key} className="role-editor-grid-header">
                                 {action.label}
                             </div>
                         ))}
 
                         {/* Resource Rows */}
-                        {RESOURCES.map(resource => (
+                        {resources.map(resource => (
                             <React.Fragment key={resource.key}>
                                 <div
                                     className="role-editor-grid-resource"
@@ -163,7 +173,7 @@ const RoleEditor = ({ role, onSave, isSaving = false }: RoleEditorProps) => {
                                 >
                                     {resource.label}
                                 </div>
-                                {ACTIONS.map(action => (
+                                {actions.map(action => (
                                     <div key={`${resource.key}-${action.key}`} className="role-editor-grid-cell">
                                         <input
                                             type="checkbox"
