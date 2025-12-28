@@ -22,8 +22,8 @@ const INITIAL: OrbitControlsState = {
     maxDistance: 10000,
     minPolarAngle: 0,
     maxPolarAngle: Math.PI,
-    minAzimuthAngle: -Infinity,
-    maxAzimuthAngle: Infinity,
+    minAzimuthAngle: -Math.PI * 1000,
+    maxAzimuthAngle: Math.PI * 1000,
     target: [0, 2, 0]
 };
 
