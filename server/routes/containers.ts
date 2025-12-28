@@ -34,25 +34,21 @@ const rbac = new RBACMiddleware(controller, router);
 router.use(protect);
 
 rbac.groupBy(Action.READ)
-    .route('/', controller.getAllContainers);
+    .route('/', controller.getAll);
 
 rbac.groupBy(Action.CREATE, middleware.verifyTeamForContainerCreation)
-    .route('/', controller.createContainer);
+    .route('/', controller.createOne);
 
-router.use(middleware.loadAndVerifyContainerAccess);
+rbac.groupBy(Action.UPDATE, middleware.loadAndVerifyContainerAccess)
+    .route('/:id', controller.updateOne);
 
-rbac.groupBy(Action.UPDATE)
-    .route('/:id/control', middleware.validateContainerAction, controller.controlContainer)
-    .route('/:id/restart', controller.restartContainer)
-    .route('/:id', controller.updateContainer);
-
-rbac.groupBy(Action.READ)
+rbac.groupBy(Action.READ, middleware.loadAndVerifyContainerAccess)
     .route('/:id/stats', controller.getContainerStats)
     .route('/:id/files', controller.getContainerFiles)
     .route('/:id/read', controller.readContainerFile)
     .route('/:id/top', controller.getContainerProcesses);
 
 rbac.groupBy(Action.DELETE)
-    .route('/:id', controller.deleteContainer);
-    
+    .route('/:id', controller.deleteOne);
+
 export default router;

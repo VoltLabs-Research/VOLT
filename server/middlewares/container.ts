@@ -30,31 +30,31 @@ import { ErrorCodes } from '@/constants/error-codes';
  * Middleware to load container and verify user access
  * Checks both team membership and direct ownership
  */
-export const loadAndVerifyContainerAccess = async(req: Request, res: Response, next: NextFunction) => {
+export const loadAndVerifyContainerAccess = async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const userId = (req as any).user._id;
 
-    try{
+    try {
         const container = await Container.findById(id);
 
-        if(!container){
+        if (!container) {
             return next(new RuntimeError(ErrorCodes.CONTAINER_NOT_FOUND, 404));
         }
 
         // Check access: either through team membership or direct ownership
-        if(container.team){
+        if (container.team) {
             const team = await Team.findOne({ _id: container.team, members: userId });
-            if(!team){
+            if (!team) {
                 return next(new RuntimeError(ErrorCodes.CONTAINER_ACCESS_DENIED, 403));
             }
             res.locals.team = team;
-        }else if(container.createdBy.toString() !== userId.toString()) {
+        } else if (container.createdBy.toString() !== userId.toString()) {
             return next(new RuntimeError(ErrorCodes.CONTAINER_ACCESS_DENIED, 403));
         }
 
         res.locals.container = container;
         next();
-    }catch(err: any){
+    } catch (err: any) {
         return next(new RuntimeError(ErrorCodes.CONTAINER_LOAD_ERROR, 500));
     }
 };
@@ -62,37 +62,26 @@ export const loadAndVerifyContainerAccess = async(req: Request, res: Response, n
 /**
  * Middleware to verify team membership for container creation
  */
-export const verifyTeamForContainerCreation = async(req: Request, res: Response, next: NextFunction) => {
+export const verifyTeamForContainerCreation = async (req: Request, res: Response, next: NextFunction) => {
     const { teamId } = req.body;
     const userId = (req as any).user._id;
 
-    if(!teamId){
+    if (!teamId) {
         return next(new RuntimeError(ErrorCodes.CONTAINER_TEAM_ID_REQUIRED, 400));
     }
 
-    try{
+    try {
         const team = await Team.findOne({ _id: teamId, members: userId });
 
-        if(!team){
+        if (!team) {
             return next(new RuntimeError(ErrorCodes.CONTAINER_TEAM_ACCESS_DENIED, 403));
         }
 
         res.locals.team = team;
         next();
-    }catch(err: any){
+    } catch (err: any) {
         return next(new RuntimeError(ErrorCodes.CONTAINER_TEAM_LOAD_ERROR, 500));
     }
 };
 
-/**
- * Middleware to validate container action
- */
-export const validateContainerAction = (req: Request, res: Response, next: NextFunction) => {
-    const { action } = req.body;
 
-    if(!action || !['start', 'stop'].includes(action)) {
-        return next(new RuntimeError(ErrorCodes.CONTAINER_INVALID_ACTION, 400));
-    }
-
-    next();
-};

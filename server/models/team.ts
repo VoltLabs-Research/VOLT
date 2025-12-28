@@ -42,7 +42,8 @@ const TeamSchema = new Schema({
     containers: [{
         type: Schema.Types.ObjectId,
         ref: 'Container',
-        cascade: 'delete'
+        cascade: 'delete',
+        inverse: { path: 'team', behavior: 'set' }
     }],
     trajectories: [{
         type: Schema.Types.ObjectId,

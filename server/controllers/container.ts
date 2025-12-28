@@ -15,46 +15,17 @@ export default class ContainerController extends BaseController<any> {
         super(Container, {
             resourceName: 'Container',
             resource: Resource.CONTAINER,
-            fields: ['name', 'image', 'status', 'team']
+            fields: ['name', 'image', 'status', 'team', 'env', 'ports', 'memory', 'cpus']
         });
     }
 
-    public getAllContainers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const userTeams = await Team.find({ members: (req.user as any)._id });
-        const teamIds = userTeams.map((t) => t._id);
+    protected async getFilter(req: Request): Promise<any> {
+        const teamId = await this.getTeamId(req);
+        return { team: teamId };
+    }
 
-        const containers = await Container.find({
-            $or: [
-                { team: { $in: teamIds } },
-                { team: null, createdBy: (req.user as any)._id },
-                { team: { $exists: false }, createdBy: (req.user as any)._id }
-            ]
-        })
-            .populate('team', 'name')
-            .populate('createdBy', 'firstName lastName email');
-
-        const syncedContainers = await Promise.all(containers.map(async (doc) => {
-            try {
-                const info = await dockerService.inspectContainer(doc.containerId);
-                if (info.State.Status !== doc.status) {
-                    doc.status = info.State.Status;
-                    await doc.save();
-                }
-            } catch (e) {
-                doc.status = 'missing';
-                await doc.save();
-            }
-            return doc;
-        }));
-
-        res.status(200).json({ status: 'success', data: { containers: syncedContainers } });
-    });
-
-    public createContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    protected async onBeforeCreate(data: Partial<any>, req: Request): Promise<Partial<any>> {
         const { name, image, env, ports, cmd, mountDockerSocket, useImageCmd } = req.body;
-        const team = res.locals.team;
-
-        await this.authorize(req, team._id.toString(), Action.CREATE);
 
         const Env = env ? env.map((e: any) => `${e.key}=${e.value}`) : [];
         const PortBindings: Record<string, any> = {};
@@ -83,9 +54,7 @@ export default class ContainerController extends BaseController<any> {
             HostConfig.Binds = ['/var/run/docker.sock:/var/run/docker.sock'];
             try {
                 const dockerGid = execSync("getent group docker | cut -d: -f3").toString().trim();
-                if (dockerGid) {
-                    HostConfig.GroupAdd = [dockerGid];
-                }
+                if (dockerGid) HostConfig.GroupAdd = [dockerGid];
             } catch (e) {
                 console.warn('Could not detect docker group ID:', e);
             }
@@ -104,152 +73,37 @@ export default class ContainerController extends BaseController<any> {
         const dockerContainer = await dockerService.createContainer(dockerConfig);
         const containerInfo = await dockerContainer.inspect();
 
-        const newContainer = await Container.create({
-            name,
-            image,
+        return {
+            ...data,
+            team: await this.getTeamId(req),
             containerId: containerInfo.Id,
-            team: team._id,
             status: containerInfo.State.Status,
-            env: env || [],
-            ports: ports || [],
-            memory: req.body.memory || 512,
-            cpus: req.body.cpus || 1,
-            createdBy: (req.user as any)._id
-        });
-
-        await Team.findByIdAndUpdate(team._id, { $push: { containers: newContainer._id } });
-
-        res.status(201).json({ status: 'success', data: { container: newContainer } });
-    });
-
-    public controlContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { action } = req.body;
-        const container = res.locals.container;
-
-        await this.authorize(req, container.team.toString(), Action.UPDATE);
-
-        if (action === 'start') {
-            await dockerService.startContainer(container.containerId);
-        } else if (action === 'stop') {
-            await dockerService.stopContainer(container.containerId);
-        } else {
-            return next(new RuntimeError(ErrorCodes.CONTAINER_INVALID_ACTION, 400));
-        }
-
-        const info = await dockerService.inspectContainer(container.containerId);
-        container.status = info.State.Status;
-        await container.save();
-
-        res.status(200).json({ status: 'success', data: { container } });
-    });
-
-    public deleteContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const container = res.locals.container;
-
-        await this.authorize(req, container.team.toString(), Action.DELETE);
-
-        await dockerService.stopContainer(container.containerId);
-        await dockerService.removeContainer(container.containerId);
-        await container.deleteOne();
-
-        res.status(204).json({ status: 'success', data: null });
-    });
-
-    public getContainerStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const container = res.locals.container;
-
-        await this.authorize(req, container.team.toString(), Action.READ);
-
-        const stats = await dockerService.getContainerStats(container.containerId);
-        const limits = {
-            memory: container.memory * 1024 * 1024,
-            cpus: container.cpus
+            createdBy: (req as any).user._id
         };
+    }
 
-        res.status(200).json({ status: 'success', data: { stats, limits } });
-    });
+    protected async onBeforeUpdate(data: Partial<any>, req: Request, currentDoc: any): Promise<Partial<any>> {
+        const { action, env, ports } = req.body;
 
-    public restartContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const container = res.locals.container;
+        if (action) {
+            if (action === 'start') {
+                await dockerService.startContainer(currentDoc.containerId);
+            } else if (action === 'stop') {
+                await dockerService.stopContainer(currentDoc.containerId);
+            } else if (action === 'restart') {
+                await dockerService.stopContainer(currentDoc.containerId);
+                await dockerService.startContainer(currentDoc.containerId);
+            }
 
-        await this.authorize(req, container.team.toString(), Action.UPDATE);
-
-        await dockerService.stopContainer(container.containerId);
-        await dockerService.startContainer(container.containerId);
-
-        container.status = 'running';
-        await container.save();
-
-        res.status(200).json({ status: 'success', data: { container } });
-    });
-
-    public getContainerFiles = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { path = '/' } = req.query;
-        const container = res.locals.container;
-
-        await this.authorize(req, container.team.toString(), Action.READ);
-
-        const output = await dockerService.execCommand(container.containerId, ['ls', '-la', String(path)]);
-        const lines = output.split('\n').slice(1);
-        const files = lines.map((line: string) => {
-            const parts = line.trim().split(/\s+/);
-            if (parts.length < 9) return null;
-
-            const isDir = parts[0].startsWith('d');
-            const name = parts.slice(8).join(' ');
-            if (name === '.' || name === '..') return null;
-
-            return {
-                name,
-                isDirectory: isDir,
-                size: parts[4],
-                permissions: parts[0],
-                updatedAt: `${parts[5]} ${parts[6]} ${parts[7]}`
-            };
-        }).filter(Boolean);
-
-        res.status(200).json({ status: 'success', data: { files } });
-    });
-
-    public readContainerFile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { path } = req.query;
-        if (!path || typeof path !== 'string') return next(new RuntimeError(ErrorCodes.CONTAINER_FILE_PATH_REQUIRED, 400));
-
-        const container = res.locals.container;
-
-        await this.authorize(req, container.team.toString(), Action.READ);
-
-        const content = await dockerService.execCommand(container.containerId, ['cat', path]);
-        res.status(200).json({ status: 'success', data: { content } });
-    });
-
-    public getContainerProcesses = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const container = res.locals.container;
-
-        await this.authorize(req, container.team.toString(), Action.READ);
-
-        const processes = await dockerService.getContainerProcesses(container.containerId);
-        res.status(200).json({ status: 'success', data: { processes } });
-    });
-
-    public handleContainerTerminal = (socket: Socket) => {
-        socket.on('container:terminal:attach', async (data: { containerId: string }) => {
-            await terminalManager.attach(socket, data.containerId);
-        });
-    };
-
-    public updateContainer = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { env, ports } = req.body;
-        const container = res.locals.container;
-
-        await this.authorize(req, container.team.toString(), Action.UPDATE);
-
-        try {
-            await dockerService.stopContainer(container.containerId);
-            await dockerService.removeContainer(container.containerId);
-        } catch (e) {
-            /* container may already be gone */
+            const info = await dockerService.inspectContainer(currentDoc.containerId);
+            return { ...data, status: info.State.Status };
         }
+
+        // Stop and remove old container
+        try {
+            await dockerService.stopContainer(currentDoc.containerId);
+            await dockerService.removeContainer(currentDoc.containerId);
+        } catch (e) { /* container may be gone */ }
 
         const Env = env ? env.map((e: any) => `${e.key}=${e.value}`) : [];
         const PortBindings: Record<string, any> = {};
@@ -264,14 +118,14 @@ export default class ContainerController extends BaseController<any> {
         }
 
         const dockerConfig = {
-            Image: container.image,
-            name: `${container.name.replace(/\s+/g, '-')}-${Date.now()}`,
+            Image: currentDoc.image,
+            name: `${currentDoc.name.replace(/\s+/g, '-')}-${Date.now()}`,
             Env,
             ExposedPorts,
             HostConfig: {
                 PortBindings,
-                Memory: container.memory * 1024 * 1024,
-                NanoCpus: container.cpus * 1_000_000_000
+                Memory: currentDoc.memory * 1024 * 1024,
+                NanoCpus: currentDoc.cpus * 1_000_000_000
             },
             Tty: true
         } as any;
@@ -279,12 +133,80 @@ export default class ContainerController extends BaseController<any> {
         const dockerContainer = await dockerService.createContainer(dockerConfig);
         const containerInfo = await dockerContainer.inspect();
 
-        container.containerId = containerInfo.Id;
-        container.status = containerInfo.State.Status;
-        container.env = env || container.env;
-        container.ports = ports || container.ports;
-        await container.save();
+        return {
+            ...data,
+            containerId: containerInfo.Id,
+            status: containerInfo.State.Status
+        };
+    }
 
-        res.status(200).json({ status: 'success', data: { container } });
+    protected async onBeforeDelete(doc: any, req: Request): Promise<void> {
+        try {
+            await dockerService.stopContainer(doc.containerId);
+            await dockerService.removeContainer(doc.containerId);
+        } catch (e) {
+            /* ignore if already removed */
+        }
+    }
+
+    public getContainerStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const container = res.locals.container;
+        await this.authorize(req, container.team.toString(), Action.READ);
+
+        const stats = await dockerService.getContainerStats(container.containerId);
+        res.status(200).json({
+            status: 'success',
+            data: {
+                stats,
+                limits: { memory: container.memory * 1024 * 1024, cpus: container.cpus }
+            }
+        });
     });
+
+    public getContainerFiles = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const { path = '/' } = req.query;
+        const container = res.locals.container;
+        await this.authorize(req, container.team.toString(), Action.READ);
+
+        const output = await dockerService.execCommand(container.containerId, ['ls', '-la', String(path)]);
+        const lines = output.split('\n').slice(1);
+        const files = lines.map((line: string) => {
+            const parts = line.trim().split(/\s+/);
+            if (parts.length < 9) return null;
+            return {
+                name: parts.slice(8).join(' '),
+                isDirectory: parts[0].startsWith('d'),
+                size: parts[4],
+                permissions: parts[0],
+                updatedAt: `${parts[5]} ${parts[6]} ${parts[7]}`
+            };
+        }).filter(Boolean).filter((f: any) => f.name !== '.' && f.name !== '..');
+
+        res.status(200).json({ status: 'success', data: { files } });
+    });
+
+    public readContainerFile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const { path } = req.query;
+        if (!path || typeof path !== 'string') return next(new RuntimeError(ErrorCodes.CONTAINER_FILE_PATH_REQUIRED, 400));
+
+        const container = res.locals.container;
+        await this.authorize(req, container.team.toString(), Action.READ);
+
+        const content = await dockerService.execCommand(container.containerId, ['cat', path]);
+        res.status(200).json({ status: 'success', data: { content } });
+    });
+
+    public getContainerProcesses = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const container = res.locals.container;
+        await this.authorize(req, container.team.toString(), Action.READ);
+
+        const processes = await dockerService.getContainerProcesses(container.containerId);
+        res.status(200).json({ status: 'success', data: { processes } });
+    });
+
+    public handleContainerTerminal = (socket: Socket) => {
+        socket.on('container:terminal:attach', async (data: { containerId: string }) => {
+            await terminalManager.attach(socket, data.containerId);
+        });
+    };
 }

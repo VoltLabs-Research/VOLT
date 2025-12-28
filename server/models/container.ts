@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { Team } from '@/models/index';
+import useInverseRelations from '@/utilities/mongo/inverse-relations';
 import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import { ValidationCodes } from '@/constants/validation-codes';
 
@@ -37,7 +38,8 @@ const ContainerSchema = new Schema<IContainer>({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: false
+        required: false,
+        inverse: { path: 'containers', behavior: 'addToSet' }
     },
     status: {
         type: String,
@@ -69,6 +71,16 @@ const ContainerSchema = new Schema<IContainer>({
 });
 
 ContainerSchema.plugin(useCascadeDelete);
+ContainerSchema.plugin(useInverseRelations);
+
+ContainerSchema.pre('deleteOne', { document: true, query: false }, async function () {
+    if (this.team) {
+        await mongoose.model('Team').updateOne(
+            { _id: this.team },
+            { $pull: { containers: this._id } }
+        );
+    }
+});
 
 const Container: Model<IContainer> = mongoose.model<IContainer>('Container', ContainerSchema);
 
