@@ -25,7 +25,7 @@ import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { Queues } from '@/constants/queues';
 import { SSHImportJob } from '@/types/services/ssh-import-queue';
 import * as path from 'node:path';
-import createTrajectory from '@/utilities/create-trajectory';
+import createTrajectory from '@/utilities/trajectory/create-trajectory';
 
 export class SSHImportQueue extends BaseProcessingQueue<SSHImportJob> {
     constructor() {
