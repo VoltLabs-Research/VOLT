@@ -54,8 +54,6 @@ export default class GroupChatController extends BaseController<any> {
             throw new RuntimeError(ErrorCodes.CHAT_GROUP_MIN_PARTICIPANTS, 400);
         }
 
-        await this.authorize(req, teamId, Action.CREATE);
-
         const team = await Team.findById(teamId);
         if (!team) throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
 

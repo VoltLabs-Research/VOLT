@@ -83,11 +83,6 @@ export default abstract class BaseController<T extends Document> {
 
         data = await this.onBeforeCreate(data, req);
 
-        const teamId = await this.getTeamId(req);
-        if (teamId) {
-            await this.authorize(req, teamId, Action.CREATE);
-        }
-
         const doc = await this.create(data, req);
         await this.onAfterCreate(doc, req);
 
@@ -110,11 +105,6 @@ export default abstract class BaseController<T extends Document> {
 
         const doc = await query.exec();
         if (!doc) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
-
-        const teamId = await this.getTeamId(req, doc);
-        if (teamId) {
-            await this.authorize(req, teamId, Action.READ);
-        }
 
         res.status(200).json({
             status: 'success',
@@ -159,11 +149,6 @@ export default abstract class BaseController<T extends Document> {
         const docToUpdate = await this.model.findOne({ ...idFilter, ...securityFilter });
         if (!docToUpdate) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
 
-        const teamId = await this.getTeamId(req, docToUpdate);
-        if (teamId) {
-            await this.authorize(req, teamId, Action.UPDATE);
-        }
-
         let data = this.allowedFields.length > 0
             ? filterObject(req.body, ...this.allowedFields)
             : req.body;
@@ -191,11 +176,6 @@ export default abstract class BaseController<T extends Document> {
         const doc = await this.model.findOne({ ...idFilter, ...securityFilter });
 
         if (!doc) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
-
-        const teamId = await this.getTeamId(req, doc);
-        if (teamId) {
-            await this.authorize(req, teamId, Action.DELETE);
-        }
 
         await this.onBeforeDelete(doc, req);
         await this.model.deleteOne({ _id: doc._id });

@@ -54,7 +54,6 @@ export default class TrajectoryController extends BaseController<any> {
     protected async onBeforeDelete(doc: any, req: Request): Promise<void> {
         const trajectoryId = doc._id.toString();
         const teamId = await this.getTeamId(req);
-        await this.authorize(req, teamId, Action.DELETE, Resource.TRAJECTORY);
         await DumpStorage.deleteDumps(trajectoryId);
     }
 

@@ -151,7 +151,6 @@ export default class ContainerController extends BaseController<any> {
 
     public getContainerStats = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const container = res.locals.container;
-        await this.authorize(req, container.team.toString(), Action.READ);
 
         const stats = await dockerService.getContainerStats(container.containerId);
         res.status(200).json({
@@ -166,7 +165,6 @@ export default class ContainerController extends BaseController<any> {
     public getContainerFiles = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { path = '/' } = req.query;
         const container = res.locals.container;
-        await this.authorize(req, container.team.toString(), Action.READ);
 
         const output = await dockerService.execCommand(container.containerId, ['ls', '-la', String(path)]);
         const lines = output.split('\n').slice(1);
@@ -190,7 +188,6 @@ export default class ContainerController extends BaseController<any> {
         if (!path || typeof path !== 'string') return next(new RuntimeError(ErrorCodes.CONTAINER_FILE_PATH_REQUIRED, 400));
 
         const container = res.locals.container;
-        await this.authorize(req, container.team.toString(), Action.READ);
 
         const content = await dockerService.execCommand(container.containerId, ['cat', path]);
         res.status(200).json({ status: 'success', data: { content } });
@@ -198,7 +195,6 @@ export default class ContainerController extends BaseController<any> {
 
     public getContainerProcesses = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const container = res.locals.container;
-        await this.authorize(req, container.team.toString(), Action.READ);
 
         const processes = await dockerService.getContainerProcesses(container.containerId);
         res.status(200).json({ status: 'success', data: { processes } });

@@ -91,7 +91,6 @@ export default class ChatController extends BaseController<any> {
         }).populate(ChatController.CHAT_POPULATES);
 
         if(!chat){
-            await this.authorize(req, teamId, Action.CREATE, Resource.CHAT);
             chat = await Chat.create({
                 participants: [user._id, participantId],
                 team: teamId,
@@ -100,8 +99,6 @@ export default class ChatController extends BaseController<any> {
             await chat.populate(ChatController.CHAT_POPULATES);
         }
 
-        await this.authorize(req, teamId, Action.READ, Resource.CHAT);
-        
         res.status(200).json({ status: 'success', data: chat });
     });
 

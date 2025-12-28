@@ -20,8 +20,6 @@ export default class AnalysisConfigController extends BaseController<any> {
         const { teamId } = req.params;
         const { page = '1', limit = '20', q = '' } = req.query as Record<string, string>;
 
-        await this.authorize(req, teamId, Action.READ);
-
         const trajectories = await Trajectory.find({ team: teamId }).select('_id name').lean();
         const trajectoryIds = trajectories.map((t: any) => t._id);
 

@@ -52,8 +52,6 @@ export default class SSHFileExplorerController extends BaseController<any> {
         const { connectionId, remotePath } = req.body;
         const { sshConnection } = res.locals;
 
-        await this.authorize(req, teamId, Action.CREATE);
-
         const queueService = getSSHImportQueue();
         queueService.addJobs([{
             jobId: v4(),

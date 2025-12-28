@@ -80,9 +80,6 @@ export default class TeamController extends BaseController<any>{
             throw new RuntimeError(ErrorCodes.TEAM_CANNOT_REMOVE_OWNER, 403);
         }
 
-        const currentUserId = (req as any).user._id;
-        await this.authorize(req, teamId, Action.DELETE, Resource.TEAM_MEMBER);
-
         const member = await TeamMember.findOne({ team: teamId, user: userToRemove._id });
         if(!member){
             throw new RuntimeError(ErrorCodes.TEAM_USER_NOT_MEMBER, 400);
