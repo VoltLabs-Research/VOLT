@@ -143,6 +143,7 @@ class APIFeatures<T extends Document = Document> {
     */
     public async perform(): Promise<QueryResult<T>>{
         const { find, sort, select, skip, limit, totalResults, skippedResults, page, totalPages } = this.buffer;
+        console.log(find);
         try{
             let query: Query<T[], T> = this.model
                 .find(find)

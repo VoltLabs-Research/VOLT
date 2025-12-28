@@ -13,6 +13,7 @@ import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import './TeamInvitePanel.css';
+import teamMember from '@/services/api/team-member';
 
 interface TeamMember {
     email: string;
@@ -46,7 +47,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
             setLoadingMembers(true);
             try {
-                const membersData = await teamApi.members.getAll(teamId);
+                const membersData = await teamMember.getAll();
                 const formattedMembers: TeamMember[] = (membersData as any[])?.map((member: any) => ({
                     email: member.email || member._id,
                     name: member.username || member.email,

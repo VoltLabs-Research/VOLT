@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { TeamState, TeamStore, UpdateTeamData } from '@/types/stores/team/team';
 import teamApi from '@/services/api/team';
 import { socketService } from '@/services/socketio';
+import teamMember from '@/services/api/team-member';
 
 const initialState: TeamState = {
     teams: [],
@@ -21,7 +22,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
         getUserTeams: async () => {
             set({ isLoading: true });
 
-            try{
+            try {
                 const teams = await teamApi.getAll();
 
                 const currentSelected = get().selectedTeam;
@@ -29,14 +30,14 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 const storedTeamId = typeof window !== 'undefined' ? localStorage.getItem('selectedTeamId') : null;
                 let selectedTeam = null;
 
-                if(storedTeamId){
+                if (storedTeamId) {
                     const storedTeam = teams.find((t) => t._id === storedTeamId);
-                    if(storedTeam){
+                    if (storedTeam) {
                         selectedTeam = storedTeam;
                     }
                 }
 
-                if(!selectedTeam){
+                if (!selectedTeam) {
                     selectedTeam =
                         currentSelected && teams.find((t) => t._id === currentSelected._id)
                             ? teams.find((t) => t._id === currentSelected._id)!
@@ -48,23 +49,23 @@ const useTeamStore = create<TeamStore>((set, get) => {
                     selectedTeam,
                     error: null
                 });
-            }catch(error: any){
+            } catch (error: any) {
                 const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to load teams';
-                if(error?.context){
+                if (error?.context) {
                     error.context.operation = 'getUserTeams';
                 }
                 set({ error: errorMessage });
                 throw error;
-            }finally{
+            } finally {
                 set({ isLoading: false });
             }
         },
 
         setSelectedTeam: (teamId: string) => {
             const team = get().teams.find((t) => t._id === teamId);
-            if(team){
+            if (team) {
                 set({ selectedTeam: team });
-                if(typeof window !== 'undefined'){
+                if (typeof window !== 'undefined') {
                     localStorage.setItem('selectedTeamId', teamId);
                 }
             }
@@ -73,7 +74,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
         createTeam: async (data) => {
             set({ isLoading: true });
 
-            try{
+            try {
                 const newTeam = await teamApi.create(data);
                 const currentTeams = get().teams;
 
@@ -84,14 +85,14 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 });
 
                 return newTeam;
-            }catch(error: any){
+            } catch (error: any) {
                 const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to create team';
-                if(error?.context){
+                if (error?.context) {
                     error.context.operation = 'createTeam';
                 }
                 set({ error: errorMessage });
                 throw error;
-            }finally{
+            } finally {
                 set({ isLoading: false });
             }
         },
@@ -99,7 +100,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
         updateTeam: async (teamId: string, data: UpdateTeamData) => {
             set({ isLoading: true });
 
-            try{
+            try {
                 const updatedTeam = await teamApi.update(teamId, data);
 
                 const currentTeams = get().teams;
@@ -109,15 +110,15 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 const selectedTeam = currentSelected?._id === teamId ? updatedTeam : currentSelected;
 
                 set({ teams, selectedTeam, error: null });
-            }catch(error: any){
+            } catch (error: any) {
                 const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to update team';
-                if(error?.context){
+                if (error?.context) {
                     error.context.teamId = teamId;
                     error.context.operation = 'updateTeam';
                 }
                 set({ error: errorMessage });
                 throw error;
-            }finally{
+            } finally {
                 set({ isLoading: false });
             }
         },
@@ -125,7 +126,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
         deleteTeam: async (teamId: string) => {
             set({ isLoading: true });
 
-            try{
+            try {
                 await teamApi.delete(teamId);
 
                 const currentTeams = get().teams;
@@ -137,15 +138,15 @@ const useTeamStore = create<TeamStore>((set, get) => {
                     : currentSelected;
 
                 set({ teams, selectedTeam, error: null });
-            }catch(error: any){
+            } catch (error: any) {
                 const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to delete team';
-                if(error?.context){
+                if (error?.context) {
                     error.context.teamId = teamId;
                     error.context.operation = 'deleteTeam';
                 }
                 set({ error: errorMessage });
                 throw error;
-            }finally{
+            } finally {
                 set({ isLoading: false });
             }
         },
@@ -153,7 +154,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
         leaveTeam: async (teamId: string) => {
             set({ isLoading: true });
 
-            try{
+            try {
                 await teamApi.leave(teamId);
 
                 const currentTeams = get().teams;
@@ -165,15 +166,15 @@ const useTeamStore = create<TeamStore>((set, get) => {
                     : currentSelected;
 
                 set({ teams, selectedTeam, error: null });
-            }catch(error: any){
+            } catch (error: any) {
                 const errorMessage = error?.context?.serverMessage || error?.message || 'Failed to leave team';
-                if(error?.context){
+                if (error?.context) {
                     error.context.teamId = teamId;
                     error.context.operation = 'leaveTeam';
                 }
                 set({ error: errorMessage });
                 throw error;
-            }finally{
+            } finally {
                 set({ isLoading: false });
             }
         },
@@ -185,8 +186,8 @@ const useTeamStore = create<TeamStore>((set, get) => {
         fetchMembers: async (teamId: string) => {
             set({ isLoading: true });
 
-            try{
-                const data = await teamApi.members.getAll(teamId);
+            try {
+                const data = await teamMember.getAll();
                 console.log(data);
                 set({
                     members: data.members,
@@ -194,10 +195,10 @@ const useTeamStore = create<TeamStore>((set, get) => {
                     owner: data.owner,
                     error: null
                 });
-            }catch(error: any){
+            } catch (error: any) {
                 set({ error: error.message || 'Failed to fetch members' });
                 throw error;
-            }finally{
+            } finally {
                 set({ isLoading: false });
             }
         },
@@ -205,19 +206,19 @@ const useTeamStore = create<TeamStore>((set, get) => {
         removeMember: async (teamId, userId) => {
             set({ isLoading: true });
 
-            try{
+            try {
                 await teamApi.members.remove(teamId, { userId });
 
                 const { members, admins } = get();
                 set({
                     members: members.filter(m => m._id !== userId),
-                    admins: admins.filter(a => a._id !== userId),
+                        admins: admins.filter(a => a._id !== userId),
                     error: null
                 });
-            }catch(error: any){
+            } catch (error: any) {
                 set({ error: error.message || 'Failed to remove member' });
                 throw error;
-            }finally{
+            } finally {
                 set({ isLoading: false });
             }
         },
@@ -226,7 +227,7 @@ const useTeamStore = create<TeamStore>((set, get) => {
 
         addOnlineUser: (userId) => {
             const current = get().onlineUsers;
-            if(!current.includes(userId)) set({ onlineUsers: [...current, userId] });
+            if (!current.includes(userId)) set({ onlineUsers: [...current, userId] });
         },
 
         removeOnlineUser: (userId) => {
@@ -238,19 +239,19 @@ const useTeamStore = create<TeamStore>((set, get) => {
             socketService.emit('get_team_presence', { teamId });
 
             const offOnline = socketService.on('team_user_online', (payload: any) => {
-                if(payload.teamId === teamId){
+                if (payload.teamId === teamId) {
                     get().addOnlineUser(payload.userId);
                 }
             });
 
             const offOffline = socketService.on('team_user_offline', (payload: any) => {
-                if(payload.teamId === teamId){
+                if (payload.teamId === teamId) {
                     get().removeOnlineUser(payload.userId);
                 }
             });
 
             const offList = socketService.on('team_presence_list', (payload: any) => {
-                if(payload.teamId === teamId){
+                if (payload.teamId === teamId) {
                     get().setOnlineUsers(payload.users.map((u: any) => u._id));
                 }
             });
@@ -264,8 +265,8 @@ const useTeamStore = create<TeamStore>((set, get) => {
     };
 });
 
-export const getCurrentTeamId = (): string | null => {
-    return useTeamStore.getState().selectedTeam?._id ?? null;
-};
+// Inject the store accessor into the API client to resolve circular dependency
+import { setGetTeamId } from '@/api';
+setGetTeamId(() => useTeamStore.getState().selectedTeam?._id || null);
 
 export default useTeamStore;

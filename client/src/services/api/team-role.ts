@@ -1,9 +1,8 @@
-import type { TeamRole, TeamRolePayload, TeamMemberWithRole } from '@/types/team-role';
+import type { TeamRole, TeamRolePayload } from '@/types/team-role';
 import type { ApiResponse } from '@/types/api';
-import { getCurrentTeamId as getTeamId } from '@/stores/team/team';
 import VoltClient from '@/api';
 
-const client = new VoltClient('/team-roles', { useRBAC: true, getTeamId });
+const client = new VoltClient('/team-roles', { useRBAC: true });
 
 const teamRoleApi = {
     async getAll(): Promise<TeamRole[]> {

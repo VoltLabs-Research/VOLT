@@ -1,8 +1,7 @@
 import VoltClient from '@/api';
-import { getCurrentTeamId as getTeamId } from '@/stores/team/team';
 
-const client = new VoltClient('/ssh-connections', { useRBAC: true, getTeamId });
-const explorerClient = new VoltClient('/ssh-file-explorer', { useRBAC: true, getTeamId });
+const client = new VoltClient('/ssh-connections', { useRBAC: true });
+const explorerClient = new VoltClient('/ssh-file-explorer', { useRBAC: true });
 
 interface CreateSSHConnectionPayload {
     name: string;

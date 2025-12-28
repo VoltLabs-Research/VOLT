@@ -69,11 +69,6 @@ const teamApi = {
     },
 
     members: {
-        async getAll(teamId: string): Promise<TeamMembersResponse> {
-            const response = await client.request<{ status: string; data: TeamMembersResponse }>('get', `/${teamId}/members`);
-            return response.data.data;
-        },
-
         async remove(teamId: string, identifier: { userId?: string; email?: string }): Promise<void> {
             await client.request('post', `/${teamId}/members/remove`, { data: { identifier } });
         }

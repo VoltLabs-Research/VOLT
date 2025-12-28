@@ -11,6 +11,9 @@ const rbac = new RBACMiddleware(controller, router);
 
 router.use(authMiddleware.protect);
 
+rbac.groupBy(Action.READ, teamMiddleware.checkTeamMembership)
+    .route('/', controller.getAll);
+
 rbac.groupBy(Action.UPDATE, teamMiddleware.checkTeamMembership)
     .route('/:id', controller.updateOne);
 

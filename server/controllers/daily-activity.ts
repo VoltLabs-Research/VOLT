@@ -15,8 +15,9 @@ export default class DailyActivityController extends BaseController<IDailyActivi
 
     public getTeamActivity = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { range } = req.query;
-        const teamId = res.locals.team._id;
+        const teamId = await this.getTeamId(req);
 
+        console.log('get team activity', teamId);
         const statsQuery: any = { team: teamId };
 
         const days = range ? parseInt(range as string) : 365;
@@ -52,6 +53,8 @@ export default class DailyActivityController extends BaseController<IDailyActivi
             },
             { $sort: { date: 1 } }
         ]);
+        
+        console.log(activities)
 
         res.status(200).json({
             status: 'success',

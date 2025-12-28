@@ -44,60 +44,6 @@ export default class TeamController extends BaseController<any>{
         };
     }
 
-    public getMembers = catchAsync(async (req: Request, res: Response) => {
-        const teamId = req.params.id;
-        console.log('here');
-        await this.authorize(req, teamId, Action.READ, Resource.TEAM_MEMBER);
-
-        const members = await TeamMember.find({ team: teamId })
-            .populate('user', 'email avatar firstName lastName lastLoginAt createdAt')
-            .populate('role', 'name permissions isSystem')
-            .lean();
-        
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-        const memberStats = await Promise.all(members.map(async (member: any) => {
-            const userId = member.user._id;
-
-            // Time spent last 7 days
-            const dailyActivities = await DailyActivity.find({
-                team: teamId,
-                user: userId,
-                date: { $gte: sevenDaysAgo }
-            });
-
-            // TODO: mongo aggregation maybe?
-            const minutesOnline = dailyActivities.reduce((acc, curr) => acc + (curr.minutesOnline || 0), 0);
-
-            const trajectoriesCount = await Trajectory.countDocuments({ team: teamId, createdBy: userId });
-            const analysesCount = await Analysis.countDocuments({
-                trajectory: { $in: await Trajectory.find({ team: teamId }).distinct('_id') },
-                createdBy: userId
-            });
-
-            return {
-                ...member,
-                timeSpentLast7Days: minutesOnline,
-                trajectoriesCount,
-                analysesCount: analysesCount,
-                joinedAt: member.joinedAt || member.createdAt
-            };
-        }));
-
-        const ownerMember = memberStats.find((member: any) => member.role?.name === 'Owner');
-        const adminMembers = memberStats.find((member: any) => member.role?.name === 'Admin') ?? [];
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                members: memberStats,
-                admins: adminMembers,
-                owner: ownerMember
-            }
-        })
-    });
-
     public leaveTeam = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id;
         const team = res.locals.team;

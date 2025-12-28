@@ -1,7 +1,6 @@
 import VoltClient from '@/api';
-import { getCurrentTeamId as getTeamId } from '@/stores/team/team';
 
-const client = new VoltClient('/analysis-config', { useRBAC: true, getTeamId });
+const client = new VoltClient('/analysis-config', { useRBAC: true });
 
 interface AnalysisConfig {
     _id: string;

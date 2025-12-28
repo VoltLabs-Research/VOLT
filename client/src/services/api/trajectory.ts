@@ -22,11 +22,10 @@
 
 import type { Trajectory } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
-import { getCurrentTeamId as getTeamId } from '@/stores/team/team';
 import VoltClient from '@/api';
 
-const client = new VoltClient('/trajectories', { useRBAC: true, getTeamId });
-const vfsClient = new VoltClient('/trajectory-vfs', { useRBAC: true, getTeamId });
+const client = new VoltClient('/trajectories', { useRBAC: true });
+const vfsClient = new VoltClient('/trajectory-vfs', { useRBAC: true });
 
 interface GetTrajectoriesParams {
     page?: number;
@@ -136,12 +135,7 @@ const trajectoryApi = {
             query: params
         });
 
-        return {
-            data: response.data.data,
-            page: response.data.page,
-            limit: response.data.limit,
-            total: response.data.total
-        };
+        return response.data;
     },
 
     async getMetrics(): Promise<any> {

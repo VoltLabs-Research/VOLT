@@ -6,14 +6,14 @@ type WithQuery<M extends HttpMethod> = RequestArgs<M> & {
     query?: Record<string, any>;
 };
 
-export interface VoltClientOptions{
+export interface VoltClientOptions {
     useRBAC?: boolean;
     getTeamId?: () => string | null;
     retry?: Partial<RetryConfig>;
 };
 
 const normalizePath = (path: string) => {
-    if(!path) return '';
+    if (!path) return '';
     return path.startsWith('/') ? path : `/${path}`;
 };
 
@@ -27,7 +27,13 @@ export const withApiUrl = (path: string) => {
     return import.meta.env.VITE_API_URL + '/api' + path;
 };
 
-export default class VoltClient{
+let globalGetTeamId: (() => string | null) | undefined;
+
+export const setGetTeamId = (fn: () => string | null) => {
+    globalGetTeamId = fn;
+};
+
+export default class VoltClient {
     private readonly basePath: string;
     private readonly useRBAC: boolean;
     private readonly getTeamId?: () => string | null;
@@ -37,7 +43,7 @@ export default class VoltClient{
     constructor(
         basePath: string,
         opts: VoltClientOptions = {}
-    ){
+    ) {
         this.basePath = normalizePath(basePath);
         this.core = new APICore({ baseURL: withApiUrl('') });
         this.useRBAC = opts.useRBAC ?? false;
@@ -45,16 +51,16 @@ export default class VoltClient{
         this.defaultRetry = opts.retry;
     }
 
-    private buildUrl(path: string){
+    private buildUrl(path: string) {
         const raw = path ?? '';
         const npath = raw === '/' ? '' : normalizePath(raw);
 
-        if(!this.useRBAC){
+        if (!this.useRBAC) {
             return this.basePath + npath;
         }
 
-        const teamId = this.getTeamId?.() ?? null;
-        if(!teamId) throw new Error('VoltClient: Missing teamId (useRBAC=true)');
+        const teamId = (this.getTeamId ? this.getTeamId() : globalGetTeamId?.()) ?? null;
+        if (!teamId) throw new Error('VoltClient: Missing teamId (useRBAC=true)');
 
         return `${this.basePath}/${teamId}${npath}`;
     }
@@ -63,15 +69,15 @@ export default class VoltClient{
         method: M,
         path: string,
         args: WithQuery<M> = {} as WithQuery<M>
-    ){
+    ) {
         let url = this.buildUrl(path);
-        if(args.query){
+        if (args.query) {
             url = appendSearchParams(url, objectToSearchParams(args.query));
         }
 
         const mergedRetry = { ...(this.defaultRetry ?? {}), ...(args.retry ?? {}) };
 
-        if(method === 'get' || method === 'delete'){
+        if (method === 'get' || method === 'delete') {
             return this.core.request<T, M>(method, url, {
                 config: args.config,
                 dedupe: args.dedupe,
@@ -86,7 +92,7 @@ export default class VoltClient{
         });
     };
 
-    scope(subPath: string){
+    scope(subPath: string) {
         return new VoltClient(joinUrl(this.basePath, normalizePath(subPath)), {
             useRBAC: this.useRBAC,
             getTeamId: this.getTeamId,

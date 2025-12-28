@@ -35,14 +35,14 @@ export default class TrajectoryController extends BaseController<any> {
         const teamId = await this.getTeamId(req);
 
         let teamQuery: any = { members: userId };
-        if(teamId){
+        if (teamId) {
             teamQuery._id = teamId;
         }
 
         const userTeams = await Team.find(teamQuery).select('_id');
 
         // If filtering by specific team ID and user isn't in it, return impossible query
-        if(teamId && userTeams.length === 0) return { _id: { $in: [] } };
+        if (teamId && userTeams.length === 0) return { _id: { $in: [] } };
 
         const teamIds = userTeams.map((team) => team._id);
         return { team: { $in: teamIds } };
@@ -58,18 +58,18 @@ export default class TrajectoryController extends BaseController<any> {
         await DumpStorage.deleteDumps(trajectoryId);
     }
 
-    protected async onBeforeCreate(data: Partial<any>, req: Request): Promise<Partial<any>>{
+    protected async onBeforeCreate(data: Partial<any>, req: Request): Promise<Partial<any>> {
         const { originalFolderName } = req.body;
 
         let trajectoryName = 'Untitled Trajectory';
-        if(originalFolderName && origin.length >= 4){
+        if (originalFolderName && originalFolderName.length >= 4) {
             trajectoryName = originalFolderName;
         }
 
         return { trajectoryName };
     }
 
-    public async create(data: Partial<any>, req: Request): Promise<any>{
+    public async create(data: Partial<any>, req: Request): Promise<any> {
         const { uploadId } = req.body;
         const userId = (req as any).user._id;
         const teamId = await this.getTeamId(req);
@@ -81,7 +81,7 @@ export default class TrajectoryController extends BaseController<any> {
             trajectoryName: data.trajectoryName,
             originalFolderName: data.originalFolderName,
             onProgress: (progress) => {
-                if(!uploadId) return;
+                if (!uploadId) return;
                 const io = req.app.get('io');
                 io.to(`upload:${uploadId}`).emit('trajectory:upload-progress', {
                     uploadId,
@@ -90,7 +90,7 @@ export default class TrajectoryController extends BaseController<any> {
                 io.to(`user:${userId}`).emit('trajectory:upload-progress', {
                     uploadId,
                     progress
-                });   
+                });
             }
         });
 
@@ -106,10 +106,10 @@ export default class TrajectoryController extends BaseController<any> {
             {
                 $push: {
                     activity: {
-                            type: TeamActivityType.TRAJECTORY_UPLOAD,
-                            user: doc.createdBy,
-                            description: `${req.user.firstName} ${req.user.lastName} has loaded a trajectory (${doc.name})`,
-                            createdAt: new Date()
+                        type: TeamActivityType.TRAJECTORY_UPLOAD,
+                        user: doc.createdBy,
+                        description: `${req.user.firstName} ${req.user.lastName} has loaded a trajectory (${doc.name})`,
+                        createdAt: new Date()
                     }
                 }
             }
@@ -144,7 +144,7 @@ export default class TrajectoryController extends BaseController<any> {
 
         const page = Math.max(1, parseInt(String(pageStr) || '1', 10));
         const pageSize = Math.max(1, Math.min(10000, parseInt(String(pageSizeStr) || '1000', 10)));
-        
+
         const populatedAtoms = getPopulatedFrameAtoms(trajectoryId, timestep as string, analysisId, exposureId as string, page, pageSize);
         res.status(200).json({ status: 'success', ...populatedAtoms });
     });

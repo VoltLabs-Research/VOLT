@@ -1,7 +1,5 @@
 import type { AxiosRequestConfig } from 'axios';
 import type { IWorkflow, PluginStatus } from '@/types/plugin';
-import type { ApiResponse } from '@/types/api';
-import { getCurrentTeamId as getTeamId } from '@/stores/team/team';
 import VoltClient from '@/api';
 
 export interface IPluginRecord{
@@ -42,7 +40,7 @@ export interface ExecutePluginResponse{
     };
 };
 
-const client = new VoltClient('/plugins', { useRBAC: true, getTeamId });
+const client = new VoltClient('/plugins', { useRBAC: true });
 
 const pluginApi = {
     async getPlugins(params?: {

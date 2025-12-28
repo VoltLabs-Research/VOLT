@@ -1,6 +1,6 @@
 import VoltClient from '@/api';
 
-const client = new VoltClient('/daily-activity');
+const client = new VoltClient('/daily-activity', { useRBAC: true });
 
 export interface ActivityItem{
     type: 'TRAJECTORY_UPLOAD' | 'TRAJECTORY_DELETION' | 'ANALYSIS_PERFORMED';
@@ -16,8 +16,8 @@ export interface ActivityData{
 };
 
 const dailyActivityApi = {
-    async getTeamActivity(teamId: string, range: number = 365): Promise<ActivityData[]>{
-        const response = await client.request<{ status: string; data: ActivityData[] }>('get', `/team/${teamId}?range=${range}`);
+    async getTeamActivity(range: number = 365): Promise<ActivityData[]>{
+        const response = await client.request<{ status: string; data: ActivityData[] }>('get', `/?range=${range}`);
         return response.data.data;
     }
 };

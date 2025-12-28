@@ -22,8 +22,6 @@ router.route('/:id')
 
 router.post('/:id/leave', middleware.checkTeamMembership, teamController.leaveTeam);
 
-router.get('/:id/members', middleware.checkTeamMembership, teamController.getMembers);
-
 router.post('/:id/members/remove', middleware.checkTeamMembership, teamController.removeMember);
 
 export default router;
