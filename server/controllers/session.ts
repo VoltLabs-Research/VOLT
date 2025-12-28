@@ -20,25 +20,32 @@
  * SOFTWARE.
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
+import { FilterQuery } from 'mongoose';
 import { Session } from '@/models/index';
-import RuntimeError from '@/utilities/runtime/runtime-error';
-import { ErrorCodes } from '@/constants/error-codes';
+import { ISession } from '@/models/session';
+import BaseController from '@/controllers/base-controller';
 import { catchAsync } from '@/utilities/runtime/runtime';
 
-export default class SessionController {
-    public getMySessions = catchAsync(async (req: Request, res: Response) => {
-        const userId = (req as any).user._id;
-        const sessions = await Session.find({ user: userId, isActive: true })
-            .sort({ lastActivity: -1 });
-
-        res.status(200).json({
-            status: 'success',
-            results: sessions.length,
-            data: sessions
+export default class SessionController extends BaseController<ISession> {
+    constructor() {
+        super(Session, {
+            resourceName: 'Session',
+            fields: ['isActive']
         });
-    });
+    }
 
+    /**
+     * Users can only see their own active sessions
+     */
+    protected async getFilter(req: Request): Promise<FilterQuery<ISession>> {
+        const userId = (req as any).user._id;
+        return { user: userId, isActive: true };
+    }
+
+    /**
+     * Get login activity history (includes all sessions, not just active)
+     */
     public getMyLoginActivity = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id;
         const limit = parseInt(req.query.limit as string) || 20;
@@ -54,19 +61,9 @@ export default class SessionController {
         });
     });
 
-    public revokeSession = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const userId = (req as any).user._id;
-        const session = await Session.findOneAndUpdate(
-            { _id: req.params.id, user: userId },
-            { isActive: false },
-            { new: true }
-        );
-
-        if (!session) return next(new RuntimeError(ErrorCodes.SESSION_NOT_FOUND, 404));
-
-        res.status(200).json({ status: 'success', data: session });
-    });
-
+    /**
+     * Revoke all sessions except current one
+     */
     public revokeAllOtherSessions = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id;
         const currentToken = req.headers.authorization?.split(' ')[1];

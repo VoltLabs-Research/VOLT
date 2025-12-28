@@ -2,14 +2,16 @@ import VoltClient from '@/api';
 
 const client = new VoltClient('/session');
 
-interface Session {
+export interface Session {
     _id: string;
-    device: string;
-    browser: string;
-    os: string;
+    user: string;
+    token: string;
+    userAgent: string;
     ip: string;
-    lastActive: string;
-    current: boolean;
+    isActive: boolean;
+    lastActivity: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 interface LoginActivity {
@@ -28,20 +30,22 @@ interface GetLoginActivityParams {
 }
 
 const sessionApi = {
-    async getAll(): Promise<Session[]>{
+    async getAll(): Promise<Session[]> {
+        // BaseController.getAll returns paginated response
         const response = await client.request<{ status: string; data: Session[] }>('get', '/');
         return response.data.data;
     },
 
-    async delete(id: string): Promise<void>{
-        await client.request('delete', `/${id}`);
+    async revoke(id: string): Promise<void> {
+        // Use updateOne with isActive: false instead of delete
+        await client.request('patch', `/${id}`, { data: { isActive: false } });
     },
 
-    async deleteOthers(): Promise<void>{
+    async revokeOthers(): Promise<void> {
         await client.request('delete', '/all/others');
     },
 
-    async getLoginActivity(params?: GetLoginActivityParams): Promise<LoginActivity[]>{
+    async getLoginActivity(params?: GetLoginActivityParams): Promise<LoginActivity[]> {
         const queryString = params
             ? `?${new URLSearchParams(params as any).toString()}`
             : '';

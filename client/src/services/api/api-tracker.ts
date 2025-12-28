@@ -13,17 +13,6 @@ export interface ApiTrackerRequest {
     createdAt: string;
 }
 
-export interface ApiTrackerStats {
-    requests: ApiTrackerRequest[];
-    summary: {
-        totalRequests: number;
-        averageResponseTime: number;
-        uniqueIPsCount: number;
-    };
-    statusCodeStats: Array<{ _id: number; count: number }>;
-    methodStats: Array<{ _id: string; count: number }>;
-}
-
 export interface GetApiTrackerParams {
     limit?: number;
     page?: number;
@@ -33,8 +22,8 @@ export interface GetApiTrackerParams {
 }
 
 const apiTrackerApi = {
-    async getMyStats(params?: GetApiTrackerParams): Promise<ApiTrackerStats>{
-        const response = await client.request<{ status: string; data: ApiTrackerStats }>('get', '/my-stats', { query: params });
+    async getAll(params?: GetApiTrackerParams): Promise<ApiTrackerRequest[]> {
+        const response = await client.request<{ status: string; data: ApiTrackerRequest[] }>('get', '/', { query: params });
         return response.data.data;
     }
 };

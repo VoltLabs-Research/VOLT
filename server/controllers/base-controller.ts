@@ -71,7 +71,7 @@ export default abstract class BaseController<T extends Document> {
 
     protected async onBeforeDelete(doc: T, req: Request): Promise<void> { }
 
-    protected async create(data: Partial<T>, req: Request): Promise<T>{
+    protected async create(data: Partial<T>, req: Request): Promise<T> {
         return await this.model.create(data);
     }
 
@@ -160,7 +160,6 @@ export default abstract class BaseController<T extends Document> {
         const idFilter = checkIfSlugOrId(req.params.id);
         const securityFilter = await this.getFilter(req);
         const docToUpdate = await this.model.findOne({ ...idFilter, ...securityFilter });
-        console.log({ ...idFilter, ...securityFilter })
         if (!docToUpdate) throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
 
         const teamId = await this.getTeamId(req, docToUpdate);

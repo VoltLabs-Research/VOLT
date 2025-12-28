@@ -5,8 +5,8 @@ import { IDailyActivity } from '@/models/daily-activity';
 import BaseController from '@/controllers/base-controller';
 import { NextFunction } from 'express-serve-static-core';
 
-export default class DailyActivityController extends BaseController<IDailyActivity>{
-    constructor(){
+export default class DailyActivityController extends BaseController<IDailyActivity> {
+    constructor() {
         super(DailyActivity, {
             resourceName: 'DailyActivity',
             fields: ['date']
@@ -17,16 +17,15 @@ export default class DailyActivityController extends BaseController<IDailyActivi
         const { range } = req.query;
         const teamId = await this.getTeamId(req);
 
-        console.log('get team activity', teamId);
         const statsQuery: any = { team: teamId };
 
         const days = range ? parseInt(range as string) : 365;
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
         startDate.setHours(0, 0, 0, 0);
-        
+
         statsQuery.date = { $gte: startDate };
-        
+
         const activities = await DailyActivity.aggregate([
             { $match: statsQuery },
             {
@@ -53,8 +52,6 @@ export default class DailyActivityController extends BaseController<IDailyActivi
             },
             { $sort: { date: 1 } }
         ]);
-        
-        console.log(activities)
 
         res.status(200).json({
             status: 'success',

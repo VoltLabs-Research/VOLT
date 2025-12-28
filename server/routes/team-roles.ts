@@ -15,12 +15,12 @@ rbac.groupBy(Action.READ, teamMiddleware.checkTeamMembership)
     .route('/', controller.getAll);
 
 rbac.groupBy(Action.CREATE, teamMiddleware.checkTeamMembership)
-    .route('/', controller.createRole);
+    .route('/', controller.createOne);
 
 rbac.groupBy(Action.UPDATE, teamMiddleware.checkTeamMembership)
-    .route('/:roleId', controller.updateRole);
+    .route('/:id', controller.updateOne);
 
 rbac.groupBy(Action.DELETE, teamMiddleware.checkTeamMembership)
-    .route('/:roleId', controller.deleteRole);
+    .route('/:id', controller.deleteOne);
 
 export default router;

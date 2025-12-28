@@ -34,18 +34,20 @@ const rbac = new RBACMiddleware(controller, router);
 router.use(authMiddleware.protect);
 
 rbac.groupBy(Action.READ)
-    .route('/', controller.getUserSSHConnections);
+    .route('/', controller.getAll);
 
 rbac.groupBy(Action.CREATE)
-    .route('/', middleware.validateSSHConnectionFields, controller.createSSHConnection);
+    .route('/', middleware.validateSSHConnectionFields, controller.createOne);
 
 router.use(middleware.loadAndVerifySSHConnection);
 
 rbac.groupBy(Action.UPDATE)
-    .route('/:id', controller.updateSSHConnection)
+    .route('/:id', controller.updateOne);
+
+rbac.groupBy(Action.READ)
     .route('/:id/test', controller.testSSHConnection);
 
 rbac.groupBy(Action.DELETE)
-    .route('/:id', controller.deleteSSHConnection);
+    .route('/:id', controller.deleteOne);
 
 export default router;

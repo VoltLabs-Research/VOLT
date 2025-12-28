@@ -23,20 +23,9 @@ export default class NotificationController extends BaseController<INotification
         return { recipient: (req as any).user.id };
     }
 
-    public getUserNotifications: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
-        return this.getAll(req, res, next);
-    };
-
-    /**
-     * Marks a notification as read(id comes from route param).
-     */
-    public markNotificationRead: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
-        req.body = { read: true };
-        return this.updateOne(req, res, next);
-    };
-
     /**
      * Marks all notifications for the current user as read.
+     * (Specialized bulk operation - not standard CRUD)
      */
     public markAllRead: RequestHandler = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -48,9 +37,5 @@ export default class NotificationController extends BaseController<INotification
         } catch (error) {
             next(error);
         }
-    };
-
-    public deleteNotification: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
-        return this.deleteOne(req, res, next);
     };
 }

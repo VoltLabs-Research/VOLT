@@ -21,19 +21,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import sessionApi from '@/services/api/session';
+import sessionApi, { type Session } from '@/services/api/session';
 
-export interface Session {
-    _id: string;
-    user: string;
-    token: string;
-    userAgent: string;
-    ip: string;
-    isActive: boolean;
-    lastActivity: string;
-    createdAt: string;
-    updatedAt: string;
-}
+export type { Session };
 
 export interface SessionsResponse {
     status: 'success' | 'error';
@@ -46,33 +36,33 @@ export const useSessions = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchSessions = async() => {
-        try{
+    const fetchSessions = async () => {
+        try {
             setLoading(true);
             setError(null);
             const data = await sessionApi.getAll();
             setSessions(data);
-        }catch(err: any){
+        } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to fetch sessions');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
 
-    const revokeSession = async(sessionId: string) => {
-        try{
-            await sessionApi.delete(sessionId);
+    const revokeSession = async (sessionId: string) => {
+        try {
+            await sessionApi.revoke(sessionId);
             setSessions(prev => prev.filter(session => session._id !== sessionId));
-        }catch(err: any){
+        } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to revoke session');
         }
     };
 
-    const revokeAllOtherSessions = async() => {
-        try{
-            await sessionApi.deleteOthers();
+    const revokeAllOtherSessions = async () => {
+        try {
+            await sessionApi.revokeOthers();
             setSessions(prev => prev.slice(0, 1));
-        }catch(err: any){
+        } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to revoke other sessions');
         }
     };

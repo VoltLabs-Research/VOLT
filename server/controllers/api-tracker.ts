@@ -20,25 +20,21 @@
  * SOFTWARE.
  */
 
-import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { Request } from 'express';
 import { FilterQuery } from 'mongoose';
 import { ApiTracker } from '@/models/index';
 import type { IApiTracker } from '@/models/api-tracker';
 import BaseController from '@/controllers/base-controller';
 
-export default class ApiTrackerController extends BaseController<IApiTracker>{
-    constructor(){
+export default class ApiTrackerController extends BaseController<IApiTracker> {
+    constructor() {
         super(ApiTracker, {
             resourceName: 'ApiTracker',
             fields: ['method', 'url', 'ip', 'userAgent', 'statusCode', 'responseTime', 'requestBody', 'queryParams', 'headers', 'createdAt']
         });
     }
 
-    protected async getFilter(req: Request): Promise<FilterQuery<IApiTracker>>{
+    protected async getFilter(req: Request): Promise<FilterQuery<IApiTracker>> {
         return { user: (req as any).user._id };
     }
-
-    public getMyApiStats: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
-        return this.getAll(req, res, next);
-    };
 }

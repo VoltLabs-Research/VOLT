@@ -3,6 +3,17 @@ import VoltClient from '@/api';
 const client = new VoltClient('/ssh-connections', { useRBAC: true });
 const explorerClient = new VoltClient('/ssh-file-explorer', { useRBAC: true });
 
+export interface SSHConnection {
+    _id: string;
+    name: string;
+    host: string;
+    port: number;
+    username: string;
+    user: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 interface CreateSSHConnectionPayload {
     name: string;
     host: string;
@@ -26,18 +37,19 @@ interface SSHFileListResponse {
 const sshApi = {
     connections: {
         async getAll(): Promise<SSHConnection[]> {
-            const response = await client.request<{ status: 'success'; data: { connections: SSHConnection[] } }>('get', '/');
-            return response.data.data.connections;
+            // BaseController returns { status, data: [...] }
+            const response = await client.request<{ status: 'success'; data: SSHConnection[] }>('get', '/');
+            return response.data.data;
         },
 
         async create(data: CreateSSHConnectionPayload): Promise<SSHConnection> {
-            const response = await client.request<{ status: 'success'; data: { connection: SSHConnection } }>('post', '/', { data });
-            return response.data.data.connection;
+            const response = await client.request<{ status: 'success'; data: SSHConnection }>('post', '/', { data });
+            return response.data.data;
         },
 
         async update(id: string, data: Partial<CreateSSHConnectionPayload>): Promise<SSHConnection> {
-            const response = await client.request<{ status: 'success'; data: { connection: SSHConnection } }>('patch', `/${id}`, { data });
-            return response.data.data.connection;
+            const response = await client.request<{ status: 'success'; data: SSHConnection }>('patch', `/${id}`, { data });
+            return response.data.data;
         },
 
         async delete(id: string): Promise<void> {

@@ -1,64 +1,71 @@
 import { Request, Response } from 'express';
-import SSHConnection from '@/models/ssh-connection';
+import SSHConnection, { ISSHConnection } from '@/models/ssh-connection';
 import SSHService from '@/services/ssh';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import BaseController from '@/controllers/base-controller';
 import { Resource } from '@/constants/permissions';
+import { FilterQuery } from 'mongoose';
 
-export default class SSHConnectionsController extends BaseController<any>{
-    constructor(){
+export default class SSHConnectionsController extends BaseController<ISSHConnection> {
+    constructor() {
         super(SSHConnection, {
-            resource: Resource.SSH_CONNECTION
+            resource: Resource.SSH_CONNECTION,
+            resourceName: 'SSHConnection',
+            fields: ['name', 'host', 'port', 'username']
         });
     }
 
-    public getUserSSHConnections = catchAsync(async (req: Request, res: Response) => {
+    /**
+     * Scope to current user only
+     */
+    protected async getFilter(req: Request): Promise<FilterQuery<ISSHConnection>> {
         const userId = (req as any).user._id || (req as any).user.id;
-        const connections = await SSHConnection.find({ user: userId })
-            .select('-encryptedPassword')
-            .sort({ createdAt: -1 })
-            .lean();
+        return { user: userId };
+    }
 
-        res.status(200).json({ status: 'success', data: { connections } });
-    });
-
-    public createSSHConnection = catchAsync(async (req: Request, res: Response) => {
+    /**
+     * Custom create to handle password encryption
+     */
+    protected async create(data: Partial<ISSHConnection>, req: Request): Promise<ISSHConnection> {
         const userId = (req as any).user._id || (req as any).user.id;
-        const { name, host, port, username, password } = req.body;
+        const { password } = req.body;
 
         const connection = new SSHConnection({
-            name,
-            host,
-            port: port || 22,
-            username,
+            ...data,
+            port: data.port || 22,
             user: userId
         });
-        connection.setPassword(password);
-        await connection.save();
 
-        res.status(201).json({ status: 'success', data: { connection: connection.toJSON() } });
-    });
-
-    public updateSSHConnection = catchAsync(async (req: Request, res: Response) => {
-        const { name, host, port, username, password } = req.body;
-        const connection = res.locals.sshConnection;
-
-        if (name) connection.name = name;
-        if (host) connection.host = host;
-        if (port) connection.port = port;
-        if (username) connection.username = username;
-        if (password) connection.setPassword(password);
+        if (password) {
+            connection.setPassword(password);
+        }
 
         await connection.save();
-        res.status(200).json({ status: 'success', data: { connection: connection.toJSON() } });
-    });
+        return connection;
+    }
 
-    public deleteSSHConnection = catchAsync(async (req: Request, res: Response) => {
-        const connection = res.locals.sshConnection;
-        await connection.deleteOne();
-        res.status(204).json({ status: 'success', data: null });
-    });
+    /**
+     * Handle password encryption on update
+     */
+    protected async onBeforeUpdate(
+        data: Partial<ISSHConnection>,
+        req: Request,
+        currentDoc: ISSHConnection
+    ): Promise<Partial<ISSHConnection>> {
+        const { password } = req.body;
 
+        // If password provided, encrypt it and set on the document
+        if (password) {
+            currentDoc.setPassword(password);
+            await currentDoc.save();
+        }
+
+        return data;
+    }
+
+    /**
+     * Test SSH connection - specialized action, not CRUD
+     */
     public testSSHConnection = catchAsync(async (req: Request, res: Response) => {
         const connection = res.locals.sshConnection;
         try {

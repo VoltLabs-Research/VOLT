@@ -29,9 +29,12 @@ const controller = new SessionController();
 
 router.use(protect);
 
-router.get('/', controller.getMySessions);
+// Standard CRUD via BaseController
+router.get('/', controller.getAll);
+router.patch('/:id', controller.updateOne);
+
+// Specialized endpoints
 router.get('/activity', controller.getMyLoginActivity);
-router.delete('/:id', controller.revokeSession);
 router.delete('/all/others', controller.revokeAllOtherSessions);
 
 export default router;

@@ -27,9 +27,8 @@ import ApiTrackerController from '@/controllers/api-tracker';
 const router = Router();
 const controller = new ApiTrackerController();
 
-// All routes require authentication
 router.use(protect);
 
-router.get('/my-stats', controller.getMyApiStats);
+router.get('/', controller.getAll);
 
 export default router;

@@ -127,8 +127,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
     }
 
     // Handle HandlerFactory response format(data is an array)
-    const requests = Array.isArray(data?.data) ? data.data : [];
-    const summary = data?.data?.summary;
+    const requests = Array.isArray(data.data.requests) ? data.data.requests : [];
 
     if(requests.length === 0){
         return (
@@ -157,29 +156,6 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                     <HiChartBar className="recent-activity-icon" />
                     Recent Activity
                 </Title>
-
-                {showStats && summary && (
-                    <div className="d-flex items-center gap-1 recent-activity-stats">
-                        <div className="d-flex column items-center gap-025 recent-activity-stat">
-                            <span className="recent-activity-stat-value color-primary">
-                                {summary.totalRequests}
-                            </span>
-                            <span className="recent-activity-stat-label font-size-1 color-secondary">Requests</span>
-                        </div>
-                        <div className="d-flex column items-center gap-025 recent-activity-stat">
-                            <span className="recent-activity-stat-value color-primary">
-                                {formatResponseTime(summary.averageResponseTime)}
-                            </span>
-                            <span className="recent-activity-stat-label font-size-1 color-secondary">Avg Time</span>
-                        </div>
-                        <div className="d-flex column items-center gap-025 recent-activity-stat">
-                            <span className="recent-activity-stat-value color-primary">
-                                {summary.uniqueIPsCount}
-                            </span>
-                            <span className="recent-activity-stat-label font-size-1 color-secondary">IPs</span>
-                        </div>
-                    </div>
-                )}
             </div>
 
             <div className="d-flex column gap-075 recent-activity-list y-auto">

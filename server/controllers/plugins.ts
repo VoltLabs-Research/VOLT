@@ -70,7 +70,6 @@ export default class PluginsController extends BaseController<IPlugin> {
     }
 
     protected async onBeforeUpdate(data: Partial<IPlugin>) {
-        console.log(data);
         // Auto-generate slug from modifier name on update
         if (data.workflow?.nodes) {
             const modifierNode = data.workflow.nodes.find((node: IWorkflowNode) => node.type === NodeType.MODIFIER);
