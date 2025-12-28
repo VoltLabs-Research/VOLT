@@ -65,9 +65,6 @@ const RasterScene: React.FC<RasterSceneProps> = ({
     if(!trajectoryId) return;
     setDownloadProgress(0);
     try{
-      // Note: downloadBlob functionality would need to be added to trajectory-api
-      // For now, using inline implementation
-      console.warn('GLB download needs trajectory-api.downloadGLBArchive()');
     }catch(error){
       console.error('Download failed:', error);
     }finally{

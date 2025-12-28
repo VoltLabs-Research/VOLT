@@ -3,9 +3,7 @@ import BaseController from '@/controllers/base-controller';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import DumpStorage from '@/services/dump-storage';
-import TrajectoryVFS from '@/services/trajectory-vfs';
 import processAndCreateTrajectory from '@/utilities/trajectory/create-trajectory';
-import archiver from 'archiver';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { getMetricsByTeamId } from '@/utilities/metrics/team';
 import { Trajectory, Team, DailyActivity } from '@/models';
@@ -13,6 +11,7 @@ import { TeamActivityType } from '@/models/daily-activity';
 import { getAnyTrajectoryPreview, sendImage } from '@/utilities/raster';
 import { Action, Resource } from '@/constants/permissions';
 import getPopulatedFrameAtoms from '@/utilities/trajectory/get-populated-frame-atoms';
+import getFrameGlbReadStream from '@/utilities/trajectory/get-glb-read-stream';
 
 export default class TrajectoryController extends BaseController<any> {
     constructor() {
@@ -59,21 +58,27 @@ export default class TrajectoryController extends BaseController<any> {
         await DumpStorage.deleteDumps(trajectoryId);
     }
 
-    public async create(data: Partial<any>, req: Request): Promise<any>{
-        const { originalFolderName, uploadId } = req.body;
-        const userId = (req as any).user._id;
-        const teamId = await this.getTeamId(req);
+    protected async onBeforeCreate(data: Partial<any>, req: Request): Promise<Partial<any>>{
+        const { originalFolderName } = req.body;
 
         let trajectoryName = 'Untitled Trajectory';
-        if(originalFolderName && originalFolderName.length >= 4){
+        if(originalFolderName && origin.length >= 4){
             trajectoryName = originalFolderName;
         }
+
+        return { trajectoryName };
+    }
+
+    public async create(data: Partial<any>, req: Request): Promise<any>{
+        const { uploadId } = req.body;
+        const userId = (req as any).user._id;
+        const teamId = await this.getTeamId(req);
 
         const trajectory = await processAndCreateTrajectory({
             files: req.files as any[],
             teamId,
             userId: (req as any).user._id,
-            trajectoryName,
+            trajectoryName: data.trajectoryName,
             originalFolderName: data.originalFolderName,
             onProgress: (progress) => {
                 if(!uploadId) return;
@@ -145,63 +150,15 @@ export default class TrajectoryController extends BaseController<any> {
     });
 
     public getGLB = catchAsync(async (req: Request, res: Response) => {
-        const { timestep, analysisId } = req.params;
-        const { type } = req.query as { type?: string };
+        const { timestep } = req.params;
         const trajectoryId = res.locals.trajectory._id.toString();
-        const vfs = new TrajectoryVFS(trajectoryId);
+        const { stream, size, filename } = await getFrameGlbReadStream(trajectoryId, timestep);
 
-        let virtualPath = '';
-        if (analysisId === 'default' || !type) {
-            virtualPath = `trajectory-${trajectoryId}/previews/timestep-${timestep}.glb`;
-        } else {
-            const glbFiles = await vfs.list(`trajectory-${trajectoryId}/analysis-${analysisId}/glb`);
-            const match = glbFiles.find(f => f.name.includes(type) && f.name.includes(timestep));
-            if (!match) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
-            virtualPath = match.relPath;
-        }
-
-        const { stream, size, filename } = await vfs.getReadStream(virtualPath);
         res.setHeader('Content-Type', 'model/gltf-binary');
         res.setHeader('Content-Length', size);
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-        if (analysisId === 'default') res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+
         stream.pipe(res);
-    });
-
-    public downloadGLBArchive = catchAsync(async (req: Request, res: Response) => {
-        const trajectory = res.locals.trajectory;
-        const trajectoryId = trajectory._id.toString();
-        const { analysisId } = req.params;
-        const vfs = new TrajectoryVFS(trajectoryId);
-
-        const entries = await vfs.list(`trajectory-${trajectoryId}/analysis-${analysisId}/glb`);
-        const frameFilter = req.query.frame ? String(req.query.frame) : null;
-
-        const filesToZip = entries.filter((entry) => {
-            if (entry.type !== 'file') return false;
-            if (frameFilter && !entry.name.includes(frameFilter)) return false;
-            return true;
-        });
-
-        if (!filesToZip.length) throw new RuntimeError(ErrorCodes.TRAJECTORY_FILES_NOT_FOUND, 404);
-
-        const filename = String(trajectory.name || trajectoryId).replace(/[^a-z0-9_\-]+/gi, '_');
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}_${analysisId}.zip"`);
-
-        const archive = archiver('zip', { zlib: { level: 0 } });
-
-        archive.on('error', () => {
-            if (!res.headersSent) res.status(500).end();
-        });
-
-        archive.pipe(res);
-
-        for (const file of filesToZip) {
-            const { stream } = await vfs.getReadStream(file.relPath);
-            archive.append(stream, { name: `glb/${file.name}` });
-        }
-
-        await archive.finalize();
     });
 };

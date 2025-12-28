@@ -120,29 +120,6 @@ const trajectoryApi = {
         return response.data.data;
     },
 
-    async getGLB(
-        trajectoryId: string,
-        timestep: number | string,
-        analysisId: string,
-        opts?: { type?: string; onProgress?: (progress: number) => void }
-    ): Promise<ArrayBuffer> {
-        const response = await client.request<ArrayBuffer>('get', `/${trajectoryId}/${timestep}/${analysisId}`, {
-            query: opts?.type ? { type: opts.type } : undefined,
-            config: {
-                responseType: 'arraybuffer',
-                onDownloadProgress: (evt) => {
-                    const total = evt.total ?? 0;
-                    if (total > 0 && opts?.onProgress) {
-                        opts.onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
-                    }
-                }
-            },
-            dedupe: false
-        });
-
-        return response.data;
-    },
-
     async getAllPaginated(params?: GetTrajectoriesParams & { sort?: string; q?: string }): Promise<{
         data: Trajectory[];
         page: number;
