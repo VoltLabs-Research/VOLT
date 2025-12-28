@@ -1,5 +1,6 @@
 import { api } from '@/api';
 import Logger from '@/services/logger';
+import getQueryParam from '@/utilities/get-query-param';
 
 class PreviewCacheService{
     private cache = new Map<string, string>();
@@ -88,7 +89,7 @@ class PreviewCacheService{
         this.loadingSet.add(id);
 
         try{
-            const response = await api.get(`/trajectories/${id}/preview`, {
+            const response = await api.get(`/trajectories/${getQueryParam('team')}/${id}/preview`, {
                 responseType: 'blob'
             });
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import trajectoryApi from '@/services/api/trajectory';
+import useTeamStore from '@/stores/team/team';
 
 interface MergedAtomsRow {
     idx: number;
@@ -15,6 +16,7 @@ interface MergedAtomsRow {
 
 const PerAtomViewer = () => {
     const { trajectoryId, analysisId, exposureId } = useParams();
+    const { selectedTeam } = useTeamStore();
     const [searchParams] = useSearchParams();
     const timestep = Number(searchParams.get('timestep') || '0');
 
@@ -44,6 +46,7 @@ const PerAtomViewer = () => {
         try{
             const result = await trajectoryApi.getAtoms(
                 trajectoryId,
+                selectedTeam?._id,
                 analysisId,
                 { timestep, exposureId, page: nextPage, pageSize }
             );

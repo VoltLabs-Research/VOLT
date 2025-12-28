@@ -1,5 +1,6 @@
 import api from '@/api';
 import type { IWorkflow, PluginStatus } from '@/types/plugin';
+import getQueryParam from '@/utilities/get-query-param';
 
 export interface IPluginRecord {
     _id: string;
@@ -49,7 +50,7 @@ const pluginApi = {
         limit?: number;
         search?: string
     }): Promise<GetPluginsResponse> => {
-        const response = await api.get<GetPluginResponse>('/plugins', { params });
+        const response = await api.get<GetPluginResponse>(`/plugins/${getQueryParam('team')}`, { params });
         return response.data;
     },
 
@@ -57,7 +58,7 @@ const pluginApi = {
      * Get available arguments for a plugin
      */
     getAvailableArguments: async (pluginSlug: string): Promise<any> => {
-        const response = await api.get<any>(`/plugins/${pluginSlug}/arguments`);
+        const response = await api.get<any>(`/plugins/${getQueryParam('team')}/${pluginSlug}/arguments`);
         return response.data.data;
     },
 
@@ -66,7 +67,7 @@ const pluginApi = {
      */
     getFile: async (trajectoryId: string, analysisId: string, exposureId: string, timestep: number, filename: string): Promise<ArrayBuffer> => {
         const response = await api.get(
-            `/plugins/file/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/${filename}`,
+            `/plugins/${getQueryParam('team')}/file/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/${filename}`,
             { responseType: 'arraybuffer' }
         );
         return response.data;
@@ -77,7 +78,7 @@ const pluginApi = {
      */
     getExposureData: async (pluginId: string, trajectoryId: string, analysisId: string, exposureId: string, timestep: number): Promise<ArrayBuffer> => {
         const response = await api.get(
-            `/plugins/${pluginId}/trajectory/${trajectoryId}/analysis/${analysisId}/exposure/${exposureId}/timestep/${timestep}/file.msgpack`,
+            `/plugins/${getQueryParam('team')}/${pluginId}/trajectory/${trajectoryId}/analysis/${analysisId}/exposure/${exposureId}/timestep/${timestep}/file.msgpack`,
             { responseType: 'arraybuffer' }
         );
         return response.data;
@@ -87,7 +88,7 @@ const pluginApi = {
      * Get a single plugin by ID or slug
      */
     getPlugin: async (idOrSlug: string): Promise<IPluginRecord> => {
-        const response = await api.get<GetPluginResponse>(`/plugins/${idOrSlug}`);
+        const response = await api.get<GetPluginResponse>(`/plugins/${getQueryParam('team')}/${idOrSlug}`);
         return response.data.data;
     },
 
@@ -100,7 +101,7 @@ const pluginApi = {
         status?: PluginStatus,
         team?: string
     }): Promise<IPluginRecord> => {
-        const response = await api.post<GetPluginResponse>('/plugins', data);
+        const response = await api.post<GetPluginResponse>(`/plugins/${getQueryParam('team')}`, data);
         return response.data.data;
     },
 
@@ -112,7 +113,7 @@ const pluginApi = {
         workflow?: IWorkflow,
         status?: PluginStatus
     }): Promise<IPluginRecord> => {
-        const response = await api.put<GetPluginResponse>(`/plugins/${idOrSlug}`, data);
+        const response = await api.put<GetPluginResponse>(`/plugins/${getQueryParam('team')}/${idOrSlug}`, data);
         return response.data.data;
     },
 
@@ -120,14 +121,14 @@ const pluginApi = {
      * Delete a plugin
      */
     deletePlugin: async (idOrSlug: string): Promise<void> => {
-        await api.delete(`/plugins/${idOrSlug}`);
+        await api.delete(`/plugins/${getQueryParam('team')}/${idOrSlug}`);
     },
 
     /**
      * Validate a workflow without saving
      */
     validateWorkflow: async (workflow: IWorkflow): Promise<ValidateWorkflowResponse['data']> => {
-        const response = await api.post<ValidateWorkflowResponse>('/plugins/validate', { workflow });
+        const response = await api.post<ValidateWorkflowResponse>(`/plugins/${getQueryParam('team')}/validate`, { workflow });
         return response.data.data;
     },
 
@@ -135,7 +136,7 @@ const pluginApi = {
      * Publish a plugin(change status from draft to published)
      */
     publishPlugin: async (idOrSlug: string): Promise<IPluginRecord> => {
-        const response = await api.post<GetPluginResponse>(`/plugins/${idOrSlug}/publish`);
+        const response = await api.post<GetPluginResponse>(`/plugins/${getQueryParam('team')}/${idOrSlug}/publish`);
         return response.data.data;
     },
 
@@ -149,7 +150,7 @@ const pluginApi = {
         timestep?: number
     ): Promise<string> => {
         const response = await api.post<ExecutePluginResponse>(
-            `/plugins/${pluginSlug}/trajectory/${trajectoryId}/execute`,
+            `/plugins/${getQueryParam('team')}/${pluginSlug}/trajectory/${trajectoryId}/execute`,
             { config, timestep });
         return response.data.data.analysisId;
     },
@@ -182,7 +183,7 @@ const pluginApi = {
         const response = await api.post<{
             status: string;
             data: { objectPath: string; fileName: string; size: number };
-        }>(`/plugins/${pluginId}/binary`, formData, {
+        }>(`/plugins/${getQueryParam('team')}/${pluginId}/binary`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             onUploadProgress: (progressEvent) => {
                 if (onProgress && progressEvent.total) {
@@ -197,18 +198,15 @@ const pluginApi = {
     /**
      * Delete a binary file from plugin
      */
-    /**
-     * Delete a binary file from plugin
-     */
     deleteBinary: async (pluginId: string): Promise<void> => {
-        await api.delete(`/plugins/${pluginId}/binary`);
+        await api.delete(`/plugins/${getQueryParam('team')}/${pluginId}/binary`);
     },
 
     /**
      * Get node output schemas for template autocomplete
      */
     getNodeSchemas: async (): Promise<Record<string, any>> => {
-        const response = await api.get<{ status: string; data: Record<string, any> }>('/plugins/schemas');
+        const response = await api.get<{ status: string; data: Record<string, any> }>(`/plugins/${getQueryParam('team')}/schemas`);
         return response.data.data;
     },
 
@@ -222,8 +220,8 @@ const pluginApi = {
         params?: { page?: number; limit?: number; teamId?: string }
     ): Promise<any> => {
         const url = trajectoryId
-            ? `/plugins/listing/${pluginId}/${listingKey}/${trajectoryId}`
-            : `/plugins/listing/${pluginId}/${listingKey}`;
+            ? `/plugins/${getQueryParam('team')}/listing/${pluginId}/${listingKey}/${trajectoryId}`
+            : `/plugins/${getQueryParam('team')}/listing/${pluginId}/${listingKey}`;
         const response = await api.get<{ status: string; data: any }>(url, { params });
         return response.data.data;
     },
@@ -239,7 +237,7 @@ const pluginApi = {
         params?: { page?: number; limit?: number }
     ): Promise<any> => {
         const response = await api.get<{ status: string; data: any }>(
-            `/plugins/per-frame-listing/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`,
+            `/plugins/${getQueryParam('team')}/per-frame-listing/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`,
             { params }
         );
         return response.data.data;
@@ -255,7 +253,7 @@ const pluginApi = {
         payload: { config: Record<string, any>; selectedFrameOnly?: boolean; timestep?: number }
     ): Promise<string> => {
         const response = await api.post<{ status: string; data: { analysisId: string } }>(
-            `/plugins/${pluginId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
+            `/plugins/${getQueryParam('team')}/${pluginId}/modifier/${modifierId}/trajectory/${trajectoryId}`,
             payload
         );
         return response.data.data.analysisId;
@@ -265,7 +263,7 @@ const pluginApi = {
      * Export a plugin as a ZIP file
      */
     exportPlugin: async (idOrSlug: string): Promise<Blob> => {
-        const response = await api.get(`/plugins/${idOrSlug}/export`, {
+        const response = await api.get(`/plugins/${getQueryParam('team')}/${idOrSlug}/export`, {
             responseType: 'blob'
         });
         return response.data;
@@ -281,7 +279,7 @@ const pluginApi = {
             formData.append('teamId', teamId);
         }
 
-        const response = await api.post<GetPluginResponse>('/plugins/import', formData, {
+        const response = await api.post<GetPluginResponse>(`/plugins/${getQueryParam('team')}/import`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
         return response.data.data;

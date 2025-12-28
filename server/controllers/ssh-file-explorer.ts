@@ -18,10 +18,6 @@ export default class SSHFileExplorerController extends BaseController<any> {
         });
     }
 
-    protected async getTeamId(req: Request): Promise<string | null> {
-        return req.body?.teamId || null;
-    }
-
     public listSSHFiles = catchAsync(async (req: Request, res: Response) => {
         const { path } = req.query;
         const connection = res.locals.sshConnection;
@@ -52,12 +48,9 @@ export default class SSHFileExplorerController extends BaseController<any> {
 
     public importTrajectoryFromSSH = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id;
-        const { connectionId, remotePath, teamId } = req.body;
+        const teamId = await this.getTeamId(req);
+        const { connectionId, remotePath } = req.body;
         const { sshConnection } = res.locals;
-
-        if (!teamId) {
-            throw new RuntimeError(ErrorCodes.TEAM_ID_REQUIRED, 400);
-        }
 
         await this.authorize(req, teamId, Action.CREATE);
 

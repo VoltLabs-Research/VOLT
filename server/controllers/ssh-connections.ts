@@ -2,8 +2,16 @@ import { Request, Response } from 'express';
 import SSHConnection from '@/models/ssh-connection';
 import SSHService from '@/services/ssh';
 import { catchAsync } from '@/utilities/runtime/runtime';
+import BaseController from '@/controllers/base-controller';
+import { Resource } from '@/constants/permissions';
 
-export default class SSHConnectionsController {
+export default class SSHConnectionsController extends BaseController<any>{
+    constructor(){
+        super(SSHConnection, {
+            resource: Resource.SSH_CONNECTION
+        });
+    }
+
     public getUserSSHConnections = catchAsync(async (req: Request, res: Response) => {
         const userId = (req as any).user._id || (req as any).user.id;
         const connections = await SSHConnection.find({ user: userId })

@@ -32,6 +32,7 @@ type Pointer = {
 };
 
 export const getMetricsByTeamId = async (teamId: string) => {
+    console.log('get metrics by team id:', teamId);
     const trajectoryDocs = await Trajectory.find({ team: teamId }).select('_id').lean();
     if (!trajectoryDocs.length) {
         return { totals: {}, lastMonth: {}, weekly: { labels: [] } };

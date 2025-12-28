@@ -23,7 +23,7 @@
 import express from 'express';
 import ContainerController from '@/controllers/container';
 import { protect } from '@/middlewares/authentication';
-import * as containerMiddleware from '@/middlewares/container';
+import * as middleware from '@/middlewares/container';
 
 const router = express.Router();
 const containerController = new ContainerController();
@@ -33,49 +33,25 @@ router.use(protect);
 router.get('/', containerController.getAllContainers);
 router.post(
     '/',
-    containerMiddleware.verifyTeamForContainerCreation,
+    middleware.verifyTeamForContainerCreation,
     containerController.createContainer
 );
+
+router.use(middleware.loadAndVerifyContainerAccess);
+
 router.post(
     '/:id/control',
-    containerMiddleware.loadAndVerifyContainerAccess,
-    containerMiddleware.validateContainerAction,
+    middleware.validateContainerAction,
     containerController.controlContainer
 );
-router.delete(
-    '/:id',
-    containerMiddleware.loadAndVerifyContainerAccess,
-    containerController.deleteContainer
-);
-router.get(
-    '/:id/stats',
-    containerMiddleware.loadAndVerifyContainerAccess,
-    containerController.getContainerStats
-);
-router.post(
-    '/:id/restart',
-    containerMiddleware.loadAndVerifyContainerAccess,
-    containerController.restartContainer
-);
-router.patch(
-    '/:id',
-    containerMiddleware.loadAndVerifyContainerAccess,
-    containerController.updateContainer
-);
-router.get(
-    '/:id/files',
-    containerMiddleware.loadAndVerifyContainerAccess,
-    containerController.getContainerFiles
-);
-router.get(
-    '/:id/read',
-    containerMiddleware.loadAndVerifyContainerAccess,
-    containerController.readContainerFile
-);
-router.get(
-    '/:id/top',
-    containerMiddleware.loadAndVerifyContainerAccess,
-    containerController.getContainerProcesses
-);
+
+router.delete('/:id', containerController.deleteContainer);
+router.get('/:id/stats', containerController.getContainerStats);
+router.post('/:id/restart', containerController.restartContainer);
+router.patch('/:id', containerController.updateContainer);
+router.get('/:id/files', containerController.getContainerFiles);
+router.get('/:id/read', containerController.readContainerFile);
+router.get('/:id/top', containerController.getContainerProcesses);
 
 export default router;
+export const opts = { requiresTeamId: true };

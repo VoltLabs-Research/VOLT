@@ -28,38 +28,20 @@ import * as sshMiddleware from '@/middlewares/ssh-connection';
 const router = Router();
 const controller = new SSHConnectionsController();
 
-router.get(
-    '/',
-    authMiddleware.protect,
-    controller.getUserSSHConnections
-);
+router.use(authMiddleware.protect);
 
-router.post(
-    '/',
-    authMiddleware.protect,
-    sshMiddleware.validateSSHConnectionFields,
-    controller.createSSHConnection
-);
+router.route('/')
+    .get(controller.getUserSSHConnections)
+    .post(sshMiddleware.validateSSHConnectionFields, controller.createSSHConnection);
 
-router.patch(
-    '/:id',
-    authMiddleware.protect,
-    sshMiddleware.loadAndVerifySSHConnection,
-    controller.updateSSHConnection
-);
+router.use(sshMiddleware.loadAndVerifySSHConnection);
 
-router.delete(
-    '/:id',
-    authMiddleware.protect,
-    sshMiddleware.loadAndVerifySSHConnection,
-    controller.deleteSSHConnection
-);
+router.route('/:id')
+    .patch(controller.updateSSHConnection)
+    .delete(controller.deleteSSHConnection);
 
-router.post(
-    '/:id/test',
-    authMiddleware.protect,
-    sshMiddleware.loadAndVerifySSHConnection,
-    controller.testSSHConnection
-);
+
+router.post('/:id/test', controller.testSSHConnection);
 
 export default router;
+export const opts = { requiresTeamId: true };

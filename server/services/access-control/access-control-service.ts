@@ -22,16 +22,10 @@ class AccessControlService {
 
         const hasWildcard = permissions.includes('*');
         const hasExactPermission = permissions.includes(requiredPermission);
-        const hasResourceManage = this.checkManagePermission(permissions, requiredPermission);
 
-        if (!hasWildcard && !hasExactPermission && !hasResourceManage) {
+        if (!hasWildcard && !hasExactPermission) {
             throw new RuntimeError(ErrorCodes.ACCESS_CONTROL_MISSING_PERMISSION, 403);
         }
-    }
-
-    private checkManagePermission(permissions: string[], requiredPermission: string): boolean {
-        const [resource] = requiredPermission.split(':');
-        return permissions.includes(`${resource}:manage`);
     }
 }
 

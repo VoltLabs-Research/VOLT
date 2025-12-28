@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-import { isValidObjectId } from 'mongoose';
 import BaseController from '@/controllers/base-controller';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
@@ -25,7 +24,7 @@ export default class TrajectoryController extends BaseController<any> {
         super(Trajectory, {
             resourceName: 'Trajectory',
             resource: Resource.TRAJECTORY,
-            fields: ['name', 'preview', 'isPublic', 'createdBy'],
+            fields: ['originalFolderName', 'uploadId', 'teamId', 'preview', 'isPublic', 'createdBy'],
             populate: [
                 { path: 'createdBy', select: 'email firstName lastName' },
                 { path: 'analysis' },
@@ -34,32 +33,22 @@ export default class TrajectoryController extends BaseController<any> {
         });
     }
 
-    protected async getTeamId(req: Request, doc?: any): Promise<string | null> {
-        if (doc?.team) {
-            return typeof doc.team === 'string' ? doc.team : doc.team._id?.toString() || doc.team.toString();
-        }
-
-        const teamId = req.body?.teamId || req.query?.teamId;
-        return teamId ? String(teamId) : null;
-    }
-
     /**
      * Users can only see trajectories in teams they belong to.
      */
     protected async getFilter(req: Request): Promise<any> {
         const userId = (req as any).user.id;
-        const { teamId } = req.query;
+        const teamId = await this.getTeamId(req);
 
         let teamQuery: any = { members: userId };
-        if (teamId && typeof teamId === 'string') {
-            if (!isValidObjectId(teamId)) throw new RuntimeError(ErrorCodes.VALIDATION_INVALID_TEAM_ID, 400);
+        if(teamId){
             teamQuery._id = teamId;
         }
 
         const userTeams = await Team.find(teamQuery).select('_id');
 
         // If filtering by specific team ID and user isn't in it, return impossible query
-        if (teamId && userTeams.length === 0) return { _id: { $in: [] } };
+        if(teamId && userTeams.length === 0) return { _id: { $in: [] } };
 
         const teamIds = userTeams.map((team) => team._id);
         return { team: { $in: teamIds } };
@@ -70,16 +59,65 @@ export default class TrajectoryController extends BaseController<any> {
      */
     protected async onBeforeDelete(doc: any, req: Request): Promise<void> {
         const trajectoryId = doc._id.toString();
-        const teamId = doc.team.toString();
+        const teamId = await this.getTeamId(req);
         await this.authorize(req, teamId, Action.DELETE, Resource.TRAJECTORY);
         await DumpStorage.deleteDumps(trajectoryId);
     }
 
-    public getTeamMetrics = catchAsync(async (req: Request, res: Response) => {
-        const { teamId } = req.query;
-        if (!teamId || typeof teamId !== 'string') {
-            throw new RuntimeError(ErrorCodes.TRAJECTORY_TEAM_ID_REQUIRED, 400);
+    public async create(data: Partial<any>, req: Request): Promise<any>{
+        const { originalFolderName, uploadId } = req.body;
+        const userId = (req as any).user._id;
+        const teamId = await this.getTeamId(req);
+
+        let trajectoryName = 'Untitled Trajectory';
+        if(originalFolderName && originalFolderName.length >= 4){
+            trajectoryName = originalFolderName;
         }
+
+        const trajectory = await processAndCreateTrajectory({
+            files: req.files as any[],
+            teamId,
+            userId: (req as any).user._id,
+            trajectoryName,
+            originalFolderName: data.originalFolderName,
+            onProgress: (progress) => {
+                if(!uploadId) return;
+                const io = req.app.get('io');
+                io.to(`upload:${uploadId}`).emit('trajectory:upload-progress', {
+                    uploadId,
+                    progress
+                });
+                io.to(`user:${userId}`).emit('trajectory:upload-progress', {
+                    uploadId,
+                    progress
+                });   
+            }
+        });
+
+        return trajectory;
+    }
+
+    protected async onAfterCreate(doc: any, req: Request): Promise<void> {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        await DailyActivity.updateOne(
+            { team: doc.team, user: doc.createdBy, date: startOfDay },
+            {
+                $push: {
+                    activity: {
+                            type: TeamActivityType.TRAJECTORY_UPLOAD,
+                            user: doc.createdBy,
+                            description: `${req.user.firstName} ${req.user.lastName} has loaded a trajectory (${doc.name})`,
+                            createdAt: new Date()
+                    }
+                }
+            }
+        );
+    }
+
+    public getTeamMetrics = catchAsync(async (req: Request, res: Response) => {
+        const teamId = await this.getTeamId(req);
         const metrics = await getMetricsByTeamId(teamId);
         res.status(200).json({ status: 'success', data: metrics });
     });
@@ -133,7 +171,7 @@ export default class TrajectoryController extends BaseController<any> {
             return next(new RuntimeError(ErrorCodes.TRAJECTORY_NOT_FOUND, 404));
         }
 
-        const teamId = trajectory.team.toString();
+        const teamId = await this.getTeamId(req);
         await this.authorize(req, teamId, Action.READ, Resource.TRAJECTORY);
 
         const page = Math.max(1, parseInt(String(pageStr) || '1', 10));
@@ -349,70 +387,5 @@ export default class TrajectoryController extends BaseController<any> {
         }
 
         await archive.finalize();
-    });
-
-    public create = catchAsync(async (req: Request, res: Response) => {
-        const userId = (req as any).user._id;
-        const { teamId, originalFolderName, uploadId } = req.body;
-
-        // TODO: check for missing params in req.body
-        await this.authorize(req, teamId, Action.CREATE, Resource.TRAJECTORY);
-
-        let trajectoryName = req.body.name;
-        if (!trajectoryName && originalFolderName && originalFolderName.length >= 4) {
-            trajectoryName = originalFolderName;
-        }
-        if (!trajectoryName) trajectoryName = 'Untitled Trajectory';
-
-        let trajectory;
-        try {
-            trajectory = await processAndCreateTrajectory({
-                files: req.files as any[],
-                teamId,
-                userId: (req as any).user._id,
-                trajectoryName,
-                originalFolderName: req.body.originalFolderName,
-                onProgress: (progress) => {
-                    if (uploadId) {
-                        const io = req.app.get('io');
-                        io.to(`upload:${uploadId}`).emit('trajectory:upload-progress', {
-                            uploadId,
-                            progress
-                        });
-                        io.to(`user:${userId}`).emit('trajectory:upload-progress', {
-                            uploadId,
-                            progress
-                        });
-                    }
-                }
-            });
-            res.status(201).json({
-                status: 'success',
-                data: trajectory
-            });
-
-            const startOfDay = new Date();
-            startOfDay.setHours(0, 0, 0, 0);
-
-            const user = await User.findById(userId).select('firstName lastName').lean();
-            const userName = user ? `${user.firstName} ${user.lastName}` : 'Someone';
-
-            await DailyActivity.updateOne(
-                { team: teamId, user: userId, date: startOfDay },
-                {
-                    $push: {
-                        activity: {
-                            type: TeamActivityType.TRAJECTORY_UPLOAD,
-                            user: userId,
-                            description: `${userName} has loaded a trajectory (${trajectoryName})`,
-                            createdAt: new Date()
-                        }
-                    }
-                },
-                { upsert: true }
-            );
-        } catch (error) {
-            throw error;
-        }
     });
 };

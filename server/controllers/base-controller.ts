@@ -49,8 +49,8 @@ export default abstract class BaseController<T extends Document> {
         await accessControlService.enforce(subject, teamId, permission);
     }
 
-    protected async getTeamId(req: Request, doc?: T): Promise<string | null> {
-        return null;
+    protected async getTeamId(req: Request, doc?: T): Promise<string> {
+        return req.params.teamId;
     }
 
     protected async getFilter(req: Request): Promise<FilterQuery<T>> {
@@ -71,6 +71,10 @@ export default abstract class BaseController<T extends Document> {
 
     protected async onBeforeDelete(doc: T, req: Request): Promise<void> { }
 
+    protected async create(data: Partial<T>, req: Request): Promise<T>{
+        return await this.model.create(data);
+    }
+
     protected getPopulate(req: Request): PopulateOptions | string | (PopulateOptions | string)[] | undefined {
         return this.defaultPopulate;
     }
@@ -87,7 +91,7 @@ export default abstract class BaseController<T extends Document> {
             await this.authorize(req, teamId, Action.CREATE);
         }
 
-        const doc = await this.model.create(data);
+        const doc = await this.create(data, req);
         await this.onAfterCreate(doc, req);
 
         res.status(201).json({

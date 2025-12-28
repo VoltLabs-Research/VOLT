@@ -29,20 +29,17 @@ import * as teamMiddleware from '@/middlewares/team';
 const router = Router();
 const controller = new SSHFileExplorerController();
 
-router.get(
-    '/list',
-    authMiddleware.protect,
-    sshMiddleware.loadAndVerifySSHConnection,
-    controller.listSSHFiles
-);
+router.use(authMiddleware.protect);
+router.use(sshMiddleware.loadAndVerifySSHConnection);
+
+router.get('/list', controller.listSSHFiles);
 
 router.post(
     '/import',
-    authMiddleware.protect,
     sshMiddleware.validateSSHImportFields,
     teamMiddleware.checkTeamMembership,
-    sshMiddleware.loadAndVerifySSHConnection,
     controller.importTrajectoryFromSSH
 );
 
 export default router;
+export const opts = { requiresTeamId: true };

@@ -13,15 +13,6 @@ const EditableTrajectoryName = ({ trajectory, className }) => {
         try{
             await updateTrajectoryById(trajectory._id, { name: newName });
         }catch(error: any){
-            const errorContext = {
-                endpoint: `/trajectories/${trajectory._id}`,
-                method: 'PATCH',
-                trajectoryId: trajectory._id,
-                resourceName: 'trajectory name',
-                statusCode: error?.context?.statusCode,
-                serverMessage: error?.context?.serverMessage || error?.message,
-                timestamp: new Date().toISOString()
-            };
             console.error('Failed to update trajectory name:', errorContext);
             throw error;
         }

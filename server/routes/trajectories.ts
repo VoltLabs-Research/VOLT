@@ -39,40 +39,16 @@ const upload = multer({
             cb(null, file.fieldname + '-' + uniqueSuffix);
         }
     }),
-    limits: {
-        // TODO: from env?
-        fileSize: process.env.MAX_FILE_SIZE ? Number(process.env.MAX_FILE_SIZE) : undefined,
-        files: process.env.MAX_FILES ? Number(process.env.MAX_FILES) : undefined
-    },
     fileFilter: (req, file, cb: FileFilterCallback) => {
         cb(null, true);
     }
 });
 
-router.route('/')
-    .get(
-        authMiddleware.protect,
-        controller.getAll
-    )
-        .post(
-        authMiddleware.protect,
-        upload.array('trajectoryFiles'),
-        middleware.processAndValidateUpload,
-        controller.create
-    );
+router.use(authMiddleware.protect);
 
 router.get(
-    '/:id/glb/:timestep/:analysisId',
-    authMiddleware.optionalAuth,
-    middleware.checkTeamMembershipForTrajectory,
-    controller.getGLB
-);
-
-router.get(
-    '/:id/analysis/:analysisId',
-    authMiddleware.protect,
-    middleware.checkTeamMembershipForTrajectory,
-    controller.getAtoms
+    '/metrics',
+    controller.getTeamMetrics
 );
 
 router.get(
@@ -81,40 +57,54 @@ router.get(
     controller.getSingleMetrics
 )
 
+router.route('/')
+    .get(controller.getAll)
+    .post(
+        upload.array('trajectoryFiles'), 
+        middleware.processAndValidateUpload, 
+        controller.createOne
+    );
+
 router.get(
-    '/metrics',
-    controller.getTeamMetrics
+    '/:id/analysis/:analysisId',
+    middleware.checkTeamMembershipForTrajectory,
+    controller.getAtoms
+);
+
+router.route('/:id')
+    .patch(
+        middleware.requireTeamMembershipForTrajectory,
+        controller.updateOne
+    )
+    .delete(
+        middleware.requireTeamMembershipForTrajectory,
+        controller.deleteOne
+    );
+
+router.use(authMiddleware.optionalAuth);
+router.get(
+    '/:id/:timestep/:analysisId',
+    middleware.checkTeamMembershipForTrajectory,
+    controller.getGLB
 );
 
 router.get(
     '/:id/preview',
-    authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory,
     controller.getPreview
 );
 
 router.get(
     '/:id/glb-archive',
-    authMiddleware.optionalAuth,
     middleware.checkTeamMembershipForTrajectory,
     controller.downloadGLBArchive
 );
 
-router.route('/:id')
-    .get(
-        authMiddleware.optionalAuth,
-        middleware.checkTeamMembershipForTrajectory,
-        controller.getOne
-    )
-        .patch(
-        authMiddleware.protect,
-        middleware.requireTeamMembershipForTrajectory,
-        controller.updateOne
-    )
-        .delete(
-        authMiddleware.protect,
-        middleware.requireTeamMembershipForTrajectory,
-        controller.deleteOne
-    );
+router.get(
+    '/:id/',
+    middleware.checkTeamMembershipForTrajectory,
+    controller.getOne
+);
 
 export default router;
+export const opts = { requiresTeamId: true };

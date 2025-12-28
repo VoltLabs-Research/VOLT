@@ -108,7 +108,6 @@ services:
     environment:
       NODE_ENV: development
       CLUSTER_ID: main-cluster
-      MAX_FILES: 200
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
       MINIO_USE_SSL: false

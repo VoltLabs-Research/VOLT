@@ -21,3 +21,4 @@ router.get('/members', controller.getMembers);
 router.patch('/members/:memberId/role', controller.assignRole);
 
 export default router;
+export const opts = { requiresTeamId: true };

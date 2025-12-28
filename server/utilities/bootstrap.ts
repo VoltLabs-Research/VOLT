@@ -27,10 +27,14 @@ export const configureApp = async({ app, routes, suffix, middlewares, errorHandl
     try{
         const routePromises = routes.map(async(route: string) => {
             try{
-                const routePath = suffix + route.replace(/\//g, '-').split(/(?=[A-Z])/).join('-').toLowerCase();
+                const module = route.replace(/\//g, '-').split(/(?=[A-Z])/).join('-').toLowerCase();
                 const routerModule = require(`@routes/${route}`);
                 const router = routerModule.default;
                 if(router){
+                    let routePath = suffix + module;
+                    if(routerModule?.opts?.requiresTeamId){
+                        routePath += '/:teamId';
+                    }
                     app.use(routePath, router);
                 }else{
                     logger.error(`The module imported from '@routes/${route}' does not have a default export.`);

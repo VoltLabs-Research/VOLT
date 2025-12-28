@@ -19,13 +19,6 @@ export default class ContainerController extends BaseController<any> {
         });
     }
 
-    protected async getTeamId(req: Request, doc?: any): Promise<string | null> {
-        if (doc?.team) {
-            return typeof doc.team === 'string' ? doc.team : doc.team._id?.toString() || doc.team.toString();
-        }
-        return req.body?.teamId || null;
-    }
-
     public getAllContainers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const userTeams = await Team.find({ members: (req.user as any)._id });
         const teamIds = userTeams.map((t) => t._id);

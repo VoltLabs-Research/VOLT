@@ -45,7 +45,6 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     const activeModel = useModelStore((s) => s.activeModel);
     const setModelBounds = useModelStore((s) => s.setModelBounds);
     const setIsModelLoading = useModelStore((s) => s.setIsModelLoading);
-    const activeScene = useModelStore((state) => state.activeScene);
 
     const stateRef = useRef<ExtendedSceneState>({
         model: null,
@@ -185,9 +184,6 @@ export default function useGlbScene(params: UseGlbSceneParams) {
         transformManager.setPosition(x, y, z);
         invalidate();
     }, [params.position?.x, params.position?.y, params.position?.z, transformManager, invalidate, loadingState.isLoading]);
-
-    // Position updates are handled by ModelSetupManager during setup or via updateParams before setup
-    // We avoid forcing setPosition here to prevent overwriting centering/grounding logic
 
     const getTargetUrl = useCallback((): string | null => {
         return params.url ?? null;

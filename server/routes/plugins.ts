@@ -45,41 +45,19 @@ router.delete('/:id/binary', pluginMiddleware.loadPlugin, controller.deleteBinar
 router.get('/:id/export', controller.exportPlugin);
 router.post('/import', controller.importPluginMiddleware, controller.importPlugin);
 
-router.post(
-    '/:pluginSlug/modifier/:modifierSlug/trajectory/:id',
-    trajMiddleware.checkTeamMembershipForTrajectory,
-    controller.evaluatePlugin
-);
-
-router.get(
-    '/glb/:id/:analysisId/:exposureId/:timestep',
-    trajMiddleware.checkTeamMembershipForTrajectory,
-    controller.getPluginExposureGLB
-);
-
-router.get(
-    '/file/:id/:analysisId/:exposureId/:timestep/:filename',
-    trajMiddleware.checkTeamMembershipForTrajectory,
-    controller.getPluginExposureFile
-);
-
 // Listing without specific trajectory(all trajectories for team)
 router.get(
     '/listing/:pluginSlug/:listingSlug',
     controller.getPluginListingDocuments
 );
 
-// Listing for specific trajectory
-router.get(
-    '/listing/:pluginSlug/:listingSlug/:id',
-    trajMiddleware.checkTeamMembershipForTrajectory,
-    controller.getPluginListingDocuments
-);
+router.use(trajMiddleware.checkTeamMembershipForTrajectory);
+router.post('/:pluginSlug/modifier/:modifierSlug/trajectory/:id', controller.evaluatePlugin);
+router.get('/glb/:id/:analysisId/:exposureId/:timestep', controller.getPluginExposureGLB);
+router.get('/file/:id/:analysisId/:exposureId/:timestep/:filename', controller.getPluginExposureFile);
 
-router.get(
-    '/per-frame-listing/:id/:analysisId/:exposureId/:timestep',
-    trajMiddleware.checkTeamMembershipForTrajectory,
-    controller.getPerFrameListing
-);
+router.get('/listing/:pluginSlug/:listingSlug/:id', controller.getPluginListingDocuments);
+router.get('/per-frame-listing/:id/:analysisId/:exposureId/:timestep', controller.getPerFrameListing);
 
 export default router;
+export const opts = { requiresTeamId: true };

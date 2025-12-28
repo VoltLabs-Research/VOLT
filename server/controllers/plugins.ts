@@ -50,14 +50,6 @@ export default class PluginsController extends BaseController<IPlugin> {
         });
     }
 
-    protected async getTeamId(req: Request, doc?: any): Promise<string | null> {
-        if (doc?.team) {
-            return typeof doc.team === 'string' ? doc.team : doc.team._id?.toString() || doc.team.toString();
-        }
-        const teamId = req.body?.teamId || req.query?.teamId;
-        return teamId ? String(teamId) : null;
-    }
-
     protected async onBeforeCreate(data: Partial<IPlugin>, req: Request): Promise<Partial<IPlugin>> {
         // auto-generate slug from modifier name if not provided
         if (!data.slug && data.workflow?.nodes) {

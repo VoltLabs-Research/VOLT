@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import CameraManager from '@/components/atoms/scene/CameraManager';
 import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
 import useGlbScene from '@/hooks/canvas/use-glb-scene';
-import { createTrajectoryGLBs } from '@/utilities/glb/modelUtils';
 
 interface SingleModelViewerProps {
     trajectoryId: string;
@@ -52,9 +51,6 @@ const computeGlbUrl = (
         if (exposureId) url += `&exposureId=${exposureId}`;
         return url;
     }
-
-    const glbs = createTrajectoryGLBs(trajectoryId, currentTimestep, analysisId || 'default');
-    return glbs[activeScene?.sceneType as keyof typeof glbs] || glbs.trajectory;
 };
 
 const SingleModelViewer: React.FC<SingleModelViewerProps> = ({

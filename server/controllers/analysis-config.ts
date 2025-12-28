@@ -16,10 +16,6 @@ export default class AnalysisConfigController extends BaseController<any> {
         });
     }
 
-    protected async getTeamId(req: Request): Promise<string | null> {
-        return req.params.teamId || null;
-    }
-
     public listByTeam = catchAsync(async (req: Request, res: Response) => {
         const { teamId } = req.params;
         const { page = '1', limit = '20', q = '' } = req.query as Record<string, string>;

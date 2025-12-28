@@ -40,7 +40,6 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     trajectoryId,
     currentTimestep,
     analysisId = 'default',
-    activeScene, // Legacy/Props override
     rotation = {},
     position = { x: 0, y: 0, z: 0 },
     scale = 1,
@@ -56,11 +55,8 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
 
     // Determine scenes to render: props override > store activeScenes
     const scenesToRender = useMemo(() => {
-        if (activeScene) {
-            return [activeScene];
-        }
         return storeActiveScenes.length > 0 ? storeActiveScenes : [];
-    }, [activeScene, storeActiveScenes]);
+    }, [storeActiveScenes]);
 
     // Track the Y-dimensions of loaded models to position them correctly
     const [modelHeights, setModelHeights] = React.useState<Record<number, number>>({});
@@ -76,13 +72,6 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
             });
         }
     }, []);
-
-    useImperativeHandle(ref, () => ({
-        loadModel: () => {
-            // Trigger reload if needed, though declarative updates should handle it
-            // useGlbScene usually handles reload on URL change
-        }
-    }), []);
 
     if (scenesToRender.length === 0) return null;
 

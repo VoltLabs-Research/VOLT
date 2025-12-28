@@ -28,24 +28,13 @@ import * as authMiddleware from '@/middlewares/authentication';
 const router = Router();
 const controller = new AnalysisConfigController();
 
-// Allow public access for public trajectories while supporting authenticated users
+router.get('/', authMiddleware.protect, controller.listByTeam);
+
 router.use(authMiddleware.optionalAuth);
-router.get(
-    '/:id',
-    middleware.checkTeamMembershipForAnalysisTrajectory,
-    controller.getOne
-);
-
-router.get(
-    '/team/:teamId',
-    authMiddleware.protect,
-    controller.listByTeam
-)
-
-router.delete(
-    '/:id',
-    middleware.checkTeamMembershipForAnalysisTrajectory,
-    controller.deleteOne
-)
+router.use(middleware.checkTeamMembershipForAnalysisTrajectory);
+router.route('/:id')
+    .get(controller.getOne)
+    .delete(controller.deleteOne);
 
 export default router;
+export const opts = { requiresTeamId: true };

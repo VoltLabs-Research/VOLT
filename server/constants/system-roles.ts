@@ -35,7 +35,7 @@ export const SystemRoles = {
             ...allActionsFor(Resource.CHAT),
             ...allActionsFor(Resource.MESSAGE),
             ...allActionsFor(Resource.SSH_CONNECTION),
-            ...crudFor(Resource.TEAM_INVITATION),
+            ...allActionsFor(Resource.TEAM_INVITATION),
             ...allActionsFor(Resource.TEAM_MEMBER),
             ...allActionsFor(Resource.TEAM_ROLE)
         ],

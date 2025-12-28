@@ -20,12 +20,8 @@ export default class TeamController extends BaseController<any>{
         });
     }
 
-    protected async getTeamId(req: Request, doc?: any): Promise<string | null>{
-        if(doc?._id){
-            return doc._id.toString();
-        }
-
-        return req.params.id || null;
+    protected async getTeamId(req: Request, doc?: any): Promise<string>{
+        return req.params.id;
     }
 
     /**
@@ -50,6 +46,7 @@ export default class TeamController extends BaseController<any>{
 
     public getMembers = catchAsync(async (req: Request, res: Response) => {
         const teamId = req.params.id;
+        console.log('here');
         await this.authorize(req, teamId, Action.READ, Resource.TEAM_MEMBER);
 
         const members = await TeamMember.find({ team: teamId })

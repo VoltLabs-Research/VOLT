@@ -15,10 +15,6 @@ export default class TeamRoleController extends BaseController<any> {
         });
     }
 
-    protected async getTeamId(req: Request): Promise<string | null> {
-        return req.params.teamId || req.params.id || null;
-    }
-
     public getRoles = catchAsync(async (req: Request, res: Response) => {
         const teamId = await this.getTeamId(req);
         if (!teamId) throw new RuntimeError(ErrorCodes.TEAM_ID_REQUIRED, 400);

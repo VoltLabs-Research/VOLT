@@ -1,28 +1,13 @@
 import api from '@/api';
 import type { Trajectory } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
+import getQueryParam from '@/utilities/get-query-param';
 
 interface GetTrajectoriesParams {
-    teamId?: string;
     page?: number;
     limit?: number;
     search?: string;
     populate?: string;
-}
-
-interface TrajectoryAtomsParams {
-    page?: number;
-    pageSize?: number;
-}
-
-interface TrajectoryAtomsResponse {
-    timestep: number;
-    natoms?: number;
-    total?: number;
-    page: number;
-    pageSize: number;
-    positions: number[][];
-    types?: number[];
 }
 
 interface FsListResponse {
@@ -43,27 +28,26 @@ interface TrajectoryInfo {
 }
 
 const trajectoryApi = {
-    async getAll(params?: GetTrajectoriesParams): Promise<Trajectory[]>{
+    async getAll(params: GetTrajectoriesParams): Promise<Trajectory[]>{
         const queryParams = new URLSearchParams();
-        if(params?.teamId) queryParams.append('teamId', params.teamId);
         if(params?.page) queryParams.append('page', params.page.toString());
         if(params?.limit) queryParams.append('limit', params.limit.toString());
         if(params?.search) queryParams.append('search', params.search);
         if(params?.populate) queryParams.append('populate', params.populate);
 
-        const url = `/trajectories${queryParams.toString() ? `?${queryParams}` : ''}`;
+        const url = `/trajectories/${getQueryParam('team')}/${queryParams.toString() ? `?${queryParams}` : ''}`;
         const response = await api.get<ApiResponse<Trajectory[]>>(url);
         return response.data.data;
     },
 
     async getOne(id: string, populate?: string): Promise<Trajectory>{
-        const url = populate ? `/trajectories/${id}?populate=${populate}` : `/trajectories/${id}`;
+        const url = populate ? `/trajectories/${getQueryParam('team')}/${id}?populate=${populate}` : `/trajectories/${id}`;
         const response = await api.get<ApiResponse<Trajectory>>(url);
         return response.data.data;
     },
 
     async create(formData: FormData, onProgress?: (progress: number) => void): Promise<Trajectory> {
-        const response = await api.post<ApiResponse<Trajectory>>('/trajectories', formData, {
+        const response = await api.post<ApiResponse<Trajectory>>(`/trajectories/${getQueryParam('team')}`, formData, {
             onUploadProgress: (evt) => {
                 const total = evt.total ?? 0;
                 if(total > 0 && onProgress){
@@ -75,12 +59,12 @@ const trajectoryApi = {
     },
 
     async update(id: string, data: Partial<Pick<Trajectory, 'name' | 'isPublic' | 'preview'>>): Promise<Trajectory>{
-        const response = await api.patch<ApiResponse<Trajectory>>(`/trajectories/${id}`, data);
+        const response = await api.patch<ApiResponse<Trajectory>>(`/trajectories/${getQueryParam('team')}/${id}`, data);
         return response.data.data;
     },
 
     async delete(id: string): Promise<void>{
-        await api.delete(`/trajectories/${id}`);
+        await api.delete(`/trajectories/${getQueryParam('team')}/${id}`);
     },
 
     async getPreview(trajectoryId: string, options?: { headers?: Record<string, string>; timeout?: number }): Promise<string>{
@@ -89,7 +73,7 @@ const trajectoryApi = {
             r: Math.random().toString(36)
         }).toString();
         const response = await api.get<ApiResponse<string>>(
-            `/trajectories/${trajectoryId}/preview?${cacheBuster}`,
+            `/trajectories/${getQueryParam('team')}/${trajectoryId}/preview?${cacheBuster}`,
             {
                 headers: options?.headers,
                 timeout: options?.timeout ?? 15000
@@ -100,7 +84,7 @@ const trajectoryApi = {
 
     async getAllPaginated(params?: GetTrajectoriesParams & { sort?: string; q?: string }): Promise<{ data: Trajectory[]; page: number; limit: number; total: number }> {
         const response = await api.get<{ status: string; data: Trajectory[]; page: number; limit: number; total: number }>(
-            '/trajectories',
+            `/trajectories/${getQueryParam('team')}`,
             { params }
         );
         return {
@@ -111,16 +95,11 @@ const trajectoryApi = {
         };
     },
 
-    async getMetrics(teamId?: string): Promise<any>{
-        const response = await api.get<ApiResponse<any>>('/trajectories/metrics', {
-            params: teamId ? { teamId } : undefined
-        });
+    async getMetrics(): Promise<any>{
+        const response = await api.get<ApiResponse<any>>(`/trajectories/${getQueryParam('team')}/metrics`);
         return response.data.data;
     },
 
-    /**
-     * Get merged atoms: LAMMPS dump data + per-atom properties from plugin exports
-     */
     async getAtoms(
         trajectoryId: string,
         analysisId: string,
@@ -134,7 +113,7 @@ const trajectoryApi = {
         hasMore: boolean;
     } | null> {
         const response = await api.get(
-            `/trajectories/${trajectoryId}/analysis/${analysisId}`,
+            `/trajectories/${getQueryParam('team')}/${trajectoryId}/analysis/${analysisId}`,
             {
                 params: {
                     timestep: params.timestep,

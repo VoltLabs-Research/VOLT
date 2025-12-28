@@ -31,6 +31,7 @@ import PreviewCacheService from '@/services/preview-cache-service';
 import { clearTrajectoryPreviewCache } from '@/hooks/trajectory/use-trajectory-preview';
 import Logger from '@/services/logger';
 import trajectoryApi from '@/services/api/trajectory';
+import useTeamStore from './team/team';
 
 const initialState: TrajectoryState = {
     trajectories: [],
@@ -147,7 +148,6 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             return asyncAction(
                 () =>
                     trajectoryApi.getAllPaginated({
-                        teamId,
                         populate: 'analysis,createdBy',
                         page,
                         limit,
@@ -309,8 +309,7 @@ const useTrajectoryStore = create<TrajectoryStore>()((set, get) => {
             const pageSize = opts?.pageSize ?? 100000;
 
             try {
-                // Casting to any to bypass strict type mismatch between mismatched API/Store definitions
-                const payload = await trajectoryApi.getAtoms(trajectoryId, 'default', { timestep, exposureId: 'default', page, pageSize });
+                const payload = await trajectoryApi.getAtoms(trajectoryId, useTeamStore.getState().selectedTeam?._id, 'default', { timestep, exposureId: 'default', page, pageSize });
                 return payload as any;
             } catch (e: any) {
                 const errorMessage = extractErrorMessage(e, 'Error loading frame atoms');
