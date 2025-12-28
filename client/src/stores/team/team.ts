@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { createAsyncAction } from '@/utilities/asyncAction';
-import type { Team } from '@/types/models';
 import type { TeamState, TeamStore, UpdateTeamData } from '@/types/stores/team/team';
 import teamApi from '@/services/api/team';
 import { socketService } from '@/services/socketio';
@@ -177,7 +176,6 @@ const useTeamStore = create<TeamStore>((set, get) => {
 
         reset: () => set(initialState),
 
-        // Member Actions
         fetchMembers: (teamId: string) => asyncAction(() => teamApi.members.getAll(teamId), {
             loadingKey: 'isLoading',
             onSuccess: (data) => ({
@@ -187,31 +185,6 @@ const useTeamStore = create<TeamStore>((set, get) => {
                 error: null
             }),
             onError: (error) => ({ error: error.message || 'Failed to fetch members' })
-        }),
-
-        promoteMember: (teamId, userId) => asyncAction(() => teamApi.members.promote(teamId, userId), {
-            loadingKey: 'isLoading',
-            onSuccess: () => {
-                const { members, admins } = get();
-                const member = members.find(m => m._id === userId);
-                if (member && !admins.find(a => a._id === userId)) {
-                    return { admins: [...admins, member], error: null };
-                }
-                return { error: null };
-            },
-            onError: (error) => ({ error: error.message || 'Failed to promote member' })
-        }),
-
-        demoteMember: (teamId, userId) => asyncAction(() => teamApi.members.demote(teamId, userId), {
-            loadingKey: 'isLoading',
-            onSuccess: () => {
-                const { admins } = get();
-                return {
-                    admins: admins.filter(a => a._id !== userId),
-                    error: null
-                };
-            },
-            onError: (error) => ({ error: error.message || 'Failed to demote member' })
         }),
 
         removeMember: (teamId, userId) => asyncAction(() => teamApi.members.remove(teamId, { userId }), {

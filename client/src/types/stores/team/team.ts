@@ -40,8 +40,6 @@ export interface TeamActions {
 
     // Member Actions
     fetchMembers: (teamId: string) => Promise<void>;
-    promoteMember: (teamId: string, userId: string) => Promise<void>;
-    demoteMember: (teamId: string, userId: string) => Promise<void>;
     removeMember: (teamId: string, userId: string) => Promise<void>;
 
     // Presence
