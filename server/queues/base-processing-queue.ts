@@ -48,7 +48,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     private sessionsBeingCleaned = new Set<string>();
     private workerPool: WorkerPoolItem[] = [];
-    private jobMap = new Map<number, { job: T; rawData: string; startTime: number }>();
+    protected jobMap = new Map<number, { job: T; rawData: string; startTime: number }>();
 
     private isShutdown = false;
     protected redis: IORedis;
@@ -406,7 +406,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         return true;
     }
 
-    private async finishJob(workerId: number, rawData: string): Promise<void> {
+    protected async finishJob(workerId: number, rawData: string): Promise<void> {
         const workerIdx = this.workerPool.findIndex(({ worker }) => worker.threadId === workerId);
         if (workerIdx !== -1) {
             const item = this.workerPool[workerIdx];
@@ -420,7 +420,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         await this.redis.lrem(this.processingKey, 1, rawData);
     }
 
-    private async handleWorkerMessage(workerId: number, message: any): Promise<void> {
+    protected async handleWorkerMessage(workerId: number, message: any): Promise<void> {
         const jobInfo = this.jobMap.get(workerId);
         if (!jobInfo) return;
 

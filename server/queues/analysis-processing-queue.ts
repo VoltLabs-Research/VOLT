@@ -25,9 +25,17 @@ import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import path from 'path';
 import { Queues } from '@/constants/queues';
+import { createRedisClient } from '@config/redis';
+import IORedis from 'ioredis';
 
-export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob>{
-    constructor(){
+export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob> {
+    protected deserializeJob(rawData: string): AnalysisJob {
+        return JSON.parse(rawData) as AnalysisJob;
+    }
+
+    private subscriber: IORedis | null = null;
+
+    constructor() {
         const options: QueueOptions = {
             queueName: Queues.ANALYSIS_PROCESSING,
             workerPath: path.resolve(__dirname, '../workers/analysis.ts'),
@@ -37,9 +45,76 @@ export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob>{
         };
 
         super(options);
+        this.initializeSubscriber();
     }
 
-    protected deserializeJob(rawData: string): AnalysisJob{
-        return JSON.parse(rawData) as AnalysisJob;
+    private async initializeSubscriber() {
+        this.subscriber = createRedisClient();
+        await this.subscriber.subscribe('cloud_upload_completion');
+
+        this.subscriber.on('message', async (channel, message) => {
+            if (channel === 'cloud_upload_completion') {
+                try {
+                    const { trajectoryId, timestep } = JSON.parse(message);
+                    await this.processPendingUploads(trajectoryId, Number(timestep));
+                } catch (e) {
+                    // ignore
+                }
+            }
+        });
+
+        this.initializeWatchdog();
+    }
+
+    private initializeWatchdog() {
+        // Run every 30 seconds
+        setInterval(async () => {
+            try {
+                await this.processWatchdog();
+            } catch (e) { /* ignore */ }
+        }, 30000);
+    }
+
+    private async processWatchdog() {
+    }
+
+    protected async handleWorkerMessage(workerId: number, message: any): Promise<void> {
+        if (message.status === 'waiting_for_upload') {
+            const jobInfo = this.jobMap.get(workerId);
+            if (jobInfo) {
+                const { rawData, job } = jobInfo;
+                const timestep = message.timestep;
+
+                const flagKey = `upload:done:${job.trajectoryId}:${timestep}`;
+                const waitListKey = `waiting:upload:${job.trajectoryId}:${timestep}`;
+
+                const lua = `
+                    if redis.call('EXISTS', KEYS[1]) == 1 then
+                        return 1
+                    else
+                        redis.call('RPUSH', KEYS[2], ARGV[1])
+                        return 0
+                    end
+                `;
+
+                const result = await this.redis.eval(lua, 2, flagKey, waitListKey, rawData);
+
+                if (result === 1) {
+                    await this.redis.multi()
+                        .lpush(this.queueKey, rawData)
+                        .lrem(this.processingKey, 1, rawData)
+                        .exec();
+
+                    await this.finishJob(workerId, rawData);
+                    return;
+                }
+
+                // Parked successfully by Lua. Just remove from processing.
+                await this.redis.lrem(this.processingKey, 1, rawData);
+                await this.finishJob(workerId, rawData);
+                return;
+            }
+        }
+        return super.handleWorkerMessage(workerId, message);
     }
 }

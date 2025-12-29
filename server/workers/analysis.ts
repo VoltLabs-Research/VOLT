@@ -30,6 +30,7 @@ import '@config/env';
 import '@/services/nodes/handlers';
 import { NodeType } from '@/types/models/plugin';
 import { precomputeListingRowsForTimesteps } from '@/services/precompute-listing-row';
+import DumpStorage from '@/services/dump-storage';
 
 /**
  * Detecta listing slugs (exposures) que tienen un nodo VISUALIZERS conectado con listing != {}
@@ -116,9 +117,22 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
     }
 
     try {
+        const frameTimestep = resolveJobTimestep(job);
+        const exists = await DumpStorage.exists(job.trajectoryId, frameTimestep);
+
+        if (!exists) {
+            logger.info(`[Worker #${process.pid}] Frame ${frameTimestep} not found in MinIO. Requesting wait status.`);
+            parentPort?.postMessage({
+                status: 'waiting_for_upload',
+                jobId: job.jobId,
+                trajectoryId: job.trajectoryId,
+                timestep: frameTimestep
+            });
+            return;
+        }
+
         logger.info(`[Worker #${process.pid}] Received job ${job.jobId}. Starting processing...`);
 
-        // lean() para reducir overhead
         const plugin = await Plugin.findOne({ slug: job.plugin }).lean();
         if (!plugin) {
             throw new Error(`Plugin not found: ${job.plugin}`);
@@ -126,8 +140,6 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
 
         const engine = new PluginWorkflowEngine();
         console.log(job);
-        // ✅ Pasa teamId si tu engine ya lo acepta (según los cambios que te pasé antes)
-        // Si aún no actualizaste engine para teamId, puedes borrar el último parámetro.
         await engine.execute(
             plugin as any,
             job.trajectoryId,
@@ -156,7 +168,7 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
             );
         }
 
-        // ✅ Precompute listing rows (NO MinIO) — no hacemos fallar el job si esto falla
+        // Precompute listing rows (NO MinIO)
         try {
             const teamId = String((job as any).teamId || '');
             if (teamId) {

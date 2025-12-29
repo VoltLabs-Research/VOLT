@@ -48,17 +48,7 @@ const main = async () => {
         getAnalysisQueue();
         logger.info('[Worker] Analysis Queue initialized');
 
-        getTrajectoryProcessingQueue();
-        logger.info('[Worker] Trajectory Processing Queue initialized');
-
-        getRasterizerQueue();
-        logger.info('[Worker] Rasterizer Queue initialized');
-
-        getSSHImportQueue();
-        logger.info('[Worker] SSH Import Queue initialized');
-
         logger.info(`[Worker] Worker is now running and processing jobs for Cluster: ${CLUSTER_ID}`);
-
     } catch (error) {
         logger.error(`[Worker] Fatal error during startup: ${error}`);
         process.exit(1);
