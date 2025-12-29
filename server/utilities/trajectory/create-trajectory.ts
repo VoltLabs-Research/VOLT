@@ -60,6 +60,8 @@ const parseFilesWithWorker = async (
 
             if (success && data) {
                 results[taskId] = data;
+            } else if (!success) {
+                console.error(`[createTrajectory] Worker parsing failed for task ${taskId}:`, error);
             }
 
             // Report progress
@@ -221,7 +223,7 @@ const processFilesInBackground = async (
     teamId: string,
     onProgress?: (progress: number) => void
 ) => {
-    const tempBaseDir = path.join(process.cwd(), 'storage', 'temp');
+    const tempBaseDir = path.resolve(__dirname, '../../storage/temp');
     const workingDir = path.join(tempBaseDir, trajectoryIdStr);
     await fs.mkdir(workingDir, { recursive: true });
 

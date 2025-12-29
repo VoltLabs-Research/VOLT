@@ -10,9 +10,9 @@ import storage from '@/services/storage';
 import binaryCache from '@/services/binary-cache';
 import CLIExec from '@/services/cli-exec';
 import logger from '@/logger';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
+import { TEMP_DIR } from '@/utilities/temp-dir';
 
 class EntrypointHandler implements NodeHandler {
     readonly type = NodeType.ENTRYPOINT;
@@ -52,7 +52,7 @@ class EntrypointHandler implements NodeHandler {
         }
 
         // Set the output path for this item
-        forEachOutput.outputPath = path.join(os.tmpdir(), `${context.pluginSlug}-${context.analysisId}-${index}-${Date.now()}`);
+        forEachOutput.outputPath = path.join(TEMP_DIR, `${context.pluginSlug}-${context.analysisId}-${index}-${Date.now()}`);
 
         const resolvedArgs = resolveTemplate(config.arguments, context);
         const argsArray = parseArgumentString(resolvedArgs);
@@ -96,7 +96,7 @@ class EntrypointHandler implements NodeHandler {
         logger.info(`[EntrypointHandler] Downloading binary: ${config.binaryObjectPath}`);
         const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, config.binaryObjectPath);
         const ext = path.extname(config.binaryFileName || config.binary || '');
-        const binaryPath = path.join(os.tmpdir(), `plugin-binary-${context.pluginSlug}-${Date.now()}${ext}`);
+        const binaryPath = path.join(TEMP_DIR, `plugin-binary-${context.pluginSlug}-${Date.now()}${ext}`);
 
         const writeStream = createWriteStream(binaryPath);
         await pipeline(stream, writeStream);

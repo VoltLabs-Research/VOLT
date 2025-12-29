@@ -30,13 +30,12 @@ import * as zlib from 'node:zlib';
 import * as fs from 'node:fs/promises';
 import * as fsNative from 'node:fs';
 import * as path from 'node:path';
-import * as os from 'node:os';
 
 type DumpInput = Buffer | string;
 
 export default class DumpStorage {
     private static readonly COMPRESSION_LEVEL = zlib.constants.Z_BEST_SPEED;
-    private static readonly CACHE_DIR = path.join(process.cwd(), 'storage', 'temp');
+    private static readonly CACHE_DIR = path.resolve(__dirname, '../storage/temp');
     private static readonly CACHE_TTL_MS = 30 * 60 * 1000;
     private static readonly RAM_THRESHOLD = 4 * 1024 * 1024;
     private static pendingRequests = new Map<string, Promise<string | null>>();

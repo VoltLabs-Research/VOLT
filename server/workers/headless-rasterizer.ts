@@ -6,9 +6,9 @@ import storage from '@/services/storage';
 import rasterize from '@/utilities/export/rasterizer';
 import logger from '@/logger';
 import * as fs from 'node:fs/promises';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import { v4 as uuidv4 } from 'uuid';
+import { TEMP_DIR } from '@/utilities/temp-dir';
 
 const CACHE_CONTROL = 'public, max-age=86400';
 const CONTENT_TYPE = 'image/png';
@@ -16,7 +16,8 @@ const CONTENT_TYPE = 'image/png';
 const processJob = async (job: RasterizerJob): Promise<void> => {
     const start = performance.now();
     const inputPath = job.opts.inputPath as string;
-    const tempPng = path.join(os.tmpdir(), `raster_${uuidv4()}.png`);
+    const tempPng = path.join(TEMP_DIR, `raster_${uuidv4()}.png`);
+
 
     try {
         logger.info(`[Worker #${process.pid}] Processing Job ${job.jobId} (Timestep: ${job.timestep})...`);

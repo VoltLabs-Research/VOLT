@@ -12,8 +12,8 @@ import BaseController from '@/controllers/base-controller';
 import { Resource } from '@/constants/resources';
 import { Trajectory } from '@/models';
 
-export default class ColorCodingController extends BaseController<any>{
-    constructor(){
+export default class ColorCodingController extends BaseController<any> {
+    constructor() {
         super(Trajectory, {
             resource: Resource.COLOR_CODING
         });

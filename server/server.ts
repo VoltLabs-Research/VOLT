@@ -41,6 +41,10 @@ const SERVER_PORT = process.env.SERVER_PORT || 8000;
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
 
 const server = http.createServer(app);
+server.setTimeout(30 * 60 * 1000);
+server.requestTimeout = 30 * 60 * 1000;
+server.keepAliveTimeout = 30 * 60 * 1000;
+server.headersTimeout = 35 * 60 * 1000;
 
 const gateway = new SocketGateway()
     .register(new JobsModule())

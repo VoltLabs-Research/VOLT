@@ -6,9 +6,9 @@ import { ErrorCodes } from '@/constants/error-codes';
 import sshService from '@/services/ssh';
 import * as fs from 'fs/promises';
 import * as path from 'node:path';
-import * as os from 'node:os';
 import logger from '@/logger';
 import '@/config/env';
+import { TEMP_DIR } from '@/utilities/temp-dir';
 
 export const processJob = async (job: SSHImportJob, postMessage?: (msg: any) => void) => {
     const sendMessage = postMessage || ((msg: any) => parentPort?.postMessage(msg));
@@ -28,7 +28,7 @@ export const processJob = async (job: SSHImportJob, postMessage?: (msg: any) => 
     let localFiles: string[] = [];
     const trajectoryName = fileStats.name || 'SSH Import';
 
-    const tempBaseDir = path.join(os.tmpdir(), 'volterra-imports');
+    const tempBaseDir = path.join(TEMP_DIR, 'imports');
     const localFolder = path.join(tempBaseDir, jobId);
 
     if (fileStats.isDirectory) {

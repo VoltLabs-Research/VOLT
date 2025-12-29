@@ -22,7 +22,6 @@
 
 import mongoose, { Schema, Model } from 'mongoose';
 import * as fs from 'fs';
-import * as os from 'node:os';
 import { rm } from 'fs/promises';
 import path from 'path';
 // @ts-ignore
@@ -34,6 +33,7 @@ import { SYS_BUCKETS } from '@/config/minio';
 import DumpStorage from '@/services/dump-storage';
 import logger from '@/logger';
 import { ValidationCodes } from '@/constants/validation-codes';
+import { TEMP_DIR } from '@/utilities/temp-dir';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
@@ -111,44 +111,44 @@ TrajectorySchema.plugin(useCascadeDelete);
 
 TrajectorySchema.index({ name: 'text', status: 'text' });
 
-TrajectorySchema.pre('findOneAndDelete', async function(next) {
+TrajectorySchema.pre('findOneAndDelete', async function (next) {
     const trajectoryToDelete = await this.model.findOne(this.getFilter());
-    if(!trajectoryToDelete){
+    if (!trajectoryToDelete) {
         return next();
     }
 
     const trajectoryId = trajectoryToDelete._id.toString();
     const { existsSync } = fs;
-    const trajectoryDir = process.env.TRAJECTORY_DIR || path.join(os.tmpdir(), 'opendxa-trajectories');
+    const trajectoryDir = process.env.TRAJECTORY_DIR || path.join(TEMP_DIR, 'trajectories');
     const trajectoryPath = path.join(trajectoryDir, trajectoryId);
 
-    try{
-        if(existsSync(trajectoryPath)) {
+    try {
+        if (existsSync(trajectoryPath)) {
             logger.info(`Removing temp trajectory directory: ${trajectoryPath}`);
             await rm(trajectoryPath, { recursive: true });
         }
 
         // Clean up MinIO dumps
-        try{
+        try {
             await DumpStorage.deleteDumps(trajectoryId);
             logger.info(`Cleaned up MinIO dumps for trajectory: ${trajectoryId}`);
-        }catch(err){
+        } catch (err) {
             logger.error(`Failed to clean up dumps: ${err}`);
         }
 
         // Clean up other MinIO buckets
         const objectName = `trajectory-${trajectoryId}`;
         const buckets = Object.values(SYS_BUCKETS).filter(b => b !== SYS_BUCKETS.DUMPS);
-        for(const bucket of buckets){
-            try{
+        for (const bucket of buckets) {
+            try {
                 await storage.deleteByPrefix(bucket, objectName);
-            }catch(err){
+            } catch (err) {
                 logger.error(err)
             }
         }
 
         next();
-    }catch(error){
+    } catch (error) {
         next(error as Error);
     }
 });

@@ -1,4 +1,3 @@
-import * as os from 'os';
 import * as path from 'path';
 import { createReadStream } from 'fs';
 import { unlink } from 'fs/promises';
@@ -8,6 +7,7 @@ import exporter, { GradientType } from '@/utilities/export/exporter';
 import storage from '@/services/storage';
 import { SYS_BUCKETS } from '@/config/minio';
 import TrajectoryParserFactory from '@/parsers/factory';
+import { TEMP_DIR } from '@/utilities/temp-dir';
 
 const FILE_THRESHOLD = 50_000_000;
 
@@ -40,7 +40,7 @@ export default class AtomisticExporter {
         const atomCount = parsed.positions.length / 3;
 
         if (atomCount > FILE_THRESHOLD) {
-            const tempFile = path.join(os.tmpdir(), `glb_${uuidv4()}.glb`);
+            const tempFile = path.join(TEMP_DIR, `glb_${uuidv4()}.glb`);
             try {
                 const success = exporter.generateGLBToFile(parsed.positions, parsed.types, parsed.min, parsed.max, tempFile);
                 if (!success) throw new Error('Native GLB generation failed');
