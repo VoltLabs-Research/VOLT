@@ -48,7 +48,6 @@ const trajectoryApi = {
             data: formData,
             config: {
                 headers: {
-                    // axios normalmente lo setea solo, pero esto evita problemas
                     'Content-Type': 'multipart/form-data'
                 },
                 onUploadProgress: (evt) => {

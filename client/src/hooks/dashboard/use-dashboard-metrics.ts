@@ -6,6 +6,7 @@ export type MetricKey = 'trajectories' | 'analysis' | string;
 export interface MetricsMetaEntry {
     displayName?: string;
     listingUrl?: string;
+    pluginName?: string;
 }
 
 export interface TrajectoryMetrics {
@@ -31,17 +32,17 @@ const keyOf = (teamId?: string) => teamId || 'all';
 
 const abbreviate = (n: number) => {
     const abs = Math.abs(n);
-    if(abs >= 1e9) return `${(n / 1e9).toFixed(n % 1e9 ? 1 : 0)}b`;
-    if(abs >= 1e6) return `${(n / 1e6).toFixed(n % 1e6 ? 1 : 0)}m`;
-    if(abs >= 1e3) return `${(n / 1e3).toFixed(n % 1e3 ? 1 : 0)}k`;
+    if (abs >= 1e9) return `${(n / 1e9).toFixed(n % 1e9 ? 1 : 0)}b`;
+    if (abs >= 1e6) return `${(n / 1e6).toFixed(n % 1e6 ? 1 : 0)}m`;
+    if (abs >= 1e3) return `${(n / 1e3).toFixed(n % 1e3 ? 1 : 0)}k`;
     return `${n}`;
 };
 
 const withPaddingDomain = (values: number[]) => {
     const min = Math.min(...values);
     const max = Math.max(...values);
-    if(!isFinite(min) || !isFinite(max)) return { min: 0, max: 1 };
-    if(min === max){
+    if (!isFinite(min) || !isFinite(max)) return { min: 0, max: 1 };
+    if (min === max) {
         const pad = max === 0 ? 1 : Math.abs(max) * 0.1;
         return { min: Math.min(0, max - pad), max: max + pad };
     }
@@ -56,12 +57,12 @@ const padSeries = (baseLabels: string[], series: number[], desired = 12) => {
     const iso = (d: Date) => d.toISOString().slice(0, 10);
 
     const map = new Map<string, number>();
-    for(let i = 0; i < baseLabels.length; i++){
+    for (let i = 0; i < baseLabels.length; i++) {
         map.set(baseLabels[i], Number(series[i]) || 0);
     }
 
     const labels: string[] = [];
-    for(let i = desired - 1; i >= 0; i--){
+    for (let i = desired - 1; i >= 0; i--) {
         const d = new Date(end);
         d.setUTCDate(d.getUTCDate() - i * 7);
         d.setUTCHours(0, 0, 0, 0);
@@ -73,9 +74,9 @@ const padSeries = (baseLabels: string[], series: number[], desired = 12) => {
 
 const fetchOnce = (teamId?: string) => {
     const key = keyOf(teamId);
-    if(inFlight.has(key)) return inFlight.get(key)!;
+    if (inFlight.has(key)) return inFlight.get(key)!;
 
-    const p = trajectoryApi.getMetrics(teamId)
+    const p = trajectoryApi.getMetrics()
         .then((data) => data as TrajectoryMetrics)
         .finally(() => inFlight.delete(key));
 
@@ -93,6 +94,7 @@ const buildCard = (
     const meta = data.meta?.[metricKey];
     const name = meta?.displayName ?? fallbackName;
     const listingUrl = meta?.listingUrl ?? fallbackUrl;
+    const pluginName = meta?.pluginName;
 
     const rawSeries = toNumericArray((data.weekly as any)[metricKey] || []);
     const padded = padSeries(baseLabels, rawSeries, 12);
@@ -102,6 +104,7 @@ const buildCard = (
         key: metricKey as MetricKey,
         name,
         listingUrl,
+        pluginName,
         count: abbreviate(rawCount),
         rawCount,
         lastMonthStatus: Number((data.lastMonth as any)[metricKey]) || 0,
@@ -124,37 +127,37 @@ const useDashboardMetrics = (
 
     const abortRef = useRef<AbortController | null>(null);
 
-    const fetchData = async() => {
-        try{
+    const fetchData = async () => {
+        try {
             const payload = await fetchOnce(teamId);
-            if(abortRef.current?.signal.aborted) return;
+            if (abortRef.current?.signal.aborted) return;
 
             cache.set(key, { data: payload, fetchedAt: Date.now() });
             setData(payload);
             setError(null);
-        }catch(err: any){
+        } catch (err: any) {
             const isCanceled =
                 abortRef.current?.signal.aborted ||
                 err?.code === 'ERR_CANCELED' ||
                 err?.name === 'CanceledError' ||
                 String(err?.message || '').toLowerCase() === 'canceled';
 
-            if(isCanceled){
+            if (isCanceled) {
                 setLoading(false);
                 return;
             }
 
             const message = err?.response?.data?.message || err?.message || 'Failed to load metrics';
             setError(message);
-        }finally{
-            if(!abortRef.current?.signal.aborted){
+        } finally {
+            if (!abortRef.current?.signal.aborted) {
                 setLoading(false);
             }
         }
     };
 
     useEffect(() => {
-        if(!teamId){
+        if (!teamId) {
             setLoading(true);
             setData(null);
             setError(null);
@@ -165,7 +168,7 @@ const useDashboardMetrics = (
         const expired = hit ? Date.now() - hit.fetchedAt > ttlMs : true;
         const shouldFetch = opts?.force || expired;
 
-        if(!shouldFetch && hit){
+        if (!shouldFetch && hit) {
             setData(hit.data);
             setLoading(false);
             setError(null);
@@ -180,13 +183,13 @@ const useDashboardMetrics = (
 
         fetchData();
 
-        return() => {
+        return () => {
             controller.abort();
         };
     }, [key, teamId, ttlMs, opts?.force]);
 
     const cards = useMemo(() => {
-        if(!data) return [];
+        if (!data) return [];
         const baseLabels = data.weekly.labels || [];
 
         // Static cards for trajectories and analyses

@@ -152,7 +152,7 @@ const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimes
                         onAnalysisError={(error) => {
                             console.error('Analysis failed:', error);
                         }}
-                    />
+                    />  
                 );
             })}
         </>

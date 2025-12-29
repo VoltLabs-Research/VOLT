@@ -94,10 +94,14 @@ export const getMetricsByTeamId = async (teamId: string) => {
         const exposureNodes = plugin.workflow?.nodes?.filter((node: IWorkflowNode) => node.type === NodeType.EXPOSURE) ?? [];
         if (!exposureNodes.length) continue;
 
+        const modifierNode = plugin.workflow?.nodes?.find((node: IWorkflowNode) => node.type === NodeType.MODIFIER);
+        const pluginName = modifierNode?.data?.modifier?.name || slug;
+
         const first = analysisPointers[0];
         for (const exposureNode of exposureNodes) {
-            const listingKey = exposureNode.id;
             const displayName = exposureNode.data?.exposure?.name || exposureNode.id;
+            const listingKey = displayName;
+
             const listingUrl = first
                 ? `/dashboard/trajectory/${first.trajectoryId}/plugin/${slug}/listing/${listingKey}`
                 : undefined;
@@ -106,6 +110,7 @@ export const getMetricsByTeamId = async (teamId: string) => {
                     kind: 'listing',
                     listingKey,
                     pluginId: slug,
+                    pluginName,
                     displayName,
                     listingUrl,
                     analysisPointers

@@ -23,10 +23,8 @@
 import BaseListingAggregator, { AggregatorConfig } from '@/services/metrics/base-listing-aggregator';
 import Plugin from '@/models/plugin';
 import { NodeType } from '@/types/models/plugin';
-import storage from '@/services/storage';
 import { Model } from 'mongoose';
-import { SYS_BUCKETS } from '@/config/minio';
-import { slugify } from '@/utilities/runtime/runtime';
+import PluginListingRow from '@/models/plugin-listing-row';
 
 export type ListingEntry = {
     aggregators?: {
@@ -44,6 +42,7 @@ type ListingMode = {
     kind: 'listing';
     listingKey: string;
     pluginId: string;
+    pluginName?: string;
     displayName?: string;
     listingUrl?: string;
     analysisPointers: Array<{
@@ -62,7 +61,8 @@ export type ListingMetrics = {
         labels: string[];
         [series: string]: number[] | string[];
     };
-    meta?: Record<string, { displayName?: string; listingUrl?: string }>;
+    meta?: Record<string, { displayName?: string; listingUrl?: string; pluginName?: string }>;
+
 };
 
 export default class MongoListingCountAggregator extends BaseListingAggregator {
@@ -82,16 +82,19 @@ export default class MongoListingCountAggregator extends BaseListingAggregator {
         if (this.mode.kind !== 'listing') return null;
 
         const plugin = await Plugin.findOne({ slug: this.mode.pluginId });
-        if (!plugin) return null;
+        if (!plugin) {
+            return null;
+        }
 
         // Find the exposure node matching the listing key(TODO: workflow-utils)
         const exposureNode = plugin.workflow.nodes.find((node: any) =>
-            node.type === NodeType.EXPOSURE && node.name === (this.mode as any).listingKey);
+            node.type === NodeType.EXPOSURE && node.data?.exposure?.name === (this.mode as any).listingKey);
 
         if (!exposureNode) return null;
-        const exposureSlug = slugify(this.mode.listingKey);
+        // The "listingSlug" in PluginListingRow is actually the exposure name (case-sensitive)
+        const exposureSlug = this.mode.listingKey;
 
-        return { exposureSlug };
+        return { exposureSlug, pluginId: plugin._id };
     }
 
     private updateBuckets(createdAt: Date) {
@@ -138,18 +141,17 @@ export default class MongoListingCountAggregator extends BaseListingAggregator {
             return;
         }
 
-        for (const pointer of this.mode.analysisPointers) {
-            const prefix = [
-                'plugins',
-                `trajectory-${pointer.trajectoryId}`,
-                `analysis-${pointer.analysisId}`,
-                definition.exposureSlug
-            ].join('/');
+        const analysisIds = this.mode.analysisPointers.map(p => p.analysisId);
 
-            const createdAt = pointer.createdAt ? new Date(pointer.createdAt) : new Date();
-            for await (const _key of storage.listByPrefix(SYS_BUCKETS.PLUGINS, prefix)) {
-                this.updateBuckets(createdAt);
-            }
+        const query = {
+            plugin: definition.pluginId,
+            listingSlug: definition.exposureSlug,
+            analysis: { $in: analysisIds }
+        };
+        const cursor = PluginListingRow.find(query).select('createdAt').cursor();
+
+        for await (const doc of cursor) {
+            this.updateBuckets(doc.createdAt);
         }
     }
 
@@ -168,7 +170,8 @@ export default class MongoListingCountAggregator extends BaseListingAggregator {
             ? {
                 [finalMetricKey]: {
                     displayName: this.mode.displayName,
-                    listingUrl: this.mode.listingUrl
+                    listingUrl: this.mode.listingUrl,
+                    pluginName: this.mode.pluginName
                 }
             }
             : {};
@@ -202,7 +205,7 @@ export default class MongoListingCountAggregator extends BaseListingAggregator {
             }
         };
 
-        const meta: Record<string, { displayName?: string; listingUrl?: string }> = {};
+        const meta: Record<string, { displayName?: string; listingUrl?: string; pluginName?: string }> = {};
         for (const { agg, key } of aggregators) {
             const metrics = await agg.collect(key);
             mergeTotals(metrics.totals);

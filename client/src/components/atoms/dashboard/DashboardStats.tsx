@@ -21,11 +21,11 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
         Dislocations: PiLineSegments
     };
 
-    if(loading){
+    if (loading) {
         return <DashboardStatsSkeleton count={3} />;
     }
 
-    if(error){
+    if (error) {
         return (
             <div className='dashboard-stats-container w-max overflow-hidden'>
                 <div className='dashboard-error'>{error}</div>
@@ -35,7 +35,7 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
 
     return (
         <div className='d-flex dashboard-stats-container w-max overflow-hidden'>
-            {cards.map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain }, index) => {
+            {cards.map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain, ...rest }, index) => {
                 const iconKey = name.replace(/\s+/g, '');
                 const Icon = icons[iconKey] || HiOutlineServerStack;
                 const up = (lastMonthStatus ?? 0) >= 0;
@@ -48,11 +48,18 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
                         key={index}
                     >
                         <div className='d-flex column gap-2 dashboard-stat-left-container w-max'>
-                            <div className='d-flex items-center dashboard-stat-header-container gap-1'>
-                                <i className='d-flex flex-center dashboard-stat-icon-container color-muted'>
-                                    <Icon />
-                                </i>
-                                <Title className='font-size-3 dashboard-stat-title color-primary'>{name}</Title>
+                            <div className='d-flex column gap-1 justify-center' style={{ minHeight: '38px' }}>
+                                <div className='d-flex items-center dashboard-stat-header-container gap-1'>
+                                    <i className='d-flex flex-center dashboard-stat-icon-container color-muted'>
+                                        <Icon />
+                                    </i>
+                                    <div className='d-flex column gap-02'>
+                                        <Title className='font-size-3 dashboard-stat-title color-primary'>{name}</Title>
+                                        {(rest as any).pluginName && (
+                                            <span className='font-size-1 color-primary font-weight-4'>{(rest as any).pluginName}</span>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                             <div className='d-flex column gap-1'>
                                 <Title className='font-size-5 color-primary'>{count}</Title>
