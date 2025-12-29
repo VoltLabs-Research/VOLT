@@ -8,7 +8,6 @@ import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 
-
 const getIcon = (type: ToastType) => {
   switch (type) {
     case 'error':
@@ -24,7 +23,7 @@ const getIcon = (type: ToastType) => {
   }
 };
 
-const Toast: React.FC<{ toast: Toast }> = ({ toast }) => {
+const ToastEl: React.FC<{ toast: Toast }> = ({ toast }) => {
   const removeToast = useUIStore((s) => s.removeToast);
 
   return (
@@ -58,7 +57,7 @@ const ToastContainer: React.FC = () => {
   return createPortal(
     <Container className='p-fixed d-flex column gap-075 toast-container'>
       {toasts.map((toast) => (
-        <Toast key={toast.id} toast={toast} />
+        <ToastEl key={toast.id} toast={toast} />
       ))}
     </Container>,
     rootElement
