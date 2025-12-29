@@ -39,7 +39,9 @@ export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, 
     fetchConnections: async () => {
         await runRequest(set, get, () => sshApi.connections.getAll(), {
             errorFallback: 'Error fetching SSH connections',
-            onSuccess: (connections) => set({ connections } as Partial<SSHConnectionSlice>)
+            onSuccess: (connections) => {
+                set({ connections: connections } as Partial<SSHConnectionSlice>)
+            }
         });
     },
 

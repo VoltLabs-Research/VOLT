@@ -19,7 +19,8 @@ export default class SSHConnectionsController extends BaseController<ISSHConnect
      */
     protected async getFilter(req: Request): Promise<FilterQuery<ISSHConnection>> {
         const userId = (req as any).user._id || (req as any).user.id;
-        return { user: userId };
+        const teamId = await this.getTeamId(req);
+        return { user: userId, team: teamId };
     }
 
     /**
@@ -28,11 +29,13 @@ export default class SSHConnectionsController extends BaseController<ISSHConnect
     protected async create(data: Partial<ISSHConnection>, req: Request): Promise<ISSHConnection> {
         const userId = (req as any).user._id || (req as any).user.id;
         const { password } = req.body;
+        const teamId = await this.getTeamId(req);
 
         const connection = new SSHConnection({
             ...data,
             port: data.port || 22,
-            user: userId
+            user: userId,
+            team: teamId
         });
 
         if (password) {

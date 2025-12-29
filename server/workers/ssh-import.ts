@@ -14,7 +14,6 @@ const processJob = async (job: SSHImportJob) => {
     const { jobId, sshConnectionId, remotePath, teamId, userId } = job;
 
     const connection = await SSHConnection.findById(sshConnectionId).select('+encryptedPassword');
-    console.log(sshConnectionId);
     if (!connection) {
         throw new Error(ErrorCodes.SSH_CONNECTION_NOT_FOUND);
     }
@@ -36,7 +35,7 @@ const processJob = async (job: SSHImportJob) => {
             remotePath,
             localFolder,
             (progress) => {
-                const percentage = 5 + Math.round((progress.downloadedBytes / progress.totalBytes) * 75);
+                const percentage = Math.round((progress.downloadedBytes / progress.totalBytes) * 100);
                 parentPort?.postMessage({
                     jobId,
                     status: 'progress',

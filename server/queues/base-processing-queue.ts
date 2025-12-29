@@ -487,18 +487,29 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         return worker;
     }
 
-    private async requeueJob(workerId: number, errorMessage: string): Promise<void> {
+    private async markJobFailed(workerId: number, errorMessage: string): Promise<boolean> {
         const jobInfo = this.jobMap.get(workerId);
-        if (!jobInfo) return;
+        // Worker crashed before it had a job assigned (e.g., TypeScript compilation error)
+        if (!jobInfo) {
+            return false;
+        }
 
-        const { job, rawData } = jobInfo;
-        await this.setJobStatus(job.jobId, 'queued_after_failure', { error: errorMessage, ...job });
-        await this.redis.multi()
-            .lpush(this.queueKey, rawData)
-            .lrem(this.processingKey, 1, rawData)
-            .exec();
+        const { job, rawData, startTime } = jobInfo;
+        const processingTime = Date.now() - startTime;
 
+        await this.setJobStatus(job.jobId, 'failed', {
+            error: errorMessage,
+            ...job,
+            processingTimeMs: processingTime,
+            crashedDuringProcessing: true
+        });
+
+        // Remove from processing list, don't add back to queue
+        await this.redis.lrem(this.processingKey, 1, rawData);
         await this.finishJob(workerId, rawData);
+
+        this.emit('jobFailed', { job, error: errorMessage, processingTime });
+        return true;
     }
 
     private async handleWorkerError(workerId: number, err: Error): Promise<void> {
@@ -517,7 +528,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }
 
         this.logError(`Worker #${workerId} error: ${msg}`);
-        await this.requeueJob(workerId, msg);
+        await this.markJobFailed(workerId, msg);
         this.replaceWorker(workerId);
     }
 
@@ -542,10 +553,15 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         });
     }
 
-    private handleWorkerExit(workerId: number, code: number): void {
+    private async handleWorkerExit(workerId: number, code: number): Promise<void> {
         if (code !== 0) {
             this.logError(`Worker #${workerId} exited unexpectedly with code ${code}`);
-            this.requeueJob(workerId, `Worker exited with code ${code}`);
+            const hadJob = await this.markJobFailed(workerId, `Worker exited with code ${code}`);
+            if (!hadJob) {
+                // Worker crashed before processing any job (e.g., TS compilation error)
+                // No need to requeue anything, just log and replace worker
+                this.logWarn(`Worker #${workerId} crashed without an assigned job (likely startup error)`);
+            }
         }
         this.replaceWorker(workerId);
     }

@@ -45,7 +45,7 @@ const buildBreadcrumbs = (relPath: string) => {
 
 export const initialState: SSHExplorerState = {
     connectionId: null, cwd: '.', entries: [], breadcrumbs: [{ name: 'root', relPath: '.' }],
-    selected: null, loading: false, importing: false, error: null, history: [], historyIndex: -1
+    selected: null, loading: true, importing: false, error: null, history: [], historyIndex: -1
 };
 
 export const createSSHExplorerSlice: SliceCreator<SSHExplorerSlice> = (set, get) => ({
@@ -59,6 +59,7 @@ export const createSSHExplorerSlice: SliceCreator<SSHExplorerSlice> = (set, get)
 
         await runRequest(set, get, () => sshApi.fileExplorer.list({ connectionId: state.connectionId!, path: relPath }), {
             errorFallback: 'Error loading files',
+            loadingKey: 'loading',
             onSuccess: (data) => set((s: SSHExplorerSlice) => {
                 const newHist = s.history.slice(0, s.historyIndex + 1);
                 newHist.push({ cwd: data.cwd, connectionId: s.connectionId! });
@@ -77,6 +78,7 @@ export const createSSHExplorerSlice: SliceCreator<SSHExplorerSlice> = (set, get)
         set({ historyIndex: s.historyIndex - 1 } as Partial<SSHExplorerSlice>);
         await runRequest(set, get, () => sshApi.fileExplorer.list({ connectionId: target.connectionId, path: target.cwd }), {
             errorFallback: 'Error loading files',
+            loadingKey: 'loading',
             onSuccess: (data) => set({ cwd: data.cwd, entries: data.entries, breadcrumbs: buildBreadcrumbs(data.cwd), selected: null } as Partial<SSHExplorerSlice>)
         });
     },
@@ -88,6 +90,7 @@ export const createSSHExplorerSlice: SliceCreator<SSHExplorerSlice> = (set, get)
         set({ historyIndex: s.historyIndex + 1 } as Partial<SSHExplorerSlice>);
         await runRequest(set, get, () => sshApi.fileExplorer.list({ connectionId: target.connectionId, path: target.cwd }), {
             errorFallback: 'Error loading files',
+            loadingKey: 'loading',
             onSuccess: (data) => set({ cwd: data.cwd, entries: data.entries, breadcrumbs: buildBreadcrumbs(data.cwd), selected: null } as Partial<SSHExplorerSlice>)
         });
     },
@@ -97,6 +100,7 @@ export const createSSHExplorerSlice: SliceCreator<SSHExplorerSlice> = (set, get)
         if (!s.connectionId) return;
         await runRequest(set, get, () => sshApi.fileExplorer.list({ connectionId: s.connectionId!, path: s.cwd }), {
             errorFallback: 'Error loading files',
+            loadingKey: 'loading',
             onSuccess: (data) => set({ cwd: data.cwd, entries: data.entries, breadcrumbs: buildBreadcrumbs(data.cwd), selected: null } as Partial<SSHExplorerSlice>)
         });
     },

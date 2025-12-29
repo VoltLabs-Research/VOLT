@@ -95,6 +95,7 @@ export const ValidationCodes = {
     SSH_CONNECTION_USERNAME_MINLEN: 'SSHConnection::Username::MinLength',
     SSH_CONNECTION_ENCRYPTED_PASSWORD: 'SSHConnection::Password::Required',
     SSH_CONNECTION_USER: 'SSHConnection::User::Required',
+    SSH_CONNECTION_TEAM: 'SSHConnection::Team::Required',
 
     TEAM_INVITATION_TEAM_REQUIRED: 'TeamInvitation::Team::Required',
     TEAM_INVITATION_INVITED_BY_REQUIRED: 'TeamInvitation::InvitedBy::Required',

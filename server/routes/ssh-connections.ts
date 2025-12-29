@@ -39,15 +39,13 @@ rbac.groupBy(Action.READ)
 rbac.groupBy(Action.CREATE)
     .route('/', middleware.validateSSHConnectionFields, controller.createOne);
 
-router.use(middleware.loadAndVerifySSHConnection);
-
-rbac.groupBy(Action.UPDATE)
+rbac.groupBy(Action.UPDATE, middleware.loadAndVerifySSHConnection)
     .route('/:id', controller.updateOne);
 
-rbac.groupBy(Action.READ)
+rbac.groupBy(Action.READ, middleware.loadAndVerifySSHConnection)
     .route('/:id/test', controller.testSSHConnection);
 
-rbac.groupBy(Action.DELETE)
+rbac.groupBy(Action.DELETE, middleware.loadAndVerifySSHConnection)
     .route('/:id', controller.deleteOne);
 
 export default router;

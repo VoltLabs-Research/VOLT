@@ -27,7 +27,7 @@ const sshApi = {
         },
 
         async test(id: string): Promise<{ valid: boolean; error?: string }> {
-            const response = await client.request<{ status: 'success'; data: { valid: boolean; error?: string } }>('post', `/${id}/test`);
+            const response = await client.request<{ status: 'success'; data: { valid: boolean; error?: string } }>('get', `/${id}/test`);
             return response.data.data;
         }
     },
