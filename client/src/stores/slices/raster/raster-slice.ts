@@ -29,6 +29,7 @@ export const createRasterSlice: SliceCreator<RasterStore> = (set, get) => ({
     getRasterFrames: async (id) => {
         await runRequest(set, get, () => rasterApi.getMetadata(id), {
             errorFallback: 'Unknown error',
+            loadingKey: 'isLoading',
             onSuccess: ({ analyses, trajectory }) => {
                 let names = Object.values(analyses).map((a: any) => a);
                 let finalAnalyses = analyses;

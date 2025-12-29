@@ -52,6 +52,7 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
     getTrajectoryById: async (id) => {
         await runRequest(set, get, () => trajectoryApi.getOne(id, 'team,analysis'), {
             errorFallback: 'Failed to load trajectory',
+            loadingKey: 'isLoading',
             onSuccess: (trajectory) => set({ trajectory } as Partial<TrajectoryStore>)
         });
     },

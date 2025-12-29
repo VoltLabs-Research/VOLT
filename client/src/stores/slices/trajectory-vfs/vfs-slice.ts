@@ -54,6 +54,7 @@ export const createTrajectoryVfsSlice: SliceCreator<TrajectoryVfsSlice> = (set, 
         const s = get() as TrajectoryVfsSlice;
         await runRequest(set, get, () => trajectoryApi.vfs.list({ connectionId: s.currentTrajectoryId || 'root', path: relPath }), {
             errorFallback: 'Error loading files',
+            loadingKey: 'loading',
             onSuccess: (data) => set((st: TrajectoryVfsSlice) => {
                 const newHist = st.history.slice(0, st.historyIndex + 1);
                 newHist.push({ cwd: data.cwd });
@@ -71,6 +72,7 @@ export const createTrajectoryVfsSlice: SliceCreator<TrajectoryVfsSlice> = (set, 
         const s = get() as TrajectoryVfsSlice;
         await runRequest(set, get, () => trajectoryApi.vfs.list({ connectionId: s.currentTrajectoryId || 'root', path: s.cwd }), {
             errorFallback: 'Error loading files',
+            loadingKey: 'loading',
             onSuccess: (data) => set({ cwd: data.cwd, entries: data.entries, breadcrumbs: data.breadcrumbs, selected: data.selected } as Partial<TrajectoryVfsSlice>)
         });
     },

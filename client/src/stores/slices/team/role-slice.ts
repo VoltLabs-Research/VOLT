@@ -30,6 +30,7 @@ export const createTeamRoleSlice: SliceCreator<TeamRoleSlice> = (set, get) => ({
     fetchRoles: async (_teamId) => {
         await runRequest(set, get, () => teamRoleApi.getAll(), {
             errorFallback: 'Failed to fetch roles', rethrow: true,
+            loadingKey: 'isLoading',
             onSuccess: (roles) => set({ roles } as Partial<TeamRoleSlice>)
         });
     },

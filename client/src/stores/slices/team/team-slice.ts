@@ -16,6 +16,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
     getUserTeams: async () => {
         await runRequest(set, get, () => teamApi.getAll(), {
             errorFallback: 'Failed to load teams', rethrow: true,
+            loadingKey: 'isLoading',
             onSuccess: (teams) => {
                 const s = get() as TeamStore;
                 const storedId = typeof window !== 'undefined' ? localStorage.getItem('selectedTeamId') : null;
@@ -43,6 +44,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
     createTeam: async (data) => {
         return await runRequest(set, get, () => teamApi.create(data), {
             errorFallback: 'Failed to create team', rethrow: true,
+            loadingKey: 'isLoading',
             onSuccess: (team) => set((s: TeamStore) => ({ teams: [team, ...s.teams], selectedTeam: team, error: null }))
         });
     },
@@ -50,6 +52,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
     updateTeam: async (teamId, data) => {
         await runRequest(set, get, () => teamApi.update(teamId, data), {
             errorFallback: 'Failed to update team', rethrow: true,
+            loadingKey: 'isLoading',
             onSuccess: (team) => set((s: TeamStore) => ({ teams: s.teams.map(t => t._id === teamId ? team : t), selectedTeam: s.selectedTeam?._id === teamId ? team : s.selectedTeam }))
         });
     },
@@ -57,6 +60,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
     deleteTeam: async (teamId) => {
         await runRequest(set, get, () => teamApi.delete(teamId), {
             errorFallback: 'Failed to delete team', rethrow: true,
+            loadingKey: 'isLoading',
             onSuccess: () => set((s: TeamStore) => { const teams = s.teams.filter(t => t._id !== teamId); return { teams, selectedTeam: s.selectedTeam?._id === teamId ? teams[0] || null : s.selectedTeam }; })
         });
     },
@@ -64,6 +68,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
     leaveTeam: async (teamId) => {
         await runRequest(set, get, () => teamApi.leave(teamId), {
             errorFallback: 'Failed to leave team', rethrow: true,
+            loadingKey: 'isLoading',
             onSuccess: () => set((s: TeamStore) => { const teams = s.teams.filter(t => t._id !== teamId); return { teams, selectedTeam: s.selectedTeam?._id === teamId ? teams[0] || null : s.selectedTeam }; })
         });
     },
@@ -74,6 +79,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
     fetchMembers: async (teamId) => {
         await runRequest(set, get, () => teamMember.getAll(), {
             errorFallback: 'Failed to fetch members', rethrow: true,
+            loadingKey: 'isLoading',
             onSuccess: (data) => set({ members: data.members, admins: data.admins, owner: data.owner } as Partial<TeamStore>)
         });
     },
@@ -81,6 +87,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
     removeMember: async (teamId, userId) => {
         await runRequest(set, get, () => teamApi.members.remove(teamId, { userId }), {
             errorFallback: 'Failed to remove member', rethrow: true,
+            loadingKey: 'isLoading',
             onSuccess: () => set((s: TeamStore) => ({ members: s.members.filter(m => m._id !== userId), admins: s.admins.filter(a => a._id !== userId) }))
         });
     },

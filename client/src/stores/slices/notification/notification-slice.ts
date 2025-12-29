@@ -36,6 +36,7 @@ export const createNotificationSlice: SliceCreator<NotificationSlice> = (set, ge
     fetch: async () => {
         await runRequest(set, get, () => notificationsApi.getAll(), {
             errorFallback: 'Failed to load notifications',
+            loadingKey: 'loading',
             onSuccess: (n) => set({ notifications: n, unreadCount: calcUnread(n) } as Partial<NotificationSlice>)
         });
     },

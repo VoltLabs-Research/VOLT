@@ -37,6 +37,7 @@ export const createRBACSlice: SliceCreator<RBACSlice> = (set, get) => {
                     actions: config.actions,
                     error: null
                 }),
+                loadingKey: 'isLoading',
                 errorFallback: 'Failed to load RBAC configuration'
             });
         },

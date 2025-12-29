@@ -50,7 +50,8 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => {
             if (!token) { set({ user: null }); return { user: null }; }
             const result = await runRequest(set, get, () => authApi.getMe(), {
                 onSuccess: (user) => set({ user, error: null }),
-                onError: () => { TokenStorage.removeToken(); set({ user: null }); }
+                onError: () => { TokenStorage.removeToken(); set({ user: null }); },
+                loadingKey: 'isLoading'
             });
             return { user: result };
         },
@@ -59,7 +60,8 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => {
             const result = await runRequest(set, get, () => authApi.signIn(credentials), {
                 errorFallback: 'Failed to sign in',
                 rethrow: true,
-                onSuccess: handleAuthSuccess
+                onSuccess: handleAuthSuccess,
+                loadingKey: 'isLoading'
             });
             return result ? { user: result.user } : { user: null };
         },
@@ -68,7 +70,8 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => {
             const result = await runRequest(set, get, () => authApi.signUp(details), {
                 errorFallback: 'Failed to sign up',
                 rethrow: true,
-                onSuccess: handleAuthSuccess
+                onSuccess: handleAuthSuccess,
+                loadingKey: 'isLoading'
             });
             return result ? { user: result.user } : { user: null };
         },
