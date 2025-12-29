@@ -1,5 +1,4 @@
 import type { Chat, Message, Participant } from '@/types/chat';
-import { getInitials } from '@/utilities/api/guest';
 import MessageSkeleton from '@/components/atoms/chat/MessageSkeleton';
 import { IoChatbubblesOutline, IoCallOutline, IoVideocamOutline, IoPeopleOutline, IoInformationCircleOutline } from 'react-icons/io5';
 import SharedFilesList from '@/components/molecules/chat/SharedFilesList';
@@ -55,8 +54,10 @@ const DetailsPanel = ({
                 ) : (
                     <div className='chat-details-section'>
                         <div className='d-flex column items-center chat-details-user-info text-center'>
-                            <div className='d-flex flex-center chat-details-avatar font-size-6 font-weight-6'>
-                                {currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
+                            <div className='d-flex flex-center chat-details-avatar font-size-6 font-weight-6 overflow-hidden'>
+                                {currentParticipant?.avatar
+                                    ? <img src={currentParticipant.avatar} alt="" className='w-max h-max object-cover' />
+                                    : '?'}
                             </div>
                             <Title className='font-size-2-5 chat-details-name font-size-4 font-weight-6 color-primary'>
                                 {currentParticipant ? `${currentParticipant.firstName} ${currentParticipant.lastName}` : 'Unknown'}
@@ -68,33 +69,21 @@ const DetailsPanel = ({
                     </div>
                 )}
 
-                {chat && !isLoading && (
+                {chat && !isLoading && chat.isGroup && (
                     <div className='chat-details-section'>
                         <Title className='font-size-2-5 chat-details-section-title font-weight-6 color-secondary'>Actions</Title>
                         <div className='d-flex column gap-075 chat-details-actions'>
-                            <Button variant='ghost' intent='neutral' leftIcon={<IoCallOutline />} block className='content-start'>
-                                Voice Call
+                            <Button
+                                variant='ghost'
+                                intent='neutral'
+                                leftIcon={<IoPeopleOutline />}
+                                block
+                                className='content-start'
+                                commandfor='group-management-modal'
+                                command='showModal'
+                            >
+                                Manage Group
                             </Button>
-                            <Button variant='ghost' intent='neutral' leftIcon={<IoVideocamOutline />} block className='content-start'>
-                                Video Call
-                            </Button>
-                            {chat.isGroup ? (
-                                <Button
-                                    variant='ghost'
-                                    intent='neutral'
-                                    leftIcon={<IoPeopleOutline />}
-                                    block
-                                    className='content-start'
-                                    commandfor='group-management-modal'
-                                    command='showModal'
-                                >
-                                    Manage Group
-                                </Button>
-                            ) : (
-                                <Button variant='ghost' intent='neutral' leftIcon={<IoInformationCircleOutline />} block className='content-start'>
-                                    View Profile
-                                </Button>
-                            )}
                         </div>
                     </div>
                 )}

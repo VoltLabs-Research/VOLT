@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { IoSearchOutline, IoPersonAddOutline, IoPeopleOutline } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/slices/chat';
-import { getInitials } from '@/utilities/api/guest';
 import formatTimeAgo from '@/utilities/api/formatTimeAgo';
 import ChatListSkeleton from '@/components/atoms/chat/messages/ChatListSkeleton';
 import { useAuthStore } from '@/stores/slices/auth';
@@ -21,9 +20,9 @@ const ChatSidebar: React.FC = () => {
 
     // Filter chats based on search query
     const filteredChats = chats.filter(chat => {
-        if(!searchQuery) return true;
+        if (!searchQuery) return true;
         const participant = chat.participants.find(p => p._id !== user?._id);
-        if(!participant) return false;
+        if (!participant) return false;
         const name = `${participant.firstName} ${participant.lastName}`.toLowerCase();
         return name.includes(searchQuery.toLowerCase());
     });
@@ -76,15 +75,15 @@ const ChatSidebar: React.FC = () => {
                         .filter((member, index, self) =>
                             self.findIndex(m => m._id === member._id) === index
                         )
-                            .map((member) => (
+                        .map((member) => (
                             <div className='d-flex items-center chat-team-member-item cursor-pointer'
                                 onClick={() => {
                                     startChatWithMember(member);
                                     setShowTeamMembers(false);
                                 }}
                             >
-                                <div className='d-flex flex-center chat-team-member-avatar f-shrink-0 font-weight-6'>
-                                    {getInitials(member.firstName, member.lastName)}
+                                <div className='d-flex flex-center chat-team-member-avatar f-shrink-0 font-weight-6 overflow-hidden'>
+                                    <img src={member.avatar} alt={member.firstName} className='w-max h-max object-cover' />
                                 </div>
                                 <div className='flex-1 chat-team-member-info'>
                                     <Title className='font-size-2-5 chat-team-member-name font-weight-6 color-primary'>
@@ -115,20 +114,21 @@ const ChatSidebar: React.FC = () => {
                             chat.participants.find(p => p._id !== user?._id)?.firstName + ' ' +
                             chat.participants.find(p => p._id !== user?._id)?.lastName;
 
-                        if(!displayName) return null;
+                        if (!displayName) return null;
 
                         return (
                             <div className={`d-flex items-center chat-conversation-item ${currentChat?._id === chat._id ? 'active' : ''} p-relative cursor-pointer`}
                                 onClick={() => selectChat(chat)}
                             >
-                                <div className={`d-flex flex-center chat-conversation-avatar ${isGroup ? 'group-avatar' : ''} f-shrink-0 font-weight-6`}>
+                                <div className={`d-flex flex-center chat-conversation-avatar ${isGroup ? 'group-avatar' : ''} f-shrink-0 font-weight-6 overflow-hidden`}>
                                     {isGroup ? (
                                         <IoPeopleOutline />
                                     ) : (
-                                        getInitials(
-                                            chat.participants.find(p => p._id !== user?._id)?.firstName || '',
-                                            chat.participants.find(p => p._id !== user?._id)?.lastName || ''
-                                        )
+                                        <img
+                                            src={chat.participants.find(p => p._id !== user?._id)?.avatar}
+                                            alt=""
+                                            className='w-max h-max object-cover'
+                                        />
                                     )}
                                 </div>
                                 <div className='flex-1 chat-conversation-content'>

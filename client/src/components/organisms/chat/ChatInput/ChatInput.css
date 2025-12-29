@@ -38,17 +38,10 @@
 
 .chat-input-wrapper:hover {
     border-color: rgba(59, 130, 246, 0.3);
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
 }
 
 .chat-input-wrapper:focus-within {
     border-color: var(--accent-blue);
-    box-shadow:
-        0 0 0 3px rgba(59, 130, 246, 0.15),
-        var(--shadow-elevated),
-        inset 0 1px 0 rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
-    background: var(--color-surface-2);
 }
 
 .chat-input-wrapper:focus-within::before {
@@ -257,31 +250,6 @@
         border-top: 1px solid rgba(255, 255, 255, 0.03);
     }
 
-    .chat-input-wrapper {
-        background: rgba(0, 0, 0, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .chat-input-wrapper:focus-within {
-        background: rgba(0, 0, 0, 0.6);
-        border-color: var(--accent-blue);
-    }
-
-    .chat-input-wrapper {
-        box-shadow:
-            0 4px 16px rgba(0, 0, 0, 0.2),
-            0 2px 8px rgba(0, 0, 0, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    }
-
-    .chat-input-wrapper:focus-within {
-        box-shadow:
-            0 0 0 3px rgba(59, 130, 246, 0.15),
-            0 6px 24px rgba(0, 0, 0, 0.3),
-            0 2px 8px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-
     .chat-send-button {
         background: linear-gradient(135deg,
                 rgba(59, 130, 246, 0.9),
@@ -296,6 +264,10 @@
     }
 }
 
+.chat-input-wrapper:focus-within {
+    border-color: var(--accent-blue);
+}
+
 /* Light Mode */
 :root[data-theme='light'] {
     .chat-input-container {
@@ -305,25 +277,6 @@
         box-shadow:
             0 -2px 8px rgba(0, 0, 0, 0.05),
             inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    }
-
-    .chat-input-wrapper {
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid rgba(255, 255, 255, 0.5);
-        box-shadow:
-            0 4px 16px rgba(0, 0, 0, 0.05),
-            0 2px 8px rgba(0, 0, 0, 0.03),
-            inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    }
-
-    .chat-input-wrapper:focus-within {
-        background: rgba(255, 255, 255, 0.95);
-        border-color: var(--accent-blue);
-        box-shadow:
-            0 0 0 3px rgba(59, 130, 246, 0.15),
-            0 6px 24px rgba(0, 0, 0, 0.08),
-            0 2px 8px rgba(0, 0, 0, 0.05),
-            inset 0 1px 0 rgba(255, 255, 255, 0.95);
     }
 
     .chat-send-button {

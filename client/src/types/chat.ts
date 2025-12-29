@@ -93,6 +93,7 @@ export type Participant = {
     _id: string;
     firstName: string;
     lastName: string;
+    avatar?: string;
 };
 
 export type Presence = 'online' | 'offline' | 'connecting';

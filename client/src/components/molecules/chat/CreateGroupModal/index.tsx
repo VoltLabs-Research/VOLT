@@ -11,6 +11,7 @@ import FormInput from '@/components/atoms/form/FormInput';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import './CreateGroupModal.css';
 import Title from '@/components/primitives/Title';
+import Container from '@/components/primitives/Container';
 
 const CreateGroupModal = () => {
     const { teamMembers, createGroupChat } = useChat();
@@ -75,79 +76,81 @@ const CreateGroupModal = () => {
             description="Create a new group chat with your team members."
             width='500px'
         >
-            <div className="space-y-4">
-                <div>
-                    <FormInput
-                        label='Group Name'
-                        value={groupName}
-                        onChange={handleNameChange}
-                        placeholder='Enter group name'
-                        required
-                        error={errors.groupName}
-                    />
+            <Container className='p-2'>
+                <div className="space-y-4">
+                    <div>
+                        <FormInput
+                            label='Group Name'
+                            value={groupName}
+                            onChange={handleNameChange}
+                            placeholder='Enter group name'
+                            required
+                            error={errors.groupName}
+                        />
+                    </div>
+
+                    <div>
+                        <FormInput
+                            label='Group Description'
+                            value={groupDescription}
+                            onChange={handleDescriptionChange}
+                            placeholder='Enter group description(optional)'
+                            error={errors.groupDescription}
+                        />
+                    </div>
                 </div>
 
-                <div>
-                    <FormInput
-                        label='Group Description'
-                        value={groupDescription}
-                        onChange={handleDescriptionChange}
-                        placeholder='Enter group description(optional)'
-                        error={errors.groupDescription}
-                    />
-                </div>
-            </div>
-
-            <div className='d-flex column gap-1 create-group-members-section mt-1 w-max'>
-                <Title className='font-size-2-5'>Select Members</Title>
-                <div className='d-flex column gap-05 create-group-members-list y-auto'>
-                    {teamMembers
-                        .filter((member, index, self) =>
-                            member._id !== user?._id &&
-                            self.findIndex(m => m._id === member._id) === index
-                        )
-                            .map((member) => (
-                            <div
-                                key={member._id}
-                                className={`d-flex items-center gap-075 create-group-member ${selectedMembers.includes(member._id) ? 'selected' : ''} cursor-pointer`}
-                                onClick={() => toggleMemberSelection(member._id)}
-                            >
-                                <div className='d-flex flex-center create-group-member-avatar font-weight-6'>
-                                    {getInitials(member.firstName, member.lastName)}
+                <div className='d-flex column gap-1 create-group-members-section mt-1 w-max'>
+                    <Title className='font-size-2-5'>Select Members</Title>
+                    <div className='d-flex column gap-05 create-group-members-list y-auto'>
+                        {teamMembers
+                            .filter((member, index, self) =>
+                                member._id !== user?._id &&
+                                self.findIndex(m => m._id === member._id) === index
+                            )
+                                .map((member) => (
+                                <div
+                                    key={member._id}
+                                    className={`d-flex items-center gap-075 create-group-member ${selectedMembers.includes(member._id) ? 'selected' : ''} cursor-pointer`}
+                                    onClick={() => toggleMemberSelection(member._id)}
+                                >
+                                    <div className='d-flex flex-center create-group-member-avatar font-weight-6'>
+                                        {getInitials(member.firstName, member.lastName)}
+                                    </div>
+                                    <div className='create-group-member-info flex-1'>
+                                        <span className='create-group-member-name font-weight-5 color-primary'>
+                                            {member.firstName} {member.lastName}
+                                        </span>
+                                    </div>
+                                    {selectedMembers.includes(member._id) && (
+                                        <IoCheckmarkOutline className='d-flex flex-center create-group-member-check' />
+                                    )}
                                 </div>
-                                <div className='create-group-member-info flex-1'>
-                                    <span className='create-group-member-name font-weight-5 color-primary'>
-                                        {member.firstName} {member.lastName}
-                                    </span>
-                                </div>
-                                {selectedMembers.includes(member._id) && (
-                                    <IoCheckmarkOutline className='d-flex flex-center create-group-member-check' />
-                                )}
-                            </div>
-                        ))}
+                            ))}
+                    </div>
                 </div>
-            </div>
 
-            <div className='d-flex content-end gap-05 mt-1'>
-                <Button
-                    variant='ghost'
-                    intent='neutral'
-                    commandfor='create-group-modal'
-                    command='close'
-                >
-                    Cancel
-                </Button>
-                <Button
-                    variant='solid'
-                    intent='brand'
-                    size='sm'
-                    disabled={!groupName.trim() || selectedMembers.length === 0 || isLoading}
-                    onClick={handleCreateGroup}
-                    isLoading={isLoading}
-                >
-                    Create Group
-                </Button>
-            </div>
+                <div className='d-flex content-end gap-05 mt-1'>
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        commandfor='create-group-modal'
+                        command='close'
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant='solid'
+                        intent='brand'
+                        size='sm'
+                        disabled={!groupName.trim() || selectedMembers.length === 0 || isLoading}
+                        onClick={handleCreateGroup}
+                        isLoading={isLoading}
+                    >
+                        Create Group
+                    </Button>
+                </div>
+            </Container>
         </Modal>
     );
 };

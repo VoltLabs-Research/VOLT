@@ -1,12 +1,5 @@
-/* Messages Page - Main Container */
 .chat-main-container {
-    border-radius: 1.5rem;
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid var(--color-border-soft);
-    box-shadow:
-        var(--shadow-elevated),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .chat-main-container::before {

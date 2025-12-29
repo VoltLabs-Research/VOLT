@@ -40,25 +40,15 @@
 }
 
 .chat-sidebar-search-container {
-    background: var(--color-surface-2);
-    backdrop-filter: blur(10px);
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-lg);
     padding: 0.75rem 1rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     width: 200px;
-
-    box-shadow:
-        var(--shadow-glass),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .chat-sidebar-search-container:focus-within {
     border-color: var(--accent-blue);
-    box-shadow:
-        0 0 0 3px rgba(59, 130, 246, 0.15),
-        var(--shadow-elevated),
-        inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .chat-sidebar-search-icon-container {
@@ -86,8 +76,6 @@
 .chat-conversation-item {
     padding: 1rem 1.5rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border-bottom: 1px solid var(--color-border-soft);
-    background: var(--color-surface-1);
     backdrop-filter: blur(5px);
     margin: 0.25rem 0.5rem;
     border-radius: var(--radius-md);
@@ -95,24 +83,8 @@
 }
 
 .chat-conversation-item:hover {
-    background: var(--color-surface-2);
-    backdrop-filter: blur(10px);
-    box-shadow:
-        var(--shadow-elevated),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    background: var(--hover-bg);
     border-color: var(--color-border);
-}
-
-.chat-conversation-item.active {
-    background: linear-gradient(135deg,
-            var(--color-surface-2),
-            var(--color-surface-3));
-    backdrop-filter: blur(15px);
-    border: 1px solid var(--accent-blue);
-    border-left: 3px solid var(--accent-blue);
-    box-shadow:
-        var(--shadow-elevated),
-        inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .chat-conversation-avatar {
@@ -240,8 +212,11 @@
 }
 
 .chat-team-member-info {
-
     min-width: 0;
+}
+
+.chat-conversation-item.active {
+    border: 1px solid var(--color-border-soft);
 }
 
 .chat-team-member-name {
@@ -282,52 +257,11 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.03);
     }
 
-    .chat-sidebar-search-container {
-        background: rgba(0, 0, 0, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.03);
-    }
-
-    .chat-sidebar-search-container:focus-within {
-        background: rgba(0, 0, 0, 0.5);
-        border-color: var(--accent-blue);
-    }
-
-    .chat-conversation-item {
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.02);
-    }
-
-    .chat-conversation-item:hover {
-        background: rgba(0, 0, 0, 0.5);
-        border-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .chat-conversation-item.active {
-        background: linear-gradient(135deg,
-                rgba(59, 130, 246, 0.15),
-                rgba(0, 0, 0, 0.4));
-        border: 1px solid var(--accent-blue);
-    }
-
     .chat-sidebar-container {
         box-shadow:
             inset -1px 0 0 rgba(255, 255, 255, 0.03),
             0 4px 20px rgba(0, 0, 0, 0.3),
             0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .chat-conversation-item:hover {
-        box-shadow:
-            0 4px 16px rgba(0, 0, 0, 0.3),
-            0 2px 8px rgba(0, 0, 0, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    }
-
-    .chat-conversation-item.active {
-        box-shadow:
-            0 4px 20px rgba(59, 130, 246, 0.2),
-            0 2px 8px rgba(59, 130, 246, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
     }
 }
 
@@ -354,49 +288,6 @@
         background: rgba(255, 255, 255, 0.8);
         border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         backdrop-filter: blur(15px);
-    }
-
-    .chat-sidebar-search-container {
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        box-shadow:
-            0 2px 8px rgba(0, 0, 0, 0.05),
-            inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    }
-
-    .chat-sidebar-search-container:focus-within {
-        background: rgba(255, 255, 255, 0.9);
-        border-color: var(--accent-blue);
-        box-shadow:
-            0 0 0 3px rgba(59, 130, 246, 0.15),
-            0 4px 16px rgba(0, 0, 0, 0.08),
-            inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    }
-
-    .chat-conversation-item {
-        background: rgba(255, 255, 255, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        backdrop-filter: blur(10px);
-    }
-
-    .chat-conversation-item:hover {
-        background: rgba(255, 255, 255, 0.8);
-        border-color: rgba(255, 255, 255, 0.5);
-        box-shadow:
-            0 4px 16px rgba(0, 0, 0, 0.08),
-            0 2px 8px rgba(0, 0, 0, 0.04),
-            inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    }
-
-    .chat-conversation-item.active {
-        background: linear-gradient(135deg,
-                rgba(59, 130, 246, 0.1),
-                rgba(255, 255, 255, 0.7));
-        border: 1px solid var(--accent-blue);
-        box-shadow:
-            0 4px 20px rgba(59, 130, 246, 0.15),
-            0 2px 8px rgba(59, 130, 246, 0.08),
-            inset 0 1px 0 rgba(255, 255, 255, 0.9);
     }
 
     .chat-team-members-container {

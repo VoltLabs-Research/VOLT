@@ -1,7 +1,6 @@
 
 import Button from '@/components/primitives/Button';
 import type { Chat, Participant, Presence } from '@/types/chat';
-import { getInitials } from '@/utilities/api/guest';
 import {
     IoCallOutline,
     IoVideocamOutline,
@@ -21,10 +20,12 @@ const ChatHeader = ({ chat, currentParticipant, presence }: ChatHeaderProps) => 
     return (
         <div className='d-flex items-center content-between chat-box-header-container p-relative'>
             <div className='d-flex items-center gap-1 chat-header-user'>
-                <div className={`d-flex flex-center chat-header-avatar ${chat.isGroup ? 'group-avatar' : ''} font-size-3 font-weight-6`}>
+                <div className={`d-flex flex-center chat-header-avatar ${chat.isGroup ? 'group-avatar' : ''} font-size-3 font-weight-6 overflow-hidden`}>
                     {chat.isGroup
                         ? <IoPeopleOutline />
-                        : currentParticipant ? getInitials(currentParticipant.firstName, currentParticipant.lastName) : '?'}
+                        : currentParticipant?.avatar
+                            ? <img src={currentParticipant.avatar} alt="" className='w-max h-max object-cover' />
+                            : '?'}
                 </div>
                 <div className='d-flex column chat-header-info'>
                     <Title className='font-size-3 chat-header-name font-weight-6 color-primary'>
