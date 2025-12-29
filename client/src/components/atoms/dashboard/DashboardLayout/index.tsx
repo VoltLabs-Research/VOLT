@@ -112,6 +112,24 @@ const DashboardLayout = () => {
     const [analysesExpanded, setAnalysesExpanded] = useState(() => pathname.includes('/analysis-configs') || pathname.includes('/plugins/'));
     const [expandedPlugins, setExpandedPlugins] = useState<Set<string>>(() => new Set());
 
+    const fetchMembers = useTeamStore((state) => state.fetchMembers);
+    const owner = useTeamStore((state) => state.owner);
+    const admins = useTeamStore((state) => state.admins);
+
+    useEffect(() => {
+        if (selectedTeam?._id) {
+            fetchMembers(selectedTeam._id);
+        }
+    }, [selectedTeam, fetchMembers]);
+
+    const canInvite = useMemo(() => {
+        if (!user || !owner) return false;
+        // Check if user is owner
+        if (owner._id === user._id || (owner.user as any)?._id === user._id) return true;
+        // Check if user is admin
+        return admins.some(admin => admin._id === user._id || (admin.user as any)?._id === user._id);
+    }, [user, owner, admins]);
+
     useEffect(() => {
         fetchPlugins();
     }, []);
@@ -705,27 +723,40 @@ const DashboardLayout = () => {
                         </Container>
                     </Container>
 
+
+
                     <Container className='dashboard-header-right'>
-                        <Popover
-                            trigger={
-                                <button
-                                    className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
-                                    title='Invite members'
-                                >
-                                    <GoPersonAdd size={18} />
-                                </button>
-                            }
-                            className="team-invite-panel glass-bg d-flex column overflow-hidden"
-                            noPadding
-                        >
-                            {(closePopover) => selectedTeam && (
-                                <TeamInvitePanel
-                                    teamName={selectedTeam.name}
-                                    teamId={selectedTeam._id}
-                                    onClose={closePopover}
-                                />
-                            )}
-                        </Popover>
+                        {canInvite ? (
+                            <Popover
+                                trigger={
+                                    <button
+                                        className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
+                                        title='Invite members'
+                                    >
+                                        <GoPersonAdd size={18} />
+                                    </button>
+                                }
+                                className="team-invite-panel glass-bg d-flex column overflow-hidden"
+                                noPadding
+                            >
+                                {(closePopover) => selectedTeam && (
+                                    <TeamInvitePanel
+                                        teamName={selectedTeam.name}
+                                        teamId={selectedTeam._id}
+                                        onClose={closePopover}
+                                    />
+                                )}
+                            </Popover>
+                        ) : (
+                            <button
+                                className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
+                                title='You must be an admin or owner to invite members'
+                                style={{ cursor: 'not-allowed', opacity: 0.6 }}
+                                disabled
+                            >
+                                <GoPersonAdd size={18} />
+                            </button>
+                        )}
 
                         <Container className='p-relative'>
                             <Popover

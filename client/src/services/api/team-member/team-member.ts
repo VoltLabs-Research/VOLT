@@ -28,7 +28,7 @@ export default {
 
             const [dailyActivities, trajectoriesCount, analysesCount] = await Promise.all([
                 dailyActivityApi.getTeamActivity(7, userId),
-                trajectoryApi.getAllPaginated({ createdBy: userId, countDocuments: true }),
+                trajectoryApi.getAllPaginated({ createdBy: userId, countDocuments: true } as any),
                 analysis.getByTeamId({ createdBy: userId, countDocuments: true })
             ]);
 
@@ -37,13 +37,13 @@ export default {
             return {
                 ...member,
                 timeSpentLast7Days: minutesOnline,
-                trajectoriesCount: trajectoriesCount.data.total,
+                trajectoriesCount: trajectoriesCount.total,
                 analysesCount: analysesCount.total
             };
         }));
 
         const ownerMember = memberStats.find((member: any) => member.role?.name === 'Owner');
-        const adminMembers = memberStats.find((member: any) => member.role?.name === 'Admin') ?? [];
+        const adminMembers = memberStats.filter((member: any) => member.role?.name === 'Admin') ?? [];
 
         return {
             members: memberStats,

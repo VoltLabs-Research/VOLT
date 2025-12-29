@@ -28,7 +28,16 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
 
     setSelectedTeam: (teamId) => {
         const team = (get() as TeamStore).teams.find(t => t._id === teamId);
-        if (team) { set({ selectedTeam: team } as Partial<TeamStore>); if (typeof window !== 'undefined') localStorage.setItem('selectedTeamId', teamId); }
+        if (team) {
+            set({
+                selectedTeam: team,
+                members: [],
+                admins: [],
+                owner: null,
+                onlineUsers: []
+            } as Partial<TeamStore>);
+            if (typeof window !== 'undefined') localStorage.setItem('selectedTeamId', teamId);
+        }
     },
 
     createTeam: async (data) => {
@@ -62,7 +71,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
     clearError: () => set({ error: null } as Partial<TeamStore>),
     reset: () => set(initialState as TeamStore),
 
-    fetchMembers: async () => {
+    fetchMembers: async (teamId) => {
         await runRequest(set, get, () => teamMember.getAll(), {
             errorFallback: 'Failed to fetch members', rethrow: true,
             onSuccess: (data) => set({ members: data.members, admins: data.admins, owner: data.owner } as Partial<TeamStore>)
