@@ -188,6 +188,15 @@ const useDashboardMetrics = (
         };
     }, [key, teamId, ttlMs, opts?.force]);
 
+    const [rotationIndex, setRotationIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setRotationIndex((prev) => prev + 1);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
     const cards = useMemo(() => {
         if (!data) return [];
         const baseLabels = data.weekly.labels || [];
@@ -200,20 +209,24 @@ const useDashboardMetrics = (
 
         // Dynamic cards from backend metrics(plugins are now included in backend response)
         const dynamicKeys = Object.keys(data.totals).filter((k) => !['trajectories', 'analysis'].includes(k));
-        const dynamicCards = dynamicKeys.map((k) => buildCard(data, k, baseLabels, k));
 
-        // Combine and sort by count descending
-        let allCards = [...staticCards, ...dynamicCards];
-        allCards.sort((a, b) => b.rawCount - a.rawCount);
+        let dynamicCard;
+        if (dynamicKeys.length > 0) {
+            const index = rotationIndex % dynamicKeys.length;
+            const key = dynamicKeys[index];
+            dynamicCard = buildCard(data, key, baseLabels, key);
+        }
 
-        // Take top 3
-        allCards = allCards.slice(0, 3);
+        // Combine: Static cards + 1 Rotating Dynamic Card
+        const allCards = [...staticCards];
+        if (dynamicCard) {
+            allCards.push(dynamicCard);
+        }
 
-        // Sort by rawCount ascending so max count is last(for UI display purposes)
-        allCards.sort((a, b) => a.rawCount - b.rawCount);
-
+        // We do NOT sort by count anymore to keep the UI stable. 
+        // Trajectories and Analyses will always be first, Plugin will be last.
         return allCards;
-    }, [data]);
+    }, [data, rotationIndex]);
 
     return { loading, error, data, cards };
 };
