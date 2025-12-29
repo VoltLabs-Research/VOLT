@@ -46,8 +46,62 @@ export const createTimestepSlice: StateCreator<any, [], [], TimestepStore> = (se
     },
 
     loadModels: async (preloadBehavior, onProgress, maxFramesToPreload, currentFrameIndex) => {
-        console.warn('loadModels implementation missing during refactor - placeholder used');
-        return {};
+        const { timestepData } = get();
+        if (!timestepData.timesteps.length) return {};
+
+        const state = get(); // Access other slices if merged, but safer to use global stores if independent
+
+        const { useTeamStore } = await import('@/stores/slices/team');
+        const { useTrajectoryStore } = await import('@/stores/slices/trajectory');
+        const { loadGLB } = await import('@/utilities/glb/loader');
+        const { computeGlbUrl } = await import('@/utilities/glb/scene-utils');
+        const { useEditorStore } = await import('@/stores/slices/editor');
+
+        const teamId = useTeamStore.getState().selectedTeam?._id;
+        const trajectoryId = useTrajectoryStore.getState().trajectory?._id;
+        // Also check EditorStore for active scene config to support analysis/plugins
+        const editorState = useEditorStore.getState();
+        const activeScene = editorState.activeScene;
+        const analysisId = editorState.model?.analysisId || 'default'; // Or from ActiveScene
+
+        if (!teamId || !trajectoryId) return {};
+
+        const timesteps = timestepData.timesteps;
+        const startIndex = currentFrameIndex || 0;
+        const limit = maxFramesToPreload || timesteps.length;
+        const endIndex = Math.min(startIndex + limit, timesteps.length);
+
+        const targetTimesteps = timesteps.slice(startIndex, endIndex);
+        const total = targetTimesteps.length;
+        let loadedCount = 0;
+
+        const results: Record<number, any> = {};
+
+        // Load sequentially or parallel? Parallel is faster but might choke network/cpu
+        // Let's do batching or limited concurrency if possible, or just Promise.all for now as browser limits connections
+        // Given it's preloading, sequential is safer for UI responsiveness, parallel for speed.
+        // Let's try efficient parallel but not all at once if list is huge.
+        // But here we are limited by maxFramesToPreload (e.g. 50). 50 reqs is fine.
+
+        const promises = targetTimesteps.map(async (timestep, i) => {
+            const url = computeGlbUrl(teamId, trajectoryId, timestep, analysisId, activeScene);
+            if (!url) return;
+
+            try {
+                // loadGLB is cached now, so re-calls are cheap
+                await loadGLB(url);
+            } catch (e) {
+                console.error(`Failed to preload frame ${timestep}`, e);
+            } finally {
+                loadedCount++;
+                if (onProgress) {
+                    onProgress(loadedCount / total, { bps: 0 }); // Todo: calculate BPS
+                }
+            }
+        });
+
+        await Promise.all(promises);
+        return results;
     },
 
     resetTimesteps() {

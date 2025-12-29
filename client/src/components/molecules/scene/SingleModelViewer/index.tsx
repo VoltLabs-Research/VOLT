@@ -32,30 +32,7 @@ interface SingleModelViewerProps {
     isSelected?: boolean;
 }
 
-const computeGlbUrl = (
-    trajectoryId: string,
-    currentTimestep: number | undefined,
-    analysisId: string,
-    activeScene?: SingleModelViewerProps['sceneConfig']
-): string | null => {
-    if (!trajectoryId || currentTimestep === undefined) return null;
-    const teamId = useTeamStore.getState().selectedTeam?._id;
-
-    if (activeScene?.source === 'plugin') {
-        const { analysisId: sceneAnalysisId, exposureId } = activeScene;
-        if (!sceneAnalysisId || !exposureId) return null;
-        return `/plugins/${teamId}/glb/${trajectoryId}/${sceneAnalysisId}/${exposureId}/${currentTimestep}`;
-    }
-
-    if (activeScene?.source === 'color-coding') {
-        const { property, startValue, endValue, gradient, analysisId: sceneAnalysisId, exposureId } = activeScene;
-        let url = `/color-coding/${teamId}/${trajectoryId}/${sceneAnalysisId}/?property=${property}&startValue=${startValue}&endValue=${endValue}&gradient=${gradient}&timestep=${currentTimestep}`;
-        if (exposureId) url += `&exposureId=${exposureId}`;
-        return url;
-    }
-
-    return `/trajectories/${teamId}/${trajectoryId}/${currentTimestep}/${analysisId}`;
-};
+import { computeGlbUrl } from '@/utilities/glb/scene-utils';
 
 const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     trajectoryId,
@@ -77,9 +54,12 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
 }) => {
     const sliceClippingPlanes = useSlicingPlanes(enableSlice);
 
+    const teamId = useTeamStore(state => state.selectedTeam?._id);
+
     const url = useMemo(() =>
-        computeGlbUrl(trajectoryId, currentTimestep, analysisId, sceneConfig),
-        [trajectoryId, currentTimestep, analysisId, sceneConfig]
+        // @ts-ignore
+        computeGlbUrl(teamId || '', trajectoryId, currentTimestep, analysisId, sceneConfig),
+        [teamId, trajectoryId, currentTimestep, analysisId, sceneConfig]
     );
 
     const { modelBounds, deselect } = useGlbScene({

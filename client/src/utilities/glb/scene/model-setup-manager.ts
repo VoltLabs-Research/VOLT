@@ -45,7 +45,7 @@ export default class ModelSetupManager {
     }
 
     setup(model: Group): Group {
-        if (this.state.isSetup) return model;
+        // if (this.state.isSetup) return model; // <-- Removed to ensure new models are always setup during swap
 
         const bounds = calculateModelBounds({ scene: model });
         // @ts-ignore

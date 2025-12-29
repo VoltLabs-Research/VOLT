@@ -36,7 +36,7 @@ export const createPlaybackSlice: StateCreator<any, [], [], PlaybackStore> = (se
                     set({ isPreloading: true, preloadProgress: 0 });
                     try {
                         const frameCount = timesteps.length;
-                        const maxFramesToPreload = frameCount > 30 ? 20 : undefined;
+                        const maxFramesToPreload = frameCount > 100 ? 100 : undefined;
                         const currentFrameIndex = get().currentTimestep !== undefined
                             ? timesteps.indexOf(get().currentTimestep!)
                             : 0;

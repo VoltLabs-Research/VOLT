@@ -34,7 +34,18 @@ export const GLB_CONSTANTS = {
     DEFAULT_ROTATION: Object.freeze({ x: 0, y: 0, z: 0 }),
 } as const;
 
+// Simple in-memory cache for loaded GLBs
+const glbCache = new Map<string, THREE.Group>();
+
 export const loadGLB = async (url: string, onProgress?: (progress: number) => void): Promise<THREE.Group> => {
+    // Check cache first
+    if (glbCache.has(url)) {
+        if (onProgress) onProgress(1); // Immediate completion
+        const cached = glbCache.get(url)!;
+        // Return a clone to prevent mutation of the cached asset by the scene
+        return cached.clone();
+    }
+
     try {
         // TODO: API
         // Checks if URL is absolute; if so, fetch directly, otherwise use client
@@ -42,15 +53,6 @@ export const loadGLB = async (url: string, onProgress?: (progress: number) => vo
 
         let response;
         if (isAbsolute) {
-            // For absolute URLs, we might need a raw fetch or verify if client handles it.
-            // But VoltClient is designed for API.
-            // If url is absolute, we probably shouldn't use VoltClient's base path logic if it forces it?
-            // Actually, let's assume the URL is relative to API if it comes from our backend.
-            // If it is an external URL, this might fail if VoltClient forces preprending.
-            // Existing code used `api.get(url)`.
-
-            // Simplest fix: Use VoltClient with raw request if possible, or just standard fetch for absolute?
-            // But we need authentication headers. Use the core instance of a generic client.
             const genericClient = new VoltClient('');
             response = await genericClient.request<ArrayBuffer>('get', url, {
                 config: {
@@ -65,9 +67,6 @@ export const loadGLB = async (url: string, onProgress?: (progress: number) => vo
                 dedupe: false
             });
         } else {
-            // Assume relative to /api/trajectories if we use the client above or generic?
-            // Since loadGLB is generic, we shouldn't assume /trajectories.
-            // Let's use a root client.
             const rootClient = new VoltClient('');
             response = await rootClient.request<ArrayBuffer>('get', url, {
                 config: {
@@ -102,7 +101,9 @@ export const loadGLB = async (url: string, onProgress?: (progress: number) => vo
                 arrayBuffer,
                 '',
                 (gltf: any) => {
-                    resolve(gltf.scene);
+                    const scene = gltf.scene;
+                    glbCache.set(url, scene);
+                    resolve(scene.clone());
                 },
                 (err: any) => {
                     reject(err instanceof Error ? err : new Error(String(err)));

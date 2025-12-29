@@ -26,7 +26,7 @@ import ResourceManager from '@/utilities/glb/scene/resource-manager';
 import ModelSetupManager from '@/utilities/glb/scene/model-setup-manager';
 import loadGLB from '@/utilities/glb/loader';
 
-export default class ModelLoader{
+export default class ModelLoader {
     constructor(
         private state: ExtendedSceneState,
         private scene: Scene,
@@ -36,15 +36,15 @@ export default class ModelLoader{
         private invalidate: () => void,
         private logger: any,
         private onLoadingStateChange: (state: any) => void
-    ){}
+    ) { }
 
-    async load(url: string): Promise<void>{
-        if(this.state.lastLoadedUrl === url || this.state.isLoadingUrl) return;
+    async load(url: string): Promise<void> {
+        if (this.state.lastLoadedUrl === url || this.state.isLoadingUrl) return;
 
         this.state.isLoadingUrl = true;
         this.setIsModelLoading(true);
         this.onLoadingStateChange({ isLoading: true, progress: 0, error: null });
-        try{
+        try {
             const loadedModel = await loadGLB(url, (progress) => {
                 this.onLoadingStateChange((prev: any) => ({
                     ...prev,
@@ -52,29 +52,41 @@ export default class ModelLoader{
                 }));
             });
 
-            this.resourceManager.cleanup();
             const newModel = this.modelSetupManager.setup(loadedModel);
             newModel.userData.glbUrl = url;
-            this.scene.add(newModel);
 
-            this.state.model = newModel;
+            if (this.state.model) {
+                console.log(`[ModelLoader] Syncing transforms from ${this.state.model.uuid} to new model ${newModel.uuid}`);
+                console.log(`[ModelLoader] Old Pos: ${JSON.stringify(this.state.model.position)}, Scale: ${this.state.model.scale.x}`); // Scale is uniform
+
+                newModel.position.copy(this.state.model.position);
+                newModel.rotation.copy(this.state.model.rotation);
+                newModel.scale.copy(this.state.model.scale);
+                newModel.updateMatrixWorld(true);
+
+                console.log(`[ModelLoader] New Pos (Synced): ${JSON.stringify(newModel.position)}, Scale: ${newModel.scale.x}`);
+            }
+
+            // Seamless swap
+            this.resourceManager.swapModel(this.state.model, newModel);
+
             this.state.lastLoadedUrl = url;
             this.state.failedUrls?.delete(url);
 
             this.onLoadingStateChange({ isLoading: false, progress: 100, error: null });
-        }catch(error: any){
+        } catch (error: any) {
             const message = error instanceof Error ? error.message : String(error);
             this.state.failedUrls?.add(url);
             this.onLoadingStateChange({ isLoading: false, progress: 0, error: message });
             this.logger.error('Model loading failed:', message);
-        }finally{
+        } finally {
             this.state.isLoadingUrl = false;
             this.setIsModelLoading(false);
             this.invalidate();
         }
     }
 
-    isLoading(): boolean{
+    isLoading(): boolean {
         return !!this.state.isLoadingUrl;
     }
 };

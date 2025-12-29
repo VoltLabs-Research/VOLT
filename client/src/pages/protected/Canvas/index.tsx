@@ -80,7 +80,6 @@ const EditorPage: React.FC = () => {
             </Container>
 
             <Scene3D ref={scene3DRef} showCanvasGrid={showCanvasGrid}>
-                {/* Pass ALL required props to TimestepViewer - URL is computed inside */}
                 <TimestepViewer
                     trajectoryId={trajectory?._id || ''}
                     currentTimestep={currentTimestep}
