@@ -13,7 +13,7 @@
     {
       "target_name": "dump_parser",
       "sources": ["src/dump_parser.cpp"],
-      "include_dirs": [],
+      "include_dirs": ["src"],
       "cflags!": ["-fno-exceptions"],
       "cflags_cc!": ["-fno-exceptions"],
       "cflags": ["-O3", "-march=native", "-ffast-math"],

@@ -8,6 +8,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "external/fast_float.h"
 
 #define LIKELY(x)   __builtin_expect(!!(x), 1)
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)
@@ -64,64 +65,9 @@ ALWAYS_INLINE void unmapFile(MappedFile& f) {
 
 HOT ALWAYS_INLINE double fastAtof(const char* RESTRICT p, const char* RESTRICT end) {
     if (UNLIKELY(p >= end)) return 0.0;
-    
-    double sign = 1.0;
-    if (*p == '-') {
-        sign = -1.0;
-        p++;
-    } else if (*p == '+') {
-        p++;
-    }
-    
-    uint64_t intPart = 0;
-    while (p < end) {
-        unsigned int d = (unsigned int)(*p - '0');
-        if (d > 9) break;
-        intPart = intPart * 10 + d;
-        p++;
-    }
-    
-    double result = (double)intPart;
-    
-    // Parse fractional part
-    if (p < end && *p == '.') {
-        p++;
-        double fracMult = 0.1;
-        while (p < end) {
-            unsigned int d = (unsigned int)(*p - '0');
-            if (d > 9) break;
-            result += d * fracMult;
-            fracMult *= 0.1;
-            p++;
-        }
-    }
-    
-    result *= sign;
-    
-    // Parse exponent
-    if (UNLIKELY(p < end && (*p == 'e' || *p == 'E'))) {
-        p++;
-        int expSign = 1;
-        if (p < end) {
-            if (*p == '-') { expSign = -1; p++; }
-            else if (*p == '+') { p++; }
-        }
-        int exp = 0;
-        while (p < end) {
-            unsigned int d = (unsigned int)(*p - '0');
-            if (d > 9) break;
-            exp = exp * 10 + d;
-            p++;
-        }
-        // Use lookup table for common exponents
-        static const double pow10[] = {1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10};
-        if (exp <= 10) {
-            result *= (expSign > 0) ? pow10[exp] : (1.0 / pow10[exp]);
-        } else {
-            result *= pow(10.0, expSign * exp);
-        }
-    }
-    
+    double result = 0.0;
+    auto answer = fast_float::from_chars(p, end, result);
+    if (answer.ec != std::errc()) return 0.0;
     return result;
 }
 

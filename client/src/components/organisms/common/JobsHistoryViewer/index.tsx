@@ -14,12 +14,14 @@ interface JobsHistoryViewerProps {
     trajectoryId?: string;
     showHeader?: boolean;
     hideAfterComplete?: boolean;
+    queueFilter?: string;
 }
 
 const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo(({
     trajectoryId,
     showHeader = true,
-    hideAfterComplete = true
+    hideAfterComplete = true,
+    queueFilter
 }) => {
     const jobs = useTeamJobsStore((state) => state.jobs);
     const isConnected = useTeamJobsStore((state) => state.isConnected);
@@ -36,9 +38,15 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo(({
     const hasAutoSelectedAnalysisRef = useRef(false);
 
     const relevantJobs = useMemo(() => {
-        if (!trajectoryId) return jobs;
-        return jobs.filter((job) => job.trajectoryId === trajectoryId);
-    }, [jobs, trajectoryId]);
+        let filtered = jobs;
+        if (trajectoryId) {
+            filtered = filtered.filter((job) => job.trajectoryId === trajectoryId);
+        }
+        if (queueFilter) {
+            filtered = filtered.filter((job) => job.queueType?.includes(queueFilter));
+        }
+        return filtered;
+    }, [jobs, trajectoryId, queueFilter]);
 
     const hasActiveJobs = useMemo(() => {
         if (!isConnected || isLoading) return false;

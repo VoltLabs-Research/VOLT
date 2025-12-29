@@ -595,6 +595,11 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     protected abstract deserializeJob(rawData: string): T;
 
     private mapJobStatusToTrajectoryStatus(jobStatus: string, queueType: string): string | null {
+        // Cloud upload jobs should NOT affect trajectory status
+        if (queueType.includes('cloud-upload')) {
+            return null;
+        }
+
         if (queueType.includes('analysis-processing-queue')) {
             switch (jobStatus) {
                 case 'queued':

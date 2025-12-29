@@ -3,12 +3,12 @@ import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { Types } from 'mongoose';
 import { v4 } from 'uuid';
-import TrajectoryParserFactory from '@/parsers/factory';
 import { Trajectory } from '@/models';
 import { getCloudUploadQueue, getTrajectoryProcessingQueue } from '@/queues';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import { Worker } from 'worker_threads';
 import { ITrajectory } from '@/types/models/trajectory';
 import { CloudUploadJob } from '@/types/services/cloud-upload';
 
@@ -21,43 +21,109 @@ interface CreateTrajectoryOptions {
     onProgress?: (progress: number) => void;
 };
 
-const processTrajectoryFile = async (
+interface ParseResult {
+    frameInfo: any;
+    srcPath: string;
+    originalSize: number;
+    originalName: string;
+}
+
+const WORKER_PATH = path.join(process.cwd(), 'workers/trajectory-parser.worker.ts');
+
+/**
+ * Spawns a worker thread and processes files in parallel batches.
+ * Returns parsed results for all valid files.
+ */
+const parseFilesWithWorker = async (
     trajectoryId: string,
-    updateProgress: any,
+    files: any[],
     workingDir: string,
-    file: any,
-    i: number
-) => {
-    let tempPath = file.path;
+    onProgress?: (progress: number) => void
+): Promise<ParseResult[]> => {
+    return new Promise(async (resolve, reject) => {
+        const worker = new Worker(WORKER_PATH, {
+            execArgv: ['-r', 'ts-node/register', '-r', 'tsconfig-paths/register']
+        });
 
-    // If we only have a buffer, write to disk briefly to let the parser read it.
-    if (!tempPath && file.buffer) {
-        tempPath = path.join(workingDir, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
-        await fs.writeFile(tempPath, file.buffer);
-    }
+        const results: (ParseResult | null)[] = new Array(files.length).fill(null);
+        let completedCount = 0;
+        let sentCount = 0;
+        const totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
 
-    // Parse and validate
-    let frameInfo;
-    try {
-        const parsed = await TrajectoryParserFactory.parse(tempPath);
-        frameInfo = parsed.metadata;
-    } catch (err) {
-        if (!file.path) await fs.rm(tempPath).catch(() => { });
-        return null;
-    }
+        const pendingTasks = new Map<number, { resolve: (v: any) => void }>();
 
-    fs.rename(tempPath, DumpStorage.getCachePath(trajectoryId, frameInfo.timestep));
+        worker.on('message', (message: any) => {
+            if (message.type !== 'result') return;
 
-    const fileSize = file.size || (await fs.stat(tempPath)).size;
+            const { taskId, success, data, error } = message;
+            completedCount++;
 
-    if (!file.path) await fs.rm(tempPath).catch(() => { });
+            if (success && data) {
+                results[taskId] = data;
+            }
 
-    return {
-        frameInfo,
-        srcPath: `minio://${trajectoryId}/${frameInfo.timestep}`,
-        originalSize: fileSize,
-        originalName: file.originalname || file.name || `frame_${frameInfo.timestep}`
-    };
+            // Report progress
+            if (onProgress && totalSize > 0) {
+                const processed = results
+                    .filter(Boolean)
+                    .reduce((acc, r) => acc + (r?.originalSize || 0), 0);
+                onProgress(Math.min(1, processed / totalSize));
+            }
+
+            // Check if all done
+            if (completedCount === files.length) {
+                worker.terminate();
+                resolve(results.filter(Boolean) as ParseResult[]);
+            }
+        });
+
+        worker.on('error', (err) => {
+            worker.terminate();
+            reject(err);
+        });
+
+        worker.on('exit', (code) => {
+            if (code !== 0 && completedCount < files.length) {
+                reject(new Error(`Worker exited with code ${code}`));
+            }
+        });
+
+        // Send tasks to worker
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            let tempPath = file.path;
+
+            // If we only have a buffer, write to disk briefly
+            if (!tempPath && file.buffer) {
+                tempPath = path.join(workingDir, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+                await fs.writeFile(tempPath, file.buffer);
+            }
+
+            if (!tempPath) {
+                completedCount++;
+                continue;
+            }
+
+            const fileSize = file.size || 0;
+
+            worker.postMessage({
+                type: 'parse',
+                taskId: i,
+                trajectoryId,
+                tempPath,
+                originalName: file.originalname || file.name || `frame_${i}`,
+                fileSize
+            });
+
+            sentCount++;
+        }
+
+        // If no tasks were sent, resolve immediately
+        if (sentCount === 0) {
+            worker.terminate();
+            resolve([]);
+        }
+    });
 };
 
 const dispatchTrajectoryJobs = async (validFiles: any[], trajectory: ITrajectory, teamId: string) => {
@@ -83,7 +149,7 @@ const dispatchTrajectoryJobs = async (validFiles: any[], trajectory: ITrajectory
             totalChunks,
             files,
             teamId,
-            name: 'Upload Trajectory',
+            name: 'Trajectory Processing',
             message: trajectory.name,
             sessionId,
             sessionStartTime: new Date().toISOString()
@@ -94,7 +160,7 @@ const dispatchTrajectoryJobs = async (validFiles: any[], trajectory: ITrajectory
 };
 
 /**
- * Processes incoming raw files, uploads them to Object Storge(MinIO),
+ * Processes incoming raw files, uploads them to Object Storage (MinIO),
  * and dispatches jobs to the processing queue.
  */
 const createTrajectory = async ({
@@ -135,7 +201,7 @@ const dispatchCloudUploadJobs = async (trajectory: ITrajectory, teamId: string) 
     const jobs: CloudUploadJob[] = [];
     const sessionId = v4();
 
-    for(let i = 0; i < trajectory.frames.length; i++){
+    for (let i = 0; i < trajectory.frames.length; i++) {
         const jobId = v4();
         const { timestep } = trajectory.frames[i];
         jobs.push({
@@ -162,29 +228,9 @@ const processFilesInBackground = async (
     const workingDir = path.join(tempBaseDir, trajectoryIdStr);
     await fs.mkdir(workingDir, { recursive: true });
 
-    let totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
-    const processedBytesMap: Record<number, number> = {};
+    // Use worker thread for parsing (non-blocking)
+    const validFiles = await parseFilesWithWorker(trajectoryIdStr, files, workingDir, onProgress);
 
-    const updateProgress = (index: number, bytes: number) => {
-        processedBytesMap[index] = bytes;
-        if (totalSize > 0 && onProgress) {
-            const totallyProcessed = Object.values(processedBytesMap).reduce((a, b) => a + b, 0);
-            onProgress(Math.min(1, totallyProcessed / totalSize));
-        }
-    };
-
-    const BATCH_SIZE = 8;
-    const allResults: any[] = [];
-
-    for (let i = 0; i < files.length; i += BATCH_SIZE) {
-        const batch = files.slice(i, i + BATCH_SIZE);
-        const batchPromises = batch.map((file, batchIndex) =>
-            processTrajectoryFile(trajectoryIdStr, updateProgress, workingDir, file, i + batchIndex));
-        const batchResults = await Promise.all(batchPromises);
-        allResults.push(...batchResults);
-    }
-
-    const validFiles = allResults.filter(Boolean);
     if (validFiles.length === 0) {
         await Trajectory.findByIdAndUpdate(trajectoryIdStr, { status: 'failed' });
         throw new RuntimeError(ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES, 400);
@@ -206,11 +252,12 @@ const processFilesInBackground = async (
         { new: true }
     );
 
-    if(onProgress) onProgress(1);
-    if(trajectory){
+    if (onProgress) onProgress(1);
+    if (trajectory) {
         await dispatchTrajectoryJobs(validFiles, trajectory, teamId);
         await dispatchCloudUploadJobs(trajectory, teamId);
     }
 };
 
 export default createTrajectory;
+

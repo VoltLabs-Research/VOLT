@@ -76,7 +76,7 @@ const EditorPage: React.FC = () => {
             <CanvasPresenceAvatars users={canvasUsers} />
 
             <Container className='canvas-jobs-panel p-absolute'>
-                <JobsHistoryViewer trajectoryId={trajectoryId} showHeader={false} />
+                <JobsHistoryViewer trajectoryId={trajectoryId} showHeader={false} queueFilter="analysis" />
             </Container>
 
             <Scene3D ref={scene3DRef} showCanvasGrid={showCanvasGrid}>

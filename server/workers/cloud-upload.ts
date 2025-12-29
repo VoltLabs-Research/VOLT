@@ -10,11 +10,11 @@ const processJob = async (job: CloudUploadJob): Promise<void> => {
     const localPath = DumpStorage.getCachePath(trajectoryId, timestep);
 
     await DumpStorage.saveDump(trajectoryId, timestep, localPath, (progress) => {
-        parentPort?.postMessage({
+        /*parentPort?.postMessage({
             jobId,
             status: 'progress',
             progress
-        });
+        });*/
     });
     
     parentPort?.postMessage({

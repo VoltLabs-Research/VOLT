@@ -111,7 +111,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
     const { isDeleting, handleClick, handleDelete } = useCardInteractions(
         onSelect,
         (id: string) => navigate(`/canvas/${id}/`),
-        processingStatus.isProcessing
+        false // Always enable navigation to allow monitoring progress in Canvas
     );
 
     const handleRasterize = useCallback(async () => {
