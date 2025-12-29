@@ -707,7 +707,6 @@ const DashboardLayout = () => {
 
                     <Container className='dashboard-header-right'>
                         <Popover
-                            id="team-invite-popover"
                             trigger={
                                 <button
                                     className='d-flex content-center items-center badge-container as-icon-container over-light-bg'

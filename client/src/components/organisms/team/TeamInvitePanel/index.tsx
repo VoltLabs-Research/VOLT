@@ -6,21 +6,13 @@ import { IoBook } from 'react-icons/io5';
 import { IoCheckmark } from 'react-icons/io5';
 import { Skeleton } from '@mui/material';
 import useToast from '@/hooks/ui/use-toast';
-import Select from '@/components/atoms/form/Select';
 import teamApi from '@/services/api/team/team';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import './TeamInvitePanel.css';
-import teamMember from '@/services/api/team-member/team-member';
-
-interface TeamMember {
-    email: string;
-    name?: string;
-    role: 'Can view' | 'Full access' | 'Can edit';
-    avatar?: string;
-}
+import type { TeamInvitation } from '@/types/team-invitation';
 
 interface TeamInvitePanelProps {
     teamName: string;
@@ -34,36 +26,29 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 }) => {
     const [email, setEmail] = useState('');
     const [generalAccess, setGeneralAccess] = useState<'Can edit' | 'Can view' | 'Restricted'>('Restricted');
-    const [members, setMembers] = useState<TeamMember[]>([]);
+    const [invitations, setInvitations] = useState<TeamInvitation[]>([]);
     const [loading, setLoading] = useState(false);
-    const [loadingMembers, setLoadingMembers] = useState(true);
+    const [loadingInvitations, setLoadingInvitations] = useState(true);
     const [buttonState, setButtonState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const inputRef = useRef<HTMLInputElement>(null);
     const { showError, showSuccess } = useToast();
 
     useEffect(() => {
-        const fetchMembers = async () => {
+        const fetchInvitations = async () => {
             if (!teamId) return;
 
-            setLoadingMembers(true);
+            setLoadingInvitations(true);
             try {
-                const membersData = await teamMember.getAll();
-                const formattedMembers: TeamMember[] = (membersData as any[])?.map((member: any) => ({
-                    email: member.email || member._id,
-                    name: member.username || member.email,
-                    role: 'Can edit',
-                    avatar: member.avatar || member.username?.charAt(0).toUpperCase() || member.email?.charAt(0).toUpperCase()
-                })) || [];
-
-                setMembers(formattedMembers);
+                const pendingInvitations = await teamApi.invitations.getPending();
+                setInvitations(pendingInvitations);
             } catch (err) {
-                console.error('Error fetching team members:', err);
+                console.error('Error fetching pending invitations:', err);
             } finally {
-                setLoadingMembers(false);
+                setLoadingInvitations(false);
             }
         };
 
-        fetchMembers();
+        fetchInvitations();
     }, [teamId]);
 
     const handleAddMember = async (e: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent<HTMLButtonElement>) => {
@@ -83,7 +68,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
             return;
         }
 
-        if (members.find(m => m.email === email.trim())) {
+        if (invitations.find(inv => inv.email === email.trim())) {
             const errorMsg = 'This email is already invited';
             showError(errorMsg);
             setButtonState('error');
@@ -94,9 +79,11 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         setLoading(true);
         setButtonState('loading');
         try {
-            await teamApi.invitations.send(teamId, email.trim(), 'Can view' as any);
+            await teamApi.invitations.send(teamId, email.trim(), 'Can view');
 
-            setMembers([...members, { email: email.trim(), role: 'Can view' }]);
+            // Refresh invitations list after sending
+            const updatedInvitations = await teamApi.invitations.getPending();
+            setInvitations(updatedInvitations);
             setEmail('');
             const successMsg = `Invitation sent to ${email.trim()}`;
             showSuccess(successMsg);
@@ -115,27 +102,15 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         }
     };
 
-    const handleRemoveMember = async (emailToRemove: string) => {
+    const handleCancelInvitation = async (invitationId: string, email: string) => {
         try {
-            await teamApi.members.remove(teamId, { email: emailToRemove });
-
-            setMembers(members.filter(m => m.email !== emailToRemove));
-            showSuccess(`Member ${emailToRemove} removed successfully`);
+            await teamApi.invitations.cancel(invitationId);
+            setInvitations(invitations.filter(inv => inv._id !== invitationId));
+            showSuccess(`Invitation to ${email} cancelled`);
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to remove member';
+            const errorMessage = err instanceof Error ? err.message : 'Failed to cancel invitation';
             showError(errorMessage);
         }
-    };
-
-    const handleRoleChange = async (email: string, newRole: 'Can view' | 'Full access' | 'Can edit' | 'Remove') => {
-        if (newRole === 'Remove') {
-            handleRemoveMember(email);
-            return;
-        }
-
-        setMembers(members.map(m =>
-            m.email === email ? { ...m, role: newRole } : m
-        ));
     };
 
     const getAvatarColor = (email: string) => {
@@ -146,6 +121,15 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 
     const getInitials = (email: string) => {
         return email.split('@')[0].charAt(0).toUpperCase();
+    };
+
+    const formatDate = (date: string | Date) => {
+        return new Date(date).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     };
 
     return (
@@ -193,7 +177,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                 </Container>
 
                 <Container className='team-invite-members-section y-auto f-shrink-0'>
-                    {loadingMembers ? (
+                    {loadingInvitations ? (
                         <>
                             {[1, 2, 3].map((i) => (
                                 <Container key={i} className='team-invite-member-item' style={{ padding: '10px 20px' }}>
@@ -208,45 +192,36 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                                 </Container>
                             ))}
                         </>
-                    ) : members.length === 0 ? (
+                    ) : invitations.length === 0 ? (
                         <Container style={{ padding: '20px', textAlign: 'center', color: 'var(--invite-text-secondary)', fontSize: '13px' }}>
-                            No members yet
+                            No pending invitations
                         </Container>
                     ) : (
-                        members.map((member) => (
-                            <Container key={member.email} className='d-flex items-center content-between gap-075 team-invite-member-item'>
+                        invitations.map((invitation) => (
+                            <Container key={invitation._id} className='d-flex items-center content-between gap-075 team-invite-member-item'>
                                 <Container className='d-flex items-center gap-075 team-invite-member-info flex-1'>
                                     <Container
                                         className='d-flex items-center content-center team-invite-avatar f-shrink-0 font-weight-5'
-                                        style={{ backgroundColor: member.avatar ? 'transparent' : getAvatarColor(member.email) }}
+                                        style={{ backgroundColor: getAvatarColor(invitation.email) }}
                                     >
-                                        {member.avatar ? (
-                                            <img
-                                                src={member.avatar}
-                                                alt={member.name || member.email}
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
-                                            />
-                                        ) : (
-                                            getInitials(member.email)
-                                        )}
+                                        {getInitials(invitation.email)}
                                     </Container>
                                     <Container className='team-invite-member-details flex-1'>
-                                        <Paragraph className='team-invite-member-name overflow-hidden font-weight-5'>{member.name || member.email}</Paragraph>
-                                        {member.name && member.name !== member.email && <Paragraph className='team-invite-member-email overflow-hidden'>{member.email}</Paragraph>}
+                                        <Paragraph className='team-invite-member-name overflow-hidden font-weight-5'>{invitation.email}</Paragraph>
+                                        <Paragraph className='team-invite-member-email overflow-hidden' style={{ fontSize: '11px', opacity: 0.7 }}>
+                                            Sent {formatDate(invitation.createdAt)}
+                                        </Paragraph>
                                     </Container>
                                 </Container>
                                 <Container className='d-flex items-center gap-05 team-invite-member-role'>
-                                    <Select
-                                        options={[
-                                            { value: 'Can view', title: 'Can view' },
-                                            { value: 'Can edit', title: 'Can edit' },
-                                            { value: 'Full access', title: 'Full access' },
-                                            { value: 'Remove', title: 'Remove' }
-                                        ]}
-                                        value={member.role}
-                                        onChange={(value) => handleRoleChange(member.email, value as 'Can view' | 'Full access' | 'Can edit' | 'Remove')}
-                                        className='team-invite-role-select cursor-pointer'
-                                    />
+                                    <Button
+                                        variant='ghost'
+                                        intent='neutral'
+                                        size='sm'
+                                        onClick={() => handleCancelInvitation(invitation._id, invitation.email)}
+                                    >
+                                        Cancel
+                                    </Button>
                                 </Container>
                             </Container>
                         ))
@@ -264,17 +239,9 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                         <Container className='team-invite-general-info flex-1'>
                             <Paragraph className='team-invite-general-name font-weight-5'>Anyone with the link</Paragraph>
                         </Container>
-                        <Select
-                            options={[
-                                { value: 'Restricted', title: 'Restricted' },
-                                { value: 'Can view', title: 'Can view' },
-                                { value: 'Can edit', title: 'Can edit' }
-                            ]}
-                            value={generalAccess}
-                            style={{ width: 150 }}
-                            onChange={(value) => setGeneralAccess(value as 'Can edit' | 'Can view' | 'Restricted')}
-                            className='team-invite-general-select cursor-pointer'
-                        />
+                        <Paragraph className='font-size-2-5' style={{ color: 'var(--color-text-secondary)' }}>
+                            {generalAccess}
+                        </Paragraph>
                     </Container>
                 </Container>
 
@@ -292,3 +259,4 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
 };
 
 export default TeamInvitePanel;
+

@@ -29,8 +29,8 @@ import { publishNotificationCreated } from '@/events/notification-events';
 import BaseController from '@/controllers/base-controller';
 import { Resource } from '@/constants/resources';
 
-export default class TeamInvitationController extends BaseController<any>{
-    constructor(){
+export default class TeamInvitationController extends BaseController<any> {
+    constructor() {
         super(TeamInvitation, {
             resource: Resource.TEAM_INVITATION
         });
@@ -92,13 +92,35 @@ export default class TeamInvitationController extends BaseController<any>{
     });
 
     /**
-     * Get pending invitations for current user.
+     * Cancel/revoke a pending invitation.
      */
+    public cancelInvitation = catchAsync(async (req: Request, res: Response) => {
+        const { invitationId } = req.params;
+        const team = res.locals.team;
+        const invitation = await TeamInvitation.findOne({
+            _id: invitationId,
+            team: team._id,
+            status: 'pending'
+        });
+
+        if (!invitation) {
+            throw new RuntimeError(ErrorCodes.TEAM_INVITATION_NOT_FOUND, 404);
+        }
+
+        invitation.status = 'rejected';
+        await invitation.save();
+
+        res.status(200).json({
+            status: 'success',
+            message: 'Invitation cancelled'
+        });
+    });
+
     public getPendingInvitations = catchAsync(async (req: Request, res: Response) => {
-        const userId = (req as any).user?._id;
+        const teamId = await this.getTeamId(req);
 
         const invitations = await TeamInvitation.find({
-            invitedUser: userId,
+            team: teamId,
             status: 'pending'
         })
             .populate('team', 'name description')
