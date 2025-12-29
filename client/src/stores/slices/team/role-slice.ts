@@ -27,29 +27,29 @@ export const initialState: TeamRoleState = { roles: [], members: [], isLoading: 
 export const createTeamRoleSlice: SliceCreator<TeamRoleSlice> = (set, get) => ({
     ...initialState,
 
-    fetchRoles: async (teamId) => {
-        await runRequest(set, get, () => teamRoleApi.getAll(teamId), {
+    fetchRoles: async (_teamId) => {
+        await runRequest(set, get, () => teamRoleApi.getAll(), {
             errorFallback: 'Failed to fetch roles', rethrow: true,
             onSuccess: (roles) => set({ roles } as Partial<TeamRoleSlice>)
         });
     },
 
-    createRole: async (teamId, data) => {
-        return await runRequest(set, get, () => teamRoleApi.create(teamId, data), {
+    createRole: async (_teamId, data) => {
+        return await runRequest(set, get, () => teamRoleApi.create(data), {
             loadingKey: 'isSaving', errorFallback: 'Failed to create role', rethrow: true,
             onSuccess: (role) => set((s: TeamRoleSlice) => ({ roles: [...s.roles, role] }))
         });
     },
 
-    updateRole: async (teamId, roleId, data) => {
-        return await runRequest(set, get, () => teamRoleApi.update(teamId, roleId, data), {
+    updateRole: async (_teamId, roleId, data) => {
+        return await runRequest(set, get, () => teamRoleApi.update(roleId, data), {
             loadingKey: 'isSaving', errorFallback: 'Failed to update role', rethrow: true,
             onSuccess: (role) => set((s: TeamRoleSlice) => ({ roles: s.roles.map(r => r._id === roleId ? role : r) }))
         });
     },
 
-    deleteRole: async (teamId, roleId) => {
-        await runRequest(set, get, () => teamRoleApi.delete(teamId, roleId), {
+    deleteRole: async (_teamId, roleId) => {
+        await runRequest(set, get, () => teamRoleApi.delete(roleId), {
             loadingKey: 'isSaving', errorFallback: 'Failed to delete role', rethrow: true,
             onSuccess: () => set((s: TeamRoleSlice) => ({ roles: s.roles.filter(r => r._id !== roleId) }))
         });

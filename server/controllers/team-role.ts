@@ -51,9 +51,17 @@ export default class TeamRoleController extends BaseController<ITeamRole> {
         }
 
         const teamId = await this.getTeamId(req);
-        const membersWithRole = await TeamMember.countDocuments({ team: teamId, role: doc._id });
-        if (membersWithRole > 0) {
-            throw new RuntimeError(ErrorCodes.TEAM_ROLE_IN_USE, 400);
+
+        // Find the system "Member" role to reassign users
+        const memberRole = await TeamRole.findOne({ team: teamId, name: 'Member', isSystem: true });
+        if (!memberRole) {
+            throw new RuntimeError(ErrorCodes.TEAM_ROLE_NOT_FOUND, 404);
         }
+
+        // Move all members with this role to the Member role
+        await TeamMember.updateMany(
+            { team: teamId, role: doc._id },
+            { $set: { role: memberRole._id } }
+        );
     }
 }
