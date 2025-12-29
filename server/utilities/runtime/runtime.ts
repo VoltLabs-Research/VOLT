@@ -21,10 +21,10 @@
  */
 
 import { Request, Response, NextFunction, RequestHandler } from 'express';
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, mkdir } from 'node:fs/promises';
 import { FilterQuery, Types } from 'mongoose';
 import { join } from 'node:path';
-import { tmpdir } from 'node:os';
+import { TEMP_DIR } from '@/utilities/temp-dir';
 
 // Type for async request handlers that may throw errors
 type AsyncRequestHandler = (
@@ -48,8 +48,9 @@ export const slugify = (value: string) => value
     .replace(/^-+/, '')
     .replace(/-+$/, '');
 
-export const createTempDir = async(prefix: string = 'opendxa-'): Promise<string> =>{
-    const tempDir = await mkdtemp(join(tmpdir(), prefix));
+export const createTempDir = async (prefix: string = 'opendxa-'): Promise<string> => {
+    await mkdir(TEMP_DIR, { recursive: true });
+    const tempDir = await mkdtemp(join(TEMP_DIR, prefix));
     return tempDir;
 };
 
@@ -82,11 +83,11 @@ export const filterObject = <T extends object>(
     ...allowedFields: readonly string[]
 ): Partial<T> => {
     // Input validation
-    if(!obj || typeof obj !== 'object'){
+    if (!obj || typeof obj !== 'object') {
         return {};
     }
 
-    if(allowedFields.length === 0){
+    if (allowedFields.length === 0) {
         return {};
     }
 
@@ -95,11 +96,11 @@ export const filterObject = <T extends object>(
     const filteredObject: Partial<T> = {};
 
     // Iterate through object properties
-    for(const [key, value] of Object.entries(obj)) {
+    for (const [key, value] of Object.entries(obj)) {
         // Check f field is allowed and protect against prototype pollution
-        if(allowedFieldsSet.has(key) && Object.hasOwnProperty.call(obj, key)) {
+        if (allowedFieldsSet.has(key) && Object.hasOwnProperty.call(obj, key)) {
             // Skip potentially dangerous properties
-            if(isDangerousProperty(key)) {
+            if (isDangerousProperty(key)) {
                 continue;
             }
 
@@ -138,24 +139,24 @@ const isDangerousProperty = (propertyName: string): boolean => {
 */
 export const checkIfSlugOrId = (identifier: unknown): FilterQuery<any> => {
     // Input validation
-    if(!identifier || typeof identifier !== 'string'){
+    if (!identifier || typeof identifier !== 'string') {
         throw new Error('Identifier must be a non-empty string');
     }
     const trimmedIdentifier = identifier.trim();
-    if(trimmedIdentifier.length === 0){
+    if (trimmedIdentifier.length === 0) {
         throw new Error('Identifier cannot be empty or only whitespace');
     }
     // Check if it's a valid MongoDB ObjectId
-    if(isValidObjectId(trimmedIdentifier)) {
-        try{
+    if (isValidObjectId(trimmedIdentifier)) {
+        try {
             return { _id: new Types.ObjectId(trimmedIdentifier) }
-        }catch(error){
+        } catch (error) {
             throw new Error('Invalid ObjectId format');
         }
     }
 
     // Check if it's a valid slug
-    if(isValidSlug(trimmedIdentifier)) {
+    if (isValidSlug(trimmedIdentifier)) {
         return { slug: trimmedIdentifier };
     }
 
