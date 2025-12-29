@@ -80,7 +80,7 @@ const DetailsPanel = ({
                                 block
                                 className='content-start'
                                 commandfor='group-management-modal'
-                                command='showModal'
+                                command='show-modal'
                             >
                                 Manage Group
                             </Button>

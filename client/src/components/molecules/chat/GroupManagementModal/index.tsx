@@ -35,7 +35,6 @@ import {
     IoStarOutline,
     IoCheckmarkCircleOutline
 } from 'react-icons/io5';
-import { getInitials } from '@/utilities/api/guest';
 import { useAuthStore } from '@/stores/slices/auth';
 import Modal from '@/components/molecules/common/Modal';
 import Button from '@/components/primitives/Button';
@@ -75,41 +74,28 @@ const GroupManagementModal = () => {
         editGroupDescription: { maxLength: 250, message: 'Description cannot exceed 250 characters' }
     });
 
-    if(!currentChat || !currentChat.isGroup) return null;
-
-    const isAdmin = currentChat.admins?.some(admin => admin._id === user?._id) || false;
-    const isOwner = currentChat.createdBy?._id === user?._id;
+    const isGroupChat = currentChat && currentChat.isGroup;
+    const isAdmin = isGroupChat && (currentChat.admins?.some(admin => admin._id === user?._id) || false);
+    const isOwner = isGroupChat && currentChat.createdBy?._id === user?._id;
 
     // Initialize form with current group data
     useEffect(() => {
-        if(currentChat){
+        if (currentChat) {
             setEditGroupName(currentChat.groupName || '');
             setEditGroupDescription(currentChat.groupDescription || '');
         }
     }, [currentChat, setEditGroupName, setEditGroupDescription]);
 
-    const handleLeaveGroup = async() => {
-        if(!confirm('Are you sure you want to leave this group?')) return;
-
-        setIsLoading(true);
-        try{
-            await leaveGroup(currentChat._id);
-            setShowGroupManagement(false);
-        }catch(error){
-            console.error('Failed to leave group:', error);
-        }finally{
-            setIsLoading(false);
-        }
-    };
-
     // Auto-save when user stops typing
     useEffect(() => {
+        if (!isGroupChat) return;
+
         const timeoutId = setTimeout(() => {
             // Validate before saving
             const nameError = validateField('editGroupName', editGroupName);
             const descError = validateField('editGroupDescription', editGroupDescription);
 
-            if(!nameError && !descError && editGroupName.trim() && editGroupName !== currentChat?.groupName) {
+            if (!nameError && !descError && editGroupName.trim() && editGroupName !== currentChat?.groupName) {
                 updateGroupInfo(
                     currentChat._id,
                     editGroupName.trim(),
@@ -119,27 +105,45 @@ const GroupManagementModal = () => {
         }, 1000); // 1 second delay
 
         return () => clearTimeout(timeoutId);
-    }, [editGroupName, editGroupDescription, currentChat, updateGroupInfo]);
+    }, [editGroupName, editGroupDescription, currentChat, updateGroupInfo, isGroupChat]);
+
+    // Early return AFTER all hooks
+    if (!isGroupChat) return null;
+
+    // Add Members functions
+    const handleLeaveGroup = async () => {
+        if (!confirm('Are you sure you want to leave this group?')) return;
+
+        setIsLoading(true);
+        try {
+            await leaveGroup(currentChat._id);
+            setShowGroupManagement(false);
+        } catch (error) {
+            console.error('Failed to leave group:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     // Add Members functions
     const handleAddMembers = () => {
         setShowAddMembers(true);
-        if(currentChat?.team?._id){
+        if (currentChat?.team?._id) {
             loadTeamMembers(currentChat.team._id);
         }
     };
 
-    const handleAddSelectedMembers = async() => {
-        if(selectedMembers.length === 0) return;
+    const handleAddSelectedMembers = async () => {
+        if (selectedMembers.length === 0) return;
 
         setIsLoading(true);
-        try{
+        try {
             await addUsersToGroup(currentChat!._id, selectedMembers);
             setSelectedMembers([]);
             setShowAddMembers(false);
-        }catch(error){
+        } catch (error) {
             console.error('Failed to add members:', error);
-        }finally{
+        } finally {
             setIsLoading(false);
         }
     };
@@ -160,11 +164,11 @@ const GroupManagementModal = () => {
         setSelectedAdmins(currentAdminIds);
     };
 
-    const handleSaveAdmins = async() => {
-        if(!currentChat) return;
+    const handleSaveAdmins = async () => {
+        if (!currentChat) return;
 
         setIsLoading(true);
-        try{
+        try {
             // Get current admin IDs
             const currentAdminIds = currentChat.admins?.map(admin => admin._id) || [];
 
@@ -179,20 +183,20 @@ const GroupManagementModal = () => {
             );
 
             // Add new admins
-            if(membersToAdd.length > 0){
+            if (membersToAdd.length > 0) {
                 await updateGroupAdmins(currentChat._id, membersToAdd, 'add');
             }
 
             // Remove admins
-            if(membersToRemove.length > 0){
+            if (membersToRemove.length > 0) {
                 await updateGroupAdmins(currentChat._id, membersToRemove, 'remove');
             }
 
             setSelectedAdmins([]);
             setShowManageAdmins(false);
-        }catch(error){
+        } catch (error) {
             console.error('Failed to update admins:', error);
-        }finally{
+        } finally {
             setIsLoading(false);
         }
     };
@@ -234,7 +238,7 @@ const GroupManagementModal = () => {
     };
 
     const renderContent = () => {
-        switch(activeSection){
+        switch (activeSection) {
             case 'general':
                 return (
                     <div className='group-management-content h-max'>
@@ -315,8 +319,10 @@ const GroupManagementModal = () => {
 
                                         return (
                                             <div key={member._id} className='d-flex items-center gap-0875 group-management-member p-relative overflow-hidden cursor-pointer'>
-                                                <div className='d-flex flex-center group-management-member-avatar'>
-                                                    {getInitials(member.firstName, member.lastName)}
+                                                <div className='d-flex flex-center group-management-member-avatar overflow-hidden'>
+                                                    {member.avatar
+                                                        ? <img src={member.avatar} alt="" className='w-max h-max object-cover' />
+                                                        : '?'}
                                                 </div>
                                                 <div className='group-management-member-info'>
                                                     <span className='group-management-member-name'>
@@ -387,8 +393,10 @@ const GroupManagementModal = () => {
                                                                 className={`d-flex items-center gap-0875 group-management-member ${isSelected ? 'selected' : ''} p-relative overflow-hidden cursor-pointer`}
                                                                 onClick={() => toggleMemberSelection(member._id)}
                                                             >
-                                                                <div className='d-flex flex-center group-management-member-avatar'>
-                                                                    {getInitials(member.firstName, member.lastName)}
+                                                                <div className='d-flex flex-center group-management-member-avatar overflow-hidden'>
+                                                                    {member.avatar
+                                                                        ? <img src={member.avatar} alt="" className='w-max h-max object-cover' />
+                                                                        : '?'}
                                                                 </div>
                                                                 <div className='group-management-member-info'>
                                                                     <span className='group-management-member-name'>
@@ -413,8 +421,8 @@ const GroupManagementModal = () => {
 
                                     {selectedMembers.length > 0 && (
                                         <div className='group-management-selected-summary text-center'>
+                                            <IoCheckmarkCircleOutline className='d-flex flex-center gap-05 check-icon' />
                                             <Paragraph>
-                                                <IoCheckmarkCircleOutline className='d-flex flex-center gap-05 check-icon' />
                                                 {selectedMembers.length} member{selectedMembers.length !== 1 ? 's' : ''} selected
                                             </Paragraph>
                                         </div>
@@ -463,11 +471,10 @@ const GroupManagementModal = () => {
                                 <div className='d-flex column gap-05 group-management-admins-list'>
                                     {/* Owner */}
                                     <div className='d-flex items-center gap-0875 group-management-admin owner p-relative overflow-hidden cursor-pointer'>
-                                        <div className='d-flex flex-center group-management-admin-avatar'>
-                                            {getInitials(
-                                                currentChat.createdBy?.firstName || '',
-                                                currentChat.createdBy?.lastName || ''
-                                            )}
+                                        <div className='d-flex flex-center group-management-admin-avatar overflow-hidden'>
+                                            {currentChat.createdBy?.avatar
+                                                ? <img src={currentChat.createdBy.avatar} alt="" className='w-max h-max object-cover' />
+                                                : '?'}
                                         </div>
                                         <div className='group-management-admin-info'>
                                             <span className='group-management-admin-name'>
@@ -483,8 +490,10 @@ const GroupManagementModal = () => {
                                     {/* Admins */}
                                     {currentChat.admins?.filter(admin => admin._id !== currentChat.createdBy?._id).map((admin) => (
                                         <div key={admin._id} className='d-flex items-center gap-0875 group-management-admin p-relative overflow-hidden cursor-pointer'>
-                                            <div className='d-flex flex-center group-management-admin-avatar'>
-                                                {getInitials(admin.firstName, admin.lastName)}
+                                            <div className='d-flex flex-center group-management-admin-avatar overflow-hidden'>
+                                                {admin.avatar
+                                                    ? <img src={admin.avatar} alt="" className='w-max h-max object-cover' />
+                                                    : '?'}
                                             </div>
                                             <div className='group-management-admin-info'>
                                                 <span className='group-management-admin-name'>
@@ -517,11 +526,10 @@ const GroupManagementModal = () => {
                                         <div className='group-management-admins-list'>
                                             {/* Owner - cannot be changed */}
                                             <div className='d-flex items-center gap-0875 group-management-admin owner disabled p-relative overflow-hidden cursor-pointer'>
-                                                <div className='d-flex flex-center group-management-admin-avatar'>
-                                                    {getInitials(
-                                                        currentChat.createdBy?.firstName || '',
-                                                        currentChat.createdBy?.lastName || ''
-                                                    )}
+                                                <div className='d-flex flex-center group-management-admin-avatar overflow-hidden'>
+                                                    {currentChat.createdBy?.avatar
+                                                        ? <img src={currentChat.createdBy.avatar} alt="" className='w-max h-max object-cover' />
+                                                        : '?'}
                                                 </div>
                                                 <div className='group-management-admin-info'>
                                                     <span className='group-management-admin-name'>
@@ -548,8 +556,10 @@ const GroupManagementModal = () => {
                                                             className={`d-flex items-center gap-0875 group-management-admin ${isSelected ? 'selected' : ''} ${isCurrentAdmin ? 'current-admin' : ''} p-relative overflow-hidden cursor-pointer`}
                                                             onClick={() => toggleAdminSelection(member._id)}
                                                         >
-                                                            <div className='d-flex flex-center group-management-admin-avatar'>
-                                                                {getInitials(member.firstName, member.lastName)}
+                                                            <div className='d-flex flex-center group-management-admin-avatar overflow-hidden'>
+                                                                {member.avatar
+                                                                    ? <img src={member.avatar} alt="" className='w-max h-max object-cover' />
+                                                                    : '?'}
                                                             </div>
                                                             <div className='group-management-admin-info'>
                                                                 <span className='group-management-admin-name'>
@@ -575,8 +585,8 @@ const GroupManagementModal = () => {
 
                                     {selectedAdmins.length > 0 && (
                                         <div className='group-management-selected-summary text-center'>
+                                            <IoCheckmarkCircleOutline className='d-flex flex-center gap-05 check-icon' />
                                             <Paragraph>
-                                                <IoCheckmarkCircleOutline className='d-flex flex-center gap-05 check-icon' />
                                                 {selectedAdmins.length} admin{selectedAdmins.length !== 1 ? 's' : ''} selected
                                             </Paragraph>
                                         </div>

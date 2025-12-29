@@ -56,10 +56,9 @@
 
 /* Dropdown styling */
 .volt-select-dropdown {
-    background: var(--color-surface-1);
-    border: 1px solid var(--color-border);
-    border-radius: .6rem;
-    box-shadow: var(--shadow-elevated);
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
     padding: .35rem;
     max-height: 300px;
     overflow-y: auto;
@@ -87,20 +86,19 @@
     color: var(--color-text-primary);
     transition: background .12s ease;
     min-height: 40px;
-    background-color: transparent;
 }
 
 .volt-select-option:hover {
-    background: color-mix(in srgb, var(--accent-indigo) 12%, transparent);
+    background-color: var(--hover-bg);
+    border-radius: var(--radius-xl);
 }
 
 .volt-select-option.selected {
-    background: color-mix(in srgb, var(--accent-indigo) 12%, transparent);
     font-weight: 600;
 }
 
 .volt-select-option-check {
-    color: var(--accent-indigo);
+    color: var(--color-text-muted);
     margin-left: auto;
     flex-shrink: 0;
 }

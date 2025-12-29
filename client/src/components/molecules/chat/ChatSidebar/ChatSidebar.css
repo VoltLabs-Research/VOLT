@@ -79,7 +79,6 @@
     backdrop-filter: blur(5px);
     margin: 0.25rem 0.5rem;
     border-radius: var(--radius-md);
-    border: 1px solid var(--color-border-soft);
 }
 
 .chat-conversation-item:hover {
@@ -89,17 +88,12 @@
 
 .chat-conversation-avatar {
     width: 48px;
-    height: 48px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-    color: white;
     font-size: 1.1rem;
     margin-right: 1rem;
 }
 
 .chat-conversation-avatar.group-avatar {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
     font-size: 1.2rem;
 }
 
@@ -174,7 +168,6 @@
 
 /* Team Members Container */
 .chat-team-members-container {
-    background: var(--color-surface-2);
     border-bottom: 1px solid var(--color-border-soft);
     max-height: 200px;
 }

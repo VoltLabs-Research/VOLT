@@ -8,7 +8,8 @@ export const SYS_BUCKETS = {
     RASTERIZER: 'opendxa-rasterizer',
     PLUGINS: 'opendxa-plugins',
     DUMPS: 'opendxa-dumps',
-    AVATARS: 'opendxa-avatars'
+    AVATARS: 'opendxa-avatars',
+    CHAT: 'opendxa-chat'
 };
 
 const createClient = (): Client => {
@@ -19,7 +20,7 @@ const createClient = (): Client => {
     const accessKey = process.env.MINIO_ACCESS_KEY;
     const secretKey = process.env.MINIO_SECRET_KEY;
 
-    if(!accessKey || !secretKey){
+    if (!accessKey || !secretKey) {
         throw new Error('[MinIO] MINIO_ACCESS_KEY o MINIO_SECRET_KEY not in .env');
     }
 
@@ -33,18 +34,18 @@ const createClient = (): Client => {
 };
 
 export const getMinioClient = (): Client => {
-    if(!minioClient){
+    if (!minioClient) {
         minioClient = createClient();
     }
     return minioClient;
 };
 
-export const ensureBucketExists = async(client: Client, bucket: string): Promise<void> =>{
+export const ensureBucketExists = async (client: Client, bucket: string): Promise<void> => {
     const exists = await client.bucketExists(bucket).catch(() => false);
-    if(!exists){
+    if (!exists) {
         await client.makeBucket(bucket, '');
         // Set public policy for avatars bucket
-        if(bucket === SYS_BUCKETS.AVATARS){
+        if (bucket === SYS_BUCKETS.AVATARS) {
             const policy = {
                 Version: '2012-10-17',
                 Statement: [{
@@ -60,10 +61,10 @@ export const ensureBucketExists = async(client: Client, bucket: string): Promise
     }
 };
 
-export const initializeMinio = async(): Promise<void> =>{
+export const initializeMinio = async (): Promise<void> => {
     const client = getMinioClient();
     const buckets = Object.values(SYS_BUCKETS);
-    for(const bucket of buckets){
+    for (const bucket of buckets) {
         await ensureBucketExists(client, bucket);
     }
     logger.info('[MinIO] Complete initialization');

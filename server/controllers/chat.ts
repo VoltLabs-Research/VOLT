@@ -25,7 +25,9 @@ import { Chat, Message, Team } from '@/models/index';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
-import { uploadSingleFile, getFileUrl, uploadToMinIO } from '@/middlewares/file-upload';
+import { uploadSingleFile, getFileUrl, uploadToMinIO, getMinIOObjectName } from '@/middlewares/file-upload';
+import storage from '@/services/storage';
+import { SYS_BUCKETS } from '@/config/minio';
 import { Action } from '@/constants/permissions';
 import { Resource } from '@/constants/resources';
 import BaseController from '@/controllers/base-controller';
@@ -37,12 +39,12 @@ export default class ChatController extends BaseController<any> {
         });
     }
 
-    protected async getTeamId(req: Request, doc?: any): Promise<string | null> {
+    protected async getTeamId(req: Request, doc?: any): Promise<string> {
         if (doc?.team) {
             return typeof doc.team === 'string' ? doc.team : doc.team._id?.toString() || doc.team.toString();
         }
         const teamId = req.params?.teamId || req.body?.teamId;
-        return teamId ? String(teamId) : null;
+        return teamId ? String(teamId) : '';
     }
 
     private static readonly POPULATE_FIELDS = {
@@ -90,7 +92,7 @@ export default class ChatController extends BaseController<any> {
             team: teamId
         }).populate(ChatController.CHAT_POPULATES);
 
-        if(!chat){
+        if (!chat) {
             chat = await Chat.create({
                 participants: [user._id, participantId],
                 team: teamId,
@@ -108,7 +110,7 @@ export default class ChatController extends BaseController<any> {
 
         const skip = (Number(page) - 1) * Number(limit);
         const messages = await Message.find({ chat: chatId })
-            .populate('sender', 'firstName lastName email')
+            .populate('sender', 'firstName lastName email avatar')
             .populate('readBy', 'firstName lastName')
             .sort({ createdAt: -1 })
             .skip(skip)
@@ -134,7 +136,7 @@ export default class ChatController extends BaseController<any> {
             readBy: [user._id]
         });
 
-        await message.populate('sender', 'firstName lastName email');
+        await message.populate('sender', 'firstName lastName email avatar');
         await Chat.findByIdAndUpdate(chatId, {
             lastMessage: message._id,
             lastMessageAt: new Date()
@@ -150,7 +152,7 @@ export default class ChatController extends BaseController<any> {
         message.content = content;
         message.editedAt = new Date();
         await message.save();
-        await message.populate('sender', 'firstName lastName email');
+        await message.populate('sender', 'firstName lastName email avatar');
 
         res.status(200).json({ status: 'success', data: message });
     });
@@ -194,7 +196,7 @@ export default class ChatController extends BaseController<any> {
                 { owner: user._id },
                 { members: user._id }
             ]
-        }).populate('owner members', 'firstName lastName email');
+        }).populate('owner members', 'firstName lastName email avatar');
 
         if (!team) {
             throw new RuntimeError(ErrorCodes.TEAM_NOT_FOUND, 404);
@@ -268,5 +270,28 @@ export default class ChatController extends BaseController<any> {
         });
 
         res.status(201).json({ status: 'success', data: message });
+    });
+
+    public getFile = catchAsync(async (req: Request, res: Response) => {
+        const { filename } = req.params;
+        const objectName = getMinIOObjectName(filename);
+
+        if (!(await storage.exists(SYS_BUCKETS.CHAT, objectName))) {
+            throw new RuntimeError(ErrorCodes.RESOURCE_NOT_FOUND, 404);
+        }
+
+        const stat = await storage.getStat(SYS_BUCKETS.CHAT, objectName);
+        const stream = await storage.getStream(SYS_BUCKETS.CHAT, objectName);
+
+        res.setHeader('Content-Type', stat.metaData['content-type'] || 'application/octet-stream');
+        res.setHeader('Content-Length', stat.size);
+
+        if (stat.metaData['content-type']?.startsWith('image/')) {
+            res.setHeader('Content-Disposition', 'inline');
+        } else {
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        }
+
+        stream.pipe(res);
     });
 }

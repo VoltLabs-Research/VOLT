@@ -35,30 +35,31 @@ const SOCKET_EVENTS = {
     MESSAGE_DELETED: 'message_deleted',
     REACTION_UPDATED: 'reaction_updated',
     USER_PRESENCE_UPDATE: 'user_presence_update',
+    USERS_PRESENCE_INFO: 'users_presence_info',
     ERROR: 'error'
 } as const;
 
 // singleton
-export default class ChatSocketManager{
+export default class ChatSocketManager {
     private static instance: ChatSocketManager | null = null;
 
     constructor(
         private registered = false,
         private unsubscribers: Array<() => void> = [],
         private refCount = 0
-    ){}
+    ) { }
 
-    static getInstance(): ChatSocketManager{
-        if(!ChatSocketManager.instance){
+    static getInstance(): ChatSocketManager {
+        if (!ChatSocketManager.instance) {
             ChatSocketManager.instance = new ChatSocketManager();
         }
         return ChatSocketManager.instance;
     }
 
-    register(currentChatIdRef: RefObject<string | null>): void{
+    register(currentChatIdRef: RefObject<string | null>): void {
         this.refCount++;
 
-        if(this.registered){
+        if (this.registered) {
             console.log(`[Chat] Socket listeners already registered(refs: ${this.refCount})`);
             return;
         }
@@ -71,16 +72,16 @@ export default class ChatSocketManager{
         this.ensureConnection();
     }
 
-    unregister(): void{
+    unregister(): void {
         this.refCount--;
         console.log(`[Chat] Unregister called(refs remaining: ${this.refCount})`);
 
-        if(this.refCount <= 0){
+        if (this.refCount <= 0) {
             this.cleanup();
         }
     }
 
-    private setupConnectionHandler(): void{
+    private setupConnectionHandler(): void {
         const unsubscribe = socketService.onConnectionChange((connected: boolean) => {
             useChatStore.getState().setConnected(connected);
             console.log(`[Chat] Socket ${connected ? 'connected' : 'disconnected'}`);
@@ -89,7 +90,7 @@ export default class ChatSocketManager{
         this.unsubscribers.push(unsubscribe);
     }
 
-    private setupEventHandlers(currentChatIdRef: RefObject<string | null>): void{
+    private setupEventHandlers(currentChatIdRef: RefObject<string | null>): void {
         const handlers = this.createEventHandlers(currentChatIdRef);
 
         Object.entries(handlers).forEach(([event, handler]) => {
@@ -120,40 +121,40 @@ export default class ChatSocketManager{
         setMessages(updatedMessages);
     }
 
-    private createMessageEditedHandler(currentChatIdRef: RefObject<string | null>){
-        return(payload: { chatId: string; message: any }): void =>{
-            if(currentChatIdRef.current !== payload.chatId) return;
+    private createMessageEditedHandler(currentChatIdRef: RefObject<string | null>) {
+        return (payload: { chatId: string; message: any }): void => {
+            if (currentChatIdRef.current !== payload.chatId) return;
             const { messages, setMessages } = useChatStore.getState();
             setMessages(messages.map((m) => m._id === payload.message._id ? payload.message : m));
         };
     }
 
-    private createMessageDeletedHandler(currentChatIdRef: RefObject<string | null>){
-        return(payload: { chatId: string; messageId: string }): void =>{
-            if(currentChatIdRef.current !== payload.chatId) return;
+    private createMessageDeletedHandler(currentChatIdRef: RefObject<string | null>) {
+        return (payload: { chatId: string; messageId: string }): void => {
+            if (currentChatIdRef.current !== payload.chatId) return;
 
             const { messages, setMessages } = useChatStore.getState();
             setMessages(messages.map((m) => m._id === payload.messageId ? { ...m, deleted: true } as any : m));
         };
     }
 
-    private createReactionUpdatedHandler(currentChatIdRef: RefObject<string | null>){
-        return(payload: { chatId: string; message: any }): void =>{
-            if(currentChatIdRef.current !== payload.chatId || !payload.message) return;
+    private createReactionUpdatedHandler(currentChatIdRef: RefObject<string | null>) {
+        return (payload: { chatId: string; message: any }): void => {
+            if (currentChatIdRef.current !== payload.chatId || !payload.message) return;
             const { messages, setMessages } = useChatStore.getState();
             const updatedMessage = this.deduplicateReactions(payload.message);
             setMessages(messages.map((m) => m._id === updatedMessage._id ? updatedMessage : m));
         };
     }
 
-    private deduplicateReactions(message: any): any{
-        if(!message.reactions || !Array.isArray(message.reactions)){
+    private deduplicateReactions(message: any): any {
+        if (!message.reactions || !Array.isArray(message.reactions)) {
             return message;
         }
 
         const seenEmojis = new Set<string>();
         const uniqueReactions = message.reactions.filter((reaction: any) => {
-            if(seenEmojis.has(reaction.emoji)) return false;
+            if (seenEmojis.has(reaction.emoji)) return false;
             seenEmojis.add(reaction.emoji);
             return true;
         });
@@ -169,27 +170,31 @@ export default class ChatSocketManager{
         useChatStore.getState().setUserPresence(payload.userId, payload.status);
     }
 
+    private handleUsersPresenceInfo = (data: Record<string, 'online' | 'offline'>): void => {
+        useChatStore.getState().setUsersPresence(data);
+    }
+
     private handleError = (error: string): void => {
         console.error('[Chat] Socket error:', error);
     }
 
-    private ensureConnection(): void{
-        if(!socketService.isConnected()){
+    private ensureConnection(): void {
+        if (!socketService.isConnected()) {
             socketService.connect().catch((error) => {
                 console.error('[Chat] Failed to connect socket:', error);
             });
-        }else{
+        } else {
             useChatStore.getState().setConnected(true);
         }
     }
 
-    private cleanup(): void{
+    private cleanup(): void {
         console.log('[Chat] Cleaning up socket listeners(last ref)');
 
         this.unsubscribers.forEach((unsubscribe) => {
-            try{
+            try {
                 unsubscribe();
-            }catch(error){
+            } catch (error) {
                 console.error('[Chat] Error during unsubscribe:', error);
             }
         });
@@ -199,25 +204,25 @@ export default class ChatSocketManager{
         this.refCount = 0;
     }
 
-    private createNewMessageHandler(currentChatIdRef: RefObject<string | null>){
-        return(data: { message: any, chatId: string }): void =>{
+    private createNewMessageHandler(currentChatIdRef: RefObject<string | null>) {
+        return (data: { message: any, chatId: string }): void => {
             console.log('[Chat] New message received:', data);
 
-            if(currentChatIdRef.current === data.chatId){
+            if (currentChatIdRef.current === data.chatId) {
                 useChatStore.getState().addMessage(data.message);
             }
         }
     }
 
-    private handleJoinedChat(data: any): void{
+    private handleJoinedChat(data: any): void {
         console.log('[Chat] Joined chat:', data.chatId);
     }
 
-    private handleLeftChat(data: any): void{
+    private handleLeftChat(data: any): void {
         console.log('[Chat] Left chat:', data.chatId);
     }
 
-    private createEventHandlers(currentChatIdRef: RefObject<string | null>){
+    private createEventHandlers(currentChatIdRef: RefObject<string | null>) {
         return {
             [SOCKET_EVENTS.JOINED_CHAT]: this.handleJoinedChat,
             [SOCKET_EVENTS.LEFT_CHAT]: this.handleLeftChat,
@@ -228,6 +233,7 @@ export default class ChatSocketManager{
             [SOCKET_EVENTS.MESSAGE_DELETED]: this.createMessageDeletedHandler(currentChatIdRef),
             [SOCKET_EVENTS.REACTION_UPDATED]: this.createReactionUpdatedHandler(currentChatIdRef),
             [SOCKET_EVENTS.USER_PRESENCE_UPDATE]: this.handleUserPresenceUpdate,
+            [SOCKET_EVENTS.USERS_PRESENCE_INFO]: this.handleUsersPresenceInfo,
             [SOCKET_EVENTS.ERROR]: this.handleError
         };
     }

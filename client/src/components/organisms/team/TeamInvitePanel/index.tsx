@@ -79,7 +79,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
         setLoading(true);
         setButtonState('loading');
         try {
-            await teamApi.invitations.send(teamId, email.trim(), 'Can view');
+            await teamApi.invitations.send(email.trim(), 'Can view');
 
             // Refresh invitations list after sending
             const updatedInvitations = await teamApi.invitations.getPending();

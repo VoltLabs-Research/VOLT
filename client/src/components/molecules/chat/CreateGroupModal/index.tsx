@@ -3,7 +3,6 @@ import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/slices/chat';
 import { useTeamStore } from '@/stores/slices/team';
 import { IoCheckmarkOutline } from 'react-icons/io5';
-import { getInitials } from '@/utilities/api/guest';
 import { useAuthStore } from '@/stores/slices/auth';
 import Modal from '@/components/molecules/common/Modal';
 import Button from '@/components/primitives/Button';
@@ -36,12 +35,12 @@ const CreateGroupModal = () => {
 
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleCreateGroup = async() => {
-        if(!validate({ groupName, groupDescription })) return;
-        if(selectedMembers.length === 0 || !selectedTeam) return; // Kept original validation
+    const handleCreateGroup = async () => {
+        if (!validate({ groupName, groupDescription })) return;
+        if (selectedMembers.length === 0 || !selectedTeam) return; // Kept original validation
 
         setIsLoading(true);
-        try{
+        try {
             await createGroupChat( // Changed from createGroup to createGroupChat to match existing hook usage
                 selectedTeam._id, // Kept selectedTeam._id as it was in the original createGroupChat call
                 groupName.trim(),
@@ -52,9 +51,9 @@ const CreateGroupModal = () => {
             setGroupDescription('');
             setSelectedMembers([]);
             setShowCreateGroup(false);
-        }catch(error){
+        } catch (error) {
             console.error('Failed to create group:', error);
-        }finally{
+        } finally {
             setIsLoading(false);
         }
     };
@@ -108,14 +107,14 @@ const CreateGroupModal = () => {
                                 member._id !== user?._id &&
                                 self.findIndex(m => m._id === member._id) === index
                             )
-                                .map((member) => (
+                            .map((member) => (
                                 <div
                                     key={member._id}
                                     className={`d-flex items-center gap-075 create-group-member ${selectedMembers.includes(member._id) ? 'selected' : ''} cursor-pointer`}
                                     onClick={() => toggleMemberSelection(member._id)}
                                 >
-                                    <div className='d-flex flex-center create-group-member-avatar font-weight-6'>
-                                        {getInitials(member.firstName, member.lastName)}
+                                    <div className='d-flex flex-center create-group-member-avatar font-weight-6 overflow-hidden'>
+                                        <img src={member.avatar} alt="" className='w-max h-max object-cover' />
                                     </div>
                                     <div className='create-group-member-info flex-1'>
                                         <span className='create-group-member-name font-weight-5 color-primary'>

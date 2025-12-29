@@ -27,7 +27,8 @@ import {
     verifyTeamAccess,
     verifyParticipantInTeam,
     requireMessageOwner,
-    loadMessage } from '@/middlewares/chat';
+    loadMessage
+} from '@/middlewares/chat';
 
 import * as auth from '@/middlewares/authentication';
 import ChatController from '@/controllers/chat';
@@ -47,6 +48,8 @@ router.get('/teams/:teamId/participants/:participantId',
     verifyParticipantInTeam,
     controller.getOrCreateChat
 );
+
+router.get('/files/:filename', controller.getFile);
 
 router.get('/:chatId/messages',
     verifyChatAccess,

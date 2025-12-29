@@ -56,9 +56,9 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
         'audio/mp3'
     ];
 
-    if(allowedTypes.includes(file.mimetype)) {
+    if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
-    }else{
+    } else {
         cb(new Error('File type not allowed'));
     }
 };
@@ -83,11 +83,11 @@ export const uploadSingleFile = uploadFile.single('file');
  * @param mimetype File mime type
  * @returns MinIO object name
  */
-export const uploadToMinIO = async(buffer: Buffer, originalName: string, mimetype: string): Promise<string> =>{
+export const uploadToMinIO = async (buffer: Buffer, originalName: string, mimetype: string): Promise<string> => {
     const uniqueName = `${uuidv4()}-${Date.now()}${path.extname(originalName)}`;
     const objectName = `chat-files/${uniqueName}`;
 
-    await storage.put(SYS_BUCKETS.PLUGINS, objectName, buffer, {
+    await storage.put(SYS_BUCKETS.CHAT, objectName, buffer, {
         'Content-Type': mimetype
     });
 

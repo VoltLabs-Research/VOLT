@@ -3,11 +3,7 @@
     width: 350px;
     background: var(--glass-bg);
     backdrop-filter: blur(25px) saturate(180%);
-    border-left: 1px solid var(--color-border-soft);
     z-index: 1;
-    box-shadow:
-        inset 1px 0 0 rgba(255, 255, 255, 0.1),
-        var(--shadow-glass);
 }
 
 .chat-details-header {
@@ -121,9 +117,8 @@
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
     margin-bottom: 1rem;
+    border: 1px solid var(--color-border-soft);
 }
 
 .chat-group-name {
@@ -145,21 +140,11 @@
 .theme-dark {
     .chat-details-container {
         background: rgba(0, 0, 0, 0.4);
-        border-left: 1px solid rgba(255, 255, 255, 0.03);
     }
 }
 
 /* Light Mode */
 :root[data-theme='light'] {
-    .chat-details-container {
-        background: rgba(255, 255, 255, 0.6);
-        border-left: 1px solid rgba(255, 255, 255, 0.3);
-        backdrop-filter: blur(25px) saturate(180%);
-        box-shadow:
-            inset 1px 0 0 rgba(255, 255, 255, 0.5),
-            0 4px 16px rgba(0, 0, 0, 0.05);
-    }
-
     .chat-details-header {
         border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         backdrop-filter: blur(15px);

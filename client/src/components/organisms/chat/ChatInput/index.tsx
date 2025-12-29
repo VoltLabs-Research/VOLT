@@ -1,12 +1,13 @@
 import React, { useRef, useState } from 'react';
-import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline } from 'react-icons/io5';
+import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline, IoDocumentTextOutline, IoImageOutline } from 'react-icons/io5';
 import EmojiPicker from '@/components/atoms/chat/EmojiPicker';
 import Button from '@/components/primitives/Button';
+import { formatSize } from '@/utilities/glb/scene-utils';
 import './ChatInput.css';
 
 type Preview = {
     file: File;
-    preview: string
+    preview: string;
 };
 
 export type ChatInputProps = {
@@ -29,30 +30,39 @@ const ChatInput = ({
 
     const fileRef = useRef<HTMLInputElement>(null);
 
-    const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleSelectFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const newFiles = Array.from(e.target.files || []);
-        if(!newFiles.length) return;
+        if (!newFiles.length) return;
+
         setFiles((prev) => [...prev, ...newFiles]);
 
-        newFiles.filter(f => f.type.startsWith('image/')).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = ev => setPreviews((prev) => [...prev, { file, preview: ev.target?.result as string }]);
-            reader.readAsDataURL(file);
-        });
+        const newPreviews = await Promise.all(newFiles.map(file => {
+            return new Promise<Preview>((resolve) => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = ev => resolve({ file, preview: ev.target?.result as string });
+                    reader.readAsDataURL(file);
+                } else {
+                    resolve({ file, preview: '' });
+                }
+            });
+        }));
+
+        setPreviews((prev) => [...prev, ...newPreviews]);
     };
 
-    const handleSend = async(e: React.FormEvent) => {
+    const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if(!message.trim() && files.length === 0) return;
+        if (!message.trim() && files.length === 0) return;
 
-        if(files.length){
+        if (files.length) {
             await onSendFiles(files);
             setFiles([]);
             setPreviews([]);
         }
 
-        if(message.trim()) {
+        if (message.trim()) {
             await onSendText(message);
             setMessage('');
         }
@@ -70,6 +80,47 @@ const ChatInput = ({
 
     return (
         <form onSubmit={handleSend} className='chat-input-container p-relative'>
+            {previews.length > 0 && (
+                <div className='chat-file-previews-container mb-1'>
+                    <div className='d-flex column gap-05'>
+                        {previews.map((item, index) => (
+                            <div key={index} className='chat-file-preview-item d-flex items-center gap-075 p-relative'>
+                                <div className='f-shrink-0'>
+                                    {item.file.type.startsWith('image/') && item.preview ? (
+                                        <div className='chat-file-preview-image-container overflow-hidden border-radius-sm border-soft'>
+                                            <img src={item.preview} alt={item.file.name} className='chat-file-preview-image w-max h-max' />
+                                        </div>
+                                    ) : (
+                                        <div className='chat-file-preview-icon d-flex items-center content-center bg-surface-3 color-primary border-radius-sm border-soft font-size-4'>
+                                            <IoDocumentTextOutline />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className='d-flex column gap-025 flex-1 min-w-0'>
+                                    <span className='chat-file-preview-name overflow-hidden text-ellipsis font-size-2 font-weight-5 color-primary'>
+                                        {item.file.name}
+                                    </span>
+                                    <span className='chat-file-preview-size font-size-1 color-secondary'>
+                                        {formatSize(item.file.size)}
+                                    </span>
+                                </div>
+                                <Button
+                                    variant='ghost'
+                                    intent='danger'
+                                    iconOnly
+                                    size='sm'
+                                    className='chat-file-preview-remove'
+                                    onClick={() => {
+                                        setFiles(prev => prev.filter((_, i) => i !== index));
+                                        setPreviews(prev => prev.filter((_, i) => i !== index));
+                                    }}
+                                >✕</Button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className='d-flex items-center gap-075 chat-input-wrapper p-relative overflow-hidden'>
                 <input
                     type='file'
@@ -126,42 +177,6 @@ const ChatInput = ({
                     onSelect={(e) => { setMessage((m) => m + e); setShowPicker(false); }}
                     onClose={() => setShowPicker(false)}
                 />
-            )}
-
-            {previews.length > 0 && (
-                <div className='chat-file-previews-container'>
-                    <div className='d-flex items-center content-between chat-file-previews-header font-weight-6 color-primary'>
-                        <span>Archivos seleccionados({previews.length})</span>
-                        <Button
-                            variant='ghost'
-                            intent='neutral'
-                            iconOnly
-                            size='sm'
-                            onClick={handleClearFiles}
-                        >✕</Button>
-                    </div>
-                    <div className='chat-file-previews-grid gap-075'>
-                        {previews.map((item, index) => (
-                            <div key={index} className='chat-file-preview-item p-relative'>
-                                <img src={item.preview} alt={item.file.name} className='chat-file-preview-image w-max' />
-                                <div className='d-flex column gap-025 chat-file-preview-info'>
-                                    <span className='chat-file-preview-name overflow-hidden font-size-1 font-weight-6 color-primary'>{item.file.name}</span>
-                                    <span className='chat-file-preview-size color-muted'>{(item.file.size / 1024).toFixed(1)} KB</span>
-                                </div>
-                                <Button
-                                    variant='ghost'
-                                    intent='danger'
-                                    iconOnly
-                                    size='sm'
-                                    onClick={() => {
-                                        setFiles(prev => prev.filter((_, i) => i !== index));
-                                        setPreviews(prev => prev.filter((_, i) => i !== index));
-                                    }}
-                                >✕</Button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
             )}
         </form>
     );

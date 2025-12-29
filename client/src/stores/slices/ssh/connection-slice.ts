@@ -31,7 +31,7 @@ export interface SSHConnectionActions {
 
 export type SSHConnectionSlice = SSHConnectionState & SSHConnectionActions;
 
-export const initialState: SSHConnectionState = { connections: [], loading: false, error: null };
+export const initialState: SSHConnectionState = { connections: [], loading: true, error: null };
 
 export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, get) => ({
     ...initialState,
@@ -39,6 +39,7 @@ export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, 
     fetchConnections: async () => {
         await runRequest(set, get, () => sshApi.connections.getAll(), {
             errorFallback: 'Error fetching SSH connections',
+            loadingKey: 'loading',
             onSuccess: (connections) => {
                 set({ connections: connections } as Partial<SSHConnectionSlice>)
             }
@@ -49,6 +50,7 @@ export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, 
         return await runRequest(set, get, () => sshApi.connections.create(data), {
             errorFallback: 'Error creating SSH connection',
             rethrow: true,
+            loadingKey: 'loading',
             onSuccess: (conn) => set((s: SSHConnectionSlice) => ({ connections: [...s.connections, conn] }))
         });
     },
@@ -57,6 +59,7 @@ export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, 
         return await runRequest(set, get, () => sshApi.connections.update?.(id, data) as Promise<SSHConnection>, {
             errorFallback: 'Error updating SSH connection',
             rethrow: true,
+            loadingKey: 'loading',
             onSuccess: (conn) => set((s: SSHConnectionSlice) => ({ connections: s.connections.map(c => c._id === id ? conn : c) }))
         });
     },
@@ -65,6 +68,7 @@ export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, 
         await runRequest(set, get, () => sshApi.connections.delete(id), {
             errorFallback: 'Error deleting SSH connection',
             rethrow: true,
+            loadingKey: 'loading',
             onSuccess: () => set((s: SSHConnectionSlice) => ({ connections: s.connections.filter(c => c._id !== id) }))
         });
     },

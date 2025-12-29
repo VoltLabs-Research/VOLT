@@ -19,106 +19,122 @@ export const useChat = () => {
     // Sync current chat ID to ref
     useEffect(() => {
         currentChatIdRef.current = store.currentChat?._id || null;
+
+        if (store.currentChat) {
+            const participantIds = store.currentChat.participants.map(p => p._id);
+            if (participantIds.length) {
+                store.fetchUsersPresence(participantIds);
+            }
+        }
     }, [store.currentChat]);
 
     // Load chats and team members
     useEffect(() => {
-        if(!selectedTeamId) return;
+        if (!selectedTeamId) return;
 
         console.log('[Chat] Loading chats for team:', selectedTeamId);
 
-        store.loadChats();
-        store.loadTeamMembers(selectedTeamId);
-    }, [selectedTeamId, store.loadChats, store.loadTeamMembers]);
+        const load = async () => {
+            await store.loadChats();
+            await store.loadTeamMembers(selectedTeamId);
+
+            // Fetch initial presence for all team members
+            const members = useChatStore.getState().teamMembers;
+            if (members.length) {
+                store.fetchUsersPresence(members.map(m => m._id));
+            }
+        };
+        load();
+    }, [selectedTeamId, store.loadChats, store.loadTeamMembers]); // Added fetchUsersPresence to dependencies if passed via store, or access via state
 
     // Register socket manager(singleton)
     useEffect(() => {
         const manager = ChatSocketManager.getInstance();
         manager.register(currentChatIdRef);
 
-        return() => manager.unregister();
+        return () => manager.unregister();
     }, []);
 
     // Cleanup on unmount
     useEffect(() => {
-        return() => {
+        return () => {
             console.log('[Chat] Component unmounting, cleaning up resources');
 
-            if(typingTimeoutRef.current){
+            if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
             }
 
-            if(abortControllerRef.current){
+            if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
             }
 
-            if(currentChatIdRef.current){
+            if (currentChatIdRef.current) {
                 store.leaveChat(currentChatIdRef.current);
             }
         };
     }, [store.leaveChat]);
 
-    const selectChat = useCallback(async(chat: any) => {
-        if(selectingChatRef.current || store.currentChat?._id == chat._id) return;
+    const selectChat = useCallback(async (chat: any) => {
+        if (selectingChatRef.current || store.currentChat?._id == chat._id) return;
 
         selectingChatRef.current = true;
-        if(abortControllerRef.current){
+        if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
 
         const abortController = new AbortController();
         abortControllerRef.current = abortController;
 
-        try{
+        try {
             console.log('[Chat] Selecting chat:', chat._id);
 
-            if(store.currentChat?._id){
+            if (store.currentChat?._id) {
                 store.leaveChat(store.currentChat._id);
             }
 
             store.setCurrentChat(chat);
             await store.loadMessages(chat._id);
 
-            if(!abortController.signal.aborted){
+            if (!abortController.signal.aborted) {
                 store.joinChat(chat._id);
                 store.markAsRead(chat._id);
             }
-        }catch(error: any){
-            if(error.name !== 'AbortError'){
+        } catch (error: any) {
+            if (error.name !== 'AbortError') {
                 console.error('[Chat] Failed to select chat:', error);
             }
-        }finally{
+        } finally {
             selectingChatRef.current = false;
-            if(abortControllerRef.current === abortController){
+            if (abortControllerRef.current === abortController) {
                 abortControllerRef.current = null;
             }
         }
     }, [store.currentChat?._id]);
 
-    const startChatWithMember = useCallback(async(member: any) => {
-        if(!selectedTeamId) return;
+    const startChatWithMember = useCallback(async (member: any) => {
+        if (!selectedTeamId) return;
 
-        try{
+        try {
             const chat = await store.getOrCreateChat(selectedTeamId, member._id);
             await selectChat(chat);
-        }catch(error: any){
+        } catch (error: any) {
             console.error('[Chat] Failed to start chat with member:', error);
         }
     }, [selectedTeamId, store, selectChat]);
 
-    const handleSendMessage = useCallback(async(content: string) => {
-        if(!content.trim() || !store.currentChat?._id) return;
+    const handleSendMessage = useCallback(async (content: string) => {
+        if (!content.trim() || !store.currentChat?._id) return;
 
-        try{
+        try {
             await store.sendMessage(content);
-        }catch(error: any){
+        } catch (error: any) {
             console.error('[Chat] Failed to send message:', error);
         }
     }, [store.currentChat?._id, store]);
 
     const handleTyping = useCallback((chatId: string) => {
         store.startTyping(chatId);
-        if(typingTimeoutRef.current){
+        if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
         }
 
