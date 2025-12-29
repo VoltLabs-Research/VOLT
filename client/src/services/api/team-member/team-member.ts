@@ -6,12 +6,12 @@ import analysis from '../analysis/analysis';
 const client = new VoltClient('/team-member', { useRBAC: true });
 
 export default {
-    async update(memberId: string, data: any): Promise<any>{
+    async update(memberId: string, data: any): Promise<any> {
         const response = await client.request('patch', `/${memberId}`, { data });
         return response.data.data;
     },
 
-    async getAll(): Promise<any>{
+    async getAll(): Promise<any> {
         const params = {
             populate: [
                 { path: 'role', select: 'name permissions isSystem' },
@@ -25,15 +25,15 @@ export default {
 
         const memberStats = await Promise.all(response.data.data.map(async (member: any) => {
             const userId = member.user._id;
-            
+
             const [dailyActivities, trajectoriesCount, analysesCount] = await Promise.all([
-                dailyActivityApi.getTeamActivity(7),
+                dailyActivityApi.getTeamActivity(7, userId),
                 trajectoryApi.getAllPaginated({ createdBy: userId, countDocuments: true }),
                 analysis.getByTeamId({ createdBy: userId, countDocuments: true })
             ]);
 
             const minutesOnline = dailyActivities.reduce((acc, curr) => acc + (curr.minutesOnline || 0), 0);
-            
+
             return {
                 ...member,
                 timeSpentLast7Days: minutesOnline,

@@ -16,12 +16,17 @@ export default class DailyActivityController extends BaseController<IDailyActivi
     }
 
     public getTeamActivity = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-        const { range } = req.query;
+        const { range, userId } = req.query;
         const teamId = await this.getTeamId(req);
 
         const statsQuery: any = { team: new Types.ObjectId(teamId) };
 
-        const days = range ? parseInt(range as string) : 365;   
+        // Filter by specific user if provided
+        if (userId) {
+            statsQuery.user = new Types.ObjectId(userId as string);
+        }
+
+        const days = range ? parseInt(range as string) : 365;
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
         startDate.setHours(0, 0, 0, 0);
@@ -40,7 +45,7 @@ export default class DailyActivityController extends BaseController<IDailyActivi
             },
             {
                 $project: {
-                    _id: 0, 
+                    _id: 0,
                     date: 1,
                     minutesOnline: 1,
                     activity: {
