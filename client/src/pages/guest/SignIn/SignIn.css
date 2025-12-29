@@ -147,10 +147,14 @@
     border: 1px solid var(--color-zinc-800);
     border-radius: var(--radius-md);
     color: var(--color-white);
-    padding-left: 2.75rem;
     padding-right: 1rem;
+    padding-left: 1rem;
     transition: all 0.2s;
     outline: none;
+}
+
+.auth-page-wrapper .form-input {
+    padding-left: 2.75rem;
 }
 
 .form-input:hover {
@@ -163,19 +167,18 @@
     background-color: var(--color-zinc-900);
 }
 
-.input-group {
-}
+.auth-page-wrapper .input-group {}
 
-.input-icon {
+.auth-page-wrapper .input-icon {
     left: 1rem;
-    top: 50%;
+    top: 1.625rem;
     transform: translateY(-50%);
     color: var(--color-zinc-600);
     transition: color 0.2s;
 }
 
-.form-input:focus+.input-icon,
-.input-group:focus-within .input-icon {
+.auth-page-wrapper .form-input:focus+.input-icon,
+.auth-page-wrapper .input-group:focus-within .input-icon {
     color: var(--color-white);
 }
 
