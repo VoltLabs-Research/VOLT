@@ -221,7 +221,7 @@ const processFilesInBackground = async (
     teamId: string,
     onProgress?: (progress: number) => void
 ) => {
-    const tempBaseDir = path.join(os.tmpdir(), 'volterra-trajectories');
+    const tempBaseDir = path.join(process.cwd(), 'storage', 'temp');
     const workingDir = path.join(tempBaseDir, trajectoryIdStr);
     await fs.mkdir(workingDir, { recursive: true });
 

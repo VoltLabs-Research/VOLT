@@ -36,7 +36,7 @@ type DumpInput = Buffer | string;
 
 export default class DumpStorage {
     private static readonly COMPRESSION_LEVEL = zlib.constants.Z_BEST_SPEED;
-    private static readonly CACHE_DIR = path.join(os.tmpdir(), 'volterra-trajectories');
+    private static readonly CACHE_DIR = path.join(process.cwd(), 'storage', 'temp');
     private static readonly CACHE_TTL_MS = 30 * 60 * 1000;
     private static readonly RAM_THRESHOLD = 4 * 1024 * 1024;
     private static pendingRequests = new Map<string, Promise<string | null>>();
@@ -77,26 +77,12 @@ export default class DumpStorage {
                 return objectName;
             }
 
-            // Large Buffer of File Path -> Stream to Temp File -> Upload -> Delete Temp
-            // We use a temp file to calculate exact size and avoid buffering large streams in RAM.
-            await this.ensureDirs();
-            const cacheDir = path.join(this.CACHE_DIR, trajectoryId);
-            await fs.mkdir(cacheDir, { recursive: true });
-            // Use a separate temp file for compressed upload, NOT the cache path
-            // Cache path should only contain decompressed data (populated by getDump)
-            const tempFilePath = this.getCachePath(trajectoryId, timestep) + '.upload.gz';
-            let inputSize = 0;
+            // Large Buffer or File Path -> Pipe Gzip stream directly to Storage
+            // This avoids creating an intermediate compressed file on disk.
 
             const sourceStream = typeof data === 'string'
                 ? fsNative.createReadStream(data)
                 : Readable.from(data);
-
-            // Measure input size while streaming
-            let processedBytes = 0;
-            sourceStream.on('data', (chunk: DumpInput) => {
-                inputSize += chunk.length;
-                processedBytes += chunk.length;
-            });
 
             let totalSize = 0;
             if (typeof data === 'string') {
@@ -107,33 +93,29 @@ export default class DumpStorage {
                 totalSize = data.length;
             }
 
+            // Monitor input stream progress
             if (onProgress && totalSize > 0) {
-                sourceStream.on('data', () => {
+                let processedBytes = 0;
+                sourceStream.on('data', (chunk: Buffer | string) => {
+                    processedBytes += chunk.length;
                     const p = Math.min(1, processedBytes / totalSize);
                     onProgress(p);
                 });
-            } else {
-                logger.warn(`[DumpStorage] Cannot track progress. TotalSize: ${totalSize}`);
             }
 
             const gzip = zlib.createGzip({ level: this.COMPRESSION_LEVEL });
-            const dest = fsNative.createWriteStream(tempFilePath);
 
-            // Compress to temp file
-            await pipeline(sourceStream, gzip, dest);
+            // Pipe source -> gzip -> storage service
+            // Storage service handles splitting into chunks for MinIO/S3
+            const uploadStream = sourceStream.pipe(gzip);
 
-            // Upload the compressed file
-            const stats = await fs.stat(tempFilePath);
-            const uploadStream = fsNative.createReadStream(tempFilePath);
             await storage.put(SYS_BUCKETS.DUMPS, objectName, uploadStream, {
                 'Content-Type': 'application/gzip',
-                'Content-Encoding': 'gzip',
-                'Content-Length': stats.size
+                'Content-Encoding': 'gzip'
+                // We don't set Content-Length here because gzip size is unknown
             });
-            this.logMetrics(objectName, inputSize, stats.size, startTime);
 
-            // Cleanup temp file after upload
-            await fs.unlink(tempFilePath).catch(() => { });
+            this.logMetrics(objectName, totalSize, 0, startTime);
             return objectName;
         } catch (error) {
             logger.error(`Failed to save dump ${objectName}: ${error}`);
