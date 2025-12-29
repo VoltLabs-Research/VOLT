@@ -23,7 +23,6 @@
 import { SYS_BUCKETS } from '@/config/minio';
 import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
-import { randomUUID } from 'node:crypto';
 import storage from '@/services/storage';
 import logger from '@/logger';
 import pLimit from '@/utilities/perf/p-limit';
@@ -37,8 +36,7 @@ type DumpInput = Buffer | string;
 
 export default class DumpStorage{
     private static readonly COMPRESSION_LEVEL = zlib.constants.Z_BEST_SPEED;
-    private static readonly CACHE_DIR = path.join(os.tmpdir(), 'volterra-dumps-cache');
-    private static readonly TEMP_DIR = path.join(os.tmpdir(), 'volterra-temp-uploads');
+    private static readonly CACHE_DIR = path.join(os.tmpdir(), 'volterra-trajectories');
     private static readonly CACHE_TTL_MS = 30 * 60 * 1000;
     private static readonly RAM_THRESHOLD = 4 * 1024 * 1024;
     private static pendingRequests = new Map<string, Promise<string | null>>();
@@ -47,7 +45,6 @@ export default class DumpStorage{
     private static async ensureDirs(): Promise<void>{
         await Promise.all([
             fs.mkdir(this.CACHE_DIR, { recursive: true }),
-            fs.mkdir(this.TEMP_DIR, { recursive: true })
         ]);
     }
 
@@ -55,7 +52,7 @@ export default class DumpStorage{
         return `trajectory-${trajectoryId}/timestep-${timestep}.dump.gz`;
     }
 
-    private static getCachePath(trajectoryId: string, timestep: string | number): string{
+    public static getCachePath(trajectoryId: string, timestep: string | number): string{
         return path.join(this.CACHE_DIR, trajectoryId, `${timestep}.dump`);
     }
 
@@ -83,7 +80,7 @@ export default class DumpStorage{
             // Large Buffer of File Path -> Stream to Temp File -> Upload -> Delete Temp
             // We use a temp file to calculate exact size and avoid buffering large streams in RAM.
             await this.ensureDirs();
-            const tempFilePath = path.join(this.TEMP_DIR, `${randomUUID()}.gz`);
+            const tempFilePath = this.getCachePath(trajectoryId, timestep);
             let inputSize = 0;
 
             const sourceStream = typeof data === 'string'
@@ -95,8 +92,6 @@ export default class DumpStorage{
             sourceStream.on('data', (chunk: DumpInput) => {
                 inputSize += chunk.length;
                 processedBytes += chunk.length;
-                // We don't know total size for stream/buffer easily here unless passed?
-                // For file path we can stat it.
             });
 
             let totalSize = 0;
@@ -134,7 +129,7 @@ export default class DumpStorage{
             this.logMetrics(objectName, inputSize, stats.size, startTime);
 
             // Cleanup
-            await fs.unlink(tempFilePath).catch(() => { });
+            // await fs.unlink(tempFilePath).catch(() => { });
             return objectName;
         }catch(error){
             logger.error(`Failed to save dump ${objectName}: ${error}`);
@@ -238,10 +233,22 @@ export default class DumpStorage{
         return totalSize;
     }
 
-    static async getDumpStream(trajectoryId: string, timestep: string | number): Promise<Readable>{
-        const objectName = this.getObjectName(trajectoryId, timestep);
-        const rawStream = await storage.getStream(SYS_BUCKETS.DUMPS, objectName);
-        return rawStream.pipe(zlib.createGunzip());
+    static async getDumpStream(
+        trajectoryId: string,
+        timestep: string | number
+    ): Promise<Readable> {
+        const cachePath = this.getCachePath(trajectoryId, timestep);
+        if (await this.isCacheValid(cachePath)) {
+            fs.utimes(cachePath, new Date(), new Date()).catch(() => {});
+            return fsNative.createReadStream(cachePath);
+        }
+
+        const localPath = await this.getDump(trajectoryId, timestep);
+        if(!localPath){
+            throw new Error(`Dump not found: trajectoryId=${trajectoryId}, timestep=${timestep}`);
+        }
+
+        return fsNative.createReadStream(localPath);
     }
 
     static async listDumps(trajectoryId: string): Promise<string[]>{
@@ -280,15 +287,5 @@ export default class DumpStorage{
         const duration = Date.now() - start;
         const ratio = original > 0 ? ((1 - compressed / original) * 100).toFixed(1) : '0';
         logger.info(`Saved ${name} | Size: ${original} -> ${compressed} (${ratio}%) | Time: ${duration}ms`);
-    }
-
-    static async pruneCache(): Promise<void>{
-        try{
-            await fs.rm(this.CACHE_DIR, { recursive: true, force: true });
-            await fs.rm(this.TEMP_DIR, { recursive: true, force: true });
-            logger.info('Dump cache pruned');
-        }catch(error){
-            logger.warn(`Cache prune failed: ${error}`);
-        }
     }
 };

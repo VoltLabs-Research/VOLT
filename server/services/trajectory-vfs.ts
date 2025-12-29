@@ -260,6 +260,7 @@ export default class TrajectoryVFS{
                 filename: path.basename(key)
             }
         }catch(err){
+            console.log(err);
             throw new RuntimeError(ErrorCodes.TRAJECTORY_VFS_FILE_NOT_FOUND, 404);
         }
     }

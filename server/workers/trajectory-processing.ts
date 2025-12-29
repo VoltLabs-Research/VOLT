@@ -21,87 +21,30 @@
  */
 
 import { parentPort } from 'node:worker_threads';
-import { createWriteStream } from 'node:fs';
-import { unlink } from 'node:fs/promises';
-import { pipeline } from 'node:stream/promises';
 import { performance } from 'node:perf_hooks';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
-import { v4 as uuidv4 } from 'uuid';
 import logger from '@/logger';
 import AtomisticExporter from '@/utilities/export/atoms';
 import DumpStorage from '@/services/dump-storage';
-import * as path from 'node:path';
-import * as os from 'node:os';
 import '@config/env';
 
 const exporter = new AtomisticExporter();
 
-/**
- * Downloads the raw LAMMPS dump stream from the storage service to a transient local file.
- * Uses Node.js streaming pipeline for optimal RAM usage.
- *
- * @param trajectoryId - The ID of the trajectory.
- * @param timestep - The specific timestep to fetch.
- * @param destinationPath - The ephemeral path where the file will be written.
- */
-const downloadFromStorage = async(
-    trajectoryId: string,
-    timestep: number,
-    destinationPath: string
-): Promise<void> =>{
-    // Fetches the read stream from MinIO via the centralized service
-    const readStream = await DumpStorage.getDumpStream(trajectoryId, timestep);
-    const writeStream = createWriteStream(destinationPath);
-
-    // Pipes the download directly to disk, avoiding memory buffering
-    await pipeline(readStream, writeStream);
-};
-
-/**
- * Processes a single frame following the Cloud Native Protocol.
- *
- * @param frameInfo - Metadata containing the timestep.
- * @param frameUri - The source URI(minio://...).
- * @param trajectoryId - The ID of the trajectory.
- */
-const processCloudFrame = async(
+const processFrame = async (
     frameInfo: { timestep: number },
     frameUri: string,
     trajectoryId: string
 ): Promise<void> =>{
-    const start = performance.now();
-
-    if(!frameUri.startsWith('minio://')){
-        throw new Error(`Invalid Protocol: Worker expects 'minio://' URI, received '${frameUri}'.`);
-    }
-
-    // Unique temp file for this specific process/thread
-    const tempFileName = `cloud_proc_${trajectoryId}_${frameInfo.timestep}_${uuidv4()}.dump`;
-    const tempFilePath = path.join(os.tmpdir(), tempFileName);
-
     try{
-        // Download. We ignore the path in the URI and use the ID/Timestep to query the Storage Service safely.
-        await downloadFromStorage(trajectoryId, frameInfo.timestep, tempFilePath);
+        const localDumpPath = await DumpStorage.getDump(trajectoryId, frameInfo.timestep);
+        if(!localDumpPath) throw new Error('Dump not found');
 
-        // Convert & Upload. The exporter reads the temp file, generates GLB, and pushes it to the 'previews' bucket path.
         const targetObjectName = `trajectory-${trajectoryId}/previews/timestep-${frameInfo.timestep}.glb`;
-
-        await exporter.toGLBMinIO(
-            tempFilePath,
-            targetObjectName
-        );
-
-        const duration = (performance.now() - start).toFixed(2);
-        logger.debug(`[Worker ${process.pid}] Frame ${frameInfo.timestep} processed in ${duration}ms`);
+        await exporter.toGLBMinIO(localDumpPath, targetObjectName);
     }catch(err){
         const msg = err instanceof Error ? err.message : String(err);
         logger.error(`[Worker ${process.pid}] Frame ${frameInfo.timestep} Failed: ${msg}`);
-        // Propagate error to fail the Promise
-        throw err;
-    }finally{
-        // Guaranteed Cleanup. We intentionally suppress unlink errors to avoid crashing
-        // the worker flow on cleanup issues.
-        await unlink(tempFilePath).catch(() => {});
+        throw err
     }
 };
 
@@ -125,7 +68,7 @@ const processJob = async (job: TrajectoryProcessingJob) => {
         // Fire all frame processors simultaneously.
         // If any frame fails, Promise.all rejects immediately marking the chunk as failed.
         await Promise.all(
-            files.map(file => processCloudFrame(file.frameInfo, file.frameFilePath, trajectoryId)));
+            files.map(file => processFrame(file.frameInfo, file.frameFilePath, trajectoryId)));
         const totalTime = (performance.now() - start).toFixed(2);
         logger.info(`[Worker #${process.pid}] Job ${job.jobId} Success | Duration: ${totalTime}ms`);
         parentPort?.postMessage({

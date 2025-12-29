@@ -5,11 +5,12 @@ import { Types } from 'mongoose';
 import { v4 } from 'uuid';
 import TrajectoryParserFactory from '@/parsers/factory';
 import { Trajectory } from '@/models';
-import { getTrajectoryProcessingQueue } from '@/queues';
+import { getCloudUploadQueue, getTrajectoryProcessingQueue } from '@/queues';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import { ITrajectory } from '@/types/models/trajectory';
+import { CloudUploadJob } from '@/types/services/cloud-upload';
 
 interface CreateTrajectoryOptions {
     files: any[];
@@ -45,12 +46,9 @@ const processTrajectoryFile = async (
         return null;
     }
 
-    const fileSize = file.size || (await fs.stat(tempPath)).size;
+    fs.rename(tempPath, DumpStorage.getCachePath(trajectoryId, frameInfo.timestep));
 
-    // Upload to storage using the file path directly(streaming).
-    await DumpStorage.saveDump(trajectoryId, frameInfo.timestep, tempPath, (progress) => {
-        updateProgress(i, progress * fileSize);
-    });
+    const fileSize = file.size || (await fs.stat(tempPath)).size;
 
     if (!file.path) await fs.rm(tempPath).catch(() => { });
 
@@ -132,6 +130,28 @@ const createTrajectory = async ({
     return newTrajectory;
 };
 
+const dispatchCloudUploadJobs = async (trajectory: ITrajectory, teamId: string) => {
+    const queue = getCloudUploadQueue();
+    const jobs: CloudUploadJob[] = [];
+    const sessionId = v4();
+
+    for(let i = 0; i < trajectory.frames.length; i++){
+        const jobId = v4();
+        const { timestep } = trajectory.frames[i];
+        jobs.push({
+            jobId,
+            teamId,
+            timestep,
+            trajectoryId: trajectory._id.toString(),
+            name: 'Upload to Object Storage Server',
+            message: `Frame ${timestep} from ${trajectory.name}`,
+            sessionId
+        });
+    }
+
+    await queue.addJobs(jobs);
+};
+
 const processFilesInBackground = async (
     trajectoryIdStr: string,
     files: any[],
@@ -140,63 +160,56 @@ const processFilesInBackground = async (
 ) => {
     const tempBaseDir = path.join(os.tmpdir(), 'volterra-trajectories');
     const workingDir = path.join(tempBaseDir, trajectoryIdStr);
+    await fs.mkdir(workingDir, { recursive: true });
 
-    try {
-        await fs.mkdir(workingDir, { recursive: true });
+    let totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
+    const processedBytesMap: Record<number, number> = {};
 
-        let totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
-        const processedBytesMap: Record<number, number> = {};
+    const updateProgress = (index: number, bytes: number) => {
+        processedBytesMap[index] = bytes;
+        if (totalSize > 0 && onProgress) {
+            const totallyProcessed = Object.values(processedBytesMap).reduce((a, b) => a + b, 0);
+            onProgress(Math.min(1, totallyProcessed / totalSize));
+        }
+    };
 
-        const updateProgress = (index: number, bytes: number) => {
-            processedBytesMap[index] = bytes;
-            if (totalSize > 0 && onProgress) {
-                const totallyProcessed = Object.values(processedBytesMap).reduce((a, b) => a + b, 0);
-                onProgress(Math.min(1, totallyProcessed / totalSize));
+    const BATCH_SIZE = 8;
+    const allResults: any[] = [];
+
+    for (let i = 0; i < files.length; i += BATCH_SIZE) {
+        const batch = files.slice(i, i + BATCH_SIZE);
+        const batchPromises = batch.map((file, batchIndex) =>
+            processTrajectoryFile(trajectoryIdStr, updateProgress, workingDir, file, i + batchIndex));
+        const batchResults = await Promise.all(batchPromises);
+        allResults.push(...batchResults);
+    }
+
+    const validFiles = allResults.filter(Boolean);
+    if (validFiles.length === 0) {
+        await Trajectory.findByIdAndUpdate(trajectoryIdStr, { status: 'failed' });
+        throw new RuntimeError(ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES, 400);
+    }
+
+    const validTotalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
+    const frames = validFiles.map((f) => f.frameInfo);
+
+    const trajectory = await Trajectory.findByIdAndUpdate(
+        trajectoryIdStr,
+        {
+            frames,
+            status: 'processing',
+            stats: {
+                totalFiles: validFiles.length,
+                totalSize: validTotalSize
             }
-        };
+        },
+        { new: true }
+    );
 
-        const BATCH_SIZE = 8;
-        const allResults: any[] = [];
-
-        for (let i = 0; i < files.length; i += BATCH_SIZE) {
-            const batch = files.slice(i, i + BATCH_SIZE);
-            const batchPromises = batch.map((file, batchIndex) =>
-                processTrajectoryFile(trajectoryIdStr, updateProgress, workingDir, file, i + batchIndex));
-            const batchResults = await Promise.all(batchPromises);
-            allResults.push(...batchResults);
-        }
-
-        const validFiles = allResults.filter(Boolean);
-        if (validFiles.length === 0) {
-            await Trajectory.findByIdAndUpdate(trajectoryIdStr, { status: 'failed' });
-            throw new RuntimeError(ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES, 400);
-        }
-
-        const validTotalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
-        const frames = validFiles.map((f) => f.frameInfo);
-
-        const trajectory = await Trajectory.findByIdAndUpdate(
-            trajectoryIdStr,
-            {
-                frames,
-                status: 'processing',
-                stats: {
-                    totalFiles: validFiles.length,
-                    totalSize: validTotalSize
-                }
-            },
-            { new: true }
-        );
-
-        if (onProgress) onProgress(1);
-        if (trajectory) await dispatchTrajectoryJobs(validFiles, trajectory, teamId);
-    } finally {
-        if (files && Array.isArray(files)) {
-            await Promise.all(files.map(f =>
-                require('fs').promises.unlink(f.path).catch(() => { })
-            ));
-        }
-        await fs.rm(workingDir, { recursive: true, force: true }).catch(() => { });
+    if(onProgress) onProgress(1);
+    if(trajectory){
+        await dispatchTrajectoryJobs(validFiles, trajectory, teamId);
+        await dispatchCloudUploadJobs(trajectory, teamId);
     }
 };
 

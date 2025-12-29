@@ -13,11 +13,13 @@ import Paragraph from '@/components/primitives/Paragraph';
 interface JobsHistoryViewerProps {
     trajectoryId?: string;
     showHeader?: boolean;
+    hideAfterComplete?: boolean;
 }
 
 const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo(({
     trajectoryId,
-    showHeader = true
+    showHeader = true,
+    hideAfterComplete = true
 }) => {
     const jobs = useTeamJobsStore((state) => state.jobs);
     const isConnected = useTeamJobsStore((state) => state.isConnected);
@@ -152,7 +154,12 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo(({
     // Determine if panel should be visible
     // For Canvas (trajectoryId set): show while there are active jobs
     // For Dashboard (no trajectoryId): show while there are active jobs
-    const shouldShowPanel = hasActiveJobs;
+    // If hideAfterComplete is false, show if there are any jobs (even if completed)
+    const shouldShowPanel = useMemo(() => {
+        if (!relevantJobs || relevantJobs.length === 0) return false;
+        if (!hideAfterComplete) return true;
+        return hasActiveJobs;
+    }, [hasActiveJobs, hideAfterComplete, relevantJobs]);
 
     // Show toast when all jobs complete (only in Canvas)
     useEffect(() => {

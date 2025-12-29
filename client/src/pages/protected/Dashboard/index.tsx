@@ -144,7 +144,7 @@ const DashboardPage: React.FC = memo(() => {
                         )}
 
                         <Container style={{ position: 'relative', zIndex: isProcessing ? 20 : 10 }}>
-                            <JobsHistoryViewer />
+                            <JobsHistoryViewer hideAfterComplete={false} />
                         </Container>
 
                         {hasNoTrajectories && (
