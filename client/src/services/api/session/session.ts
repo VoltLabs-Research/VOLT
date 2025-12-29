@@ -1,7 +1,7 @@
 import VoltClient from '@/api';
 import type { Session, GetLoginActivityParams, LoginActivity } from './types';
 
-const client = new VoltClient('/session');
+const client = new VoltClient('/sessions');
 
 const sessionApi = {
     async getAll(): Promise<Session[]> {

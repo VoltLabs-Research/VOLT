@@ -44,8 +44,7 @@ parentPort.on('message', async (message: ParseTaskMessage) => {
 
     try {
         // Parse and validate
-        const parsed = await TrajectoryParserFactory.parse(tempPath);
-        const frameInfo = parsed.metadata;
+        const frameInfo = await TrajectoryParserFactory.parseMetadata(tempPath);
 
         // Move file to cache location
         const cachePath = DumpStorage.getCachePath(trajectoryId, frameInfo.timestep);

@@ -53,8 +53,12 @@ export default class SSHFileExplorerController extends BaseController<any> {
         const { sshConnection } = res.locals;
 
         const queueService = getSSHImportQueue();
+        const queueId = v4();
         queueService.addJobs([{
             jobId: v4(),
+            trajectoryId: `import-${queueId}`,
+            trajectoryName: `Import: ${remotePath.split('/').pop() || remotePath}`,
+            timestep: 0,
             sessionId: v4(),
             teamId,
             name: 'Import Trajectory',

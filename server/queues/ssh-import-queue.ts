@@ -26,12 +26,15 @@ import { Queues } from '@/constants/queues';
 import { SSHImportJob } from '@/types/services/ssh-import-queue';
 import * as path from 'node:path';
 import createTrajectory from '@/utilities/trajectory/create-trajectory';
+import { processJob } from '@/workers/ssh-import';
 
 export class SSHImportQueue extends BaseProcessingQueue<SSHImportJob> {
     constructor() {
         const options: QueueOptions = {
             queueName: Queues.SSH_IMPORT,
-            workerPath: path.resolve(__dirname, '../workers/ssh-import.ts')
+            workerPath: path.resolve(__dirname, '../workers/ssh-import.ts'),
+            useWorkerThreads: false,
+            processor: processJob
         };
 
         super(options);

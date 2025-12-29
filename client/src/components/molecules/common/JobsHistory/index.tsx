@@ -1,57 +1,50 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files(the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import { memo, useMemo } from 'react';
 import { useTeamJobsStore } from '@/stores/slices/team';
 import JobSkeleton from '@/components/atoms/common/JobSkeleton';
-import JobQueue from '@/components/atoms/common/JobQueue';
+import TrajectoryJobGroup from '@/components/molecules/common/TrajectoryJobGroup';
 import Container from '@/components/primitives/Container';
+import type { TrajectoryJobGroup as TJG, Job } from '@/types/jobs';
 import './JobsHistory.css';
 
 interface JobsHistoryProps {
     trajectoryId?: string;
+    queueFilter?: string;
 }
 
-const JobsHistory = memo(({ trajectoryId }: JobsHistoryProps) => {
-    const jobs = useTeamJobsStore((state) => state.jobs);
+const JobsHistory = memo(({ trajectoryId, queueFilter }: JobsHistoryProps) => {
+    const groups = useTeamJobsStore((state) => state.groups);
     const isConnected = useTeamJobsStore((state) => state.isConnected);
     const isLoading = useTeamJobsStore((state) => state.isLoading);
 
-    const filteredJobs = useMemo(() => {
-        if (!trajectoryId) return jobs;
-        return jobs.filter((job) => job.trajectoryId === trajectoryId);
-    }, [jobs, trajectoryId]);
+    const filteredGroups = useMemo(() => {
+        let result = groups;
+        if (trajectoryId) {
+            result = result.filter((g: TJG) => g.trajectoryId === trajectoryId);
+        }
+        if (queueFilter) {
+            result = result.map((g: TJG) => ({
+                ...g,
+                frameGroups: g.frameGroups.map(f => ({
+                    ...f,
+                    jobs: f.jobs.filter((j: Job) => j.queueType?.includes(queueFilter))
+                })).filter(f => f.jobs.length > 0)
+            })).filter((g: TJG) => g.frameGroups.length > 0);
+        }
+        return result;
+    }, [groups, trajectoryId, queueFilter]);
 
     const shouldShowSkeleton = !isConnected || isLoading;
 
     return (
-        <Container className='d-flex column'>
+        <Container className='d-flex column gap-05'>
             {shouldShowSkeleton ? (
                 <JobSkeleton />
             ) : (
-                filteredJobs.map((job, index) => (
-                    <JobQueue
-                        job={job}
-                        key={job.jobId || `job-${index}`}
+                filteredGroups.map((group: TJG, index: number) => (
+                    <TrajectoryJobGroup
+                        key={group.trajectoryId}
+                        group={group}
+                        defaultExpanded={index === 0}
                     />
                 ))
             )}
@@ -62,3 +55,5 @@ const JobsHistory = memo(({ trajectoryId }: JobsHistoryProps) => {
 JobsHistory.displayName = 'JobsHistory';
 
 export default JobsHistory;
+
+

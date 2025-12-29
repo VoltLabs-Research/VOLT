@@ -203,6 +203,7 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
         parentPort?.postMessage({
             status: 'completed',
             jobId: job.jobId,
+            timestep: job.timestep,
             result: null
         });
 
@@ -217,6 +218,7 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
 
         parentPort?.postMessage({
             status: 'failed',
+            timestep: job.timestep,
             jobId: job.jobId,
             error: err.message
         });

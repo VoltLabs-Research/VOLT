@@ -10,7 +10,9 @@ import * as os from 'node:os';
 import logger from '@/logger';
 import '@/config/env';
 
-const processJob = async (job: SSHImportJob) => {
+export const processJob = async (job: SSHImportJob, postMessage?: (msg: any) => void) => {
+    const sendMessage = postMessage || ((msg: any) => parentPort?.postMessage(msg));
+
     const { jobId, sshConnectionId, remotePath, teamId, userId } = job;
 
     const connection = await SSHConnection.findById(sshConnectionId).select('+encryptedPassword');
@@ -36,7 +38,7 @@ const processJob = async (job: SSHImportJob) => {
             localFolder,
             (progress) => {
                 const percentage = Math.round((progress.downloadedBytes / progress.totalBytes) * 100);
-                parentPort?.postMessage({
+                sendMessage({
                     jobId,
                     status: 'progress',
                     progress: percentage,
@@ -68,11 +70,11 @@ const processJob = async (job: SSHImportJob) => {
         trajectoryName
     };
 
-    parentPort?.postMessage({
+    return {
         status: 'completed',
         jobId,
         result
-    });
+    };
 };
 
 /**
@@ -83,7 +85,10 @@ const main = async () => {
 
     parentPort?.on('message', async (message: { job: SSHImportJob }) => {
         try {
-            await processJob(message.job);
+            const result = await processJob(message.job, (msg) => parentPort?.postMessage(msg));
+            if (result) {
+                parentPort?.postMessage(result);
+            }
         } catch (error) {
             // TODO: Duplicated code
             logger.error(`[Worker #${process.pid}] Fatal Exception: ${error}`);

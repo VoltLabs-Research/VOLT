@@ -143,12 +143,15 @@ class PluginExecutionService {
             config,
             inputFile: item.path || '',
             analysisId: analysisId.toString(),
-            timestep: item.timestep,
+            timestep: item.timestep ?? item.frame,
+            trajectoryName: trajectory.name,
             modifierId: plugin.slug,
             plugin: plugin.slug,
             name: plugin.modifier?.name || plugin.slug,
             // @ts-ignore
-            message: `${trajectory.name} - Item ${index + 1}/${items.length}`,
+            message: trajectory.name,
+            totalItems: items.length,
+            itemIndex: index,
             forEachItem: item,
             forEachIndex: index
         }));

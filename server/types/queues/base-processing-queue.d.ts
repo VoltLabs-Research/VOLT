@@ -2,10 +2,12 @@ import { Worker } from 'worker_threads';
 
 export interface BaseJob {
     jobId: string;
+    timestep: number;
+    trajectoryId: string;
+    trajectoryName: string;
+    teamId: string;
     retries?: number;
     maxRetries?: number;
-    trajectoryId?: string;
-    teamId: string;
     estimatedDurationMs?: number;
     name?: string;
     sessionId?: string;
@@ -13,7 +15,7 @@ export interface BaseJob {
 }
 
 export interface WorkerPoolItem {
-    worker: Worker;
+    worker: Worker | any;
     isIdle: boolean;
     currentJobId?: string;
     startTime?: number;
@@ -25,6 +27,8 @@ export interface WorkerPoolItem {
 export interface QueueOptions {
     queueName: string;
     workerPath: string;
+    processor?: (job: any, postMessage?: (msg: any) => void) => Promise<any>;
+    useWorkerThreads?: boolean;
     maxConcurrentJobs?: number;
     cpuLoadThreshold?: number;
     ramLoadThreshold?: number;
@@ -44,3 +48,4 @@ export interface QueueMetrics {
     workerRestarts: number;
     lastHealthCheck: string;
 }
+

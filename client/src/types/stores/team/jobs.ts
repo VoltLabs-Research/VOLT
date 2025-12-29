@@ -1,7 +1,7 @@
-import type { Job } from '@/types/jobs';
+import type { TrajectoryJobGroup } from '@/types/jobs';
 
 export interface TeamJobsState {
-    jobs: Job[];
+    groups: TrajectoryJobGroup[];
     isConnected: boolean;
     isLoading: boolean;
     expiredSessions: Set<string>;
@@ -14,8 +14,9 @@ export interface TeamJobsActions {
     disconnect: () => void;
     _initializeSocket: () => void;
     _handleConnect: (connected: boolean) => void;
-    _handleTeamJobs: (initialJobs: Job[]) => void;
+    _handleTeamJobs: (groups: TrajectoryJobGroup[]) => void;
     _handleJobUpdate: (updatedJob: any) => void;
 }
 
 export type TeamJobsStore = TeamJobsState & TeamJobsActions;
+

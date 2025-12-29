@@ -128,31 +128,27 @@ const parseFilesWithWorker = async (
 
 const dispatchTrajectoryJobs = async (validFiles: any[], trajectory: ITrajectory, teamId: string) => {
     const queue = getTrajectoryProcessingQueue();
-    const CHUNK_SIZE = Number(process.env.TRAJECTORY_QUEUE_JOB_CHUNK_SIZE);
     const jobs: any[] = [];
     const sessionId = v4();
 
-    const totalChunks = Math.ceil(validFiles.length / CHUNK_SIZE);
-    for (let i = 0; i < validFiles.length; i += CHUNK_SIZE) {
-        const jobId = v4();
-        const chunk = validFiles.slice(i, i + CHUNK_SIZE);
-        const chunkIndex = Math.floor(i / CHUNK_SIZE);
-        const files = chunk.map(({ frameInfo, srcPath }) => ({
-            frameInfo,
-            frameFilePath: srcPath
-        }));
-
+    for (const { frameInfo, srcPath } of validFiles) {
+        const timestep = frameInfo?.timestep ?? 0;
         jobs.push({
-            jobId,
+            jobId: v4(),
             trajectoryId: trajectory._id.toString(),
-            chunkIndex,
-            totalChunks,
-            files,
+            trajectoryName: trajectory.name,
+            timestep,
             teamId,
-            name: 'Trajectory Processing',
+            name: 'Convert to GLB',
             message: trajectory.name,
             sessionId,
-            sessionStartTime: new Date().toISOString()
+            sessionStartTime: new Date().toISOString(),
+            file: {
+                frameInfo,
+                frameFilePath: srcPath
+            },
+            folderPath: '',
+            tempFolderPath: ''
         });
     }
 
@@ -209,8 +205,9 @@ const dispatchCloudUploadJobs = async (trajectory: ITrajectory, teamId: string) 
             teamId,
             timestep,
             trajectoryId: trajectory._id.toString(),
-            name: 'Upload to Object Storage Server',
-            message: `Frame ${timestep} from ${trajectory.name}`,
+            trajectoryName: trajectory.name,
+            name: 'Upload Frame',
+            message: trajectory.name,
             sessionId
         });
     }

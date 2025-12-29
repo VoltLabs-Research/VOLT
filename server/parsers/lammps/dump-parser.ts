@@ -91,4 +91,33 @@ export default class LammpsDumpParser {
     public canParse(headerLines: string[]): boolean {
         return headerLines.some((line) => line.includes('ITEM: TIMESTEP'));
     }
+
+    /**
+     * Parse only metadata from header lines (Pure JS, no C++ overhead).
+     */
+    public parseMetadataOnly(headerLines: string[]): FrameMetadata {
+        let timestep = 0;
+        let natoms = 0;
+        let boxBounds = { xlo: 0, xhi: 0, ylo: 0, yhi: 0, zlo: 0, zhi: 0 };
+        let headers: string[] = [];
+
+        for (let i = 0; i < headerLines.length; i++) {
+            const line = headerLines[i].trim();
+            if (line.includes('ITEM: TIMESTEP') && headerLines[i + 1]) {
+                timestep = Number(headerLines[i + 1]);
+            } else if (line.includes('ITEM: NUMBER OF ATOMS') && headerLines[i + 1]) {
+                natoms = Number(headerLines[i + 1]);
+            } else if (line.includes('ITEM: BOX BOUNDS') && headerLines[i + 3]) {
+                const x = headerLines[i + 1].trim().split(/\s+/).map(Number);
+                const y = headerLines[i + 2].trim().split(/\s+/).map(Number);
+                const z = headerLines[i + 3].trim().split(/\s+/).map(Number);
+                boxBounds = { xlo: x[0], xhi: x[1], ylo: y[0], yhi: y[1], zlo: z[0], zhi: z[1] };
+            } else if (line.includes('ITEM: ATOMS')) {
+                // Format: ITEM: ATOMS id type x y z ...
+                headers = line.replace('ITEM: ATOMS', '').trim().split(/\s+/);
+                break;
+            }
+        }
+        return { timestep, natoms, boxBounds, headers };
+    }
 }

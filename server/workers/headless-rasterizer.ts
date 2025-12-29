@@ -47,13 +47,14 @@ const processJob = async (job: RasterizerJob): Promise<void> => {
         });
 
         const duration = (performance.now() - start).toFixed(2);
-        parentPort?.postMessage({ status: 'completed', jobId: job.jobId, duration });
+        parentPort?.postMessage({ status: 'completed', jobId: job.jobId, timestep: job.timestep, duration });
         logger.info(`[Worker #${process.pid}] Job ${job.jobId} Success | Duration: ${duration}ms`);
     } catch (error: any) {
         logger.error(`[Worker #${process.pid}] Job ${job.jobId} Failed: ${error.message}`);
         parentPort?.postMessage({
             status: 'failed',
             jobId: job.jobId,
+            timestep: job.timestep,
             error: error.message || 'Unknown rasterizer error'
         });
     } finally {

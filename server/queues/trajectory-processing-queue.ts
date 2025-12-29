@@ -33,14 +33,13 @@ import logger from '@/logger';
 export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryProcessingJob> {
     private firstChunkProcessed = new Set<string>();
 
-    constructor(){
+    constructor() {
         const options: QueueOptions = {
             queueName: Queues.TRAJECTORY_PROCESSING,
             workerPath: path.resolve(__dirname, '../workers/trajectory-processing.ts'),
             maxConcurrentJobs: Number(process.env.TRAJECTORY_QUEUE_MAX_CONCURRENT_JOBS),
             cpuLoadThreshold: Number(process.env.TRAJECTORY_QUEUE_CPU_LOAD_THRESHOLD),
-            ramLoadThreshold: Number(process.env.TRAJECTORY_QUEUE_RAM_LOAD_THREHOLD),
-            useStreamingAdd: true
+            ramLoadThreshold: Number(process.env.TRAJECTORY_QUEUE_RAM_LOAD_THREHOLD)
         };
 
         super(options);
@@ -53,44 +52,42 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
         });
     }
 
-    private async onJobCompleted(data: any): Promise<void>{
+    private async onJobCompleted(data: any): Promise<void> {
         const job = data.job as TrajectoryProcessingJob;
 
-        // Only trigger preview generation once per trajectory(first completed chunk wins)
+        // Only trigger preview generation once per trajectory
         const trackingKey = `${job.trajectoryId}:preview-scheduled`;
-        if(this.firstChunkProcessed.has(trackingKey)) return;
+        if (this.firstChunkProcessed.has(trackingKey)) return;
 
         this.firstChunkProcessed.add(trackingKey);
 
-        try{
-            const firstFrame = job.files?.[0];
-            if(!firstFrame || firstFrame.frameInfo?.timestep === undefined){
-                logger.warn(`No first frame data found for trajectory ${job.trajectoryId}`);
+        try {
+            const frameInfo = job.file?.frameInfo;
+            if (!frameInfo || frameInfo.timestep === undefined) {
+                logger.warn(`No frame data found for trajectory ${job.trajectoryId}`);
                 return;
             }
 
-            const frameGLB = `trajectory-${job.trajectoryId}/previews/timestep-${firstFrame.frameInfo.timestep}.glb`;
+            const frameGLB = `trajectory-${job.trajectoryId}/previews/timestep-${frameInfo.timestep}.glb`;
             const trajectory = await Trajectory.findById(job.trajectoryId);
-            if(!trajectory) throw Error('Trajectory::NotFound');
+            if (!trajectory) throw Error('Trajectory::NotFound');
 
             await rasterizeGLBs(frameGLB, SYS_BUCKETS.MODELS, SYS_BUCKETS.RASTERIZER, trajectory);
 
-            // If this is part of a session, increment the remaining counter to include this rasterizer job
-            if(job.sessionId){
+            if (job.sessionId) {
                 const counterKey = `session:${job.sessionId}:remaining`;
                 await this.redis.incr(counterKey);
                 logger.info(`Incremented session counter for rasterizer preview job for trajectory ${job.trajectoryId}`);
             }
-        }catch(error){
+        } catch (error) {
             logger.error(`Failed to queue preview generation for trajectory ${job.trajectoryId}: ${error}`);
-            // Don't throw - trajectory processing shouldn't fail if preview generation fails
         }
     }
 
-    protected deserializeJob(rawData: string): TrajectoryProcessingJob{
-        try{
+    protected deserializeJob(rawData: string): TrajectoryProcessingJob {
+        try {
             return JSON.parse(rawData) as TrajectoryProcessingJob;
-        }catch(error){
+        } catch (error) {
             logger.error(`[${this.queueName}] Error deserializing job: ${error}`);
             throw new Error('Failed to deserialize job data');
         }

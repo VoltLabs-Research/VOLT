@@ -3,6 +3,7 @@ import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { Queues } from '@/constants/queues';
 import { CloudUploadJob } from '@/types/services/cloud-upload';
 import * as path from 'node:path';
+import { processJob } from '@/workers/cloud-upload';
 
 export class CloudUploadQueue extends BaseProcessingQueue<CloudUploadJob> {
     constructor() {
@@ -11,7 +12,9 @@ export class CloudUploadQueue extends BaseProcessingQueue<CloudUploadJob> {
             workerPath: path.resolve(__dirname, '../workers/cloud-upload.ts'),
             maxConcurrentJobs: Number(process.env.CLOUD_UPLOAD_QUEUE_MAX_CONCURRENT_JOBS),
             cpuLoadThreshold: Number(process.env.CLOUD_UPLOAD_QUEUE_CPU_LOAD_THRESHOLD),
-            ramLoadThreshold: Number(process.env.CLOUD_UPLOAD_QUEUE_RAM_LOAD_THRESHOLD)
+            ramLoadThreshold: Number(process.env.CLOUD_UPLOAD_QUEUE_RAM_LOAD_THRESHOLD),
+            useWorkerThreads: false,
+            processor: processJob
         };
 
         super(options);

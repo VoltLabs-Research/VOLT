@@ -20,13 +20,16 @@
  * SOFTWARE.
  */
 
-import os from 'os';
 import util from 'util';
 import IORedis from 'ioredis';
 import { BaseJob, QueueOptions, WorkerPoolItem } from '@/types/queues/base-processing-queue';
 import { createRedisClient } from '@config/redis';
 import { Worker } from 'worker_threads';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { EventEmitter } from 'events';
+import { Redis } from 'ioredis';
+import { VirtualWorker } from '@/utilities/queues/virtual-worker';
 import { publishJobUpdate } from '@/events/job-updates';
 import { Trajectory } from '@/models';
 import logger from '@/logger';
@@ -36,6 +39,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     protected readonly workerPath: string;
     protected readonly maxConcurrentJobs: number;
     protected readonly useStreamingAdd: boolean;
+    protected readonly options: QueueOptions;
 
     protected readonly TTL: number = 24 * 60 * 60;
     protected readonly batchSize = 20;
@@ -59,6 +63,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
         this.queueName = options.queueName;
         this.workerPath = options.workerPath;
+        this.options = options;
 
         this.queueKey = `${this.queueName}_queue`;
         this.processingKey = `${this.queueKey}:processing`;
@@ -464,7 +469,17 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }
     }
 
-    private createWorker(): Worker {
+    private createWorker(): Worker | any {
+        if (this.options.useWorkerThreads === false && this.options.processor) {
+            const worker = new VirtualWorker(this.options.processor);
+            const workerId = worker.threadId;
+
+            worker.on('message', (message: any) => this.handleWorkerMessage(workerId, message));
+            // Virtual workers don't "error" or "exit" in the OS sense, but we can keep listeners if we implement them
+            // worker.on('error', ...)
+            return worker;
+        }
+
         const worker = new Worker(this.workerPath, {
             execArgv: [
                 '-r',

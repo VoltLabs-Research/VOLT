@@ -1,6 +1,6 @@
 import LammpsDumpParser from '@/parsers/lammps/dump-parser';
 import LammpsDataParser from '@/parsers/lammps/data-parser';
-import { ParseOptions, ParseResult } from '@/types/parser';
+import { ParseOptions, ParseResult, FrameMetadata } from '@/types/parser';
 import { createReadStream } from 'fs';
 import { createInterface } from 'readline';
 
@@ -57,6 +57,23 @@ export default class TrajectoryParserFactory {
             return this.dataParser.parse(filePath, options);
         } else {
             throw new Error('UnsupportedTrajectoryFormat');
+        }
+    }
+
+    /**
+     * Parse only metadata from file header.
+     * Efficiently avoids loading large files into memory.
+     */
+    public static async parseMetadata(filePath: string): Promise<FrameMetadata> {
+        const headerLines = await peekFileHeader(filePath, 50);
+
+        if (this.dumpParser.canParse(headerLines)) {
+            return this.dumpParser.parseMetadataOnly(headerLines);
+        } else {
+            // Fallback to full parse for other formats (or implement metadata parser for them too)
+            // Lammps Data format usually has header at top too, but let's stick to Dump optimization first.
+            const result = await this.parse(filePath);
+            return result.metadata;
         }
     }
 }

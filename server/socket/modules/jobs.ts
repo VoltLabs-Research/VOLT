@@ -1,59 +1,44 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files(the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import { Server, Socket } from 'socket.io';
 import { publishJobUpdate } from '@/events/job-updates';
 import { redis } from '@config/redis';
-import { getTrajectoryProcessingQueue, getAnalysisQueue, getRasterizerQueue } from '@/queues';
+import { getTrajectoryProcessingQueue, getAnalysisQueue, getRasterizerQueue, getSSHImportQueue, getCloudUploadQueue } from '@/queues';
 import { BaseJob } from '@/types/queues/base-processing-queue';
 import { ClientData, ProcessingQueue } from '@/types/config/socket';
 import BaseSocketModule from '@/socket/base-socket-module';
 import logger from '@/logger';
 
-/**
- * Jobs feature module:
- *  - Handles team subscription flow with initial snapshot + buffered updates.
- *  - Provides a public API to emit job updates onto the domain bus.
- */
-class JobsModule extends BaseSocketModule{
-    // Local buffer while a client is doing initial fetch
+interface FrameJobGroup {
+    timestep: number;
+    jobs: BaseJob[];
+    overallStatus: 'running' | 'completed' | 'failed' | 'partial';
+}
+
+interface TrajectoryJobGroup {
+    trajectoryId: string;
+    trajectoryName: string;
+    frameGroups: FrameJobGroup[];
+    latestTimestamp: string;
+    overallStatus: 'running' | 'completed' | 'failed' | 'partial';
+    completedCount: number;
+    totalCount: number;
+}
+
+class JobsModule extends BaseSocketModule {
     private initializingClients = new Map<string, ClientData>();
 
-    constructor(){
+    constructor() {
         super('JobsModule');
     }
 
-    onInit(io: Server): void{
+    onInit(io: Server): void {
         this.io = io;
     }
 
-    onConnection(socket: Socket): void{
-        socket.on('subscribe_to_team', async({ teamId, previousTeamId }) => {
-            if(previousTeamId){
-                this.leaveRoom(socket, `team-${previousTeamId}`);
-            }
-
+    onConnection(socket: Socket): void {
+        socket.on('subscribe_to_team', async ({ teamId, previousTeamId }) => {
+            if (previousTeamId) this.leaveRoom(socket, `team-${previousTeamId}`);
             this.initializingClients.delete(socket.id);
-            if(!teamId) return;
+            if (!teamId) return;
 
             this.initializingClients.set(socket.id, {
                 teamId,
@@ -62,11 +47,10 @@ class JobsModule extends BaseSocketModule{
             });
 
             this.joinRoom(socket, `team-${teamId}`);
+            const groups = await this.getGroupedJobsForTeam(teamId);
+            socket.emit('team_jobs', groups);
 
-            const jobs = await this.getJobsForTeam(teamId);
-            socket.emit('team_jobs', jobs);
-
-            setImmediate(async() => {
+            setImmediate(async () => {
                 await this.sendPendingUpdates(socket.id);
                 this.initializingClients.delete(socket.id);
             });
@@ -77,216 +61,209 @@ class JobsModule extends BaseSocketModule{
         });
     }
 
-    /**
-     * Publish a job update to the domain bus(all pods receive it).
-     */
-    async emitJobUpdate(teamId: string, payload: any): Promise<void>{
-        if(!teamId || !payload) return;
+    async emitJobUpdate(teamId: string, payload: any): Promise<void> {
+        if (!teamId || !payload) return;
         await publishJobUpdate(teamId, payload);
     }
 
-    /**
-     * Re-emit a job update to local sockets(called by whoever listens to Pub/Sub).
-     */
-    async reemitLocal(teamId: string, jobData: any): Promise<void>{
-        if(!this.io){
-            return;
-        }
+    async reemitLocal(teamId: string, jobData: any): Promise<void> {
+        if (!this.io) return;
 
         const update = this.normalizeUpdate(jobData);
-        if(this.hasAnyInitializingForTeam(teamId)) {
+        if (this.hasAnyInitializingForTeam(teamId)) {
             this.addPendingUpdate(teamId, update);
             return;
         }
 
-        try{
+        try {
             const sockets = await this.io.in(`team-${teamId}`).fetchSockets();
-            const ready = sockets.filter((socket) => !this.initializingClients.has(socket.id));
-            if(ready.length === 0){
+            const ready = sockets.filter((s) => !this.initializingClients.has(s.id));
+            if (ready.length === 0) {
                 this.addPendingUpdate(teamId, update);
                 return;
             }
-
-            ready.forEach((socket) => socket.emit('job_update', update));
-        }catch(error){
-            logger.error(`[${this.name}] Error fetching sockets for team ${teamId}: ${error}`);
-            // Fallback: emit to room directly without filtering
+            ready.forEach((s) => s.emit('job_update', update));
+        } catch (error) {
+            logger.error(`[${this.name}] Error fetching sockets: ${error}`);
             this.io.to(`team-${teamId}`).emit('job_update', update);
         }
     }
 
-    /**
-     * Checks if any socket for the given team is currently initializing on this instance.
-     *
-     * @param teamId Team identifier.
-     * @returns `true` if at least one socket is initializing; otherwise `false`.
-     */
-    private hasAnyInitializingForTeam(teamId: string): boolean{
-        for(const client of this.initializingClients.values()) {
-            if(client.teamId === teamId){
-                return true;
-            }
+    private hasAnyInitializingForTeam(teamId: string): boolean {
+        for (const c of this.initializingClients.values()) {
+            if (c.teamId === teamId) return true;
         }
-
         return false;
     }
 
-    /**
-     * Adds an update to the pending buffer for all sockets initializing for the given team.
-     *
-     * @param teamId Team identifier.
-     * @param jobData Update payload to buffer.
-     *
-     * @remarks
-     * - Caps buffer per socket at 1000 entries, trimming to the last 50 if exceeded.
-     */
-    private addPendingUpdate(teamId: string, jobData: any): void{
-        for(const client of this.initializingClients.values()) {
-            if(client.teamId !== teamId) continue;
-
-            client.pendingUpdates.push(jobData);
-            if(client.pendingUpdates.length > 1000){
-                client.pendingUpdates = client.pendingUpdates.slice(-50);
-            }
+    private addPendingUpdate(teamId: string, jobData: any): void {
+        for (const c of this.initializingClients.values()) {
+            if (c.teamId !== teamId) continue;
+            c.pendingUpdates.push(jobData);
+            if (c.pendingUpdates.length > 1000) c.pendingUpdates = c.pendingUpdates.slice(-50);
         }
     }
 
-    /**
-     * Sends buffered updates for a given socket and clears its buffer.
-     *
-     * @param socketId Socket identifier
-     */
-    private async sendPendingUpdates(socketId: string): Promise<void>{
-        if(!this.io) return;
-
+    private async sendPendingUpdates(socketId: string): Promise<void> {
+        if (!this.io) return;
         const client = this.initializingClients.get(socketId);
-        if(!client || client.pendingUpdates.length === 0) return;
-
+        if (!client || client.pendingUpdates.length === 0) return;
         const socket = this.io.sockets.sockets.get(socketId);
-        if(!socket) return;
+        if (!socket) return;
 
         const batchSize = 10;
-        for(let i = 0; i < client.pendingUpdates.length; i += batchSize){
-            client.pendingUpdates.slice(i, i + batchSize).forEach((update) => socket.emit('job_update', update));
-            if(i + batchSize < client.pendingUpdates.length){
-                await new Promise((resolve) => setTimeout(resolve, 10));
-            }
+        for (let i = 0; i < client.pendingUpdates.length; i += batchSize) {
+            client.pendingUpdates.slice(i, i + batchSize).forEach((u) => socket.emit('job_update', u));
+            if (i + batchSize < client.pendingUpdates.length) await new Promise((r) => setTimeout(r, 10));
         }
-
         client.pendingUpdates.length = 0;
     }
 
-    /**
-     * Returns all processing queues that should contribute to the initial snapshopt.
-     */
-    private getAllProcessingQueues(): ProcessingQueue[]{
+    private getAllProcessingQueues(): ProcessingQueue[] {
         return [
             { name: 'trajectory', queue: getTrajectoryProcessingQueue() },
             { name: 'analysis', queue: getAnalysisQueue() },
             { name: 'raster', queue: getRasterizerQueue() },
-            // Virtual queue for SSH imports
-            { name: 'ssh-import', queue: { queueKey: 'ssh-import' } as any }
+            { name: 'ssh-import', queue: getSSHImportQueue() },
+            { name: 'cloud-upload', queue: getCloudUploadQueue() }
         ];
     }
 
-    /**
-     * Fetches the latest job states for the given team from Redis, merging across queues.
-     * Uses pipelining to minimize round-trips.
-     *
-     * @param teamId Team identifier.
-     * @returns Array of unique jobs(deduplicated by `jobId`, newest timestamp wins).
-     */
-    private async getJobsForTeam(teamId: string): Promise<BaseJob[]>{
-        if(!teamId) return [];
+    private computeStatus(jobs: BaseJob[]): 'running' | 'completed' | 'failed' | 'partial' {
+        const hasRunning = jobs.some((j: any) => j.status === 'running' || j.status === 'queued');
+        const hasFailed = jobs.some((j: any) => j.status === 'failed');
+        const allCompleted = jobs.every((j: any) => j.status === 'completed');
+        if (hasRunning) return 'running';
+        if (allCompleted) return 'completed';
+        if (hasFailed && jobs.filter((j: any) => j.status === 'completed').length === 0) return 'failed';
+        return 'partial';
+    }
+
+    private groupJobsByFrame(jobs: BaseJob[]): FrameJobGroup[] {
+        const frameMap = new Map<number, BaseJob[]>();
+        for (const job of jobs) {
+            const key = (job as any).timestep;
+            if (!frameMap.has(key)) frameMap.set(key, []);
+            frameMap.get(key)!.push(job);
+        }
+
+        const result: FrameJobGroup[] = [];
+        for (const [timestep, frameJobs] of frameMap) {
+            const sorted = this.sortByTimestamp(frameJobs);
+            result.push({ timestep, jobs: sorted, overallStatus: this.computeStatus(frameJobs) });
+        }
+
+        return result.sort((a, b) => b.timestep - a.timestep);
+    }
+
+    private groupJobsByTrajectory(jobs: BaseJob[]): TrajectoryJobGroup[] {
+        const trajMap = new Map<string, BaseJob[]>();
+        for (const job of jobs) {
+            const trajId = job.trajectoryId;
+            if (!trajMap.has(trajId)) trajMap.set(trajId, []);
+            trajMap.get(trajId)!.push(job);
+        }
+
+        const result: TrajectoryJobGroup[] = [];
+        for (const [trajectoryId, trajJobs] of trajMap) {
+            const sorted = this.sortByTimestamp(trajJobs);
+            const completedCount = sorted.filter((j: any) => j.status === 'completed').length;
+            const trajectoryName = sorted[0].trajectoryName;
+            const latestTimestamp = (sorted[0] as any)?.timestamp || new Date().toISOString();
+
+            result.push({
+                trajectoryId,
+                trajectoryName,
+                frameGroups: this.groupJobsByFrame(sorted),
+                latestTimestamp,
+                overallStatus: this.computeStatus(sorted),
+                completedCount,
+                totalCount: sorted.length
+            });
+        }
+
+        return result.sort((a, b) => new Date(b.latestTimestamp).getTime() - new Date(a.latestTimestamp).getTime());
+    }
+
+    private sortByTimestamp(jobs: BaseJob[]): BaseJob[] {
+        return [...jobs].sort((a, b) => {
+            const ta = (a as any).timestamp ? new Date((a as any).timestamp).getTime() : 0;
+            const tb = (b as any).timestamp ? new Date((b as any).timestamp).getTime() : 0;
+            return tb - ta;
+        });
+    }
+
+    private async getGroupedJobsForTeam(teamId: string): Promise<TrajectoryJobGroup[]> {
+        if (!teamId) return [];
         const startTime = Date.now();
-        logger.info(`[Socket] Fetching fresh jobs for team ${teamId}...`);
+        logger.info(`[Socket] Fetching grouped jobs for team ${teamId}...`);
 
         const allQueues = this.getAllProcessingQueues();
         const teamJobsKey = `team:${teamId}:jobs`;
         const jobIds = await redis?.smembers(teamJobsKey);
 
-        if(!jobIds?.length){
-            logger.info(`[Socket] No jobs found in team index for team ${teamId}`);
+        if (!jobIds?.length) {
+            logger.info(`[Socket] No jobs found for team ${teamId}`);
             return [];
         }
 
-        const queueResults = await Promise.all(allQueues.map(async({ name, queue }) => {
+        const queueResults = await Promise.all(allQueues.map(async ({ name, queue }) => {
             const statusKeys = jobIds.map((id) => `${queue.queueKey}:status:${id}`);
             const batchSize = 500;
             const jobs: BaseJob[] = [];
 
-            for(let i = 0; i < statusKeys.length; i += batchSize){
+            for (let i = 0; i < statusKeys.length; i += batchSize) {
                 const batchKeys = statusKeys.slice(i, i + batchSize);
-
                 const pipeline = redis?.pipeline();
                 batchKeys.forEach((k) => pipeline?.get(k));
                 const results = (await pipeline?.exec()) || [];
 
-                for(const [_, value] of results){
-                    if(!value) continue;
-
+                for (const [_, value] of results) {
+                    if (!value) continue;
                     const data = JSON.parse(value as string);
-                    if(data.teamId !== teamId) continue;
-
-                    jobs.push({
-                        jobId: data.jobId,
-                        status: data.status,
-                        progress: data.progress || 0,
-                        queueType: name as any,
-                        timestamp: data.timestamp,
-                            ...data
-                    });
+                    if (data.teamId !== teamId) continue;
+                    jobs.push({ ...data, queueType: name });
                 }
             }
-
-            logger.info(`[Socket] Found ${jobs.length} jobs in ${name} queue for team ${teamId}`);
             return jobs;
         }));
 
         const jobMap = new Map<string, BaseJob>();
-        for(const job of queueResults.flat()) {
+        for (const job of queueResults.flat()) {
             const prev = jobMap.get(job.jobId);
             const tNew = (job as any).timestamp ? new Date((job as any).timestamp).getTime() : 0;
             const tPrev = (prev as any)?.timestamp ? new Date((prev as any).timestamp).getTime() : 0;
-            if(!prev || tNew > tPrev) jobMap.set(job.jobId, job);
+            if (!prev || tNew > tPrev) jobMap.set(job.jobId, job);
         }
 
-        const uniqueJobs = Array.from(jobMap.values()).sort((a, b) =>{
-            const ta = (a as any).timestamp ? new Date((a as any).timestamp).getTime() : 0;
-            const tb = (b as any).timestamp ? new Date((b as any).timestamp).getTime() : 0;
-            return tb - ta;
-        });
+        const uniqueJobs = Array.from(jobMap.values());
+        const grouped = this.groupJobsByTrajectory(uniqueJobs);
 
-        logger.info(`[Socket] Fresh fetch completed for team ${teamId}: ${uniqueJobs.length} jobs in ${Date.now() - startTime}ms`);
-        return uniqueJobs;
+        logger.info(`[Socket] Grouped ${uniqueJobs.length} jobs into ${grouped.length} trajectories in ${Date.now() - startTime}ms`);
+        return grouped;
     }
 
-    /**
-     * Normalizes arbitrary job update paylaods to a stable shape for the client.
-     *
-     * @param jobData Raw job data as received from workers/queues.
-     * @returns Normalized job update object.
-     */
     private normalizeUpdate(jobData: any) {
         return {
             jobId: jobData.jobId,
             status: jobData.status,
             progress: jobData.progress || 0,
-            chunkIndex: jobData.chunkIndex,
-            totalChunks: jobData.totalChunks,
             name: jobData.name,
             message: jobData.message,
             trajectoryId: jobData.trajectoryId,
+            trajectoryName: jobData.trajectoryName,
+            timestep: jobData.timestep,
             sessionId: jobData.sessionId,
             sessionStartTime: jobData.sessionStartTime,
             timestamp: jobData.timestamp || new Date().toISOString(),
             queueType: jobData.queueType || 'unknown',
             type: jobData.type,
-                ...(jobData.error && { error: jobData.error }),
-                ...(jobData.result && { result: jobData.result }),
-                ...(jobData.processingTimeMs && { processingTimeMs: jobData.processingTimeMs })
+            ...(jobData.error && { error: jobData.error }),
+            ...(jobData.result && { result: jobData.result }),
+            ...(jobData.processingTimeMs && { processingTimeMs: jobData.processingTimeMs })
         };
     }
 }
 
 export default JobsModule;
+
