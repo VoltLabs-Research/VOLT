@@ -143,7 +143,7 @@ export default class TrajectoryController extends BaseController<any> {
         const page = Math.max(1, parseInt(String(pageStr) || '1', 10));
         const pageSize = Math.max(1, Math.min(10000, parseInt(String(pageSizeStr) || '1000', 10)));
 
-        const populatedAtoms = getPopulatedFrameAtoms(trajectoryId, timestep as string, analysisId, exposureId as string, page, pageSize);
+        const populatedAtoms = await getPopulatedFrameAtoms(trajectoryId, timestep as string, analysisId, exposureId as string, page, pageSize);
         res.status(200).json({ status: 'success', ...populatedAtoms });
     });
 

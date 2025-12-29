@@ -8,8 +8,17 @@ import { getModifierAnalysis, getModifierPerAtomProps, getPropertyByAtoms, getMi
 import { SYS_BUCKETS } from '@/config/minio';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { ErrorCodes } from '@/constants/error-codes';
+import BaseController from '@/controllers/base-controller';
+import { Resource } from '@/constants/resources';
+import { Trajectory } from '@/models';
 
-export default class ColorCodingController {
+export default class ColorCodingController extends BaseController<any>{
+    constructor(){
+        super(Trajectory, {
+            resource: Resource.COLOR_CODING
+        });
+    }
+
     public getProperties = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
         const { trajectoryId, analysisId } = req.params;
         const { timestep } = req.query;

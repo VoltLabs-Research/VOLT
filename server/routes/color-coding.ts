@@ -23,25 +23,22 @@
 import { Router } from 'express';
 import ColorCodingController from '@/controllers/color-coding';
 import * as midldeware from '@/middlewares/authentication';
+import RBACMiddleware from '@/middlewares/rbac';
+import { Action } from '@/constants/permissions';
 
 const router = Router();
 const controller = new ColorCodingController();
+const rbac = new RBACMiddleware(controller, router);
 
 router.use(midldeware.protect);
 
-router.get(
-    '/properties/:trajectoryId/:analysisId',
-    // TODO: checkTeamMembershipForTrajectory
-    controller.getProperties
-);
+// TODO: checkTeamMembershipForTrajectory
+rbac.groupBy(Action.READ, midldeware.protect)
+    .route('/properties/:trajectoryId/:analysisId', controller.getProperties)
+    .route('/stats/:trajectoryId/:analysisId', controller.getStats)
+    .route('/:trajectoryId/:analysisId', controller.get);
 
-router.get(
-    '/stats/:trajectoryId/:analysisId',
-    controller.getStats
-);
-
-router.route('/:trajectoryId/:analysisId/')
-    .get(controller.get)
-    .post(controller.create);
+rbac.groupBy(Action.CREATE, midldeware.protect)
+    .route('/:trajectoryId/:analysisId', controller.create);
 
 export default router;

@@ -29,11 +29,6 @@ export interface TrajectoryActions {
     toggleTrajectorySelection: (id: string) => void;
     deleteSelectedTrajectories: () => Promise<void>;
     getMetrics: (id: string, opts?: { force?: boolean }) => void;
-    getFrameAtoms: (
-        trajectoryId: string,
-        timestep: number,
-        opts?: { force?: boolean; page?: number; pageSize?: number }
-    ) => Promise<{ timestep: number; natoms?: number; total?: number; page?: number; pageSize?: number; positions: number[][]; types?: number[] } | null>;
     setTrajectory: (trajectory: Trajectory | null) => void;
     clearError: () => void;
     reset: () => void;

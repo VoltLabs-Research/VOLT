@@ -38,10 +38,11 @@ export const createAnalysisConfigSlice: SliceCreator<ExtendedAnalysisStore> = (s
             errorFallback: 'Failed to load analysis configs',
             onSuccess: (data) => {
                 const { data: analysisConfigs, listingMeta } = calculatePaginationState({
-                    newData: (data.configs || []) as unknown as Analysis[],
+                    newData: (data || []) as unknown as Analysis[],
                     currentData: s.analysisConfigs, page, limit, append,
                     totalFromApi: data.total, previousTotal: s.listingMeta.total
                 });
+                console.log(data)
                 set({ analysisConfigs, listingMeta, error: null } as Partial<ExtendedAnalysisStore>);
             }
         });

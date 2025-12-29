@@ -49,7 +49,7 @@ const computeGlbUrl = (
 
     if (activeScene?.source === 'color-coding') {
         const { property, startValue, endValue, gradient, analysisId: sceneAnalysisId, exposureId } = activeScene;
-        let url = `/color-coding/${trajectoryId}/${sceneAnalysisId}/?property=${property}&startValue=${startValue}&endValue=${endValue}&gradient=${gradient}&timestep=${currentTimestep}`;
+        let url = `/color-coding/${teamId}/${trajectoryId}/${sceneAnalysisId}/?property=${property}&startValue=${startValue}&endValue=${endValue}&gradient=${gradient}&timestep=${currentTimestep}`;
         if (exposureId) url += `&exposureId=${exposureId}`;
         return url;
     }

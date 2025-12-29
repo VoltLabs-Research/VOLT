@@ -2,6 +2,7 @@ import VoltClient from '@/api';
 import type { RasterMetadata, RasterFrameData, ColorCodingPayload, ColorCodingStats } from './types';
 
 const client = new VoltClient('', { useRBAC: true });
+const colorCodingClient = new VoltClient('/color-coding', { useRBAC: true });
 
 const rasterApi = {
     async generateGLB(id: string): Promise<any> {
@@ -34,9 +35,9 @@ const rasterApi = {
             timestep: number,
             payload: ColorCodingPayload
         ): Promise<void> {
-            await client.request(
+            await colorCodingClient.request(
                 'post',
-                `/color-coding/${trajectoryId}/${analysisId}?timestep=${timestep}`,
+                `/${trajectoryId}/${analysisId}?timestep=${timestep}`,
                 { data: payload }
             );
         },
@@ -46,9 +47,9 @@ const rasterApi = {
             analysisId: string,
             params?: { timestep?: number; property?: string; type?: string; exposureId?: string }
         ): Promise<ColorCodingStats> {
-            const response = await client.request<{ status: string; data: ColorCodingStats }>(
+            const response = await colorCodingClient.request<{ status: string; data: ColorCodingStats }>(
                 'get',
-                `/color-coding/stats/${trajectoryId}/${analysisId}`,
+                `/stats/${trajectoryId}/${analysisId}`,
                 { query: params }
             );
             return response.data.data;
@@ -59,9 +60,9 @@ const rasterApi = {
             analysisId: string,
             timestep: number
         ): Promise<{ base: string[]; modifiers: Record<string, string[]> }> {
-            const response = await client.request<{ status: string; data: { base: string[]; modifiers: Record<string, string[]> } }>(
+            const response = await colorCodingClient.request<{ status: string; data: { base: string[]; modifiers: Record<string, string[]> } }>(
                 'get',
-                `/color-coding/properties/${trajectoryId}/${analysisId}`,
+                `/properties/${trajectoryId}/${analysisId}`,
                 { query: { timestep } }
             );
             return response.data.data;

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import trajectoryApi from '@/services/api/trajectory/trajectory';
-import { useTeamStore } from '@/stores/slices/team';
 
 interface MergedAtomsRow {
     idx: number;
@@ -16,7 +15,7 @@ interface MergedAtomsRow {
 
 const PerAtomViewer = () => {
     const { trajectoryId, analysisId, exposureId } = useParams();
-    const { selectedTeam } = useTeamStore();
+
     const [searchParams] = useSearchParams();
     const timestep = Number(searchParams.get('timestep') || '0');
 
@@ -30,28 +29,27 @@ const PerAtomViewer = () => {
     const [total, setTotal] = useState(0);
     const pageSize = 50_000;
 
-    const fetchPage = useCallback(async(nextPage: number) => {
-        if(!trajectoryId || !analysisId || !exposureId){
+    const fetchPage = useCallback(async (nextPage: number) => {
+        if (!trajectoryId || !analysisId || !exposureId) {
             setError('Missing required parameters.');
             return;
         }
 
         setError(null);
-        if(nextPage === 1){
+        if (nextPage === 1) {
             setLoading(true);
-        }else{
+        } else {
             setIsFetchingMore(true);
         }
 
-        try{
+        try {
             const result = await trajectoryApi.getAtoms(
                 trajectoryId,
-                selectedTeam?._id,
                 analysisId,
                 { timestep, exposureId, page: nextPage, pageSize }
             );
 
-            if(!result){
+            if (!result) {
                 setError('Failed to load atoms data.');
                 return;
             }
@@ -61,15 +59,15 @@ const PerAtomViewer = () => {
             setHasMore(result.hasMore);
             setPage(nextPage);
 
-            if(nextPage === 1){
+            if (nextPage === 1) {
                 setRows(result.data);
-            }else{
+            } else {
                 setRows(prev => [...prev, ...result.data]);
             }
-        }catch(err: any){
+        } catch (err: any) {
             const message = err?.response?.data?.message || err?.message || 'Failed to load atoms.';
             setError(message);
-        }finally{
+        } finally {
             setLoading(false);
             setIsFetchingMore(false);
         }
@@ -89,9 +87,9 @@ const PerAtomViewer = () => {
     ], []);
 
     const typeToColor = (t?: number): string => {
-        if(t === undefined || t === null) return '#888888';
+        if (t === undefined || t === null) return '#888888';
         const type = Math.max(1, Math.floor(t as number));
-        if(type <= typePalette.length) return typePalette[type - 1];
+        if (type <= typePalette.length) return typePalette[type - 1];
         const hue = ((type - 1) * 47) % 360;
         return `hsl(${hue}deg 60% 55%)`;
     };
@@ -125,7 +123,7 @@ const PerAtomViewer = () => {
 
         // Add per-atom property columns(deduplicated)
         const uniqueProperties = [...new Set(properties)];
-        for(const prop of uniqueProperties){
+        for (const prop of uniqueProperties) {
             baseCols.push({
                 key: prop,
                 title: prop,
@@ -150,7 +148,7 @@ const PerAtomViewer = () => {
             hasMore={hasMore}
             isFetchingMore={isFetchingMore}
             onLoadMore={() => {
-                if(!loading && !isFetchingMore && hasMore){
+                if (!loading && !isFetchingMore && hasMore) {
                     fetchPage(page + 1);
                 }
             }}

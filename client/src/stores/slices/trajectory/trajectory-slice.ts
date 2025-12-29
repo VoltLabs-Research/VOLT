@@ -101,14 +101,6 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
         set({ selectedTrajectories: s.selectedTrajectories.includes(id) ? s.selectedTrajectories.filter(x => x !== id) : [...s.selectedTrajectories, id] } as Partial<TrajectoryStore>);
     },
 
-    getFrameAtoms: async (trajectoryId, timestep, opts) => {
-        try {
-            return await trajectoryApi.getAtoms(trajectoryId, useTeamStore.getState().selectedTeam?._id, 'default', {
-                timestep, exposureId: 'default', page: opts?.page ?? 1, pageSize: opts?.pageSize ?? 100000
-            }) as any;
-        } catch { return null; }
-    },
-
     getMetrics: async (id, opts) => {
         const s = get() as TrajectoryStore;
         if ((s.trajectoryMetrics as any)?.trajectory?._id === id && !opts?.force) return;
