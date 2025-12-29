@@ -120,7 +120,7 @@ const MyTeam: React.FC = () => {
             const roleInfo = memberRoleMap.get(member._id);
             return {
                 ...member,
-                isOnline: isOnline(member._id),
+                isOnline: isOnline(member.user._id),
                 isOwner: isOwnerCheck(member._id),
                 isAdmin: isAdmin(member._id),
                 rawJoined: member.joinedAt,
@@ -170,7 +170,7 @@ const MyTeam: React.FC = () => {
             key: 'role',
             title: 'Role',
             render: (_: any, member: any) => {
-                if (member.isOwner) {   
+                if (member.isOwner) {
                     return <span className="badge badge-primary">Owner</span>;
                 }
                 console.log(member.user._id !== currentUser?._id, canManage)
