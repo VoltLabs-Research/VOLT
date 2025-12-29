@@ -35,9 +35,9 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps & React.HTMLAttribu
     return (
         <>
             <div
+                {...rest}
                 className={`d-flex content-between items-center editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''} cursor-pointer ${className || ''}`}
                 onClick={() => onSelect(option)}
-                {...rest}
             >
                 <div className='d-flex items-center gap-1 editor-sidebar-scene-option-left-container'>
                     <i className='editor-sidebar-scene-option-icon-container'>

@@ -195,6 +195,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     };
 
     const onSelect = (option: any, analysis?: any) => {
+        console.log('[CanvasSidebarScene] onSelect called:', { option, analysis, sceneType: option?.sceneType });
         if (analysis) {
             updateAnalysisConfig(analysis);
         }
@@ -351,6 +352,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                                                 >
                                                     <PopoverMenuItem
                                                         onClick={() => {
+                                                            console.log('[CanvasSidebarScene] addScene called:', { sceneObject, analysis });
                                                             if (analysis) updateAnalysisConfig(analysis);
                                                             addScene(sceneObject);
                                                         }}

@@ -80,7 +80,11 @@ export default class DumpStorage {
             // Large Buffer of File Path -> Stream to Temp File -> Upload -> Delete Temp
             // We use a temp file to calculate exact size and avoid buffering large streams in RAM.
             await this.ensureDirs();
-            const tempFilePath = this.getCachePath(trajectoryId, timestep);
+            const cacheDir = path.join(this.CACHE_DIR, trajectoryId);
+            await fs.mkdir(cacheDir, { recursive: true });
+            // Use a separate temp file for compressed upload, NOT the cache path
+            // Cache path should only contain decompressed data (populated by getDump)
+            const tempFilePath = this.getCachePath(trajectoryId, timestep) + '.upload.gz';
             let inputSize = 0;
 
             const sourceStream = typeof data === 'string'
@@ -115,7 +119,7 @@ export default class DumpStorage {
             const gzip = zlib.createGzip({ level: this.COMPRESSION_LEVEL });
             const dest = fsNative.createWriteStream(tempFilePath);
 
-            // Compress to disk
+            // Compress to temp file
             await pipeline(sourceStream, gzip, dest);
 
             // Upload the compressed file
@@ -128,8 +132,8 @@ export default class DumpStorage {
             });
             this.logMetrics(objectName, inputSize, stats.size, startTime);
 
-            // Cleanup
-            // await fs.unlink(tempFilePath).catch(() => { });
+            // Cleanup temp file after upload
+            await fs.unlink(tempFilePath).catch(() => { });
             return objectName;
         } catch (error) {
             logger.error(`Failed to save dump ${objectName}: ${error}`);
