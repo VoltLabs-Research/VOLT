@@ -3,7 +3,7 @@ import type { PlaybackState, PlaybackStore } from '@/types/stores/editor/playbac
 
 const DEFAULT_PLAY_SPEED = 1;
 const MIN_PLAY_SPEED = 0.1;
-const MAX_PLAY_SPEED = 5;
+const MAX_PLAY_SPEED = 10;
 
 const initialState: PlaybackState = {
     isPlaying: false,
@@ -59,7 +59,6 @@ export const createPlaybackSlice: StateCreator<any, [], [], PlaybackStore> = (se
 
                 while (get().isPlaying) {
                     const { currentTimestep } = get();
-
                     if (currentTimestep === undefined) {
                         set({ currentTimestep: timesteps[0] });
                         while (get().isModelLoading && get().isPlaying) {

@@ -17,8 +17,7 @@ const initialState: TimestepState = {
 // Pure function for worker - extracts and sorts timesteps
 const extractTimestepsWorker = (frames: any[]): number[] => {
     if (!frames || frames.length === 0) return [];
-    return frames
-        .map((frame: any) => frame.timestep)
+    return Array.from(new Set(frames.map((frame: any) => frame.timestep)))
         .sort((a: number, b: number) => a - b);
 };
 
