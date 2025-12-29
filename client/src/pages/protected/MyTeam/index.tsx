@@ -256,7 +256,7 @@ const MyTeam: React.FC = () => {
                     icon: IoPersonRemoveOutline,
                     onClick: async () => {
                         if (confirm(`Are you sure you want to remove ${member.firstName}?`)) {
-                            await removeMember(selectedTeam._id, member._id);
+                            await removeMember(selectedTeam._id, member.user._id);
                         }
                     },
                     destructive: true

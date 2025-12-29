@@ -32,8 +32,8 @@ const teamApi = {
     },
 
     members: {
-        async remove(teamId: string, identifier: { userId?: string; email?: string }): Promise<void> {
-            await client.request('post', `/${teamId}/members/remove`, { data: { identifier } });
+        async remove(teamId: string, data: { userId?: string; }): Promise<void> {
+            await client.request('post', `/${teamId}/members/remove`, { data });
         }
     },
 

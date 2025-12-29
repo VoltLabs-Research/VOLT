@@ -1,9 +1,8 @@
 import { Request, Response } from 'express';
 import { Team, TeamMember, User } from '@/models';
-import { FilterQuery } from 'mongoose';
+import { FilterQuery, Types } from 'mongoose';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { ErrorCodes } from '@/constants/error-codes';
-import { Action } from '@/constants/permissions';
 import { Resource } from '@/constants/resources';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import BaseController from '@/controllers/base-controller';
@@ -71,9 +70,10 @@ export default class TeamController extends BaseController<any>{
     public removeMember = catchAsync(async (req: Request, res: Response) => {
         const teamId = req.params.id;
         const team = res.locals.team;
-        const { email } = req.body;
-
-        const userToRemove = await User.findOne({ email });
+        const { userId } = req.body;
+        console.log(req.body);
+        const userToRemove = await User.findOne({ _id: userId });
+        console.log(userToRemove);
         if(!userToRemove) throw new RuntimeError(ErrorCodes.USER_NOT_FOUND, 404);
 
         if(team.owner.toString() === userToRemove._id.toString()){
