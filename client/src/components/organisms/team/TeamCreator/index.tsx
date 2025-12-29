@@ -92,7 +92,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
             description="Create a new workspace for your trajectories."
             width="450px"
         >
-            <form onSubmit={handleSubmit} className='d-flex column gap-1-5'>
+            <form onSubmit={handleSubmit} className='d-flex column gap-1-5 p-1'>
                 <FormInput
                     label='Team Name'
                     value={teamName}
@@ -104,7 +104,7 @@ const TeamCreator: React.FC<TeamCreatorProps> = ({ onClose, isRequired = false }
                 />
 
                 <FormInput
-                    label='Description(Optional)'
+                    label='Description (Optional)'
                     value={teamDescription}
                     onChange={handleDescriptionChange}
                     placeholder='What is this team for?'

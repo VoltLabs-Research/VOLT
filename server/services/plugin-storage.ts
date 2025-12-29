@@ -15,6 +15,7 @@ import { slugify } from '@/utilities/runtime/runtime';
 import Plugin from '@/models/plugin';
 import storage from '@/services/storage';
 import logger from '@/logger';
+import workflowValidator from '@/services/nodes/workflow-validator';
 
 export interface BinaryUploadResult {
     objectPath: string;
@@ -180,6 +181,32 @@ class PluginStorageService {
 
         logger.info(`[PluginStorageService] Plugin imported: ${newPlugin.slug}`);
         return { plugin: newPlugin, binaryImported };
+    }
+
+    /**
+     * Validate a plugin's workflow and publish it if valid.
+     * Throws an error if validation fails.
+     */
+    async validateAndPublishPlugin(pluginId: string): Promise<IPlugin> {
+        const plugin = await Plugin.findById(pluginId);
+        if (!plugin) {
+            throw new Error('Plugin::NotFound');
+        }
+
+        const { valid, errors } = workflowValidator.validateStructure(plugin.workflow);
+        plugin.validated = valid;
+        plugin.validationErrors = errors;
+
+        if (!valid) {
+            await plugin.save();
+            throw new Error(`Plugin::ValidationFailed::${errors.join(', ')}`);
+        }
+
+        plugin.status = PluginStatus.PUBLISHED;
+        await plugin.save();
+
+        logger.info(`[PluginStorageService] Plugin validated and published: ${plugin.slug}`);
+        return plugin;
     }
 }
 

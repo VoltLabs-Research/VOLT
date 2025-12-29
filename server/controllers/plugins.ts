@@ -235,7 +235,13 @@ export default class PluginsController extends BaseController<IPlugin> {
         if (!req.file) throw new RuntimeError('Plugin::Binary::Required', 400);
 
         const result = await pluginStorageService.uploadBinary(plugin._id.toString(), req.file);
-        res.status(200).json({ status: 'success', data: result });
+
+        try {
+            const validatedPlugin = await pluginStorageService.validateAndPublishPlugin(plugin._id.toString());
+            res.status(200).json({ status: 'success', data: { ...result, plugin: validatedPlugin } });
+        } catch (err: any) {
+            throw new RuntimeError(err.message, 400);
+        }
     });
 
     public deleteBinary = catchAsync(async (req: Request, res: Response) => {
@@ -272,7 +278,8 @@ export default class PluginsController extends BaseController<IPlugin> {
 
         try {
             const result = await pluginStorageService.importPlugin(req.file.buffer, teamId);
-            res.status(201).json({ status: 'success', data: result.plugin });
+            const validatedPlugin = await pluginStorageService.validateAndPublishPlugin(result.plugin._id.toString());
+            res.status(201).json({ status: 'success', data: validatedPlugin });
         } catch (err: any) {
             return next(new RuntimeError(err.message, 400));
         }

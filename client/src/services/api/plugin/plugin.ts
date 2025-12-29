@@ -105,13 +105,22 @@ const pluginApi = {
     async executePlugin(
         pluginSlug: string,
         trajectoryId: string,
-        config: Record<string, any>,
-        timestep?: number
+        options: {
+            config: Record<string, any>;
+            selectedFrameOnly?: boolean;
+            timestep?: number;
+        }
     ): Promise<string> {
         const response = await client.request<ExecutePluginResponse>(
             'post',
             `/${pluginSlug}/trajectory/${trajectoryId}/execute`,
-            { data: { config, timestep } }
+            {
+                data: {
+                    config: options.config,
+                    selectedFrameOnly: options.selectedFrameOnly,
+                    timestep: options.timestep
+                }
+            }
         );
         return response.data.data.analysisId;
     },

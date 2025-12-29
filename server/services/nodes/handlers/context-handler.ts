@@ -27,6 +27,8 @@ class ContextHandler implements NodeHandler {
             let timesteps = await DumpStorage.listDumps(context.trajectoryId);
             const trajectory = await Trajectory.findById(context.trajectoryId).lean();
 
+            logger.info(`[ContextHandler] selectedFrameOnly=${context.selectedFrameOnly}, selectedTimestep=${context.selectedTimestep}, available timesteps: ${timesteps.length}`);
+
             // Filter to single frame if selectedFrameOnly is enabled
             if (context.selectedFrameOnly && context.selectedTimestep !== undefined) {
                 const targetTimestep = String(context.selectedTimestep);
