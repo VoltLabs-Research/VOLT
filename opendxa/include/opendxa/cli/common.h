@@ -148,7 +148,6 @@ struct ParallelConfig {
 
 inline ParallelConfig initParallelism(const std::map<std::string, std::string>& opts, bool deterministicDefault = false) {
     auto deterministicOpt = getOptionalBool(opts, "--deterministic");
-    bool deterministicEnv = getEnvBool("OPENDXA_DETERMINISTIC");
 
     auto resolveThreads = [&](int fallback) {
         int threads = 0;
@@ -166,13 +165,11 @@ inline ParallelConfig initParallelism(const std::map<std::string, std::string>& 
 
     int threads = 0;
     if (deterministicOpt.has_value()) {
-        if (*deterministicOpt) {
-            threads = 1;
-        } else {
+        //if (*deterministicOpt) {
+        //    threads = 1;
+        // } else {
             threads = resolveThreads(oneapi::tbb::info::default_concurrency());
-        }
-    } else if (deterministicEnv) {
-        threads = 1;
+        // }
     } else {
         int fallback = deterministicDefault ? 1 : oneapi::tbb::info::default_concurrency();
         threads = resolveThreads(fallback);

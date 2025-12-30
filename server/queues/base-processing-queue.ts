@@ -33,6 +33,7 @@ import { VirtualWorker } from '@/utilities/queues/virtual-worker';
 import { publishJobUpdate } from '@/events/job-updates';
 import { Trajectory } from '@/models';
 import logger from '@/logger';
+import { Queues } from '@/constants/queues';
 
 export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitter {
     protected readonly queueName: string;
@@ -611,11 +612,11 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     private mapJobStatusToTrajectoryStatus(jobStatus: string, queueType: string): string | null {
         // Cloud upload jobs should NOT affect trajectory status
-        if (queueType.includes('cloud-upload')) {
+        if (queueType.includes(Queues.CLOUD_UPLOAD)) {
             return null;
         }
 
-        if (queueType.includes('analysis-processing-queue')) {
+        if (queueType.includes(Queues.ANALYSIS_PROCESSING)) {
             switch (jobStatus) {
                 case 'queued':
                 case 'waiting':
@@ -631,7 +632,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             }
         }
 
-        if (queueType.includes('rasterizer')) {
+        if (queueType.includes(Queues.RASTERIZER)) {
             // Rasterizer(preview generation)
             switch (jobStatus) {
                 case 'queued':

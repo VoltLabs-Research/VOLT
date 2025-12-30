@@ -156,7 +156,7 @@ target_include_directories(opendxa_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/dependencies/ptm
     ${CMAKE_SOURCE_DIR}/dependencies/pybind11_json/include
     ${CMAKE_SOURCE_DIR}/dependencies/boost
-    ${CMAKE_SOURCE_DIR}/dependencies/fast_float
+    ${CMAKE_SOURCE_DIR}/dependencies
     ${CMAKE_SOURCE_DIR}/dependencies/mwm_csp
 )
 

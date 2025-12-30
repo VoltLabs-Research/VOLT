@@ -6,6 +6,7 @@
 #include <tbb/parallel_for_each.h>
 #include <tbb/blocked_range.h>
 #include <tbb/spin_mutex.h>
+#include <tbb/concurrent_vector.h>
 #include <vector>
 #include <ranges>
 #include <atomic>
@@ -214,17 +215,105 @@ struct BurgersCircuitSearchStruct{
 // to detect the first set of closed loops ("primary" Burgers circuit). 
 // When two search frontiers collide with matching transformation matrices, 
 // form a new loop.
-// NOTE: Vertices are processed sequentially to ensure deterministic circuit creation order.
+// PARALLELIZED: Each vertex's BFS is independent, using thread-local storage.
 void BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
     const int searchDepth = (maxBurgersCircuitSize - 1) / 2;
+    const size_t vertexCount = mesh().vertexCount();
+    
+    // Structure to hold a potential circuit candidate found during parallel search
+    struct CircuitCandidate {
+        InterfaceMesh::Edge* edge;
+        size_t vertexIndex;
+    };
+    
+    // Thread-safe container for found candidates
+    tbb::concurrent_vector<CircuitCandidate> candidates;
+    
+    // Parallel BFS over all vertices
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, vertexCount, 1024),
+        [&](const tbb::blocked_range<size_t>& r){
+        // Thread-local data structures
+        MemoryPool<SearchNode> pool(1024);
+        std::vector<SearchNode*> queue;
+        std::unordered_map<InterfaceMesh::Vertex*, SearchNode*> visited_map;
+        
+        for(size_t i = r.begin(); i < r.end(); ++i){
+            auto* startVert = mesh().vertex(i);
+            queue.clear();
+            visited_map.clear();
+            pool.clear(true);
 
-    // Process vertices sequentially for deterministic ordering
+            auto* root = pool.construct();
+            root->node = startVert;
+            root->coord = Point3::Origin();
+            root->tm.setIdentity();
+            root->depth = 0;
+            root->viaEdge = nullptr;
+            visited_map[startVert] = root;
+            queue.push_back(root);
+
+            for(size_t qi = 0; qi < queue.size(); ++qi){
+                auto* cur = queue[qi];
+
+                for(auto* edge = cur->node->edges(); edge != nullptr; edge = edge->nextVertexEdge()){
+                    // Quick check - skip if already part of a circuit
+                    if(edge->nextCircuitEdge || (edge->face() && edge->face()->circuit)) continue;
+
+                    auto* nbVert = edge->vertex2();
+                    Point3 nbCoord = cur->coord + cur->tm * edge->clusterVector;
+
+                    auto it = visited_map.find(nbVert);
+                    if(it != visited_map.end()){
+                        auto* prevStruct = it->second;
+                        Vector3 b = prevStruct->coord - nbCoord;
+                        if(!b.isZero(CA_LATTICE_VECTOR_EPSILON)){
+                            Matrix3 R = cur->tm * edge->clusterTransition->reverse->tm;
+                            if(R.equals(prevStruct->tm, CA_TRANSITION_MATRIX_EPSILON)){
+                                // Found a potential circuit - record it for later processing
+                                // Double-check edge is still available (could have been claimed)
+                                if(!edge->nextCircuitEdge && !(edge->face() && edge->face()->circuit)){
+                                    candidates.push_back({edge, i});
+                                }
+                                // Don't break - continue searching for more candidates
+                            }
+                        }
+                    }else if(cur->depth < searchDepth){
+                        auto* nb = pool.construct();
+                        nb->node = nbVert;
+                        nb->coord = nbCoord;
+                        nb->depth = cur->depth + 1;
+                        nb->viaEdge = edge;
+                        nb->tm = edge->clusterTransition->isSelfTransition()
+                            ? cur->tm
+                            : cur->tm * edge->clusterTransition->reverse->tm;
+                        visited_map[nbVert] = nb;
+                        queue.push_back(nb);
+                    }
+                }
+            }
+        }
+    });
+    
+    // Sequential circuit creation from candidates (maintains determinism)
+    // Sort by vertex index to ensure reproducible order
+    std::vector<CircuitCandidate> sortedCandidates(candidates.begin(), candidates.end());
+    std::sort(sortedCandidates.begin(), sortedCandidates.end(), 
+        [](const CircuitCandidate& a, const CircuitCandidate& b){
+            return a.vertexIndex < b.vertexIndex;
+        });
+    
+    // Process candidates sequentially with fresh visited_map per candidate
     MemoryPool<SearchNode> pool(1024);
     std::vector<SearchNode*> queue;
     std::unordered_map<InterfaceMesh::Vertex*, SearchNode*> visited_map;
-
-    for(size_t i = 0; i < mesh().vertexCount(); ++i){
-        auto* startVert = mesh().vertex(i);
+    
+    for(const auto& candidate : sortedCandidates){
+        auto* edge = candidate.edge;
+        
+        // Skip if edge was already claimed by another circuit
+        if(edge->nextCircuitEdge || (edge->face() && edge->face()->circuit)) continue;
+        
+        auto* startVert = mesh().vertex(candidate.vertexIndex);
         queue.clear();
         visited_map.clear();
         pool.clear(true);
@@ -238,25 +327,28 @@ void BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
         visited_map[startVert] = root;
         queue.push_back(root);
 
+        // Rebuild visited_map up to the edge
         bool found = false;
         for(size_t qi = 0; qi < queue.size() && !found; ++qi){
             auto* cur = queue[qi];
 
-            for(auto* edge = cur->node->edges(); edge != nullptr && !found; edge = edge->nextVertexEdge()){
-                if(edge->nextCircuitEdge || (edge->face() && edge->face()->circuit)) continue;
+            for(auto* e = cur->node->edges(); e != nullptr && !found; e = e->nextVertexEdge()){
+                if(e->nextCircuitEdge || (e->face() && e->face()->circuit)) continue;
 
-                auto* nbVert = edge->vertex2();
-                Point3 nbCoord = cur->coord + cur->tm * edge->clusterVector;
+                auto* nbVert = e->vertex2();
+                Point3 nbCoord = cur->coord + cur->tm * e->clusterVector;
 
                 auto it = visited_map.find(nbVert);
                 if(it != visited_map.end()){
                     auto* prevStruct = it->second;
                     Vector3 b = prevStruct->coord - nbCoord;
                     if(!b.isZero(CA_LATTICE_VECTOR_EPSILON)){
-                        Matrix3 R = cur->tm * edge->clusterTransition->reverse->tm;
+                        Matrix3 R = cur->tm * e->clusterTransition->reverse->tm;
                         if(R.equals(prevStruct->tm, CA_TRANSITION_MATRIX_EPSILON)){
-                            if (!edge->nextCircuitEdge && !(edge->face() && edge->face()->circuit)) {
-                                found = createBurgersCircuit(edge, maxBurgersCircuitSize, visited_map);
+                            if(!e->nextCircuitEdge && !(e->face() && e->face()->circuit)){
+                                if(e == edge){
+                                    found = createBurgersCircuit(e, maxBurgersCircuitSize, visited_map);
+                                }
                             }
                         }
                     }
@@ -265,10 +357,10 @@ void BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
                     nb->node = nbVert;
                     nb->coord = nbCoord;
                     nb->depth = cur->depth + 1;
-                    nb->viaEdge = edge;
-                    nb->tm = edge->clusterTransition->isSelfTransition()
+                    nb->viaEdge = e;
+                    nb->tm = e->clusterTransition->isSelfTransition()
                         ? cur->tm
-                        : cur->tm * edge->clusterTransition->reverse->tm;
+                        : cur->tm * e->clusterTransition->reverse->tm;
                     visited_map[nbVert] = nb;
                     queue.push_back(nb);
                 }

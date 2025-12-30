@@ -42,6 +42,24 @@ class PluginStorageService {
             'x-amz-meta-original-name': file.originalname
         });
 
+        // Update the plugin's entrypoint node with binary info
+        const plugin = await Plugin.findById(pluginId);
+        if (plugin?.workflow?.nodes) {
+            const entrypointNode = plugin.workflow.nodes.find(
+                (n: IWorkflowNode) => n.type === NodeType.ENTRYPOINT
+            );
+            if (entrypointNode?.data) {
+                if (!entrypointNode.data.entrypoint) {
+                    entrypointNode.data.entrypoint = {};
+                }
+                entrypointNode.data.entrypoint.binary = file.originalname;
+                entrypointNode.data.entrypoint.binaryObjectPath = objectPath;
+                entrypointNode.data.entrypoint.binaryFileName = file.originalname;
+                plugin.markModified('workflow');
+                await plugin.save();
+            }
+        }
+
         logger.info(`[PluginStorageService] Binary uploaded: ${objectPath} (${file.size} bytes)`);
 
         return {
