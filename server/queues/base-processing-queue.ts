@@ -61,13 +61,13 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     constructor(options: QueueOptions) {
         super();
 
-        this.queueName = `${process.env.NODE_ENV}:${options.queueName}`;
+        this.queueName = `${options.queueName}`;
         this.workerPath = options.workerPath;
         this.options = options;
 
-        this.queueKey = `${this.queueName}_queue`;
-        this.processingKey = `${this.queueKey}:processing`;
-        this.statusKeyPrefix = `${this.queueKey}:status:`;
+        this.queueKey = `${process.env.NODE_ENV}/${this.queueName}_queue`;
+        this.processingKey = `${process.env.NODE_ENV}/${this.queueKey}:processing`;
+        this.statusKeyPrefix = `${process.env.NODE_ENV}/${this.queueKey}:status:`;
 
         this.maxConcurrentJobs = options.maxConcurrentJobs || Math.max(2, Math.floor(os.cpus().length * 0.75));
         this.useStreamingAdd = options.useStreamingAdd || false;
@@ -262,6 +262,18 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         if (!sessionData) {
             logger.warn(`Session data not found for ${sessionId}`);
             return;
+        }
+
+        // Cleanup dump cache directory for this trajectory
+        try {
+            const { TEMP_DIR } = await import('@/utilities/temp-dir');
+            const path = await import('node:path');
+            const fs = await import('node:fs/promises');
+            const dumpCacheDir = path.join(TEMP_DIR, trajectoryId);
+            await fs.rm(dumpCacheDir, { recursive: true, force: true });
+            this.logInfo(`Cleaned up dump cache directory for trajectory ${trajectoryId}`);
+        } catch (cleanupError) {
+            this.logError(`Failed to cleanup dump cache for trajectory ${trajectoryId}: ${cleanupError}`);
         }
 
         try {
@@ -475,8 +487,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             const workerId = worker.threadId;
 
             worker.on('message', (message: any) => this.handleWorkerMessage(workerId, message));
-            // Virtual workers don't "error" or "exit" in the OS sense, but we can keep listeners if we implement them
-            // worker.on('error', ...)
             return worker;
         }
 

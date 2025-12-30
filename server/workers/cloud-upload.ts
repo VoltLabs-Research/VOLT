@@ -2,19 +2,28 @@ import DumpStorage from '@/services/dump-storage';
 import { CloudUploadJob } from '@/types/services/cloud-upload';
 import { parentPort } from 'node:worker_threads';
 import logger from '@/logger';
+import * as fs from 'node:fs/promises';
 import '@config/env';
 
 export const processJob = async (job: CloudUploadJob): Promise<any> => {
     const { jobId, trajectoryId, timestep } = job;
     const localPath = DumpStorage.getCachePath(trajectoryId, timestep);
 
-    await DumpStorage.saveDump(trajectoryId, timestep, localPath, () => { });
+    try{
+        await DumpStorage.saveDump(trajectoryId, timestep, localPath, () => { });
 
-    return {
-        status: 'completed',
-        jobId,
-        timestep
-    };
+        return {
+            status: 'completed',
+            jobId,
+            timestep
+        };
+    }finally{
+        // TODO: Other more elegant instruction for this
+        await new Promise((resolve) => setTimeout(async () => {
+            await fs.rm(localPath);
+            resolve(true);
+        }, 1000));
+    }
 };
 
 const main = async () => {

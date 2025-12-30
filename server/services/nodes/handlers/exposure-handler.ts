@@ -10,6 +10,7 @@ import logger from '@/logger';
 import { PluginExposureMeta } from '@/models';
 import removeArrays from '@/utilities/runtime/remove-arrays';
 import pLimit from '@/utilities/perf/p-limit';
+import * as fs from 'node:fs/promises';
 
 class ExposureHandler implements NodeHandler{
     readonly type = NodeType.EXPOSURE;

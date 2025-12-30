@@ -59,7 +59,6 @@ const processJob = async (job: RasterizerJob): Promise<void> => {
             error: error.message || 'Unknown rasterizer error'
         });
     } finally {
-        // Clean up temp files
         await fs.unlink(tempPng).catch(() => { });
         if (inputPath) {
             await fs.unlink(inputPath).catch(() => { });

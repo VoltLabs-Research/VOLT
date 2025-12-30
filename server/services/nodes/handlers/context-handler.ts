@@ -46,6 +46,7 @@ class ContextHandler implements NodeHandler {
             });
 
             const trajectory_dumps = await Promise.all(dumpPromises);
+
             return {
                 trajectory_dumps,
                 count: trajectory_dumps.length,

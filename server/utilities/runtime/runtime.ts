@@ -48,12 +48,6 @@ export const slugify = (value: string) => value
     .replace(/^-+/, '')
     .replace(/-+$/, '');
 
-export const createTempDir = async (prefix: string = 'opendxa-'): Promise<string> => {
-    await mkdir(TEMP_DIR, { recursive: true });
-    const tempDir = await mkdtemp(join(TEMP_DIR, prefix));
-    return tempDir;
-};
-
 /**
  * Catches async errors in Express route handlers and passes them to the error middleware.
  * This eliminate the need for try-catch blocks in every async route handler.

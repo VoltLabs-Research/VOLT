@@ -1,7 +1,7 @@
 export const Queues = {
-    ANALYSIS_PROCESSING: 'analysis-processing-queue',
-    TRAJECTORY_PROCESSING: 'trajectory-processing-queue',
-    RASTERIZER: 'rasterizer-queue',
-    SSH_IMPORT: 'ssh-import-queue',
-    CLOUD_UPLOAD: 'cloud-upload'
+    ANALYSIS_PROCESSING: '_analysis-processing-queue',
+    TRAJECTORY_PROCESSING: '_trajectory-processing-queue',
+    RASTERIZER: '_rasterizer-queue',
+    SSH_IMPORT: '_ssh-import-queue',
+    CLOUD_UPLOAD: '_cloud-upload'
 };

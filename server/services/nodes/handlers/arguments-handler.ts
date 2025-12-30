@@ -24,7 +24,6 @@ class ArgumentsHandler implements NodeHandler {
             let value = argDef.value ?? context.userConfig[argDef.argument] ?? argDef.default;
             const argType = argDef.type as string;
 
-            // Handle frame type: resolve timestep to dump file path
             if (argType === 'frame') {
                 if (value !== undefined && value !== null) {
                     const dumpPath = await DumpStorage.getDump(context.trajectoryId, value);

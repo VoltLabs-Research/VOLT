@@ -123,7 +123,9 @@ export default class PluginWorkflowEngine {
                 }
             }
 
-            return this.collectExposureResults(plugin.workflow, context);
+            const results = this.collectExposureResults(plugin.workflow, context);
+            await this.cleanup(context.generatedFiles);
+            return results;
         } catch (error: any) {
             logger.error(`[PluginWorkflowEngine] Execution failed: ${error.message}`);
             await this.cleanup(context.generatedFiles);
@@ -224,7 +226,7 @@ export default class PluginWorkflowEngine {
     private async cleanup(files: string[]): Promise<void> {
         for (const file of files) {
             try {
-                await fs.unlink(file);
+                await fs.rm(file, { recursive: true, force: true });
             } catch {
             }
         }

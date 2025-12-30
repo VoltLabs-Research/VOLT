@@ -31,10 +31,8 @@ import '@/services/nodes/handlers';
 import { NodeType } from '@/types/models/plugin';
 import { precomputeListingRowsForTimesteps } from '@/services/precompute-listing-row';
 import DumpStorage from '@/services/dump-storage';
+import path from 'node:path';
 
-/**
- * Detecta listing slugs (exposures) que tienen un nodo VISUALIZERS conectado con listing != {}
- */
 const extractListingSlugs = (plugin: any): string[] => {
     const nodes = plugin?.workflow?.nodes || [];
     const edges = plugin?.workflow?.edges || [];
@@ -139,7 +137,6 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
         }
 
         const engine = new PluginWorkflowEngine();
-        console.log(job);
         await engine.execute(
             plugin as any,
             job.trajectoryId,

@@ -1,6 +1,5 @@
 import { ITrajectory } from '@/types/models/trajectory';
 import { RasterizerOptions } from './export/rasterizer';
-import { createTempDir } from '@/utilities/runtime/runtime';
 import { RasterizerJob } from '@/types/services/rasterizer-queue';
 import { getRasterizerQueue } from '@/queues';
 import { Response } from 'express';
@@ -9,6 +8,7 @@ import storage from '@/services/storage';
 import * as path from 'node:path';
 import { SYS_BUCKETS } from '@/config/minio';
 import logger from '@/logger';
+import { TEMP_DIR } from './temp-dir';
 
 export const rasterizeGLBs = async (
     prefix: string,
@@ -41,9 +41,7 @@ export const rasterizeGLBs = async (
 
         const task = async () => {
             try {
-                // Create unique temp dir for this specific frame
-                const tempDir = await createTempDir();
-                const tempPath = path.join(tempDir, timestep.toString());
+                const tempPath = path.join(TEMP_DIR, timestep.toString());
 
                 await storage.download(prefixBucketName, key, tempPath);
                 jobs.push({
