@@ -26,7 +26,6 @@ import { BaseJob, QueueOptions, WorkerPoolItem } from '@/types/queues/base-proce
 import { createRedisClient } from '@config/redis';
 import { Worker } from 'worker_threads';
 import * as os from 'node:os';
-import * as path from 'node:path';
 import { EventEmitter } from 'events';
 import { Redis } from 'ioredis';
 import { VirtualWorker } from '@/utilities/queues/virtual-worker';
@@ -62,7 +61,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     constructor(options: QueueOptions) {
         super();
 
-        this.queueName = options.queueName;
+        this.queueName = `${process.env.NODE_ENV}:${options.queueName}`;
         this.workerPath = options.workerPath;
         this.options = options;
 
