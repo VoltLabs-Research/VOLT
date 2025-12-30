@@ -12,6 +12,7 @@ build-release/
 !/opendxa/dependencies/ptm/**
 !/opendxa/dependencies/geogram/
 !/opendxa/dependencies/geogram/**
+!/opendxa/dependencies/fast_float/
 !/opendxa/dependencies/fast_float/**
 !/opendxa/dependencies/mwm_csp/**
 !/opendxa/dependencies/mwm_csp/
