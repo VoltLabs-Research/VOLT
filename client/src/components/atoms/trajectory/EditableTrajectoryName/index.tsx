@@ -2,8 +2,14 @@ import EditableTag from '@/components/atoms/common/EditableTag';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import { useAuthStore } from '@/stores/slices/auth';
 import Title from '@/components/primitives/Title';
+import type { Trajectory } from '@/types/models';
 
-const EditableTrajectoryName = ({ trajectory, className }) => {
+interface EditableTrajectoryNameProps{
+    trajectory: Trajectory,
+    className: string;
+};
+
+const EditableTrajectoryName = ({ trajectory, className }: EditableTrajectoryNameProps) => {
     const updateTrajectoryById = useTrajectoryStore((state) => state.updateTrajectoryById);
     const user = useAuthStore((state) => state.user);
     const isAuthenticated = !!user;
@@ -13,7 +19,7 @@ const EditableTrajectoryName = ({ trajectory, className }) => {
         try{
             await updateTrajectoryById(trajectory._id, { name: newName });
         }catch(error: any){
-            console.error('Failed to update trajectory name:', errorContext);
+            console.error('Failed to update trajectory name:', error);
             throw error;
         }
     };

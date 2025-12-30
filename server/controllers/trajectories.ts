@@ -17,7 +17,7 @@ export default class TrajectoryController extends BaseController<any> {
     constructor() {
         super(Trajectory, {
             resource: Resource.TRAJECTORY,
-            fields: ['originalFolderName', 'uploadId', 'teamId', 'preview', 'isPublic', 'createdBy'],
+            fields: ['originalFolderName', 'uploadId', 'teamId', 'preview', 'name', 'isPublic', 'createdBy'],
             populate: [
                 { path: 'createdBy', select: 'email firstName lastName' },
                 { path: 'analysis' },

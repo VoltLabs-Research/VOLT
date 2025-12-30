@@ -19,7 +19,7 @@ const TrajectoryVisibilityStatusFloatIcon = () => {
         try{
             await updateTrajectoryById(id, { isPublic: !isPublic });
         }catch(error: any){
-            console.error('Failed to toggle trajectory visibility:', errorContext);
+            console.error('Failed to toggle trajectory visibility:', error);
         }finally{
             setIsUpdating(false);
         }
