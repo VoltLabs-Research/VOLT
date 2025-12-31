@@ -25,11 +25,12 @@ import { Trajectory, Team } from '@/models/index';
 import multer, { FileFilterCallback } from 'multer';
 
 import path from 'path';
+import tempFileManager from '@/services/temp-file-manager';
 
 export const upload = multer({
     storage: multer.diskStorage({
         destination: (req, file, cb) => {
-            const dest = path.resolve(__dirname, '../storage/temp');
+            const dest = tempFileManager.rootPath;
             cb(null, dest);
         },
         filename: (req, file, cb) => {

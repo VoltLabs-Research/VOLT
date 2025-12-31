@@ -8,7 +8,7 @@ import logger from '@/logger';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { v4 as uuidv4 } from 'uuid';
-import { TEMP_DIR } from '@/utilities/temp-dir';
+import tempFileManager from '@/services/temp-file-manager';
 
 const CACHE_CONTROL = 'public, max-age=86400';
 const CONTENT_TYPE = 'image/png';
@@ -16,7 +16,7 @@ const CONTENT_TYPE = 'image/png';
 const processJob = async (job: RasterizerJob): Promise<void> => {
     const start = performance.now();
     const inputPath = job.opts.inputPath as string;
-    const tempPng = path.join(TEMP_DIR, `raster_${uuidv4()}.png`);
+    const tempPng = tempFileManager.generateFilePath({ prefix: 'raster_', extension: '.png' });
 
 
     try {

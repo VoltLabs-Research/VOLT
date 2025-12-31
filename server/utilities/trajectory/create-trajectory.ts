@@ -1,4 +1,5 @@
 import DumpStorage from '@/services/dump-storage';
+import tempFileManager from '@/services/temp-file-manager';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { Types } from 'mongoose';
@@ -223,7 +224,7 @@ const processFilesInBackground = async (
     teamId: string,
     onProgress?: (progress: number) => void
 ) => {
-    const tempBaseDir = path.resolve(__dirname, '../../storage/temp');
+    const tempBaseDir = tempFileManager.rootPath;
     const workingDir = path.join(tempBaseDir, trajectoryIdStr);
     await fs.mkdir(workingDir, { recursive: true });
 

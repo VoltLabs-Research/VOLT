@@ -24,7 +24,7 @@ import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { mkdtemp, mkdir } from 'node:fs/promises';
 import { FilterQuery, Types } from 'mongoose';
 import { join } from 'node:path';
-import { TEMP_DIR } from '@/utilities/temp-dir';
+
 
 // Type for async request handlers that may throw errors
 type AsyncRequestHandler = (

@@ -8,7 +8,7 @@ import storage from '@/services/storage';
 import * as path from 'node:path';
 import { SYS_BUCKETS } from '@/config/minio';
 import logger from '@/logger';
-import { TEMP_DIR } from './temp-dir';
+import tempFileManager from '@/services/temp-file-manager';
 
 export const rasterizeGLBs = async (
     prefix: string,
@@ -41,7 +41,7 @@ export const rasterizeGLBs = async (
 
         const task = async () => {
             try {
-                const tempPath = path.join(TEMP_DIR, timestep.toString());
+                const tempPath = path.join(tempFileManager.rootPath, timestep.toString());
 
                 await storage.download(prefixBucketName, key, tempPath);
                 jobs.push({

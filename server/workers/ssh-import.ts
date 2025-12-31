@@ -8,7 +8,7 @@ import * as fs from 'fs/promises';
 import * as path from 'node:path';
 import logger from '@/logger';
 import '@/config/env';
-import { TEMP_DIR } from '@/utilities/temp-dir';
+import tempFileManager from '@/services/temp-file-manager';
 
 export const processJob = async (job: SSHImportJob, postMessage?: (msg: any) => void) => {
     const sendMessage = postMessage || ((msg: any) => parentPort?.postMessage(msg));
@@ -28,7 +28,7 @@ export const processJob = async (job: SSHImportJob, postMessage?: (msg: any) => 
     let localFiles: string[] = [];
     const trajectoryName = fileStats.name || 'SSH Import';
 
-    const tempBaseDir = path.join(TEMP_DIR, 'imports');
+    const tempBaseDir = tempFileManager.getDirPath('imports');
     const localFolder = path.join(tempBaseDir, jobId);
 
     if (fileStats.isDirectory) {

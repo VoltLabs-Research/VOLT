@@ -33,7 +33,7 @@ import { SYS_BUCKETS } from '@/config/minio';
 import DumpStorage from '@/services/dump-storage';
 import logger from '@/logger';
 import { ValidationCodes } from '@/constants/validation-codes';
-import { TEMP_DIR } from '@/utilities/temp-dir';
+import TempFileManager from '@/services/temp-file-manager';
 
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
@@ -119,7 +119,7 @@ TrajectorySchema.pre('findOneAndDelete', async function (next) {
 
     const trajectoryId = trajectoryToDelete._id.toString();
     const { existsSync } = fs;
-    const trajectoryDir = process.env.TRAJECTORY_DIR || path.join(TEMP_DIR, 'trajectories');
+    const trajectoryDir = process.env.TRAJECTORY_DIR || path.join(TempFileManager.rootPath, 'trajectories');
     const trajectoryPath = path.join(trajectoryDir, trajectoryId);
 
     try {

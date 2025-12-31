@@ -3,6 +3,7 @@ import { NodeType, Exporter } from '@/types/models/plugin';
 import { IPlugin, IWorkflow } from '@/types/models/modifier';
 import nodeRegistry, { ExecutionContext } from '@/services/nodes/node-registry';
 import { topologicalSort, findDescendantByType } from '@/utilities/plugins/workflow-utils';
+import tempFileManager from '@/services/temp-file-manager';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 // Ensure all node handlers are registered
@@ -223,11 +224,18 @@ export default class PluginWorkflowEngine {
         return results;
     }
 
-    private async cleanup(files: string[]): Promise<void> {
+    private async cleanup(files: string[], sessionId?: string): Promise<void> {
+        // Register files with session for fallback cleanup if session ID provided
+        if (sessionId && files.length > 0) {
+            tempFileManager.registerMany(sessionId, files);
+        }
+
+        // Immediate cleanup of generated files
         for (const file of files) {
             try {
                 await fs.rm(file, { recursive: true, force: true });
             } catch {
+                // Silently ignore - file might already be deleted
             }
         }
     }

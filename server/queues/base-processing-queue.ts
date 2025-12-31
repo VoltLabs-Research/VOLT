@@ -27,7 +27,6 @@ import { createRedisClient } from '@config/redis';
 import { Worker } from 'worker_threads';
 import * as os from 'node:os';
 import { EventEmitter } from 'events';
-import { Redis } from 'ioredis';
 import { VirtualWorker } from '@/utilities/queues/virtual-worker';
 import { publishJobUpdate } from '@/events/job-updates';
 import { Trajectory } from '@/models';
@@ -65,9 +64,9 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         this.workerPath = options.workerPath;
         this.options = options;
 
-        this.queueKey = `${process.env.NODE_ENV}/${this.queueName}_queue`;
-        this.processingKey = `${process.env.NODE_ENV}/${this.queueKey}:processing`;
-        this.statusKeyPrefix = `${process.env.NODE_ENV}/${this.queueKey}:status:`;
+        this.queueKey = `${this.queueName}_queue`;
+        this.processingKey = `${this.queueKey}:processing`;
+        this.statusKeyPrefix = `${this.queueKey}:status:`;
 
         this.maxConcurrentJobs = options.maxConcurrentJobs || Math.max(2, Math.floor(os.cpus().length * 0.75));
         this.useStreamingAdd = options.useStreamingAdd || false;
@@ -264,16 +263,13 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             return;
         }
 
-        // Cleanup dump cache directory for this trajectory
+        // Cleanup using centralized TempFileManager
         try {
-            const { TEMP_DIR } = await import('@/utilities/temp-dir');
-            const path = await import('node:path');
-            const fs = await import('node:fs/promises');
-            const dumpCacheDir = path.join(TEMP_DIR, trajectoryId);
-            await fs.rm(dumpCacheDir, { recursive: true, force: true });
-            this.logInfo(`Cleaned up dump cache directory for trajectory ${trajectoryId}`);
+            const tempFileManager = (await import('@/services/temp-file-manager')).default;
+            await tempFileManager.cleanupSession(sessionId);
+            await tempFileManager.cleanupTrajectoryDumps(trajectoryId);
         } catch (cleanupError) {
-            this.logError(`Failed to cleanup dump cache for trajectory ${trajectoryId}: ${cleanupError}`);
+            this.logError(`Failed to cleanup for session ${sessionId}: ${cleanupError}`);
         }
 
         try {
@@ -293,18 +289,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         } catch (error) {
             this.logError(`Failed to emit session completed event: ${error}`);
         }
-    }
-
-    private async emitSessionExpired(teamId: string, sessionId: string, trajectoryId: string): Promise<void> {
-        const expiredEvent = {
-            type: 'session_expired',
-            sessionId,
-            trajectoryId,
-            timestamp: new Date().toISOString()
-        };
-
-        await publishJobUpdate(teamId, expiredEvent);
-        this.logInfo(`Session expired event emitted to team ${teamId}`);
     }
 
     private async checkAndCleanupSession(job: T): Promise<void> {
@@ -619,63 +603,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     protected abstract deserializeJob(rawData: string): T;
 
-    private mapJobStatusToTrajectoryStatus(jobStatus: string, queueType: string): string | null {
-        // Cloud upload jobs should NOT affect trajectory status
-        if (queueType.includes(Queues.CLOUD_UPLOAD)) {
-            return null;
-        }
-
-        if (queueType.includes(Queues.ANALYSIS_PROCESSING)) {
-            switch (jobStatus) {
-                case 'queued':
-                case 'waiting':
-                    return 'queued';
-                case 'running':
-                    return 'analyzing';
-                case 'completed':
-                    return 'completed';
-                case 'failed':
-                    return 'failed';
-                default:
-                    return null;
-            }
-        }
-
-        if (queueType.includes(Queues.RASTERIZER)) {
-            // Rasterizer(preview generation)
-            switch (jobStatus) {
-                case 'queued':
-                case 'waiting':
-                    return 'rendering';
-                case 'running':
-                    return 'rendering';
-                case 'completed':
-                    return 'completed';
-                case 'failed':
-                    return 'failed';
-                default:
-                    return null;
-            }
-        } else {
-            // Trajectory processing
-            switch (jobStatus) {
-                case 'queued':
-                case 'waiting':
-                    return 'queued';
-                case 'running':
-                    return 'processing';
-                case 'completed':
-                    // When trajectory processing completes, it transitions to rendering
-                    // (rasterizer job will be created next)
-                    return 'rendering';
-                case 'failed':
-                    return 'failed';
-                default:
-                    return null;
-            }
-        }
-    }
-
     private async setJobStatus(jobId: string, status: string, data: any): Promise<void> {
         const statusData = {
             jobId,
@@ -695,79 +622,19 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             await this.redis.sadd(teamJobsKey, jobId);
         }
 
-        // Map job status to trajectory status
-        const trajectoryStatus = this.mapJobStatusToTrajectoryStatus(status, data.queueType || this.queueName);
-
-        // Update trajectory status only on meaningful state transitions
-        // and only once per session(when the first job reaches a certain status)
-        if (data.trajectoryId && trajectoryStatus) {
+        // Update trajectory status using centralized service
+        if (data.trajectoryId && teamId) {
             try {
-                const trajectory = await Trajectory.findById(data.trajectoryId);
-                if (!trajectory) {
-                    this.logWarn(`Trajectory not found: ${data.trajectoryId}`);
-                    return;
-                }
-
-                let shouldUpdate = false;
-                const currentStatus = trajectory.status;
-
-                if (status === 'queued' && currentStatus !== 'processing' && currentStatus !== 'rendering' && currentStatus !== 'completed') {
-                    shouldUpdate = true;
-                } else if (status === 'running') {
-                    if (trajectoryStatus === 'analyzing') {
-                        // 🔥 Caso especial: análisis de dislocaciones
-                        // Permitimos cambiar desde cualquier estado(incluido 'completed'/'rendering')
-                        shouldUpdate = true;
-                    } else if (currentStatus !== 'rendering' && currentStatus !== 'completed') {
-                        // Comportamiento original para el pipeline principal
-                        shouldUpdate = true;
-
-                        if (data.sessionId) {
-                            const sessionRunningKey = `${data.sessionId}:first_running_job`;
-                            const alreadyRunning = await this.redis.get(sessionRunningKey);
-                            if (alreadyRunning) {
-                                shouldUpdate = false;
-                            } else {
-                                await this.redis.setex(sessionRunningKey, 86400, '1');
-                            }
-                        }
-                    }
-                } else if (status === 'completed' && trajectoryStatus === 'rendering') {
-                    // pipeline principal
-                    if (data.sessionId) {
-                        const sessionCompleteKey = `${data.sessionId}:first_complete_job`;
-                        const alreadyCompleted = await this.redis.get(sessionCompleteKey);
-                        if (!alreadyCompleted) {
-                            await this.redis.setex(sessionCompleteKey, 86400, '1');
-                            shouldUpdate = true;
-                        }
-                    }
-                } else if (status === 'completed' && trajectoryStatus === 'completed' && currentStatus !== 'completed') {
-                    // rasterizer o análisis que dejan la traj en 'completed'
-                    shouldUpdate = true;
-                } else if (status === 'failed' && currentStatus !== 'failed') {
-                    shouldUpdate = true;
-                }
-
-                if (shouldUpdate) {
-                    const updatedTrajectory = await Trajectory.findByIdAndUpdate(
-                        data.trajectoryId,
-                        { status: trajectoryStatus },
-                        { new: true }
-                    );
-
-                    if (updatedTrajectory && teamId) {
-                        await this.redis.publish('trajectory_updates', JSON.stringify({
-                            trajectoryId: data.trajectoryId,
-                            status: trajectoryStatus,
-                            teamId,
-                            updatedAt: updatedTrajectory.updatedAt,
-                            timestamp: new Date().toISOString()
-                        }));
-                    }
-                }
+                const trajectoryStatusService = (await import('@/services/trajectory-status-service')).default;
+                await trajectoryStatusService.updateFromJobStatus({
+                    trajectoryId: data.trajectoryId,
+                    teamId,
+                    sessionId: data.sessionId,
+                    jobStatus: status,
+                    queueType: data.queueType || this.queueName
+                });
             } catch (error) {
-                this.logError(`Failed to update trajectory ${data.trajectoryId} status: ${error}`);
+                this.logError(`Failed to update trajectory status: ${error}`);
             }
         }
 
