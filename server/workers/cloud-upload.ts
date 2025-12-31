@@ -9,7 +9,7 @@ export const processJob = async (job: CloudUploadJob): Promise<any> => {
     const { jobId, trajectoryId, timestep } = job;
     const localPath = DumpStorage.getCachePath(trajectoryId, timestep);
 
-    try{
+    try {
         await DumpStorage.saveDump(trajectoryId, timestep, localPath, () => { });
 
         return {
@@ -17,7 +17,7 @@ export const processJob = async (job: CloudUploadJob): Promise<any> => {
             jobId,
             timestep
         };
-    }finally{
+    } finally {
         // TODO: Other more elegant instruction for this
         await new Promise((resolve) => setTimeout(async () => {
             await fs.rm(localPath);

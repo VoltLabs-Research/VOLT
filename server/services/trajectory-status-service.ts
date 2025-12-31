@@ -11,6 +11,7 @@ import { Queues } from '@/constants/queues';
 import { createRedisClient } from '@config/redis';
 import logger from '@/logger';
 import IORedis from 'ioredis';
+import { Analysis } from '@/models';
 
 export interface StatusUpdateContext {
     trajectoryId: string;
@@ -128,7 +129,22 @@ class TrajectoryStatusService {
                 trajectoryStatus === 'completed' &&
                 currentStatus !== 'completed') {
                 // Rasterizer or analysis final completion
-                shouldUpdate = true;
+                if (queueType.includes(Queues.ANALYSIS_PROCESSING)) {
+                    // Verifying if there are any pending analyses for this trajectory
+                    const pendingAnalyses = await Analysis.exists({
+                        trajectory: trajectoryId,
+                        finishedAt: { $exists: false }
+                    });
+
+                    if (pendingAnalyses) {
+                        logger.debug(`[TrajectoryStatusService] Trajectory ${trajectoryId} has pending analyses. Skipping 'completed' status update.`);
+                        shouldUpdate = false;
+                    } else {
+                        shouldUpdate = true;
+                    }
+                } else {
+                    shouldUpdate = true;
+                }
             } else if (jobStatus === 'failed' && currentStatus !== 'failed') {
                 shouldUpdate = true;
             }

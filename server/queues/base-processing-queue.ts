@@ -267,7 +267,20 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         try {
             const tempFileManager = (await import('@/services/temp-file-manager')).default;
             await tempFileManager.cleanupSession(sessionId);
-            await tempFileManager.cleanupTrajectoryDumps(trajectoryId);
+
+            // Check if there are any active analyses for this trajectory
+            // We use dynamic import to avoid potential circular dependencies in this base class
+            const { Analysis } = await import('@/models');
+            const hasActiveAnalyses = await Analysis.exists({
+                trajectory: trajectoryId,
+                finishedAt: { $exists: false }
+            });
+
+            if (!hasActiveAnalyses) {
+                await tempFileManager.cleanupTrajectoryDumps(trajectoryId);
+            } else {
+                this.logInfo(`Skipping dump cleanup for trajectory ${trajectoryId} due to active analyses.`);
+            }
         } catch (cleanupError) {
             this.logError(`Failed to cleanup for session ${sessionId}: ${cleanupError}`);
         }

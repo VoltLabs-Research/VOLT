@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
 import { TbObjectScan, TbSearch } from 'react-icons/tb';
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md';
 import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
@@ -25,7 +26,98 @@ interface AnalysisSection {
     plugin: string;
     exposures: RenderableExposure[];
     isCurrentAnalysis: boolean;
+    config: Record<string, any>;
 }
+
+/**
+ * For analyses of the same plugin, find which config keys have different values.
+ * Returns a map of analysisId -> array of [key, value] pairs that differ.
+ */
+const computeDifferingConfigFields = (
+    analyses: { _id: string; plugin: string; config: Record<string, any> }[]
+): Map<string, [string, any][]> => {
+    const result = new Map<string, [string, any][]>();
+
+    // Group analyses by plugin
+    const byPlugin = new Map<string, typeof analyses>();
+    for (const analysis of analyses) {
+        const existing = byPlugin.get(analysis.plugin) || [];
+        existing.push(analysis);
+        byPlugin.set(analysis.plugin, existing);
+    }
+
+    // For each plugin group, find differing keys
+    for (const [, pluginAnalyses] of byPlugin) {
+        if (pluginAnalyses.length <= 1) {
+            // Only one analysis for this plugin - show all config if present
+            for (const analysis of pluginAnalyses) {
+                const entries = Object.entries(analysis.config || {});
+                if (entries.length > 0) {
+                    result.set(analysis._id, entries);
+                }
+            }
+            continue;
+        }
+
+        // Multiple analyses - find which keys differ
+        const allKeys = new Set<string>();
+        for (const analysis of pluginAnalyses) {
+            Object.keys(analysis.config || {}).forEach(k => allKeys.add(k));
+        }
+
+        const differingKeys = new Set<string>();
+        for (const key of allKeys) {
+            const values = pluginAnalyses.map(a => JSON.stringify(a.config?.[key]));
+            const uniqueValues = new Set(values);
+            if (uniqueValues.size > 1) {
+                differingKeys.add(key);
+            }
+        }
+
+        // For each analysis, store only the differing fields
+        for (const analysis of pluginAnalyses) {
+            const differingEntries: [string, any][] = [];
+            for (const key of differingKeys) {
+                if (analysis.config && key in analysis.config) {
+                    differingEntries.push([key, analysis.config[key]]);
+                }
+            }
+            if (differingEntries.length > 0) {
+                result.set(analysis._id, differingEntries);
+            }
+        }
+    }
+
+    return result;
+};
+
+/**
+ * Format config value for display
+ */
+const formatConfigValue = (value: any): string => {
+    if (value === null || value === undefined) return 'null';
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    if (typeof value === 'number') return String(value);
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value)) return `[${value.length}]`;
+    if (typeof value === 'object') return '{...}';
+    return String(value);
+};
+
+/**
+ * Build a map of argument key -> label from plugin arguments
+ */
+const buildArgumentLabelMap = (
+    pluginSlug: string,
+    getPluginArguments: (slug: string) => { argument: string; label: string }[]
+): Map<string, string> => {
+    const labelMap = new Map<string, string>();
+    const args = getPluginArguments(pluginSlug);
+    for (const arg of args) {
+        labelMap.set(arg.argument, arg.label);
+    }
+    return labelMap;
+};
 
 const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) => {
     const setActiveScene = useEditorStore((state) => state.setActiveScene);
@@ -36,6 +128,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
 
     const getRenderableExposures = usePluginStore((state) => state.getRenderableExposures);
     const getModifiers = usePluginStore((state) => state.getModifiers);
+    const getPluginArguments = usePluginStore((state) => state.getPluginArguments);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
 
@@ -69,7 +162,8 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                 pluginName: modifier?.name || analysis.plugin || 'Unknown',
                 plugin: analysis.plugin,
                 exposures,
-                isCurrentAnalysis: analysis._id === analysisConfigId
+                isCurrentAnalysis: analysis._id === analysisConfigId,
+                config: analysis.config || {}
             });
         }
 
@@ -89,6 +183,12 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
             s.pluginName.toLowerCase().includes(query)
         );
     }, [allAnalysisSections, searchQuery]);
+
+    // Compute differing config fields for analyses of the same plugin
+    const differingConfigByAnalysis = useMemo(() => {
+        if (!trajectory?.analysis) return new Map<string, [string, any][]>();
+        return computeDifferingConfigFields(trajectory.analysis);
+    }, [trajectory?.analysis]);
 
     // Load exposures for a specific analysis (this is the actual server call)
     const loadExposuresForAnalysis = useCallback(async (analysisId: string, plugin: string) => {
@@ -293,22 +393,41 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                     const isExpanded = expandedSections.has(section.analysisId);
                     const isLoading = loadingAnalyses.has(section.analysisId);
                     const analysis = trajectory?.analysis?.find((a: any) => a._id === section.analysisId);
+                    const differingFields = differingConfigByAnalysis.get(section.analysisId) || [];
+
+                    // Build label map for this plugin to show labels instead of keys
+                    const labelMap = buildArgumentLabelMap(section.plugin, getPluginArguments);
+                    const configDescription = differingFields
+                        .map(([key, value]) => `${labelMap.get(key) || key}: ${formatConfigValue(value)}`)
+                        .join(', ');
 
                     return (
                         <Container key={section.analysisId} className='analysis-section'>
                             <Container
-                                className='analysis-section-header d-flex items-center gap-05 cursor-pointer'
+                                className='analysis-section-header d-flex column cursor-pointer'
                                 onClick={() => toggleSection(section.analysisId)}
                             >
-                                <i className='analysis-section-arrow'>
-                                    {isExpanded ? <MdKeyboardArrowDown /> : <MdKeyboardArrowRight />}
-                                </i>
-                                <Paragraph
-                                    className={`analysis-section-title font-size-2 ${section.isCurrentAnalysis ? 'color-gray' : 'color-secondary'}`}
-                                >
-                                    {section.pluginName}
-                                    {section.isCurrentAnalysis && ' (Active)'}
-                                </Paragraph>
+                                <Container className='d-flex items-center gap-05'>
+                                    <i className='analysis-section-arrow'>
+                                        {isExpanded ? <MdKeyboardArrowDown /> : <MdKeyboardArrowRight />}
+                                    </i>
+                                    <Paragraph
+                                        className={`analysis-section-title font-size-2 ${section.isCurrentAnalysis ? 'color-gray' : 'color-secondary'}`}
+                                    >
+                                        {section.pluginName}
+                                        {section.isCurrentAnalysis && ' (Active)'}
+                                        {analysis?.createdAt && (
+                                            <span className='analysis-section-date'>
+                                                {' • '}{formatDistanceToNow(new Date(analysis.createdAt), { addSuffix: true })}
+                                            </span>
+                                        )}
+                                    </Paragraph>
+                                </Container>
+                                {configDescription && (
+                                    <Paragraph className='analysis-section-description color-tertiary font-size-1'>
+                                        {configDescription}
+                                    </Paragraph>
+                                )}
                             </Container>
 
                             {isExpanded && isLoading && (
