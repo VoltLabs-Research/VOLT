@@ -27,12 +27,9 @@ export interface RenderableExposure {
 }
 
 export interface ResolvedModifier {
-    pluginId: string;
-    pluginSlug: string;
+    plugin: IPluginRecord;
     name: string;
     icon?: string;
-    description?: string;
-    version?: string;
 }
 
 export interface PluginArgument {
@@ -154,12 +151,9 @@ export const usePluginStore = create<PluginState>((set, get) => ({
                     const modData = (node?.data?.modifier || {}) as IModifierData;
 
                     return {
-                        pluginId: plugin._id,
-                        pluginSlug: plugin.slug,
+                        plugin,
                         name: modData.name || plugin.slug,
-                        icon: modData.icon,
-                        description: modData.description,
-                        version: modData.version
+                        icon: modData.icon
                     };
                 });
 
@@ -173,7 +167,7 @@ export const usePluginStore = create<PluginState>((set, get) => ({
         const { plugins } = get();
         const key = plugins.map(p => `${p._id}:${(p as any).updatedAt ?? ''}`).join('|');
         if (key === modifiersCache.key && modifiersCache.data.length > 0) return modifiersCache.data;
-
+        console.log('get modifiers:', plugins)
         modifiersCache = {
             key,
             data: plugins.map(plugin => {
@@ -183,12 +177,9 @@ export const usePluginStore = create<PluginState>((set, get) => ({
                 const data = (node?.data?.modifier || {}) as IModifierData;
 
                 return {
-                    pluginId: plugin._id,
-                    pluginSlug: plugin.slug,
+                    plugin,
                     name: data.name || plugin.slug,
-                    icon: data.icon,
-                    description: data.description,
-                    version: data.version
+                    icon: data.icon
                 };
             })
         };

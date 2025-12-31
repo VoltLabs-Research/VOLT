@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, formatDuration } from 'date-fns';
 import { TbObjectScan, TbSearch } from 'react-icons/tb';
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md';
 import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
 import { useEditorStore } from '@/stores/slices/editor';
-import type { Trajectory } from '@/types/models';
-import { usePluginStore, type RenderableExposure } from '@/stores/slices/plugin/plugin-slice';
+import type { Analysis, Trajectory } from '@/types/models';
+import { usePluginStore, type RenderableExposure, type ResolvedModifier } from '@/stores/slices/plugin/plugin-slice';
 import './CanvasSidebarScene.css';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
@@ -14,16 +14,17 @@ import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
+import CursorTooltip from '@/components/atoms/common/CursorTooltip';
 import { RiMore2Fill } from 'react-icons/ri';
+import Title from '@/components/primitives/Title';
 
 interface CanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
 }
 
 interface AnalysisSection {
-    analysisId: string;
-    pluginName: string;
-    plugin: string;
+    analysis: Analysis;
+    plugin: ResolvedModifier | null;
     exposures: RenderableExposure[];
     isCurrentAnalysis: boolean;
     config: Record<string, any>;
@@ -137,7 +138,10 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
 
-
+    // Tooltip state for analysis section hover
+    const [tooltipOpen, setTooltipOpen] = useState(false);
+    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+    const [tooltipAnalysis, setTooltipAnalysis] = useState<any | null>(null);
 
     const analysisConfigId = analysisConfig?._id;
     const activeSceneRef = useRef(activeScene);
@@ -154,13 +158,12 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         const sections: AnalysisSection[] = [];
 
         for (const analysis of trajectory.analysis) {
-            const modifier = modifiers.find(m => m.pluginSlug === analysis.plugin);
+            const modifier = modifiers.find(m => m.plugin.slug === analysis.plugin);
             const exposures = exposuresByAnalysis.get(analysis._id) || [];
 
             sections.push({
-                analysisId: analysis._id,
-                pluginName: modifier?.name || analysis.plugin || 'Unknown',
-                plugin: analysis.plugin,
+                analysis,
+                plugin: modifier || null,
                 exposures,
                 isCurrentAnalysis: analysis._id === analysisConfigId,
                 config: analysis.config || {}
@@ -175,12 +178,14 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         });
     }, [trajectory?.analysis, exposuresByAnalysis, analysisConfigId, getModifiers]);
 
+    console.log(allAnalysisSections);
+
     // Filter by search query (client-side filtering since data is already loaded)
     const filteredSections = useMemo(() => {
         if (!searchQuery.trim()) return allAnalysisSections;
         const query = searchQuery.toLowerCase();
         return allAnalysisSections.filter(s =>
-            s.pluginName.toLowerCase().includes(query)
+            (s.plugin?.name || s.analysis.plugin || '').toLowerCase().includes(query)
         );
     }, [allAnalysisSections, searchQuery]);
 
@@ -301,7 +306,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         }
         setActiveScene(option.sceneType);
     };
-
+    console.log('tooltip analysis:', tooltipAnalysis)
 
 
     const getSceneObjectFromOption = (option: any) => {
@@ -390,22 +395,39 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
 
                 {/* Analysis Sections */}
                 {filteredSections.map((section) => {
-                    const isExpanded = expandedSections.has(section.analysisId);
-                    const isLoading = loadingAnalyses.has(section.analysisId);
-                    const analysis = trajectory?.analysis?.find((a: any) => a._id === section.analysisId);
-                    const differingFields = differingConfigByAnalysis.get(section.analysisId) || [];
+                    const isExpanded = expandedSections.has(section.analysis._id);
+                    const isLoading = loadingAnalyses.has(section.analysis._id);
+                    const analysis = trajectory?.analysis?.find((a: any) => a._id === section.analysis._id);
+                    const differingFields = differingConfigByAnalysis.get(section.analysis._id) || [];
 
                     // Build label map for this plugin to show labels instead of keys
-                    const labelMap = buildArgumentLabelMap(section.plugin, getPluginArguments);
+                    const labelMap = buildArgumentLabelMap(section.plugin?.plugin.slug || section.analysis.plugin || '', getPluginArguments);
                     const configDescription = differingFields
                         .map(([key, value]) => `${labelMap.get(key) || key}: ${formatConfigValue(value)}`)
                         .join(', ');
 
                     return (
-                        <Container key={section.analysisId} className='analysis-section'>
+                        <Container key={section.analysis._id} className='analysis-section'>
                             <Container
                                 className='analysis-section-header d-flex column cursor-pointer'
-                                onClick={() => toggleSection(section.analysisId)}
+                                onClick={() => toggleSection(section.analysis._id)}
+                                onMouseEnter={(e: React.MouseEvent) => {
+                                    const rect = (e.currentTarget as Element).getBoundingClientRect();
+                                    setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top });
+                                    const durationMs = section.analysis.finishedAt && section.analysis.startedAt
+                                        ? new Date(section.analysis.finishedAt).getTime() - new Date(section.analysis.startedAt).getTime()
+                                        : null;
+                                    console.log(section)
+                                    setTooltipAnalysis({ ...section, duration: durationMs });
+                                    setTooltipOpen(true);
+                                }}
+                                onMouseLeave={() => {
+                                    setTooltipOpen(false);
+                                    setTooltipAnalysis(null);
+                                }}
+                                onMouseMove={(e: React.MouseEvent) => {
+                                    setTooltipPos({ x: e.clientX, y: e.clientY });
+                                }}
                             >
                                 <Container className='d-flex items-center gap-05'>
                                     <i className='analysis-section-arrow'>
@@ -414,7 +436,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                                     <Paragraph
                                         className={`analysis-section-title font-size-2 ${section.isCurrentAnalysis ? 'color-gray' : 'color-secondary'}`}
                                     >
-                                        {section.pluginName}
+                                        {section.plugin?.name || 'Unknown'}
                                         {section.isCurrentAnalysis && ' (Active)'}
                                         {analysis?.createdAt && (
                                             <span className='analysis-section-date'>
@@ -454,7 +476,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                                                 key={`${exposure.exposureId}-${index}`}
                                             >
                                                 <Popover
-                                                    id={`exposure-option-menu-${section.analysisId}-${index}`}
+                                                    id={`exposure-option-menu-${section.analysis._id}-${index}`}
                                                     triggerAction="contextmenu"
                                                     trigger={
                                                         <CanvasSidebarOption
@@ -509,7 +531,76 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                 )}
             </div>
 
+            <CursorTooltip
+                isOpen={tooltipOpen}
+                x={tooltipPos.x}
+                y={tooltipPos.y}
+                content={
+                    tooltipAnalysis && (
+                        <Container className='analysis-tooltip-content'>
+                            <Container className='analysis-tooltip-header-container d-flex column gap-05'>
+                                <Title className='font-weight-4 font-size-3 d-flex gap-05'>
+                                    <span>{tooltipAnalysis.plugin?.name}</span>
+                                    {tooltipAnalysis.duration != null && (
+                                        <span className='color-muted'> • {formatDuration({ seconds: Math.floor(tooltipAnalysis.duration / 1000) })}</span>
+                                    )}
+                                </Title>
+                                <Paragraph className='color-tertiary font-size-1'>
+                                    {tooltipAnalysis.plugin?.plugin?.modifier?.description}
+                                </Paragraph>
+                            </Container>
 
+                            {/* Two tables side by side */}
+                            <Container className='analysis-tooltip-tables d-flex gap-2'>
+                                {/* Config fields */}
+                                {tooltipAnalysis.config && Object.keys(tooltipAnalysis.config).length > 0 && (
+                                    <Container className='analysis-tooltip-grid'>
+                                        {Object.entries(tooltipAnalysis.config).map(([key, value]) => {
+                                            const argDef = tooltipAnalysis.plugin?.plugin?.arguments?.find(
+                                                (arg: any) => arg.argument === key
+                                            );
+                                            const label = argDef?.label || key;
+
+                                            return (
+                                                <React.Fragment key={key}>
+                                                    <span className='color-muted font-size-1'>{label}</span>
+                                                    <span className='color-secondary font-size-1 font-weight-5'>
+                                                        {formatConfigValue(value)}
+                                                    </span>
+                                                </React.Fragment>
+                                            );
+                                        })}
+                                    </Container>
+                                )}
+
+                                {/* Metadata */}
+                                <Container className='analysis-tooltip-grid'>
+                                    <span className='color-muted font-size-1'>Exposures</span>
+                                    <span className='color-secondary font-size-1 font-weight-5'>
+                                        {tooltipAnalysis.exposures?.length || 0}
+                                    </span>
+                                    <span className='color-muted font-size-1'>Completed Frames</span>
+                                    <span className='color-secondary font-size-1 font-weight-5'>
+                                        {tooltipAnalysis.analysis.completedFrames}
+                                    </span>
+                                    {tooltipAnalysis.analysis.clusterId && (
+                                        <>
+                                            <span className='color-muted font-size-1'>Cluster</span>
+                                            <span className='color-secondary font-size-1 font-weight-5'>
+                                                {tooltipAnalysis.analysis.clusterId}
+                                            </span>
+                                        </>
+                                    )}
+                                    <span className='color-muted font-size-1'>Created</span>
+                                    <span className='color-secondary font-size-1 font-weight-5'>
+                                        {formatDistanceToNow(new Date(tooltipAnalysis.analysis.createdAt), { addSuffix: true })}
+                                    </span>
+                                </Container>
+                            </Container>
+                        </Container>
+                    )
+                }
+            />
         </div>
     );
 };

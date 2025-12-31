@@ -40,6 +40,23 @@
     text-overflow: ellipsis;
 }
 
+.analysis-tooltip-content {
+    max-width: 400px;
+    padding: 0.25rem 0;
+}
+
+.analysis-tooltip-tables {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    align-items: end;
+}
+
+.analysis-tooltip-grid {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 0.25rem 0.75rem;
+}
+
 .analysis-section-date {
     font-weight: 400;
     opacity: 0.6;
