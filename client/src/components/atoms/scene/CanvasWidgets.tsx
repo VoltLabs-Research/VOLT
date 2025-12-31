@@ -29,13 +29,14 @@ import SlicePlane from '@/components/organisms/scene/SlicePlane';
 import TimestepControls from '@/components/organisms/scene/TimestepControls';
 import ModifierConfiguration from '@/components/organisms/form/ModifierConfiguration';
 import ChartViewer from '@/components/organisms/common/ChartViewer';
+import PluginResultsViewer from '@/components/organisms/scene/PluginResultsViewer';
 import Draggable from '@/components/atoms/common/Draggable';
 import { useEditorStore } from '@/stores/slices/editor';
 import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import ColorCoding from '@/components/organisms/scene/ColorCoding';
 import type { Trajectory } from '@/types/models';
 
-interface CanvasWidgetsProps{
+interface CanvasWidgetsProps {
     trajectory: Trajectory;
     currentTimestep: number;
     scene3DRef: React.RefObject<any>
@@ -44,6 +45,7 @@ interface CanvasWidgetsProps{
 const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: CanvasWidgetsProps) => {
     const showWidgets = useUIStore((store) => store.showEditorWidgets);
     const activeModifiers = useUIStore((store) => store.activeModifiers);
+    const resultsViewerData = useUIStore((store) => store.resultsViewerData);
     const activeScene = useEditorStore((state) => state.activeScene);
     const plugins = usePluginStore((state) => state.plugins);
 
@@ -136,6 +138,15 @@ const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: C
                 </Draggable>
             )}
 
+            {resultsViewerData && (
+                <PluginResultsViewer
+                    pluginSlug={resultsViewerData.pluginSlug}
+                    pluginName={resultsViewerData.pluginName}
+                    analysisId={resultsViewerData.analysisId}
+                    exposures={resultsViewerData.exposures}
+                />
+            )}
+
             {legacyComponents.map(([key, Comp]) => (
                 <Comp key={`modifier-${key}`} />
             ))}
@@ -158,7 +169,7 @@ const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: C
                         onAnalysisError={(error) => {
                             console.error('Analysis failed:', error);
                         }}
-                    />  
+                    />
                 );
             })}
         </>

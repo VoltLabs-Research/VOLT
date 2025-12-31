@@ -8,6 +8,7 @@ import type { Analysis, Trajectory } from '@/types/models';
 import { usePluginStore, type RenderableExposure, type ResolvedModifier } from '@/stores/slices/plugin/plugin-slice';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
+import { useUIStore } from '@/stores/slices/ui';
 import { Skeleton } from '@mui/material';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
@@ -131,6 +132,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     const getPluginArguments = usePluginStore((state) => state.getPluginArguments);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
+    const setResultsViewerData = useUIStore((state) => state.setResultsViewerData);
 
     const [exposuresByAnalysis, setExposuresByAnalysis] = useState<Map<string, RenderableExposure[]>>(new Map());
     const [loadingAnalyses, setLoadingAnalyses] = useState<Set<string>>(new Set());
@@ -141,6 +143,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     const [tooltipOpen, setTooltipOpen] = useState(false);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
     const [tooltipAnalysis, setTooltipAnalysis] = useState<any | null>(null);
+    const [headerPopoverStates, setHeaderPopoverStates] = useState<Map<string, boolean>>(new Map());
 
     const analysisConfigId = analysisConfig?._id;
     const activeSceneRef = useRef(activeScene);
@@ -189,6 +192,25 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
             (s.plugin?.name || s.analysis.plugin || '').toLowerCase().includes(query)
         );
     }, [allAnalysisSections, searchQuery]);
+
+    // Pre-compute popover callbacks to avoid hooks in loop
+    const headerPopoverCallbacks = useMemo(() => {
+        const map = new Map<string, (isOpen: boolean) => void>();
+        filteredSections.forEach(section => {
+            map.set(section.analysis._id, (isOpen: boolean) => {
+                setHeaderPopoverStates(prev => {
+                    const next = new Map(prev);
+                    next.set(section.analysis._id, isOpen);
+                    return next;
+                });
+                if (isOpen) {
+                    setTooltipOpen(false);
+                    setTooltipAnalysis(null);
+                }
+            });
+        });
+        return map;
+    }, [filteredSections]);
 
     // Compute differing config fields for analyses of the same plugin
     const differingConfigByAnalysis = useMemo(() => {
@@ -404,50 +426,129 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                         .map(([key, value]) => `${labelMap.get(key) || key}: ${formatConfigValue(value)}`)
                         .join(', ');
 
+                    const headerPopoverOpen = headerPopoverStates.get(section.analysis._id) || false;
+                    const handleHeaderPopoverChange = headerPopoverCallbacks.get(section.analysis._id)!;
+
                     return (
                         <Container key={section.analysis._id} className='analysis-section'>
-                            <Container
-                                className='analysis-section-header d-flex column cursor-pointer'
-                                onClick={() => toggleSection(section.analysis._id)}
-                                onMouseEnter={(e: React.MouseEvent) => {
-                                    const rect = (e.currentTarget as Element).getBoundingClientRect();
-                                    setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top });
-                                    const durationMs = section.analysis.finishedAt && section.analysis.startedAt
-                                        ? new Date(section.analysis.finishedAt).getTime() - new Date(section.analysis.startedAt).getTime()
-                                        : null;
-                                    setTooltipAnalysis({ ...section, duration: durationMs });
-                                    setTooltipOpen(true);
-                                }}
-                                onMouseLeave={() => {
-                                    setTooltipOpen(false);
-                                    setTooltipAnalysis(null);
-                                }}
-                                onMouseMove={(e: React.MouseEvent) => {
-                                    setTooltipPos({ x: e.clientX, y: e.clientY });
-                                }}
-                            >
-                                <Container className='d-flex items-center gap-05'>
-                                    <i className='analysis-section-arrow'>
-                                        {isExpanded ? <MdKeyboardArrowDown /> : <MdKeyboardArrowRight />}
-                                    </i>
-                                    <Paragraph
-                                        className={`analysis-section-title font-size-2 ${section.isCurrentAnalysis ? 'color-gray' : 'color-secondary'}`}
+                            <Popover
+                                id={`analysis-header-menu-${section.analysis._id}`}
+                                triggerAction="contextmenu"
+                                onOpenChange={handleHeaderPopoverChange}
+                                trigger={
+                                    <Container
+                                        className='analysis-section-header d-flex column cursor-pointer'
+                                        onClick={() => toggleSection(section.analysis._id)}
+                                        onMouseEnter={(e: React.MouseEvent) => {
+                                            if (headerPopoverOpen) return;
+                                            const rect = (e.currentTarget as Element).getBoundingClientRect();
+                                            setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top });
+                                            const durationMs = section.analysis.finishedAt && section.analysis.startedAt
+                                                ? new Date(section.analysis.finishedAt).getTime() - new Date(section.analysis.startedAt).getTime()
+                                                : null;
+                                            setTooltipAnalysis({ ...section, duration: durationMs });
+                                            setTooltipOpen(true);
+                                        }}
+                                        onMouseLeave={() => {
+                                            if (!headerPopoverOpen) {
+                                                setTooltipOpen(false);
+                                                setTooltipAnalysis(null);
+                                            }
+                                        }}
+                                        onMouseMove={(e: React.MouseEvent) => {
+                                            if (!headerPopoverOpen) {
+                                                setTooltipPos({ x: e.clientX, y: e.clientY });
+                                            }
+                                        }}
                                     >
-                                        {section.plugin?.name || 'Unknown'}
-                                        {section.isCurrentAnalysis && ' (Active)'}
-                                        {analysis?.createdAt && (
-                                            <span className='analysis-section-date'>
-                                                {' • '}{formatDistanceToNow(new Date(analysis.createdAt), { addSuffix: true })}
-                                            </span>
+                                        <Container className='d-flex items-center gap-05'>
+                                            <i className='analysis-section-arrow' onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleSection(section.analysis._id);
+                                            }}>
+                                                {isExpanded ? <MdKeyboardArrowDown /> : <MdKeyboardArrowRight />}
+                                            </i>
+                                            <Paragraph
+                                                className={`analysis-section-title font-size-2 ${section.isCurrentAnalysis ? 'color-gray' : 'color-secondary'}`}
+                                            >
+                                                {section.plugin?.name || 'Unknown'}
+                                                {section.isCurrentAnalysis && ' (Active)'}
+                                                {analysis?.createdAt && (
+                                                    <span className='analysis-section-date'>
+                                                        {' • '}{formatDistanceToNow(new Date(analysis.createdAt), { addSuffix: true })}
+                                                    </span>
+                                                )}
+                                            </Paragraph>
+                                        </Container>
+                                        {configDescription && (
+                                            <Paragraph className='analysis-section-description color-tertiary font-size-1'>
+                                                {configDescription}
+                                            </Paragraph>
                                         )}
-                                    </Paragraph>
-                                </Container>
-                                {configDescription && (
-                                    <Paragraph className='analysis-section-description color-tertiary font-size-1'>
-                                        {configDescription}
-                                    </Paragraph>
-                                )}
-                            </Container>
+                                    </Container>
+                                }
+                            >
+                                <PopoverMenuItem
+                                    onClick={() => {
+                                        const plugin = section.plugin?.plugin;
+                                        let exposures: RenderableExposure[] = [];
+
+                                        if (plugin?.workflow?.nodes && plugin.workflow.edges) {
+                                            const { nodes, edges } = plugin.workflow;
+
+                                            // Find visualizer nodes with listings
+                                            const visualizerNodes = nodes.filter(node =>
+                                                node.type === 'visualizers' && (
+                                                    (node.data?.visualizers?.listing && Object.keys(node.data.visualizers.listing).length > 0) ||
+                                                    (node.data?.visualizers?.perAtomProperties && node.data.visualizers.perAtomProperties.length > 0)
+                                                )
+                                            );
+
+                                            // Trace backward to find connected exposures
+                                            const findConnectedExposure = (nodeId: string, depth = 0): any | null => {
+                                                if (depth > 5) return null;
+                                                const incomingEdge = edges.find(e => e.target === nodeId);
+                                                if (!incomingEdge) return null;
+                                                const sourceNode = nodes.find(n => n.id === incomingEdge.source);
+                                                if (!sourceNode) return null;
+                                                if (sourceNode.type === 'exposure') {
+                                                    return sourceNode;
+                                                }
+                                                return findConnectedExposure(sourceNode.id, depth + 1);
+                                            };
+
+                                            const seenExposures = new Set<string>();
+                                            visualizerNodes.forEach(vizNode => {
+                                                const exposureNode = findConnectedExposure(vizNode.id);
+                                                if (exposureNode && !seenExposures.has(exposureNode.id)) {
+                                                    seenExposures.add(exposureNode.id);
+                                                    exposures.push({
+                                                        pluginId: plugin._id || '',
+                                                        pluginSlug: plugin.slug,
+                                                        analysisId: section.analysis._id,
+                                                        exposureId: exposureNode.id,
+                                                        name: exposureNode.data?.exposure?.name || exposureNode.id,
+                                                        icon: exposureNode.data?.exposure?.icon,
+                                                        results: exposureNode.data?.exposure?.results || '',
+                                                        canvas: !!vizNode.data?.visualizers?.canvas,
+                                                        raster: !!vizNode.data?.visualizers?.raster,
+                                                        modifierId: plugin.slug
+                                                    });
+                                                }
+                                            });
+                                        }
+
+                                        setResultsViewerData({
+                                            pluginSlug: section.plugin?.plugin.slug || section.analysis.plugin,
+                                            pluginName: section.plugin?.name || 'Unknown',
+                                            analysisId: section.analysis._id,
+                                            exposures: exposures
+                                        });
+                                    }}
+                                >
+                                    View details
+                                </PopoverMenuItem>
+                            </Popover>
 
                             {isExpanded && isLoading && (
                                 <Container className='analysis-section-content'>
@@ -511,7 +612,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                             )}
 
                             {isExpanded && !isLoading && section.exposures.length === 0 && (
-                                <Paragraph className='analysis-section-empty color-muted font-size-1 pl-2'>
+                                <Paragraph className='analysis-section-empty text-center color-muted font-size-1'>
                                     No visualizations available
                                 </Paragraph>
                             )}
@@ -597,7 +698,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                     )
                 }
             />
-        </div>
+        </div >
     );
 };
 

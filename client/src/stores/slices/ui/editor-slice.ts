@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand';
+import type { RenderableExposure } from '@/stores/slices/plugin/plugin-slice';
 
 export interface ActiveModifier {
     key: string;
@@ -7,12 +8,20 @@ export interface ActiveModifier {
     type: 'legacy' | 'plugin';
 }
 
+export interface ResultsViewerData {
+    pluginSlug: string;
+    pluginName: string;
+    analysisId: string;
+    exposures: RenderableExposure[];
+}
+
 export interface EditorUIState {
     showCanvasGrid: boolean;
     showEditorWidgets: boolean;
     showRenderConfig: boolean;
     activeModifiers: ActiveModifier[];
     isSceneInteracting: boolean;
+    resultsViewerData: ResultsViewerData | null;
 }
 
 export interface EditorUIActions {
@@ -21,6 +30,8 @@ export interface EditorUIActions {
     toggleCanvasGrid: () => void;
     toggleEditorWidgets: () => void;
     setSceneInteracting: (isInteracting: boolean) => void;
+    setResultsViewerData: (data: ResultsViewerData | null) => void;
+    closeResultsViewer: () => void;
     resetEditorUI: () => void;
 }
 
@@ -31,7 +42,8 @@ const initialState: EditorUIState = {
     showEditorWidgets: true,
     showRenderConfig: false,
     activeModifiers: [],
-    isSceneInteracting: false
+    isSceneInteracting: false,
+    resultsViewerData: null
 };
 
 export const createEditorUISlice: StateCreator<any, [], [], EditorUISlice> = (set, get) => ({
@@ -71,8 +83,15 @@ export const createEditorUISlice: StateCreator<any, [], [], EditorUISlice> = (se
         set({ isSceneInteracting: isInteracting });
     },
 
+    setResultsViewerData(data: ResultsViewerData | null) {
+        set({ resultsViewerData: data });
+    },
+
+    closeResultsViewer() {
+        set({ resultsViewerData: null });
+    },
+
     resetEditorUI() {
         set(initialState);
     }
 });
-
