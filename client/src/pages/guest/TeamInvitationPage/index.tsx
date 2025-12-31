@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Skeleton } from '@mui/material';
 import teamApi from '@/services/api/team/team';
-import type { TeamInvitation } from '@/types/team-invitation';
+import type { TeamInvitation } from '@/types/models';
 import Button from '@/components/primitives/Button';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import Container from '@/components/primitives/Container';

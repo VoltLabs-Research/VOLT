@@ -15,7 +15,19 @@ export const attachPointerEvents = (params: {
     onSelect?: () => void;
     setOrbitControlsEnabled?: (enabled: boolean) => void;
 }) => {
-    const { glCanvas, camera, raycaster, groundPlane, state, showSelectionBox, hideSelectionBox, deselect, onSelect, setOrbitControlsEnabled } = params;
+    const { 
+        glCanvas, 
+        camera, 
+        raycaster, 
+        groundPlane, 
+        state, 
+        showSelectionBox, 
+        hideSelectionBox, 
+        deselect, 
+        onSelect, 
+        setOrbitControlsEnabled 
+    } = params;
+    
     const mouse = new THREE.Vector3();
     let lastClickTime = 0;
     const dragOffset = new THREE.Vector3();

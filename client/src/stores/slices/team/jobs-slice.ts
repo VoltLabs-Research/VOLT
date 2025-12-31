@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { socketService } from '@/services/websockets/socketio';
-import type { TrajectoryJobGroup, FrameJobGroup, Job } from '@/types/jobs';
+import type { TrajectoryJobGroup, FrameJobGroupStatus, Job } from '@/types/jobs';
 import type { TeamJobsStore } from '@/types/stores/team/jobs';
 
 const initialState = {
@@ -16,7 +16,7 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
     let teamJobsUnsubscribe: (() => void) | null = null;
     let jobUpdateUnsubscribe: (() => void) | null = null;
 
-    const computeStatus = (jobs: Job[]): 'running' | 'completed' | 'failed' | 'partial' => {
+    const computeStatus = (jobs: Job[]): FrameJobGroupStatus => {
         const hasRunning = jobs.some(j => j.status === 'running' || j.status === 'queued');
         const hasFailed = jobs.some(j => j.status === 'failed');
         const allCompleted = jobs.every(j => j.status === 'completed');
@@ -24,10 +24,6 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
         if (allCompleted) return 'completed';
         if (hasFailed && jobs.filter(j => j.status === 'completed').length === 0) return 'failed';
         return 'partial';
-    };
-
-    const getAllJobs = (groups: TrajectoryJobGroup[]): Job[] => {
-        return groups.flatMap(g => g.frameGroups.flatMap(f => f.jobs));
     };
 
     return {

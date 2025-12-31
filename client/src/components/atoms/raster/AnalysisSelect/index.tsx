@@ -1,7 +1,7 @@
 import React from 'react';
 import type { AnalysisSelectProps } from '@/types/raster';
 import Select from '@/components/atoms/form/Select';
-import { usePluginStore } from '@/stores/slices/plugin';
+import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { useMemo } from 'react';
 import Container from '@/components/primitives/Container';
 

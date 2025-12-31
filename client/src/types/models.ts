@@ -111,3 +111,55 @@ export interface Analysis {
     createdAt: string;
     updatedAt: string;
 }
+
+export interface TeamInvitation {
+    _id: string;
+    team: {
+        _id: string;
+        name: string;
+        description?: string;
+        memberCount?: number;
+    };
+    invitedBy: {
+        email: string;
+        firstName?: string;
+        lastName?: string;
+        avatar?: string;
+    };
+    email: string;
+    token: string;
+    role: 'Can view' | 'Can edit' | 'Full access';
+    expiresAt: string;
+    status: 'pending' | 'accepted' | 'rejected';
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface TeamRole {
+    _id: string;
+    name: string;
+    permissions: string[];
+    isSystem: boolean;
+    team: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface TeamRolePayload {
+    name: string;
+    permissions: string[];
+}
+
+export interface TeamMemberWithRole {
+    _id: string;
+    user: {
+        _id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        avatar?: string;
+    } | string;
+    role?: TeamRole; 
+    joinedAt: string;
+}
+

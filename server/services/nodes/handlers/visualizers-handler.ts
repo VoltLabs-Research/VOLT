@@ -3,7 +3,7 @@ import { IWorkflowNode } from '@/types/models/modifier';
 import { NodeHandler } from '@/services/nodes/node-registry';
 import { T, NodeOutputSchema } from '@/services/nodes/schema-types';
 
-class VisualizersHandler implements NodeHandler{
+class VisualizersHandler implements NodeHandler {
     readonly type = NodeType.VISUALIZERS;
 
     readonly outputSchema: NodeOutputSchema = {
@@ -14,7 +14,7 @@ class VisualizersHandler implements NodeHandler{
         }
     };
 
-    async execute(node: IWorkflowNode): Promise<Record<string, any>>{
+    async execute(node: IWorkflowNode): Promise<Record<string, any>> {
         const config = node.data.visualizers!;
         return {
             canvas: config.canvas ?? false,

@@ -3,7 +3,7 @@ import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import CodeEditor from '@/components/atoms/common/CodeEditor';
 import FormField from '@/components/molecules/form/FormField';
-import { usePluginBuilderStore } from '@/stores/slices/plugin';
+import { usePluginBuilderStore } from '@/stores/slices/plugin/builder-slice';
 import Button from '@/components/primitives/Button';
 import type { ISchemaData } from '@/types/plugin';
 import Paragraph from '@/components/primitives/Paragraph';

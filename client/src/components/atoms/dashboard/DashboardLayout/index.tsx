@@ -53,7 +53,7 @@ import Paragraph from '@/components/primitives/Paragraph';
 import { IoChevronForward } from 'react-icons/io5';
 import { HiOutlineServer } from 'react-icons/hi2';
 import { MdImportExport } from 'react-icons/md';
-import { usePluginStore } from '@/stores/slices/plugin';
+import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { NodeType } from '@/types/plugin';
 import { BsFiles } from 'react-icons/bs';
 import './DashboardLayout.css';

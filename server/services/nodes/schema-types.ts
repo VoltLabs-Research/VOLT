@@ -1,13 +1,13 @@
 export type SchemaPropertyType = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'any';
 
-export interface SchemaProperty{
+export interface SchemaProperty {
     type: SchemaPropertyType;
     description?: string;
     items?: SchemaProperty;
     properties?: Record<string, SchemaProperty>;
 };
 
-export interface NodeOutputSchema{
+export interface NodeOutputSchema {
     properties: Record<string, SchemaProperty>;
 };
 
@@ -17,6 +17,6 @@ export const T = {
     number: (description?: string): SchemaProperty => ({ type: 'number', description }),
     boolean: (description?: string): SchemaProperty => ({ type: 'boolean', description }),
     any: (description?: string): SchemaProperty => ({ type: 'any', description }),
-    array: (items: SchemaProperty, description?: string): SchemaProperty => ({  type: 'array', items, description }),
+    array: (items: SchemaProperty, description?: string): SchemaProperty => ({ type: 'array', items, description }),
     object: (properties: Record<string, SchemaProperty>, description?: string): SchemaProperty => ({ type: 'object', properties, description })
 };

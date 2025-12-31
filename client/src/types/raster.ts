@@ -10,10 +10,6 @@ export interface Scene {
     isUnavailable?: boolean;
 }
 
-export interface FrameObject {
-    [modelName: string]: Scene;
-}
-
 export interface MetricEntry {
     key: string;
     label: string;
@@ -72,45 +68,4 @@ export interface ThumbnailsProps {
     isLoading: boolean;
     onThumbnailClick: (index: number) => void;
     getThumbnailScene: (timestep: number) => Scene | null;
-}
-
-
-
-export interface ThumbnailItemProps {
-    scene: Scene;
-    timestep: number;
-    index: number;
-    isActive: boolean;
-    isPlaying: boolean;
-    selectedFrameIndex: number;
-    onClick: (index: number) => void;
-}
-
-export interface SceneColumnProps {
-    trajectoryId?: string;
-    scene: Scene | null;
-    isPlaying: boolean;
-    isLoading: boolean;
-    playbackControls: PlaybackControlsProps;
-    analysisSelect: AnalysisSelectProps;
-    modelRail: ModelRailProps;
-    delay?: number;
-}
-
-// Minimal types to satisfy imports from trajectory store types.
-// These can be expanded later if raster pagination/querying is implemented.
-export interface RasterQuery {
-    page?: number;
-    pageSize?: number;
-    analysisId?: string;
-    model?: string;
-    frames?: number[];
-}
-
-export interface RasterPage {
-    page: number;
-    pageSize: number;
-    total: number;
-    // Map of timestep -> metadata(e.g., available models)
-    frames: Record<string, any>;
 }

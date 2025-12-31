@@ -1,4 +1,4 @@
-import type { LayoutKey } from '@/types/animation';
+export type LayoutKey = 'dashboard' | 'auth' | 'canvas' | 'default';
 
 export const getLayoutKey = (pathname: string): LayoutKey => {
     if(pathname.startsWith('/dashboard')) return 'dashboard';

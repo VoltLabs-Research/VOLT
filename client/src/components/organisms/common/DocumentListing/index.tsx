@@ -1,26 +1,21 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import React, { useRef, useState, useCallback, useMemo } from 'react'
 import { RxDotsHorizontal } from 'react-icons/rx'
 import { Plus } from 'lucide-react'
 import DocumentListingTable from '@/components/molecules/common/DocumentListingTable'
 import { Skeleton } from '@mui/material'
-import './DocumentListing.css'
 import Container from '@/components/primitives/Container'
 import Button from '@/components/primitives/Button'
 import DynamicIcon from '@/components/atoms/common/DynamicIcon'
 import Title from '@/components/primitives/Title'
 import Paragraph from '@/components/primitives/Paragraph'
+import getValueByPath from '@/utilities/common/getValueByPath'
+import './DocumentListing.css'
 
 // TODO: REFACTOR
 const sortDataWorker = (
     data: any[],
     sortConfig: { key: string; direction: 'asc' | 'desc' } | null
 ): any[] => {
-    const getValueByPath = (obj: any, path: string) => {
-        if (!obj || !path) return undefined
-        if (path.indexOf('.') === -1) return obj?.[path]
-        return path.split('.').reduce((acc: any, key: string) => (acc == null ? undefined : acc[key]), obj)
-    }
-
     const toSearchString = (val: any): string => {
         if (val == null) return ''
         const t = typeof val

@@ -1,5 +1,9 @@
 import type { Variants } from 'framer-motion';
-import type { PageVariantsConfig } from '@/types/animation';
+
+export interface PageVariantsConfig {
+    reducedMotion: boolean;
+    isSameLayout: boolean;
+};
 
 export const SMOOTH_EASING = [0.25, 0.46, 0.45, 0.94] as const;
 export const PREMIUM_EASING = [0.16, 1, 0.3, 1] as const;

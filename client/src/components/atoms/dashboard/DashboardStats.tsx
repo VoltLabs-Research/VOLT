@@ -14,13 +14,6 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
     const { loading, error, cards } = useDashboardMetrics(teamId, trajectoryId);
     const navigate = useNavigate();
 
-    const icons: Record<string, React.ComponentType<any>> = {
-        StructureAnalysis: RiVipDiamondLine,
-        Trajectories: HiOutlineServerStack,
-        AnalysisConfigs: RiVipDiamondLine,
-        Dislocations: PiLineSegments
-    };
-
     if (loading) {
         return <DashboardStatsSkeleton count={3} />;
     }
@@ -37,7 +30,7 @@ const DashboardStats: React.FC<{ teamId?: string; trajectoryId?: string }> = ({ 
         <div className='d-flex dashboard-stats-container w-max overflow-hidden'>
             {cards.map(({ name, listingUrl, count, lastMonthStatus, series, labels, yDomain, ...rest }, index) => {
                 const iconKey = name.replace(/\s+/g, '');
-                const Icon = icons[iconKey] || HiOutlineServerStack;
+                const Icon = HiOutlineServerStack;
                 const up = (lastMonthStatus ?? 0) >= 0;
                 const isClickable = Boolean(listingUrl && !listingUrl.includes(':trajectoryId'));
                 return (

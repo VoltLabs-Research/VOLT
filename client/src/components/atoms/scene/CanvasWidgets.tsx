@@ -21,7 +21,6 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import type { EditorWidgetsProps } from '@/types/canvas';
 import { useUIStore } from '@/stores/slices/ui';
 import EditorSidebar from '@/components/organisms/scene/EditorSidebar';
 import TrajectoryVisibilityStatusFloatIcon from '@/components/atoms/scene/TrajectoryVisibilityStatusFloatIcon';
@@ -32,10 +31,17 @@ import ModifierConfiguration from '@/components/organisms/form/ModifierConfigura
 import ChartViewer from '@/components/organisms/common/ChartViewer';
 import Draggable from '@/components/atoms/common/Draggable';
 import { useEditorStore } from '@/stores/slices/editor';
-import { usePluginStore } from '@/stores/slices/plugin';
+import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import ColorCoding from '@/components/organisms/scene/ColorCoding';
+import type { Trajectory } from '@/types/models';
 
-const CanvasWidgets = React.memo<EditorWidgetsProps>(({ trajectory, currentTimestep, scene3DRef }) => {
+interface CanvasWidgetsProps{
+    trajectory: Trajectory;
+    currentTimestep: number;
+    scene3DRef: React.RefObject<any>
+};
+
+const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: CanvasWidgetsProps) => {
     const showWidgets = useUIStore((store) => store.showEditorWidgets);
     const activeModifiers = useUIStore((store) => store.activeModifiers);
     const activeScene = useEditorStore((state) => state.activeScene);

@@ -31,3 +31,6 @@ export interface RBACConfig {
     actions: RBACAction[];
 }
 
+export interface GetSystemStats{
+    stats: SystemStats;
+};

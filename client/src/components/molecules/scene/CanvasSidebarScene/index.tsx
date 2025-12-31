@@ -6,7 +6,6 @@ import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
 import { useEditorStore } from '@/stores/slices/editor';
 import type { Analysis, Trajectory } from '@/types/models';
 import { usePluginStore, type RenderableExposure, type ResolvedModifier } from '@/stores/slices/plugin/plugin-slice';
-import './CanvasSidebarScene.css';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import { Skeleton } from '@mui/material';
@@ -15,8 +14,8 @@ import Paragraph from '@/components/primitives/Paragraph';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import CursorTooltip from '@/components/atoms/common/CursorTooltip';
-import { RiMore2Fill } from 'react-icons/ri';
 import Title from '@/components/primitives/Title';
+import './CanvasSidebarScene.css';
 
 interface CanvasSidebarSceneProps {
     trajectory?: Trajectory | null;
@@ -150,6 +149,10 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
         activeSceneRef.current = activeScene;
     }, [activeScene]);
 
+    useEffect(() => {
+        console.log('---------------------------------------_>', analysisConfig)
+    }, [analysisConfig]);
+
     // Build analysis sections from trajectory (data already loaded in trajectory object)
     const allAnalysisSections = useMemo((): AnalysisSection[] => {
         if (!trajectory?.analysis) return [];
@@ -177,8 +180,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
             return 0;
         });
     }, [trajectory?.analysis, exposuresByAnalysis, analysisConfigId, getModifiers]);
-
-    console.log(allAnalysisSections);
 
     // Filter by search query (client-side filtering since data is already loaded)
     const filteredSections = useMemo(() => {
@@ -300,14 +301,11 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     };
 
     const onSelect = (option: any, analysis?: any) => {
-        console.log('[CanvasSidebarScene] onSelect called:', { option, analysis, sceneType: option?.sceneType });
         if (analysis) {
             updateAnalysisConfig(analysis);
         }
         setActiveScene(option.sceneType);
     };
-    console.log('tooltip analysis:', tooltipAnalysis)
-
 
     const getSceneObjectFromOption = (option: any) => {
         return option.sceneType || {
@@ -417,7 +415,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                                     const durationMs = section.analysis.finishedAt && section.analysis.startedAt
                                         ? new Date(section.analysis.finishedAt).getTime() - new Date(section.analysis.startedAt).getTime()
                                         : null;
-                                    console.log(section)
                                     setTooltipAnalysis({ ...section, duration: durationMs });
                                     setTooltipOpen(true);
                                 }}
@@ -493,7 +490,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                                                 >
                                                     <PopoverMenuItem
                                                         onClick={() => {
-                                                            console.log('[CanvasSidebarScene] addScene called:', { sceneObject, analysis });
                                                             if (analysis) updateAnalysisConfig(analysis);
                                                             addScene(sceneObject);
                                                         }}

@@ -1,8 +1,8 @@
-import type { Analysis } from '@/types/models';
+import type { AnalysisConfig } from '@/services/api/analysis/types';
 
 export interface AnalysisConfigState {
-    analysisConfig: Analysis | null;
-    analysisConfigs: Analysis[];
+    analysisConfig: AnalysisConfig | null;
+    analysisConfigs: AnalysisConfig[];
     listingMeta: {
         page: number;
         limit: number;
@@ -13,17 +13,12 @@ export interface AnalysisConfigState {
     isListingLoading: boolean;
     isFetchingMore: boolean;
     error: string | null;
-    dislocationsLoading: boolean;
-    analysisDislocationsById: Record<string, any[]>;
-    dislocationsLoadingById: Record<string, boolean>;
 }
 
 export interface AnalysisConfigActions {
-    setIsLoading: (loading: boolean) => void;
     resetAnalysisConfig: () => void;
-    getDislocationsByAnalysisId: (analysisId: string) => void;
     getAnalysisConfigs: (teamId: string, opts?: { page?: number; limit?: number; search?: string; append?: boolean; force?: boolean }) => Promise<void>;
-    updateAnalysisConfig: (analysis?: Analysis | null) => void;
+    updateAnalysisConfig: (analysis?: AnalysisConfig | null) => void;
 }
 
 export type AnalysisConfigStore = AnalysisConfigState & AnalysisConfigActions;

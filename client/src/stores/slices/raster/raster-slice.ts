@@ -1,7 +1,8 @@
 import type { PreloadTask, RasterStore, RasterState } from '@/types/stores/raster';
 import rasterApi from '@/services/api/raster/raster';
-import { runRequest, extractError } from '../../helpers';
+import { runRequest } from '../../helpers';
 import type { SliceCreator } from '../../helpers/create-slice';
+import { extractErrorMessage } from '@/utilities/api/error-extractor';
 
 export const initialState: RasterState = {
     trajectory: null, isLoading: false, isAnalysisLoading: false, analyses: {}, analysesNames: [],
@@ -63,7 +64,7 @@ export const createRasterSlice: SliceCreator<RasterStore> = (set, get) => ({
             });
             return data?.data ?? null;
         } catch (e) {
-            set((st: RasterStore) => { const lf = new Set(st.loadingFrames); lf.delete(key); return { loadingFrames: lf, error: extractError(e) }; });
+            set((st: RasterStore) => { const lf = new Set(st.loadingFrames); lf.delete(key); return { loadingFrames: lf, error: extractErrorMessage(e) }; });
             return null;
         }
     },

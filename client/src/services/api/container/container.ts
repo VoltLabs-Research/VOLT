@@ -1,18 +1,24 @@
 import VoltClient from '@/api';
-import type { GetContainersParams, CreateContainerPayload, Container, ContainerProcess, ContainerStats } from './types';
+import type { ApiResponse } from '@/types/api';
+import type { 
+    GetContainersParams, 
+    CreateContainerPayload, 
+    Container, 
+    ContainerProcess, 
+    ContainerStats, 
+    GetContainerStats, 
+    GetContainerProcesses } from './types';
 
 const client = new VoltClient('/containers', { useRBAC: true });
 
 const containerApi = {
     async getAll(params?: GetContainersParams): Promise<Container[]> {
-        const response = await client.request<{ status: string; data: Container[] }>('get', '/', {
-            query: params
-        });
+        const response = await client.request<ApiResponse<Container[]>>('get', '/', { query: params });
         return response.data.data;
     },
 
     async create(data: CreateContainerPayload): Promise<Container> {
-        const response = await client.request<{ status: string; data: Container }>('post', '/', { data });
+        const response = await client.request<ApiResponse<Container>>('post', '/', { data });
         return response.data.data;
     },
 
@@ -21,7 +27,7 @@ const containerApi = {
     },
 
     async update(id: string, data: Partial<CreateContainerPayload>): Promise<Container> {
-        const response = await client.request<{ status: string; data: Container }>('patch', `/${id}`, { data });
+        const response = await client.request<ApiResponse<Container>>('patch', `/${id}`, { data });
         return response.data.data;
     },
 
@@ -34,25 +40,25 @@ const containerApi = {
     },
 
     async getStats(id: string): Promise<ContainerStats> {
-        const response = await client.request<{ status: string; data: { stats: ContainerStats; limits: any } }>('get', `/${id}/stats`);
+        const response = await client.request<ApiResponse<GetContainerStats>>('get', `/${id}/stats`);
         return response.data.data.stats;
     },
 
     async getProcesses(id: string): Promise<ContainerProcess[]> {
-        const response = await client.request<{ status: string; data: { processes: ContainerProcess[] } }>('get', `/${id}/top`);
+        const response = await client.request<ApiResponse<GetContainerProcesses>>('get', `/${id}/top`);
         return response.data.data.processes;
     },
 
     fileExplorer: {
         async list(containerId: string, path: string): Promise<any> {
-            const response = await client.request<{ status: string; data: any }>('get', `/${containerId}/files`, {
+            const response = await client.request('get', `/${containerId}/files`, {
                 query: { path }
             });
             return response.data.data;
         },
 
         async read(containerId: string, path: string): Promise<any> {
-            const response = await client.request<{ status: string; data: any }>('get', `/${containerId}/read`, {
+            const response = await client.request('get', `/${containerId}/read`, {
                 query: { path }
             });
             return response.data.data;

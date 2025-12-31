@@ -13,7 +13,6 @@ export const getOptimizedMaterial = (
     const key = `${baseMaterial.uuid}-${clippingPlanes.length}`;
     if (cache.has(key)) {
         const cached = cache.get(key)!;
-        // @ts-ignore
         cached.clippingPlanes = clippingPlanes;
         return cached;
     }
@@ -55,17 +54,10 @@ export const getOptimizedMaterial = (
         baseMaterial = baseMaterial.clone();
     }
 
-    // @ts-ignore
     if (clippingPlanes.length > 0) baseMaterial.clippingPlanes = clippingPlanes;
-    // @ts-ignore(baseMaterial as any).clipIntersection = true;
-    // @ts-ignore
     baseMaterial.precision = 'highp';
-    // @ts-ignore
-    baseMaterial.fog = false;
-    // @ts-ignore
     baseMaterial.userData.isOptimized = true;
-    // @ts-ignore
-    return baseMaterial;
+    return baseMaterial as THREE.MeshStandardMaterial;
 };
 
 export const calculateModelBounds = (glb: any) => {

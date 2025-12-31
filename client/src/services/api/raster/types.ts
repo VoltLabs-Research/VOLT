@@ -25,3 +25,8 @@ export interface ColorCodingPayload {
     gradient?: string;
     exposureId?: string;
 }
+
+export interface ColorCodingProperties{
+    base: string[];
+    modifiers: Record<string, string[]>;
+};

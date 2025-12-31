@@ -4,13 +4,16 @@ import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 import { NodeType, type IWorkflow } from '@/types/plugin';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import { createNode } from '@/utilities/plugins/node-factory';
-import pluginApi, { type IPluginRecord } from '@/services/api/plugin/plugin';
+import pluginApi from '@/services/api/plugin/plugin';
 import { useTeamStore } from '@/stores/slices/team';
 import { runRequest } from '../../helpers';
-import type { SliceCreator } from '../../helpers/create-slice';
+import type { IPluginRecord } from '@/services/api/plugin/types';
 
+type ValidationResult = {
+    valid: boolean; 
+    errors: string[] 
+};
 
-type ValidationResult = { valid: boolean; errors: string[] };
 type PluginNodeData = {
     modifier?: unknown;
     arguments?: unknown;
@@ -58,11 +61,8 @@ export interface PluginBuilderState {
     getWorkflow: () => IWorkflow;
     loadWorkflow: (workflow: IWorkflow) => void;
     clearWorkflow: () => void;
-    setCurrentPlugin: (plugin: IPluginRecord | null) => void;
     saveWorkflow: () => Promise<IPluginRecord | null>;
     loadPluginById: (idOrSlug: string) => Promise<void>;
-    validateCurrentWorkflow: () => Promise<ValidationResult>;
-    publishPlugin: () => Promise<IPluginRecord | null>;
 }
 
 const initialState = {
@@ -212,7 +212,6 @@ export const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
     },
 
     clearWorkflow: () => set(initialState),
-    setCurrentPlugin: (plugin) => set({ currentPlugin: plugin }),
 
     async saveWorkflow() {
         const { getWorkflow, currentPlugin } = get();
@@ -238,44 +237,5 @@ export const usePluginBuilderStore = create<PluginBuilderState>((set, get) => ({
             }
         });
     },
-
-    async validateCurrentWorkflow() {
-        set({ isValidating: true });
-        try {
-            const response = await pluginApi.validateWorkflow(get().getWorkflow());
-            // Adapt API response(errors as string) to store state(errors as string[])
-            const result: ValidationResult = {
-                valid: response.valid,
-                errors: response.errors ? [response.errors] : []
-            };
-            set({ validationResult: result, isValidating: false });
-            return result;
-        } catch (err) {
-            const result: ValidationResult = { valid: false, errors: [(err as Error).message || 'Validation failed'] };
-            set({ validationResult: result, isValidating: false });
-            return result;
-        }
-    },
-
-    async publishPlugin() {
-        const { currentPlugin, validateCurrentWorkflow } = get();
-        if (!currentPlugin?._id) {
-            set({ saveError: 'Plugin must be saved before publishing' });
-            return null;
-        }
-
-        const validation = await validateCurrentWorkflow();
-        if (!validation.valid) {
-            set({ saveError: `Cannot publish: ${validation.errors.join(', ')}` });
-            return null;
-        }
-
-        return await runRequest(set, get, () => pluginApi.publishPlugin(currentPlugin._id), {
-            loadingKey: 'isSaving',
-            errorKey: 'saveError',
-            errorFallback: 'Failed to publish plugin',
-            onSuccess: (published) => set({ currentPlugin: published })
-        });
-    }
 }));
 

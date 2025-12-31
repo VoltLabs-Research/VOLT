@@ -11,8 +11,8 @@ import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
+import type { TeamInvitation } from '@/types/models';
 import './TeamInvitePanel.css';
-import type { TeamInvitation } from '@/types/team-invitation';
 
 interface TeamInvitePanelProps {
     teamName: string;

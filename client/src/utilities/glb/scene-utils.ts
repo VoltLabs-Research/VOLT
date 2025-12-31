@@ -24,10 +24,9 @@ export const formatSize = (bytes: number): string => {
 }
 
 export const formatNumber = (n?: number) => {
-    if (Number.isFinite(n)) {
+    if(Number.isFinite(n)){
         return new Intl.NumberFormat().format(n as number);
     }
-
 
     return '-';
 };

@@ -159,14 +159,6 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
         </>
     );
 
-    // ... existing content(headerLeftIcons, breadcrumbsContent, headerRightIcons, fileListHeader, fileListContent, return statement) ...
-    // Note: I will only replace the parts that need changing.
-    // Wait, replace_file_content replaces a block usually.
-    // I should target the navItems block and the return statement separately? Or the whole file is too big.
-    // I will do separate edits.
-
-    // This replacement handles the navItems definition update.
-
     const headerLeftIcons = (
         <>
             <i className={`file-explorer-header-icon-container ${!canBack ? 'is-disabled' : ''}`} onClick={back}>

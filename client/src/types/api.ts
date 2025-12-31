@@ -28,6 +28,20 @@ export interface ApiResponse<T>{
     data: T;
 }
 
+export interface PaginatedResponse<T>{
+    data: T[];
+    page: {
+        current: number;
+        total: number;
+    };
+    results: {
+        skipped: number;
+        total: number;
+        paginated: number;
+    };
+    status: string;
+};
+
 export interface AuthResponsePayload{
   token: string;
   user: User;

@@ -1,24 +1,15 @@
 import { Exporter, ModifierContext, NodeType } from '@/types/plugin';
 import type { Node } from '@xyflow/react';
-import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
-
-import { v4 as uuidv4 } from 'uuid';
-
-export const generateNodeId = (type: NodeType): string => {
-    return uuidv4();
-};
+import { v4 } from 'uuid';
 
 export const createNode = (type: NodeType, position: { x: number; y: number }): Node => {
-    const id = generateNodeId(type);
-    const config = NODE_CONFIGS[type];
+    const id = v4();
 
     return {
         id,
         type,
         position,
-        data: {
-            ...getDefaultDataForType(type)
-        }
+        data: { ...getDefaultDataForType(type) }
     };
 };
 

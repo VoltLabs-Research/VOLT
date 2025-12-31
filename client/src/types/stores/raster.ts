@@ -20,16 +20,6 @@
  * SOFTWARE.
  */
 
-interface AnalysisName {
-    _id: string;
-    name: string;
-    description?: string;
-    RMSD?: number;
-    maxTrialCircuitSize?: number;
-    circuitStretchability?: number;
-    identificationMode?: string;
-}
-
 export type PreloadTask = {
     timestep: number;
     analysisId: string;
@@ -42,7 +32,7 @@ export interface RasterState {
     isLoading: boolean;
     isAnalysisLoading: boolean;
     analyses: Record<string, any>;
-    analysesNames: AnalysisName[];
+    analysesNames: any[];
     selectedAnalysis: string | null;
     error: string | null;
 

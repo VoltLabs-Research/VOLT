@@ -1,8 +1,3 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- * Plugin Storage Service - Handles binary upload/delete and plugin export/import
- */
-
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 import archiver from 'archiver';

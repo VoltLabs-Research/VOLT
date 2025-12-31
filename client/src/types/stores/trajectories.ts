@@ -11,7 +11,6 @@ export interface TrajectoryState {
     trajectory: Trajectory | null;
     isLoading: boolean;
     isFetchingMore: boolean;
-    uploadingFileCount: number;
     activeUploads: Record<string, number>;
     error: string | null;
     isLoadingTrajectories: boolean;
@@ -29,8 +28,6 @@ export interface TrajectoryActions {
     toggleTrajectorySelection: (id: string) => void;
     deleteSelectedTrajectories: () => Promise<void>;
     getMetrics: (id: string, opts?: { force?: boolean }) => void;
-    setTrajectory: (trajectory: Trajectory | null) => void;
-    clearError: () => void;
     reset: () => void;
     clearCurrentTrajectory: () => void;
 }

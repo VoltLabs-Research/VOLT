@@ -9,9 +9,9 @@ import useLogger from '@/hooks/core/use-logger';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import { useUIStore, type ActiveModifier } from '@/stores/slices/ui';
-import { usePluginStore } from '@/stores/slices/plugin';
-import './CanvasSidebarModifiers.css';
+import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { RiSliceFill } from 'react-icons/ri';
+import './CanvasSidebarModifiers.css';
 
 const CanvasSidebarModifiers = () => {
     const logger = useLogger('canvas-sidebar-modifiers');
@@ -20,11 +20,8 @@ const CanvasSidebarModifiers = () => {
     const modifiers = usePluginStore((state) => state.modifiers);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const setShowRenderConfig = useUIStore((state) => state.setShowRenderConfig);
-    const idRateSeries = useTrajectoryStore((state) => state.idRateSeries);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const navigate = useNavigate();
-
-    // We save the previous state to detect which modifiers have just been activated
     const prevActiveRef = useRef<ActiveModifier[]>(activeModifiers);
 
     useEffect(() => {
@@ -51,12 +48,12 @@ const CanvasSidebarModifiers = () => {
     }, [activeModifiers, analysisConfig, trajectory, logger, navigate, setShowRenderConfig]);
 
     const allModifiers = useMemo(() => ([
-        ...modifiers.map((mod) => ({
-            title: mod.name,
-            modifierId: mod.pluginSlug,
-            Icon: mod.icon ? () => <DynamicIcon iconName={mod.icon ?? ''} /> : PiEngine,
-            pluginId: mod.pluginId,
-            pluginModifierId: mod.pluginSlug,
+        ...modifiers.map((modifier) => ({
+            title: modifier.name,
+            modifierId: modifier.plugin._id,
+            Icon: modifier.icon ? () => <DynamicIcon iconName={modifier.icon ?? ''} /> : PiEngine,
+            pluginId: modifier.plugin._id,
+            pluginModifierId: modifier.plugin.slug,
             isPlugin: true
         })),
         {

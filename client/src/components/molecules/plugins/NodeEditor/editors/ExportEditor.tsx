@@ -3,7 +3,7 @@ import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
 import CodeEditor from '@/components/atoms/common/CodeEditor';
-import { usePluginBuilderStore } from '@/stores/slices/plugin';
+import { usePluginBuilderStore } from '@/stores/slices/plugin/builder-slice';
 import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/utilities/plugins/node-types';
 import type { IExportData, Exporter, ExportType } from '@/types/plugin';
 

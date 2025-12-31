@@ -1,6 +1,6 @@
 import type { AxiosRequestConfig } from 'axios';
 import type { IWorkflow, PluginStatus } from '@/types/plugin';
-import type { GetPluginsResponse, IPluginRecord, GetPluginResponse, ValidateWorkflowResponse, ExecutePluginResponse } from './types';
+import type { GetPluginsResponse, IPluginRecord, GetPluginResponse, ExecutePluginResponse } from './types';
 import VoltClient from '@/api';
 
 const client = new VoltClient('/plugins', { useRBAC: true });
@@ -15,52 +15,6 @@ const pluginApi = {
         const response = await client.request<GetPluginsResponse>('get', '/', {
             query: params
         });
-        return response.data;
-    },
-
-    async getPublishedPlugins(): Promise<IPluginRecord[]> {
-        const response = await pluginApi.getPlugins({ status: 'published' as PluginStatus });
-        return response.data;
-    },
-
-    async getAvailableArguments(pluginSlug: string): Promise<any> {
-        const response = await client.request<{ status: string; data: any }>('get', `/${pluginSlug}/arguments`);
-        return response.data.data;
-    },
-
-    async getFile(
-        trajectoryId: string,
-        analysisId: string,
-        exposureId: string,
-        timestep: number,
-        filename: string
-    ): Promise<ArrayBuffer> {
-        const response = await client.request<ArrayBuffer>(
-            'get',
-            `/file/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/${filename}`,
-            {
-                config: { responseType: 'arraybuffer' as AxiosRequestConfig['responseType'] },
-                dedupe: false
-            }
-        );
-        return response.data;
-    },
-
-    async getExposureData(
-        _pluginId: string,
-        trajectoryId: string,
-        analysisId: string,
-        exposureId: string,
-        timestep: number
-    ): Promise<ArrayBuffer> {
-        const response = await client.request<ArrayBuffer>(
-            'get',
-            `/file/${trajectoryId}/${analysisId}/${exposureId}/${timestep}/file.msgpack`,
-            {
-                config: { responseType: 'arraybuffer' as AxiosRequestConfig['responseType'] },
-                dedupe: false
-            }
-        );
         return response.data;
     },
 
@@ -90,11 +44,6 @@ const pluginApi = {
 
     async deletePlugin(idOrSlug: string): Promise<void> {
         await client.request('delete', `/${idOrSlug}`);
-    },
-
-    async validateWorkflow(workflow: IWorkflow): Promise<ValidateWorkflowResponse['data']> {
-        const response = await client.request<ValidateWorkflowResponse>('patch', '/validate', { data: { workflow } });
-        return response.data.data;
     },
 
     async publishPlugin(idOrSlug: string): Promise<IPluginRecord> {

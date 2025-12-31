@@ -25,7 +25,6 @@ import { ANIMATION_CONSTANTS, ensureSimulationBox, startSizeAnimAfterRotation, r
 import { updateSelectionGeometry } from '@/utilities/glb/selection';
 import type { ExtendedSceneState } from '@/types/canvas';
 
-// Reuse these to avoid GC pressure
 const _box = new Box3();
 const _center = new Vector3();
 
@@ -53,7 +52,6 @@ export default class AnimationController{
         this.updateSizeAnimation(now);
         this.updateSelection(now);
 
-        // Single invalidate call per frame instead of multiple
         if(this.needsInvalidate){
             this.invalidate();
         }
@@ -188,7 +186,6 @@ export default class AnimationController{
 
         const hover = this.state.isHovered && !this.state.isSelectedPersistent;
 
-        // Reuse cached center from updateSimulationBox
         this.state.selection.group.position.lerp(_center, ANIMATION_CONSTANTS.SELECTION_LERP_SPEED);
 
         const timeSince = (now - this.state.lastInteractionTime) / 1000;

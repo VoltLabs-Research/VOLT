@@ -1,17 +1,16 @@
 import VoltClient from '@/api';
 import type { Session, GetLoginActivityParams, LoginActivity } from './types';
+import type { ApiResponse } from '@/types/api';
 
 const client = new VoltClient('/sessions');
 
 const sessionApi = {
     async getAll(): Promise<Session[]> {
-        // BaseController.getAll returns paginated response
-        const response = await client.request<{ status: string; data: Session[] }>('get', '/');
+        const response = await client.request<ApiResponse<Session[]>>('get', '/');
         return response.data.data;
     },
 
     async revoke(id: string): Promise<void> {
-        // Use updateOne with isActive: false instead of delete
         await client.request('patch', `/${id}`, { data: { isActive: false } });
     },
 
@@ -24,7 +23,7 @@ const sessionApi = {
             ? `?${new URLSearchParams(params as any).toString()}`
             : '';
 
-        const response = await client.request<{ status: string; data: LoginActivity[] }>('get', `/activity${queryString}`);
+        const response = await client.request<ApiResponse<LoginActivity[]>>('get', `/activity${queryString}`);
         return response.data.data;
     }
 };

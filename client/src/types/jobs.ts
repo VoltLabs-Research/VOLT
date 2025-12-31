@@ -1,9 +1,12 @@
+export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'retrying' | 'unknown';
+export type FrameJobGroupStatus = 'running' | 'completed' | 'failed' | 'partial';
+
 export interface Job {
     jobId: string;
     trajectoryId: string;
     timestep: number;
     sessionId?: string;
-    status: 'queued' | 'running' | 'completed' | 'failed' | 'retrying' | 'unknown';
+    status: JobStatus;
     timestamp: string;
     progress?: number;
     queueType?: string;
@@ -12,20 +15,10 @@ export interface Job {
     [key: string]: any;
 }
 
-export interface JobStats {
-    total: number;
-    completed: number;
-    totalAllTime: number;
-    byStatus: Record<string, number>;
-    hasActiveJobs: boolean;
-    completionRate: number;
-    isActiveSession: boolean;
-}
-
 export interface FrameJobGroup {
     timestep: number;
     jobs: Job[];
-    overallStatus: 'running' | 'completed' | 'failed' | 'partial';
+    overallStatus: FrameJobGroupStatus;
 }
 
 export interface TrajectoryJobGroup {
@@ -33,10 +26,7 @@ export interface TrajectoryJobGroup {
     trajectoryName: string;
     frameGroups: FrameJobGroup[];
     latestTimestamp: string;
-    overallStatus: 'running' | 'completed' | 'failed' | 'partial';
+    overallStatus: FrameJobGroupStatus;
     completedCount: number;
     totalCount: number;
 }
-
-
-

@@ -11,7 +11,6 @@ import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, GizmoHelper, GizmoViewport, AdaptiveDpr, AdaptiveEvents, Bvh, Preload } from '@react-three/drei';
 import { EffectComposer, SSAO } from '@react-three/postprocessing';
-import ScreenshotHandler from '@/components/atoms/scene/ScreenshotHandler';
 import TrajectoryLighting from '@/components/atoms/scene/TrajectoryLighting';
 import DefectLighting from '@/components/atoms/scene/DefectLighting';
 import CanvasGrid from '@/components/atoms/scene/CanvasGrid';
@@ -317,7 +316,6 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 			>
 				<DynamicRenderer />
 				<CameraRig orbitRef={orbitControlsRef} />
-				<ScreenshotHandler onToolsReady={handleToolsReady} backgroundColor={backgroundColor} />
 				<color attach="background" args={[threeBackgroundColor]} />
 				<Preload all />
 				{adaptiveEnabled && <AdaptiveDpr pixelated={pixelated} />}

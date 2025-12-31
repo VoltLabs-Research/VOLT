@@ -9,7 +9,12 @@ export interface AuthState {
     user: User | null;
     isLoading: boolean;
     error: string | null;
-    passwordInfo?: { lastChanged?: Date; requiresChange?: boolean };
+
+    passwordInfo?: {
+        lastChanged?: Date;
+        requiresChange?: boolean;
+    };
+
     isChangingPassword: boolean;
     isLoadingPasswordInfo: boolean;
 }
@@ -30,16 +35,22 @@ export const initialState: AuthState = {
     user: null,
     isLoading: false,
     error: null,
+
     passwordInfo: undefined,
     isChangingPassword: false,
     isLoadingPasswordInfo: false
 };
 
 export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => {
-    const handleAuthSuccess = (data: { user: User; token: string }) => {
-        TokenStorage.setToken(data.token);
-        set({ user: data.user, error: null });
-        return { user: data.user };
+    const handleAuthSuccess = (response: { user: User; token: string }) => {
+        TokenStorage.setToken(response.token);
+
+        set({
+            user: response.user,
+            error: null
+        });
+
+        return { user: response.user };
     };
 
     return {
@@ -47,59 +58,92 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => {
 
         initializeAuth: async () => {
             const token = TokenStorage.getToken();
-            if (!token) { set({ user: null }); return { user: null }; }
-            const result = await runRequest(set, get, () => authApi.getMe(), {
-                onSuccess: (user) => set({ user, error: null }),
-                onError: () => { TokenStorage.removeToken(); set({ user: null }); },
-                loadingKey: 'isLoading'
+
+            if (!token) {
+                set({ user: null });
+                return { user: null };
+            }
+
+            const user = await runRequest(set, get, () => authApi.getMe(), {
+                loadingKey: 'isLoading',
+                onSuccess: (user) => {
+                    set({ user, error: null });
+                },
+                onError: () => {
+                    TokenStorage.removeToken();
+                    set({ user: null });
+                }
             });
-            return { user: result };
+
+            return { user };
         },
 
         signIn: async (credentials) => {
             const result = await runRequest(set, get, () => authApi.signIn(credentials), {
+                loadingKey: 'isLoading',
                 errorFallback: 'Failed to sign in',
                 rethrow: true,
-                onSuccess: handleAuthSuccess,
-                loadingKey: 'isLoading'
+                onSuccess: handleAuthSuccess
             });
+
             return result ? { user: result.user } : { user: null };
         },
 
         signUp: async (details) => {
             const result = await runRequest(set, get, () => authApi.signUp(details), {
+                loadingKey: 'isLoading',
                 errorFallback: 'Failed to sign up',
                 rethrow: true,
-                onSuccess: handleAuthSuccess,
-                loadingKey: 'isLoading'
+                onSuccess: handleAuthSuccess
             });
+
             return result ? { user: result.user } : { user: null };
         },
 
         signOut: () => {
             TokenStorage.removeToken();
             clearErrorHistory();
-            set({ user: null, error: null });
+
+            set({
+                user: null,
+                error: null
+            });
+
             window.location.href = '/auth/sign-in';
         },
 
-        clearError: () => set({ error: null }),
+        clearError: () => {
+            set({ error: null });
+        },
 
-        changePassword: async (data) => {
-            await runRequest(set, get, () => authApi.password.change({ currentPassword: data.currentPassword, newPassword: data.newPassword }), {
-                loadingKey: 'isChangingPassword',
-                rethrow: true
-            });
+        changePassword: async ({ currentPassword, newPassword }) => {
+            await runRequest(
+                set,
+                get,
+                () =>
+                    authApi.password.change({
+                        currentPassword,
+                        newPassword
+                    }),
+                {
+                    loadingKey: 'isChangingPassword',
+                    rethrow: true
+                }
+            );
+
             return {};
         },
 
         getPasswordInfo: async () => {
-            const info = await runRequest(set, get, () => authApi.password.getInfo(), {
+            const passwordInfo = await runRequest(set, get, () => authApi.password.getInfo(), {
                 loadingKey: 'isLoadingPasswordInfo',
                 rethrow: true,
-                onSuccess: (passwordInfo) => set({ passwordInfo })
+                onSuccess: (passwordInfo) => {
+                    set({ passwordInfo });
+                }
             });
-            return { passwordInfo: info };
+
+            return { passwordInfo };
         }
     };
 };

@@ -23,7 +23,7 @@
 import VoltClient from '@/api';
 import type { Chat, Message } from '@/types/chat';
 import type { User } from '@/types/models';
-import type { GetChatMessagesResponse, GetTeamMembersResponse, GetChatsResponse } from './types';
+import type { GetChatMessagesResponse, GetTeamMembersResponse, GetChatsResponse, SendMessageResponse } from './types';
 
 const api = new VoltClient('/chat', { useRBAC: false });
 
@@ -55,7 +55,12 @@ export const chatApi = {
     },
 
     // Send a message to a chat
-    sendMessage: async (chatId: string, content: string, messageType = 'text', metadata?: any): Promise<Message> => {
+    sendMessage: async (
+        chatId: string,
+        content: string,
+        messageType: 'text' | 'file' | 'system' = 'text',
+        metadata?: Message['metadata']
+    ): Promise<Message> => {
         const response = await api.request<SendMessageResponse>('post', `/${chatId}/messages`, {
             data: {
                 content,
@@ -86,7 +91,10 @@ export const chatApi = {
 
     // Get file as base64 for preview
     getFilePreview: async (chatId: string, messageId: string): Promise<{ dataUrl: string; fileName: string; fileType: string; fileSize: number }> => {
-        const response = await api.request<{ status: string; data: any }>('get', `/${chatId}/messages/${messageId}/preview`);
+        const response = await api.request<{
+            status: 'success';
+            data: { dataUrl: string; fileName: string; fileType: string; fileSize: number };
+        }>('get', `/${chatId}/messages/${messageId}/preview`);
         return response.data.data;
     },
 
@@ -95,7 +103,10 @@ export const chatApi = {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await api.request<{ status: string; data: any }>('post', `/${chatId}/upload`, {
+        const response = await api.request<{
+            status: 'success';
+            data: { filename: string; originalName: string; size: number; mimetype: string; url: string };
+        }>('post', `/${chatId}/upload`, {
             data: formData,
             config: {
                 headers: {

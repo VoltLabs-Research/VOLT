@@ -1,43 +1,23 @@
 import type { SceneState } from '@/types/scene';
 import { Vector3, Euler, Plane } from 'three';
 
-export interface TrajectoryData {
-    _id: string;
-    name: string;
-    dislocations?: DislocationData[];
-    timesteps?: number[];
-    metadata?: Record<string, any>;
-}
-
-export interface DislocationData {
-    timestep: number;
-    segments: any[];
-    metadata?: Record<string, any>;
-}
-
-export interface EditorWidgetsProps {
-    trajectory: TrajectoryData | null;
-    currentTimestep: number | undefined;
-    scene3DRef?: React.RefObject<any>;
-}
-
-export interface Scene3DContainerProps {
-    trajectoryId: string | undefined;
-    onTrajectoryUpload: (trajectory: TrajectoryData) => void;
-}
+export type Pos3D = {
+    x: number;
+    y: number;
+    z: number;
+};
 
 export type UseGlbSceneParams = {
-    /** Optional URL to load - if provided, overrides store-derived URL */
     url?: string | null;
     sliceClippingPlanes: Plane[];
-    position: { x: number; y: number; z: number };
-    rotation: { x: number; y: number; z: number };
+    position: Pos3D; 
+    rotation: Pos3D;
     scale: number;
     enableInstancing?: boolean;
     updateThrottle: number;
     useFixedReference?: boolean;
     referencePoint?: 'origin' | 'initial' | 'custom';
-    customReference?: { x: number; y: number; z: number };
+    customReference?: Pos3D;
     preserveInitialTransform?: boolean;
     onSelect?: () => void;
     orbitControlsRef?: React.RefObject<any>;

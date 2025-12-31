@@ -1,6 +1,6 @@
 import type { Team } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
-import type { TeamInvitation } from '@/types/team-invitation';
+import type { TeamInvitation } from '@/types/models';
 import type { CreateTeamPayload } from './types';
 import VoltClient from '@/api';
 
@@ -9,7 +9,7 @@ const invitationClient = new VoltClient('/team-invitations', { useRBAC: true });
 
 const teamApi = {
     async getAll(): Promise<Team[]> {
-        const response = await client.request<{ status: string; data: Team[] }>('get', '/');
+        const response = await client.request<ApiResponse<Team[]>>('get', '/');
         return response.data.data;
     },
 

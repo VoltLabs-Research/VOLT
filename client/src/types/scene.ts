@@ -64,15 +64,3 @@ export type SceneState = {
         matrix?: any;
     } | null;
 };
-
-export type LoadingState = {
-  isLoading: boolean;
-  progress: number;
-  error: string | null;
-};
-
-export type EdgesBox = EdgesGeometry & { boundingBox?: Box3 };
-
-export type BoxGeo = BoxGeometry;
-export type MeshBasicMat = MeshBasicMaterial;
-export type ShaderMat = ShaderMaterial;

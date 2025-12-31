@@ -34,3 +34,12 @@ export interface CreateContainerPayload {
     ports?: { private: number; public: number }[];
     [key: string]: any;
 }
+
+export interface GetContainerStats{
+    stats: ContainerStats;
+    limits: any;
+};
+
+export interface GetContainerProcesses{
+    processes: ContainerProcess[]
+};

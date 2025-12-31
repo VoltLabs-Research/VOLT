@@ -5,7 +5,7 @@ import FormField from '@/components/molecules/form/FormField';
 import { useNodeData } from '@/hooks/plugins/use-node-data';
 import type { IEntrypointData } from '@/types/plugin';
 import pluginApi from '@/services/api/plugin/plugin';
-import { usePluginBuilderStore } from '@/stores/slices/plugin';
+import { usePluginBuilderStore } from '@/stores/slices/plugin/builder-slice';
 import Button from '@/components/primitives/Button';
 import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
 import Paragraph from '@/components/primitives/Paragraph';

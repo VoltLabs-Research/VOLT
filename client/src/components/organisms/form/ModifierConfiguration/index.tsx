@@ -3,7 +3,7 @@ import { IoIosArrowDown } from 'react-icons/io';
 import FormField from '@/components/molecules/form/FormField';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Button from '@/components/primitives/Button';
-import { usePluginStore } from '@/stores/slices/plugin';
+import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import pluginApi from '@/services/api/plugin/plugin';
 import Container from '@/components/primitives/Container';

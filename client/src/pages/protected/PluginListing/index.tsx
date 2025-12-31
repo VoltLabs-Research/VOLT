@@ -5,7 +5,7 @@ import pluginApi from '@/services/api/plugin/plugin';
 import trajectoryApi from '@/services/api/trajectory/trajectory';
 import analysisConfigApi from '@/services/api/analysis/analysis';
 import { Skeleton } from '@mui/material';
-import { usePluginStore } from '@/stores/slices/plugin';
+import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { useTeamStore } from '@/stores/slices/team';
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import PerFrameListingModal from '@/components/organisms/common/PerFrameListingModal';

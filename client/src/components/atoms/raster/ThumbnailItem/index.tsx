@@ -1,12 +1,22 @@
 import React from 'react';
-import type { ThumbnailItemProps } from '@/types/raster';
+import type { Scene } from '@/types/raster';
 import { motion } from 'framer-motion';
 import useRasterFrame from '@/hooks/raster/use-raster-frame';
 import { useParams } from 'react-router';
 import { Skeleton } from '@mui/material';
 import Paragraph from '@/components/primitives/Paragraph';
 
-const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
+interface ThumbnailItemProps {
+    scene: Scene;
+    timestep: number;
+    index: number;
+    isActive: boolean;
+    isPlaying: boolean;
+    selectedFrameIndex: number;
+    onClick: (index: number) => void;
+}
+
+const ThumbnailItem = ({
   scene,
   timestep,
   index,
@@ -14,16 +24,14 @@ const ThumbnailItem: React.FC<ThumbnailItemProps> = ({
   isPlaying,
   selectedFrameIndex,
   onClick,
-}) => {
+}: ThumbnailItemProps) => {
   const { trajectoryId } = useParams<{ trajectoryId: string }>();
 
-  // Accepts a 5th priority arg; our hook signature now tolerates it
   const { scene: loadedScene, isLoading: loadingFrame } = useRasterFrame(
     trajectoryId,
     timestep,
     scene.analysisId,
-    scene.model,
-    isActive ? 'high' : 'low'
+    scene.model
   );
 
   const display = loadedScene || scene;

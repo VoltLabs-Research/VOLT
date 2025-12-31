@@ -27,65 +27,38 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import VoltClient from '@/api';
 
-const client = new VoltClient('/trajectories');
-
 export const GLB_CONSTANTS = {
     DEFAULT_POSITION: Object.freeze({ x: 0, y: 0, z: 0 }),
     DEFAULT_ROTATION: Object.freeze({ x: 0, y: 0, z: 0 }),
 } as const;
 
-// Simple in-memory cache for loaded GLBs
 const glbCache = new Map<string, THREE.Group>();
 
 export const loadGLB = async (url: string, onProgress?: (progress: number) => void): Promise<THREE.Group> => {
-    // Check cache first
     if (glbCache.has(url)) {
-        if (onProgress) onProgress(1); // Immediate completion
+        if (onProgress) onProgress(1);
         const cached = glbCache.get(url)!;
-        // Return a clone to prevent mutation of the cached asset by the scene
         return cached.clone();
     }
 
     try {
-        // TODO: API
-        // Checks if URL is absolute; if so, fetch directly, otherwise use client
-        const isAbsolute = url.startsWith('http');
-
-        let response;
-        if (isAbsolute) {
-            const genericClient = new VoltClient('');
-            response = await genericClient.request<ArrayBuffer>('get', url, {
-                config: {
-                    responseType: 'arraybuffer',
-                    onDownloadProgress: (evt) => {
-                        const total = evt.total ?? 0;
-                        if (total > 0 && onProgress) {
-                            onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
-                        }
+        const client = new VoltClient('');
+        const response = await client.request<ArrayBuffer>('get', url, {
+            config: {
+                responseType: 'arraybuffer',
+                onDownloadProgress: (evt) => {
+                    const total = evt.total ?? 0;
+                    if (total > 0 && onProgress) {
+                        onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
                     }
-                },
-                dedupe: false
-            });
-        } else {
-            const rootClient = new VoltClient('');
-            response = await rootClient.request<ArrayBuffer>('get', url, {
-                config: {
-                    responseType: 'arraybuffer',
-                    onDownloadProgress: (evt) => {
-                        const total = evt.total ?? 0;
-                        if (total > 0 && onProgress) {
-                            onProgress(Math.min(1, Math.max(0, evt.loaded / total)));
-                        }
-                    }
-                },
-                dedupe: false
-            });
-        }
+                }
+            },
+            dedupe: false
+        });
 
 
         const arrayBuffer = response.data;
 
-        // Parse with GLTF loader
         return new Promise<THREE.Group>((resolve, reject) => {
             const gltfLoader = new GLTFLoader();
             try {

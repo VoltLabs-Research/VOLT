@@ -15,7 +15,6 @@ export interface CreateSSHConnectionPayload {
     port: number;
     username: string;
     password?: string;
-    privateKey?: string;
 }
 
 export interface SSHFileListResponse {
@@ -28,3 +27,8 @@ export interface SSHFileListResponse {
     }>;
     cwd: string;
 }
+
+export interface TestSSHConnection{
+    valid: boolean;
+    error?: string;
+};

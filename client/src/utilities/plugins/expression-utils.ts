@@ -14,10 +14,19 @@ export interface NodeOutputSchema {
         description?: string;
         children?: NodeOutputSchema;
     };
-}
+};
 
-// Define what each node type outputs(available for reference by downstream nodes)
-export const NODE_OUTPUT_SCHEMAS: Record<NodeType, NodeOutputSchema> = {
+export interface AvailableExpression {
+    nodeId: string;
+    nodeName: string;
+    nodeType: NodeType;
+    path: string;
+    fullExpression: string;
+    type: string;
+    description?: string;
+};
+
+const NODE_OUTPUT_SCHEMAS = {
     [NodeType.MODIFIER]: {
         name: { type: 'string', description: 'Plugin name' },
         version: { type: 'string', description: 'Plugin version' },
@@ -30,7 +39,6 @@ export const NODE_OUTPUT_SCHEMAS: Record<NodeType, NodeOutputSchema> = {
     [NodeType.ARGUMENTS]: {
         as_str: { type: 'string', description: 'Arguments as string' },
         as_array: { type: 'array', description: 'Arguments as array' },
-        // Dynamic: each argument key becomes available
     },
     [NodeType.CONTEXT]: {
         trajectory_dumps: { type: 'array', description: 'List of dump file paths' },
@@ -70,7 +78,6 @@ export const NODE_OUTPUT_SCHEMAS: Record<NodeType, NodeOutputSchema> = {
     }
 };
 
-// Get all ancestor nodes(nodes that come before this node in the workflow)
 export function getAncestorNodes(nodeId: string, nodes: Node[], edges: Edge[]): Node[]{
     const ancestors: Node[] = [];
     const visited = new Set<string>();
@@ -93,17 +100,6 @@ export function getAncestorNodes(nodeId: string, nodes: Node[], edges: Edge[]): 
     }
 
     return ancestors;
-}
-
-// Get available expressions from ancestor nodes
-export interface AvailableExpression {
-    nodeId: string;
-    nodeName: string;
-    nodeType: NodeType;
-    path: string;
-    fullExpression: string;
-    type: string;
-    description?: string;
 }
 
 export function getAvailableExpressions(
@@ -189,15 +185,6 @@ export function getAvailableExpressions(
     return expressions;
 }
 
-// Parse expression from text to extract the reference
-export function parseExpression(text: string): { isExpression: boolean; reference?: string } {
-    const match = text.match(/\{\{\s*([^}]+)\s*\}\}/);
-    if(match){
-        return { isExpression: true, reference: match[1].trim() };
-    }
-    return { isExpression: false };
-}
-
 export const formatCellValue = (value: any, path: string): string => {
     if(value === null || value === undefined){
         return '-';
@@ -244,7 +231,6 @@ export const normalizeRows = (rows: any[], columns: ColumnDef[]) => {
     });
 };
 
-// Check if value contains an expression
 export function containsExpression(value: string): boolean{
     return /\{\{[^}]+\}\}/.test(value);
 }

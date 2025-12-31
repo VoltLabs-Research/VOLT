@@ -1,3 +1,4 @@
+import { extractErrorMessage } from '@/utilities/api/error-extractor';
 import type { StoreApi } from 'zustand';
 
 export interface AsyncState { isLoading?: boolean; loading?: boolean; error?: string | null;[key: string]: any }
@@ -15,12 +16,6 @@ export interface RunRequestOptions<TResult, TState extends AsyncState> {
 type SetFn<T> = StoreApi<T>['setState'];
 type GetFn<T> = StoreApi<T>['getState'];
 
-export function extractError(error: unknown, fallback = 'An error occurred'): string {
-    if (!error) return fallback;
-    const e = error as any;
-    return e?.response?.data?.data?.error || e?.response?.data?.message || e?.context?.serverMessage || e?.message || (typeof error === 'string' ? error : fallback);
-}
-
 export async function runRequest<TResult, TState extends AsyncState = AsyncState>(
     set: (partial: Partial<TState>) => void,
     get: () => TState,
@@ -37,7 +32,7 @@ export async function runRequest<TResult, TState extends AsyncState = AsyncState
         if (onSuccess) onSuccess(result, set as SetFn<TState>, get as GetFn<TState>);
         return result;
     } catch (error) {
-        set({ [loadingKey]: false, [errorKey]: extractError(error, errorFallback) } as Partial<TState>);
+        set({ [loadingKey]: false, [errorKey]: extractErrorMessage(error, errorFallback) } as Partial<TState>);
         if (onError) onError(error as Error, set as SetFn<TState>, get as GetFn<TState>);
         if (rethrow) throw error;
         return null;

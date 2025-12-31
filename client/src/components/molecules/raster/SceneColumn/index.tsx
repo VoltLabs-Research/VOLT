@@ -1,9 +1,20 @@
 import React from 'react';
-import type { SceneColumnProps } from '@/types/raster';
 import { motion } from 'framer-motion';
 import RasterScene from '../RasterScene';
+import type { Scene, PlaybackControlsProps, AnalysisSelectProps, ModelRailProps } from '@/types/raster';
 
-const SceneColumn: React.FC<SceneColumnProps> = ({
+interface SceneColumnProps {
+    trajectoryId?: string;
+    scene: Scene | null;
+    isPlaying: boolean;
+    isLoading: boolean;
+    playbackControls: PlaybackControlsProps;
+    analysisSelect: AnalysisSelectProps;
+    modelRail: ModelRailProps;
+    delay?: number;
+}
+
+const SceneColumn = ({
   scene,
   isPlaying,
   isLoading,
@@ -12,7 +23,7 @@ const SceneColumn: React.FC<SceneColumnProps> = ({
   analysisSelect,
   modelRail,
   delay = 0,
-}) => {
+}: SceneColumnProps) => {
   const shouldShowSkeleton = isLoading && (!scene || !scene.data);
 
   return (

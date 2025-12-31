@@ -6,7 +6,6 @@ import { topologicalSort, findDescendantByType } from '@/utilities/plugins/workf
 import tempFileManager from '@/services/temp-file-manager';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
-// Ensure all node handlers are registered
 import '@/services/nodes/handlers';
 
 interface ExposureResult {
@@ -235,7 +234,6 @@ export default class PluginWorkflowEngine {
             try {
                 await fs.rm(file, { recursive: true, force: true });
             } catch {
-                // Silently ignore - file might already be deleted
             }
         }
     }

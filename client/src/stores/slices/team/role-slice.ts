@@ -1,4 +1,4 @@
-import type { TeamRole, TeamRolePayload, TeamMemberWithRole } from '@/types/team-role';
+import type { TeamRole, TeamRolePayload, TeamMemberWithRole } from '@/types/models';
 import teamRoleApi from '@/services/api/team-role/team-role';
 import teamMemberApi from '@/services/api/team-member/team-member';
 import { runRequest } from '../../helpers';

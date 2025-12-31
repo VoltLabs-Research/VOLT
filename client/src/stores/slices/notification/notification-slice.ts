@@ -21,8 +21,6 @@ export interface NotificationActions {
 
 export type NotificationSlice = NotificationState & NotificationActions;
 
-const calcUnread = (n: Notification[]) => n.filter(x => !x.read).length;
-
 export const initialState: NotificationState = {
     notifications: [],
     loading: false,
@@ -35,39 +33,84 @@ export const createNotificationSlice: SliceCreator<NotificationSlice> = (set, ge
 
     fetch: async () => {
         await runRequest(set, get, () => notificationsApi.getAll(), {
-            errorFallback: 'Failed to load notifications',
             loadingKey: 'loading',
-            onSuccess: (n) => set({ notifications: n, unreadCount: calcUnread(n) } as Partial<NotificationSlice>)
+            errorFallback: 'Failed to load notifications',
+            onSuccess: (notifications: Notification[]) => {
+                const unreadCount = notifications.filter((n) => !n.read).length;
+
+                set({
+                    notifications,
+                    unreadCount
+                } as Partial<NotificationSlice>);
+            }
         });
     },
 
-    markAsRead: async (id) => {
-        await runRequest(set, get, () => notificationsApi.markAsRead(id), {
+    markAsRead: async (notificationId: string) => {
+        await runRequest(set, get, () => notificationsApi.markAsRead(notificationId), {
             skipLoading: true,
-            onSuccess: () => set((s: NotificationSlice) => {
-                const updated = s.notifications.map(n => n._id === id ? { ...n, read: true } : n);
-                return { notifications: updated, unreadCount: calcUnread(updated) };
-            })
+            onSuccess: () => {
+                set((state: NotificationSlice) => {
+                    const notifications = state.notifications.map((notification) => {
+                        const isTarget = notification._id === notificationId;
+                        if (!isTarget) return notification;
+
+                        return {
+                            ...notification,
+                            read: true
+                        };
+                    });
+
+                    const unreadCount = notifications.filter((n) => !n.read).length;
+
+                    return {
+                        notifications,
+                        unreadCount
+                    };
+                });
+            }
         });
     },
 
     markAllAsRead: async () => {
         await runRequest(set, get, () => notificationsApi.markAllAsRead(), {
             skipLoading: true,
-            onSuccess: () => set((s: NotificationSlice) => ({
-                notifications: s.notifications.map(n => ({ ...n, read: true })),
-                unreadCount: 0
-            }))
+            onSuccess: () => {
+                set((state: NotificationSlice) => {
+                    const notifications = state.notifications.map((notification) => ({
+                        ...notification,
+                        read: true
+                    }));
+
+                    return {
+                        notifications,
+                        unreadCount: 0
+                    };
+                });
+            }
         });
     },
 
-    addNotification: (n) => set((s: NotificationSlice) => ({
-        notifications: [n, ...s.notifications],
-        unreadCount: s.unreadCount + (n.read ? 0 : 1)
-    })),
+    addNotification: (notification: Notification) => {
+        set((state: NotificationSlice) => {
+            const shouldIncrementUnread = !notification.read;
+            const unreadCount = state.unreadCount + (shouldIncrementUnread ? 1 : 0);
+
+            return {
+                notifications: [notification, ...state.notifications],
+                unreadCount
+            };
+        });
+    },
 
     initializeSocket: () => {
-        const off = socketService.on('notification', (n: Notification) => (get() as NotificationSlice).addNotification(n));
-        return () => off();
+        const off = socketService.on('notification', (notification: Notification) => {
+            const slice = get() as NotificationSlice;
+            slice.addNotification(notification);
+        });
+
+        return () => {
+            off();
+        };
     }
 });

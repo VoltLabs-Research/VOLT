@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { combineSlices } from '@/stores/helpers';
-import { createAnalysisConfigSlice, type ExtendedAnalysisStore } from './analysis-slice';
+import { createAnalysisConfigSlice } from './slice';
+import type { AnalysisConfigStore } from '@/types/stores/analysis-config';
 
-export const useAnalysisConfigStore = create<ExtendedAnalysisStore>()(combineSlices(createAnalysisConfigSlice));
+export const useAnalysisConfigStore = create<AnalysisConfigStore>()(combineSlices(createAnalysisConfigSlice));
 
-export { type ExtendedAnalysisStore } from './analysis-slice';
 export default useAnalysisConfigStore;
