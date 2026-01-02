@@ -9,7 +9,7 @@ import { parentPort, workerData } from 'worker_threads';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import TrajectoryParserFactory from '@/parsers/factory';
-import DumpStorage from '@/services/dump-storage';
+import DumpStorage from '@/services/trajectory/dump-storage';
 
 interface ParseTaskMessage {
     type: 'parse';

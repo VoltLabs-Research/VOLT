@@ -3,7 +3,7 @@ import { IWorkflowNode } from '@/types/models/modifier';
 import { NodeHandler, ExecutionContext } from '@/services/nodes/node-registry';
 import { T, NodeOutputSchema } from '@/services/nodes/schema-types';
 import { Trajectory } from '@/models';
-import DumpStorage from '@/services/dump-storage';
+import DumpStorage from '@/services/trajectory/dump-storage';
 import logger from '@/logger';
 
 class ContextHandler implements NodeHandler {

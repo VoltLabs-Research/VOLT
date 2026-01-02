@@ -1,4 +1,4 @@
-import DumpStorage from '@/services/dump-storage';
+import DumpStorage from '@/services/trajectory/dump-storage';
 import tempFileManager from '@/services/temp-file-manager';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';

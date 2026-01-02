@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import BaseController from '@/controllers/base-controller';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
-import DumpStorage from '@/services/dump-storage';
+import DumpStorage from '@/services/trajectory/dump-storage';
 import processAndCreateTrajectory from '@/utilities/trajectory/create-trajectory';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { getMetricsByTeamId } from '@/utilities/metrics/team';
@@ -10,8 +10,8 @@ import { Trajectory, Team, DailyActivity } from '@/models';
 import { TeamActivityType } from '@/models/daily-activity';
 import { getAnyTrajectoryPreview, sendImage } from '@/utilities/raster';
 import { Resource } from '@/constants/resources';
-import getPopulatedFrameAtoms from '@/utilities/trajectory/get-populated-frame-atoms';
 import getFrameGlbReadStream from '@/utilities/trajectory/get-glb-read-stream';
+import SimulationAtoms from '@/services/trajectory/atoms';
 
 export default class TrajectoryController extends BaseController<any> {
     constructor() {
@@ -136,14 +136,15 @@ export default class TrajectoryController extends BaseController<any> {
         const { timestep, exposureId, page: pageStr, pageSize: pageSizeStr } = req.query;
         const trajectoryId = res.locals.trajectory._id.toString();
 
-        if (!timestep || !exposureId) {
+        if(!timestep || !exposureId){
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
         }
 
         const page = Math.max(1, parseInt(String(pageStr) || '1', 10));
         const pageSize = Math.max(1, Math.min(10000, parseInt(String(pageSizeStr) || '1000', 10)));
 
-        const populatedAtoms = await getPopulatedFrameAtoms(trajectoryId, timestep as string, analysisId, exposureId as string, page, pageSize);
+        const simulationAtoms = new SimulationAtoms(trajectoryId, timestep as string);
+        const populatedAtoms = await simulationAtoms.getFrameAtoms(analysisId, exposureId as string, page, pageSize);
         res.status(200).json({ status: 'success', ...populatedAtoms });
     });
 

@@ -69,6 +69,9 @@ const PluginCompactTable = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const [height, setHeight] = useState(400);
 
+    // Calculate total width of all columns
+    const totalWidth = columns.reduce((sum, col) => sum + (col.width || 150), 0);
+
     useEffect(() => {
         if (!containerRef.current) return;
         const observer = new ResizeObserver((entries) => {
@@ -105,38 +108,50 @@ const PluginCompactTable = ({
     }
 
     return (
-        <div className="plugin-exposure-table-compact" ref={containerRef} style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div className="plugin-compact-table-header">
-                {columns.map((col) => (
-                    <div
-                        key={col.key}
-                        className="plugin-compact-table-header-cell"
-                        style={{
-                            width: col.width ? `${col.width}px` : 'auto',
-                            flex: col.width ? '0 0 auto' : '1'
+        <div 
+            className="plugin-exposure-table-compact" 
+            ref={containerRef} 
+            style={{ 
+                height: '100%', 
+                display: 'flex', 
+                flexDirection: 'column',
+                overflowX: 'auto',
+                overflowY: 'auto'
+            }}
+        >
+            <div style={{ minWidth: `${totalWidth}px`, display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <div className="plugin-compact-table-header">
+                    {columns.map((col) => (
+                        <div
+                            key={col.key}
+                            className="plugin-compact-table-header-cell"
+                            style={{
+                                width: col.width ? `${col.width}px` : 'auto',
+                                flex: col.width ? '0 0 auto' : '1'
+                            }}
+                        >
+                            {col.title}
+                        </div>
+                    ))}
+                </div>
+                <div
+                    className="plugin-compact-table-list-container"
+                    style={{ flex: 1, minHeight: 0 }}
+                    onScroll={handleScroll}
+                >
+                    <List
+                        rowCount={data.length}
+                        rowHeight={rowHeight}
+                        rowComponent={VirtualizedRow}
+                        rowProps={{
+                            data,
+                            columns,
                         }}
-                    >
-                        {col.title}
-                    </div>
-                ))}
-            </div>
-            <div
-                className="plugin-compact-table-list-container"
-                style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}
-                onScroll={handleScroll}
-            >
-                <List
-                    rowCount={data.length}
-                    rowHeight={rowHeight}
-                    rowComponent={VirtualizedRow}
-                    rowProps={{
-                        data,
-                        columns,
-                    }}
-                    height={Math.max(0, height)}
-                    width="100%"
-                    style={{ overflowX: 'hidden' }}
-                />
+                        height={Math.max(0, height)}
+                        width={totalWidth}
+                        style={{ overflowX: 'visible', overflowY: 'visible' }}
+                    />
+                </div>
             </div>
             {isFetchingMore && (
                 <div className="plugin-exposure-loading" style={{ padding: '0.25rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>

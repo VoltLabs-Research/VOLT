@@ -23,7 +23,7 @@
 import mime from 'mime-types';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
-import DumpStorage from '@/services/dump-storage';
+import DumpStorage from '@/services/trajectory/dump-storage';
 import logger from '@/logger';
 import storage from '@/services/storage';
 import QuickCache from '@/utilities/perf/quick-cache';
@@ -32,7 +32,6 @@ import { SYS_BUCKETS } from '@/config/minio';
 import { Trajectory, Analysis } from '@/models';
 import { FsEntry, VFSReadStream } from '@/types/services/trajectory-vfs';
 import * as path from 'node:path';
-import * as os from 'node:os';
 
 /**
  * Concurrency limiter for I/O operations(MinIO/MongoDB).

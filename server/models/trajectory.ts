@@ -30,7 +30,7 @@ import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 import useInverseRelations from '@/utilities/mongo/inverse-relations';
 import storage from '@/services/storage';
 import { SYS_BUCKETS } from '@/config/minio';
-import DumpStorage from '@/services/dump-storage';
+import DumpStorage from '@/services/trajectory/dump-storage';
 import logger from '@/logger';
 import { ValidationCodes } from '@/constants/validation-codes';
 import TempFileManager from '@/services/temp-file-manager';

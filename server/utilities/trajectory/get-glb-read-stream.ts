@@ -1,4 +1,4 @@
-import TrajectoryVFS from '@/services/trajectory-vfs';
+import TrajectoryVFS from '@/services/trajectory/virtual-fs';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 

@@ -4,7 +4,7 @@ import { Analysis, Trajectory } from '@/models';
 import { RasterizerOptions } from '@/utilities/export/rasterizer';
 import { getTimestepPreview, rasterizeGLBs } from '@/utilities/raster';
 import { SYS_BUCKETS } from '@/config/minio';
-import TrajectoryVFS from '@/services/trajectory-vfs';
+import TrajectoryVFS from '@/services/trajectory/virtual-fs';
 import archiver from 'archiver';
 import logger from '@/logger';
 

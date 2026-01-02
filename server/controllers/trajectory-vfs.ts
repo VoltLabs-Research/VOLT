@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
-import TrajectoryVFS from '@/services/trajectory-vfs';
+import TrajectoryVFS from '@/services/trajectory/virtual-fs';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { Trajectory, User } from '@/models';
 import BaseController from '@/controllers/base-controller';

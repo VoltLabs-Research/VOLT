@@ -11,7 +11,7 @@ import { IPlugin } from '@/types/models/modifier';
 import { PluginStatus } from '@/types/models/plugin';
 import { getAnalysisQueue } from '@/queues';
 import Plugin from '@/models/plugin';
-import PluginWorkflowEngine from '@/services/plugin-workflow-engine';
+import PluginWorkflowEngine from '@/services/plugin/workflow-engine';
 
 export interface ExecutePluginOptions {
     config: Record<string, any>;

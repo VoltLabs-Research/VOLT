@@ -1,4 +1,4 @@
-import DumpStorage from '@/services/dump-storage';
+import DumpStorage from '@/services/trajectory/dump-storage';
 import { CloudUploadJob } from '@/types/services/cloud-upload';
 import { parentPort } from 'node:worker_threads';
 import logger from '@/logger';

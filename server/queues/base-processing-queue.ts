@@ -638,7 +638,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         // Update trajectory status using centralized service
         if (data.trajectoryId && teamId) {
             try {
-                const trajectoryStatusService = (await import('@/services/trajectory-status-service')).default;
+                const trajectoryStatusService = (await import('@/services/trajectory/status-service')).default;
                 await trajectoryStatusService.updateFromJobStatus({
                     trajectoryId: data.trajectoryId,
                     teamId,

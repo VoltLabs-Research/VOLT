@@ -3,7 +3,7 @@ import { performance } from 'node:perf_hooks';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
 import logger from '@/logger';
 import AtomisticExporter from '@/utilities/export/atoms';
-import DumpStorage from '@/services/dump-storage';
+import DumpStorage from '@/services/trajectory/dump-storage';
 import '@config/env';
 
 const exporter = new AtomisticExporter();

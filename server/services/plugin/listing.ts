@@ -13,6 +13,7 @@ import { Analysis, PluginListingRow } from '@/models';
 import Plugin from '@/models/plugin';
 import storage from '@/services/storage';
 import logger from '@/logger';
+import AtomProperties from '@/services/trajectory/atom-properties';
 
 export interface ListingQueryParams {
     pluginSlug: string;
@@ -50,6 +51,12 @@ export interface PerFrameListingResult {
 }
 
 class PluginListingService {
+    private readonly atomProps: AtomProperties;
+
+    constructor() {
+        this.atomProps = new AtomProperties();
+    }
+
     /**
      * Get listing documents for a plugin
      */
@@ -128,11 +135,16 @@ class PluginListingService {
 
     /**
      * Get per-frame listing data with pagination
+     * Uses AtomProperties to handle exposure configuration and data unwrapping
      */
     async getPerFrameListing(params: PerFrameListingParams): Promise<PerFrameListingResult> {
         const { trajectoryId, analysisId, exposureId, timestep } = params;
         const page = Math.max(1, params.page || 1);
         const limit = Math.min(1000, Math.max(1, params.limit || 50));
+
+        // Use AtomProperties to get exposure configuration (iterableKey)
+        const config = await this.atomProps.getExposureAtomConfig(analysisId, exposureId);
+        const iterableKey = config.iterableKey;
 
         const objectName = [
             'plugins',
@@ -142,27 +154,20 @@ class PluginListingService {
             `timestep-${timestep}.msgpack`
         ].join('/');
 
-        const analysis = await Analysis.findById(analysisId);
-        if (!analysis) throw new Error('Analysis::NotFound');
-
-        const plugin = await Plugin.findOne({ slug: analysis.plugin });
-        if (!plugin) throw new Error('Plugin::NotFound');
-
-        const exposureNode = plugin.workflow.nodes.find(
-            (node: IWorkflowNode) => node.type === NodeType.EXPOSURE && node.id === exposureId
-        );
-        const iterableKey = exposureNode?.data?.exposure?.iterable || 'data';
-
         const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, objectName);
         const offset = (page - 1) * limit;
 
         let total = 0;
         let pagedItems: any[] = [];
 
+        // Helper to extract iterable array from msgpack payload
         const resolveIterable = (payload: any): any[] => {
             if (Array.isArray(payload)) return payload;
-            if (payload?.[iterableKey] && Array.isArray(payload[iterableKey])) return payload[iterableKey];
+            if (iterableKey && payload?.[iterableKey] && Array.isArray(payload[iterableKey])) {
+                return payload[iterableKey];
+            }
             if (payload?.data && Array.isArray(payload.data)) return payload.data;
+            // Fallback: search for first array property
             for (const key in payload) {
                 if (Array.isArray(payload[key])) return payload[key];
             }

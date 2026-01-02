@@ -23,14 +23,14 @@
 import { parentPort } from 'node:worker_threads';
 import { Analysis, Plugin } from '@/models';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
-import PluginWorkflowEngine from '@/services/plugin-workflow-engine';
+import PluginWorkflowEngine from '@/services/plugin/workflow-engine';
 import mongoConnector from '@/utilities/mongo/mongo-connector';
 import logger from '@/logger';
 import '@config/env';
 import '@/services/nodes/handlers';
 import { NodeType } from '@/types/models/plugin';
-import { precomputeListingRowsForTimesteps } from '@/services/precompute-listing-row';
-import DumpStorage from '@/services/dump-storage';
+import { precomputeListingRowsForTimesteps } from '@/services/plugin/precompute-listing-row';
+import DumpStorage from '@/services/trajectory/dump-storage';
 import path from 'node:path';
 
 const extractListingSlugs = (plugin: any): string[] => {

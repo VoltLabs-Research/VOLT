@@ -10,9 +10,9 @@ import RuntimeError from '@/utilities/runtime/runtime-error';
 import BaseController from './base-controller';
 import nodeRegistry from '@/services/nodes/node-registry';
 import workflowValidator from '@/services/nodes/workflow-validator';
-import pluginStorageService from '@/services/plugin-storage';
-import pluginExecutionService from '@/services/plugin-execution';
-import pluginListingService from '@/services/plugin-listing';
+import pluginStorageService from '@/services/plugin/storage';
+import pluginExecutionService from '@/services/plugin/execution';
+import pluginListingService from '@/services/plugin/listing';
 import multer from 'multer';
 
 const binaryUpload = multer({
