@@ -4,7 +4,7 @@ import { PiAtomThin, PiDotsThreeVerticalBold, PiImagesSquareThin } from 'react-i
 import { RxTrash } from "react-icons/rx";
 import { HiOutlineViewfinderCircle } from "react-icons/hi2";
 import { motion } from 'framer-motion';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import EditableTrajectoryName from '@/components/atoms/trajectory/EditableTrajectoryName';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
@@ -262,7 +262,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                                 />
                             ) : (
                                 <Paragraph className='simulation-last-edited overflow-hidden'>
-                                    Edited {formatTimeAgo(trajectory.updatedAt)}
+                                    Edited {formatDistanceToNow(trajectory.updatedAt, { addSuffix: true })}
                                 </Paragraph>
                             )}
                         </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Message } from '@/types/chat';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import TextMessage from '@/components/atoms/chat/TextMessage';
 import FileMessage from '@/components/atoms/chat/FileMessage';
 import MessageControls from '@/components/atoms/chat/MessageControls';
@@ -96,7 +96,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                         </>
                     )}
 
-                    <div className='d-flex items-center gap-05 chat-message-time font-size-1 color-muted'>{formatTimeAgo(msg.createdAt)}</div>
+                    <div className='d-flex items-center gap-05 chat-message-time font-size-1 color-muted'>{formatDistanceToNow(msg.createdAt, { addSufix: true })}</div>
                 </div>
             </div>
         </div>

@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Square, Terminal, Box, Plus } from 'lucide-react';
+import { Play, Square, Box } from 'lucide-react';
 import { RiDeleteBin6Line, RiEyeLine, RiTerminalLine } from 'react-icons/ri';
 import useToast from '@/hooks/ui/use-toast';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
 import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
 import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
-import Button from '@/components/primitives/Button';
 import { useUIStore } from '@/stores/slices/ui';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import containerApi from '@/services/api/container/container';
 import useContainerStore, { type Container } from '@/stores/slices/container';
 import './Containers.css';
@@ -183,7 +182,7 @@ const Containers: React.FC = () => {
             sortable: true,
             render: (value) => (
                 <span className='text-muted font-size-2 color-muted' title={new Date(value).toLocaleString()}>
-                    {formatTimeAgo(value)}
+                    {formatDistanceToNow(value, { addSuffix: true })}
                 </span>
             ),
             skeleton: { variant: 'text', width: 90 }

@@ -1,6 +1,6 @@
 import { type Node, type Edge } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import { getValueByPath } from '@/utilities/common/getValueByPath';
 
 export type ColumnDef = {
@@ -198,7 +198,7 @@ export const formatCellValue = (value: any, path: string): string => {
 
     if(typeof value === 'string'){
         if(path.toLowerCase().includes('createdat') || path.toLowerCase().endsWith('date')) {
-            return formatTimeAgo(value);
+            return formatDistanceToNow(value);
         }
         return value;
     }

@@ -3,7 +3,7 @@ import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import { useTeamStore } from '@/stores/slices/team';
 import analysisConfigApi from '@/services/api/analysis/analysis';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import { useUIStore } from '@/stores/slices/ui';
 
@@ -86,21 +86,21 @@ const AnalysisConfigsListing = () => {
             title: 'Started At',
             sortable: true,
             key: 'startedAt',
-            render: (value) => formatTimeAgo(value),
+            render: (value) => formatDistanceToNow(value, { addSuffix: true }),
             skeleton: { variant: 'text', width: 100 }
         },
         {
             title: 'Finished At',
             sortable: true,
             key: 'finishedAt',
-            render: (value) => formatTimeAgo(value),
+            render: (value) => formatDistanceToNow(value, { addSuffix: true }),
             skeleton: { variant: 'text', width: 100 }
         },
         {
             title: 'Created',
             sortable: true,
             key: 'createdAt',
-            render: (value) => formatTimeAgo(value),
+            render: (value) => formatDistanceToNow(value, { addSuffix: true }),
             skeleton: { variant: 'text', width: 100 }
         }
     ], []);

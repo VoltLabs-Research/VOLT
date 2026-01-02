@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { IoSearchOutline, IoPersonAddOutline, IoPeopleOutline } from 'react-icons/io5';
 import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/slices/chat';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import ChatListSkeleton from '@/components/atoms/chat/messages/ChatListSkeleton';
 import { useAuthStore } from '@/stores/slices/auth';
 import Title from '@/components/primitives/Title';
@@ -138,7 +138,7 @@ const ChatSidebar: React.FC = () => {
                                         </Title>
                                         {chat.lastMessageAt && (
                                             <span className='chat-conversation-time font-weight-5 color-muted'>
-                                                {formatTimeAgo(chat.lastMessageAt)}
+                                                {formatDistanceToNow(chat.lastMessageAt, { addSufix: true })}
                                             </span>
                                         )}
                                     </div>

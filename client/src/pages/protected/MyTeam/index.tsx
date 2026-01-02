@@ -9,12 +9,11 @@ import type { ColumnConfig } from '@/components/organisms/common/DocumentListing
 import Select from '@/components/atoms/form/Select';
 import { IoChatbubbleOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import EditableTag from '@/components/atoms/common/EditableTag';
-import { formatDistanceToNow } from 'date-fns';
 import useToast from '@/hooks/ui/use-toast';
 import ActivityHeatmap from '@/components/molecules/common/ActivityHeatmap';
 import type { ActivityData } from '@/services/api/team/team';
 import { useState } from 'react';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import './MyTeam.css';
 import dailyActivityApi from '@/services/api/daily-activity/daily-activity';
 
@@ -236,7 +235,7 @@ const MyTeam: React.FC = () => {
         {
             key: 'rawJoined',
             title: 'Joined',
-            render: (val: string) => <span className="color-secondary font-size-2">{val ? formatTimeAgo(val) : '-'}</span>
+            render: (val: string) => <span className="color-secondary font-size-2">{val ? formatDistanceToNow(val, { addSuffix: true }) : '-'}</span>
         }
     ], [canManage, currentUser, roleOptions, handleRoleChange]);
 

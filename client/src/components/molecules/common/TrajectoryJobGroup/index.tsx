@@ -2,6 +2,7 @@ import React, { useState, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaChevronRight } from 'react-icons/fa';
 import type { TrajectoryJobGroup as TrajectoryJobGroupType, FrameJobGroup, Job } from '@/types/jobs';
+import { formatDistanceToNow } from 'date-fns';
 import JobQueue from '@/components/atoms/common/JobQueue';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
@@ -18,16 +19,6 @@ const statusConfig = {
     completed: 'status-completed',
     failed: 'status-failed',
     partial: 'status-partial'
-};
-
-const formatTimeAgo = (timestamp: string) => {
-    const diff = Date.now() - new Date(timestamp).getTime();
-    const minutes = Math.floor(diff / 60000);
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
 };
 
 const FrameGroup: React.FC<{ frame: FrameJobGroup }> = memo(({ frame }) => {
@@ -96,7 +87,7 @@ const TrajectoryJobGroup: React.FC<TrajectoryJobGroupProps> = memo(({ group, def
                             {group.trajectoryName}
                         </Title>
                         <Paragraph className="font-size-1 color-secondary">
-                            {group.completedCount}/{group.totalCount} jobs • {formatTimeAgo(group.latestTimestamp)}
+                            {group.completedCount}/{group.totalCount} jobs • {formatDistanceToNow(group.latestTimestamp, { addSufix: true })}
                         </Paragraph>
                     </Container>
                     <Container className="d-flex items-center gap-1">

@@ -4,7 +4,7 @@ import { useSSHExplorerStore } from '@/stores/slices/ssh';
 import { useTeamStore } from '@/stores/slices/team';
 import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
 import Button from '@/components/primitives/Button';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import {
     LuFolder,
     LuFile,
@@ -173,7 +173,7 @@ const SSHFileExplorer = () => {
                         </div>
                         <div className="file-explorer-list-column" style={{ opacity: 0.7 }}>{entry.type === 'dir' ? 'Folder' : 'File'}</div>
                         <div className="file-explorer-list-column" style={{ opacity: 0.7 }}>{entry.size !== undefined ? formatSize(entry.size) : '-'}</div>
-                        <div className="file-explorer-list-column" style={{ opacity: 0.7 }}>{entry.mtime ? formatTimeAgo(new Date(entry.mtime).toISOString()) : '-'}</div>
+                        <div className="file-explorer-list-column" style={{ opacity: 0.7 }}>{entry.mtime ? formatDistanceToNow(new Date(entry.mtime).toISOString(), { addSuffix: true }) : '-'}</div>
                     </div>
                 ))
             )}

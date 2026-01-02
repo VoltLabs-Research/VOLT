@@ -1,8 +1,7 @@
-/// <reference types="vite/client" />
 import { useEffect, useState } from 'react';
 import useTrajectoryFS, { type FsEntry } from '@/stores/slices/trajectory-vfs';
 import trajectoryApi from '@/services/api/trajectory/trajectory';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
 import {
     LuLayoutList,
@@ -211,7 +210,7 @@ const TrajectoryFileExplorer = ({ onFileOpen }: TrajectoryFileExplorerProps) => 
             </div>
 
             <div className='file-explorer-list-column'>
-                {formatTimeAgo(e.mtime || '')}
+                {formatDistanceToNow(e.mtime || '', { addSuffix: true })}
             </div>
         </div>
     ));

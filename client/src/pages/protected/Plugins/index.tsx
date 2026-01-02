@@ -5,7 +5,7 @@ import { TbRocket } from 'react-icons/tb';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
 import pluginApi from '@/services/api/plugin/plugin';
 import { PluginStatus } from '@/types/plugin';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { useTeamStore } from '@/stores/slices/team';
 import useToast from '@/hooks/ui/use-toast';
@@ -202,7 +202,7 @@ const PluginsListing = () => {
             title: 'Created',
             sortable: true,
             key: 'createdAt',
-            render: (value) => formatTimeAgo(value),
+            render: (value) => formatDistanceToNow(value),
             skeleton: { variant: 'text', width: 100 }
         }
     ], [handleRowClick]);

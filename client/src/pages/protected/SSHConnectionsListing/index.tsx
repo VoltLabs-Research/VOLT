@@ -4,7 +4,7 @@ import DocumentListing, { type ColumnConfig } from '@/components/organisms/commo
 import { useSSHConnectionStore, type SSHConnection } from '@/stores/slices/ssh';
 import SSHConnectionModal from '@/components/molecules/ssh/SSHConnectionModal';
 import useToast from '@/hooks/ui/use-toast';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import { RiDeleteBin6Line, RiSettings3Line, RiWifiLine } from 'react-icons/ri';
 import { LuFolderOpen } from 'react-icons/lu';
@@ -38,7 +38,7 @@ const columns: ColumnConfig[] = [
         key: 'createdAt',
         title: 'Created',
         sortable: true,
-        render: (value: string) => formatTimeAgo(value),
+        render: (value: string) => formatDistanceToNow(value),
         skeleton: { variant: 'text', width: 80 }
     }
 ];

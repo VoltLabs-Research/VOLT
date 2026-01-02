@@ -5,7 +5,7 @@ import DocumentListing, { type ColumnConfig } from '@/components/organisms/commo
 import { useTeamStore } from '@/stores/slices/team';
 import { useTeamRoleStore } from '@/stores/slices/team';
 import useToast from '@/hooks/ui/use-toast';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import RoleEditor, { openRoleEditorModal } from '@/components/organisms/team/RoleEditor';
 import type { TeamRole, TeamRolePayload } from '@/types/team-role';
 import Container from '@/components/primitives/Container';
@@ -118,7 +118,7 @@ const ManageRoles: React.FC = () => {
             title: 'Created',
             sortable: true,
             render: (value: string) => (
-                <span className="color-secondary font-size-2">{formatTimeAgo(value)}</span>
+                <span className="color-secondary font-size-2">{formatDistanceToNow(value)}</span>
             ),
             skeleton: { variant: 'text', width: 100 }
         }

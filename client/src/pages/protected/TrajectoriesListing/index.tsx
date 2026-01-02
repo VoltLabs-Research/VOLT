@@ -4,10 +4,8 @@ import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/common/DocumentListing'
 import { useTrajectoryStore } from '@/stores/slices/trajectory'
 import { useTeamStore } from '@/stores/slices/team'
-import formatTimeAgo from '@/utilities/api/formatTimeAgo'
-import trajectoryApi from '@/services/api/trajectory/trajectory'
+import { formatDistance, formatDistanceToNow } from 'date-fns'
 import { useUIStore } from '@/stores/slices/ui';
-import { CiFileOn } from 'react-icons/ci'
 import { useNavigate } from 'react-router'
 
 const TrajectoriesListing = () => {
@@ -86,13 +84,13 @@ const TrajectoriesListing = () => {
         {
             title: 'Created At',
             key: 'createdAt',
-            render: (v) => formatTimeAgo(v),
+            render: (v) => formatDistanceToNow(v, { addSuffix: true }),
             skeleton: { variant: 'text', width: 90 }
         },
         {
             title: 'Updated At',
             key: 'updatedAt',
-            render: (v) => formatTimeAgo(v),
+            render: (v) => formatDistanceToNow(v, { addSuffix: true }),
             skeleton: { variant: 'text', width: 90 }
         }
     ], [])

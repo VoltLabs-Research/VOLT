@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { IoImageOutline, IoDocumentOutline, IoDownloadOutline } from 'react-icons/io5';
 import type { Message } from '@/types/chat';
 import { formatSize } from '@/utilities/glb/scene-utils';
-import formatTimeAgo from '@/utilities/api/formatTimeAgo';
+import { formatDistanceToNow } from 'date-fns';
 import { chatApi } from '@/services/api/chat/chat';
 import './SharedFilesList.css';
 
@@ -66,7 +66,7 @@ const SharedFilesList = ({ messages, currentChatId }: SharedFilesListProps) => {
                             <div className='chat-shared-file-name overflow-hidden font-size-2 font-weight-5 color-primary'>{m.metadata?.fileName || m.content}</div>
                             <div className='d-flex items-center gap-05 chat-shared-file-meta font-size-1 color-secondary'>
                                 <span className='chat-shared-file-size font-weight-5'>{formatSize(m.metadata?.fileSize ?? 0)}</span>
-                                <span className='chat-shared-file-date'>{formatTimeAgo(m.createdAt)}</span>
+                                <span className='chat-shared-file-date'>{formatDistanceToNow(m.createdAt, { addSuffix: true })}</span>
                             </div>
                         </div>
                         <a
