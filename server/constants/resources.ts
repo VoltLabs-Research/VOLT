@@ -9,6 +9,7 @@ export enum Resource{
     FILE_PREVIEW = 'file-preview',
     GROUP_CHAT = 'group-chat',
     NOTIFICATION = 'notification',
+    PARTICLE_FILTER = 'particle-filter',
     PLUGIN = 'plugin',
     RASTER = 'raster',
     SESSION = 'session',

@@ -131,6 +131,9 @@ export const ErrorCodes = {
     COLOR_CODING_DUMP_NOT_FOUND: 'ColorCoding::DumpNotFound',
     COLOR_CODING_NOT_FOUND: 'ColorCoding::NotFound',
 
+    PARTICLE_FILTER_INVALID_ACTION: 'ParticleFilter::InvalidAction',
+    PARTICLE_FILTER_ALL_DELETED: 'ParticleFilter::AllDeleted',
+
     RASTER_INVALID_TYPE: 'Raster::InvalidType',
     RASTER_NOT_FOUND: 'Raster::NotFound',
     RASTER_FAILED: 'Raster::Failed',

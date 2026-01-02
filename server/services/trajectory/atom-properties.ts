@@ -4,12 +4,27 @@ import { decodeMultiStream } from '@/utilities/msgpack/msgpack-stream';
 import storage from '@/services/storage';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
-
 import { NodeType } from '@/types/models/modifier';
 import { findAncestorByType, findDescendantByType } from '@/utilities/plugins/workflow-utils';
 import { getMinMaxNative } from '@/parsers/lammps/native-stats';
+import path from 'path';
+import DumpStorage from './dump-storage';
+import TrajectoryParserFactory from '@/parsers/factory';
 
 type AnyPlugin = any;
+
+const particleFilterNative = require(path.join(process.cwd(), 'native/build/Release/particle_filter.node'));
+
+export interface FilterExpression {
+    property: string;
+    operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
+    value: number;
+}
+
+export interface FilterResult {
+    mask: Uint8Array;
+    matchCount: number;
+}
 
 export interface ExposureAtomConfig {
     exposureId: string;
@@ -252,6 +267,96 @@ export default class AtomProperties {
         }
 
         return undefined;
+    }
+
+    /**
+     * Evaluate filter expression on property values (ultra-fast native implementation)
+     * Handles 50M+ atoms efficiently
+     */
+    public evaluateFilter(values: Float32Array, operator: string, compareValue: number): FilterResult {
+        return particleFilterNative.evaluateFilter(values, operator, compareValue);
+    }
+
+    /**
+     * Filter positions and types by mask (creates new filtered arrays)
+     */
+    public filterByMask(positions: Float32Array, types: Uint16Array, mask: Uint8Array): {
+        positions: Float32Array;
+        types: Uint16Array;
+        count: number;
+    } {
+        return particleFilterNative.filterByMask(positions, types, mask);
+    }
+
+    /**
+     * Evaluate complete filter expression on dump + per-atom data
+     */
+    public async evaluateFilterExpression(
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string | null | undefined,
+        timestep: string,
+        expression: FilterExpression
+    ): Promise<FilterResult> {
+        // Check if property is from per-atom modifier data
+        let isPerAtomProperty = false;
+        if (exposureId) {
+            try {
+                const config = await this.getExposureAtomConfig(analysisId, exposureId);
+                isPerAtomProperty = config.perAtomProperties.includes(expression.property);
+            } catch {
+                // If exposureId is invalid or not found, assume it's a dump property
+                isPerAtomProperty = false;
+            }
+        }
+
+        let values: Float32Array;
+
+        if (isPerAtomProperty && exposureId) {
+            // Get from plugin data
+            const modifierData = await this.getModifierAnalysis(trajectoryId, analysisId, exposureId, timestep);
+            values = this.toFloat32ByAtomId(modifierData, expression.property) || new Float32Array(0);
+        } else {
+            const dumpFilePath = await DumpStorage.getDump(trajectoryId, timestep);
+            if (!dumpFilePath) throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+
+            const parsed = await TrajectoryParserFactory.parse(dumpFilePath, { properties: [expression.property] });
+            
+            // Handle base properties that are stored separately (type, x, y, z, id)
+            const lowerProp = expression.property.toLowerCase();
+            if (lowerProp === 'type') {
+                // Convert Uint16Array to Float32Array
+                values = new Float32Array(parsed.types.length);
+                for (let i = 0; i < parsed.types.length; i++) {
+                    values[i] = parsed.types[i];
+                }
+            } else if (lowerProp === 'x') {
+                values = new Float32Array(parsed.positions.length / 3);
+                for (let i = 0; i < values.length; i++) {
+                    values[i] = parsed.positions[i * 3];
+                }
+            } else if (lowerProp === 'y') {
+                values = new Float32Array(parsed.positions.length / 3);
+                for (let i = 0; i < values.length; i++) {
+                    values[i] = parsed.positions[i * 3 + 1];
+                }
+            } else if (lowerProp === 'z') {
+                values = new Float32Array(parsed.positions.length / 3);
+                for (let i = 0; i < values.length; i++) {
+                    values[i] = parsed.positions[i * 3 + 2];
+                }
+            } else if (lowerProp === 'id' && parsed.ids) {
+                values = new Float32Array(parsed.ids.length);
+                for (let i = 0; i < parsed.ids.length; i++) {
+                    values[i] = parsed.ids[i];
+                }
+            } else {
+                // Other properties from dump headers
+                values = parsed.properties?.[expression.property] || parsed.properties?.[lowerProp] || new Float32Array(0);
+            }
+        }
+
+        return this.evaluateFilter(values, expression.operator, expression.value);
     }
 
     private getPluginMsgpackKey(trajectoryId: string, analysisId: string, exposureId: string, timestep: string): string {

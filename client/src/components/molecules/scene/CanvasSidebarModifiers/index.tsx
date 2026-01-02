@@ -70,6 +70,12 @@ const CanvasSidebarModifiers = () => {
         },
         {
             Icon: PiEngine,
+            title: 'Particle Selection',
+            modifierId: 'particle-filter',
+            isPlugin: false
+        },
+        {
+            Icon: PiEngine,
             title: 'Render Settings',
             modifierId: 'render-settings',
             isPlugin: false

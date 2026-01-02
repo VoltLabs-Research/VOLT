@@ -1,7 +1,4 @@
-import { useAnalysisConfigStore } from '@/stores/slices/analysis';
-import { useEditorStore } from '@/stores/slices/editor';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
-import useFrameProperties from '@/hooks/trajectory/use-frame-properties';
+import usePropertySelector from '@/hooks/trajectory/use-property-selector';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Button from '@/components/primitives/Button';
 import FormField from '@/components/molecules/form/FormField';
@@ -19,22 +16,23 @@ const COLOR_GRADIENTS = [
 ];
 
 const ColorCoding = () => {
-    const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
-    const currentTimestep = useEditorStore((state) => state.currentTimestep);
-    const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const setActiveScene = useEditorStore((state) => state.setActiveScene);
-    const [property, setProperty] = useState('');
-    const [exposureId, setExposureId] = useState<string | null>(null);
+    const {
+        property,
+        exposureId,
+        propertyOptions,
+        isLoading,
+        handlePropertyChange,
+        trajectory,
+        analysisConfig,
+        currentTimestep,
+        setActiveScene
+    } = usePropertySelector();
+
     const [startValue, setStartValue] = useState(0);
     const [endValue, setEndValue] = useState(0);
     const [gradient, setGradient] = useState('Viridis');
     const [automaticRange, setAutomaticRange] = useState(false);
     const [symmetricRange, setSymmetricRange] = useState(false);
-    const { properties, isLoading } = useFrameProperties({
-        analysisId: analysisConfig?._id,
-        trajectoryId: trajectory?._id,
-        frame: currentTimestep
-    });
 
     const applyColorCoding = async () => {
         await rasterApi.colorCoding.apply(trajectory!._id, analysisConfig!._id, currentTimestep!, {
@@ -49,19 +47,6 @@ const ColorCoding = () => {
             source: 'color-coding',
             startValue
         } as any);
-    };
-
-    const propertyOptions = [
-        ...properties.base.map((prop) => ({ value: prop, title: prop, exposureId: null })),
-        ...Object.entries(properties.modifiers).flatMap(([expId, props]) =>
-            props.map((prop) => ({ value: prop, title: prop, exposureId: expId }))
-        )
-    ];
-
-    const handlePropertyChange = (value: string) => {
-        setProperty(value);
-        const selectedOption = propertyOptions.find((opt) => opt.value === value);
-        setExposureId(selectedOption?.exposureId || null);
     };
 
     const fetchStats = async () => {

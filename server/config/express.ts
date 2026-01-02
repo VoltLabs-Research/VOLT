@@ -101,7 +101,8 @@ configureApp({
         'ssh-connections',
         'ssh-file-explorer',
         'containers',
-        'system'
+        'system',
+        'particle-filter'
     ],
     middlewares: [
         apiTracker,

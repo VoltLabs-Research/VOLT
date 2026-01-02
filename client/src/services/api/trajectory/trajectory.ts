@@ -27,6 +27,7 @@ import VoltClient from '@/api';
 
 const client = new VoltClient('/trajectories', { useRBAC: true });
 const vfsClient = new VoltClient('/trajectory-vfs', { useRBAC: true });
+const particleFilterClient = new VoltClient('/particle-filter', { useRBAC: true });
 
 const trajectoryApi = {
     async getAll(params: GetTrajectoriesParams): Promise<Trajectory[]> {
@@ -183,6 +184,64 @@ const trajectoryApi = {
             );
 
             return response.data.data.trajectories;
+        }
+    },
+
+    particleFilter: {
+        async getProperties(trajectoryId: string, analysisId: string, timestep: number): Promise<{ dump: string[]; perAtom: string[] }> {
+            const response = await particleFilterClient.request<{ status: 'success'; data: { dump: string[]; perAtom: string[] } }>('get', `/properties/${trajectoryId}/${analysisId}`, {
+                query: { timestep }
+            });
+            return response.data.data;
+        },
+
+        async preview(params: {
+            trajectoryId: string;
+            analysisId: string;
+            timestep: number;
+            property: string;
+            operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
+            value: number;
+            exposureId?: string;
+        }): Promise<{ matchCount: number; totalAtoms: number }> {
+            const { trajectoryId, analysisId, ...queryParams } = params;
+            const response = await particleFilterClient.request<{
+                status: 'success';
+                data: { matchCount: number; totalAtoms: number };
+            }>('get', `/preview/${trajectoryId}/${analysisId}`, {
+                query: queryParams
+            });
+            return response.data.data;
+        },
+
+        async applyAction(params: {
+            trajectoryId: string;
+            analysisId: string;
+            timestep: number;
+            property: string;
+            operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
+            value: number;
+            action: 'delete' | 'highlight';
+            exposureId?: string;
+        }): Promise<{ fileId: string; atomsResult: number; action: string }> {
+            const { trajectoryId, analysisId, timestep, action, ...bodyParams } = params;
+            const response = await particleFilterClient.request<{
+                status: 'success';
+                data: { fileId: string; atomsResult: number; action: string };
+            }>('post', `/${trajectoryId}/${analysisId}`, {
+                query: { timestep, action },
+                data: bodyParams
+            });
+            return response.data.data;
+        },
+
+        async getFilteredGLB(trajectoryId: string, analysisId: string, fileId: string): Promise<Blob> {
+            const response = await particleFilterClient.request<Blob>('get', `/${trajectoryId}/${analysisId}`, {
+                query: { fileId },
+                config: { responseType: 'blob' },
+                dedupe: false
+            });
+            return response.data;
         }
     }
 };

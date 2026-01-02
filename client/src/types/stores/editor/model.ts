@@ -37,10 +37,10 @@ export interface ModelData {
     glbs: null
 }
 
-export type ActiveScene = SceneObjectType;
+export type ActiveScene = SceneObjectType;  
 
 export interface ModelState {
-    activeScene: SceneObjectType; // Deprecated/Computed from activeScenes[0] or primary
+    activeScene: SceneObjectType; 
     activeScenes: ActiveScene[];
     activeModel: ModelData | null;
     isModelLoading: boolean;
