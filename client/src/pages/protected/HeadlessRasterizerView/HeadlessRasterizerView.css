@@ -311,7 +311,7 @@
 
 /* Thumbnails */
 .raster-thumbnails {
-  height: 170px;
+  height: auto;
   overflow-x: auto;
   overflow-y: hidden;
 }
@@ -326,7 +326,7 @@
 }
 
 .raster-thumbnail-container.active {
-  border: 3px solid var(--accent-indigo);
+  border: 1px solid var(--accent-blue);
   box-shadow: var(--shadow-elevated);
   z-index: 2;
 }
@@ -759,30 +759,3 @@
   }
 }
 
-.raster-metadata-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background-color: var(--color-surface-1);
-  border: 1px solid var(--color-border-soft);
-  border-radius: var(--radius-md);
-}
-
-.raster-metadata-label {
-  color: var(--color-text-secondary);
-  font-size: 0.85rem;
-}
-
-.raster-metadata-value {
-  color: var(--color-text-primary);
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-@media (max-width: 768px) {
-  .raster-metadata-item {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.8rem;
-  }
-}

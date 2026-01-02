@@ -28,29 +28,23 @@ import * as authMiddleware from '@/middlewares/authentication';
 const router = Router();
 const controller = new RasterController();
 
+// Routes with teamId prefix for RBAC compatibility
 router.get(
-    '/:id/metadata',
+    '/:teamId/:id/metadata',
     authMiddleware.optionalAuth,
     trajectoryMiddleware.checkTeamMembershipForTrajectory,
     controller.getRasterFrameMetadata
 );
 
 router.get(
-    '/:id/frame-data/:timestep/:analysisId/:model',
+    '/:teamId/:id/frame-data/:timestep/:analysisId/:model',
     authMiddleware.optionalAuth,
     trajectoryMiddleware.checkTeamMembershipForTrajectory,
     controller.getRasterFrameData
 );
 
-router.get(
-    '/:id/images-archive',
-    authMiddleware.optionalAuth,
-    trajectoryMiddleware.checkTeamMembershipForTrajectory,
-    controller.downloadRasterImagesArchive
-);
-
 router.post(
-    '/:id/glb/',
+    '/:teamId/:id/glb/',
     authMiddleware.protect,
     trajectoryMiddleware.checkTeamMembershipForTrajectory,
     controller.rasterizeFrames

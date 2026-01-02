@@ -4,7 +4,6 @@ import RasterScene from '../RasterScene';
 import type { Scene, PlaybackControlsProps, AnalysisSelectProps, ModelRailProps } from '@/types/raster';
 
 interface SceneColumnProps {
-    trajectoryId?: string;
     scene: Scene | null;
     isPlaying: boolean;
     isLoading: boolean;
@@ -18,7 +17,6 @@ const SceneColumn = ({
   scene,
   isPlaying,
   isLoading,
-  trajectoryId,
   playbackControls,
   analysisSelect,
   modelRail,
@@ -36,7 +34,6 @@ const SceneColumn = ({
     >
       <RasterScene
         scene={scene}
-        trajectoryId={trajectoryId}
         disableAnimation={isPlaying}
         isLoading={shouldShowSkeleton}
         playbackControls={playbackControls}

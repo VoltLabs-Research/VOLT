@@ -5,7 +5,7 @@ import type { SliceCreator } from '../../helpers/create-slice';
 import { extractErrorMessage } from '@/utilities/api/error-extractor';
 
 export const initialState: RasterState = {
-    trajectory: null, isLoading: false, isAnalysisLoading: false, analyses: {}, analysesNames: [],
+    trajectory: null, isLoading: true, isAnalysisLoading: false, analyses: {}, analysesNames: [],
     selectedAnalysis: null, error: null, loadingFrames: new Set<string>(), isPreloading: false, preloadProgress: 0, frameCache: {}
 };
 
@@ -52,7 +52,8 @@ export const createRasterSlice: SliceCreator<RasterStore> = (set, get) => ({
         if (cached) return cached;
 
         const frames = s.analyses?.[analysisId]?.frames?.[timestep];
-        if (frames?.availableModels && !frames.availableModels.includes(model)) return null;
+        // Don't request if model is not in availableModels
+        if (!frames?.availableModels?.includes(model)) return null;
 
         set((st: RasterStore) => ({ loadingFrames: new Set(st.loadingFrames).add(key) }));
 
@@ -63,8 +64,9 @@ export const createRasterSlice: SliceCreator<RasterStore> = (set, get) => ({
                 return { loadingFrames, frameCache: { ...st.frameCache, ...(data?.data ? { [key]: data.data } : {}) } };
             });
             return data?.data ?? null;
-        } catch (e) {
-            set((st: RasterStore) => { const lf = new Set(st.loadingFrames); lf.delete(key); return { loadingFrames: lf, error: extractErrorMessage(e) }; });
+        } catch (e: any) {
+            set((st: RasterStore) => { const lf = new Set(st.loadingFrames); lf.delete(key); return { loadingFrames: lf }; });
+            // Don't set error for 404s - model simply not available/rasterized yet
             return null;
         }
     },

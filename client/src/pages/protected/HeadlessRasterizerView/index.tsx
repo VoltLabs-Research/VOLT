@@ -23,12 +23,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import useUrlState from '@/hooks/core/use-url-state';
+import useAppInitializer from '@/hooks/core/use-app-initializer';
 import { useRasterStore } from '@/stores/slices/raster';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import { useAuthStore } from '@/stores/slices/auth';
+import { useTeamStore } from '@/stores/slices/team';
 import useRasterFrame from '@/hooks/raster/use-raster-frame';
 import type { AnalysisSelectProps, ModelRailProps, PlaybackControlsProps, Scene } from '@/types/raster';
-import { formatNumber, formatSize } from '@/utilities/glb/scene-utils';
 import { getOrCreateGuestUser } from '@/utilities/api/guest';
 import { socketService } from '@/services/websockets/socketio';
 import RasterHeader from '@/components/molecules/raster/RasterHeader';
@@ -45,6 +45,8 @@ const HeadlessRasterizerView: React.FC = () => {
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
     const { updateUrlParams, getUrlParam } = useUrlState();
 
+    useAppInitializer();
+
     const {
         trajectory,
         analyses,
@@ -58,8 +60,8 @@ const HeadlessRasterizerView: React.FC = () => {
         error,
     } = useRasterStore();
 
-    const { getMetrics, trajectoryMetrics, isMetricsLoading } = useTrajectoryStore();
     const user = useAuthStore((state) => state.user);
+    const { selectedTeam, getUserTeams } = useTeamStore();
     const connectedUsers = useRasterConnectedUsers(trajectoryId);
 
     const [guestUser, setGuestUser] = useState<any>(null);
@@ -91,15 +93,21 @@ const HeadlessRasterizerView: React.FC = () => {
     const initializedRef = useRef(false);
     const preloadKeyRef = useRef<string | null>(null);
 
+    // Ensure teams are loaded (for RBAC teamId)
     useEffect(() => {
-        if (!trajectoryId) return;
+        if (!selectedTeam) {
+            getUserTeams();
+        }
+    }, [selectedTeam, getUserTeams]);
+
+    useEffect(() => {
+        if (!trajectoryId || !selectedTeam) return;
         getRasterFrames(trajectoryId);
-        getMetrics(trajectoryId);
 
         return () => {
             preloadKeyRef.current = null;
         };
-    }, [trajectoryId, getRasterFrames, getMetrics]);
+    }, [trajectoryId, selectedTeam, getRasterFrames]);
 
     const framesFor = (analysisId: string | null) => {
         if (!analysisId || !analyses?.[analysisId]?.frames) return [];
@@ -210,12 +218,8 @@ const HeadlessRasterizerView: React.FC = () => {
             const leftModels = modelsFor(left, tsList[initialIndex]);
             const rightModels = modelsFor(right, tsList[initialIndex]);
 
-            // Filter out 'preview' since it often doesn't exist in backend
-            const safeLeftModels = leftModels.filter((m: string) => m !== 'preview');
-            const safeRightModels = rightModels.filter((m: string) => m !== 'preview');
-
-            setLeftModel(ml && safeLeftModels.includes(ml) ? ml : safeLeftModels[0] ?? '');
-            setRightModel(mr && safeRightModels.includes(mr) ? mr : safeRightModels[0] ?? '');
+            setLeftModel(ml && leftModels.includes(ml) ? ml : leftModels[0] ?? '');
+            setRightModel(mr && rightModels.includes(mr) ? mr : rightModels[0] ?? '');
 
             initializedRef.current = true;
         }, 0);
@@ -483,7 +487,6 @@ const HeadlessRasterizerView: React.FC = () => {
 
                 <div className='d-flex gap-1 raster-scenes-top-container w-max' style={{ alignItems: 'stretch', gap: '0.75rem' }}>
                     <SceneColumn
-                        trajectoryId={trajectory?._id}
                         scene={canRender ? leftScene.scene ?? null : null}
                         isPlaying={isPlaying}
                         isLoading={isLoading || !canRender || leftScene.isLoading}
@@ -494,7 +497,6 @@ const HeadlessRasterizerView: React.FC = () => {
                     />
 
                     <SceneColumn
-                        trajectoryId={trajectory?._id}
                         scene={canRender ? rightScene.scene ?? null : null}
                         isPlaying={isPlaying}
                         isLoading={isLoading || !canRender || rightScene.isLoading}
@@ -513,23 +515,6 @@ const HeadlessRasterizerView: React.FC = () => {
                     onThumbnailClick={handleThumbClick}
                     getThumbnailScene={getThumbnailScene}
                 />
-
-                {!isMetricsLoading && trajectoryMetrics && (
-                    <div className='d-flex items-center gap-1 raster-metadata-bar'>
-                        <span className='raster-metadata-item'>
-                            <span className='raster-metadata-label'>Frames</span>
-                            <span className='raster-metadata-value'>{formatNumber((trajectoryMetrics as any)?.frames?.totalFrames)}</span>
-                        </span>
-                        <span className='raster-metadata-item'>
-                            <span className='raster-metadata-label'>Size</span>
-                            <span className='raster-metadata-value'>{formatSize((trajectoryMetrics as any)?.files?.totalSizeBytes)}</span>
-                        </span>
-                        <span className='raster-metadata-item'>
-                            <span className='raster-metadata-label'>Analyses</span>
-                            <span className='raster-metadata-value'>{formatNumber((trajectoryMetrics as any)?.structureAnalysis?.totalDocs)}</span>
-                        </span>
-                    </div>
-                )}
             </div>
         </CursorShareLayer>
     );

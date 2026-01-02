@@ -44,7 +44,6 @@ export interface ModelRailProps {
 
 export interface RasterSceneProps {
     scene: Scene | null;
-    trajectoryId?: string;
     disableAnimation?: boolean;
     isLoading?: boolean;
     playbackControls: PlaybackControlsProps;

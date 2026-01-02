@@ -1,22 +1,15 @@
 import React from 'react';
 import type { RasterSceneProps } from '@/types/raster';
 import AnalysisSelect from '@/components/atoms/raster/AnalysisSelect';
-import Loader from '@/components/atoms/common/Loader';
-import Button from '@/components/primitives/Button';
 import { Skeleton } from '@mui/material';
 import RasterSceneSkeleton from '@/components/atoms/raster/RasterSceneSkeleton';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlaybackControls from '@/components/atoms/raster/PlaybackControls';
 import ModelRail from '@/components/atoms/raster/ModelRail';
-import analysisConfigApi from '@/services/api/analysis/analysis';
-import rasterApi from '@/services/api/raster/raster';
-import trajectoryApi from '@/services/api/trajectory/trajectory';
-import { LuDownload } from 'react-icons/lu';
 import './RasterScene.css';
 
 const RasterScene: React.FC<RasterSceneProps> = ({
   scene,
-  trajectoryId,
   disableAnimation,
   isLoading,
   playbackControls,
@@ -24,8 +17,6 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   modelRail,
 }) => {
   const [showUnavailable, setShowUnavailable] = React.useState(false);
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const [downloadProgress, setDownloadProgress] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     setShowUnavailable(false);
@@ -40,56 +31,6 @@ const RasterScene: React.FC<RasterSceneProps> = ({
   }, [scene?.isUnavailable]);
 
   const handleDoubleClick = () => { };
-
-  const canDownload = !!trajectoryId;
-  const handleDownloadDislocations = async() => {
-    if(!scene?.analysisId) return;
-    setDownloadProgress(0);
-    try{
-      const data = await analysisConfigApi.getDislocations(scene.analysisId);
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `dislocations_${scene.analysisId}.json`;
-      a.click();
-      window.URL.revokeObjectURL(url);
-    }catch(error){
-      console.error('Download failed:', error);
-    }finally{
-      setDownloadProgress(null);
-      setIsMenuOpen(false);
-    }
-  };
-  const handleDownloadGLBZip = async() => {
-    if(!trajectoryId) return;
-    setDownloadProgress(0);
-    try{
-    }catch(error){
-      console.error('Download failed:', error);
-    }finally{
-      setDownloadProgress(null);
-      setIsMenuOpen(false);
-    }
-  };
-  const handleDownloadRasterImagesZip = async() => {
-    if(!trajectoryId) return;
-    const q: string[] = [];
-    if(scene?.analysisId) q.push(`analysisId=${encodeURIComponent(scene.analysisId)}`);
-    if(scene?.model) q.push(`model=${encodeURIComponent(scene.model)}`);
-    q.push('includePreview=0');
-    const qs = q.length ? `?${q.join('&')}` : '';
-    setDownloadProgress(0);
-    try{
-      // Note: downloadBlob functionality would need to be added to raster-api
-      console.warn('Raster images download needs raster-api.downloadImagesArchive()');
-    }catch(error){
-      console.error('Download failed:', error);
-    }finally{
-      setDownloadProgress(null);
-      setIsMenuOpen(false);
-    }
-  };
 
   if(isLoading && !scene?.data) return <RasterSceneSkeleton />;
 
@@ -126,34 +67,6 @@ const RasterScene: React.FC<RasterSceneProps> = ({
       <div className="raster-scene-topbar sm:d-flex sm:column sm:gap-05 p-relative w-max items-center">
         <div className="raster-scene-topbar-center">
           <AnalysisSelect {...analysisSelect} />
-        </div>
-        <div className="d-flex items-center gap-05 raster-scene-topbar-right p-relative">
-          <Button
-            variant='ghost'
-            intent='neutral'
-            iconOnly
-            size='sm'
-            aria-label="Download"
-            title="Download"
-            onClick={() => setIsMenuOpen(v => !v)}
-            disabled={!canDownload}
-            isLoading={typeof downloadProgress === 'number'}
-          >
-            <LuDownload size={18} />
-          </Button>
-          {isMenuOpen && (
-            <div className="d-flex column raster-scene-download-menu p-absolute">
-              <Button variant='ghost' intent='neutral' size='sm' align='start' block onClick={handleDownloadDislocations} disabled={!scene?.analysisId}>
-                Dislocations data(JSON)
-              </Button>
-              <Button variant='ghost' intent='neutral' size='sm' align='start' block onClick={handleDownloadGLBZip} disabled={!canDownload}>
-                Frames GLBs(zip)
-              </Button>
-              <Button variant='ghost' intent='neutral' size='sm' align='start' block onClick={handleDownloadRasterImagesZip} disabled={!canDownload}>
-                Raster images(zip)
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 

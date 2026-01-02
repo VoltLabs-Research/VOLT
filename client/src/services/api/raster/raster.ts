@@ -2,17 +2,17 @@ import VoltClient from '@/api';
 import type { RasterMetadata, RasterFrameData, ColorCodingPayload, ColorCodingStats, ColorCodingProperties } from './types';
 import type { ApiResponse } from '@/types/api';
 
-const client = new VoltClient('', { useRBAC: true });
+const client = new VoltClient('/raster', { useRBAC: true });
 const colorCodingClient = new VoltClient('/color-coding', { useRBAC: true });
 
 const rasterApi = {
     async generateGLB(id: string): Promise<any> {
-        const response = await client.request('post', `/raster/${id}/glb/`);
+        const response = await client.request('post', `/${id}/glb/`);
         return response.data.data;
     },
 
     async getMetadata(id: string): Promise<RasterMetadata> {
-        const response = await client.request<ApiResponse<RasterMetadata>>('get', `/raster/${id}/metadata`);
+        const response = await client.request<ApiResponse<RasterMetadata>>('get', `/${id}/metadata`);
         return response.data.data;
     },
 
@@ -24,7 +24,7 @@ const rasterApi = {
     ): Promise<RasterFrameData> {
         const response = await client.request<ApiResponse<RasterFrameData>>(
             'get',
-            `/raster/${trajectoryId}/frame-data/${timestep}/${analysisId}/${model}`
+            `/${trajectoryId}/frame-data/${timestep}/${analysisId}/${model}`
         );
         return response.data.data;
     },

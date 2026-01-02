@@ -55,7 +55,16 @@ const processJob = async (job: RasterizerJob): Promise<void> => {
             throw new Error('Rasterizer produced empty buffer');
         }
 
-        const objectName = `trajectory-${job.trajectoryId}/previews/timestep-${job.timestep}.png`;
+        // Determine output path based on whether this is a base preview or analysis model
+        let objectName: string;
+        if (job.analysisId && job.model) {
+            // Analysis-specific model: trajectory-{id}/analysis-{analysisId}/raster/{timestep}_{model}.png
+            objectName = `trajectory-${job.trajectoryId}/analysis-${job.analysisId}/raster/${job.timestep}_${job.model}.png`;
+        } else {
+            // Base trajectory preview: trajectory-{id}/previews/timestep-{timestep}.png
+            objectName = `trajectory-${job.trajectoryId}/previews/timestep-${job.timestep}.png`;
+        }
+        
         await storage.put(SYS_BUCKETS.RASTERIZER, objectName, buffer, {
             'Content-Type': CONTENT_TYPE,
             'Cache-Control': CACHE_CONTROL

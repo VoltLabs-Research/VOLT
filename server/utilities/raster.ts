@@ -15,26 +15,46 @@ export const rasterizeGLBs = async (
     prefixBucketName: string,
     bucketName: string,
     trajectory: ITrajectory,
-    opts: Partial<RasterizerOptions> = {}
+    opts: Partial<RasterizerOptions> = {},
+    analysisId?: string,
+    jobName?: string
 ): Promise<void> => {
     const jobs: RasterizerJob[] = [];
     const CONCURRENCY_LIMIT = 10;
     const pendingTasks: Promise<void>[] = [];
 
+    // GLBs in these paths should NOT be rasterized (they are interactive/UI-specific)
+    const EXCLUDED_PATH_SEGMENTS = ['/color-coding/', '/particle-filter/'];
+
     for await (const key of storage.listByPrefix(prefixBucketName, prefix)) {
         const filename = key.split('/').pop();
-        if (!filename) continue;
+        if (!filename || !filename.endsWith('.glb')) continue;
 
-        const base = path.basename(filename, '.glb');
-        const match = base.match(/\d+/g);
+        // Skip color-coding and particle-filter GLBs
+        if (EXCLUDED_PATH_SEGMENTS.some(seg => key.includes(seg))) continue;
 
-        if (!match) {
-            logger.warn(`No timestep found in filename: ${filename}`);
-            continue;
+        // Extract model name from filename (e.g., "dislocations.glb" -> "dislocations")
+        const modelName = path.basename(filename, '.glb');
+        
+        // Extract timestep from path: .../glb/{timestep}/{model}.glb or timestep-{ts}.glb
+        const parts = key.split('/');
+        let timestep: number;
+        
+        // Check if path contains /glb/{timestep}/ pattern
+        const glbIdx = parts.indexOf('glb');
+        if (glbIdx !== -1 && parts.length > glbIdx + 1) {
+            timestep = parseInt(parts[glbIdx + 1], 10);
+        } else {
+            // Fallback: extract from filename like "timestep-0.glb"
+            const match = modelName.match(/\d+/g);
+            if (!match) {
+                logger.warn(`No timestep found in filename: ${filename}`);
+                continue;
+            }
+            timestep = Number(match[match.length - 1]);
         }
 
-        const timestep = Number(match[match.length - 1]);
-        if (Number.isNaN(timestep)) {
+        if (!Number.isFinite(timestep)) {
             logger.warn(`Invalid timestep parsed: ${filename}`);
             continue;
         }
@@ -47,13 +67,24 @@ export const rasterizeGLBs = async (
                 });
 
                 await storage.download(prefixBucketName, key, tempPath);
+                
+                // Determine if this is a base preview or an analysis model
+                const isBasePreview = !analysisId || modelName.startsWith('timestep-');
+                
+                // Determine job name based on context
+                const name = isBasePreview 
+                    ? 'Generate Preview' 
+                    : (jobName || `Preview for ${modelName}`);
+
                 jobs.push({
                     jobId: v4(),
                     trajectoryId: trajectory._id.toString(),
                     trajectoryName: trajectory.name,
                     teamId: trajectory.team._id.toString(),
                     timestep,
-                    name: 'Generate Preview',
+                    analysisId: isBasePreview ? undefined : analysisId,
+                    model: isBasePreview ? undefined : modelName,
+                    name,
                     message: trajectory.name,
                     opts: {
                         inputPath: tempPath,

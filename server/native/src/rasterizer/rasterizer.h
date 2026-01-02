@@ -218,6 +218,7 @@ private:
         const uint32_t* idx32 = nullptr;
         size_t vertexCount = 0;
         size_t indexCount = 0;
+        size_t colorStride = 3; // 3 for VEC3 (RGB), 4 for VEC4 (RGBA)
         GLBType type = GLBType::POINTS;
     };
 
@@ -226,6 +227,61 @@ private:
         size_t p = json.find(k);
         if(p == std::string::npos) return -1;
         return std::atoi(json.c_str() + p + k.size());
+    }
+
+    // Find integer value for a key starting from a given position
+    static int findIntFrom(const std::string& json, const char* key, size_t startPos){
+        std::string k = std::string("\"") + key + "\":";
+        size_t p = json.find(k, startPos);
+        if(p == std::string::npos) return -1;
+        return std::atoi(json.c_str() + p + k.size());
+    }
+
+    // Parse bufferView info: byteOffset and byteLength
+    struct BufferViewInfo {
+        size_t byteOffset = 0;
+        size_t byteLength = 0;
+    };
+
+    static BufferViewInfo parseBufferView(const std::string& json, int index) {
+        BufferViewInfo info;
+        // Find "bufferViews" array
+        size_t bvPos = json.find("\"bufferViews\"");
+        if (bvPos == std::string::npos) return info;
+        
+        // Find the opening bracket
+        size_t arrStart = json.find('[', bvPos);
+        if (arrStart == std::string::npos) return info;
+        
+        // Navigate to the nth bufferView object
+        size_t pos = arrStart + 1;
+        int currentIndex = 0;
+        int braceDepth = 0;
+        size_t objStart = 0;
+        
+        while (pos < json.size() && currentIndex <= index) {
+            char c = json[pos];
+            if (c == '{') {
+                if (braceDepth == 0) objStart = pos;
+                braceDepth++;
+            } else if (c == '}') {
+                braceDepth--;
+                if (braceDepth == 0) {
+                    if (currentIndex == index) {
+                        // Found our bufferView, parse it
+                        std::string bvJson = json.substr(objStart, pos - objStart + 1);
+                        info.byteOffset = findIntFrom(bvJson, "byteOffset", 0);
+                        if (info.byteOffset == (size_t)-1) info.byteOffset = 0;
+                        info.byteLength = findIntFrom(bvJson, "byteLength", 0);
+                        if (info.byteLength == (size_t)-1) info.byteLength = 0;
+                        return info;
+                    }
+                    currentIndex++;
+                }
+            }
+            pos++;
+        }
+        return info;
     }
 
     static bool parseGLB_MMap(const char* path, GLBView& out, MMapFile& mm){
@@ -267,69 +323,91 @@ private:
         bool isMesh = (mode == 4);
         out.type = isMesh ? GLBType::TRIANGLES : GLBType::POINTS;
 
-        size_t totalFloats = binLen / 4;
-        const float* floatData = (const float*) bin;
-
         if(isMesh){
-            size_t bvPos = json.find("\"bufferViews\"");
-            if(bvPos == std::string::npos) return false;
-
-            int posOffset = 0, posLen = 0;
-            int normOffset = -1, normLen = 0;
-            int colOffset = -1, colLen = 0;
-            int idxOffset = -1, idxLen = 0;
-
-            size_t accPos = json.find("\"accessors\"");
-            if(accPos != std::string::npos){
-                int count = findInt(json, "count");
-                if(count > 0) out.vertexCount = count;
-            }
-
-            size_t indicesPos = json.find("\"indices\"");
-            if(indicesPos != std::string::npos){
-                size_t afterIndices = json.find("\"count\"", indicesPos);
-                if(afterIndices != std::string::npos){
-                    int idxCount = std::atoi(json.c_str() + afterIndices + 8);
-                    if(idxCount > 0) out.indexCount = idxCount;
+            // Check if COLOR_0 exists and determine if it's VEC3 or VEC4
+            bool hasColors = (json.find("COLOR_0") != std::string::npos);
+            bool colorIsVec4 = false;
+            if(hasColors){
+                size_t colorAccPos = json.find("\"COLOR_0\"");
+                if(colorAccPos != std::string::npos){
+                    size_t vec4Pos = json.find("\"VEC4\"", colorAccPos);
+                    size_t vec3Pos = json.find("\"VEC3\"", colorAccPos);
+                    if(vec4Pos != std::string::npos && (vec3Pos == std::string::npos || vec4Pos < vec3Pos)){
+                        colorIsVec4 = true;
+                    }
                 }
             }
+            out.colorStride = colorIsVec4 ? 4 : 3;
 
+            // Determine index type (5123 = uint16, 5125 = uint32)
             size_t pos5123 = json.find("5123");
             size_t pos5125 = json.find("5125");
             bool useU16 = (pos5123 != std::string::npos && (pos5125 == std::string::npos || pos5123 < pos5125));
 
-            if(out.vertexCount == 0){
-                out.vertexCount = (totalFloats / 6);
+            // Parse bufferViews to get correct offsets
+            // Layout for mesh with colors: BV0=positions, BV1=normals, BV2=colors, BV3=indices
+            // Layout for mesh without colors: BV0=positions, BV1=normals, BV2=indices
+            BufferViewInfo bvPos = parseBufferView(json, 0);
+            BufferViewInfo bvNorm = parseBufferView(json, 1);
+            BufferViewInfo bvCol, bvIdx;
+            
+            if(hasColors){
+                bvCol = parseBufferView(json, 2);
+                bvIdx = parseBufferView(json, 3);
+            }else{
+                bvIdx = parseBufferView(json, 2);
             }
 
-            size_t posBytes = out.vertexCount * 3 * 4;
-            size_t normBytes = out.vertexCount * 3 * 4;
-            size_t colBytes = out.vertexCount * 3 * 4;
-
-            out.pos = floatData;
-
-            size_t offset = posBytes / 4;
-            if(offset + out.vertexCount * 3 <= totalFloats){
-                out.normals = floatData + offset;
-                offset += out.vertexCount * 3;
+            // Validate bufferView data - reject if no valid geometry
+            if(bvPos.byteLength == 0 || bvIdx.byteLength == 0){
+                return false;
             }
 
-            if(offset + out.vertexCount * 3 <= totalFloats){
-                out.col = floatData + offset;
-                offset += out.vertexCount * 3;
+            // Validate offsets are within binary buffer bounds
+            if(bvPos.byteOffset + bvPos.byteLength > binLen ||
+               bvNorm.byteOffset + bvNorm.byteLength > binLen ||
+               bvIdx.byteOffset + bvIdx.byteLength > binLen){
+                return false;
+            }
+            if(hasColors && bvCol.byteOffset + bvCol.byteLength > binLen){
+                return false;
+            }
+
+            // Calculate vertex count from position buffer (VEC3 floats)
+            out.vertexCount = bvPos.byteLength / (3 * sizeof(float));
+            
+            // Calculate index count
+            if(useU16){
+                out.indexCount = bvIdx.byteLength / sizeof(uint16_t);
+            }else{
+                out.indexCount = bvIdx.byteLength / sizeof(uint32_t);
+            }
+
+            // Reject empty meshes
+            if(out.vertexCount == 0 || out.indexCount == 0){
+                return false;
+            }
+
+            // Set pointers using bufferView offsets
+            out.pos = (const float*)(bin + bvPos.byteOffset);
+            out.normals = (const float*)(bin + bvNorm.byteOffset);
+            
+            if(hasColors && bvCol.byteLength > 0){
+                out.col = (const float*)(bin + bvCol.byteOffset);
             }
 
             if(out.indexCount > 0){
-                size_t idxByteOff = offset * 4;
-                idxByteOff = (idxByteOff + 3) & ~3;
-                
                 if(useU16){
-                    out.idx16 = (const uint16_t*)(bin + idxByteOff);
+                    out.idx16 = (const uint16_t*)(bin + bvIdx.byteOffset);
                 }else{
-                    out.idx32 = (const uint32_t*)(bin + idxByteOff);
+                    out.idx32 = (const uint32_t*)(bin + bvIdx.byteOffset);
                 }
             }
         }else{
+            // Point cloud: simple interleaved layout
+            size_t totalFloats = binLen / 4;
+            const float* floatData = (const float*) bin;
+            
             if((totalFloats % 6) == 0){
                 out.vertexCount = totalFloats / 6;
                 out.pos = floatData;
@@ -689,17 +767,18 @@ private:
                     uint8_t r2 = 180, g2 = 180, b2 = 180;
 
                     if(glb.col){
-                        r0 = toU8(glb.col[i0 * 3]); 
-                        g0 = toU8(glb.col[i0 * 3 + 1]); 
-                        b0 = toU8(glb.col[i0 * 3 + 2]);
+                        size_t stride = glb.colorStride;
+                        r0 = toU8(glb.col[i0 * stride]); 
+                        g0 = toU8(glb.col[i0 * stride + 1]); 
+                        b0 = toU8(glb.col[i0 * stride + 2]);
 
-                        r1 = toU8(glb.col[i1 * 3]); 
-                        g1 = toU8(glb.col[i1 * 3 + 1]); 
-                        b1 = toU8(glb.col[i1 * 3 + 2]);
+                        r1 = toU8(glb.col[i1 * stride]); 
+                        g1 = toU8(glb.col[i1 * stride + 1]); 
+                        b1 = toU8(glb.col[i1 * stride + 2]);
 
-                        r2 = toU8(glb.col[i2 * 3]); 
-                        g2 = toU8(glb.col[i2 * 3 + 1]); 
-                        b2 = toU8(glb.col[i2 * 3 + 2]);
+                        r2 = toU8(glb.col[i2 * stride]); 
+                        g2 = toU8(glb.col[i2 * stride + 1]); 
+                        b2 = toU8(glb.col[i2 * stride + 2]);
                     }
 
                     rasterizeTriangle(x0, y0, z0, r0, g0, b0,
