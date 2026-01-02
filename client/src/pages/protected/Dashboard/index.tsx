@@ -3,6 +3,7 @@ import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer'
 import FileUpload from '@/components/molecules/common/FileUpload';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
 import useTrajectoryUpdates from '@/hooks/trajectory/use-trajectory-updates';
+import useRequireTeamData from '@/hooks/team/use-require-team-data';
 import TimestepViewer from '@/components/organisms/scene/TimestepViewer';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/scene/Scene3D';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
@@ -23,6 +24,10 @@ import './Dashboard.css';
 const DashboardPage: React.FC = memo(() => {
     useTeamJobs();
     useTrajectoryUpdates();
+    
+    // Load team data (trajectories, etc.)
+    const { isLoading: isLoadingTeamData } = useRequireTeamData();
+    
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoadingTrajectories = useTrajectoryStore((state) => state.isLoadingTrajectories);
     const setBackgroundColor = useEditorStore((state) => state.environment.setBackgroundColor);

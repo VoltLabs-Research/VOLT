@@ -5,6 +5,7 @@ import { AnimatePresence } from 'framer-motion';
 import TimestepViewer from '@/components/organisms/scene/TimestepViewer';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import useCanvasPresence from '@/hooks/canvas/use-canvas-presence';
+import useRequireTrajectory from '@/hooks/trajectory/use-require-trajectory';
 import CanvasWidgets from '@/components/atoms/scene/CanvasWidgets';
 import CanvasPresenceAvatars from '@/components/atoms/scene/CanvasPresenceAvatars';
 import PreloadingOverlay from '@/components/atoms/common/PreloadingOverlay';
@@ -33,6 +34,12 @@ const EditorPage: React.FC = () => {
     // Subscribe to team jobs for real-time updates
     useTeamJobs();
 
+    // Ensure the trajectory is loaded
+    const { trajectory: loadedTrajectory, isLoading: trajectoryLoading, isReady: trajectoryReady } = useRequireTrajectory({
+        trajectoryId,
+        enabled: !!trajectoryId
+    });
+
     // Get trajectory data and current timestep from coordinator
     const { trajectory, currentTimestep } = useCanvasCoordinator({ trajectoryId });
     const { canvasUsers } = useCanvasPresence({ trajectoryId, enabled: !!trajectoryId });
@@ -56,8 +63,8 @@ const EditorPage: React.FC = () => {
 
     // Memoize loading state calculation
     const showLoading = useMemo(() =>
-        (isModelLoading && !(didPreload && isPlaying)) || !trajectory || currentTimestep === undefined,
-        [isModelLoading, didPreload, isPlaying, trajectory, currentTimestep]
+        (isModelLoading && !(didPreload && isPlaying)) || !trajectory || currentTimestep === undefined || trajectoryLoading,
+        [isModelLoading, didPreload, isPlaying, trajectory, currentTimestep, trajectoryLoading]
     );
 
     return (

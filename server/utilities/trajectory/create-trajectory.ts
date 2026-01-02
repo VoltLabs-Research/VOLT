@@ -1,4 +1,3 @@
-import DumpStorage from '@/services/trajectory/dump-storage';
 import tempFileManager from '@/services/temp-file-manager';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
@@ -8,7 +7,6 @@ import { Trajectory } from '@/models';
 import { getCloudUploadQueue, getTrajectoryProcessingQueue } from '@/queues';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import * as os from 'node:os';
 import { Worker } from 'worker_threads';
 import { ITrajectory } from '@/types/models/trajectory';
 import { CloudUploadJob } from '@/types/services/cloud-upload';

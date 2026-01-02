@@ -30,6 +30,7 @@ import LoadingShimmer from '@/components/atoms/animations/LoadingShimmer';
 import ToastContainer from '@/components/atoms/common/ToastContainer';
 import { useAuthStore } from '@/stores/slices/auth';
 import useToast from '@/hooks/ui/use-toast';
+import useAppInitializer from '@/hooks/core/use-app-initializer';
 import { renderPublicRoutes, renderProtectedRoutes, renderGuestRoutes } from '@/routes';
 
 const AuthLoadingOverlay = () => (
@@ -66,6 +67,10 @@ const App = () => {
     const location = useLocation();
     const isLoading = useAuthStore((state) => state.isLoading);
     const { showError } = useToast();
+
+    // Initialize global app data (teams, websocket, plugins, etc.)
+    // This runs once and ensures data is available regardless of which page is accessed first
+    useAppInitializer();
 
     // Setup error notification handler for API errors
     useMemo(() => {
