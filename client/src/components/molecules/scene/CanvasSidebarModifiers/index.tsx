@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { PiEngine } from 'react-icons/pi';
+import { PiEngine, PiSelectionThin } from 'react-icons/pi';
 import { CiImageOn } from 'react-icons/ci';
 import { IoColorPalette } from 'react-icons/io5';
 import { useNavigate } from 'react-router';
+import { VscPulse } from 'react-icons/vsc';
 import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import useLogger from '@/hooks/core/use-logger';
@@ -69,7 +70,7 @@ const CanvasSidebarModifiers = () => {
             isPlugin: false
         },
         {
-            Icon: PiEngine,
+            Icon: PiSelectionThin,
             title: 'Particle Selection',
             modifierId: 'particle-filter',
             isPlugin: false
@@ -79,7 +80,14 @@ const CanvasSidebarModifiers = () => {
             title: 'Render Settings',
             modifierId: 'render-settings',
             isPlugin: false
-        }, {
+        },
+        {
+            Icon: VscPulse,
+            title: 'Performance Monitor',
+            modifierId: 'performance-monitor',
+            isPlugin: false
+        },
+        {
             Icon: CiImageOn,
             title: 'Raster Frames',
             modifierId: 'raster',

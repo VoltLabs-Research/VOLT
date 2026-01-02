@@ -14,6 +14,7 @@ import { createTimestepSlice } from './timesteps-slice';
 import { createConfigurationSlice, type ConfigurationSlice } from './configuration-slice';
 import { createEnvironmentSlice, type EnvironmentSlice } from './environment-slice';
 import { createEffectsSlice, type EffectsSlice } from './effects-slice';
+import { createRendererStatsSlice, type RendererStatsSlice } from './renderer-stats-slice';
 
 import type { ModelStore } from '@/types/stores/editor/model';
 import type { PlaybackStore } from '@/types/stores/editor/playback';
@@ -33,7 +34,8 @@ export type EditorStore =
     RendererSlice &
     ConfigurationSlice &
     EnvironmentSlice &
-    EffectsSlice;
+    EffectsSlice &
+    RendererStatsSlice;
 
 export const useEditorStore = create<EditorStore>()(
     persist(
@@ -51,6 +53,7 @@ export const useEditorStore = create<EditorStore>()(
             ...createConfigurationSlice(...args),
             ...createEnvironmentSlice(...args),
             ...createEffectsSlice(...args),
+            ...createRendererStatsSlice(...args),
         }),
         {
             name: 'editor-storage',

@@ -20,6 +20,7 @@ import DynamicLights from '@/components/molecules/scene/DynamicLights';
 import DynamicBackground from '@/components/molecules/scene/DynamicBackground';
 import DynamicRenderer from '@/components/molecules/scene/DynamicRenderer';
 import CameraRig from '@/components/atoms/scene/CameraRig';
+import PerformanceStatsCollector from '@/components/atoms/scene/PerformanceStatsCollector';
 import { useUIStore } from '@/stores/slices/ui';
 import { useEditorStore } from '@/stores/slices/editor';
 import { calculateClosestCameraPositionZY } from '@/utilities/glb/modelUtils';
@@ -316,6 +317,7 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 			>
 				<DynamicRenderer />
 				<CameraRig orbitRef={orbitControlsRef} />
+				<PerformanceStatsCollector />
 				<color attach="background" args={[threeBackgroundColor]} />
 				<Preload all />
 				{adaptiveEnabled && <AdaptiveDpr pixelated={pixelated} />}

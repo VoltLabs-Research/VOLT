@@ -35,6 +35,7 @@ import { useEditorStore } from '@/stores/slices/editor';
 import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import ColorCoding from '@/components/organisms/scene/ColorCoding';
 import ParticleFilter from '@/components/organisms/scene/ParticleFilter';
+import PerformanceMonitor from '@/components/organisms/scene/PerformanceMonitor';
 import type { Trajectory } from '@/types/models';
 
 interface CanvasWidgetsProps {
@@ -90,7 +91,8 @@ const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: C
     const legacyModifiersMap = useMemo(() => ({
         'slice-plane': SlicePlane,
         'color-coding': ColorCoding,
-        'particle-filter': ParticleFilter
+        'particle-filter': ParticleFilter,
+        'performance-monitor': PerformanceMonitor
     }) as Record<string, React.ComponentType<any>>, []);
 
     const { legacyModifiers, pluginModifiers } = useMemo(() => {
