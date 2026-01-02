@@ -6,8 +6,6 @@ import storage from '@/services/storage';
 import rasterize from '@/utilities/export/rasterizer';
 import logger from '@/logger';
 import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
-import { v4 as uuidv4 } from 'uuid';
 import tempFileManager from '@/services/temp-file-manager';
 
 const CACHE_CONTROL = 'public, max-age=86400';
@@ -18,11 +16,10 @@ const processJob = async (job: RasterizerJob): Promise<void> => {
     const inputPath = job.opts.inputPath as string;
     const tempPng = tempFileManager.generateFilePath({ prefix: 'raster_', extension: '.png' });
 
-
     try {
         logger.info(`[Worker #${process.pid}] Processing Job ${job.jobId} (Timestep: ${job.timestep})...`);
 
-        const success = rasterize(inputPath, tempPng, {
+        const opts = {
             width: job.opts.width ?? 1600,
             height: job.opts.height ?? 900,
             fov: job.opts.fov ?? 45,
@@ -30,10 +27,27 @@ const processJob = async (job: RasterizerJob): Promise<void> => {
             el: job.opts.el ?? 25,
             distScale: job.opts.distScale ?? 1.0,
             up: job.opts.up as 'z' | 'y' ?? 'z'
-        });
+        };
+
+        logger.info(`[Worker #${process.pid}] Rasterizing: input="${inputPath}", output="${tempPng}", opts=${JSON.stringify(opts)}`);
+
+        const inputExists = await fs.access(inputPath).then(() => true).catch(() => false);
+        if (!inputExists) {
+            throw new Error(`Input file does not exist: ${inputPath}`);
+        }
+
+        const inputStats = await fs.stat(inputPath);
+        logger.info(`[Worker #${process.pid}] Input file size: ${inputStats.size} bytes`);
+
+        const success = rasterize(inputPath, tempPng, opts);
 
         if (!success) {
-            throw new Error('Native rasterization failed');
+            throw new Error(`Native rasterization failed - Check if GLB is valid and native module is working correctly`);
+        }
+
+        const outputExists = await fs.access(tempPng).then(() => true).catch(() => false);
+        if (!outputExists) {
+            throw new Error(`Output PNG was not created by rasterizer`);
         }
 
         const buffer = await fs.readFile(tempPng);

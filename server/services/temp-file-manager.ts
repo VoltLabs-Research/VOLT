@@ -65,9 +65,6 @@ class TempFileManager {
         let dirPath = TEMP_DIR;
         if (subdir) {
             dirPath = path.join(TEMP_DIR, subdir);
-            // innovative side-effect: we rely on consumer to ensure dir exists or we assume it exists?
-            // Ideally we should ensure it exists, but this is synchronous.
-            // For now, return path. Consumer usually handles creation or uses standard temp dir.
         }
 
         const filePath = path.join(dirPath, filename);

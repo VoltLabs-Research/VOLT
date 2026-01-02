@@ -35,7 +35,12 @@ const rasterize = (glbPath: string, pngPath: string, options: RasterizerOptions 
     const distScale = options.distScale ?? 1.0;
     const zUp = options.up === 'z';
 
-    return rasterizer.rasterize(glbPath, pngPath, width, height, az, el, { fov, distScale, zUp });
+    try {
+        return rasterizer.rasterize(glbPath, pngPath, width, height, az, el, { fov, distScale, zUp });
+    } catch (error: any) {
+        console.error('[Rasterizer] Native module threw exception:', error.message || error);
+        throw new Error(`Native rasterizer exception: ${error.message || error}`);
+    }
 };
 
 export default rasterize;

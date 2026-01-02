@@ -41,7 +41,10 @@ export const rasterizeGLBs = async (
 
         const task = async () => {
             try {
-                const tempPath = path.join(tempFileManager.rootPath, timestep.toString());
+                const tempPath = tempFileManager.generateFilePath({ 
+                    prefix: `glb_${timestep}_`, 
+                    extension: '.glb' 
+                });
 
                 await storage.download(prefixBucketName, key, tempPath);
                 jobs.push({
