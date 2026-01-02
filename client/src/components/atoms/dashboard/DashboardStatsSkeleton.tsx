@@ -7,7 +7,7 @@ const DashboardStatsSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => 
             {Array.from({ length: count }).map((_, i) => (
                 <div className='dashboard-stat-container p-relative cursor-pointer' key={i}>
                     <div className='d-flex column gap-2 dashboard-stat-left-container w-max'>
-                        <div className='dashboard-stat-header-container gap-1'>
+                        <div className='dashboard-stat-header-container gap-1 d-flex items-center'>
                             <i className='dashboard-stat-icon-container color-muted'>
                                 <Skeleton variant='circular' width={28} height={28} />
                             </i>

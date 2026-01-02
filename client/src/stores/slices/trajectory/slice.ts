@@ -82,7 +82,7 @@ export const initialState: TrajectoryState = {
         hasMore: false
     },
     trajectory: null,
-    isLoading: true,
+    isLoading: false,
     isFetchingMore: false,
     activeUploads: {},
     error: null,
@@ -105,39 +105,44 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
 
         const storeSnapshot = get() as TrajectoryStore;
 
+        // Skip if already have trajectories (initial load only)
+        if (!append && !search && page === 1 && storeSnapshot.trajectories.length > 0) {
+            return;
+        }
+
         if (append && storeSnapshot.isFetchingMore) {
             return;
         }
 
         const fetchTrajectories = () => {
-            return trajectoryApi.getAllPaginated({
-                populate: 'analysis,createdBy',
-                page,
-                limit,
-                q: search
-            });
-        };
-
-        await runRequest(set, get, fetchTrajectories, {
-            loadingKey: append ? 'isFetchingMore' : 'isLoadingTrajectories',
-            errorFallback: 'Failed to load trajectories',
-            onSuccess: (apiResponse) => {
-                const paginationResult = calculatePaginationState({
-                    newData: apiResponse.data || [],
-                    currentData: storeSnapshot.trajectories,
+                return trajectoryApi.getAllPaginated({
+                    populate: 'analysis,createdBy',
                     page,
                     limit,
-                    append,
-                    totalFromApi: apiResponse.total,
-                    previousTotal: storeSnapshot.listingMeta.total
+                    q: search
                 });
+            };
 
-                set({
-                    trajectories: paginationResult.data,
-                    listingMeta: paginationResult.listingMeta
-                });
-            }
-        });
+            await runRequest(set, get, fetchTrajectories, {
+                loadingKey: append ? 'isFetchingMore' : 'isLoadingTrajectories',
+                errorFallback: 'Failed to load trajectories',
+                onSuccess: (apiResponse) => {
+                    const paginationResult = calculatePaginationState({
+                        newData: apiResponse.data || [],
+                        currentData: storeSnapshot.trajectories,
+                        page,
+                        limit,
+                        append,
+                        totalFromApi: apiResponse.total,
+                        previousTotal: storeSnapshot.listingMeta.total
+                    });
+
+                    set({
+                        trajectories: paginationResult.data,
+                        listingMeta: paginationResult.listingMeta
+                    });
+                }
+            });
     },
 
     getTrajectoryById: async (trajectoryId) => {

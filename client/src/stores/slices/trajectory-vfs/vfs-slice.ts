@@ -79,16 +79,24 @@ export const initialState: TrajectoryVfsState = {
     historyIndex: 0
 };
 
+// Track if VFS has been initialized
+let isVfsInitialized = false;
+
 export const createTrajectoryVfsSlice: SliceCreator<TrajectoryVfsSlice> = (set, get) => ({
     ...initialState,
 
     init: async () => {
+        // Skip if already initialized
+        if (isVfsInitialized) return;
+        
         set({ ...initialState } as TrajectoryVfsSlice);
 
         const slice = get() as TrajectoryVfsSlice;
 
         await slice.fetchTrajectories();
         await slice.open('');
+        
+        isVfsInitialized = true;
     },
 
     open: async (relPath = '') => {

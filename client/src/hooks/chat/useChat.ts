@@ -5,6 +5,9 @@ import ChatSocketManager from '@/services/websockets/chat-socket-manager';
 
 const TYPING_TIMEOUT_MS = 1000;
 
+// Track which team's chat has been loaded
+let chatLoadedForTeam: string | null = null;
+
 export const useChat = () => {
     const store = useChatStore((store) => store);
     const { selectedTeam } = useTeamStore();
@@ -31,8 +34,11 @@ export const useChat = () => {
     // Load chats and team members
     useEffect(() => {
         if (!selectedTeamId) return;
+        // Skip if already loaded for this team
+        if (chatLoadedForTeam === selectedTeamId) return;
 
         console.log('[Chat] Loading chats for team:', selectedTeamId);
+        chatLoadedForTeam = selectedTeamId;
 
         const load = async () => {
             await store.loadChats();
@@ -45,7 +51,7 @@ export const useChat = () => {
             }
         };
         load();
-    }, [selectedTeamId, store.loadChats, store.loadTeamMembers]); // Added fetchUsersPresence to dependencies if passed via store, or access via state
+    }, [selectedTeamId]); // Removed store functions from deps - they don't change
 
     // Register socket manager(singleton)
     useEffect(() => {

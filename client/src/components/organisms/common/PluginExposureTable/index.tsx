@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import DocumentListingTable from '@/components/molecules/common/DocumentListingTable';
@@ -154,6 +154,9 @@ const PluginExposureTable = ({
         return extractColumnsFromWorkflow(plugin, listingSlug);
     }, [pluginsBySlug, pluginSlug, listingSlug]);
 
+    // Track if initial fetch has been done for current params
+    const fetchedForRef = useRef<string | null>(null);
+
     const fetchBatch = useCallback(async (after?: string | null) => {
         if (!pluginSlug || !listingSlug) {
             setError('Invalid listing parameters.');
@@ -163,6 +166,15 @@ const PluginExposureTable = ({
         if (!trajectoryId && !teamId) {
             setError('Please select a team or trajectory first.');
             return;
+        }
+
+        // Guard against duplicate initial fetches (StrictMode)
+        const paramsKey = `${pluginSlug}:${listingSlug}:${trajectoryId || ''}:${teamId || ''}`;
+        if (!after) {
+            if (fetchedForRef.current === paramsKey && rows.length > 0) {
+                return;
+            }
+            fetchedForRef.current = paramsKey;
         }
 
         setError(null);

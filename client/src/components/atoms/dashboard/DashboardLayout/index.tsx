@@ -235,29 +235,35 @@ const DashboardLayout = () => {
 
     const [teamsInitialized, setTeamsInitialized] = useState(false);
 
+    // Track if initial data has been loaded for the current team
+    const teamDataLoadedRef = useRef<string | null>(null);
+
     useEffect(() => {
         if (selectedTeam === null || trajectories.length) return;
         setTeamsInitialized(true);
     }, [selectedTeam, trajectories]);
 
     useEffect(() => {
-        // Only load if we have a team and haven't loaded yet
-        if (selectedTeam?._id && !teamsInitialized) {
-            getTrajectories(selectedTeam._id, { page: 1, limit: 20 });
-            fetchPlugins({ page: 1, limit: 100 });
-            getAnalysisConfigs(selectedTeam._id, { page: 1, limit: 20 });
-            fetchContainers({ page: 1, limit: 20 });
-        }
-    }, [selectedTeam, getTrajectories, fetchPlugins, getAnalysisConfigs, fetchContainers, teamsInitialized]);
+        // Only load if we have a team and haven't loaded for this team yet
+        if (!selectedTeam?._id) return;
+        if (teamDataLoadedRef.current === selectedTeam._id) return;
+        
+        teamDataLoadedRef.current = selectedTeam._id;
+        
+        // These functions should have internal guards against duplicate requests
+        getTrajectories(selectedTeam._id, { page: 1, limit: 20 });
+        getAnalysisConfigs(selectedTeam._id, { page: 1, limit: 20 });
+    }, [selectedTeam?._id, getTrajectories, getAnalysisConfigs]);
 
-    useEffect(() => {
-        getUserTeams();
-    }, [getUserTeams]);
+    // These are handled by useAppInitializer, no need to call again
+    // useEffect(() => {
+    //     getUserTeams();
+    // }, [getUserTeams]);
 
-    useEffect(() => {
-        initializeSocket();
-        fetch(); // Load initial notifications from server
-    }, [initializeSocket, fetch]);
+    // useEffect(() => {
+    //     initializeSocket();
+    //     fetch(); // Load initial notifications from server
+    // }, [initializeSocket, fetch]);
 
     useEffect(() => {
         if (!teams.length) return;

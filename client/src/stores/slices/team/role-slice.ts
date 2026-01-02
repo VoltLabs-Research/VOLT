@@ -24,14 +24,23 @@ export type TeamRoleSlice = TeamRoleState & TeamRoleActions;
 
 export const initialState: TeamRoleState = { roles: [], members: [], isLoading: false, isSaving: false, error: null };
 
+// Track which team's roles have been fetched
+let fetchedRolesForTeam: string | null = null;
+
 export const createTeamRoleSlice: SliceCreator<TeamRoleSlice> = (set, get) => ({
     ...initialState,
 
-    fetchRoles: async (_teamId) => {
+    fetchRoles: async (teamId) => {
+        // Skip if already fetched for this team
+        if (fetchedRolesForTeam === teamId) return;
+        
         await runRequest(set, get, () => teamRoleApi.getAll(), {
             errorFallback: 'Failed to fetch roles', rethrow: true,
             loadingKey: 'isLoading',
-            onSuccess: (roles) => set({ roles } as Partial<TeamRoleSlice>)
+            onSuccess: (roles) => {
+                fetchedRolesForTeam = teamId;
+                set({ roles } as Partial<TeamRoleSlice>);
+            }
         });
     },
 

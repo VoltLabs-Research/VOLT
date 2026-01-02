@@ -1,12 +1,18 @@
+export interface DeduplicateResult<T> {
+    data: T;
+    wasDeduplicated: boolean;
+}
+
 export class RequestDeduplicator{
     private pendingRequests = new Map<string, Promise<any>>();
 
     async deduplicate<T>(
         key: string,
         request: () => Promise<T>
-    ): Promise<T>{
+    ): Promise<DeduplicateResult<T>>{
         if(this.pendingRequests.has(key)){
-            return this.pendingRequests.get(key);
+            const data = await this.pendingRequests.get(key);
+            return { data, wasDeduplicated: true };
         }
 
         const promise = request().finally(() => {
@@ -14,7 +20,8 @@ export class RequestDeduplicator{
         });
 
         this.pendingRequests.set(key, promise);
-        return promise;
+        const data = await promise;
+        return { data, wasDeduplicated: false };
     }
 }
 

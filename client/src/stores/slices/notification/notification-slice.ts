@@ -32,6 +32,10 @@ export const createNotificationSlice: SliceCreator<NotificationSlice> = (set, ge
     ...initialState,
 
     fetch: async () => {
+        const state = get() as NotificationSlice;
+        // Skip if already have notifications
+        if (state.notifications.length > 0) return;
+        
         await runRequest(set, get, () => notificationsApi.getAll(), {
             loadingKey: 'loading',
             errorFallback: 'Failed to load notifications',

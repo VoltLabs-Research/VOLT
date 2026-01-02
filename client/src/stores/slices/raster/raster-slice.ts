@@ -5,7 +5,7 @@ import type { SliceCreator } from '../../helpers/create-slice';
 import { extractErrorMessage } from '@/utilities/api/error-extractor';
 
 export const initialState: RasterState = {
-    trajectory: null, isLoading: true, isAnalysisLoading: false, analyses: {}, analysesNames: [],
+    trajectory: null, isLoading: false, isAnalysisLoading: false, analyses: {}, analysesNames: [],
     selectedAnalysis: null, error: null, loadingFrames: new Set<string>(), isPreloading: false, preloadProgress: 0, frameCache: {}
 };
 

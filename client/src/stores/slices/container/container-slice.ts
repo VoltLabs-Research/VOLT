@@ -32,7 +32,12 @@ export const createContainerSlice: SliceCreator<ContainerSlice> = (set, get) => 
     fetchContainers: async (opts = {}) => {
         const { page = 1, limit = 20, search = '', append = false } = opts;
         const state = get() as ContainerSlice;
+        
+        // Skip if already loading
         if ((append && state.isFetchingMore) || (!append && state.isLoading)) return;
+        
+        // Skip if already have containers and not appending/searching
+        if (!append && !search && page === 1 && state.containers.length > 0) return;
 
         await runRequest(set, get, () => containerApi.getAll({ page, limit, q: search }), {
             loadingKey: append ? 'isFetchingMore' : 'isLoading',

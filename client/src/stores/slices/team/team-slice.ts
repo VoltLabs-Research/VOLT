@@ -16,10 +16,17 @@ export const initialState: TeamState = {
     onlineUsers: []
 };
 
+// Track which team's members have been fetched
+let fetchedMembersForTeam: string | null = null;
+
 export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
     ...initialState,
 
     getUserTeams: async () => {
+        const state = get() as TeamStore;
+        // Skip if already have teams
+        if (state.teams.length > 0) return;
+        
         await runRequest(set, get, () => teamApi.getAll(), {
             errorFallback: 'Failed to load teams',
             rethrow: true,
@@ -46,6 +53,9 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
 
         const selectedTeam = state.teams.find((team) => team._id === teamId);
         if (!selectedTeam) return;
+
+        // Reset members cache when switching teams
+        fetchedMembersForTeam = null;
 
         set({
             selectedTeam,
@@ -81,12 +91,19 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
             loadingKey: 'isLoading',
             onSuccess: (updatedTeam) =>
                 set((state: TeamStore) => {
+                    // Preserve populated fields (like owner) from the current team
+                    const currentTeam = state.teams.find(t => t._id === teamId);
+                    const mergedTeam = {
+                        ...updatedTeam,
+                        owner: updatedTeam.owner || currentTeam?.owner
+                    };
+
                     const nextTeams = state.teams.map((team) =>
-                        team._id === teamId ? updatedTeam : team
+                        team._id === teamId ? mergedTeam : team
                     );
 
                     const nextSelectedTeam =
-                        state.selectedTeam?._id === teamId ? updatedTeam : state.selectedTeam;
+                        state.selectedTeam?._id === teamId ? mergedTeam : state.selectedTeam;
 
                     return {
                         teams: nextTeams,
@@ -136,17 +153,22 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
 
     reset: () => set(initialState as TeamStore),
 
-    fetchMembers: async (_teamId) => {
+    fetchMembers: async (teamId) => {
+        // Skip if already fetched for this team
+        if (fetchedMembersForTeam === teamId) return;
+        
         await runRequest(set, get, () => teamMember.getAll(), {
             errorFallback: 'Failed to fetch members',
             rethrow: true,
             loadingKey: 'isLoading',
-            onSuccess: (data) =>
+            onSuccess: (data) => {
+                fetchedMembersForTeam = teamId;
                 set({
                     members: data.members,
                     admins: data.admins,
                     owner: data.owner
-                } as Partial<TeamStore>)
+                } as Partial<TeamStore>);
+            }
         });
     },
 

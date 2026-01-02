@@ -31,6 +31,10 @@ export const createRBACSlice: SliceCreator<RBACSlice> = (set, get) => {
         ...initialState,
 
         fetchRBACConfig: async () => {
+            const state = get() as RBACSlice;
+            // Skip if already have config
+            if (state.resources.length > 0) return;
+            
             await runRequest(set, get, () => systemApi.getRBACConfig(), {
                 onSuccess: (config) => set({
                     resources: config.resources,

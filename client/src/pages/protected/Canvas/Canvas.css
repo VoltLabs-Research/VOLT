@@ -108,6 +108,7 @@
 
 .editor-container .jobs-history-viewer-enhanced.expanded {
     width: 400px;
+    border-radius: var(--radius-2xl);
 }
 
 .file-upload-loader-container p {
@@ -137,6 +138,7 @@
 .canvas-jobs-panel .jobs-history-viewer-enhanced {
     position: relative;
     max-height: 200px;
+    border-radius: var(--radius-2xl);
 }
 
 @media screen and (max-width: 768px) {

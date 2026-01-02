@@ -56,6 +56,9 @@ export const initialDataState: ChatDataState = {
     isConnected: false
 };
 
+// Track which team's members have been loaded
+let loadedTeamMembersForTeam: string | null = null;
+
 const emitSocket = (event: string, data: any) => {
     if (socketService.isConnected()) socketService.emit(event, data).catch(() => { });
 };
@@ -80,6 +83,10 @@ export const createChatDataSlice: SliceCreator<ChatDataSlice, any> = (set, get) 
     setConnected: (connected) => set({ isConnected: connected }),
 
     loadChats: async () => {
+        const state = get();
+        // Skip if already have chats
+        if (state.chats.length > 0) return;
+        
         await runRequest(set, get, () => chatApi.getChats(), {
             loadingKey: 'isLoadingChats',
             errorFallback: 'Failed to load chats',
@@ -88,9 +95,15 @@ export const createChatDataSlice: SliceCreator<ChatDataSlice, any> = (set, get) 
     },
 
     loadTeamMembers: async (teamId) => {
+        // Skip if already loaded for this team
+        if (loadedTeamMembersForTeam === teamId) return;
+        
         await runRequest(set, get, () => chatApi.getTeamMembers(teamId), {
             skipLoading: true,
-            onSuccess: (members) => set({ teamMembers: members })
+            onSuccess: (members) => {
+                loadedTeamMembersForTeam = teamId;
+                set({ teamMembers: members });
+            }
         });
     },
 

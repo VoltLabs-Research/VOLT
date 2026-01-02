@@ -127,10 +127,10 @@ body.jobs-history-expanded {
     transition: .5s;
     width: 15rem;
     height: 3.5rem;
-    left: 0.75rem;
-    bottom: 0.75rem;
-    border-radius: 2rem;
-    padding: 0.75rem 1.25rem;
+    left: 1rem;
+    bottom: 1rem;
+    border-radius: var(--radius-2xl);
+    padding: 1rem 1.5rem;
     background: var(--glass-bg);
     backdrop-filter: blur(52px) saturate(160%);
     box-shadow: var(--shadow-glass);
@@ -138,13 +138,13 @@ body.jobs-history-expanded {
 }
 
 .jobs-history-viewer-enhanced.expanded {
-    left: 0.75rem;
-    bottom: 0.75rem;
+    left: 1rem;
+    bottom: 1rem;
     border-radius: var(--radius-2xl);
     padding: 0;
     cursor: default;
-    width: 340px;
-    height: clamp(220px, 28vh, 320px);
+    width: 360px;
+    height: clamp(240px, 30vh, 340px);
     overflow-y: scroll;
 }
 
@@ -162,7 +162,7 @@ body.jobs-history-expanded {
 }
 
 .jobs-history-viewer-header-enhanced {
-    padding: 1rem .8rem .5rem;
+    padding: 1.25rem 1rem 0.75rem;
 }
 
 .header-content {

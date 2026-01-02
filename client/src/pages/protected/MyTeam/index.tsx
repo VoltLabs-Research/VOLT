@@ -35,12 +35,12 @@ const MyTeam: React.FC = () => {
         }
     }, [selectedTeam, fetchRoles, fetchMembers, initializeSocket]);
 
-    const ownerId = selectedTeam?.owner?._id.toString();
+    const ownerId = selectedTeam?.owner?._id?.toString();
     const currentIsOwner = !!(currentUser && ownerId && ownerId === currentUser._id);
     const currentIsAdmin = !!(currentUser && admins?.some?.(a => a._id === currentUser._id));
     const canManage = currentIsOwner || currentIsAdmin;
 
-    const handleSaveTeamName = async (newName: string) => {
+    const handleSaveTeamName = useCallback(async (newName: string) => {
         if (!selectedTeam || !newName.trim() || newName === selectedTeam.name) return;
 
         try {
@@ -49,7 +49,7 @@ const MyTeam: React.FC = () => {
         } catch (err) {
             showError('Failed to update team name');
         }
-    };
+    }, [selectedTeam, updateTeam, showSuccess, showError]);
 
     const handleRoleChange = useCallback(async (memberId: string, roleId: string) => {
         if (!selectedTeam?._id) return;
@@ -84,7 +84,7 @@ const MyTeam: React.FC = () => {
                 )}
             </div>
         );
-    }, [selectedTeam, canManage]);
+    }, [selectedTeam, canManage, handleSaveTeamName]);
 
 
 

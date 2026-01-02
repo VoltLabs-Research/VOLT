@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import trajectoryApi from '@/services/api/trajectory/trajectory';
 import { useTeamStore } from '@/stores/slices/team';
@@ -17,12 +17,19 @@ const PluginListing = () => {
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [perFrameConfig, setPerFrameConfig] = useState<any>(null);
 
+    // Track if trajectories have been fetched for this team
+    const fetchedForTeamRef = useRef<string | null>(null);
+
     useEffect(() => {
         setTrajectoryId(paramTrajectoryId);
     }, [paramTrajectoryId]);
 
     useEffect(() => {
         if (!team?._id) return;
+        // Skip if already fetched for this team
+        if (fetchedForTeamRef.current === team._id) return;
+        fetchedForTeamRef.current = team._id;
+        
         trajectoryApi.getAll({ teamId: team._id })
             .then(data => setTrajectories(data))
             .catch(err => console.error('Failed to load trajectories', err));

@@ -8,9 +8,9 @@ const initialState = {
     analysisConfig: null,
     analysisConfigs: [],
     listingMeta: initialListingMeta,
-    isLoading: true,
+    isLoading: false,
     isFetchingMore: false,
-    isListingLoading: true,
+    isListingLoading: false,
     error: null,
     getAnalysisConfigs: async () => {},
 };
@@ -30,39 +30,44 @@ export const createAnalysisConfigSlice: SliceCreator<AnalysisConfigStore> = (set
 
         const storeSnapshot = get();
 
+        // Skip if already have configs (initial load only)
+        if (!shouldAppend && !searchQuery && page === 1 && storeSnapshot.analysisConfigs.length > 0) {
+            return;
+        }
+
         if (shouldAppend && storeSnapshot.isFetchingMore) {
             return;
         }
 
         const request = () => {
-            return analysisConfigApi.getByTeamId({
-                page,
-                limit,
-                q: searchQuery
-            });
-        };
-
-        await runRequest(set, get, request, {
-            loadingKey: shouldAppend ? 'isFetchingMore' : 'isListingLoading',
-            errorFallback: 'Failed to load analysis configs',
-            onSuccess: (apiResponse) => {
-                const paginationResult = calculatePaginationState({
-                    newData: apiResponse.data,
-                    currentData: storeSnapshot.analysisConfigs,
+                return analysisConfigApi.getByTeamId({
                     page,
                     limit,
-                    append: shouldAppend,
-                    totalFromApi: apiResponse.results.total,
-                    previousTotal: storeSnapshot.listingMeta.total
+                    q: searchQuery
                 });
+            };
 
-                set({
-                    analysisConfigs: paginationResult.data,
-                    listingMeta: paginationResult.listingMeta,
-                    error: null
-                });
-            }
-        });
+            await runRequest(set, get, request, {
+                loadingKey: shouldAppend ? 'isFetchingMore' : 'isListingLoading',
+                errorFallback: 'Failed to load analysis configs',
+                onSuccess: (apiResponse) => {
+                    const paginationResult = calculatePaginationState({
+                        newData: apiResponse.data,
+                        currentData: storeSnapshot.analysisConfigs,
+                        page,
+                        limit,
+                        append: shouldAppend,
+                        totalFromApi: apiResponse.results.total,
+                        previousTotal: storeSnapshot.listingMeta.total
+                    });
+
+                    set({
+                        analysisConfigs: paginationResult.data,
+                        listingMeta: paginationResult.listingMeta,
+                        error: null
+                    });
+                }
+            });
     },
 
     updateAnalysisConfig: (config) => {

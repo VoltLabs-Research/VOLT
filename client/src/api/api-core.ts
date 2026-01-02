@@ -119,7 +119,8 @@ export default class APICore{
             }
 
             const key = generateDeduplicationKey('GET', url);
-            const data = await requestDeduplicator.deduplicate(key, () => withRetry(doRequest, retryCfg));
+            const { data } = await requestDeduplicator.deduplicate(key, () => withRetry(doRequest, retryCfg));
+            
             return { data };
         }catch(error){
             throw classifyError(error);

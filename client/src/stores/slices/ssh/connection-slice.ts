@@ -39,7 +39,7 @@ export type SSHConnectionSlice = SSHConnectionState & SSHConnectionActions;
 
 export const initialState: SSHConnectionState = {
     connections: [],
-    loading: true,
+    loading: false,
     error: null
 };
 
@@ -76,6 +76,10 @@ const toTestErrorMessage = (error: unknown): string => {
 
 export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, get) => {
     const fetchConnections = async (): Promise<void> => {
+        const state = get() as SSHConnectionSlice;
+        // Skip if already have connections
+        if (state.connections.length > 0) return;
+        
         const request = () => sshApi.connections.getAll();
 
         await runRequest(set, get, request, {
