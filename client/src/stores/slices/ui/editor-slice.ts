@@ -67,7 +67,15 @@ export const createEditorUISlice: StateCreator<any, [], [], EditorUISlice> = (se
                 modifierId,
                 type: pluginId && modifierId ? 'plugin' : 'legacy'
             };
-            set({ activeModifiers: [...modifiers, newModifier] });
+
+            let nextModifiers = [...modifiers];
+
+            // If we are activating a plugin modifier, remove any other active plugin modifiers
+            if (newModifier.type === 'plugin') {
+                nextModifiers = nextModifiers.filter(m => m.type !== 'plugin');
+            }
+
+            set({ activeModifiers: [...nextModifiers, newModifier] });
         }
     },
 
