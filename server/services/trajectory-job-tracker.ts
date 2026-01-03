@@ -112,7 +112,7 @@ class TrajectoryJobTracker {
         logger.info(`[TrajectoryJobTracker] DECREMENT ${trajectoryId} | Queue: ${queueType} | JobId: ${jobId} | Status: ${status} | Before: ${beforeCount} | After: ${afterCount} | Cleanup: ${shouldCleanup === 1 ? 'YES' : 'NO'}`);
 
         if (shouldCleanup === 1) {
-            logger.info(`[TrajectoryJobTracker] 🔍 Counter reached 0 for ${trajectoryId}, initiating cleanup verification...`);
+            logger.info(`[TrajectoryJobTracker] Counter reached 0 for ${trajectoryId}, initiating cleanup verification...`);
             return await this.verifyAndCleanup(trajectoryId, teamId);
         }
 
@@ -120,7 +120,7 @@ class TrajectoryJobTracker {
     }
 
     private async verifyAndCleanup(trajectoryId: string, teamId: string): Promise<boolean> {
-        logger.info(`[TrajectoryJobTracker] 🔒 Attempting cleanup lock for ${trajectoryId}...`);
+        logger.info(`[TrajectoryJobTracker] Attempting cleanup lock for ${trajectoryId}...`);
 
         if (this.cleanupInProgress.has(trajectoryId)) {
             logger.warn(`[TrajectoryJobTracker] Cleanup already in progress (in-memory flag) for ${trajectoryId}`);
@@ -151,7 +151,7 @@ class TrajectoryJobTracker {
 
             logger.info(`[TrajectoryJobTracker] No active jobs found in queues for ${trajectoryId}`);
 
-            logger.info(`[TrajectoryJobTracker] 🔍 Checking for active analyses in DB for ${trajectoryId}...`);
+            logger.info(`[TrajectoryJobTracker] Checking for active analyses in DB for ${trajectoryId}...`);
             const { Analysis } = await import('@/models');
             const hasActiveAnalyses = await Analysis.exists({
                 trajectory: trajectoryId,
@@ -169,7 +169,7 @@ class TrajectoryJobTracker {
             await this.executeCleanup(trajectoryId);
             logger.info(`[TrajectoryJobTracker] Cleanup executed successfully for ${trajectoryId}`);
 
-            logger.info(`[TrajectoryJobTracker] 🗑️ Deleting Redis metadata for ${trajectoryId}...`);
+            logger.info(`[TrajectoryJobTracker] Deleting Redis metadata for ${trajectoryId}...`);
             await this.redis.del(
                 `trajectory:${trajectoryId}:jobs:active`,
                 `trajectory:${trajectoryId}:jobs:metadata`,

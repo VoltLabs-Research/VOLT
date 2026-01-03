@@ -78,21 +78,21 @@ const NODE_OUTPUT_SCHEMAS = {
     }
 };
 
-export function getAncestorNodes(nodeId: string, nodes: Node[], edges: Edge[]): Node[]{
+export function getAncestorNodes(nodeId: string, nodes: Node[], edges: Edge[]): Node[] {
     const ancestors: Node[] = [];
     const visited = new Set<string>();
     const queue: string[] = [nodeId];
 
-    while(queue.length > 0){
+    while (queue.length > 0) {
         const currentId = queue.shift()!;
-        if(visited.has(currentId)) continue;
+        if (visited.has(currentId)) continue;
         visited.add(currentId);
 
         // Find edges where this node is the target
         const incomingEdges = edges.filter(e => e.target === currentId);
-        for(const edge of incomingEdges){
+        for (const edge of incomingEdges) {
             const sourceNode = nodes.find(n => n.id === edge.source);
-            if(sourceNode && !visited.has(sourceNode.id)) {
+            if (sourceNode && !visited.has(sourceNode.id)) {
                 ancestors.push(sourceNode);
                 queue.push(sourceNode.id);
             }
@@ -106,19 +106,19 @@ export function getAvailableExpressions(
     nodeId: string,
     nodes: Node[],
     edges: Edge[]
-): AvailableExpression[]{
+): AvailableExpression[] {
     const ancestors = getAncestorNodes(nodeId, nodes, edges);
     const expressions: AvailableExpression[] = [];
 
-    for(const ancestor of ancestors){
+    for (const ancestor of ancestors) {
         const nodeType = ancestor.type as NodeType;
         const nodeName = ancestor.id;
         const schema = NODE_OUTPUT_SCHEMAS[nodeType];
 
-        if(!schema) continue;
+        if (!schema) continue;
 
         // Add static schema properties
-        for(const [key, info] of Object.entries(schema)) {
+        for (const [key, info] of Object.entries(schema)) {
             expressions.push({
                 nodeId: ancestor.id,
                 nodeName,
@@ -130,8 +130,8 @@ export function getAvailableExpressions(
             });
 
             // For objects, we could expand children if defined
-            if(info.children){
-                for(const [childKey, childInfo] of Object.entries(info.children)) {
+            if (info.children) {
+                for (const [childKey, childInfo] of Object.entries(info.children)) {
                     expressions.push({
                         nodeId: ancestor.id,
                         nodeName,
@@ -146,11 +146,11 @@ export function getAvailableExpressions(
         }
 
         // Special handling for Arguments node - add dynamic argument keys
-        if(nodeType === NodeType.ARGUMENTS){
+        if (nodeType === NodeType.ARGUMENTS) {
             const nodeData = ancestor.data as Record<string, any>;
             const argDefs = nodeData.arguments?.arguments || [];
-            for(const arg of argDefs){
-                if(arg.argument){
+            for (const arg of argDefs) {
+                if (arg.argument) {
                     expressions.push({
                         nodeId: ancestor.id,
                         nodeName,
@@ -165,10 +165,10 @@ export function getAvailableExpressions(
         }
 
         // Special handling for Schema node - add definition keys
-        if(nodeType === NodeType.SCHEMA){
+        if (nodeType === NodeType.SCHEMA) {
             const nodeData = ancestor.data as Record<string, any>;
             const definition = nodeData.schema?.definition || {};
-            for(const key of Object.keys(definition)) {
+            for (const key of Object.keys(definition)) {
                 expressions.push({
                     nodeId: ancestor.id,
                     nodeName,
@@ -186,34 +186,101 @@ export function getAvailableExpressions(
 }
 
 export const formatCellValue = (value: any, path: string): string => {
-    if(value === null || value === undefined){
+    if (value === null || value === undefined) {
         return '-';
     }
 
-    if(typeof value === 'number'){
+    if (typeof value === 'number') {
         return Number.isInteger(value)
             ? value.toLocaleString()
             : Number(value).toFixed(4).replace(/\.?0+$/, '');
     }
 
-    if(typeof value === 'string'){
-        if(path.toLowerCase().includes('createdat') || path.toLowerCase().endsWith('date')) {
+    if (typeof value === 'string') {
+        if (path.toLowerCase().includes('createdat') || path.toLowerCase().endsWith('date')) {
             return formatDistanceToNow(value);
         }
         return value;
     }
 
-    if(Array.isArray(value)) {
+    if (Array.isArray(value)) {
         return value.map((v) => formatCellValue(v, path)).join(', ');
     }
 
-    if(typeof value === 'object'){
-        if('name' in value && typeof value.name === 'string'){
+    if (typeof value === 'object') {
+        if ('name' in value && typeof value.name === 'string') {
             return String(value.name);
         }
         return JSON.stringify(value);
     }
     return String(value);
+};
+
+export const resolveDynamicColumns = (rows: any[], columns: ColumnDef[]): { columns: ColumnDef[], rows: any[] } => {
+    // First, determine all available columns by scanning rows for wildcard expansions
+    const expandedColumns: ColumnDef[] = [];
+    const expandedKeys = new Set<string>();
+
+    // Pass 1: Expand columns
+    columns.forEach(col => {
+        if (col.path.includes('*')) {
+            const match = col.path.match(/^\{\{\s*([^\.]+)\.(.+)\s*\}\}$/);
+            if (match) {
+                const [_, nodeId, propPath] = match;
+                const parts = propPath.split('*');
+                const basePath = parts[0].replace(/\.$/, '');
+                const remainingPath = parts[1] ? parts[1].replace(/^\./, '') : '';
+
+                rows.forEach(row => {
+                    const baseValue = getValueByPath(row, basePath) || getValueByPath(row, basePath.split('.').pop()!);
+
+                    if (baseValue && typeof baseValue === 'object') {
+                        console.log(`[resolveDynamicColumns] Expanding wildcard for path: ${col.path} on keys: ${Object.keys(baseValue).join(', ')}`);
+                        Object.keys(baseValue).forEach(key => {
+                            const label = col.label === 'auto' ? key : `${col.label} ${key}`;
+                            const fullPath = `${col.path}::${key}`; // internal unique path
+                            if (!expandedKeys.has(fullPath)) {
+                                expandedKeys.add(fullPath);
+                                expandedColumns.push({
+                                    label: label,
+                                    path: fullPath,
+                                    // Store meta to resolve later
+                                    _meta: { basePath, key, remainingPath }
+                                } as any);
+                            }
+                        });
+                    }
+                });
+            }
+        } else {
+            expandedColumns.push(col);
+        }
+    });
+
+    // Pass 2: Resolve values
+    const normalizedRows = rows.map(row => {
+        const enriched = { ...row };
+        expandedColumns.forEach(col => {
+            let val;
+            if ((col as any)._meta) {
+                const { basePath, key, remainingPath } = (col as any)._meta;
+                const baseValue = getValueByPath(row, basePath) || getValueByPath(row, basePath.split('.').pop()!);
+                if (baseValue && baseValue[key]) {
+                    val = remainingPath ? getValueByPath(baseValue[key], remainingPath) : baseValue[key];
+                }
+            } else {
+                val = getValueByPath(row, col.path);
+            }
+            enriched[col.label] = formatCellValue(val, col.path);
+        });
+
+        if (!enriched._id) {
+            enriched._id = row.timestep ?? row._objectKey ?? `row-${Math.random().toString(36).slice(2)}`;
+        }
+        return enriched;
+    });
+
+    return { columns: expandedColumns, rows: normalizedRows };
 };
 
 export const normalizeRows = (rows: any[], columns: ColumnDef[]) => {
@@ -224,13 +291,13 @@ export const normalizeRows = (rows: any[], columns: ColumnDef[]) => {
             enriched[path] = formatCellValue(resolved, path);
         });
 
-        if(!enriched._id){
+        if (!enriched._id) {
             enriched._id = row.timestep ?? row._objectKey ?? `row-${Math.random().toString(36).slice(2)}`;
         }
         return enriched;
     });
 };
 
-export function containsExpression(value: string): boolean{
+export function containsExpression(value: string): boolean {
     return /\{\{[^}]+\}\}/.test(value);
 }

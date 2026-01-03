@@ -1,8 +1,3 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- * Plugin Listing Service - Handles listing document queries and file retrieval
- */
-
 import { Response } from 'express';
 import { SYS_BUCKETS } from '@/config/minio';
 import { decodeMultiStream } from '@/utilities/msgpack/msgpack-stream';
@@ -26,7 +21,7 @@ export interface ListingQueryParams {
 }
 
 export interface ListingResult {
-    meta: { pluginSlug: string; listingSlug: string };
+    meta: { pluginSlug: string; listingSlug: string; columns?: { path: string; label: string }[] };
     rows: any[];
     limit: number;
     hasMore: boolean;
@@ -50,6 +45,15 @@ export interface PerFrameListingResult {
     hasMore: boolean;
 }
 
+const RESERVED_KEYS = new Set([
+    '_id',
+    'timestep',
+    'analysisId',
+    'trajectoryId',
+    'exposureId',
+    'trajectoryName'
+]);
+
 class PluginListingService {
     private readonly atomProps: AtomProperties;
 
@@ -57,9 +61,6 @@ class PluginListingService {
         this.atomProps = new AtomProperties();
     }
 
-    /**
-     * Get listing documents for a plugin
-     */
     async getListingDocuments(params: ListingQueryParams): Promise<ListingResult> {
         const { pluginSlug, listingSlug, teamId, trajectoryId } = params;
         const limit = Math.min(200, Math.max(1, params.limit || 50));
@@ -110,22 +111,58 @@ class PluginListingService {
         const hasMore = docs.length > limit;
         const slice = hasMore ? docs.slice(0, limit) : docs;
 
-        const rows = slice.map((doc: any) => ({
+        const rawRows = slice.map((doc: any) => ({
             _id: String(doc._id),
             timestep: doc.timestep,
             analysisId: String(doc.analysis),
             trajectoryId: String(doc.trajectory),
             exposureId: doc.exposureId,
             trajectoryName: doc.trajectoryName,
-            ...doc.row
+            ...(doc.row || {})
         }));
+
+        const rows = rawRows.map((r: any) => {
+            const fixed: Record<string, any> = {
+                _id: r._id,
+                timestep: r.timestep,
+                analysisId: r.analysisId,
+                trajectoryId: r.trajectoryId,
+                exposureId: r.exposureId,
+                trajectoryName: r.trajectoryName
+            };
+
+            const rest = { ...r };
+            for (const k of Object.keys(fixed)) delete rest[k];
+
+            return { ...fixed, ...rest };
+        });
+
+        const seen = new Set<string>();
+        const ordered: string[] = [];
+        const nonNull = new Set<string>();
+
+        for (const r of rows) {
+            for (const [k, v] of Object.entries(r)) {
+                if (RESERVED_KEYS.has(k)) continue;
+                if (v === null || v === undefined) continue;
+                nonNull.add(k);
+                if (!seen.has(k)) {
+                    seen.add(k);
+                    ordered.push(k);
+                }
+            }
+        }
+
+        const columns = ordered
+            .filter((k) => nonNull.has(k))
+            .map((k) => ({ path: k, label: k }));
 
         const nextCursor = hasMore
             ? `${slice[slice.length - 1].timestep}:${slice[slice.length - 1]._id}`
             : null;
 
         return {
-            meta: { pluginSlug, listingSlug },
+            meta: { pluginSlug, listingSlug, columns },
             rows,
             limit,
             hasMore,
@@ -133,16 +170,11 @@ class PluginListingService {
         };
     }
 
-    /**
-     * Get per-frame listing data with pagination
-     * Uses AtomProperties to handle exposure configuration and data unwrapping
-     */
     async getPerFrameListing(params: PerFrameListingParams): Promise<PerFrameListingResult> {
         const { trajectoryId, analysisId, exposureId, timestep } = params;
         const page = Math.max(1, params.page || 1);
         const limit = Math.min(1000, Math.max(1, params.limit || 50));
 
-        // Use AtomProperties to get exposure configuration (iterableKey)
         const config = await this.atomProps.getExposureAtomConfig(analysisId, exposureId);
         const iterableKey = config.iterableKey;
 
@@ -160,14 +192,12 @@ class PluginListingService {
         let total = 0;
         let pagedItems: any[] = [];
 
-        // Helper to extract iterable array from msgpack payload
         const resolveIterable = (payload: any): any[] => {
             if (Array.isArray(payload)) return payload;
             if (iterableKey && payload?.[iterableKey] && Array.isArray(payload[iterableKey])) {
                 return payload[iterableKey];
             }
             if (payload?.data && Array.isArray(payload.data)) return payload.data;
-            // Fallback: search for first array property
             for (const key in payload) {
                 if (Array.isArray(payload[key])) return payload[key];
             }
@@ -201,9 +231,6 @@ class PluginListingService {
         };
     }
 
-    /**
-     * Stream GLB file for an exposure
-     */
     async streamExposureGLB(
         trajectoryId: string,
         analysisId: string,
@@ -225,9 +252,6 @@ class PluginListingService {
         stream.pipe(res);
     }
 
-    /**
-     * Stream chart PNG file for an exposure
-     */
     async streamExposureChart(
         trajectoryId: string,
         analysisId: string,
@@ -249,9 +273,6 @@ class PluginListingService {
         stream.pipe(res);
     }
 
-    /**
-     * Stream exposure file (msgpack/json)
-     */
     async streamExposureFile(
         trajectoryId: string,
         analysisId: string,

@@ -177,12 +177,6 @@ const PluginExposureTable = ({
             return;
         }
 
-        // Guard against duplicate initial fetches (StrictMode)
-        // If we are doing initial fetch (no cursor or page 1) and we seemingly already fetched for these deps?
-        // But hook handles deps.
-        // We can keep `fetchedForRef` logic if we want to be extra safe, or rely on hook.
-        // Hook is safe.
-
         setError(null);
         if (isInitial || force) {
             setLoading(true);
