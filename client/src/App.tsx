@@ -24,9 +24,7 @@ import { useMemo } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { setErrorNotificationHandler } from '@/api/error-notification';
-import GlobalTransitionOverlay from '@/components/atoms/animations/GlobalTransitionOverlay';
 import Loader from '@/components/atoms/common/Loader';
-import LoadingShimmer from '@/components/atoms/animations/LoadingShimmer';
 import ToastContainer from '@/components/atoms/common/ToastContainer';
 import { useAuthStore } from '@/stores/slices/auth';
 import useToast from '@/hooks/ui/use-toast';
@@ -93,20 +91,18 @@ const App = () => {
     }), [isDesktop]);
 
     const handleExitComplete = () => {
-        if(typeof window !== 'undefined'){
+        if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
             document.body.style.transform = '';
         }
     };
 
-    return(
+    return (
         <div style={containerStyle}>
             <AnimatePresence>
                 {isLoading && <AuthLoadingOverlay />}
             </AnimatePresence>
 
-            <GlobalTransitionOverlay />
-            <LoadingShimmer />
             <ToastContainer />
 
             <AnimatePresence

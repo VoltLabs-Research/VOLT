@@ -24,14 +24,14 @@ import { Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/atoms/auth/ProtectedRoute';
 import DashboardLayout from '@/components/atoms/dashboard/DashboardLayout';
 import SettingsLayout from '@/components/organisms/settings/SettingsLayout';
-import PageWrapper from '@/components/atoms/animations/PageWrapper';
+import PageTransition from '@/components/atoms/animations/PageTransition';
 import { routesConfig } from './config';
 import type { RouteConfig } from './types';
 
 const wrapWithPageWrapper = (Component: React.ComponentType) => (
-    <PageWrapper>
+    <PageTransition>
         <Component />
-    </PageWrapper>
+    </PageTransition>
 );
 
 export const renderPublicRoutes = () => {
