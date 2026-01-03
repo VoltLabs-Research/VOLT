@@ -287,6 +287,29 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 		return () => { window.removeEventListener('keydown', handleKeyDown); };
 	}, [tools, toggleCanvasGrid, toggleEditorWidgets, activeModel]);
 
+	// Listen for custom camera command events from keyboard shortcuts
+	useEffect(() => {
+		const handleCameraCommand = (e: CustomEvent<{ command: string }>) => {
+			if (!orbitControlsRef.current) return;
+
+			const { command } = e.detail;
+
+			if (command === 'reset-camera') {
+				// Reset to default camera position
+				orbitControlsRef.current.object.position.set(8, 8, 6);
+				orbitControlsRef.current.object.up.set(0, 0, 1);
+				orbitControlsRef.current.target.set(0, 0, 0);
+				orbitControlsRef.current.object.lookAt(0, 0, 0);
+				orbitControlsRef.current.update();
+			}
+		};
+
+		window.addEventListener('volterra:camera-command', handleCameraCommand as EventListener);
+		return () => {
+			window.removeEventListener('volterra:camera-command', handleCameraCommand as EventListener);
+		};
+	}, []);
+
 	useEffect(() => {
 		return () => {
 			if (interactionTimeoutRef.current) {

@@ -6,11 +6,15 @@ import TimestepViewer from '@/components/organisms/scene/TimestepViewer';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import useCanvasPresence from '@/hooks/canvas/use-canvas-presence';
 import useRequireTrajectory from '@/hooks/trajectory/use-require-trajectory';
+import useKeyboardShortcuts from '@/hooks/ui/use-keyboard-shortcuts';
 import CanvasWidgets from '@/components/atoms/scene/CanvasWidgets';
 import CanvasPresenceAvatars from '@/components/atoms/scene/CanvasPresenceAvatars';
 import PreloadingOverlay from '@/components/atoms/common/PreloadingOverlay';
+import KeyboardShortcutsPanel from '@/components/organisms/common/KeyboardShortcutsPanel';
+import ShortcutFeedback from '@/components/atoms/common/ShortcutFeedback';
 import { useEditorStore } from '@/stores/slices/editor';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
+import { useKeyboardShortcutsStore } from '@/stores/slices/ui/keyboard-shortcuts-slice';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
 import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
 import Loader from '@/components/atoms/common/Loader';
@@ -33,6 +37,16 @@ const EditorPage: React.FC = () => {
 
     // Subscribe to team jobs for real-time updates
     useTeamJobs();
+
+    // Initialize keyboard shortcuts for canvas
+    useKeyboardShortcuts();
+    const setCurrentScope = useKeyboardShortcutsStore((s) => s.setCurrentScope);
+
+    // Set canvas scope when entering the page
+    useEffect(() => {
+        setCurrentScope('canvas');
+        return () => setCurrentScope('global');
+    }, [setCurrentScope]);
 
     // Ensure the trajectory is loaded
     const { trajectory: loadedTrajectory, isLoading: trajectoryLoading, isReady: trajectoryReady } = useRequireTrajectory({
@@ -97,8 +111,13 @@ const EditorPage: React.FC = () => {
                     position={CANVAS_CONFIG.timestepViewerDefaults.position}
                 />
             </Scene3D>
+
+            {/* Keyboard Shortcuts UI */}
+            <KeyboardShortcutsPanel />
+            <ShortcutFeedback />
         </Container>
     );
 };
 
 export default React.memo(EditorPage);
+

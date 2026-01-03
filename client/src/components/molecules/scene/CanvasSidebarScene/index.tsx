@@ -10,6 +10,7 @@ import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import { useUIStore } from '@/stores/slices/ui';
 import { Skeleton } from '@mui/material';
+import ExposureSkeleton from '@/components/atoms/scene/ExposureSkeleton';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
 import Popover from '@/components/molecules/common/Popover';
@@ -590,7 +591,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
 
                             {isExpanded && isLoading && (
                                 <Container className='analysis-section-content'>
-                                    <Skeleton variant="rounded" height={40} sx={{ borderRadius: 1 }} />
+                                    <ExposureSkeleton count={3} compact />
                                 </Container>
                             )}
 

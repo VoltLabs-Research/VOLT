@@ -21,10 +21,12 @@
  */
 
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import PlayControls from '@/components/molecules/scene/PlayControls';
 import TimestepSlider from '@/components/molecules/scene/TimestepSlider';
 import SpeedControl from '@/components/molecules/scene/SpeedControl';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
+import Container from '@/components/primitives/Container';
 import { useEditorStore } from '@/stores/slices/editor';
 import './TimestepControls.css';
 
@@ -36,6 +38,7 @@ const TimestepControls: React.FC = () => {
     const togglePlay = useEditorStore((state) => state.togglePlay);
     const setPlaySpeed = useEditorStore((state) => state.setPlaySpeed);
     const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
+    const isModelLoading = useEditorStore((state) => state.isModelLoading);
 
     if (currentTimestep === undefined) return null;
 
@@ -46,13 +49,30 @@ const TimestepControls: React.FC = () => {
                 onPlayPause={togglePlay}
             />
 
-            <TimestepSlider
-                currentTimestep={currentTimestep}
-                maxTimestep={timestepData.maxTimestep}
-                availableTimesteps={timestepData.timesteps}
-                onTimestepChange={setCurrentTimestep}
-                disabled={false}
-            />
+            <Container className='timestep-slider-wrapper p-relative flex-1'>
+                <TimestepSlider
+                    currentTimestep={currentTimestep}
+                    maxTimestep={timestepData.maxTimestep}
+                    availableTimesteps={timestepData.timesteps}
+                    onTimestepChange={setCurrentTimestep}
+                    disabled={false}
+                />
+
+                {/* Frame loading indicator */}
+                <AnimatePresence>
+                    {isModelLoading && (
+                        <motion.div
+                            className="frame-loading-indicator"
+                            initial={{ opacity: 0, scaleX: 0 }}
+                            animate={{ opacity: 1, scaleX: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <div className="frame-loading-bar" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </Container>
 
             <SpeedControl
                 playSpeed={playSpeed}
@@ -63,3 +83,4 @@ const TimestepControls: React.FC = () => {
 };
 
 export default TimestepControls;
+

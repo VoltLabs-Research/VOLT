@@ -1,0 +1,85 @@
+.exposure-skeleton-container {
+    padding: 0.25rem 0;
+}
+
+.exposure-skeleton-item {
+    padding: 0.5rem;
+    border-radius: var(--radius-md);
+}
+
+.exposure-skeleton-item.compact {
+    padding: 0.375rem;
+}
+
+/* Shimmer animation base */
+.shimmer {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.04) 0%,
+            rgba(255, 255, 255, 0.12) 50%,
+            rgba(255, 255, 255, 0.04) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Icon skeleton */
+.exposure-skeleton-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.exposure-skeleton-item.compact .exposure-skeleton-icon {
+    width: 28px;
+    height: 28px;
+}
+
+/* Content skeletons */
+.exposure-skeleton-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.exposure-skeleton-title {
+    height: 14px;
+    width: 75%;
+    border-radius: 4px;
+}
+
+.exposure-skeleton-subtitle {
+    height: 10px;
+    width: 50%;
+    border-radius: 3px;
+}
+
+/* Stagger effect enhancement */
+.exposure-skeleton-item:nth-child(2) .shimmer {
+    animation-delay: 0.15s;
+}
+
+.exposure-skeleton-item:nth-child(3) .shimmer {
+    animation-delay: 0.3s;
+}
+
+.exposure-skeleton-item:nth-child(4) .shimmer {
+    animation-delay: 0.45s;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .shimmer {
+        animation: none;
+        background: rgba(255, 255, 255, 0.08);
+    }
+}
