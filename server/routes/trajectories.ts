@@ -46,6 +46,7 @@ rbac.groupBy(Action.DELETE, authMiddleware.protect)
     .route('/:id', middleware.requireTeamMembershipForTrajectory, controller.deleteOne);
 
 rbac.groupBy(Action.READ, authMiddleware.optionalAuth, middleware.checkTeamMembershipForTrajectory)
+    .route('/:id/download', controller.downloadDumps)
     .route('/:id/:timestep/:analysisId', controller.getGLB)
     .route('/:id/preview', controller.getPreview)
     .route('/:id', controller.getOne);

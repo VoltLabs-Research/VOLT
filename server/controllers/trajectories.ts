@@ -4,7 +4,7 @@ import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import DumpStorage from '@/services/trajectory/dump-storage';
 import processAndCreateTrajectory from '@/utilities/trajectory/create-trajectory';
-import { catchAsync } from '@/utilities/runtime/runtime';
+import { catchAsync, slugify } from '@/utilities/runtime/runtime';
 import { getMetricsByTeamId } from '@/utilities/metrics/team';
 import { Trajectory, Team, DailyActivity } from '@/models';
 import { TeamActivityType } from '@/models/daily-activity';
@@ -12,6 +12,7 @@ import { getAnyTrajectoryPreview, sendImage } from '@/utilities/raster';
 import { Resource } from '@/constants/resources';
 import getFrameGlbReadStream from '@/utilities/trajectory/get-glb-read-stream';
 import SimulationAtoms from '@/services/trajectory/atoms';
+import archiver from 'archiver';
 
 export default class TrajectoryController extends BaseController<any> {
     constructor() {
@@ -136,7 +137,7 @@ export default class TrajectoryController extends BaseController<any> {
         const { timestep, exposureId, page: pageStr, pageSize: pageSizeStr } = req.query;
         const trajectoryId = res.locals.trajectory._id.toString();
 
-        if(!timestep || !exposureId){
+        if (!timestep || !exposureId) {
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
         }
 
@@ -146,6 +147,30 @@ export default class TrajectoryController extends BaseController<any> {
         const simulationAtoms = new SimulationAtoms(trajectoryId, timestep as string);
         const populatedAtoms = await simulationAtoms.getFrameAtoms(analysisId, exposureId as string, page, pageSize);
         res.status(200).json({ status: 'success', ...populatedAtoms });
+    });
+
+    public downloadDumps = catchAsync(async (req: Request, res: Response) => {
+        const trajectoryId = res.locals.trajectory._id.toString();
+        const trajectory = res.locals.trajectory;
+
+        const timesteps = await DumpStorage.listDumps(trajectoryId);
+        if (timesteps.length === 0) {
+            throw new RuntimeError(ErrorCodes.TRAJECTORY_FILE_NOT_FOUND, 404);
+        }
+
+        const archiveName = slugify(trajectory.name || 'trajectory');
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${archiveName}-dumps.zip"`);
+
+        const archive = archiver('zip', { zlib: { level: 5 } });
+        archive.pipe(res);
+
+        for (const timestep of timesteps) {
+            const stream = await DumpStorage.getDumpStream(trajectoryId, timestep);
+            archive.append(stream, { name: `timestep-${timestep}.dump` });
+        }
+
+        await archive.finalize();
     });
 
     public getGLB = catchAsync(async (req: Request, res: Response) => {

@@ -76,6 +76,22 @@ const trajectoryApi = {
         await client.request('delete', `/${id}`);
     },
 
+    async downloadDumps(trajectoryId: string, trajectoryName?: string): Promise<void> {
+        const response = await client.request<Blob>('get', `/${trajectoryId}/download`, {
+            config: { responseType: 'blob' },
+            dedupe: false
+        });
+
+        const url = URL.createObjectURL(response.data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${trajectoryName || 'trajectory'}-dumps.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
     async getPreview(
         trajectoryId: string,
         options?: { headers?: Record<string, string>; timeout?: number }

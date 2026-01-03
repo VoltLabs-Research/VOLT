@@ -2,7 +2,7 @@ import React, { useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PiAtomThin, PiDotsThreeVerticalBold, PiImagesSquareThin } from 'react-icons/pi';
 import { RxTrash } from "react-icons/rx";
-import { HiOutlineViewfinderCircle } from "react-icons/hi2";
+import { HiOutlineViewfinderCircle, HiArrowDownTray } from "react-icons/hi2";
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import EditableTrajectoryName from '@/components/atoms/trajectory/EditableTrajectoryName';
@@ -16,6 +16,7 @@ import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
 import { useRasterStore } from '@/stores/slices/raster';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
+import trajectoryApi from '@/services/api/trajectory/trajectory';
 import type { Trajectory } from '@/types/models';
 import './SimulationCard.css';
 
@@ -140,6 +141,14 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
 
     const handleShare = (): void => {
     };
+
+    const handleDownload = useCallback(async () => {
+        try {
+            await trajectoryApi.downloadDumps(trajectory._id, trajectory.name);
+        } catch (error) {
+            console.error('Download failed:', error);
+        }
+    }, [trajectory._id, trajectory.name]);
 
     const shouldShowPreview = previewBlobUrl && !previewError;
     const shouldShowPlaceholder = !shouldShowPreview || previewLoading;
@@ -279,6 +288,9 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                     >
                         <PopoverMenuItem icon={<HiOutlineViewfinderCircle />} onClick={handleViewScene}>
                             View Scene
+                        </PopoverMenuItem>
+                        <PopoverMenuItem icon={<HiArrowDownTray />} onClick={handleDownload}>
+                            Download Dumps
                         </PopoverMenuItem>
                         <PopoverMenuItem icon={<PiImagesSquareThin />} onClick={handleRasterize}>
                             Rasterize
