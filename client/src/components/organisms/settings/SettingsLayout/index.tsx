@@ -5,7 +5,7 @@ import './SettingsLayout.css';
 
 const SettingsLayout: React.FC = () => {
     return (
-        <Container className='settings-layout-container vh-max w-max'>
+        <Container className='settings-layout-container flex-1 d-flex column w-max overflow-hidden'>
             <main className='settings-main y-auto flex-1'>
                 <div className='settings-content-wrapper'>
                     <Outlet />

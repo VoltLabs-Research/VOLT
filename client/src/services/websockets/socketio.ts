@@ -23,7 +23,7 @@
 import { io, Socket } from 'socket.io-client';
 import Logger from '@/services/common/logger';
 
-export interface SocketOptions{
+export interface SocketOptions {
     url?: string;
     path?: string;
     auth?: Record<string, any>;
@@ -34,12 +34,12 @@ export interface SocketOptions{
     timeout?: number;
 }
 
-export interface EventSubscription{
+export interface EventSubscription {
     event: string;
     callback: (...args: any[]) => void;
 }
 
-class SocketIOService{
+class SocketIOService {
     private socket: Socket | null = null;
     private subscriptions: EventSubscription[] = [];
     private connectionUrl: string;
@@ -52,7 +52,7 @@ class SocketIOService{
     private connectionListeners: Array<(connected: boolean) => void> = [];
     private logger: Logger = new Logger('socket-io-service');
 
-    constructor(baseUrl: string, options: SocketOptions = {}){
+    constructor(baseUrl: string, options: SocketOptions = {}) {
         this.connectionUrl = options.url || baseUrl;
         this.logger.log('Socket URL:', this.connectionUrl);
 
@@ -60,22 +60,22 @@ class SocketIOService{
             path: options.path || '/socket.io',
             autoConnect: options.autoConnect ?? true,
             reconnection: options.reconnection ?? true,
-            reconnectionAttempts: options.reconnectionAttempts ?? 5,
+            reconnectionAttempts: options.reconnectionAttempts ?? Infinity,
             reconnectionDelay: options.reconnectionDelay ?? 1000,
             timeout: options.timeout ?? 20000,
             auth: options.auth || {}
         };
 
-        this.maxReconnectionAttempts = this.options.reconnectionAttempts || 5;
+        this.maxReconnectionAttempts = this.options.reconnectionAttempts || Infinity;
         this.autoReconnect = this.options.reconnection ?? true;
 
-        if(this.options.autoConnect){
+        if (this.options.autoConnect) {
             this.connect();
         }
     }
 
-    public connect(): Promise<void>{
-        if(this.socket?.connected || this.connecting){
+    public connect(): Promise<void> {
+        if (this.socket?.connected || this.connecting) {
             return Promise.resolve();
         }
 
@@ -83,7 +83,7 @@ class SocketIOService{
         this.manualDisconnect = false;
 
         return new Promise((resolve, reject) => {
-            try{
+            try {
                 this.socket = io(this.connectionUrl, {
                     path: this.options.path,
                     reconnection: this.options.reconnection,
@@ -104,27 +104,27 @@ class SocketIOService{
                 });
 
                 this.socket.on('disconnect', (reason) => this.handleDisconnect(reason));
-            }catch(error){
+            } catch (error) {
                 this.connecting = false;
                 reject(error);
             }
         });
     }
 
-    public disconnect(): void{
-        if(!this.socket) return;
+    public disconnect(): void {
+        if (!this.socket) return;
 
         this.manualDisconnect = true;
         this.socket.disconnect();
         this.notifyConnectionListeners(false);
     }
 
-    public isConnected(): boolean{
+    public isConnected(): boolean {
         return !!this.socket?.connected;
     }
 
-    public on<T= any>(event: string, callback: (data: T) => void): () => void{
-        if(!event || typeof callback !== 'function'){
+    public on<T = any>(event: string, callback: (data: T) => void): () => void {
+        if (!event || typeof callback !== 'function') {
             throw new Error('Event name and callback function are required');
         }
 
@@ -133,9 +133,9 @@ class SocketIOService{
             (sub) => sub.event === event && sub.callback === callback
         );
 
-        if(existingSubscription){
+        if (existingSubscription) {
             // Already subscribed, don't add duplicate
-            return() => {
+            return () => {
                 this.off(event, callback);
             };
         }
@@ -143,7 +143,7 @@ class SocketIOService{
         const subscription: EventSubscription = { event, callback };
         this.subscriptions.push(subscription);
 
-        if(this.socket){
+        if (this.socket) {
             this.socket.on(event, callback);
         }
 
@@ -153,49 +153,49 @@ class SocketIOService{
         };
     }
 
-    public off(event: string, callback?: (...args: any[]) => void): void{
-        if(!event) return;
+    public off(event: string, callback?: (...args: any[]) => void): void {
+        if (!event) return;
 
         // Remove from our subscription list
-        if(callback){
+        if (callback) {
             this.subscriptions = this.subscriptions.filter((sub) => sub.event !== event || sub.callback !== callback);
-        }else{
+        } else {
             this.subscriptions = this.subscriptions.filter((sub) => sub.event !== event);
         }
 
         // Remove from socket in connected
-        if(this.socket){
-            if(callback){
+        if (this.socket) {
+            if (callback) {
                 this.socket.off(event, callback);
-            }else{
+            } else {
                 this.socket.off(event);
             }
         }
     }
 
-    public emit<T = any>(event: string, data?: any): Promise<T>{
-        if(!event){
+    public emit<T = any>(event: string, data?: any): Promise<T> {
+        if (!event) {
             return Promise.reject(new Error('Event name is required'));
         }
 
-        if(!this.socket?.connected){
+        if (!this.socket?.connected) {
             return Promise.reject(new Error('Socket is not connected'));
         }
 
         return new Promise((resolve, reject) => {
-            try{
+            try {
                 this.socket!.emit(event, data, (response: T) => {
                     resolve(response);
                 });
-            }catch(error){
+            } catch (error) {
                 this.logger.error(`Error emitting ${event}:`, error);
                 reject(error);
             }
         });
     }
 
-    public subscribeToTrajectory(trajectoryId: string, user: any, previousTrajectoryId?: string){
-        if(!this.socket?.connected){
+    public subscribeToTrajectory(trajectoryId: string, user: any, previousTrajectoryId?: string) {
+        if (!this.socket?.connected) {
             this.logger.error('Cannot subscribe to trajectory: Socket not connected');
             return Promise.reject(new Error('not connected'));
         }
@@ -204,15 +204,15 @@ class SocketIOService{
         return this.emit('subscribe_to_trajectory', { trajectoryId, user, previousTrajectoryId });
     }
 
-    public onConnectionChange(listener: (connected: boolean) => void): () => void{
+    public onConnectionChange(listener: (connected: boolean) => void): () => void {
         this.connectionListeners.push(listener);
-        return() => {
+        return () => {
             this.connectionListeners = this.connectionListeners.filter((l) => l !== listener);
         };
     }
 
-    public subscribeToTeam(teamId: string, previousTeamId?: string): void{
-        if(!this.socket?.connected){
+    public subscribeToTeam(teamId: string, previousTeamId?: string): void {
+        if (!this.socket?.connected) {
             this.logger.error('Cannot subscribe to team: Socket not connected');
             return;
         }
@@ -221,20 +221,20 @@ class SocketIOService{
         this.socket.emit('subscribe_to_team', { teamId, previousTeamId });
     }
 
-    public updateAuth(auth: Record<string, any>): void{
+    public updateAuth(auth: Record<string, any>): void {
         this.options.auth = { ...this.options.auth, ...auth };
 
-        if(this.socket?.connected){
+        if (this.socket?.connected) {
             this.disconnect();
             this.connect().catch(this.logger.error);
         }
     }
 
-    public getCurrentToken(): string | null{
+    public getCurrentToken(): string | null {
         return this.options.auth?.token || null;
     }
 
-    private handleConnect(){
+    private handleConnect() {
         this.connectionAttempts = 0;
         this.connecting = false;
         this.notifyConnectionListeners(true);
@@ -242,30 +242,30 @@ class SocketIOService{
         this.resubscribeToEvents();
     }
 
-    private handleDisconnect(reason: string){
+    private handleDisconnect(reason: string) {
         this.logger.log('Socket disconnected:', reason);
         this.notifyConnectionListeners(false);
 
         // If the connection was not initiated by the client and auto-reconnect is enabled
-        if(reason !== 'io client disconnect' && !this.manualDisconnect && this.autoReconnect){
+        if (reason !== 'io client disconnect' && !this.manualDisconnect && this.autoReconnect) {
             this.connect().catch(this.logger.error);
         }
     }
 
-    private handleConnectError(error: any, reject: any = null){
+    private handleConnectError(error: any, reject: any = null) {
         this.logger.error('Socket connection error:', error);
         this.connectionAttempts += 1;
 
-        if(this.connectionAttempts >= this.maxReconnectionAttempts){
+        if (this.connectionAttempts >= this.maxReconnectionAttempts) {
             this.connecting = false;
-            if(reject){
+            if (reject) {
                 reject(new Error(`Failed to connect after ${this.maxReconnectionAttempts} attempts: ${error.message}`));
             }
         }
     }
 
-    private resubscribeToEvents(): void{
-        if(!this.socket) return;
+    private resubscribeToEvents(): void {
+        if (!this.socket) return;
 
         // When reconnecting, the socket.io client creates a new connection
         // so we need to re-register all listeners. However, we should NOT
@@ -275,17 +275,17 @@ class SocketIOService{
         // Socket.io automatically clears listeners on disconnect, so we can
         // safely re-add all subscriptions from our subscription list
         this.subscriptions.forEach((sub) => {
-            if(this.socket){
+            if (this.socket) {
                 this.socket.on(sub.event, sub.callback);
             }
         });
     }
 
-    private notifyConnectionListeners(connected: boolean): void{
+    private notifyConnectionListeners(connected: boolean): void {
         this.connectionListeners.forEach((listener) => {
-            try{
+            try {
                 listener(connected);
-            }catch(error){
+            } catch (error) {
                 this.logger.error('Error in connection listener:', error);
             }
         });
@@ -294,7 +294,7 @@ class SocketIOService{
 
 // Initialize socket service with token if available
 const getInitialAuth = () => {
-    try{
+    try {
         const token = localStorage.getItem('authToken');
         return token ? { token } : {};
     } catch {
