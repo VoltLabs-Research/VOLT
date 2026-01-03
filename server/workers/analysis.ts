@@ -31,55 +31,25 @@ import '@/services/nodes/handlers';
 import { NodeType } from '@/types/models/plugin';
 import { precomputeListingRowsForTimesteps } from '@/services/plugin/precompute-listing-row';
 import DumpStorage from '@/services/trajectory/dump-storage';
-import path from 'node:path';
+import { findDescendantByType } from '@/utilities/plugins/workflow-utils';
 
 const extractListingSlugs = (plugin: any): string[] => {
-    const nodes = plugin?.workflow?.nodes || [];
-    const edges = plugin?.workflow?.edges || [];
-
-    // construir adjacency (source -> [targets])
-    const outMap = new Map<string, string[]>();
-    for (const e of edges) {
-        const arr = outMap.get(e.source) || [];
-        arr.push(e.target);
-        outMap.set(e.source, arr);
-    }
+    const workflow = plugin?.workflow;
+    if (!workflow?.nodes) return [];
 
     const result = new Set<string>();
-    const exposures = nodes.filter((n: any) => n.type === NodeType.EXPOSURE);
+    const exposures = workflow.nodes.filter((n: any) => n.type === NodeType.EXPOSURE);
 
     for (const exp of exposures) {
         const listingSlug = exp?.data?.exposure?.name;
         if (!listingSlug) continue;
 
-        const q = [exp.id];
-        const visited = new Set<string>();
+        const visualizerNode = findDescendantByType(exp.id, workflow, NodeType.VISUALIZERS);
+        const listing = visualizerNode?.data?.visualizers?.listing;
+        const hasListing = listing && typeof listing === 'object' && Object.keys(listing).length > 0;
 
-        while (q.length) {
-            const id = q.shift()!;
-            if (visited.has(id)) continue;
-            visited.add(id);
-
-            const children = outMap.get(id) || [];
-            for (const childId of children) {
-                const child = nodes.find((x: any) => x.id === childId);
-                if (!child) continue;
-
-                const listing = child?.data?.visualizers?.listing;
-                const hasListing =
-                    child.type === NodeType.VISUALIZERS &&
-                    listing &&
-                    typeof listing === 'object' &&
-                    Object.keys(listing).length > 0;
-
-                if (hasListing) {
-                    result.add(listingSlug);
-                    q.length = 0; // early exit BFS para este exposure
-                    break;
-                }
-
-                q.push(childId);
-            }
+        if (hasListing) {
+            result.add(listingSlug);
         }
     }
 
@@ -165,13 +135,12 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
             );
         }
 
-        // Precompute listing rows (NO MinIO)
         try {
             const teamId = String((job as any).teamId || '');
             if (teamId) {
                 const timestep = resolveJobTimestep(job);
                 const listingSlugs = extractListingSlugs(plugin);
-
+                console.log('------------------------ LISTING SLUGS:', listingSlugs);
                 if (listingSlugs.length) {
                     await Promise.all(
                         listingSlugs.map((listingSlug) =>

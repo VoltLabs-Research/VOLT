@@ -30,7 +30,7 @@ const MessageSchema: Schema<IMessage> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Chat',
         required: true,
-        cascade: 'delete'
+        inverse: { path: 'messages', behavior: 'addToSet' }
     },
     sender: {
         type: Schema.Types.ObjectId,

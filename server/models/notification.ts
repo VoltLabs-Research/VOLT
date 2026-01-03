@@ -29,7 +29,6 @@ const NotificationSchema: Schema<INotification> = new Schema({
     recipient: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        cascade: 'delete',
         required: true,
         index: true
     },

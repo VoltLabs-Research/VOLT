@@ -10,6 +10,7 @@ import { getMinMaxNative } from '@/parsers/lammps/native-stats';
 import path from 'path';
 import DumpStorage from './dump-storage';
 import TrajectoryParserFactory from '@/parsers/factory';
+import logger from '@/logger';
 
 type AnyPlugin = any;
 
@@ -40,16 +41,23 @@ export default class AtomProperties {
         const props: Record<string, string[]> = {};
         const visualizerNodes = plugin.workflow.nodes.filter((node: any) => node.type === NodeType.VISUALIZERS);
 
+        logger.debug(`[AtomProperties.getModifierPerAtomProps] Found ${visualizerNodes.length} visualizer nodes`);
+
         for (const visualizerNode of visualizerNodes) {
             const perAtom = visualizerNode?.data?.visualizers?.perAtomProperties;
+            logger.debug(`[AtomProperties.getModifierPerAtomProps] Visualizer ${visualizerNode.id} perAtomProperties: ${JSON.stringify(perAtom)}`);
+            
             if (!Array.isArray(perAtom) || perAtom.length === 0) continue;
 
             const exposureNode = findAncestorByType(visualizerNode.id, plugin.workflow, NodeType.EXPOSURE as any);
+            logger.debug(`[AtomProperties.getModifierPerAtomProps] Found ancestor exposure for visualizer ${visualizerNode.id}: ${exposureNode?.id || 'none'}`);
+            
             if (exposureNode?.id) {
                 props[String(exposureNode.id)] = perAtom;
             }
         }
 
+        logger.debug(`[AtomProperties.getModifierPerAtomProps] Final props: ${JSON.stringify(props)}`);
         return props;
     }
 

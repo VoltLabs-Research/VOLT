@@ -311,7 +311,6 @@ const PluginSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Team',
         required: true,
-        cascade: 'delete',
         inverse: { path: 'plugins', behavior: 'addToSet' }
     },
     slug: {

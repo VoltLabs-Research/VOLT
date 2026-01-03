@@ -313,6 +313,7 @@ export const usePluginStore = create<PluginState>((set, get) => ({
 
             let supportsCanvas = false;
             let supportsRaster = false;
+            let hasPerAtomProperties = false;
             let exportConfig: IExportData | undefined;
 
             const stack = [...(workflowIndex.outgoingBySource.get(exposureNodeId) ?? [])];
@@ -328,6 +329,12 @@ export const usePluginStore = create<PluginState>((set, get) => ({
                     const flags = readVisualizersFlags(targetNode);
                     supportsCanvas = supportsCanvas || flags.canvas;
                     supportsRaster = supportsRaster || flags.raster;
+                    
+                    // Check for perAtomProperties
+                    const perAtom = targetNode.data?.visualizers?.perAtomProperties;
+                    if (Array.isArray(perAtom) && perAtom.length > 0) {
+                        hasPerAtomProperties = true;
+                    }
                     continue;
                 }
 
@@ -345,7 +352,12 @@ export const usePluginStore = create<PluginState>((set, get) => ({
             const matchesContext = context === 'canvas' ? supportsCanvas : supportsRaster;
             const exportsGlb = exportConfig?.type === 'glb';
 
-            if (!matchesContext || !exportsGlb) {
+            // Include exposure if it matches context and exports GLB, OR if it has perAtomProperties
+            if (!matchesContext && !hasPerAtomProperties) {
+                continue;
+            }
+            
+            if (!exportsGlb && !hasPerAtomProperties) {
                 continue;
             }
 

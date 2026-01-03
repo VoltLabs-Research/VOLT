@@ -109,6 +109,12 @@ const deletePluginArtifacts = async (analysis: IAnalysis | null) => {
 
     try {
         await storage.deleteByPrefix(SYS_BUCKETS.PLUGINS, prefix);
+        
+        // Delete PluginExposureMeta and PluginListingRow documents
+        await Promise.all([
+            mongoose.model('PluginExposureMeta').deleteMany({ analysis: analysisId }),
+            mongoose.model('PluginListingRow').deleteMany({ analysis: analysisId })
+        ]);
     } catch (err) {
         logger.error(`[Analysis] Failed to delete plugin artifacts for analysis ${analysisId}: ${err}`);
     }

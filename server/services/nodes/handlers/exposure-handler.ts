@@ -109,6 +109,8 @@ class ExposureHandler implements NodeHandler{
         const hasListing = Boolean(visualizerNode?.data?.visualizers?.listing && Object.keys(visualizerNode.data.visualizers.listing).length);
         const needsMetadata = hasListing;
 
+        logger.debug(`[ExposureHandler] Exposure ${node.id} (${config.name}): hasListing=${hasListing}, needsMetadata=${needsMetadata}, visualizerNode=${visualizerNode?.id || 'none'}, listing=${JSON.stringify(visualizerNode?.data?.visualizers?.listing || {})}`);
+
         const concurrency = Math.max(1, parseInt(process.env.EXPOSURE_HANDLER_CONCURRENCY || '4', 10));
         const limit = pLimit(concurrency);
 
@@ -143,6 +145,7 @@ class ExposureHandler implements NodeHandler{
                 }
 
                 if(metadata && Object.keys(metadata).length){
+                    logger.debug(`[ExposureHandler] Creating PluginExposureMeta for exposure ${exposureId}, timestep ${timestep}, metadata keys: ${Object.keys(metadata).join(', ')}`);
                     await PluginExposureMeta.updateOne({
                         analysis: context.analysisId,
                         exposureId: exposureId,
@@ -157,6 +160,8 @@ class ExposureHandler implements NodeHandler{
                             metadata
                         }
                     }, { upsert: true });
+                } else {
+                    logger.debug(`[ExposureHandler] Skipping PluginExposureMeta for exposure ${exposureId}, timestep ${timestep} - no metadata or empty. needsMetadata=${needsMetadata}, metadata=${JSON.stringify(metadata)}`);
                 }
 
                 return {

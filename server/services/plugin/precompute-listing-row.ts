@@ -2,6 +2,7 @@ import { PluginListingRow, PluginExposureMeta, Trajectory, Analysis, Plugin } fr
 import { buildNodeMap, buildParentMap, resolveRow } from '@/utilities/plugins/listing-resolver';
 import { NodeType } from '@/types/models/modifier';
 import type { IWorkflowNode } from '@/types/models/modifier';
+import logger from '@/logger';
 
 type Column = {
     path: string;
@@ -54,15 +55,18 @@ export const precomputeListingRowsForTimesteps = async (
         timesteps: number[]
     }
 ) => {
+    console.log('PRE COMPUTE LISTING ROWS:', params.listingSlug);
     const plugin = await Plugin.findById(params.pluginId).select('_id workflow').lean();
     if(!plugin) return;
 
     const { nodes, edges } = plugin.workflow;
     const columns = extractColumnsFromVisualizer(nodes, edges, params.listingSlug);
+    console.log('COLUMNS:', columns);
     if(!columns.length) return;
 
     const exposureIds = nodes.filter((node) => node.type === NodeType.EXPOSURE).map((node) => node.id);
     const primaryExposureId = findPrimaryExposureId(nodes, params.listingSlug);
+    console.log('primary exposure id:', primaryExposureId);
     if(!primaryExposureId) return;
 
     const nodeMap = buildNodeMap(nodes);
@@ -82,6 +86,10 @@ export const precomputeListingRowsForTimesteps = async (
         .select('timestep exposureId metadata')
         .lean();
 
+    console.log('metas:', metas);
+
+    logger.debug(`[PrecomputeListingRow] Found ${metas.length} PluginExposureMeta for listing "${params.listingSlug}", primaryExposureId: ${primaryExposureId}, exposureIds: ${exposureIds.join(', ')}`);
+
     const byTimestep = new Map<number, Map<string, any>>();
     for(const meta of metas){
         const timestep = meta.timestep;
@@ -97,11 +105,11 @@ export const precomputeListingRowsForTimesteps = async (
     const ops: any[] = [];
     for(const timestep of params.timesteps){
         const perExposure = byTimestep.get(timestep);
-        if(!perExposure || !perExposure.has(primaryExposureId)) continue;
 
+        // Build exposureData even if no metas exist - use empty objects as fallback
         const exposureData = new Map<string, any>();
         for(const id of exposureIds){
-            exposureData.set(id, perExposure.get(id) ?? {});
+            exposureData.set(id, perExposure?.get(id) ?? {});
         }
 
         const ctx = {

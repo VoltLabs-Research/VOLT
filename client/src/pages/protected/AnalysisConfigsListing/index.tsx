@@ -59,6 +59,13 @@ const AnalysisConfigsListing = () => {
         [handleMenuAction]
     );
 
+    const formatDate = useCallback((value: any) => {
+        if (!value) return '-';
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return '-';
+        return formatDistanceToNow(date, { addSuffix: true });
+    }, []);
+
     const columns: ColumnConfig[] = useMemo(() => [
         {
             title: 'Trajectory',
@@ -86,24 +93,24 @@ const AnalysisConfigsListing = () => {
             title: 'Started At',
             sortable: true,
             key: 'startedAt',
-            render: (value) => formatDistanceToNow(value, { addSuffix: true }),
+            render: (value) => formatDate(value),
             skeleton: { variant: 'text', width: 100 }
         },
         {
             title: 'Finished At',
             sortable: true,
             key: 'finishedAt',
-            render: (value) => formatDistanceToNow(value, { addSuffix: true }),
+            render: (value) => formatDate(value),
             skeleton: { variant: 'text', width: 100 }
         },
         {
             title: 'Created',
             sortable: true,
             key: 'createdAt',
-            render: (value) => formatDistanceToNow(value, { addSuffix: true }),
+            render: (value) => formatDate(value),
             skeleton: { variant: 'text', width: 100 }
         }
-    ], []);
+    ], [formatDate]);
 
     const handleLoadMore = useCallback(async () => {
         if (!team?._id || !listingMeta.hasMore || isFetchingMore) return;

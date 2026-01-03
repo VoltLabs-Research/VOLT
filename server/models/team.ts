@@ -20,8 +20,7 @@ const TeamSchema = new Schema({
     owner: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: [true, ValidationCodes.TEAM_OWNER_REQUIRED],
-        cascade: 'delete'
+        required: [true, ValidationCodes.TEAM_OWNER_REQUIRED]
     },
     admins: [{
         type: Schema.Types.ObjectId,
@@ -48,13 +47,17 @@ const TeamSchema = new Schema({
     trajectories: [{
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
-        cascade: 'pull',
+        inverse: { path: 'team', behavior: 'set' }
+    }],
+    chats: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Chat',
+        cascade: 'delete',
         inverse: { path: 'team', behavior: 'set' }
     }],
     plugins: [{
         type: Schema.Types.ObjectId,
         ref: 'Plugin',
-        cascade: 'delete',
         inverse: { path: 'team', behavior: 'set' }
     }]
 }, {

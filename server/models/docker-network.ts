@@ -30,7 +30,6 @@ const DockerNetworkSchema = new Schema<IDockerNetwork>({
         type: Schema.Types.ObjectId,
         ref: 'Container',
         required: false,
-        cascade: 'delete',
         inverse: { path: 'network', behavior: 'set' }
     }
 }, {

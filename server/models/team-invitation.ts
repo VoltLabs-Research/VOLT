@@ -44,19 +44,17 @@ const TeamInvitationSchema: Schema<ITeamInvitation> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Team',
         required: [true, ValidationCodes.TEAM_INVITATION_TEAM_REQUIRED],
-        cascade: 'delete',
+        inverse: { path: 'invitations', behavior: 'addToSet' },
         index: true
     },
     invitedBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: [true, ValidationCodes.TEAM_INVITATION_INVITED_BY_REQUIRED],
-        cascade: 'delete'
+        required: [true, ValidationCodes.TEAM_INVITATION_INVITED_BY_REQUIRED]
     },
     invitedUser: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        cascade: 'delete',
         index: true
     },
     email: {

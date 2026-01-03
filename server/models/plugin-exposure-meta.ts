@@ -22,15 +22,13 @@ const PluginExposureMetaSchema = new Schema<IPluginExposureMeta>({
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
         required: true,
-        index: true,
-        cascade: 'delete'
+        index: true
     },
     analysis: {
         type: Schema.Types.ObjectId,
         ref: 'Analysis',
         required: true,
-        index: true,
-        cascade: 'delete'
+        index: true
     },
     exposureId: {
         type: String,

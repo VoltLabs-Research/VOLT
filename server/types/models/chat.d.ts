@@ -25,6 +25,7 @@ import { Document } from 'mongoose';
 export interface IChat extends Document {
     participants: mongoose.Types.ObjectId[];
     team: mongoose.Types.ObjectId;
+    messages: mongoose.Types.ObjectId[];
     lastMessage?: mongoose.Types.ObjectId;
     lastMessageAt?: Date;
     isActive: boolean;

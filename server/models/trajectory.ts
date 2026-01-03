@@ -60,7 +60,6 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Team',
         required: true,
-        cascade: 'delete',
         inverse: { path: 'trajectories', behavior: 'addToSet' }
     },
     createdBy: {
@@ -81,7 +80,7 @@ const TrajectorySchema: Schema<ITrajectory> = new Schema({
     analysis: [{
         type: Schema.Types.ObjectId,
         ref: 'Analysis',
-        cascade: 'pull',
+        cascade: 'delete',
         inverse: { path: 'trajectory', behavior: 'set' },
         default: []
     }],
@@ -145,6 +144,17 @@ TrajectorySchema.pre('findOneAndDelete', async function (next) {
             } catch (err) {
                 logger.error(err)
             }
+        }
+
+        // Clean up plugin artifacts
+        try {
+            await Promise.all([
+                mongoose.model('PluginExposureMeta').deleteMany({ trajectory: trajectoryId }),
+                mongoose.model('PluginListingRow').deleteMany({ trajectory: trajectoryId })
+            ]);
+            logger.info(`Cleaned up plugin artifacts for trajectory: ${trajectoryId}`);
+        } catch (err) {
+            logger.error(`Failed to clean up plugin artifacts: ${err}`);
         }
 
         next();

@@ -35,12 +35,17 @@ const ChatSchema: Schema<IChat> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Team',
         required: [true, ValidationCodes.CHAT_TEAM_REQUIRED],
-        cascade: 'delete'
+        inverse: { path: 'chats', behavior: 'addToSet' }
     },
-    lastMessage: {
+    messages: [{
         type: Schema.Types.ObjectId,
         ref: 'Message',
-        cascade: 'delete'
+        cascade: 'delete',
+        inverse: { path: 'chat', behavior: 'set' }
+    }],
+    lastMessage: {
+        type: Schema.Types.ObjectId,
+        ref: 'Message'
     },
     lastMessageAt: {
         type: Date
