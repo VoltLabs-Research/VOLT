@@ -10,6 +10,8 @@ import * as path from 'node:path';
 import { Worker } from 'worker_threads';
 import { ITrajectory } from '@/types/models/trajectory';
 import { CloudUploadJob } from '@/types/services/cloud-upload';
+import unzipper from 'unzipper';
+import { createReadStream } from 'node:fs';
 
 interface CreateTrajectoryOptions {
     files: any[];
@@ -226,8 +228,73 @@ const processFilesInBackground = async (
     const workingDir = path.join(tempBaseDir, trajectoryIdStr);
     await fs.mkdir(workingDir, { recursive: true });
 
+    const finalFiles: any[] = [];
+
+    for (const file of files) {
+        const isZip = file.mimetype === 'application/zip' || file.originalname.endsWith('.zip');
+
+        if (isZip) {
+            let zipPath = file.path;
+            const tempZipName = `upload_${Date.now()}_${Math.random().toString(36).substring(7)}.zip`;
+
+            // If multers didn't save to disk (memory storage), write buffer to temp file
+            if (!zipPath && file.buffer) {
+                zipPath = path.join(workingDir, tempZipName);
+                await fs.writeFile(zipPath, file.buffer);
+            }
+
+            if (zipPath) {
+                try {
+                    // Extract ZIP contents
+                    await createReadStream(zipPath)
+                        .pipe(unzipper.Extract({ path: workingDir }))
+                        .promise();
+
+                    const getFilesRecursive = async (dir: string): Promise<string[]> => {
+                        const dirents = await fs.readdir(dir, { withFileTypes: true });
+                        const files = await Promise.all(dirents.map((dirent) => {
+                            const res = path.resolve(dir, dirent.name);
+                            return dirent.isDirectory() ? getFilesRecursive(res) : res;
+                        }));
+                        return Array.prototype.concat(...files);
+                    };
+
+                    const allFiles = await getFilesRecursive(workingDir);
+                    console.log(`[createTrajectory] Found ${allFiles.length} files after extraction in ${workingDir}`);
+
+                    for (const fullPath of allFiles) {
+                        const filename = path.basename(fullPath);
+
+                        // Skip the zip file itself and hidden files
+                        if (filename === path.basename(zipPath)) continue;
+                        if (filename === tempZipName) continue;
+                        if (filename.startsWith('.')) continue;
+                        if (filename === '__MACOSX') continue;
+
+                        const stats = await fs.stat(fullPath);
+
+                        finalFiles.push({
+                            path: fullPath,
+                            originalname: filename,
+                            size: stats.size
+                        });
+                    }
+
+
+                    // Optional: Delete the temp zip file to save space
+                    // await fs.unlink(zipPath).catch(() => {});
+                } catch (e) {
+                    console.error(`[createTrajectory] Failed to extract zip ${file.originalname}:`, e);
+                }
+            }
+        } else {
+            // Processing normal file
+            finalFiles.push(file);
+        }
+    }
+
     // Use worker thread for parsing (non-blocking)
-    const validFiles = await parseFilesWithWorker(trajectoryIdStr, files, workingDir, onProgress);
+    const validFiles = await parseFilesWithWorker(trajectoryIdStr, finalFiles, workingDir, onProgress);
 
     if (validFiles.length === 0) {
         await Trajectory.findByIdAndUpdate(trajectoryIdStr, { status: 'failed' });

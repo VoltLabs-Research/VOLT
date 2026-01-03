@@ -405,13 +405,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         // If this part of the function is executed it means that the maximum attempt has been reached.
         this.logError(`Job ${job.jobId} failed after ${maxAttempts} attempts. Removing from queue permanently.`);
 
-        await this.setJobStatus(job.jobId, 'failed', {
-            ...job,
-            retries: currentAttempt,
-            error,
-            finalAttempt: true,
-            processingTimeMs: processingTime,
-        });
+        const statusKey = `${this.statusKeyPrefix}${job.jobId}`;
+        await this.redis.del(statusKey);
 
         await this.redis.del(retryCountKey);
 
