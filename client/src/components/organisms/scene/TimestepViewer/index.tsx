@@ -1,5 +1,6 @@
 import React, { useMemo, forwardRef, useImperativeHandle } from 'react';
 import { useEditorStore } from '@/stores/slices/editor';
+import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import SingleModelViewer from '@/components/molecules/scene/SingleModelViewer';
 
 interface TimestepViewerProps {
@@ -52,11 +53,57 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
 }, ref) => {
     // Get activeScenes from store
     const storeActiveScenes = useEditorStore((state) => state.activeScenes);
+    const plugins = usePluginStore((state) => state.plugins);
 
-    // Determine scenes to render: props override > store activeScenes
+    // Helper to check if a scene is a chart export (not a GLB)
+    const isChartScene = React.useCallback((scene: any) => {
+        if (scene.source !== 'plugin') return false;
+        const { exposureId } = scene;
+        if (!exposureId) return false;
+
+        for (const plugin of plugins) {
+            const exposureNode = plugin.workflow.nodes.find((n: any) => n.id === exposureId);
+            if (!exposureNode) continue;
+
+            // Build adjacency map for BFS traversal
+            const adjacency = new Map<string, string[]>();
+            for (const edge of plugin.workflow.edges) {
+                const targets = adjacency.get(edge.source) || [];
+                targets.push(edge.target);
+                adjacency.set(edge.source, targets);
+            }
+
+            // BFS to find export node downstream from exposure
+            const visited = new Set<string>();
+            const queue = [exposureId];
+            let exportNode: any = null;
+
+            while (queue.length > 0) {
+                const currentId = queue.shift()!;
+                if (visited.has(currentId)) continue;
+                visited.add(currentId);
+
+                const node = plugin.workflow.nodes.find((n: any) => n.id === currentId);
+                if (node?.type === 'export') {
+                    exportNode = node;
+                    break;
+                }
+
+                const neighbors = adjacency.get(currentId) || [];
+                queue.push(...neighbors);
+            }
+
+            if (exportNode?.data?.export?.type === 'chart-png') {
+                return true;
+            }
+        }
+        return false;
+    }, [plugins]);
+
+    // Filter out chart scenes (they're handled by CanvasWidgets, not as 3D models)
     const scenesToRender = useMemo(() => {
-        return storeActiveScenes.length > 0 ? storeActiveScenes : [];
-    }, [storeActiveScenes]);
+        return storeActiveScenes.filter(scene => !isChartScene(scene));
+    }, [storeActiveScenes, isChartScene]);
 
     // Track the Y-dimensions of loaded models to position them correctly
     const [modelHeights, setModelHeights] = React.useState<Record<number, number>>({});

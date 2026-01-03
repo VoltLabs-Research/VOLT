@@ -28,11 +28,13 @@ export enum ModifierContext {
 export enum Exporter {
     ATOMISTIC = 'AtomisticExporter',
     MESH = 'MeshExporter',
-    DISLOCATION = 'DislocationExporter'
+    DISLOCATION = 'DislocationExporter',
+    CHART = 'ChartExporter'
 };
 
 export enum ExportType {
-    GLB = 'glb'
+    GLB = 'glb',
+    CHART_PNG = 'chart-png'
 };
 
 export enum PluginStatus {

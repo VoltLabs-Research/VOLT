@@ -167,9 +167,15 @@ export const EXPORTER_OPTIONS = [{
 }, {
     value: Exporter.DISLOCATION,
     label: 'Dislocation Exporter'
+}, {
+    value: Exporter.CHART,
+    label: 'Chart Exporter'
 }];
 
 export const EXPORT_TYPE_OPTIONS = [{
     value: ExportType.GLB,
-    label: 'GLB(3D Model)'
+    label: 'GLB (3D Model)'
+}, {
+    value: ExportType.CHART_PNG,
+    label: 'Chart (PNG Image)'
 }];

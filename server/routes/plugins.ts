@@ -56,6 +56,7 @@ rbac.groupBy(Action.DELETE)
 
 rbac.groupBy(Action.READ, trajMiddleware.checkTeamMembershipForTrajectory)
     .route('/glb/:id/:analysisId/:exposureId/:timestep', controller.getPluginExposureGLB)
+    .route('/chart/:id/:analysisId/:exposureId/:timestep', controller.getPluginExposureChart)
     .route('/file/:id/:analysisId/:exposureId/:timestep/:filename', controller.getPluginExposureFile)
     .route('/listing/:pluginSlug/:listingSlug/:id', controller.getPluginListingDocuments)
     .route('/per-frame-listing/:id/:analysisId/:exposureId/:timestep', controller.getPerFrameListing);

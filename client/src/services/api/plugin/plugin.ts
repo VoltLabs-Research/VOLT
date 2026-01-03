@@ -170,6 +170,23 @@ const pluginApi = {
         });
 
         return response.data.data;
+    },
+
+    async getChartImage(
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string,
+        timestep: number | string
+    ): Promise<string> {
+        const response = await client.request<Blob>(
+            'get',
+            `/chart/${trajectoryId}/${analysisId}/${exposureId}/${timestep}`,
+            {
+                config: { responseType: 'blob' as AxiosRequestConfig['responseType'] },
+                dedupe: false
+            }
+        );
+        return URL.createObjectURL(response.data);
     }
 };
 

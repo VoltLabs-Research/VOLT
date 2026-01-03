@@ -159,6 +159,26 @@ export default class PluginsController extends BaseController<IPlugin> {
         }
     });
 
+    public getPluginExposureChart = catchAsync(async (req: Request, res: Response) => {
+        const { timestep, analysisId, exposureId } = req.params;
+        const { trajectory } = res.locals;
+
+        try {
+            await pluginListingService.streamExposureChart(
+                trajectory._id.toString(),
+                analysisId,
+                exposureId,
+                timestep,
+                res
+            );
+        } catch (err) {
+            res.status(404).json({
+                status: 'error',
+                data: { error: `Chart not found for exposure ${exposureId} at timestep ${timestep}` }
+            });
+        }
+    });
+
     public getPluginExposureFile = catchAsync(async (req: Request, res: Response) => {
         const { timestep, analysisId, exposureId } = req.params;
         const filename = req.params.filename || 'file.msgpack';

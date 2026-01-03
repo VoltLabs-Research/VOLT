@@ -29,6 +29,7 @@ import SlicePlane from '@/components/organisms/scene/SlicePlane';
 import TimestepControls from '@/components/organisms/scene/TimestepControls';
 import ModifierConfiguration from '@/components/organisms/form/ModifierConfiguration';
 import ChartViewer from '@/components/organisms/common/ChartViewer';
+import ChartImageViewer from '@/components/organisms/common/ChartImageViewer';
 import PluginResultsViewer from '@/components/organisms/scene/PluginResultsViewer';
 import Draggable from '@/components/atoms/common/Draggable';
 import { useEditorStore } from '@/stores/slices/editor';
@@ -36,6 +37,7 @@ import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import ColorCoding from '@/components/organisms/scene/ColorCoding';
 import ParticleFilter from '@/components/organisms/scene/ParticleFilter';
 import PerformanceMonitor from '@/components/organisms/scene/PerformanceMonitor';
+import { Exporter, ExportType } from '@/types/plugin';
 import type { Trajectory } from '@/types/models';
 
 interface CanvasWidgetsProps {
@@ -60,16 +62,33 @@ const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: C
             const exposureNode = plugin.workflow.nodes.find((n: any) => n.id === exposureId);
             if (!exposureNode) continue;
 
-            // Find connected export node
-            const exportNode = plugin.workflow.nodes.find((n: any) =>
-                n.type === 'export' &&
-                plugin.workflow.edges.some((e: any) =>
-                    e.target === n.id && (
-                        e.source === exposureId ||
-                        plugin.workflow.edges.some((e2: any) => e2.source === exposureId && e2.target === e.source)
-                    )
-                )
-            );
+            // Build adjacency map for BFS traversal
+            const adjacency = new Map<string, string[]>();
+            for (const edge of plugin.workflow.edges) {
+                const targets = adjacency.get(edge.source) || [];
+                targets.push(edge.target);
+                adjacency.set(edge.source, targets);
+            }
+
+            // BFS to find export node downstream from exposure
+            const visited = new Set<string>();
+            const queue = [exposureId];
+            let exportNode: any = null;
+
+            while (queue.length > 0) {
+                const currentId = queue.shift()!;
+                if (visited.has(currentId)) continue;
+                visited.add(currentId);
+
+                const node = plugin.workflow.nodes.find((n: any) => n.id === currentId);
+                if (node?.type === 'export') {
+                    exportNode = node;
+                    break;
+                }
+
+                const neighbors = adjacency.get(currentId) || [];
+                queue.push(...neighbors);
+            }
 
             return {
                 results: exposureNode.data?.exposure?.results,
@@ -79,7 +98,10 @@ const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: C
         return null;
     }, [activeScene, plugins]);
 
-    const isChart = (activeExposure?.export?.exporter as string) === 'ChartExporter';
+    // Check if this is a chart export (pre-rendered PNG from backend)
+    const isChartExporter = activeExposure?.export?.exporter === Exporter.CHART;
+    const isChartPngExport = activeExposure?.export?.type === ExportType.CHART_PNG;
+    const isChart = isChartExporter || isChartPngExport;
     const [showChart, setShowChart] = useState(false);
 
     useEffect(() => {
@@ -129,15 +151,26 @@ const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: C
                     minHeight={300}
                 >
                     <div className='chart-viewer-container primary-surface p-absolute overflow-hidden'>
-                        <ChartViewer
-                            trajectoryId={trajectory?._id || ''}
-                            analysisId={(activeScene as any).analysisId}
-                            exposureId={(activeScene as any).exposureId}
-                            timestep={currentTimestep || 0}
-                            options={activeExposure?.export?.options as any}
-                            filename={activeExposure?.results || ''}
-                            onClose={() => setShowChart(false)}
-                        />
+                        {isChartPngExport ? (
+                            <ChartImageViewer
+                                trajectoryId={trajectory?._id || ''}
+                                analysisId={(activeScene as any).analysisId}
+                                exposureId={(activeScene as any).exposureId}
+                                timestep={currentTimestep || 0}
+                                title={activeExposure?.export?.options?.title}
+                                onClose={() => setShowChart(false)}
+                            />
+                        ) : (
+                            <ChartViewer
+                                trajectoryId={trajectory?._id || ''}
+                                analysisId={(activeScene as any).analysisId}
+                                exposureId={(activeScene as any).exposureId}
+                                timestep={currentTimestep || 0}
+                                options={activeExposure?.export?.options as any}
+                                filename={activeExposure?.results || ''}
+                                onClose={() => setShowChart(false)}
+                            />
+                        )}
                     </div>
                 </Draggable>
             )}

@@ -329,7 +329,7 @@ export const usePluginStore = create<PluginState>((set, get) => ({
                     const flags = readVisualizersFlags(targetNode);
                     supportsCanvas = supportsCanvas || flags.canvas;
                     supportsRaster = supportsRaster || flags.raster;
-                    
+
                     // Check for perAtomProperties
                     const perAtom = targetNode.data?.visualizers?.perAtomProperties;
                     if (Array.isArray(perAtom) && perAtom.length > 0) {
@@ -351,13 +351,14 @@ export const usePluginStore = create<PluginState>((set, get) => ({
 
             const matchesContext = context === 'canvas' ? supportsCanvas : supportsRaster;
             const exportsGlb = exportConfig?.type === 'glb';
+            const exportsChart = exportConfig?.type === 'chart-png';
 
-            // Include exposure if it matches context and exports GLB, OR if it has perAtomProperties
+            // Include exposure if it matches context and exports GLB or chart, OR if it has perAtomProperties
             if (!matchesContext && !hasPerAtomProperties) {
                 continue;
             }
-            
-            if (!exportsGlb && !hasPerAtomProperties) {
+
+            if (!exportsGlb && !exportsChart && !hasPerAtomProperties) {
                 continue;
             }
 

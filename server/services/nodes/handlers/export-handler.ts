@@ -1,6 +1,6 @@
-import { Exporter, NodeType } from '@/types/models/plugin';
-import { IWorkflowNode } from '@/types/models/modifier';
-import { NodeHandler, ExecutionContext } from '@/services/nodes/node-registry';
+import { NodeType } from '@/types/models/plugin';
+import { Exporter, ExportType, IWorkflowNode } from '@/types/models/modifier';
+import { NodeHandler, ExecutionContext, resolveTemplate } from '@/services/nodes/node-registry';
 import { T, NodeOutputSchema } from '@/services/nodes/schema-types';
 import { findAncestorByType, getNestedValue } from '@/utilities/plugins/workflow-utils';
 import { decodeMultiStream, decodeMultiStreamFromFile } from '@/utilities/msgpack/msgpack-stream';
@@ -9,6 +9,7 @@ import { slugify } from '@/utilities/runtime/runtime';
 import AtomisticExporter from '@/utilities/export/atoms';
 import DislocationExporter from '@/utilities/export/dislocations';
 import MeshExporter from '@/utilities/export/mesh';
+import ChartExporter from '@/utilities/export/chart';
 import logger from '@/logger';
 import storage from '@/services/storage';
 
@@ -28,23 +29,23 @@ class ExportHandler implements NodeHandler {
         }
     };
 
-    private mergeChunkedValue(target: any, incoming: any): any{
-        if(incoming === undefined || incoming === null) return target;
-        if(target === undefined || target === null) return incoming;
+    private mergeChunkedValue(target: any, incoming: any): any {
+        if (incoming === undefined || incoming === null) return target;
+        if (target === undefined || target === null) return incoming;
 
-        if(Array.isArray(target) && Array.isArray(incoming)){
+        if (Array.isArray(target) && Array.isArray(incoming)) {
             target.push(...incoming);
             return target;
         }
 
-        if(target && incoming && typeof target === 'object' && typeof incoming === 'object'){
-            for(const [key, value] of Object.entries(incoming)){
+        if (target && incoming && typeof target === 'object' && typeof incoming === 'object') {
+            for (const [key, value] of Object.entries(incoming)) {
                 const existing = (target as any)[key];
-                if(Array.isArray(existing) && Array.isArray(value)){
+                if (Array.isArray(existing) && Array.isArray(value)) {
                     existing.push(...value);
-                }else if(existing && value && typeof existing === 'object' && typeof value === 'object'){
+                } else if (existing && value && typeof existing === 'object' && typeof value === 'object') {
                     (target as any)[key] = this.mergeChunkedValue(existing, value);
-                }else{
+                } else {
                     (target as any)[key] = value;
                 }
             }
@@ -57,9 +58,9 @@ class ExportHandler implements NodeHandler {
     private async readChunkedData(
         iterable: AsyncIterable<unknown>,
         iterableKey?: string
-    ): Promise<any>{
+    ): Promise<any> {
         let data: any = null;
-        for await (const msg of iterable){
+        for await (const msg of iterable) {
             const chunkData = iterableKey ? getNestedValue(msg as any, iterableKey) : msg;
             data = this.mergeChunkedValue(data, chunkData);
         }
@@ -69,12 +70,12 @@ class ExportHandler implements NodeHandler {
     private async loadExposureData(
         item: any,
         iterableKey?: string
-    ): Promise<any>{
-        if(item?.localPath){
+    ): Promise<any> {
+        if (item?.localPath) {
             return this.readChunkedData(decodeMultiStreamFromFile(item.localPath), iterableKey);
         }
 
-        if(item?.storageKey){
+        if (item?.storageKey) {
             const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, item.storageKey);
             return this.readChunkedData(decodeMultiStream(stream as AsyncIterable<Uint8Array>), iterableKey);
         }
@@ -94,10 +95,19 @@ class ExportHandler implements NodeHandler {
         const exportResults: any[] = [];
         const iterableKey = exposureNode.data?.exposure?.iterable;
 
+        // Determine folder and extension based on export type
+        const isChartExport = config.type === ExportType.CHART_PNG || config.exporter === Exporter.CHART;
+        const folder = isChartExport ? 'charts' : 'glb';
+        const extension = isChartExport ? 'png' : config.type;
+
         for (const item of exposureResults) {
             let data = item.data;
 
-            if (!item.error && (data === undefined || data === null)) {
+            // For chart exports, ALWAYS reload the full data from localPath
+            // because ExposureHandler pre-filters using iterableKey, but charts need all fields (e.g. rdf.x, rdf.y)
+            if (isChartExport && item.localPath) {
+                data = await this.loadExposureData(item, undefined); // No iterableKey = full data
+            } else if (!item.error && (data === undefined || data === null)) {
                 data = await this.loadExposureData(item, iterableKey);
             }
 
@@ -110,14 +120,17 @@ class ExportHandler implements NodeHandler {
                 continue;
             }
 
-            const objectName = `trajectory-${context.trajectoryId}/analysis-${context.analysisId}/glb/${item.frame ?? item.index}/${slugify(exposureNode.id)}.${config.type}`;
+            const objectName = `trajectory-${context.trajectoryId}/analysis-${context.analysisId}/${folder}/${item.frame ?? item.index}/${slugify(exposureNode.id)}.${extension}`;
+
+            // Resolve template expressions in options (for chart axis keys, etc.)
+            const resolvedOptions = this.resolveChartOptions(config.options || {}, context);
 
             try {
                 await this.exportItem(
-                    config.exporter as Exporter,
+                    config.exporter,
                     data,
                     objectName,
-                    config.options || {}
+                    resolvedOptions
                 );
                 exportResults.push({
                     index: item.index,
@@ -140,11 +153,18 @@ class ExportHandler implements NodeHandler {
     }
 
     private async exportItem(
-        exporterType: Exporter,
+        exporterType: string,
         data: any,
         objectName: string,
         options: Record<string, any>
     ): Promise<void> {
+        // Handle Chart export
+        if (exporterType === Exporter.CHART) {
+            const chartExporter = new ChartExporter();
+            await chartExporter.toPNGMinIO(data, objectName, options as any);
+            return;
+        }
+
         // For AtomisticExporter, check if data is already grouped by structure type
         if (exporterType === Exporter.ATOMISTIC) {
             const exporter = new AtomisticExporter();
@@ -185,12 +205,71 @@ class ExportHandler implements NodeHandler {
         await exporter.toGLBMinIO(data, objectName, options);
     }
 
-    private getExporter(exporterType: Exporter): any {
+    private getExporter(exporterType: string): any {
         switch (exporterType) {
-            case Exporter.ATOMISTIC: return new AtomisticExporter();
-            case Exporter.DISLOCATION: return new DislocationExporter();
-            case Exporter.MESH: return new MeshExporter();
+            case Exporter.ATOMISTIC:
+                return new AtomisticExporter();
+            case Exporter.DISLOCATION:
+                return new DislocationExporter();
+            case Exporter.MESH:
+                return new MeshExporter();
+            default:
+                throw new Error(`Unknown exporter type: ${exporterType}`);
         }
+    }
+
+    /**
+     * Resolve template expressions in chart options.
+     * For xAxisKey/yAxisKey, if they reference a schema definition, extract the data path.
+     * E.g., {{ schemaNodeId.definition.rdf.x }} -> "rdf.x"
+     */
+    private resolveChartOptions(
+        options: Record<string, any>,
+        context: ExecutionContext
+    ): Record<string, any> {
+        const resolved: Record<string, any> = {};
+
+        for (const [key, value] of Object.entries(options)) {
+            if (typeof value === 'string' && value.includes('{{')) {
+                // Check if this is an axis key that references a schema definition
+                if (key === 'xAxisKey' || key === 'yAxisKey') {
+                    resolved[key] = this.resolveSchemaPathReference(value);
+                } else {
+                    // Regular template resolution
+                    resolved[key] = resolveTemplate(value, context);
+                }
+            } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                // Recursively resolve nested objects
+                resolved[key] = this.resolveChartOptions(value, context);
+            } else {
+                resolved[key] = value;
+            }
+        }
+
+        return resolved;
+    }
+
+    /**
+     * Resolve a schema definition reference to the actual data path.
+     * E.g., "{{ schemaNodeId.definition.rdf.x }}" -> "rdf.x"
+     */
+    private resolveSchemaPathReference(template: string): string {
+        const match = template.match(/\{\{\s*([^}]+)\s*\}\}/);
+        if (!match) return template;
+
+        const ref = match[1].trim();
+        const parts = ref.split('.');
+
+        // Check if this is a schema definition reference (contains ".definition.")
+        const definitionIndex = parts.indexOf('definition');
+        if (definitionIndex !== -1 && definitionIndex < parts.length - 1) {
+            // Extract the path after "definition"
+            const dataPath = parts.slice(definitionIndex + 1).join('.');
+            return dataPath;
+        }
+
+        // Fallback: return as-is
+        return template;
     }
 };
 

@@ -26,11 +26,36 @@ export enum ModifierContext {
 export enum Exporter {
     ATOMISTIC = 'AtomisticExporter',
     MESH = 'MeshExporter',
-    DISLOCATION = 'DislocationExporter'
+    DISLOCATION = 'DislocationExporter',
+    CHART = 'ChartExporter'
 };
 
 export enum ExportType {
-    GLB = 'glb'
+    GLB = 'glb',
+    CHART_PNG = 'chart-png'
+};
+
+export enum ChartType {
+    LINE = 'line',
+    BAR = 'bar',
+    SCATTER = 'scatter',
+    AREA = 'area'
+};
+
+export interface IChartExportOptions {
+    xAxisKey: string;
+    yAxisKey: string;
+    chartType: ChartType;
+    title?: string;
+    xAxisLabel?: string;
+    yAxisLabel?: string;
+    width?: number;
+    height?: number;
+    backgroundColor?: string;
+    lineColor?: string;
+    fillColor?: string;
+    showGrid?: boolean;
+    showLegend?: boolean;
 };
 
 export enum PluginStatus {

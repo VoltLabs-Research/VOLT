@@ -226,6 +226,30 @@ class PluginListingService {
     }
 
     /**
+     * Stream chart PNG file for an exposure
+     */
+    async streamExposureChart(
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string,
+        timestep: string,
+        res: Response
+    ): Promise<void> {
+        const exposureKey = slugify(exposureId);
+        const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/charts/${timestep}/${exposureKey}.png`;
+
+        const stat = await storage.getStat(SYS_BUCKETS.PLUGINS, objectName);
+        const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, objectName);
+
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Content-Length', stat.size);
+        res.setHeader('Content-Disposition', `inline; filename="${exposureId}_${timestep}.png"`);
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+
+        stream.pipe(res);
+    }
+
+    /**
      * Stream exposure file (msgpack/json)
      */
     async streamExposureFile(
