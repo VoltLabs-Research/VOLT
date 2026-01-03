@@ -4,6 +4,7 @@ import type { ColumnConfig } from '@/components/organisms/common/DocumentListing
 import EmptyState from '@/components/atoms/common/EmptyState';
 import { Skeleton } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { List, type RowComponentProps } from 'react-window';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
@@ -114,7 +115,12 @@ const RowBase = ({
   };
 
   const content = (
-    <button type="button" style={rowStyle} className="document-listing-table-row-container cursor-pointer">
+    <motion.button
+      type="button"
+      style={rowStyle}
+      className="document-listing-table-row-container cursor-pointer"
+      transition={{ duration: 0.1 }}
+    >
       {columns.map((col, colIdx) => {
         const cellValue = item?.[col.key];
         const title = String(cellValue ?? '');
@@ -142,7 +148,7 @@ const RowBase = ({
           </div>
         );
       })}
-    </button>
+    </motion.button>
   );
 
   if (menuOptions.length === 0) return content;

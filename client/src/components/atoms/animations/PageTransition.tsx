@@ -8,9 +8,9 @@ interface PageTransitionProps {
 const pageVariants = {
     initial: {
         opacity: 0,
-        scale: 0.99,
-        y: 10, // Slight offset from bottom
-        filter: 'blur(10px)'
+        scale: 0.98, // Slightly more subtle scale
+        y: 10,
+        filter: 'blur(8px)' // Reduce blur slightly for performance
     },
     enter: {
         opacity: 1,
@@ -18,17 +18,18 @@ const pageVariants = {
         y: 0,
         filter: 'blur(0px)',
         transition: {
-            duration: 0.4,
-            ease: [0.2, 0.65, 0.3, 0.9] as any, // Custom cubic bezier for "Apple-like" feel
+            duration: 0.5,
+            ease: [0.32, 0.72, 0, 1] as any, // "Fluid" Apple-like bezier
+            staggerChildren: 0.1
         }
     },
     exit: {
         opacity: 0,
-        scale: 1.01, // Subtle expansion on exit
-        filter: 'blur(10px)',
+        scale: 1.02,
+        filter: 'blur(4px)',
         transition: {
             duration: 0.3,
-            ease: 'easeIn' as any
+            ease: [0.32, 0.72, 0, 1] as any
         }
     }
 };

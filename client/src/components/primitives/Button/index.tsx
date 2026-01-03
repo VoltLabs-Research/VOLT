@@ -1,14 +1,18 @@
 import React, { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import type { HTMLMotionProps } from 'framer-motion';
 import './Button.css';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends HTMLMotionProps<"button"> {
     /**
      * Visual style of the button
      * @default 'solid'
      */
     variant?: 'solid' | 'soft' | 'outline' | 'ghost';
+
+    children?: React.ReactNode;
 
     /**
      * Color theme/intent of the button
@@ -99,21 +103,21 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     children,
     onClick,
     type = 'button',
-        ...props
+    ...props
 }, ref) => {
     const navigate = useNavigate();
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-        if(isLoading || disabled){
+        if (isLoading || disabled) {
             e.preventDefault();
             return;
         }
 
-        if(onClick){
+        if (onClick) {
             onClick(e);
         }
 
-        if(to){
+        if (to) {
             navigate(to);
         }
     };
@@ -133,11 +137,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
         , 'p-relative', 'items-center', 'content-center', 'font-weight-5', 'u-select-none', 'cursor-pointer'].filter(Boolean).join(' ');
 
     return (
-        <button
+        <motion.button
             ref={ref}
             type={type}
             className={classes}
             disabled={disabled || isLoading}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
             onClick={handleClick}
             {...props}
         >
@@ -150,7 +156,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
             {leftIcon && <span className="button-icon-left font-size-4">{leftIcon}</span>}
             {children}
             {rightIcon && <span className="button-icon-right">{rightIcon}</span>}
-        </button>
+        </motion.button>
     );
 });
 

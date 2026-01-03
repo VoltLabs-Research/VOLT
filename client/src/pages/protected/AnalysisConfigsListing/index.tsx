@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import { useTeamStore } from '@/stores/slices/team';
@@ -18,6 +19,8 @@ const AnalysisConfigsListing = () => {
     const listingMeta = useAnalysisConfigStore((state) => state.listingMeta);
     const { confirm } = useConfirm();
 
+    const navigate = useNavigate();
+
     // We pass these directly to DocumentListing
     const lifecycleProps = {
         listingMeta,
@@ -32,6 +35,9 @@ const AnalysisConfigsListing = () => {
     const handleMenuAction = useCallback(async (action: string, item: any) => {
         switch (action) {
             case 'view':
+                if (item?.trajectory?._id) {
+                    navigate(`/canvas/${item.trajectory._id}`);
+                }
                 break;
 
             case 'delete':

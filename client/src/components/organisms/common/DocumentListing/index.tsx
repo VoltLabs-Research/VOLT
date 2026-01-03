@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback, useMemo } from 'react'
+import { motion } from 'framer-motion';
 import useListingLifecycle, { type ListingMeta } from '@/hooks/common/use-listing-lifecycle'
 import { RxDotsHorizontal } from 'react-icons/rx'
 import { Plus } from 'lucide-react'
@@ -328,21 +329,28 @@ const DocumentListing = ({
             </Container>
 
             <Container className='document-listing-body-container overflow-auto flex-1' ref={bodyRef as any}>
-                <DocumentListingTable
-                    columns={columns}
-                    data={sortedData}
-                    onCellClick={handleSort}
-                    getCellTitle={(col: any) => <>{col.title} {getSortIndicator(col)}</>}
-                    isLoading={isLoading}
-                    getMenuOptions={wrappedGetMenuOptions}
-                    emptyMessage={emptyMessage}
-                    enableInfinite={enableInfinite}
-                    hasMore={activeHasMore}
-                    isFetchingMore={isFetchingMore}
-                    onLoadMore={activeLoadMore}
-                    keyExtractor={_keyExtractor}
-                    scrollContainerRef={bodyRef as any}
-                />
+                <motion.div
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] as any }}
+                    style={{ height: '100%' }}
+                >
+                    <DocumentListingTable
+                        columns={columns}
+                        data={sortedData}
+                        onCellClick={handleSort}
+                        getCellTitle={(col: any) => <>{col.title} {getSortIndicator(col)}</>}
+                        isLoading={isLoading}
+                        getMenuOptions={wrappedGetMenuOptions}
+                        emptyMessage={emptyMessage}
+                        enableInfinite={enableInfinite}
+                        hasMore={activeHasMore}
+                        isFetchingMore={isFetchingMore}
+                        onLoadMore={activeLoadMore}
+                        keyExtractor={_keyExtractor}
+                        scrollContainerRef={bodyRef as any}
+                    />
+                </motion.div>
             </Container>
         </Container>
     )

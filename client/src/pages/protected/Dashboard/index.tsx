@@ -1,4 +1,5 @@
 import React, { memo, useRef, useMemo } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
 import FileUpload from '@/components/molecules/common/FileUpload';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
@@ -25,10 +26,10 @@ import './Dashboard.css';
 const DashboardPage: React.FC = memo(() => {
     useTeamJobs();
     useTrajectoryUpdates();
-    
+
     // Load team data (trajectories, etc.)
     const { isLoading: isLoadingTeamData } = useRequireTeamData();
-    
+
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoadingTrajectories = useTrajectoryStore((state) => state.isLoadingTrajectories);
     const setBackgroundColor = useEditorStore((state) => state.environment.setBackgroundColor);
@@ -75,32 +76,46 @@ const DashboardPage: React.FC = memo(() => {
             <DashboardContainer className='d-flex h-max sm:column w-max gap-2 p-1   '>
                 <Container className='d-flex column dashboard-body-left-container gap-2 h-max'>
                     <Container className='scene-preview-container p-relative w-max vh-max overflow-hidden'>
-                        {isProcessing ? (
-                            <Container className='d-flex items-center gap-05 top-1 left-1 z-20 p-absolute'>
-                                <ProcessingLoader
-                                    className='scene-preview-processing'
-                                    message="Your trajectory is being processed"
-                                    completionRate={0}
-                                    isVisible={true}
-                                />
-                            </Container>
-                        ) : (trajectory?._id && currentTimestep !== undefined) && (
-                            <>
-                                <Container className='badge-container scene-preview-name-badge primary-surface p-absolute'>
-                                    <Paragraph className='font-size-2 font-weight-5'>{trajectory.name}</Paragraph>
-                                </Container>
+                        <AnimatePresence mode="wait">
+                            {isProcessing ? (
+                                <motion.div
+                                    key="processing"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className='d-flex items-center gap-05 top-1 left-1 z-20 p-absolute'
+                                >
+                                    <ProcessingLoader
+                                        className='scene-preview-processing'
+                                        message="Your trajectory is being processed"
+                                        completionRate={0}
+                                        isVisible={true}
+                                    />
+                                </motion.div>
+                            ) : (trajectory?._id && currentTimestep !== undefined) ? (
+                                <motion.div
+                                    key="badges"
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10, pointerEvents: 'none' }}
+                                >
+                                    <Container className='badge-container scene-preview-name-badge primary-surface p-absolute' style={{ pointerEvents: 'auto' }}>
+                                        <Paragraph className='font-size-2 font-weight-5'>{trajectory.name}</Paragraph>
+                                    </Container>
 
-                                <Container className='badge-container scene-preview-natoms-badge primary-surface p-absolute'>
-                                    <Paragraph className='font-size-2 font-weight-5'>
-                                        {formatNumber((trajectory.frames || []).find((f: any) => f.timestep === currentTimestep)?.natoms ?? 0)} atoms
-                                    </Paragraph>
-                                </Container>
+                                    <Container className='badge-container scene-preview-natoms-badge primary-surface p-absolute' style={{ pointerEvents: 'auto' }}>
+                                        <Paragraph className='font-size-2 font-weight-5'>
+                                            {formatNumber((trajectory.frames || []).find((f: any) => f.timestep === currentTimestep)?.natoms ?? 0)} atoms
+                                        </Paragraph>
+                                    </Container>
 
-                                <Container className='badge-container scene-preview-navigate-icon primary-surface p-absolute font-size-5 d-flex flex-center '>
-                                    <GoArrowRight />
-                                </Container>
-                            </>
-                        )}
+                                    <Container className='badge-container scene-preview-navigate-icon primary-surface p-absolute font-size-5 d-flex flex-center ' style={{ pointerEvents: 'auto' }}>
+                                        <GoArrowRight />
+                                    </Container>
+                                </motion.div>
+                            ) : null}
+                        </AnimatePresence>
 
                         <Scene3D
                             showGizmo={false}
@@ -119,22 +134,28 @@ const DashboardPage: React.FC = memo(() => {
                             )}
                         </Scene3D>
 
-                        {isProcessing && (
-                            <div
-                                style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    bottom: 0,
-                                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                                    backdropFilter: 'blur(4px)',
-                                    zIndex: 5,
-                                    borderRadius: '0.75rem',
-                                    pointerEvents: 'none'
-                                }}
-                            />
-                        )}
+                        <AnimatePresence>
+                            {isProcessing && (
+                                <motion.div
+                                    key="backdrop"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                        backdropFilter: 'blur(4px)',
+                                        zIndex: 5,
+                                        borderRadius: '0.75rem',
+                                        pointerEvents: 'none'
+                                    }}
+                                />
+                            )}
+                        </AnimatePresence>
 
                         <Container style={{ position: 'relative', zIndex: isProcessing ? 20 : 10 }}>
                             <JobsHistoryViewer hideAfterComplete={false} />

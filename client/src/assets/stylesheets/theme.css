@@ -159,7 +159,7 @@
     --status-info-bg: rgba(0, 122, 255, 0.1);
     --status-info-border: rgba(0, 122, 255, 0.2);
 
-            --hover-bg: rgba(0, 0, 0, 0.04);
+    --hover-bg: rgba(0, 0, 0, 0.04);
     --active-bg: rgba(0, 0, 0, 0.08);
     --selected-indicator: #007aff;
     --focus-ring: #007aff;

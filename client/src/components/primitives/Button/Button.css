@@ -14,9 +14,7 @@
     opacity: 0.6;
 }
 
-.button:active:not(:disabled) {
-    transform: scale(0.98);
-}
+
 
 /* --- Sizes --- */
 .button.size-sm {
