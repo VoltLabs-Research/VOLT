@@ -55,18 +55,15 @@ export const precomputeListingRowsForTimesteps = async (
         timesteps: number[]
     }
 ) => {
-    console.log('PRE COMPUTE LISTING ROWS:', params.listingSlug);
     const plugin = await Plugin.findById(params.pluginId).select('_id workflow').lean();
     if(!plugin) return;
 
     const { nodes, edges } = plugin.workflow;
     const columns = extractColumnsFromVisualizer(nodes, edges, params.listingSlug);
-    console.log('COLUMNS:', columns);
     if(!columns.length) return;
 
     const exposureIds = nodes.filter((node) => node.type === NodeType.EXPOSURE).map((node) => node.id);
     const primaryExposureId = findPrimaryExposureId(nodes, params.listingSlug);
-    console.log('primary exposure id:', primaryExposureId);
     if(!primaryExposureId) return;
 
     const nodeMap = buildNodeMap(nodes);
@@ -85,8 +82,6 @@ export const precomputeListingRowsForTimesteps = async (
     })
         .select('timestep exposureId metadata')
         .lean();
-
-    console.log('metas:', metas);
 
     logger.debug(`[PrecomputeListingRow] Found ${metas.length} PluginExposureMeta for listing "${params.listingSlug}", primaryExposureId: ${primaryExposureId}, exposureIds: ${exposureIds.join(', ')}`);
 

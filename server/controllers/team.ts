@@ -71,9 +71,7 @@ export default class TeamController extends BaseController<any>{
         const teamId = req.params.id;
         const team = res.locals.team;
         const { userId } = req.body;
-        console.log(req.body);
         const userToRemove = await User.findOne({ _id: userId });
-        console.log(userToRemove);
         if(!userToRemove) throw new RuntimeError(ErrorCodes.USER_NOT_FOUND, 404);
 
         if(team.owner.toString() === userToRemove._id.toString()){

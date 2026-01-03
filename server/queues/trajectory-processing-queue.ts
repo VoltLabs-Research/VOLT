@@ -72,13 +72,8 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
             const trajectory = await Trajectory.findById(job.trajectoryId);
             if (!trajectory) throw Error('Trajectory::NotFound');
 
+            // Queue rasterizer jobs (tracking is handled automatically by BaseProcessingQueue.addJobs)
             await rasterizeGLBs(frameGLB, SYS_BUCKETS.MODELS, SYS_BUCKETS.RASTERIZER, trajectory);
-
-            if (job.sessionId) {
-                const counterKey = `session:${job.sessionId}:remaining`;
-                await this.redis.incr(counterKey);
-                logger.info(`Incremented session counter for rasterizer preview job for trajectory ${job.trajectoryId}`);
-            }
         } catch (error) {
             logger.error(`Failed to queue preview generation for trajectory ${job.trajectoryId}: ${error}`);
         }

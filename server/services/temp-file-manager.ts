@@ -147,11 +147,26 @@ class TempFileManager {
      */
     async cleanupTrajectoryDumps(trajectoryId: string): Promise<void> {
         const dumpCacheDir = path.join(TEMP_DIR, trajectoryId);
+        logger.info(`[TempFileManager] 🗑️ Attempting to remove dump cache directory: ${dumpCacheDir}`);
+
         try {
+            // Check if directory exists first
+            const stats = await fs.stat(dumpCacheDir);
+            logger.info(`[TempFileManager] ✅ Directory exists, size info: ${JSON.stringify(stats)}`);
+
+            // List contents before deletion
+            const files = await fs.readdir(dumpCacheDir);
+            logger.info(`[TempFileManager] 📂 Directory contains ${files.length} files: ${files.join(', ')}`);
+
             await fs.rm(dumpCacheDir, { recursive: true, force: true });
-            logger.info(`[TempFileManager] Cleaned up dump cache for trajectory ${trajectoryId}`);
-        } catch (error) {
-            logger.debug(`[TempFileManager] Failed to cleanup dumps for ${trajectoryId}: ${error}`);
+            logger.info(`[TempFileManager] ✅ Successfully cleaned up dump cache for trajectory ${trajectoryId}`);
+        } catch (error: any) {
+            if (error.code === 'ENOENT') {
+                logger.info(`[TempFileManager] ℹ️ Dump cache directory does not exist for ${trajectoryId}, nothing to clean`);
+            } else {
+                logger.error(`[TempFileManager] ❌ Failed to cleanup dumps for ${trajectoryId}: ${error}`);
+                throw error;
+            }
         }
     }
 

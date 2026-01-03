@@ -32,6 +32,7 @@ import { publishJobUpdate } from '@/events/job-updates';
 import { Trajectory } from '@/models';
 import logger from '@/logger';
 import { Queues } from '@/constants/queues';
+import trajectoryJobTracker from '@/services/trajectory-job-tracker';
 
 export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitter {
     protected readonly queueName: string;
@@ -457,6 +458,23 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
                 await this.redis.del(retryCountKey);
                 await this.checkAndCleanupSession(job);
+
+                // Track job completion at trajectory level
+                try {
+                    logger.info(`[${this.queueName}] Attempting to decrement trajectory job counter for job ${job.jobId}...`);
+                    await trajectoryJobTracker.decrementJobCount({
+                        trajectoryId: job.trajectoryId,
+                        teamId: job.teamId,
+                        queueType: this.queueName,
+                        jobId: job.jobId,
+                        sessionId: job.sessionId
+                    }, 'completed');
+                    logger.info(`[${this.queueName}] Successfully decremented counter for job ${job.jobId}`);
+                } catch (trackerError) {
+                    logger.error(`[${this.queueName}] Failed to decrement trajectory job counter: ${trackerError}`);
+                    logger.error(`[${this.queueName}] Stack: ${trackerError instanceof Error ? trackerError.stack : 'N/A'}`);
+                }
+
                 await this.finishJob(workerId, rawData);
 
                 break;
@@ -467,6 +485,22 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     this.redis.expire(statusKey, this.TTL);
                     await this.checkAndCleanupSession(job);
                 }
+
+                // Track job failure at trajectory level
+                try {
+                    logger.info(`[${this.queueName}] Attempting to decrement trajectory job counter (failed) for job ${job.jobId}...`);
+                    await trajectoryJobTracker.decrementJobCount({
+                        trajectoryId: job.trajectoryId,
+                        teamId: job.teamId,
+                        queueType: this.queueName,
+                        jobId: job.jobId,
+                        sessionId: job.sessionId
+                    }, 'failed');
+                    logger.info(`[${this.queueName}] Successfully decremented counter (failed) for job ${job.jobId}`);
+                } catch (trackerError) {
+                    logger.error(`[${this.queueName}] Failed to decrement trajectory job counter (failed): ${trackerError}`);
+                }
+
                 await this.finishJob(workerId, rawData);
 
                 break;
@@ -802,6 +836,23 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }));
 
         await this.initializeSession(sessionId, sessionStartTime, jobs.length, jobsWithSession[0]);
+
+        // Track jobs at trajectory level
+        try {
+            logger.info(`[${this.queueName}] Attempting to increment trajectory job counter for ${jobs.length} jobs...`);
+            for (const job of jobsWithSession) {
+                await trajectoryJobTracker.incrementJobCount({
+                    trajectoryId: job.trajectoryId,
+                    teamId: job.teamId,
+                    queueType: this.queueName,
+                    jobId: job.jobId,
+                    sessionId
+                });
+            }
+            logger.info(`[${this.queueName}] Successfully incremented counter for ${jobs.length} jobs`);
+        } catch (trackerError) {
+            logger.error(`[${this.queueName}] Failed to increment trajectory job counter: ${trackerError}`);
+        }
 
         if (this.useStreamingAdd) {
             await this.addJobsStreaming(jobsWithSession, sessionId, sessionStartTime);

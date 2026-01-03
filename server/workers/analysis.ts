@@ -140,7 +140,6 @@ const processJob = async (job: AnalysisJob): Promise<void> => {
             if (teamId) {
                 const timestep = resolveJobTimestep(job);
                 const listingSlugs = extractListingSlugs(plugin);
-                console.log('------------------------ LISTING SLUGS:', listingSlugs);
                 if (listingSlugs.length) {
                     await Promise.all(
                         listingSlugs.map((listingSlug) =>
