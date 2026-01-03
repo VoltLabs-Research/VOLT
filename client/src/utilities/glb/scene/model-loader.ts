@@ -21,10 +21,11 @@
  */
 
 import type { ExtendedSceneState } from '@/types/canvas';
-import { Scene } from 'three';
+import { Mesh, Points, Scene } from 'three';
 import ResourceManager from '@/utilities/glb/scene/resource-manager';
 import ModelSetupManager from '@/utilities/glb/scene/model-setup-manager';
 import loadGLB from '@/utilities/glb/loader';
+import { useUIStore } from '@/stores/slices/ui';
 
 export default class ModelLoader {
     constructor(
@@ -38,7 +39,10 @@ export default class ModelLoader {
         private onLoadingStateChange: (state: any) => void
     ) { }
 
-    async load(url: string): Promise<void> {
+
+
+    async load(url: string, onEmptyData?: () => void): Promise<void> {
+
         if (this.state.lastLoadedUrl === url || this.state.isLoadingUrl) return;
 
         this.state.isLoadingUrl = true;
@@ -51,6 +55,57 @@ export default class ModelLoader {
                     progress: Math.round(progress * 100)
                 }));
             });
+
+            // Check if model has any *actually renderable* content
+            let hasData = false;
+
+            loadedModel.traverse((child) => {
+                if (hasData) return; // avoid extra work (can't truly break traverse)
+
+                // POINTS: renderable if it has positions
+                if (child instanceof Points) {
+                    const geom = child.geometry;
+                    const pos = geom?.getAttribute('position');
+                    if (pos && pos.count > 0) {
+                        hasData = true;
+                        console.log('[renderable points]', child.name || '(no-name)', child.uuid, 'points=', pos.count);
+                    }
+                    return;
+                }
+
+                // MESH: renderable only if it has triangles
+                if (child instanceof Mesh) {
+                    const geom = child.geometry;
+                    const pos = geom?.getAttribute('position');
+
+                    // no vertices => not renderable
+                    if (!pos || pos.count < 3) return;
+
+                    // with index: need at least 3 indices (1 triangle)
+                    if (geom.index) {
+                        if (geom.index.count >= 3) {
+                            hasData = true;
+                            console.log('[renderable mesh]', child.name || '(no-name)', child.uuid, 'triIndices=', geom.index.count);
+                        } else {
+                            console.warn('[non-renderable mesh] index empty', child.name || '(no-name)', child.uuid);
+                        }
+                        return;
+                    }
+
+                    // without index: Three uses every 3 vertices as a triangle
+                    if (pos.count >= 3) {
+                        hasData = true;
+                        console.log('[renderable mesh]', child.name || '(no-name)', child.uuid, 'verts=', pos.count);
+                    }
+                }
+            });
+
+
+            console.log(hasData)
+            if (!hasData) {
+                useUIStore.getState().addToast('No results found to build 3D model', 'warning');
+                if (onEmptyData) onEmptyData();
+            }
 
             const newModel = this.modelSetupManager.setup(loadedModel);
             newModel.userData.glbUrl = url;

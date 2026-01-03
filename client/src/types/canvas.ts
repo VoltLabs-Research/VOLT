@@ -10,7 +10,7 @@ export type Pos3D = {
 export type UseGlbSceneParams = {
     url?: string | null;
     sliceClippingPlanes: Plane[];
-    position: Pos3D; 
+    position: Pos3D;
     rotation: Pos3D;
     scale: number;
     enableInstancing?: boolean;
@@ -21,13 +21,14 @@ export type UseGlbSceneParams = {
     preserveInitialTransform?: boolean;
     onSelect?: () => void;
     orbitControlsRef?: React.RefObject<any>;
+    onEmptyData?: () => void;
 };
 
 export interface ExtendedSceneState extends SceneState {
     referenceScaleFactor?: number;
-    fixedReferencePoint?: Vector3 | null;
-    useFixedReference?: boolean;
-    initialTransform?: { position: Vector3; rotation: Euler; scale: number } | null;
-    failedUrls?: Set<string>;
-    isLoadingUrl?: boolean;
+    fixedReferencePoint: Vector3 | null;
+    useFixedReference: boolean;
+    initialTransform: { position: Vector3; rotation: Euler; scale: Vector3; matrix?: any } | null;
+    failedUrls: Set<string>;
+    isLoadingUrl: boolean;
 };

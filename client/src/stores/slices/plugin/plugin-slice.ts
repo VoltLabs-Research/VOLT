@@ -97,6 +97,8 @@ export interface PluginState {
         context?: 'canvas' | 'raster',
         pluginSlug?: string
     ) => Promise<RenderableExposure[]>;
+
+    fetchPlugin: (slug: string) => Promise<void>;
 }
 
 const PLUGINS_TTL_MS = 60_000;
@@ -259,6 +261,39 @@ export const usePluginStore = create<PluginState>((set, get) => ({
         });
     },
 
+    async fetchPlugin(slug: string) {
+        const state = get();
+        if (state.pluginsBySlug[slug]) return;
+
+        set({ loading: true });
+        try {
+            const plugin = await pluginApi.getPlugin(slug);
+            const nextPluginsBySlug = { ...get().pluginsBySlug };
+            nextPluginsBySlug[plugin.slug] = plugin;
+
+            // Also update modifiers if this plugin isn't there
+            const modifiers = get().modifiers;
+            const existingModifier = modifiers.find(m => m.plugin.slug === plugin.slug);
+            let nextModifiers = modifiers;
+
+            if (!existingModifier) {
+                const newModifiers = resolveModifiersFromPlugins([plugin]);
+                if (newModifiers.length > 0) {
+                    nextModifiers = [...modifiers, newModifiers[0]];
+                }
+            }
+
+            set({
+                pluginsBySlug: nextPluginsBySlug,
+                modifiers: nextModifiers,
+                loading: false
+            });
+        } catch (error) {
+            console.error(`Failed to fetch plugin ${slug}:`, error);
+            set({ loading: false });
+        }
+    },
+
     getModifiers() {
         return get().modifiers;
     },
@@ -350,9 +385,13 @@ export const usePluginStore = create<PluginState>((set, get) => ({
             }
 
             const matchesContext = context === 'canvas' ? supportsCanvas : supportsRaster;
+            console.log('matches context:', matchesContext, exposureData.name, renderables)
             const exportsGlb = exportConfig?.type === 'glb';
             const exportsChart = exportConfig?.type === 'chart-png';
 
+            if (!matchesContext) {
+                continue;
+            }
             // Include exposure if it matches context and exports GLB or chart, OR if it has perAtomProperties
             if (!matchesContext && !hasPerAtomProperties) {
                 continue;

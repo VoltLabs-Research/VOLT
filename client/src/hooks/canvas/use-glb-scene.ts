@@ -194,9 +194,9 @@ export default function useGlbScene(params: UseGlbSceneParams) {
         if (targetUrl &&
             targetUrl !== stateRef.current.lastLoadedUrl &&
             !modelLoader.isLoading()) {
-            modelLoader.load(targetUrl);
+            modelLoader.load(targetUrl, params.onEmptyData);
         }
-    }, [getTargetUrl, modelLoader]);
+    }, [getTargetUrl, modelLoader, params.onEmptyData]);
 
     const throttledUpdateScene = useThrottledCallback(updateScene, params.updateThrottle);
 

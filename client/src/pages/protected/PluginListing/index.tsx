@@ -26,7 +26,7 @@ const PluginListing = () => {
         if (fetchedForTeamRef.current === team._id) return;
         fetchedForTeamRef.current = team._id;
 
-        trajectoryApi.getAll({ teamId: team._id })
+        trajectoryApi.getAll({ })
             .then(data => setTrajectories(data))
             .catch(err => console.error('Failed to load trajectories', err));
     }, [team?._id]);

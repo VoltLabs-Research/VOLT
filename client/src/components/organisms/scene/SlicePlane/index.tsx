@@ -84,7 +84,6 @@ const SlicePlane = () => {
                     <Container className='d-flex content-between items-center'>
                         <span>Reverse Orientation</span>
                         <FormField
-                            label="Reverse Orientation"
                             fieldKey="reverseOrientation"
                             fieldType='checkbox'
                             fieldValue={slicePlaneConfig.reverseOrientation}

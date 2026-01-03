@@ -34,6 +34,9 @@ interface SingleModelViewerProps {
 
 import { computeGlbUrl } from '@/utilities/glb/scene-utils';
 
+import { useEditorStore } from '@/stores/slices/editor';
+import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
+
 const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     trajectoryId,
     currentTimestep,
@@ -62,6 +65,43 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         [teamId, trajectoryId, currentTimestep, analysisId, sceneConfig]
     );
 
+    const handleEmptyData = React.useCallback(async () => {
+        if (sceneConfig.source !== 'plugin' || !sceneConfig.exposureId) return;
+
+        console.log('[SingleModelViewer] Empty data detected, switching exposure...');
+
+        try {
+            const exposures = await usePluginStore.getState().getRenderableExposures(trajectoryId, analysisId);
+
+            const currentIndex = exposures.findIndex(e => e.exposureId === sceneConfig.exposureId);
+            if (currentIndex === -1 || exposures.length <= 1) return;
+
+            const nextIndex = (currentIndex + 1) % exposures.length;
+            const nextExposure = exposures[nextIndex];
+
+            console.log(`[SingleModelViewer] Switching from ${sceneConfig.exposureId} to ${nextExposure.exposureId}`);
+
+            const newScene = {
+                ...sceneConfig,
+                exposureId: nextExposure.exposureId,
+                analysisId: nextExposure.analysisId, 
+                sceneType: 'plugin',
+                source: 'plugin'
+            };
+
+            const editorStore = useEditorStore.getState();
+            editorStore.removeScene(sceneConfig as any);
+            editorStore.addScene(newScene as any);
+
+            if (editorStore.activeScene && (editorStore.activeScene as any).exposureId === sceneConfig.exposureId) {
+                editorStore.setActiveScene(newScene as any);
+            }
+
+        } catch (err) {
+            console.error('[SingleModelViewer] Failed to switch exposure', err);
+        }
+    }, [sceneConfig, trajectoryId, analysisId]);
+
     const { modelBounds, deselect } = useGlbScene({
         url,
         sliceClippingPlanes,
@@ -79,7 +119,8 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         enableInstancing,
         updateThrottle,
         onSelect,
-        orbitControlsRef
+        orbitControlsRef,
+        onEmptyData: handleEmptyData
     });
 
     React.useEffect(() => {
