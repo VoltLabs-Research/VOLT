@@ -290,7 +290,7 @@ export const usePluginStore = create<PluginState>((set, get) => ({
             return [];
         }
 
-        await get().fetchPlugins();
+        await get().fetchPlugins({ force: true });
 
         const plugin = get().pluginsBySlug[resolvedPluginSlug];
         console.log('getRenderableExposures:', plugin, resolvedPluginSlug);

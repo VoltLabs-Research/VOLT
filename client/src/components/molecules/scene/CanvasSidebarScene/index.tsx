@@ -130,6 +130,8 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     const getRenderableExposures = usePluginStore((state) => state.getRenderableExposures);
     const getModifiers = usePluginStore((state) => state.getModifiers);
     const getPluginArguments = usePluginStore((state) => state.getPluginArguments);
+    const loading = usePluginStore((state) => state.loading);
+    const fetchPlugins = usePluginStore((state) => state.fetchPlugins);
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
     const setResultsViewerData = useUIStore((state) => state.setResultsViewerData);
@@ -151,6 +153,10 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     useEffect(() => {
         activeSceneRef.current = activeScene;
     }, [activeScene]);
+
+    useEffect(() => {
+        fetchPlugins({ force: true });
+    }, [fetchPlugins]);
 
     useEffect(() => {
         console.log('---------------------------------------_>', analysisConfig)
@@ -413,7 +419,21 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                     </Container>
                 )}
 
+                {/* Loading Skeletons */}
+                {loading && filteredSections.length === 0 && Array.from({ length: 3 }).map((_, i) => (
+                    <Container key={`skeleton-${i}`} className='analysis-section'>
+                        <Container className='analysis-section-header d-flex column gap-05 p-1'>
+                            <Container className='d-flex items-center gap-05'>
+                                <Skeleton variant="circular" width={16} height={16} />
+                                <Skeleton variant="text" width={120} height={24} />
+                                <Skeleton variant="text" width={80} height={24} />
+                            </Container>
+                        </Container>
+                    </Container>
+                ))}
+
                 {/* Analysis Sections */}
+
                 {filteredSections.map((section) => {
                     const isExpanded = expandedSections.has(section.analysis._id);
                     const isLoading = loadingAnalyses.has(section.analysis._id);
