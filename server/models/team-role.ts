@@ -39,6 +39,7 @@ const TeamRoleSchema = new Schema({
 
 TeamRoleSchema.index({ team: 1, name: 1 }, { unique: true });
 TeamRoleSchema.index({ team: 1, isSystem: 1 });
+TeamRoleSchema.index({ name: 'text' });
 
 TeamRoleSchema.statics.createSystemRolesForTeam = async function (
     teamId: mongoose.Types.ObjectId

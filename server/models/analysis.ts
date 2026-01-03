@@ -83,6 +83,8 @@ const AnalysisSchema: Schema<IAnalysis> = new Schema({
     timestamps: true
 });
 
+AnalysisSchema.index({ plugin: 'text' });
+
 AnalysisSchema.plugin(useInverseRelations);
 AnalysisSchema.plugin(useCascadeDelete);
 

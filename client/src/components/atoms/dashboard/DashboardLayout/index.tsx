@@ -56,6 +56,7 @@ import { MdImportExport } from 'react-icons/md';
 import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { NodeType } from '@/types/plugin';
 import { BsFiles } from 'react-icons/bs';
+import GlobalSearch from '@/components/molecules/dashboard/GlobalSearch';
 import './DashboardLayout.css';
 
 // Greeting helper functions
@@ -229,7 +230,6 @@ const DashboardLayout = () => {
         { id: 'advanced', label: 'Advanced', icon: IoSettingsOutline }
     ]), []);
 
-    const searchQuery = useUIStore((s) => s.query);
     const [settingsExpanded, setSettingsExpanded] = useState(() => pathname.startsWith('/dashboard/settings'));
     const activeSettingsTab = searchParams.get('tab') || 'general';
 
@@ -317,16 +317,6 @@ const DashboardLayout = () => {
     useEffect(() => {
         setSidebarOpen(false);
     }, [pathname]);
-
-    const setSearchQuery = useUIStore((s) => s.setQuery);
-    const [localQuery, setLocalQuery] = useState(searchQuery);
-
-    useEffect(() => { setLocalQuery(searchQuery); }, [searchQuery]);
-
-    useEffect(() => {
-        const id = setTimeout(() => setSearchQuery(localQuery), 300);
-        return () => clearTimeout(id);
-    }, [localQuery, setSearchQuery]);
 
     const teamOptions = useMemo(() =>
         teams.map(team => ({
@@ -716,17 +706,7 @@ const DashboardLayout = () => {
 
                     {/* Center: Search */}
                     <Container className='dashboard-header-center'>
-                        <Container className='d-flex gap-1 search-container'>
-                            <i className='search-icon-container'>
-                                <IoSearchOutline />
-                            </i>
-                            <input
-                                placeholder='Search...'
-                                className='search-input h-max'
-                                value={localQuery}
-                                onChange={(e) => setLocalQuery(e.target.value)}
-                            />
-                        </Container>
+                        <GlobalSearch />
                     </Container>
 
 

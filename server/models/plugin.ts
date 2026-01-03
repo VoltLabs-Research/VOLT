@@ -343,6 +343,8 @@ const PluginSchema = new Schema({
     toObject: { virtuals: true }
 });
 
+PluginSchema.index({ slug: 'text', 'modifier.name': 'text', 'modifier.description': 'text' });
+
 PluginSchema.plugin(useInverseRelations);
 PluginSchema.plugin(useCascadeDelete);
 

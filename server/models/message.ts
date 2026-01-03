@@ -94,6 +94,7 @@ MessageSchema.index({ chat: 1, createdAt: -1 });
 MessageSchema.index({ sender: 1 });
 MessageSchema.index({ readBy: 1 });
 MessageSchema.index({ 'reactions.emoji': 1 });
+MessageSchema.index({ content: 'text' });
 
 MessageSchema.plugin(useCascadeDelete);
 

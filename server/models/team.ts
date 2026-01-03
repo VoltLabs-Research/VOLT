@@ -61,6 +61,8 @@ const TeamSchema = new Schema({
     timestamps: true
 });
 
+TeamSchema.index({ name: 'text', description: 'text' });
+
 TeamSchema.plugin(useCascadeDelete);
 TeamSchema.plugin(useInverseRelations);
 

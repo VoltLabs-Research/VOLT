@@ -89,6 +89,8 @@ const ContainerSchema = new Schema<IContainer>({
     timestamps: true
 });
 
+ContainerSchema.index({ name: 'text', image: 'text' });
+
 ContainerSchema.plugin(useCascadeDelete);
 ContainerSchema.plugin(useInverseRelations);
 
