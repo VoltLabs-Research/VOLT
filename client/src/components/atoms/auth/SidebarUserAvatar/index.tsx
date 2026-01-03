@@ -26,15 +26,28 @@ import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import { CiLogout, CiSettings } from 'react-icons/ci';
 import { useNavigate } from 'react-router';
 import Container from '@/components/primitives/Container';
+import { useState } from 'react';
 import './SidebarUserAvatar.css';
 
 // TODO: USER AVATAR SHOULD BE A NEW COMPONENT
 const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUsername = false, onClick = () => { } }) => {
     const { user, signOut } = useAuthStore();
     const navigate = useNavigate();
+    const [isSigningOut, setIsSigningOut] = useState(false);
+
+    const handleSignOut = async () => {
+        try {
+            setIsSigningOut(true);
+            await signOut();
+        } catch (error) {
+            console.error('Sign out failed', error);
+        } finally {
+            setIsSigningOut(false);
+        }
+    };
 
     // Si no hay usuario autenticado, mostrar una interfaz genérica o nada
-    if(!user){
+    if (!user) {
         return null;
     }
 
@@ -70,7 +83,11 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
             <PopoverMenuItem icon={<CiSettings />} onClick={() => navigate('/dashboard/settings/general')}>
                 Account Settings
             </PopoverMenuItem>
-            <PopoverMenuItem icon={<CiLogout />} onClick={signOut}>
+            <PopoverMenuItem
+                icon={<CiLogout />}
+                onClick={handleSignOut}
+                isLoading={isSigningOut}
+            >
                 Sign Out
             </PopoverMenuItem>
         </Popover >

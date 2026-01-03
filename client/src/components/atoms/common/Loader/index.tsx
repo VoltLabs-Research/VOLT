@@ -24,15 +24,17 @@ import React from 'react';
 import Container from '@/components/primitives/Container';
 import './Loader.css';
 
-interface LoaderProps{
+interface LoaderProps {
     scale: number;
+    isFixed?: boolean;
+    className?: string;
 };
 
-const Loader = ({ scale }: LoaderProps) => {
+const Loader = ({ scale, isFixed = true, className = '' }: LoaderProps) => {
     const loaderItems = Array.from({ length: 12 }, (_, index) => index + 1);
 
     return (
-        <Container className='d-flex flex-center p-fixed'>
+        <Container className={`d-flex flex-center ${isFixed ? 'p-fixed' : ''} ${className}`}>
             <Container className='p-relative' style={{ transform: 'scale(' + scale + ')' }}>
                 {loaderItems.map((item) => (
                     <Container

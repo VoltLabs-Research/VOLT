@@ -8,6 +8,7 @@ import trajectoryApi from '@/services/api/trajectory/trajectory';
 import { runRequest } from '../../helpers';
 import { extractErrorMessage } from '@/utilities/api/error-extractor';
 import type { SliceCreator } from '../../helpers/create-slice';
+import { useUIStore } from '@/stores/slices/ui';
 
 const trajectoryPreviewCache = new PreviewCacheService();
 
@@ -115,34 +116,34 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
         }
 
         const fetchTrajectories = () => {
-                return trajectoryApi.getAllPaginated({
-                    populate: 'analysis,createdBy',
+            return trajectoryApi.getAllPaginated({
+                populate: 'analysis,createdBy',
+                page,
+                limit,
+                q: search
+            });
+        };
+
+        await runRequest(set, get, fetchTrajectories, {
+            loadingKey: append ? 'isFetchingMore' : 'isLoadingTrajectories',
+            errorFallback: 'Failed to load trajectories',
+            onSuccess: (apiResponse) => {
+                const paginationResult = calculatePaginationState({
+                    newData: apiResponse.data || [],
+                    currentData: storeSnapshot.trajectories,
                     page,
                     limit,
-                    q: search
+                    append,
+                    totalFromApi: apiResponse.total,
+                    previousTotal: storeSnapshot.listingMeta.total
                 });
-            };
 
-            await runRequest(set, get, fetchTrajectories, {
-                loadingKey: append ? 'isFetchingMore' : 'isLoadingTrajectories',
-                errorFallback: 'Failed to load trajectories',
-                onSuccess: (apiResponse) => {
-                    const paginationResult = calculatePaginationState({
-                        newData: apiResponse.data || [],
-                        currentData: storeSnapshot.trajectories,
-                        page,
-                        limit,
-                        append,
-                        totalFromApi: apiResponse.total,
-                        previousTotal: storeSnapshot.listingMeta.total
-                    });
-
-                    set({
-                        trajectories: paginationResult.data,
-                        listingMeta: paginationResult.listingMeta
-                    });
-                }
-            });
+                set({
+                    trajectories: paginationResult.data,
+                    listingMeta: paginationResult.listingMeta
+                });
+            }
+        });
     },
 
     getTrajectoryById: async (trajectoryId) => {
@@ -185,6 +186,8 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
                 error: null
             }));
 
+            useUIStore.getState().addToast('Trajectory created successfully', 'success');
+
             return createdTrajectory;
         } catch (error) {
             set((currentStore: TrajectoryStore) => ({
@@ -208,6 +211,7 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
 
         try {
             await trajectoryApi.update(trajectoryId, patch);
+            useUIStore.getState().addToast('Trajectory updated successfully', 'success');
         } catch (error) {
             set(rollbackSnapshot);
             set({ error: extractErrorMessage(error) });
@@ -237,6 +241,7 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
             await Promise.all(
                 selectedTrajectoryIds.map((trajectoryId) => trajectoryApi.delete(trajectoryId))
             );
+            useUIStore.getState().addToast('Trajectories deleted successfully', 'success');
         } catch (error) {
             set(rollbackSnapshot);
             throw error;
@@ -272,6 +277,7 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
 
         try {
             await trajectoryApi.delete(trajectoryId);
+            useUIStore.getState().addToast('Trajectory deleted successfully', 'success');
         } catch (error) {
             set(rollbackSnapshot);
             set({ error: extractErrorMessage(error) });

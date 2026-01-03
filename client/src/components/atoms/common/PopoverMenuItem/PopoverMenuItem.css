@@ -29,3 +29,8 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+.popover-menu-item .button-icon-right {
+    margin-left: auto;
+    padding-left: 12px;
+}

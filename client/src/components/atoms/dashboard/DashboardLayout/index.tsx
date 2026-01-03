@@ -126,9 +126,9 @@ const DashboardLayout = () => {
     const canInvite = useMemo(() => {
         if (!user || !owner) return false;
         // Check if user is owner
-        if (owner._id === user._id || (owner.user as any)?._id === user._id) return true;
+        if (owner._id === user._id || (owner as any).user?._id === user._id) return true;
         // Check if user is admin
-        return admins.some(admin => admin._id === user._id || (admin.user as any)?._id === user._id);
+        return admins.some(admin => admin._id === user._id || (admin as any).user?._id === user._id);
     }, [user, owner, admins]);
 
     useEffect(() => {
@@ -247,9 +247,9 @@ const DashboardLayout = () => {
         // Only load if we have a team and haven't loaded for this team yet
         if (!selectedTeam?._id) return;
         if (teamDataLoadedRef.current === selectedTeam._id) return;
-        
+
         teamDataLoadedRef.current = selectedTeam._id;
-        
+
         // These functions should have internal guards against duplicate requests
         getTrajectories(selectedTeam._id, { page: 1, limit: 20 });
         getAnalysisConfigs(selectedTeam._id, { page: 1, limit: 20 });
@@ -396,6 +396,19 @@ const DashboardLayout = () => {
         const first = user.firstName?.[0] || '';
         const last = user.lastName?.[0] || '';
         return (first + last).toUpperCase() || 'U';
+    };
+
+    const [isSigningOut, setIsSigningOut] = useState(false);
+
+    const handleSignOut = async () => {
+        try {
+            setIsSigningOut(true);
+            await useAuthStore.getState().signOut();
+        } catch (error) {
+            console.error('Sign out failed', error);
+        } finally {
+            setIsSigningOut(false);
+        }
     };
 
     return (
@@ -632,7 +645,11 @@ const DashboardLayout = () => {
                         <PopoverMenuItem icon={<IoSettingsOutline />} onClick={() => navigate('/dashboard/settings/general')}>
                             Account Settings
                         </PopoverMenuItem>
-                        <PopoverMenuItem icon={<IoCloseOutline />} onClick={() => useAuthStore.getState().signOut()}>
+                        <PopoverMenuItem
+                            icon={<IoCloseOutline />}
+                            onClick={handleSignOut}
+                            isLoading={isSigningOut}
+                        >
                             Sign Out
                         </PopoverMenuItem>
                     </Popover>
@@ -714,6 +731,7 @@ const DashboardLayout = () => {
                     <Container className='dashboard-header-right'>
                         {canInvite ? (
                             <Popover
+                                id="invite-members-popover"
                                 trigger={
                                     <button
                                         className='d-flex content-center items-center badge-container as-icon-container over-light-bg'

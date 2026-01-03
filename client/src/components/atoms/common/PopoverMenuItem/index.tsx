@@ -2,12 +2,15 @@ import React, { type ReactNode } from 'react';
 import Button from '@/components/primitives/Button';
 import './PopoverMenuItem.css';
 
+import Loader from '@/components/atoms/common/Loader';
+
 interface PopoverMenuItemProps {
     onClick?: () => void;
     icon?: ReactNode;
     children: ReactNode;
     variant?: 'default' | 'danger';
     disabled?: boolean;
+    isLoading?: boolean;
 }
 
 const PopoverMenuItem = ({
@@ -15,7 +18,8 @@ const PopoverMenuItem = ({
     icon,
     children,
     variant = 'default',
-    disabled = false
+    disabled = false,
+    isLoading = false
 }: PopoverMenuItemProps) => {
     return (
         <Button
@@ -24,10 +28,11 @@ const PopoverMenuItem = ({
             size='sm'
             block
             align='start'
-            className={`popover-menu-item ${disabled ? 'disabled' : ''} font-size-2 color-primary u-select-none cursor-pointer`}
-            onClick={onClick}
-            disabled={disabled}
+            className={`popover-menu-item ${disabled || isLoading ? 'disabled' : ''} font-size-2 color-primary u-select-none cursor-pointer`}
+            onClick={isLoading ? undefined : onClick}
+            disabled={disabled || isLoading}
             leftIcon={icon ? <span className="popover-menu-item-icon d-flex flex-center f-shrink-0 font-size-3">{icon}</span> : undefined}
+            rightIcon={isLoading ? <Loader scale={0.4} isFixed={false} /> : undefined}
         >
             {children}
         </Button>

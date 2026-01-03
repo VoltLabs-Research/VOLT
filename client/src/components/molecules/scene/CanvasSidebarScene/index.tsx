@@ -146,6 +146,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
     const [tooltipAnalysis, setTooltipAnalysis] = useState<any | null>(null);
     const [headerPopoverStates, setHeaderPopoverStates] = useState<Map<string, boolean>>(new Map());
+    const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
     const analysisConfigId = analysisConfig?._id;
     const activeSceneRef = useRef(activeScene);
@@ -509,62 +510,79 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                                 }
                             >
                                 <PopoverMenuItem
-                                    onClick={() => {
-                                        const plugin = section.plugin?.plugin;
-                                        let exposures: RenderableExposure[] = [];
+                                    onClick={async () => {
+                                        try {
+                                            setIsLoadingDetails(true);
+                                            const plugin = section.plugin?.plugin;
+                                            let exposures: RenderableExposure[] = [];
 
-                                        if (plugin?.workflow?.nodes && plugin.workflow.edges) {
-                                            const { nodes, edges } = plugin.workflow;
+                                            if (plugin?.workflow?.nodes && plugin.workflow.edges) {
+                                                const { nodes, edges } = plugin.workflow;
 
-                                            // Find visualizer nodes with listings
-                                            const visualizerNodes = nodes.filter(node =>
-                                                node.type === 'visualizers' && (
-                                                    (node.data?.visualizers?.listing && Object.keys(node.data.visualizers.listing).length > 0) ||
-                                                    (node.data?.visualizers?.perAtomProperties && node.data.visualizers.perAtomProperties.length > 0)
-                                                )
-                                            );
+                                                // Find visualizer nodes with listings
+                                                const visualizerNodes = nodes.filter(node =>
+                                                    node.type === 'visualizers' && (
+                                                        (node.data?.visualizers?.listing && Object.keys(node.data.visualizers.listing).length > 0) ||
+                                                        (node.data?.visualizers?.perAtomProperties && node.data.visualizers.perAtomProperties.length > 0)
+                                                    )
+                                                );
 
-                                            // Trace backward to find connected exposures
-                                            const findConnectedExposure = (nodeId: string, depth = 0): any | null => {
-                                                if (depth > 5) return null;
-                                                const incomingEdge = edges.find(e => e.target === nodeId);
-                                                if (!incomingEdge) return null;
-                                                const sourceNode = nodes.find(n => n.id === incomingEdge.source);
-                                                if (!sourceNode) return null;
-                                                if (sourceNode.type === 'exposure') {
-                                                    return sourceNode;
-                                                }
-                                                return findConnectedExposure(sourceNode.id, depth + 1);
-                                            };
+                                                // Trace backward to find connected exposures
+                                                const findConnectedExposure = (nodeId: string, depth = 0): any | null => {
+                                                    if (depth > 5) return null;
+                                                    const incomingEdge = edges.find(e => e.target === nodeId);
+                                                    if (!incomingEdge) return null;
+                                                    const sourceNode = nodes.find(n => n.id === incomingEdge.source);
+                                                    if (!sourceNode) return null;
+                                                    if (sourceNode.type === 'exposure') {
+                                                        return sourceNode;
+                                                    }
+                                                    return findConnectedExposure(sourceNode.id, depth + 1);
+                                                };
 
-                                            const seenExposures = new Set<string>();
-                                            visualizerNodes.forEach(vizNode => {
-                                                const exposureNode = findConnectedExposure(vizNode.id);
-                                                if (exposureNode && !seenExposures.has(exposureNode.id)) {
-                                                    seenExposures.add(exposureNode.id);
-                                                    exposures.push({
-                                                        pluginId: plugin._id || '',
-                                                        pluginSlug: plugin.slug,
-                                                        analysisId: section.analysis._id,
-                                                        exposureId: exposureNode.id,
-                                                        name: exposureNode.data?.exposure?.name || exposureNode.id,
-                                                        icon: exposureNode.data?.exposure?.icon,
-                                                        results: exposureNode.data?.exposure?.results || '',
-                                                        canvas: !!vizNode.data?.visualizers?.canvas,
-                                                        raster: !!vizNode.data?.visualizers?.raster,
-                                                        modifierId: plugin.slug
-                                                    });
-                                                }
+                                                const seenExposures = new Set<string>();
+                                                visualizerNodes.forEach(vizNode => {
+                                                    const exposureNode = findConnectedExposure(vizNode.id);
+                                                    if (exposureNode && !seenExposures.has(exposureNode.id)) {
+                                                        seenExposures.add(exposureNode.id);
+                                                        exposures.push({
+                                                            pluginId: plugin._id || '',
+                                                            pluginSlug: plugin.slug,
+                                                            analysisId: section.analysis._id,
+                                                            exposureId: exposureNode.id,
+                                                            name: exposureNode.data?.exposure?.name || exposureNode.id,
+                                                            icon: exposureNode.data?.exposure?.icon,
+                                                            results: exposureNode.data?.exposure?.results || '',
+                                                            canvas: !!vizNode.data?.visualizers?.canvas,
+                                                            raster: !!vizNode.data?.visualizers?.raster,
+                                                            modifierId: plugin.slug
+                                                        });
+                                                    }
+                                                });
+                                            }
+
+                                            // Simulate a small delay if local calculation is too fast, or wait for any potential async state updates
+                                            // Actuallly getRenderableExposures above inside loop is synchronous as we are parsing local workflow
+                                            // The "View details" action seems purely client-side parsing of the workflow graph?
+                                            // "getRenderableExposures" store action IS async, but here we are reimplementing logic?
+                                            // Ah, line 130 defines `getRenderableExposures` store action.
+                                            // BUT the code I am replacing replicates logic manually?
+                                            // Yes. And it calls `setResultsViewerData`.
+                                            // I will wrap this in try/finally to handle isLoadingDetails.
+
+                                            setResultsViewerData({
+                                                pluginSlug: section.plugin?.plugin.slug || section.analysis.plugin,
+                                                pluginName: section.plugin?.name || 'Unknown',
+                                                analysisId: section.analysis._id,
+                                                exposures: exposures
                                             });
+                                        } catch (error) {
+                                            console.error(error);
+                                        } finally {
+                                            setIsLoadingDetails(false);
                                         }
-
-                                        setResultsViewerData({
-                                            pluginSlug: section.plugin?.plugin.slug || section.analysis.plugin,
-                                            pluginName: section.plugin?.name || 'Unknown',
-                                            analysisId: section.analysis._id,
-                                            exposures: exposures
-                                        });
                                     }}
+                                    isLoading={isLoadingDetails}
                                 >
                                     View details
                                 </PopoverMenuItem>
@@ -598,7 +616,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                                                     triggerAction="contextmenu"
                                                     trigger={
                                                         <CanvasSidebarOption
-                                                            onSelect={() => onSelect(optionObj, analysis)}
+                                                            onSelect={() => onSelect(optionObj, analysis as any)}
                                                             activeOption={isOptionInScene(optionObj)}
                                                             isLoading={false}
                                                             option={{

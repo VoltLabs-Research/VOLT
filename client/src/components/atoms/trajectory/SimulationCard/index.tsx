@@ -115,13 +115,18 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
         false // Always enable navigation to allow monitoring progress in Canvas
     );
 
+    const [loadingAction, setLoadingAction] = React.useState<string | null>(null);
+
     const handleRasterize = useCallback(async () => {
         try {
+            setLoadingAction('rasterize');
             if (rasterize) {
                 await rasterize(trajectory._id);
             }
         } catch (error: any) {
             console.error('Rasterize failed:', error);
+        } finally {
+            setLoadingAction(null);
         }
     }, [trajectory._id, rasterize]);
 
@@ -144,9 +149,12 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
 
     const handleDownload = useCallback(async () => {
         try {
+            setLoadingAction('download');
             await trajectoryApi.downloadDumps(trajectory._id, trajectory.name);
         } catch (error) {
             console.error('Download failed:', error);
+        } finally {
+            setLoadingAction(null);
         }
     }, [trajectory._id, trajectory.name]);
 
@@ -197,7 +205,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                     }}
                     transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                 >
-                    {trajectory?.createdBy?.firstName && (
+                    {typeof trajectory?.createdBy === 'object' && trajectory.createdBy?.firstName && (
                         <motion.div
                             className='d-flex items-center simulation-caption-header p-relative'
                             variants={{
@@ -286,16 +294,32 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                             </button>
                         }
                     >
-                        <PopoverMenuItem icon={<HiOutlineViewfinderCircle />} onClick={handleViewScene}>
+                        <PopoverMenuItem
+                            icon={<HiOutlineViewfinderCircle />}
+                            onClick={handleViewScene}
+                        >
                             View Scene
                         </PopoverMenuItem>
-                        <PopoverMenuItem icon={<HiArrowDownTray />} onClick={handleDownload}>
+                        <PopoverMenuItem
+                            icon={<HiArrowDownTray />}
+                            onClick={handleDownload}
+                            isLoading={loadingAction === 'download'}
+                        >
                             Download Dumps
                         </PopoverMenuItem>
-                        <PopoverMenuItem icon={<PiImagesSquareThin />} onClick={handleRasterize}>
+                        <PopoverMenuItem
+                            icon={<PiImagesSquareThin />}
+                            onClick={handleRasterize}
+                            isLoading={loadingAction === 'rasterize'}
+                        >
                             Rasterize
                         </PopoverMenuItem>
-                        <PopoverMenuItem icon={<RxTrash />} onClick={onDelete} variant="danger">
+                        <PopoverMenuItem
+                            icon={<RxTrash />}
+                            onClick={onDelete}
+                            variant="danger"
+                            isLoading={isDeleting}
+                        >
                             Delete
                         </PopoverMenuItem>
                     </Popover>

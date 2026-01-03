@@ -50,11 +50,28 @@ type RowRenderProps = {
   style?: React.CSSProperties;
 };
 
-const renderMenuOption = (option: MenuOption, idx: number) => {
-  if(Array.isArray(option)) {
+const AsyncMenuItemWrapper = ({ option }: { option: MenuOption }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleClick = async (onClick: () => void) => {
+    try {
+      setIsLoading(true);
+      await onClick();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (Array.isArray(option)) {
     const [label, Icon, onClick] = option;
     return (
-      <PopoverMenuItem key={idx} icon={<Icon />} onClick={onClick}>
+      <PopoverMenuItem
+        icon={<Icon />}
+        onClick={() => handleClick(onClick)}
+        isLoading={isLoading}
+      >
         {label}
       </PopoverMenuItem>
     );
@@ -63,10 +80,10 @@ const renderMenuOption = (option: MenuOption, idx: number) => {
   const Icon = option.icon;
   return (
     <PopoverMenuItem
-      key={idx}
       icon={Icon ? <Icon /> : undefined}
-      onClick={option.onClick}
+      onClick={() => handleClick(option.onClick)}
       variant={option.destructive ? 'danger' : 'default'}
+      isLoading={isLoading}
     >
       {option.label}
     </PopoverMenuItem>
@@ -88,7 +105,7 @@ const RowBase = ({
   const menuOptions = getMenuOptions ? getMenuOptions(item) : [];
 
   const rowStyle: React.CSSProperties = {
-      ...style,
+    ...style,
     width: useFlexDistribution ? '100%' : totalRowWidth,
     display: 'flex',
     alignItems: 'center',
@@ -128,11 +145,13 @@ const RowBase = ({
     </button>
   );
 
-  if(menuOptions.length === 0) return content;
+  if (menuOptions.length === 0) return content;
 
   return (
     <Popover id={`row-menu-${rowKey}`} trigger={content}>
-      {menuOptions.map(renderMenuOption)}
+      {menuOptions.map((option, idx) => (
+        <AsyncMenuItemWrapper key={idx} option={option} />
+      ))}
     </Popover>
   );
 };
@@ -264,18 +283,18 @@ const DocumentListingTable = ({
 
   // Observe intersection of the sentinel within the provided scroll container(non-virtualized)
   useEffect(() => {
-    if(!enableInfinite || useVirtualization) return;
+    if (!enableInfinite || useVirtualization) return;
 
     const root =
       scrollContainerRef && 'current' in scrollContainerRef ? (scrollContainerRef.current as any) : null;
 
     const sentinel = sentinelRef.current;
-    if(!sentinel) return;
+    if (!sentinel) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if(entry?.isIntersecting && hasMore && !isFetchingMore) onLoadMore?.();
+        if (entry?.isIntersecting && hasMore && !isFetchingMore) onLoadMore?.();
       },
       { root: root ?? null, rootMargin: '0px 0px 200px 0px', threshold: 0 }
     );
@@ -287,7 +306,7 @@ const DocumentListingTable = ({
   // Handle infinite scroll for virtualized list
   const handleScroll = useCallback(
     (event: React.UIEvent<HTMLDivElement>) => {
-      if(!enableInfinite || !useVirtualization) return;
+      if (!enableInfinite || !useVirtualization) return;
 
       const target = event.target as HTMLElement;
       const scrollOffset = target.scrollTop;
@@ -296,7 +315,7 @@ const DocumentListingTable = ({
       const visibleHeight = listHeight;
       const scrollThreshold = totalHeight - visibleHeight - 200;
 
-      if(scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold && hasMore && !isFetchingMore){
+      if (scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold && hasMore && !isFetchingMore) {
         onLoadMore?.();
       }
 
