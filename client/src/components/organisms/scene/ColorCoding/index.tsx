@@ -6,6 +6,7 @@ import rasterApi from '@/services/api/raster/raster';
 import { useState, useEffect } from 'react';
 import Title from '@/components/primitives/Title';
 import Container from '@/components/primitives/Container';
+import { useUIStore } from '@/stores/slices/ui';
 import './ColorCoding.css';
 
 const COLOR_GRADIENTS = [
@@ -34,19 +35,28 @@ const ColorCoding = () => {
     const [automaticRange, setAutomaticRange] = useState(false);
     const [symmetricRange, setSymmetricRange] = useState(false);
 
+    const [isStatsLoading, setIsStatsLoading] = useState(false);
+    const addToast = useUIStore((state) => state.addToast);
+
     const applyColorCoding = async () => {
-        await rasterApi.colorCoding.apply(trajectory!._id, analysisConfig!._id, currentTimestep!, {
-            property, startValue, endValue, gradient, exposureId: exposureId || undefined
-        });
-        setActiveScene({
-            analysisId: analysisConfig?._id || '',
-            endValue,
-            exposureId: exposureId || undefined,
-            gradient,
-            property,
-            source: 'color-coding',
-            startValue
-        } as any);
+        try {
+            await rasterApi.colorCoding.apply(trajectory!._id, analysisConfig!._id, currentTimestep!, {
+                property, startValue, endValue, gradient, exposureId: exposureId || undefined
+            });
+            setActiveScene({
+                analysisId: analysisConfig?._id || '',
+                endValue,
+                exposureId: exposureId || undefined,
+                gradient,
+                property,
+                source: 'color-coding',
+                startValue
+            } as any);
+            addToast('Color coding applied successfully', 'success');
+        } catch (error) {
+            console.error(error);
+            addToast('Failed to apply color coding', 'error');
+        }
     };
 
     const fetchStats = async () => {
@@ -55,6 +65,7 @@ const ColorCoding = () => {
         const selectedOption = propertyOptions.find(opt => opt.value === property);
         const type = selectedOption?.exposureId ? 'modifier' : 'base';
 
+        setIsStatsLoading(true);
         try {
             const stats = await rasterApi.colorCoding.getStats(trajectory._id, analysisConfig._id, {
                 timestep: currentTimestep,
@@ -74,6 +85,9 @@ const ColorCoding = () => {
             }
         } catch (e) {
             console.error(e);
+            addToast('Failed to fetch property statistics', 'error');
+        } finally {
+            setIsStatsLoading(false);
         }
     };
 

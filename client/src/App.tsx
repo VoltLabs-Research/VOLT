@@ -30,6 +30,7 @@ import { useAuthStore } from '@/stores/slices/auth';
 import useToast from '@/hooks/ui/use-toast';
 import useAppInitializer from '@/hooks/core/use-app-initializer';
 import { renderPublicRoutes, renderProtectedRoutes, renderGuestRoutes } from '@/routes';
+import NotFoundRedirect from '@/components/atoms/common/NotFoundRedirect';
 
 const AuthLoadingOverlay = () => (
     <motion.div
@@ -116,6 +117,8 @@ const App = () => {
                     {renderPublicRoutes()}
                     {renderProtectedRoutes()}
                     {renderGuestRoutes()}
+
+                    <Route path="*" element={<NotFoundRedirect />} />
                 </Routes>
             </AnimatePresence>
         </div>
