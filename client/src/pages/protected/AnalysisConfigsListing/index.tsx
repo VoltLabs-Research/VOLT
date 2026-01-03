@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import { useTeamStore } from '@/stores/slices/team';
 import analysisConfigApi from '@/services/api/analysis/analysis';
 import { formatDistanceToNow } from 'date-fns';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
-import { useUIStore } from '@/stores/slices/ui';
+import useListingLifecycle from '@/hooks/common/use-listing-lifecycle';
+import useConfirm from '@/hooks/ui/use-confirm';
 
 const AnalysisConfigsListing = () => {
     const team = useTeamStore((state) => state.selectedTeam);
@@ -15,19 +16,18 @@ const AnalysisConfigsListing = () => {
     const isListingLoading = useAnalysisConfigStore((state) => state.isListingLoading);
     const isFetchingMore = useAnalysisConfigStore((state) => state.isFetchingMore);
     const listingMeta = useAnalysisConfigStore((state) => state.listingMeta);
+    const { confirm } = useConfirm();
 
-    const searchQuery = useUIStore((s) => s.query);
-
-    // Initial fetch handled by DashboardLayout or here if missing
-    useEffect(() => {
-        if (!team?._id) return;
-        // Only fetch if empty to avoid double fetch with DashboardLayout,
-        // OR rely on DashboardLayout and just do nothing here?
-        // To be safe against direct navigation, check if data exists.
-        if (analysisConfigs.length === 0) {
-            getAnalysisConfigs(team._id, { page: 1, limit: 20 });
-        }
-    }, [team?._id, getAnalysisConfigs, analysisConfigs.length]);
+    // We pass these directly to DocumentListing
+    const lifecycleProps = {
+        listingMeta,
+        fetchData: (params: any) => {
+            if (!team?._id) return;
+            return getAnalysisConfigs(team._id, params);
+        },
+        initialFetchParams: { page: 1, limit: 20 },
+        dependencies: [team?._id, getAnalysisConfigs]
+    };
 
     const handleMenuAction = useCallback(async (action: string, item: any) => {
         switch (action) {
@@ -35,7 +35,8 @@ const AnalysisConfigsListing = () => {
                 break;
 
             case 'delete':
-                if (!window.confirm('Delete this analysis config? This cannot be undone.')) {
+                const isConfirmed = await confirm('Delete this analysis config? This cannot be undone.');
+                if (!isConfirmed) {
                     return;
                 }
 
@@ -49,7 +50,7 @@ const AnalysisConfigsListing = () => {
                 }
                 break;
         }
-    }, [team?._id, getAnalysisConfigs]);
+    }, [team?._id, getAnalysisConfigs, confirm]);
 
     const getMenuOptions = useCallback(
         (item: any) => ([
@@ -112,15 +113,6 @@ const AnalysisConfigsListing = () => {
         }
     ], [formatDate]);
 
-    const handleLoadMore = useCallback(async () => {
-        if (!team?._id || !listingMeta.hasMore || isFetchingMore) return;
-        await getAnalysisConfigs(team._id, {
-            page: listingMeta.page + 1,
-            limit: listingMeta.limit,
-            append: true
-        });
-    }, [team?._id, listingMeta, isFetchingMore, getAnalysisConfigs]);
-
     return (
         <DocumentListing
             title="Analysis Configs"
@@ -131,9 +123,7 @@ const AnalysisConfigsListing = () => {
             getMenuOptions={getMenuOptions}
             emptyMessage="No analysis configs found"
             enableInfinite
-            hasMore={listingMeta.hasMore}
-            isFetchingMore={isFetchingMore}
-            onLoadMore={handleLoadMore}
+            {...lifecycleProps}
         />
     );
 };

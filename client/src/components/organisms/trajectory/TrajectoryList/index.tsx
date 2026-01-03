@@ -21,6 +21,7 @@
  */
 
 import React, { useEffect } from 'react';
+import useConfirm from '@/hooks/ui/use-confirm';
 import { IoIosArrowDown } from 'react-icons/io';
 import FileItem from '@/components/molecules/common/FileItem';
 import Loader from '@/components/atoms/common/Loader';
@@ -42,18 +43,20 @@ const TrajectoryList: React.FC<TrajectoryListProps> = ({ onFileSelect }) => {
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const selectedTrajectoryId = useTrajectoryStore(state => state.trajectory?._id);
     const logger = useLogger('trajectory-list');
+    const { confirm } = useConfirm();
 
     useEffect(() => {
-        if(!trajectories.length){
+        if (!trajectories.length) {
             getTrajectories();
         }
     }, []);
 
-    const handleDelete = async(trajectoryId: string, e: React.MouseEvent) => {
+    const handleDelete = async (trajectoryId: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        try{
+        if (!await confirm('Delete this trajectory?')) return;
+        try {
             await deleteTrajectoryById(trajectoryId);
-        }catch(err){
+        } catch (err) {
             logger.error('Error deleting folder:', err);
         }
     };

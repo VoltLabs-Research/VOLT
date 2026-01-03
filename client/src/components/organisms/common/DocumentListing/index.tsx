@@ -1,4 +1,5 @@
 import React, { useRef, useState, useCallback, useMemo } from 'react'
+import useListingLifecycle, { type ListingMeta } from '@/hooks/common/use-listing-lifecycle'
 import { RxDotsHorizontal } from 'react-icons/rx'
 import { Plus } from 'lucide-react'
 import DocumentListingTable from '@/components/molecules/common/DocumentListingTable'
@@ -147,6 +148,12 @@ type DocumentListingProps = {
     }
     headerActions?: React.ReactNode
     gap?: string
+
+    // Lifecycle props
+    fetchData?: (params: any) => Promise<void> | void
+    listingMeta?: ListingMeta
+    dependencies?: any[]
+    initialFetchParams?: any
 }
 
 const DocumentListing = ({
@@ -164,8 +171,27 @@ const DocumentListing = ({
     onLoadMore,
     createNew,
     headerActions,
-    gap = 'gap-3'
+    gap = 'gap-3',
+    fetchData,
+    listingMeta,
+    dependencies = [],
+    initialFetchParams
 }: DocumentListingProps) => {
+    const { handleLoadMore: hookLoadMore } = useListingLifecycle({
+        data,
+        isLoading,
+        isFetchingMore: !!isFetchingMore,
+        listingMeta: listingMeta || { page: 1, limit: 20, hasMore: hasMore || false },
+        fetchData: fetchData || (() => { }),
+        dependencies,
+        initialFetchParams,
+        skipInitialFetch: !fetchData
+    });
+
+    const activeLoadMore = fetchData ? hookLoadMore : onLoadMore;
+    // Prefer passed hasMore if available(for manual mode), otherwise use listingMeta
+    const activeHasMore = listingMeta ? listingMeta.hasMore : hasMore;
+
     const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
     const [optimisticallyDeletedIds, setOptimisticallyDeletedIds] = useState(new Set<string>());
 
@@ -311,9 +337,9 @@ const DocumentListing = ({
                     getMenuOptions={wrappedGetMenuOptions}
                     emptyMessage={emptyMessage}
                     enableInfinite={enableInfinite}
-                    hasMore={hasMore}
+                    hasMore={activeHasMore}
                     isFetchingMore={isFetchingMore}
-                    onLoadMore={onLoadMore}
+                    onLoadMore={activeLoadMore}
                     keyExtractor={_keyExtractor}
                     scrollContainerRef={bodyRef as any}
                 />

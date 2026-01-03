@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, Square, Box } from 'lucide-react';
 import { RiDeleteBin6Line, RiEyeLine, RiTerminalLine } from 'react-icons/ri';
@@ -6,10 +6,11 @@ import useToast from '@/hooks/ui/use-toast';
 import DocumentListing, { type ColumnConfig, StatusBadge } from '@/components/organisms/common/DocumentListing';
 import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
 import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
-import { useUIStore } from '@/stores/slices/ui';
 import { formatDistanceToNow } from 'date-fns';
 import containerApi from '@/services/api/container/container';
 import useContainerStore, { type Container } from '@/stores/slices/container';
+import useListingLifecycle from '@/hooks/common/use-listing-lifecycle';
+import useConfirm from '@/hooks/ui/use-confirm';
 import './Containers.css';
 
 const Containers: React.FC = () => {
@@ -23,16 +24,17 @@ const Containers: React.FC = () => {
     const [terminalContainer, setTerminalContainer] = useState<Container | null>(null);
     const { showSuccess, showError } = useToast();
     const navigate = useNavigate();
-    const searchQuery = useUIStore((s) => s.query);
+    const { confirm } = useConfirm();
 
-    // Initial fetch handled by DashboardLayout, but good ensure logic
-    useEffect(() => {
-        if (containers.length === 0) {
-            fetchContainers({ page: 1, limit: 20 });
-        }
-    }, [fetchContainers, containers.length]);
+    // We pass these directly to DocumentListing
+    const lifecycleProps = {
+        listingMeta,
+        fetchData: fetchContainers,
+        initialFetchParams: { page: 1, limit: 20 },
+        dependencies: [fetchContainers]
+    };
 
-    const handleControl = async (container: Container, action: 'start' | 'stop') => {
+    const handleControl = useCallback(async (container: Container, action: 'start' | 'stop') => {
         try {
             await containerApi.control(container._id, action);
             showSuccess(`Container ${action}ed successfully`);
@@ -40,10 +42,10 @@ const Containers: React.FC = () => {
         } catch (error: any) {
             showError(error.response?.data?.message || `Failed to ${action} container`);
         }
-    };
+    }, [showSuccess, showError, fetchContainers]);
 
-    const handleDelete = async (container: Container) => {
-        if (!window.confirm(`Are you sure you want to delete container "${container.name}"?`)) {
+    const handleDelete = useCallback(async (container: Container) => {
+        if (!await confirm(`Delete container "${container.name}"? This action cannot be undone.`)) {
             return;
         }
         try {
@@ -53,7 +55,7 @@ const Containers: React.FC = () => {
         } catch (error: any) {
             showError(error.response?.data?.message || 'Failed to delete container');
         }
-    };
+    }, [confirm, showSuccess, showError, fetchContainers]);
 
     const handleMenuAction = useCallback(async (action: string, item: any) => {
         // Cast item to Container
@@ -79,7 +81,7 @@ const Containers: React.FC = () => {
                 await handleDelete(container);
                 break;
         }
-    }, [navigate, showError, fetchContainers]);
+    }, [navigate, showError, handleControl, handleDelete]);
 
     const getMenuOptions = useCallback((item: any) => {
         const container = item as Container;
@@ -189,15 +191,6 @@ const Containers: React.FC = () => {
         }
     ], []);
 
-    const handleLoadMore = useCallback(async () => {
-        if (!listingMeta.hasMore || isFetchingMore) return;
-        await fetchContainers({
-            page: listingMeta.page + 1,
-            limit: listingMeta.limit,
-            append: true
-        });
-    }, [listingMeta, isFetchingMore, fetchContainers]);
-
     return (
         <DashboardContainer pageName='Containers' className='d-flex column h-max'>
             <DocumentListing
@@ -210,9 +203,8 @@ const Containers: React.FC = () => {
                 emptyMessage='No containers found. Create one to get started.'
                 keyExtractor={(item) => item._id}
                 enableInfinite
-                hasMore={listingMeta.hasMore}
-                isFetchingMore={isFetchingMore}
-                onLoadMore={handleLoadMore}
+
+                {...lifecycleProps}
                 createNew={{
                     buttonTitle: 'New Container',
                     onCreate: () => navigate('/dashboard/containers/new')

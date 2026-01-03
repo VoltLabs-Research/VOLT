@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { formatSize } from '@/utilities/glb/scene-utils'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/common/DocumentListing'
@@ -7,6 +7,8 @@ import { useTeamStore } from '@/stores/slices/team'
 import { formatDistance, formatDistanceToNow } from 'date-fns'
 import { useUIStore } from '@/stores/slices/ui';
 import { useNavigate } from 'react-router'
+import useListingLifecycle from '@/hooks/common/use-listing-lifecycle'
+import useConfirm from '@/hooks/ui/use-confirm'
 
 const TrajectoriesListing = () => {
     const getTrajectories = useTrajectoryStore((s) => s.getTrajectories)
@@ -19,25 +21,26 @@ const TrajectoriesListing = () => {
     const navigate = useNavigate();
 
     const searchQuery = useUIStore((s) => s.query);
+    const { confirm } = useConfirm();
 
-    useEffect(() => {
-        if (!team?._id) return;
-        // Fetch handled by DashboardLayout prefetch, but ensure consistent state if missing
-        if (trajectories.length === 0) {
-            getTrajectories(team._id, { page: 1, limit: 20, search: searchQuery });
-        } else if (searchQuery) {
-            // If searching, we must fetch(store might cache non-search results)
-            getTrajectories(team._id, { page: 1, limit: 20, search: searchQuery, force: true });
-        }
-    }, [team?._id, searchQuery, getTrajectories, trajectories.length])
+    // We now pass these directly to DocumentListing
+    const lifecycleProps = {
+        listingMeta,
+        fetchData: (params: any) => {
+            if (!team?._id) return;
+            return getTrajectories(team._id, { ...params, search: searchQuery });
+        },
+        initialFetchParams: { page: 1, limit: 20, search: searchQuery },
+        dependencies: [team?._id, searchQuery, getTrajectories]
+    };
 
     const handleMenuAction = useCallback(async (action: string, item: any) => {
         if (action === 'delete') {
-            if (window.confirm('Delete this trajectory?')) {
+            if (await confirm(`Delete trajectory "${item.name}"? This action cannot be undone.`)) {
                 await deleteTrajectoryById(item._id)
             }
         }
-    }, [deleteTrajectoryById]);
+    }, [deleteTrajectoryById, confirm]);
 
     const getMenuOptions = useCallback((item: any) => ([
         ['View', RiEyeLine, () => handleMenuAction('view', item)],
@@ -95,16 +98,6 @@ const TrajectoriesListing = () => {
         }
     ], [])
 
-    const handleLoadMore = useCallback(async () => {
-        if (!team?._id || !listingMeta.hasMore || isFetchingMore) return;
-        await getTrajectories(team._id, {
-            page: listingMeta.page + 1,
-            limit: listingMeta.limit,
-            search: searchQuery,
-            append: true
-        });
-    }, [team?._id, listingMeta, isFetchingMore, getTrajectories, searchQuery]);
-
     return (
         <DocumentListing
             title='Trajectories'
@@ -115,9 +108,8 @@ const TrajectoriesListing = () => {
             getMenuOptions={getMenuOptions}
             emptyMessage='No trajectories found'
             enableInfinite
-            hasMore={listingMeta.hasMore}
-            isFetchingMore={isFetchingMore}
-            onLoadMore={handleLoadMore}
+
+            {...lifecycleProps}
         />
     )
 }

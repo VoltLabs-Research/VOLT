@@ -120,7 +120,7 @@ const pluginApi = {
         pluginSlug: string,
         listingSlug: string,
         trajectoryId?: string,
-        params?: { page?: number; limit?: number; teamId?: string }
+        params?: { page?: number; limit?: number; teamId?: string; cursor?: string }
     ): Promise<any> {
         const path = trajectoryId
             ? `/listing/${pluginSlug}/${listingSlug}/${trajectoryId}`

@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import type { Node } from '@xyflow/react';
+import useConfirm from '@/hooks/ui/use-confirm';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
 import KeyValueEditor from '@/components/molecules/plugins/KeyValueEditor';
@@ -27,6 +28,7 @@ const BOOLEAN_OPTIONS = [
 ];
 
 const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
+    const { confirm } = useConfirm();
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const argumentsData = (node.data?.arguments || { arguments: [] }) as IArgumentsData;
     const args = argumentsData.arguments || [];
@@ -81,10 +83,11 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
         updateNodeData(node.id, { arguments: { arguments: [...args, newArg] } });
     }, [args, node.id, updateNodeData]);
 
-    const removeArgument = useCallback((index: number) => {
+    const removeArgument = useCallback(async (index: number) => {
+        if (!await confirm('Remove this argument?')) return;
         const updatedArgs = args.filter((_, i) => i !== index);
         updateNodeData(node.id, { arguments: { arguments: updatedArgs } });
-    }, [args, node.id, updateNodeData]);
+    }, [args, node.id, updateNodeData, confirm]);
 
     return (
         <>
@@ -165,7 +168,7 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                             onFieldChange={(_, value) => updateArgument(index, 'value', value)}
                             options={[
                                 { value: '', title: '-- No value --' },
-                                    ...arg.options.map(opt => ({ value: opt.key, title: opt.label }))
+                                ...arg.options.map(opt => ({ value: opt.key, title: opt.label }))
                             ]}
                         />
                     ) : (

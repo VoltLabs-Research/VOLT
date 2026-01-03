@@ -1,13 +1,14 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import { useSSHConnectionStore, type SSHConnection } from '@/stores/slices/ssh';
 import SSHConnectionModal from '@/components/molecules/ssh/SSHConnectionModal';
 import useToast from '@/hooks/ui/use-toast';
 import { formatDistanceToNow } from 'date-fns';
-import { useState } from 'react';
+
 import { RiDeleteBin6Line, RiSettings3Line, RiWifiLine } from 'react-icons/ri';
 import { LuFolderOpen } from 'react-icons/lu';
+import useConfirm from '@/hooks/ui/use-confirm';
 
 const columns: ColumnConfig[] = [
     {
@@ -48,12 +49,26 @@ const SSHConnectionsListing = () => {
     const { showSuccess, showError } = useToast();
     const [editingConnection, setEditingConnection] = useState<SSHConnection | null>(null);
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+    const { confirm } = useConfirm();
 
     const { connections, loading, fetchConnections, deleteConnection, testConnection } = useSSHConnectionStore();
+
+    const [page, setPage] = useState(1);
+    const limit = 20;
 
     useEffect(() => {
         fetchConnections();
     }, [fetchConnections]);
+
+    const visibleConnections = useMemo(() => {
+        return connections.slice(0, page * limit);
+    }, [connections, page, limit]);
+
+    const hasMore = visibleConnections.length < connections.length;
+
+    const handleLoadMore = useCallback(() => {
+        setPage((prev) => prev + 1);
+    }, []);
 
     const handleOpenFileExplorer = useCallback((connection: SSHConnection) => {
         navigate(`/dashboard/ssh-connections/${connection._id}/file-explorer`);
@@ -77,7 +92,7 @@ const SSHConnectionsListing = () => {
     }, []);
 
     const handleDeleteConnection = useCallback(async (connection: SSHConnection) => {
-        if (!window.confirm(`Delete connection "${connection.name}"? This cannot be undone.`)) return;
+        if (!await confirm(`Delete connection "${connection.name}"? This action cannot be undone.`)) return;
 
         try {
             await deleteConnection(connection._id);
@@ -85,7 +100,7 @@ const SSHConnectionsListing = () => {
         } catch (err: any) {
             showError(err.message || 'Failed to delete connection');
         }
-    }, [deleteConnection, showSuccess, showError]);
+    }, [deleteConnection, showSuccess, showError, confirm]);
 
     const handleCreateNew = useCallback(() => {
         setEditingConnection(null);
@@ -121,11 +136,14 @@ const SSHConnectionsListing = () => {
     return (
         <>
             <DocumentListing
-                title="SSH Connections"
+                title={`SSH Connections (${connections.length})`}
                 columns={columns}
-                data={connections}
+                data={visibleConnections}
                 isLoading={loading}
                 emptyMessage="No SSH connections found. Create one to get started."
+                enableInfinite
+                hasMore={hasMore}
+                onLoadMore={handleLoadMore}
                 getMenuOptions={getMenuOptions}
                 createNew={{
                     buttonTitle: 'Add Connection',

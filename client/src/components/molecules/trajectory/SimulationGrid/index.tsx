@@ -1,4 +1,5 @@
 import { useEffect, useCallback, memo } from 'react';
+import useConfirm from '@/hooks/ui/use-confirm';
 import SimulationCard from '@/components/atoms/trajectory/SimulationCard';
 import SimulationSkeletonCard from '@/components/atoms/trajectory/SimulationSkeletonCard';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
@@ -8,6 +9,7 @@ import Container from '@/components/primitives/Container';
 import './SimulationGrid.css';
 
 const SimulationGrid = memo(() => {
+    const { confirm } = useConfirm();
     const [parent] = useAnimationPresence();
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
@@ -24,7 +26,7 @@ const SimulationGrid = memo(() => {
     const hasEmptyState = !isLoading && trajectories.length === 0 && activeUploadEntries.length === 0;
 
     useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
+        const handleKeyDown = async (event: KeyboardEvent) => {
             if (selectedTrajectories.length === 0) {
                 return;
             }
@@ -32,7 +34,9 @@ const SimulationGrid = memo(() => {
             const isDeleteShortcut = (event.ctrlKey || event.metaKey) && (event.key === 'Backspace' || event.key === 'Delete');
             if (isDeleteShortcut) {
                 event.preventDefault();
-                deleteSelectedTrajectories();
+                if (await confirm(`Delete ${selectedTrajectories.length} selected trajectories? This cannot be undone.`)) {
+                    deleteSelectedTrajectories();
+                }
             }
         };
 
@@ -41,7 +45,7 @@ const SimulationGrid = memo(() => {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [selectedTrajectories.length, deleteSelectedTrajectories]);
+    }, [selectedTrajectories.length, deleteSelectedTrajectories, confirm]);
 
     if (hasEmptyState) {
         return <EmptyState

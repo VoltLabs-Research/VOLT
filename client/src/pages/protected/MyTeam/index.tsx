@@ -16,6 +16,7 @@ import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import './MyTeam.css';
 import dailyActivityApi from '@/services/api/daily-activity/daily-activity';
+import useConfirm from '@/hooks/ui/use-confirm';
 
 const MyTeam: React.FC = () => {
     const navigate = useNavigate();
@@ -23,7 +24,12 @@ const MyTeam: React.FC = () => {
     const { roles, fetchRoles, assignRole, members: membersWithRoles } = useTeamRoleStore();
     const { user: currentUser } = useAuthStore();
     const { showSuccess, showError } = useToast();
+    const { confirm } = useConfirm();
     const [activityData, setActivityData] = useState<ActivityData[]>([]);
+
+    // Client-side pagination state
+    const [page, setPage] = useState(1);
+    const limit = 20;
 
     useEffect(() => {
         if (selectedTeam) {
@@ -141,6 +147,16 @@ const MyTeam: React.FC = () => {
         });
     }, [members, admins, owner, onlineUsers, memberRoleMap]);
 
+    const visibleData = useMemo(() => {
+        return tableData.slice(0, page * limit);
+    }, [tableData, page, limit]);
+
+    const hasMore = visibleData.length < tableData.length;
+
+    const handleLoadMore = useCallback(() => {
+        setPage((prev) => prev + 1);
+    }, []);
+
     const columns: ColumnConfig[] = useMemo(() => [
         {
             key: 'user',
@@ -254,7 +270,8 @@ const MyTeam: React.FC = () => {
                     label: 'Remove from Team',
                     icon: IoPersonRemoveOutline,
                     onClick: async () => {
-                        if (confirm(`Are you sure you want to remove ${member.firstName}?`)) {
+                        const isConfirmed = await confirm(`Are you sure you want to remove ${member.firstName}?`);
+                        if (isConfirmed) {
                             await removeMember(selectedTeam._id, member.user._id);
                         }
                     },
@@ -270,9 +287,9 @@ const MyTeam: React.FC = () => {
     return (
         <Container className="my-team-page dashboard-content-padding h-100">
             <DocumentListing
-                title={headerContent || 'My Team'}
+                title={headerContent || `My Team (${tableData.length})`}
                 columns={columns}
-                data={tableData}
+                data={visibleData}
                 isLoading={isLoading}
                 getMenuOptions={getMenuOptions}
                 emptyMessage="No members found in this team."
@@ -281,6 +298,9 @@ const MyTeam: React.FC = () => {
                     <ActivityHeatmap data={activityData} />
                 }
                 gap=""
+                enableInfinite
+                hasMore={hasMore}
+                onLoadMore={handleLoadMore}
             />
         </Container>
     );

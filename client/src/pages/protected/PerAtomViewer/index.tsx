@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import trajectoryApi from '@/services/api/trajectory/trajectory';
+import useListingLifecycle, { type ListingMeta } from '@/hooks/common/use-listing-lifecycle';
 
 interface MergedAtomsRow {
     idx: number;
@@ -21,22 +22,27 @@ const PerAtomViewer = () => {
 
     const [rows, setRows] = useState<MergedAtomsRow[]>([]);
     const [properties, setProperties] = useState<string[]>([]);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(false);
+    const [listingMeta, setListingMeta] = useState<ListingMeta>({
+        page: 1,
+        limit: 50_000,
+        hasMore: false,
+        total: 0
+    });
     const [loading, setLoading] = useState(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [total, setTotal] = useState(0);
     const pageSize = 50_000;
 
-    const fetchPage = useCallback(async (nextPage: number) => {
+    const fetchPage = useCallback(async (params: any) => {
+        const { page: nextPage, force } = params;
+
         if (!trajectoryId || !analysisId || !exposureId) {
             setError('Missing required parameters.');
             return;
         }
 
         setError(null);
-        if (nextPage === 1) {
+        if (nextPage === 1 || force) {
             setLoading(true);
         } else {
             setIsFetchingMore(true);
@@ -55,9 +61,13 @@ const PerAtomViewer = () => {
             }
 
             setProperties(result.properties);
-            setTotal(result.total);
-            setHasMore(result.hasMore);
-            setPage(nextPage);
+
+            setListingMeta(prev => ({
+                ...prev,
+                page: nextPage,
+                hasMore: result.hasMore,
+                total: result.total
+            }));
 
             if (nextPage === 1) {
                 setRows(result.data);
@@ -73,12 +83,17 @@ const PerAtomViewer = () => {
         }
     }, [trajectoryId, analysisId, exposureId, timestep, pageSize]);
 
-    useEffect(() => {
-        setRows([]);
-        setPage(1);
-        setHasMore(false);
-        fetchPage(1);
-    }, [fetchPage]);
+    const { handleLoadMore } = useListingLifecycle({
+        data: rows,
+        isLoading: loading,
+        isFetchingMore,
+        listingMeta,
+        fetchData: fetchPage,
+        initialFetchParams: { page: 1, limit: pageSize },
+        dependencies: [trajectoryId, analysisId, exposureId, timestep, pageSize]
+    });
+
+
 
     const typePalette = useMemo(() => [
         '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2',
@@ -145,13 +160,9 @@ const PerAtomViewer = () => {
             isLoading={loading}
             emptyMessage={error ?? 'No atoms data found.'}
             enableInfinite
-            hasMore={hasMore}
+            hasMore={listingMeta.hasMore}
             isFetchingMore={isFetchingMore}
-            onLoadMore={() => {
-                if (!loading && !isFetchingMore && hasMore) {
-                    fetchPage(page + 1);
-                }
-            }}
+            onLoadMore={handleLoadMore}
         />
     );
 };

@@ -18,6 +18,7 @@ import {
     IfStatementEditor
 } from './editors';
 import './NodeEditor.css';
+import useConfirm from '@/hooks/ui/use-confirm';
 
 interface NodeEditorProps {
     node: Node;
@@ -39,11 +40,13 @@ const EDITOR_COMPONENTS: Partial<Record<NodeType, React.FC<{ node: Node }>>> = {
 const NodeEditor: React.FC<NodeEditorProps> = ({ node }) => {
     const deleteNode = usePluginBuilderStore((state) => state.deleteNode);
     const selectNode = usePluginBuilderStore((state) => state.selectNode);
+    const { confirm } = useConfirm();
 
     const nodeType = node.type as NodeType;
     const EditorComponent = EDITOR_COMPONENTS[nodeType];
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
+        if (!await confirm(`Delete this ${nodeType} node?`)) return;
         deleteNode(node.id);
         selectNode(null);
     };

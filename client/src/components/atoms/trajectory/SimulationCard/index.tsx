@@ -11,6 +11,7 @@ import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';
 import SimulationCardUsers from '@/components/atoms/trajectory/SimulationCardUsers';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import useConfirm from '@/hooks/ui/use-confirm';
 import useCardInteractions from '@/hooks/ui/interaction/use-card-interaction';
 import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
 import { useRasterStore } from '@/stores/slices/raster';
@@ -93,6 +94,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
     const navigate = useNavigate();
     const deleteTrajectoryById = useTrajectoryStore((state) => state.deleteTrajectoryById);
     const rasterize = useRasterStore((state) => state.rasterize);
+    const { confirm } = useConfirm();
 
     const {
         previewBlobUrl,
@@ -135,7 +137,8 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
     const showProcessingLoader = processingStatus.isProcessing || isWaitingForProcess;
     const containerClasses = `simulation-container ${showProcessingLoader ? 'has-jobs' : ''} ${isDeleting ? 'is-deleting' : ''} ${isSelected ? 'is-selected' : ''}`;
 
-    const onDelete = (): void => {
+    const onDelete = async (): Promise<void> => {
+        if (!await confirm(`Delete trajectory "${trajectory.name}"? This cannot be undone.`)) return;
         handleDelete(trajectory._id, deleteTrajectoryById, () => {
             cleanupPreview();
         });

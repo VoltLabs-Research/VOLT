@@ -29,9 +29,7 @@ import * as os from 'node:os';
 import { EventEmitter } from 'events';
 import { VirtualWorker } from '@/utilities/queues/virtual-worker';
 import { publishJobUpdate } from '@/events/job-updates';
-import { Trajectory } from '@/models';
 import logger from '@/logger';
-import { Queues } from '@/constants/queues';
 import trajectoryJobTracker from '@/services/trajectory-job-tracker';
 
 export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitter {

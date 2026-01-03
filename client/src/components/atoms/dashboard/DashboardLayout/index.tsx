@@ -31,14 +31,12 @@ import { HiOutlineDotsVertical } from "react-icons/hi";
 import { TbHelp, TbCube3dSphere } from 'react-icons/tb';
 import { useTeamStore } from '@/stores/slices/team';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
-import { useRasterStore } from '@/stores/slices/raster';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
-import { useEditorStore } from '@/stores/slices/editor';
-import { useUIStore } from '@/stores/slices/ui';
 import { useNotificationStore } from '@/stores/slices/notification';
 import { useAuthStore } from '@/stores/slices/auth';
 import Select from '@/components/atoms/form/Select';
 import useToast from '@/hooks/ui/use-toast';
+import useTeamStateReset from '@/hooks/team/use-team-state-reset';
 import { Skeleton } from '@mui/material';
 import type { IconType } from 'react-icons';
 import { IoIosAdd } from 'react-icons/io';
@@ -116,6 +114,7 @@ const DashboardLayout = () => {
     const fetchMembers = useTeamStore((state) => state.fetchMembers);
     const owner = useTeamStore((state) => state.owner);
     const admins = useTeamStore((state) => state.admins);
+    const { resetAllTeamState } = useTeamStateReset();
 
     useEffect(() => {
         if (selectedTeam?._id) {
@@ -329,23 +328,7 @@ const DashboardLayout = () => {
     const handleTeamChange = (teamId: string) => {
         if (selectedTeam?._id === teamId) return;
 
-        const { reset: resetTrajectories } = useTrajectoryStore.getState();
-        const { clearFrameCache } = useRasterStore.getState();
-        const { resetAnalysisConfig } = useAnalysisConfigStore.getState();
-        const { resetModel } = useEditorStore.getState();
-        const { resetTimesteps } = useEditorStore.getState();
-        const { resetPlayback } = useEditorStore.getState();
-        const { resetEditorUI } = useUIStore.getState();
-        const { reset: resetRenderConfig } = useEditorStore.getState().renderConfig;
-
-        resetTrajectories();
-        clearFrameCache();
-        resetAnalysisConfig();
-        resetModel();
-        resetTimesteps();
-        resetPlayback();
-        resetEditorUI();
-        resetRenderConfig();
+        resetAllTeamState();
 
         setSelectedTeam(teamId);
         setSearchParams({ team: teamId });
@@ -363,23 +346,7 @@ const DashboardLayout = () => {
                 const newTeamId = remainingTeams[0]._id;
                 setSelectedTeam(newTeamId);
 
-                const { reset: resetTrajectories } = useTrajectoryStore.getState();
-                const { clearFrameCache } = useRasterStore.getState();
-                const { resetAnalysisConfig } = useAnalysisConfigStore.getState();
-                const { resetModel } = useEditorStore.getState();
-                const { resetTimesteps } = useEditorStore.getState();
-                const { resetPlayback } = useEditorStore.getState();
-                const { resetEditorUI } = useUIStore.getState();
-                const { reset: resetRenderConfig } = useEditorStore.getState().renderConfig;
-
-                resetTrajectories();
-                clearFrameCache();
-                resetAnalysisConfig();
-                resetModel();
-                resetTimesteps();
-                resetPlayback();
-                resetEditorUI();
-                resetRenderConfig();
+                resetAllTeamState();
 
                 setSearchParams({ team: newTeamId });
             }

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import trajectoryApi from '@/services/api/trajectory/trajectory';
 import { useEditorStore } from '@/stores/slices/editor';
 import PluginCompactTable, { type ColumnConfig } from '../PluginCompactTable';
+import useListingLifecycle, { type ListingMeta } from '@/hooks/common/use-listing-lifecycle';
 
 interface PluginAtomsTableProps {
     trajectoryId: string;
@@ -34,18 +35,24 @@ const PluginAtomsTable = ({
 }: PluginAtomsTableProps) => {
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
 
+
     const [rows, setRows] = useState<any[]>([]);
     const [properties, setProperties] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
-    const [page, setPage] = useState(1);
-    const [hasMore, setHasMore] = useState(false);
+    const [listingMeta, setListingMeta] = useState<ListingMeta>({
+        page: 1,
+        limit: 50000,
+        hasMore: false
+    });
     const [error, setError] = useState<string | null>(null);
 
-    const fetchAtoms = useCallback(async (pageNum: number) => {
+    const fetchAtoms = useCallback(async (params: any) => {
         if (!trajectoryId || !analysisId || currentTimestep === undefined) return;
 
-        if (pageNum === 1) setIsLoading(true);
+        const { page: pageNum, force } = params;
+
+        if (pageNum === 1 || force) setIsLoading(true);
         else setIsFetchingMore(true);
 
         setError(null);
@@ -61,10 +68,16 @@ const PluginAtomsTable = ({
             if (response) {
                 setRows((prev) => (pageNum === 1 ? response.data : [...prev, ...response.data]));
                 setProperties(response.properties);
-                setHasMore(response.hasMore);
+                setListingMeta(prev => ({
+                    ...prev,
+                    page: pageNum,
+                    hasMore: response.hasMore,
+                    // Assuming response doesn't provide total, or if it does:
+                    total: response.total
+                }));
             } else {
                 if (pageNum === 1) setRows([]);
-                setHasMore(false);
+                setListingMeta(prev => ({ ...prev, hasMore: false }));
             }
         } catch (err: any) {
             setError(err.message || 'Failed to fetch atoms');
@@ -74,18 +87,17 @@ const PluginAtomsTable = ({
         }
     }, [trajectoryId, analysisId, exposureId, currentTimestep]);
 
-    useEffect(() => {
-        setPage(1);
-        fetchAtoms(1);
-    }, [fetchAtoms]);
+    const { handleLoadMore } = useListingLifecycle({
+        data: rows,
+        isLoading,
+        isFetchingMore,
+        listingMeta,
+        fetchData: fetchAtoms,
+        initialFetchParams: { page: 1, limit: 50000 },
+        dependencies: [trajectoryId, analysisId, exposureId, currentTimestep]
+    });
 
-    const handleLoadMore = () => {
-        if (hasMore && !isFetchingMore) {
-            const nextPage = page + 1;
-            setPage(nextPage);
-            fetchAtoms(nextPage);
-        }
-    };
+
 
     const columns: ColumnConfig[] = useMemo(() => {
         const base = [
@@ -127,7 +139,7 @@ const PluginAtomsTable = ({
         <PluginCompactTable
             columns={columns}
             data={rows}
-            hasMore={hasMore}
+            hasMore={listingMeta.hasMore}
             isLoading={isLoading}
             isFetchingMore={isFetchingMore}
             onLoadMore={handleLoadMore}

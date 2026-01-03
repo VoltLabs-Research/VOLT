@@ -43,6 +43,7 @@ import { useFormValidation } from '@/hooks/useFormValidation';
 import './GroupManagementModal.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import useConfirm from '@/hooks/ui/use-confirm';
 
 const GroupManagementModal = () => {
     const {
@@ -59,6 +60,7 @@ const GroupManagementModal = () => {
     const user = useAuthStore((store) => store.user);
     const [isLoading, setIsLoading] = useState(false);
     const [activeSection, setActiveSection] = useState<'general' | 'members' | 'administrators'>('members');
+    const { confirm } = useConfirm();
 
     // Add Members states
     const [showAddMembers, setShowAddMembers] = useState(false);
@@ -112,7 +114,8 @@ const GroupManagementModal = () => {
 
     // Add Members functions
     const handleLeaveGroup = async () => {
-        if (!confirm('Are you sure you want to leave this group?')) return;
+        const isConfirmed = await confirm('Are you sure you want to leave this group?');
+        if (!isConfirmed) return;
 
         setIsLoading(true);
         try {

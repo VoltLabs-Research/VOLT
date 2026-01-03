@@ -23,7 +23,6 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
-import DocumentListingTable from '@/components/molecules/common/DocumentListingTable';
 import pluginApi from '@/services/api/plugin/plugin';
 import analysisConfigApi from '@/services/api/analysis/analysis';
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
@@ -31,6 +30,8 @@ import { formatCellValue, normalizeRows, type ColumnDef } from '@/utilities/plug
 import { NodeType } from '@/types/plugin';
 import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import PluginCompactTable from '../PluginCompactTable';
+import useConfirm from '@/hooks/ui/use-confirm';
+import useListingLifecycle, { type ListingMeta } from '@/hooks/common/use-listing-lifecycle';
 import './PluginExposureTable.css';
 
 type ListingResponse = {
@@ -128,15 +129,20 @@ const PluginExposureTable = ({
     headerActions
 }: PluginExposureTableProps) => {
     const navigate = useNavigate();
+    const { confirm } = useConfirm();
+    const pageSize = compact ? 20 : 50;
 
     const [columns, setColumns] = useState<ColumnConfig[]>([]);
     const [rows, setRows] = useState<any[]>([]);
-    const [hasMore, setHasMore] = useState(false);
-    const [nextCursor, setNextCursor] = useState<string | null>(null);
+    const [listingMeta, setListingMeta] = useState<ListingMeta>({
+        page: 1,
+        limit: pageSize,
+        hasMore: false,
+        nextCursor: null
+    });
     const [loading, setLoading] = useState(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const pageSize = compact ? 20 : 50;
 
     const pluginsBySlug = usePluginStore((s) => s.pluginsBySlug);
     const fetchPlugins = usePluginStore((s) => s.fetchPlugins);
@@ -157,7 +163,10 @@ const PluginExposureTable = ({
     // Track if initial fetch has been done for current params
     const fetchedForRef = useRef<string | null>(null);
 
-    const fetchBatch = useCallback(async (after?: string | null) => {
+    const fetchBatch = useCallback(async (params: any) => {
+        const { cursor, force, page } = params;
+        const isInitial = page === 1;
+
         if (!pluginSlug || !listingSlug) {
             setError('Invalid listing parameters.');
             return;
@@ -169,16 +178,13 @@ const PluginExposureTable = ({
         }
 
         // Guard against duplicate initial fetches (StrictMode)
-        const paramsKey = `${pluginSlug}:${listingSlug}:${trajectoryId || ''}:${teamId || ''}`;
-        if (!after) {
-            if (fetchedForRef.current === paramsKey && rows.length > 0) {
-                return;
-            }
-            fetchedForRef.current = paramsKey;
-        }
+        // If we are doing initial fetch (no cursor or page 1) and we seemingly already fetched for these deps?
+        // But hook handles deps.
+        // We can keep `fetchedForRef` logic if we want to be extra safe, or rely on hook.
+        // Hook is safe.
 
         setError(null);
-        if (!after) {
+        if (isInitial || force) {
             setLoading(true);
         } else {
             setIsFetchingMore(true);
@@ -189,7 +195,11 @@ const PluginExposureTable = ({
                 pluginSlug,
                 listingSlug,
                 trajectoryId,
-                { limit: pageSize, teamId }
+                {
+                    limit: pageSize,
+                    teamId,
+                    cursor: cursor ?? undefined
+                }
             ) as ListingResponse;
 
             const defs = (payload as any)?.meta?.columns && Array.isArray((payload as any).meta.columns)
@@ -200,10 +210,15 @@ const PluginExposureTable = ({
             setColumns(buildColumns(defs, shouldShowTrajectory));
 
             const normalizedRows = normalizeRows(payload.rows ?? [], defs);
-            setRows((prev) => (!after ? normalizedRows : [...prev, ...normalizedRows]));
 
-            setHasMore(Boolean(payload.hasMore));
-            setNextCursor(payload.nextCursor ?? null);
+            setListingMeta(prev => ({
+                ...prev,
+                page: page, // Hook manages page counter
+                hasMore: Boolean(payload.hasMore),
+                nextCursor: payload.nextCursor ?? null
+            }));
+
+            setRows((prev) => (isInitial && !params.append ? normalizedRows : [...prev, ...normalizedRows]));
         } catch (err: any) {
             const message = err?.response?.data?.message || err?.message || 'Failed to load listing.';
             setError(message);
@@ -213,16 +228,24 @@ const PluginExposureTable = ({
         }
     }, [listingSlug, pluginSlug, trajectoryId, teamId, columnDefs, pageSize, showTrajectoryColumn]);
 
+    // Reset columns for new listing
     useEffect(() => {
         setRows([]);
         setColumns([]);
-        setHasMore(false);
-        setNextCursor(null);
+        setListingMeta(prev => ({ ...prev, page: 1, hasMore: false, nextCursor: null }));
+    }, [pluginSlug, listingSlug, trajectoryId, teamId]);
 
-        if (pluginSlug && listingSlug && (trajectoryId || teamId)) {
-            fetchBatch(null);
-        }
-    }, [pluginSlug, listingSlug, trajectoryId, teamId, fetchBatch]);
+    const { handleLoadMore } = useListingLifecycle({
+        data: rows,
+        isLoading: loading,
+        isFetchingMore,
+        listingMeta,
+        fetchData: fetchBatch,
+        initialFetchParams: { page: 1, limit: pageSize },
+        dependencies: [pluginSlug, listingSlug, trajectoryId, teamId]
+    });
+
+
 
     const handleMenuAction = useCallback(async (action: string, item: any) => {
         if (action === 'delete') {
@@ -232,7 +255,8 @@ const PluginExposureTable = ({
                 return;
             }
 
-            if (!window.confirm('Delete this analysis? This cannot be undone.')) return;
+            const isConfirmed = await confirm('Delete this analysis? This cannot be undone.');
+            if (!isConfirmed) return;
 
             setRows((prev) => prev.filter((row) => row?.analysisId !== analysisId));
 
@@ -240,10 +264,10 @@ const PluginExposureTable = ({
                 await analysisConfigApi.delete(analysisId);
             } catch (e) {
                 console.error('Failed to delete analysis:', e);
-                fetchBatch(null);
+                fetchBatch({ page: 1, force: true });
             }
         }
-    }, [fetchBatch]);
+    }, [fetchBatch, confirm]);
 
     const getMenuOptions = useCallback((item: any) => {
         const options: any[] = [];
@@ -269,18 +293,14 @@ const PluginExposureTable = ({
         return options;
     }, [handleMenuAction, navigate]);
 
-    const handleLoadMore = useCallback(() => {
-        if (!loading && !isFetchingMore && hasMore && nextCursor) {
-            fetchBatch(nextCursor);
-        }
-    }, [loading, isFetchingMore, hasMore, nextCursor, fetchBatch]);
+
 
     if (compact) {
         return (
             <PluginCompactTable
                 columns={columns}
                 data={rows}
-                hasMore={hasMore}
+                hasMore={listingMeta.hasMore}
                 isLoading={loading}
                 isFetchingMore={isFetchingMore}
                 onLoadMore={handleLoadMore}
@@ -297,7 +317,7 @@ const PluginExposureTable = ({
             isLoading={loading}
             emptyMessage={error ?? 'No documents found.'}
             enableInfinite
-            hasMore={hasMore}
+            hasMore={listingMeta.hasMore}
             isFetchingMore={isFetchingMore}
             onLoadMore={handleLoadMore}
             onMenuAction={handleMenuAction}

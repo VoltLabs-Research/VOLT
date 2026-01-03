@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useRef, useState, useMemo } from 'react';
+import React, { memo, useRef, useMemo } from 'react';
 import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
 import FileUpload from '@/components/molecules/common/FileUpload';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
@@ -19,6 +19,7 @@ import { useEditorStore } from '@/stores/slices/editor';
 import DashboardStats from '@/components/atoms/dashboard/DashboardStats';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import useThemeDetector from '@/hooks/ui/use-theme-detector';
 import './Dashboard.css';
 
 const DashboardPage: React.FC = memo(() => {
@@ -63,24 +64,11 @@ const DashboardPage: React.FC = memo(() => {
 
     const hasNoTrajectories = !isLoadingTrajectories && trajectories.length === 0;
 
-    const [isLight, setIsLight] = useState(() =>
-        typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'light'
-    );
-
-    // Update background color in environment config when theme changes
-    useEffect(() => {
-        if (typeof document === 'undefined') return;
-        const root = document.documentElement;
-        const update = () => {
-            const isLightTheme = root.getAttribute('data-theme') === 'light';
-            setIsLight(isLightTheme);
+    const { isLight } = useThemeDetector({
+        onThemeChange: (isLightTheme) => {
             setBackgroundColor(isLightTheme ? '#f8f8f8' : '#0a0a0a');
-        };
-        update();
-        const observer = new MutationObserver(update);
-        observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
-        return () => observer.disconnect();
-    }, [setBackgroundColor]);
+        }
+    });
 
     return (
         <FileUpload>

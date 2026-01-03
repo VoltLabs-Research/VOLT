@@ -25,6 +25,7 @@ import { TbServer } from 'react-icons/tb';
 import { CircularProgress } from '@mui/material';
 import { formatSize } from '@/utilities/glb/scene-utils';
 import useToast from '@/hooks/ui/use-toast';
+import useConfirm from '@/hooks/ui/use-confirm';
 import './SSHFileExplorer.css';
 
 type SSHFileExplorerProps = {
@@ -38,6 +39,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
 
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const { showSuccess, showError } = useToast();
+    const { confirm } = useConfirm();
 
     const { connections, fetchConnections, deleteConnection } = useSSHConnectionStore();
     const {
@@ -96,7 +98,8 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
     };
 
     const handleDeleteConnection = async (conn: SSHConnection) => {
-        if (!confirm(`Delete connection "${conn.name}"?`)) return;
+        const isConfirmed = await confirm(`Delete connection "${conn.name}"?`);
+        if (!isConfirmed) return;
 
         try {
             await deleteConnection(conn._id);
@@ -249,7 +252,7 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
                         </div>
                         <div className="file-explorer-list-column" style={{ opacity: 0.7 }}>{entry.type === 'dir' ? 'Folder' : 'File'}</div>
                         <div className="file-explorer-list-column" style={{ opacity: 0.7 }}>{entry.size !== undefined ? formatSize(entry.size) : '-'}</div>
-                        <div className="file-explorer-list-column" style={{ opacity: 0.7 }}>{entry.mtime ? formatDistanceToNow(new Date(entry.mtime).toISOString(), { addSuffix: true }) : '-', }</div>
+                        <div className="file-explorer-list-column" style={{ opacity: 0.7 }}>{entry.mtime ? formatDistanceToNow(new Date(entry.mtime).toISOString(), { addSuffix: true }) : '-'}</div>
                     </div>
                 ))
             )}

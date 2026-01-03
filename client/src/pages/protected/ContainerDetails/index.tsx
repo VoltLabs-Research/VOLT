@@ -15,6 +15,7 @@ import {
     RefreshCw
 } from 'lucide-react';
 import useToast from '@/hooks/ui/use-toast';
+import useConfirm from '@/hooks/ui/use-confirm';
 import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
 import ContainerFileExplorer from '@/components/organisms/containers/ContainerFileExplorer';
 import ContainerProcesses from '@/components/organisms/containers/ContainerProcesses';
@@ -30,6 +31,7 @@ const ContainerDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { showSuccess, showError } = useToast();
+    const { confirm } = useConfirm();
 
     const [container, setContainer] = useState<any>(null);
     const [statsHistory, setStatsHistory] = useState<any[]>([]);
@@ -106,7 +108,8 @@ const ContainerDetails: React.FC = () => {
         setActionLoading(true);
         try {
             if (action === 'delete') {
-                if (!window.confirm('Are you sure you want to delete this container?')) {
+                const isConfirmed = await confirm('Are you sure you want to delete this container?');
+                if (!isConfirmed) {
                     setActionLoading(false);
                     return;
                 }

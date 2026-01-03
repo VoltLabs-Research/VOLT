@@ -3,7 +3,10 @@ import { useAuthStore } from '@/stores/slices/auth';
 import authApi from '@/services/api/auth/auth';
 import GeneralSettings from '@/components/molecules/settings/GeneralSettings';
 
+import useConfirm from '@/hooks/ui/use-confirm';
+
 const GeneralPage: React.FC = () => {
+    const { confirm } = useConfirm();
     const user = useAuthStore((state) => state.user);
 
     const [userData, setUserData] = useState({
@@ -15,7 +18,7 @@ const GeneralPage: React.FC = () => {
     const [updateError, setUpdateError] = useState<string | null>(null);
 
     useEffect(() => {
-        if(user){
+        if (user) {
             setUserData({
                 firstName: user.firstName || '',
                 lastName: user.lastName || '',
@@ -24,23 +27,23 @@ const GeneralPage: React.FC = () => {
         }
     }, [user]);
 
-    const updateUserOnServer = useCallback(async(field: string, value: string) => {
-        try{
+    const updateUserOnServer = useCallback(async (field: string, value: string) => {
+        try {
             setIsUpdating(true);
             setUpdateError(null);
             await authApi.updateMe({ [field]: value } as any);
             setUserData(prev => ({ ...prev, [field]: value }));
-        }catch(error: any){
+        } catch (error: any) {
             console.error('Error updating user data:', error);
             setUpdateError(`Failed to update ${field}. Please try again.`);
-            if(user){
+            if (user) {
                 setUserData({
                     firstName: user.firstName || '',
                     lastName: user.lastName || '',
                     email: user.email || ''
                 });
             }
-        }finally{
+        } finally {
             setIsUpdating(false);
         }
     }, [user]);
@@ -53,11 +56,12 @@ const GeneralPage: React.FC = () => {
         }, 1000);
     }, [updateUserOnServer]);
 
-    const handleDeleteAccount = useCallback(() => {
-        if(window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+    const handleDeleteAccount = useCallback(async () => {
+        const isConfirmed = await confirm('Are you sure you want to delete your account? This action cannot be undone.');
+        if (isConfirmed) {
             alert('TODO:');
         }
-    }, []);
+    }, [confirm]);
 
     return (
         <GeneralSettings

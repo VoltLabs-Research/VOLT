@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import type { Node } from '@xyflow/react';
+import useConfirm from '@/hooks/ui/use-confirm';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
 import { usePluginBuilderStore } from '@/stores/slices/plugin/builder-slice';
@@ -30,6 +31,7 @@ const DEFAULT_CONDITION: ICondition = {
 };
 
 const IfStatementEditor: React.FC<IfStatementEditorProps> = ({ node }) => {
+    const { confirm } = useConfirm();
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const ifStatementData = (node.data?.ifStatement || { conditions: [] }) as IIfStatementData;
     const conditions = ifStatementData.conditions || [];
@@ -49,10 +51,11 @@ const IfStatementEditor: React.FC<IfStatementEditorProps> = ({ node }) => {
         });
     }, [conditions, node.id, updateNodeData]);
 
-    const removeCondition = useCallback((index: number) => {
+    const removeCondition = useCallback(async (index: number) => {
+        if (!await confirm('Remove this condition?')) return;
         const updatedConditions = conditions.filter((_, i) => i !== index);
         updateNodeData(node.id, { ifStatement: { conditions: updatedConditions } });
-    }, [conditions, node.id, updateNodeData]);
+    }, [conditions, node.id, updateNodeData, confirm]);
 
     return (
         <>

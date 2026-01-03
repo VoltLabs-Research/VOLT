@@ -12,11 +12,13 @@ import WelcomeEmpty from '@/components/atoms/chat/WelcomeEmpty';
 import DetailsPanel from '@/components/molecules/chat/DetailsPanel';
 import ChatHeader from '@/components/molecules/chat/ChatHeader';
 import MessageList from '@/components/molecules/chat/MessageLists';
+import useConfirm from '@/hooks/ui/use-confirm';
 import './ChatArea.css';
 
 const ChatArea = () => {
     const user = useAuthStore((state) => state.user);
     const { setShowGroupManagement } = useChatStore();
+    const { confirm } = useConfirm();
 
     const {
         handleTyping,
@@ -38,9 +40,9 @@ const ChatArea = () => {
     }, [currentChat?._id, user?._id]);
 
     const presence = useMemo(() => {
-        if(!currentChat) return 'connecting' as const;
-        if(currentChat.isGroup) return 'online' as const;
-        if(!currentParticipant) return isConnected ? 'online' as const : 'connecting' as const;
+        if (!currentChat) return 'connecting' as const;
+        if (currentChat.isGroup) return 'online' as const;
+        if (!currentParticipant) return isConnected ? 'online' as const : 'connecting' as const;
         return (getUserPresence(currentParticipant._id) as any) || 'offline';
     }, [currentChat, currentParticipant, isConnected]);
 
@@ -70,9 +72,12 @@ const ChatArea = () => {
                                 isOwn={isOwn}
                                 isGroupChat={currentChat?.isGroup}
                                 currentChatId={currentChat?._id || ''}
-                                onEdit={async(id, content) => { await editMessage(id, content); }}
-                                onDelete={async(id) => { if(confirm('Are you sure you want to delete this message?')) await deleteMessage(id); }}
-                                onToggleReaction={async(id, e) => { await toggleReaction(id, e); }}
+                                onEdit={async (id, content) => { await editMessage(id, content); }}
+                                onDelete={async (id) => {
+                                    const isConfirmed = await confirm('Are you sure you want to delete this message?');
+                                    if (isConfirmed) await deleteMessage(id);
+                                }}
+                                onToggleReaction={async (id, e) => { await toggleReaction(id, e); }}
                                 isOptionsOpen={optionsId === m._id}
                                 isReactionsOpen={reactionsId === m._id}
                                 onToggleOptions={(id) => toggleOptions(id)}
@@ -86,8 +91,8 @@ const ChatArea = () => {
                     <ChatInput
                         disabled={!currentChat}
                         onTyping={() => currentChat && handleTyping(currentChat._id)}
-                        onSendText={async(text) => { await handleSendMessage(text); }}
-                        onSendFiles={async(files) => { for(const f of files) await sendFileMessage(f); }}
+                        onSendText={async (text) => { await handleSendMessage(text); }}
+                        onSendFiles={async (files) => { for (const f of files) await sendFileMessage(f); }}
                     />
                 </div>
             ) : (

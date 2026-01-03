@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { useCallback, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine } from 'react-icons/ri';
 import { TbRocket } from 'react-icons/tb';
@@ -9,6 +9,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { useTeamStore } from '@/stores/slices/team';
 import useToast from '@/hooks/ui/use-toast';
+import useListingLifecycle from '@/hooks/common/use-listing-lifecycle';
+import useConfirm from '@/hooks/ui/use-confirm';
 import type { IPluginRecord } from '@/services/api/plugin/types';
 import './Plugins.css';
 
@@ -23,13 +25,14 @@ const PluginsListing = () => {
     const { showSuccess } = useToast();
     const [isImporting, setIsImporting] = useState(false);
     const importInputRef = useRef<HTMLInputElement>(null);
+    const { confirm } = useConfirm();
 
-    // Initial fetch handled by DashboardLayout mostly, but ensure here
-    useEffect(() => {
-        if (plugins.length === 0) {
-            fetchPlugins({ page: 1, limit: 20 });
-        }
-    }, [fetchPlugins, plugins.length]);
+    const lifecycleProps = {
+        listingMeta,
+        fetchData: fetchPlugins,
+        initialFetchParams: { page: 1, limit: 20 },
+        dependencies: [fetchPlugins]
+    };
 
     const handleMenuAction = useCallback(async (action: string, item: IPluginRecord) => {
         switch (action) {
@@ -78,7 +81,7 @@ const PluginsListing = () => {
                 }
                 break;
             case 'delete':
-                if (!window.confirm('Delete this plugin? This cannot be undone.')) return;
+                if (!await confirm(`Delete plugin "${item.modifier?.name || item.slug}"? This action cannot be undone.`)) return;
                 try {
                     await pluginApi.deletePlugin(item._id);
                     fetchPlugins({ page: 1, force: true });
@@ -102,7 +105,7 @@ const PluginsListing = () => {
                 }
                 break;
         }
-    }, [navigate, selectedTeam?._id, fetchPlugins]);
+    }, [navigate, selectedTeam?._id, fetchPlugins, confirm]);
 
     const getMenuOptions = useCallback((item: IPluginRecord) => {
         const options: Array<[string, React.ElementType, () => void]> = [
@@ -207,15 +210,6 @@ const PluginsListing = () => {
         }
     ], [handleRowClick]);
 
-    const handleLoadMore = useCallback(async () => {
-        if (!listingMeta.hasMore || isFetchingMore) return;
-        await fetchPlugins({
-            page: listingMeta.page + 1,
-            limit: listingMeta.limit,
-            append: true
-        });
-    }, [listingMeta, isFetchingMore, fetchPlugins]);
-
     return (
         <DocumentListing
             title='Plugins'
@@ -225,11 +219,9 @@ const PluginsListing = () => {
             getMenuOptions={getMenuOptions}
             emptyMessage='No plugins found. Create your first plugin!'
             enableInfinite
-            hasMore={listingMeta.hasMore}
-            isFetchingMore={isFetchingMore}
-            onLoadMore={handleLoadMore}
+            {...lifecycleProps}
             createNew={{
-                buttonTitle: 'New Plugin',
+                buttonTitle: 'New plugin',
                 onCreate: handleCreateNew
             }}
             headerActions={

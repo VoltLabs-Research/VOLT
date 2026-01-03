@@ -2,6 +2,7 @@ import React, { useEffect, useCallback, useMemo, useState } from 'react';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import { IoShieldCheckmarkOutline } from 'react-icons/io5';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
+import useConfirm from '@/hooks/ui/use-confirm';
 import { useTeamStore } from '@/stores/slices/team';
 import { useTeamRoleStore } from '@/stores/slices/team';
 import useToast from '@/hooks/ui/use-toast';
@@ -15,14 +16,27 @@ const ManageRoles: React.FC = () => {
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const { roles, isLoading, isSaving, fetchRoles, createRole, updateRole, deleteRole } = useTeamRoleStore();
     const { showSuccess, showError } = useToast();
+    const { confirmDelete } = useConfirm();
 
     const [editingRole, setEditingRole] = useState<TeamRole | null>(null);
+    const [page, setPage] = useState(1);
+    const limit = 20;
 
     useEffect(() => {
         if (selectedTeam?._id) {
             fetchRoles(selectedTeam._id);
         }
     }, [selectedTeam?._id, fetchRoles]);
+
+    const visibleRoles = useMemo(() => {
+        return roles.slice(0, page * limit);
+    }, [roles, page, limit]);
+
+    const hasMore = visibleRoles.length < roles.length;
+
+    const handleLoadMore = useCallback(() => {
+        setPage((prev) => prev + 1);
+    }, []);
 
     const handleOpenCreate = useCallback(() => {
         setEditingRole(null);
@@ -60,7 +74,8 @@ const ManageRoles: React.FC = () => {
             return;
         }
 
-        if (!window.confirm(`Are you sure you want to delete the role "${role.name}"?`)) {
+        const isConfirmed = await confirmDelete(role.name);
+        if (!isConfirmed) {
             return;
         }
 
@@ -70,7 +85,7 @@ const ManageRoles: React.FC = () => {
         } catch (err: any) {
             showError(err?.message || 'Failed to delete role. It may be in use by team members.');
         }
-    }, [selectedTeam?._id, deleteRole, showSuccess, showError]);
+    }, [selectedTeam?._id, deleteRole, showSuccess, showError, confirmDelete]);
 
     const columns: ColumnConfig[] = useMemo(() => [
         {
@@ -157,13 +172,16 @@ const ManageRoles: React.FC = () => {
     return (
         <Container className="manage-roles-page dashboard-content-padding h-100">
             <DocumentListing
-                title="Manage Roles"
+                title={`Manage Roles (${roles.length})`}
                 columns={columns}
-                data={roles}
+                data={visibleRoles}
                 isLoading={isLoading}
                 getMenuOptions={getMenuOptions}
                 emptyMessage="No roles found. Create your first custom role."
                 keyExtractor={(item) => item._id}
+                enableInfinite
+                hasMore={hasMore}
+                onLoadMore={handleLoadMore}
                 createNew={{
                     buttonTitle: 'New Role',
                     onCreate: handleOpenCreate
