@@ -33,7 +33,7 @@ export const createTeamRoleSlice: SliceCreator<TeamRoleSlice> = (set, get) => ({
     fetchRoles: async (teamId) => {
         // Skip if already fetched for this team
         if (fetchedRolesForTeam === teamId) return;
-        
+
         await runRequest(set, get, () => teamRoleApi.getAll(), {
             errorFallback: 'Failed to fetch roles', rethrow: true,
             loadingKey: 'isLoading',
@@ -61,6 +61,7 @@ export const createTeamRoleSlice: SliceCreator<TeamRoleSlice> = (set, get) => ({
     deleteRole: async (_teamId, roleId) => {
         await runRequest(set, get, () => teamRoleApi.delete(roleId), {
             loadingKey: 'isSaving', errorFallback: 'Failed to delete role', rethrow: true,
+            successMessage: 'Role deleted successfully',
             onSuccess: () => set((s: TeamRoleSlice) => ({ roles: s.roles.filter(r => r._id !== roleId) }))
         });
     },

@@ -19,6 +19,7 @@ export interface AnalysisConfigActions {
     resetAnalysisConfig: () => void;
     getAnalysisConfigs: (teamId: string, opts?: { page?: number; limit?: number; search?: string; append?: boolean; force?: boolean }) => Promise<void>;
     updateAnalysisConfig: (analysis?: AnalysisConfig | null) => void;
+    deleteAnalysisConfig: (id: string) => Promise<void>;
 }
 
 export type AnalysisConfigStore = AnalysisConfigState & AnalysisConfigActions;

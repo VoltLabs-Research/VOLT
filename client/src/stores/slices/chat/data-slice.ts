@@ -86,7 +86,7 @@ export const createChatDataSlice: SliceCreator<ChatDataSlice, any> = (set, get) 
         const state = get();
         // Skip if already have chats
         if (state.chats.length > 0) return;
-        
+
         await runRequest(set, get, () => chatApi.getChats(), {
             loadingKey: 'isLoadingChats',
             errorFallback: 'Failed to load chats',
@@ -97,7 +97,7 @@ export const createChatDataSlice: SliceCreator<ChatDataSlice, any> = (set, get) 
     loadTeamMembers: async (teamId) => {
         // Skip if already loaded for this team
         if (loadedTeamMembersForTeam === teamId) return;
-        
+
         await runRequest(set, get, () => chatApi.getTeamMembers(teamId), {
             skipLoading: true,
             onSuccess: (members) => {
@@ -151,6 +151,7 @@ export const createChatDataSlice: SliceCreator<ChatDataSlice, any> = (set, get) 
         set((s: any) => ({ messages: s.messages.map((m: Message) => m._id === messageId ? { ...m, deleted: true } : m) }));
         await runRequest(set, get, () => chatApi.deleteMessage(chat._id, messageId), {
             skipLoading: true,
+            successMessage: 'Message deleted successfully',
             onSuccess: () => emitSocket('delete_message', { chatId: chat._id, messageId }),
             onError: () => set((s: any) => ({ messages: s.messages.map((m: Message) => m._id === messageId ? orig : m) }))
         });
@@ -170,6 +171,7 @@ export const createChatDataSlice: SliceCreator<ChatDataSlice, any> = (set, get) 
     createGroupChat: async (teamId, groupName, groupDescription, participantIds) => {
         await runRequest(set, get, () => chatApi.createGroupChat(teamId, groupName, groupDescription, participantIds), {
             skipLoading: true,
+            successMessage: 'Group chat created successfully',
             onSuccess: (chat) => {
                 set((s: any) => ({ chats: [...s.chats, chat] }));
                 emitSocket('group_created', { chatId: chat._id });
@@ -180,6 +182,7 @@ export const createChatDataSlice: SliceCreator<ChatDataSlice, any> = (set, get) 
     addUsersToGroup: async (chatId, userIds) => {
         await runRequest(set, get, () => chatApi.addUsersToGroup(chatId, userIds), {
             skipLoading: true,
+            successMessage: 'Users added to group successfully',
             onSuccess: (chat) => { updateChat(set, chatId, chat); emitSocket('users_added_to_group', { chatId, userIds }); }
         });
     },
@@ -187,6 +190,7 @@ export const createChatDataSlice: SliceCreator<ChatDataSlice, any> = (set, get) 
     removeUsersFromGroup: async (chatId, userIds) => {
         await runRequest(set, get, () => chatApi.removeUsersFromGroup(chatId, userIds), {
             skipLoading: true,
+            successMessage: 'Users removed from group successfully',
             onSuccess: (chat) => { updateChat(set, chatId, chat); emitSocket('users_removed_from_group', { chatId, userIds }); }
         });
     },
@@ -194,6 +198,7 @@ export const createChatDataSlice: SliceCreator<ChatDataSlice, any> = (set, get) 
     updateGroupInfo: async (chatId, groupName, groupDescription) => {
         await runRequest(set, get, () => chatApi.updateGroupInfo(chatId, groupName, groupDescription), {
             skipLoading: true,
+            successMessage: 'Group info updated successfully',
             onSuccess: (chat) => { updateChat(set, chatId, chat); emitSocket('group_info_updated', { chatId, groupName, groupDescription }); }
         });
     },
@@ -201,6 +206,7 @@ export const createChatDataSlice: SliceCreator<ChatDataSlice, any> = (set, get) 
     updateGroupAdmins: async (chatId, userIds, action) => {
         await runRequest(set, get, () => chatApi.updateGroupAdmins(chatId, userIds, action), {
             skipLoading: true,
+            successMessage: `Group admins ${action === 'add' ? 'added' : 'removed'} successfully`,
             onSuccess: (chat) => updateChat(set, chatId, chat)
         });
     },
@@ -208,6 +214,7 @@ export const createChatDataSlice: SliceCreator<ChatDataSlice, any> = (set, get) 
     leaveGroup: async (chatId) => {
         await runRequest(set, get, () => chatApi.leaveGroup(chatId), {
             skipLoading: true,
+            successMessage: 'Left group successfully',
             onSuccess: () => {
                 set((s: any) => ({ chats: s.chats.filter((c: Chat) => c._id !== chatId), currentChat: s.currentChat?._id === chatId ? null : s.currentChat }));
                 emitSocket('user_left_group', { chatId });

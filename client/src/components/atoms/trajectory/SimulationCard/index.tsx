@@ -18,6 +18,7 @@ import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
 import trajectoryApi from '@/services/api/trajectory/trajectory';
 import type { Trajectory } from '@/types/models';
+import { useUIStore } from '@/stores/slices/ui';
 import './SimulationCard.css';
 
 interface SimulationCardProps {
@@ -150,9 +151,13 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
     const handleDownload = useCallback(async () => {
         try {
             setLoadingAction('download');
+            // Assuming downloadDumps triggers the download
             await trajectoryApi.downloadDumps(trajectory._id, trajectory.name);
-        } catch (error) {
+            useUIStore.getState().addToast('Download started successfully', 'success');
+        } catch (error: any) {
             console.error('Download failed:', error);
+            // Error toast handled by global handler or we can add local one
+            useUIStore.getState().addToast('Failed to start download', 'error');
         } finally {
             setLoadingAction(null);
         }

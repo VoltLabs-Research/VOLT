@@ -26,7 +26,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
         const state = get() as TeamStore;
         // Skip if already have teams
         if (state.teams.length > 0) return;
-        
+
         await runRequest(set, get, () => teamApi.getAll(), {
             errorFallback: 'Failed to load teams',
             rethrow: true,
@@ -71,10 +71,11 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
     },
 
     createTeam: async (data) => {
-        return await runRequest(set, get, () => teamApi.create(data), {
+        const result = await runRequest(set, get, () => teamApi.create(data), {
             errorFallback: 'Failed to create team',
             rethrow: true,
             loadingKey: 'isLoading',
+            successMessage: 'Team created successfully',
             onSuccess: (createdTeam) =>
                 set((state: TeamStore) => ({
                     teams: [createdTeam, ...state.teams],
@@ -82,6 +83,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
                     error: null
                 }))
         });
+        return result as any;
     },
 
     updateTeam: async (teamId, data) => {
@@ -89,13 +91,14 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
             errorFallback: 'Failed to update team',
             rethrow: true,
             loadingKey: 'isLoading',
+            successMessage: 'Team updated successfully',
             onSuccess: (updatedTeam) =>
                 set((state: TeamStore) => {
                     // Preserve populated fields (like owner) from the current team
                     const currentTeam = state.teams.find(t => t._id === teamId);
                     const mergedTeam = {
                         ...updatedTeam,
-                        owner: updatedTeam.owner || currentTeam?.owner
+                        owner: updatedTeam.owner || currentTeam?.owner || (state.owner as any)
                     };
 
                     const nextTeams = state.teams.map((team) =>
@@ -108,7 +111,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
                     return {
                         teams: nextTeams,
                         selectedTeam: nextSelectedTeam
-                    };
+                    } as Partial<TeamStore>;
                 })
         });
     },
@@ -118,6 +121,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
             errorFallback: 'Failed to delete team',
             rethrow: true,
             loadingKey: 'isLoading',
+            successMessage: 'Team deleted successfully',
             onSuccess: () =>
                 set((state: TeamStore) => {
                     const nextTeams = state.teams.filter((team) => team._id !== teamId);
@@ -136,6 +140,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
             errorFallback: 'Failed to leave team',
             rethrow: true,
             loadingKey: 'isLoading',
+            successMessage: 'Left team successfully',
             onSuccess: () =>
                 set((state: TeamStore) => {
                     const nextTeams = state.teams.filter((team) => team._id !== teamId);
@@ -156,7 +161,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
     fetchMembers: async (teamId) => {
         // Skip if already fetched for this team
         if (fetchedMembersForTeam === teamId) return;
-        
+
         await runRequest(set, get, () => teamMember.getAll(), {
             errorFallback: 'Failed to fetch members',
             rethrow: true,
@@ -177,6 +182,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
             errorFallback: 'Failed to remove member',
             rethrow: true,
             loadingKey: 'isLoading',
+            successMessage: 'Member removed successfully',
             onSuccess: () =>
                 set((state: TeamStore) => ({
                     members: state.members.filter((member) => member._id !== userId),

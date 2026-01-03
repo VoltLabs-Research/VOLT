@@ -23,6 +23,7 @@ export const createRasterSlice: SliceCreator<RasterStore> = (set, get) => ({
     rasterize: async (id) => {
         await runRequest(set, get, () => rasterApi.generateGLB(id), {
             loadingKey: 'isAnalysisLoading', errorFallback: 'An unknown error occurred', rethrow: true,
+            successMessage: 'Rasterization completed successfully',
             onSuccess: (analyses) => set({ analyses } as Partial<RasterStore>)
         });
     },

@@ -79,7 +79,7 @@ export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, 
         const state = get() as SSHConnectionSlice;
         // Skip if already have connections
         if (state.connections.length > 0) return;
-        
+
         const request = () => sshApi.connections.getAll();
 
         await runRequest(set, get, request, {
@@ -100,6 +100,7 @@ export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, 
             errorFallback: ERROR_MESSAGES.CREATE,
             rethrow: true,
             loadingKey: 'loading',
+            successMessage: 'SSH connection created successfully',
             onSuccess: (created: SSHConnection) => {
                 set((state: SSHConnectionSlice) => ({
                     connections: appendConnection(state.connections, created)
@@ -118,6 +119,7 @@ export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, 
             errorFallback: ERROR_MESSAGES.UPDATE,
             rethrow: true,
             loadingKey: 'loading',
+            successMessage: 'SSH connection updated successfully',
             onSuccess: (updated: SSHConnection) => {
                 set((state: SSHConnectionSlice) => ({
                     connections: replaceConnectionById(state.connections, id, updated)
@@ -133,6 +135,7 @@ export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, 
             errorFallback: ERROR_MESSAGES.DELETE,
             rethrow: true,
             loadingKey: 'loading',
+            successMessage: 'SSH connection deleted successfully',
             onSuccess: () => {
                 set((state: SSHConnectionSlice) => ({
                     connections: removeConnectionById(state.connections, id)

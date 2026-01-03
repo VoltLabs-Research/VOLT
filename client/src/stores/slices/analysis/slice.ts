@@ -12,7 +12,8 @@ const initialState = {
     isFetchingMore: false,
     isListingLoading: false,
     error: null,
-    getAnalysisConfigs: async () => {},
+    getAnalysisConfigs: async () => { },
+    deleteAnalysisConfig: async () => { },
 };
 
 export const createAnalysisConfigSlice: SliceCreator<AnalysisConfigStore> = (set, get) => ({
@@ -40,38 +41,56 @@ export const createAnalysisConfigSlice: SliceCreator<AnalysisConfigStore> = (set
         }
 
         const request = () => {
-                return analysisConfigApi.getByTeamId({
+            return analysisConfigApi.getByTeamId({
+                page,
+                limit,
+                q: searchQuery
+            });
+        };
+
+        await runRequest(set, get, request, {
+            loadingKey: shouldAppend ? 'isFetchingMore' : 'isListingLoading',
+            errorFallback: 'Failed to load analysis configs',
+            onSuccess: (apiResponse) => {
+                const paginationResult = calculatePaginationState({
+                    newData: apiResponse.data,
+                    currentData: storeSnapshot.analysisConfigs,
                     page,
                     limit,
-                    q: searchQuery
+                    append: shouldAppend,
+                    totalFromApi: apiResponse.results.total,
+                    previousTotal: storeSnapshot.listingMeta.total
                 });
-            };
 
-            await runRequest(set, get, request, {
-                loadingKey: shouldAppend ? 'isFetchingMore' : 'isListingLoading',
-                errorFallback: 'Failed to load analysis configs',
-                onSuccess: (apiResponse) => {
-                    const paginationResult = calculatePaginationState({
-                        newData: apiResponse.data,
-                        currentData: storeSnapshot.analysisConfigs,
-                        page,
-                        limit,
-                        append: shouldAppend,
-                        totalFromApi: apiResponse.results.total,
-                        previousTotal: storeSnapshot.listingMeta.total
-                    });
-
-                    set({
-                        analysisConfigs: paginationResult.data,
-                        listingMeta: paginationResult.listingMeta,
-                        error: null
-                    });
-                }
-            });
+                set({
+                    analysisConfigs: paginationResult.data,
+                    listingMeta: paginationResult.listingMeta,
+                    error: null
+                });
+            }
+        });
     },
 
     updateAnalysisConfig: (config) => {
         set({ analysisConfig: config ?? null });
+    },
+
+    deleteAnalysisConfig: async (id: string) => {
+        await runRequest(set, get, () => analysisConfigApi.delete(id), {
+            loadingKey: 'isLoading',
+            errorFallback: 'Failed to delete analysis config',
+            rethrow: true,
+            successMessage: 'Analysis config deleted successfully',
+            onSuccess: () => {
+                set((state: AnalysisConfigStore) => ({
+                    analysisConfigs: state.analysisConfigs.filter((c) => c._id !== id),
+                    listingMeta: {
+                        ...state.listingMeta,
+                        total: state.listingMeta.total - 1
+                    }
+                }));
+            }
+        });
     },
 
     resetAnalysisConfig: () => {

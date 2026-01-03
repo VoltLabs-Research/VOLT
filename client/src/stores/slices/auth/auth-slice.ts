@@ -83,6 +83,7 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => {
                 loadingKey: 'isLoading',
                 errorFallback: 'Failed to sign in',
                 rethrow: true,
+                successMessage: 'Signed in successfully',
                 onSuccess: handleAuthSuccess
             });
 
@@ -94,6 +95,7 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => {
                 loadingKey: 'isLoading',
                 errorFallback: 'Failed to sign up',
                 rethrow: true,
+                successMessage: 'Signed up successfully',
                 onSuccess: handleAuthSuccess
             });
 
@@ -127,7 +129,8 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => {
                     }),
                 {
                     loadingKey: 'isChangingPassword',
-                    rethrow: true
+                    rethrow: true,
+                    successMessage: 'Password changed successfully'
                 }
             );
 
