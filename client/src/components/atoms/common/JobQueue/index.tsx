@@ -5,6 +5,10 @@ import type { Job } from '@/types/jobs';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import Popover from '@/components/molecules/common/Popover';
+import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
+import analysisConfigApi from '@/services/api/analysis/analysis';
+import { toast } from 'sonner';
 import './JobQueue.css';
 
 const statusConfig = {
@@ -27,8 +31,34 @@ const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => 
     if (!(job.status in statusConfig)) return null;
 
     const containerClass = `job-container ${job.status}${isChild ? ' is-child' : ''}`;
+    const isFailed = job.status === 'failed';
+    const isAnalysisJob = job.queueType === 'analysis';
 
-    return (
+    // Extract analysisId from jobId (format: analysisId-index)
+    const analysisId = job.jobId?.split('-').slice(0, -1).join('-');
+
+    const handleRetry = async () => {
+        if (!analysisId) {
+            toast.error('Cannot retry: Invalid job ID');
+            return;
+        }
+
+        try {
+            const response = await analysisConfigApi.retryFailedFrames(analysisId);
+            if (response.retriedFrames === 0) {
+                toast.info('No failed frames found to retry');
+            } else {
+                toast.success(
+                    `Queued ${response.retriedFrames} failed frame${response.retriedFrames > 1 ? 's' : ''} for retry`
+                );
+            }
+        } catch (e: any) {
+            console.error('Failed to retry frames', e);
+            toast.error(e?.response?.data?.message || 'Failed to retry frames');
+        }
+    };
+
+    const jobContent = (
         <Container className={containerClass}>
             <Container className='d-flex column gap-025 flex-1'>
                 <Container className='d-flex items-center content-between gap-05'>
@@ -62,6 +92,31 @@ const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => 
             )}
         </Container>
     );
+
+    // If job is failed and is an analysis job, wrap with popover
+    if (isFailed && isAnalysisJob && analysisId) {
+        return (
+            <Popover
+                id={`job-popover-${job.jobId}`}
+                trigger={jobContent}
+                triggerAction="click"
+            >
+                {(close) => (
+                    <PopoverMenuItem
+                        icon={<FaRedo />}
+                        onClick={() => {
+                            handleRetry();
+                            close();
+                        }}
+                    >
+                        Retry
+                    </PopoverMenuItem>
+                )}
+            </Popover>
+        );
+    }
+
+    return jobContent;
 };
 
 export default JobQueue;

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate } from 'react-router-dom';
-import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
+import { RiDeleteBin6Line, RiEyeLine, RiRefreshLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import { useTeamStore } from '@/stores/slices/team';
 import analysisConfigApi from '@/services/api/analysis/analysis';
@@ -9,6 +9,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import useListingLifecycle from '@/hooks/common/use-listing-lifecycle';
 import useConfirm from '@/hooks/ui/use-confirm';
+import { toast } from 'sonner';
 
 const AnalysisConfigsListing = () => {
     usePageTitle('Analysis Configs');
@@ -65,12 +66,29 @@ const AnalysisConfigsListing = () => {
                     console.error('Failed to delete analysis config', e);
                 }
                 break;
+
+            case 'retry':
+                try {
+                    const response = await analysisConfigApi.retryFailedFrames(item._id);
+                    if (response.retriedFrames === 0) {
+                        toast.info('No failed frames found to retry');
+                    } else {
+                        toast.success(
+                            `Queued ${response.retriedFrames} failed frame${response.retriedFrames > 1 ? 's' : ''} for retry`
+                        );
+                    }
+                } catch (e: any) {
+                    console.error('Failed to retry frames', e);
+                    toast.error(e?.response?.data?.message || 'Failed to retry frames');
+                }
+                break;
         }
-    }, [team?._id, getAnalysisConfigs, confirm]);
+    }, [team?._id, getAnalysisConfigs, confirm, navigate]);
 
     const getMenuOptions = useCallback(
         (item: any) => ([
             ['View', RiEyeLine, () => handleMenuAction('view', item)],
+            ['Retry Failed Frames', RiRefreshLine, () => handleMenuAction('retry', item)],
             ['Delete', RiDeleteBin6Line, () => handleMenuAction('delete', item)]
         ]),
         [handleMenuAction]

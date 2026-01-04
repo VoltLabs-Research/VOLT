@@ -40,4 +40,7 @@ rbac.groupBy(Action.READ, authMiddleware.optionalAuth, middleware.checkTeamMembe
 rbac.groupBy(Action.DELETE, authMiddleware.protect)
     .route('/:id', controller.deleteOne);
 
+rbac.groupBy(Action.UPDATE, authMiddleware.protect)
+    .route('/:id/retry-failed-frames', controller.retryFailedFrames);
+
 export default router;
