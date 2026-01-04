@@ -19,8 +19,8 @@ const useAppInitializer = () => {
     const getUserTeams = useTeamStore((state) => state.getUserTeams);
     const { initializeSocket: initNotificationSocket } = useNotificationStore();
     const { fetch: fetchNotifications } = useNotificationStore();
-    const fetchPlugins = usePluginStore((state) => state.fetchPlugins);
-    const fetchContainers = useContainerStore((state) => state.fetchContainers);
+    // const fetchPlugins = usePluginStore((state) => state.fetchPlugins);
+    // const fetchContainers = useContainerStore((state) => state.fetchContainers);
 
     // Track the last initialized user ID to detect auth changes
     const lastInitializedUserRef = useRef<string | null>(null);
@@ -52,9 +52,9 @@ const useAppInitializer = () => {
         getUserTeams();
         initNotificationSocket();
         fetchNotifications();
-        fetchPlugins({ page: 1, limit: 100 });
-        fetchContainers({ page: 1, limit: 20 });
-    }, [user?._id, getUserTeams, initNotificationSocket, fetchNotifications, fetchPlugins, fetchContainers, logger]);
+        // fetchPlugins({ page: 1, limit: 100 });
+        // fetchContainers({ page: 1, limit: 20 });
+    }, [user?._id, getUserTeams, initNotificationSocket, fetchNotifications, logger]);
 };
 
 export default useAppInitializer;

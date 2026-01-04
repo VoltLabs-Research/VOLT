@@ -104,13 +104,7 @@ TeamSchema.post('save', async function (doc) {
     }
 });
 
-TeamSchema.pre('deleteOne', { document: true, query: false }, async function () {
-    const TeamRole = mongoose.model('TeamRole');
-    const TeamMember = mongoose.model('TeamMember');
 
-    await TeamRole.deleteMany({ team: this._id });
-    await TeamMember.deleteMany({ team: this._id });
-});
 
 const Team: Model<ITeam> = mongoose.model<ITeam>('Team', TeamSchema);
 

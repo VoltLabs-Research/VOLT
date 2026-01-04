@@ -1,5 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { SystemRoles } from '@/constants/system-roles';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 export interface ITeamRole extends Document {
     team: mongoose.Types.ObjectId;
@@ -20,7 +21,8 @@ const TeamRoleSchema = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: true
+        required: true,
+        cascade: 'delete'
     },
     name: {
         type: String,
@@ -40,6 +42,8 @@ const TeamRoleSchema = new Schema({
 TeamRoleSchema.index({ team: 1, name: 1 }, { unique: true });
 TeamRoleSchema.index({ team: 1, isSystem: 1 });
 TeamRoleSchema.index({ name: 'text' });
+
+TeamRoleSchema.plugin(useCascadeDelete);
 
 TeamRoleSchema.statics.createSystemRolesForTeam = async function (
     teamId: mongoose.Types.ObjectId

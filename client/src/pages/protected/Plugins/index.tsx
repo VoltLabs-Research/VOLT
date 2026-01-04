@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useRef } from 'react';
+import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine } from 'react-icons/ri';
 import { TbRocket } from 'react-icons/tb';
@@ -18,6 +18,7 @@ const PluginsListing = () => {
     const navigate = useNavigate();
     const plugins = usePluginStore((s) => s.plugins);
     const fetchPlugins = usePluginStore((s) => s.fetchPlugins);
+    const resetPlugins = usePluginStore((s) => s.resetPlugins);
     const isLoading = usePluginStore((s) => s.loading);
     const isFetchingMore = usePluginStore((s) => s.isFetchingMore);
     const listingMeta = usePluginStore((s) => s.listingMeta);
@@ -33,6 +34,13 @@ const PluginsListing = () => {
         initialFetchParams: { page: 1, limit: 20 },
         dependencies: [fetchPlugins]
     };
+
+    // Reset state on unmount
+    useEffect(() => {
+        return () => {
+            resetPlugins();
+        };
+    }, [resetPlugins]);
 
     const handleMenuAction = useCallback(async (action: string, item: IPluginRecord) => {
         switch (action) {
@@ -81,7 +89,7 @@ const PluginsListing = () => {
                 }
                 break;
             case 'delete':
-                if (!await confirm(`Delete plugin "${item.modifier?.name || item.slug}"? This action cannot be undone.`)) return;
+                if (!await confirm(`Delete plugin "${item.slug}"? This action cannot be undone.`)) return;
                 try {
                     await pluginApi.deletePlugin(item._id);
                     fetchPlugins({ page: 1, force: true });

@@ -1,20 +1,23 @@
 import VoltClient from '@/api';
 import type { ApiResponse } from '@/types/api';
-import type { 
-    GetContainersParams, 
-    CreateContainerPayload, 
-    Container, 
-    ContainerProcess, 
-    ContainerStats, 
-    GetContainerStats, 
-    GetContainerProcesses } from './types';
+import type {
+    GetContainersParams,
+    CreateContainerPayload,
+    Container,
+    ContainerProcess,
+    ContainerStats,
+    GetContainerStats,
+    GetContainerProcesses
+} from './types';
 
 const client = new VoltClient('/containers', { useRBAC: true });
 
 const containerApi = {
-    async getAll(params?: GetContainersParams): Promise<Container[]> {
-        const response = await client.request<ApiResponse<Container[]>>('get', '/', { query: params });
-        return response.data.data;
+    async getAll(params?: GetContainersParams): Promise<{ data: Container[], total: number }> {
+        const response = await client.request<any>('get', '/', { query: params });
+        const data = response.data?.data || [];
+        const total = response.data?.results?.total || response.data?.page?.total || data.length;
+        return { data, total };
     },
 
     async create(data: CreateContainerPayload): Promise<Container> {

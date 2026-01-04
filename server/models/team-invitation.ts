@@ -45,6 +45,7 @@ const TeamInvitationSchema: Schema<ITeamInvitation> = new Schema({
         ref: 'Team',
         required: [true, ValidationCodes.TEAM_INVITATION_TEAM_REQUIRED],
         inverse: { path: 'invitations', behavior: 'addToSet' },
+        cascade: 'delete',
         index: true
     },
     invitedBy: {
@@ -102,8 +103,8 @@ const TeamInvitationSchema: Schema<ITeamInvitation> = new Schema({
 });
 
 // Generate token before saving
-TeamInvitationSchema.pre('save', function(next) {
-    if(!this.isNew) return next();
+TeamInvitationSchema.pre('save', function (next) {
+    if (!this.isNew) return next();
 
     const token = crypto.randomBytes(32).toString('hex');
     this.token = token;

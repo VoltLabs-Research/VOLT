@@ -19,6 +19,14 @@ const initialState = {
 export const createAnalysisConfigSlice: SliceCreator<AnalysisConfigStore> = (set, get) => ({
     ...initialState,
 
+    resetAnalysisConfigs: () => {
+        set({
+            analysisConfigs: [],
+            listingMeta: initialListingMeta,
+            error: null
+        });
+    },
+
     getAnalysisConfigs: async (teamId, options = {}) => {
         if (!teamId) {
             throw new Error('No team ID provided');

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
@@ -13,6 +13,7 @@ const AnalysisConfigsListing = () => {
     const team = useTeamStore((state) => state.selectedTeam);
     const analysisConfigs = useAnalysisConfigStore((state) => state.analysisConfigs);
     const getAnalysisConfigs = useAnalysisConfigStore((state) => state.getAnalysisConfigs);
+    const resetAnalysisConfigs = useAnalysisConfigStore((state) => state.resetAnalysisConfigs);
     // Use store loading states
     const isListingLoading = useAnalysisConfigStore((state) => state.isListingLoading);
     const isFetchingMore = useAnalysisConfigStore((state) => state.isFetchingMore);
@@ -31,6 +32,13 @@ const AnalysisConfigsListing = () => {
         initialFetchParams: { page: 1, limit: 20 },
         dependencies: [team?._id, getAnalysisConfigs]
     };
+
+    // Reset state on unmount
+    useEffect(() => {
+        return () => {
+            resetAnalysisConfigs();
+        };
+    }, [resetAnalysisConfigs]);
 
     const handleMenuAction = useCallback(async (action: string, item: any) => {
         switch (action) {

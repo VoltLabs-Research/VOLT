@@ -71,7 +71,7 @@ const AnalysisSchema: Schema<IAnalysis> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
         required: true,
-        cascade: 'unset',
+        cascade: 'delete',
         inverse: { path: 'analysis', behavior: 'addToSet' }
     },
     createdBy: {
@@ -109,7 +109,7 @@ const deletePluginArtifacts = async (analysis: IAnalysis | null) => {
 
     try {
         await storage.deleteByPrefix(SYS_BUCKETS.PLUGINS, prefix);
-        
+
         // Delete PluginExposureMeta and PluginListingRow documents
         await Promise.all([
             mongoose.model('PluginExposureMeta').deleteMany({ analysis: analysisId }),

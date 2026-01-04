@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 export interface ITeamMember extends Document {
     team: mongoose.Types.ObjectId;
@@ -11,7 +12,8 @@ const TeamMemberSchema = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: true
+        required: true,
+        cascade: 'delete'
     },
     user: {
         type: Schema.Types.ObjectId,
@@ -34,6 +36,8 @@ const TeamMemberSchema = new Schema({
 TeamMemberSchema.index({ team: 1, user: 1 }, { unique: true });
 TeamMemberSchema.index({ team: 1 });
 TeamMemberSchema.index({ user: 1 });
+
+TeamMemberSchema.plugin(useCascadeDelete);
 
 const TeamMember: Model<ITeamMember> = mongoose.model<ITeamMember>('TeamMember', TeamMemberSchema);
 

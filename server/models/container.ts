@@ -95,12 +95,47 @@ ContainerSchema.plugin(useCascadeDelete);
 ContainerSchema.plugin(useInverseRelations);
 
 ContainerSchema.pre('deleteOne', { document: true, query: false }, async function () {
-    if (this.team) {
+    const container = this as any;
+    if (container.team) {
         await mongoose.model('Team').updateOne(
-            { _id: this.team },
-            { $pull: { containers: this._id } }
+            { _id: container.team },
+            { $pull: { containers: container._id } }
         );
     }
+
+    if (container.network) {
+        await mongoose.model('DockerNetwork').deleteOne({ _id: container.network });
+    }
+    if (container.volume) {
+        await mongoose.model('DockerVolume').deleteOne({ _id: container.volume });
+    }
+});
+
+ContainerSchema.pre('findOneAndDelete', async function (next) {
+    const doc = await this.model.findOne(this.getFilter());
+    if (doc) {
+        if (doc.network) {
+            await mongoose.model('DockerNetwork').deleteOne({ _id: doc.network });
+        }
+        if (doc.volume) {
+            await mongoose.model('DockerVolume').deleteOne({ _id: doc.volume });
+        }
+    }
+    next();
+});
+
+// Handle deleteMany
+ContainerSchema.pre('deleteMany', async function (next) {
+    const docs = await this.model.find(this.getFilter());
+    for (const doc of docs) {
+        if (doc.network) {
+            await mongoose.model('DockerNetwork').deleteOne({ _id: doc.network });
+        }
+        if (doc.volume) {
+            await mongoose.model('DockerVolume').deleteOne({ _id: doc.volume });
+        }
+    }
+    next();
 });
 
 const Container: Model<IContainer> = mongoose.model<IContainer>('Container', ContainerSchema);

@@ -1,6 +1,6 @@
-import type { Container, ListingMeta } from '@/types/models';
+import type { Container } from '@/services/api/container/types';
 import containerApi from '@/services/api/container/container';
-import { calculatePaginationState, initialListingMeta } from '@/utilities/api/pagination-utils';
+import { calculatePaginationState, initialListingMeta, type ListingMeta } from '@/utilities/api/pagination-utils';
 import { runRequest } from '../../helpers';
 import type { SliceCreator } from '../../helpers/create-slice';
 
@@ -13,7 +13,8 @@ export interface ContainerState {
 }
 
 export interface ContainerActions {
-    fetchContainers: (opts?: { page?: number; limit?: number; search?: string; append?: boolean }) => Promise<void>;
+    fetchContainers: (opts?: { page?: number; limit?: number; search?: string; append?: boolean; force?: boolean }) => Promise<void>;
+    resetContainers: () => void;
 }
 
 export type ContainerSlice = ContainerState & ContainerActions;
@@ -29,28 +30,40 @@ export const initialState: ContainerState = {
 export const createContainerSlice: SliceCreator<ContainerSlice> = (set, get) => ({
     ...initialState,
 
+
+
+    resetContainers: () => {
+        set({
+            containers: [],
+            listingMeta: initialListingMeta,
+            isLoading: false,
+            error: null
+        } as Partial<ContainerSlice>);
+    },
+
     fetchContainers: async (opts = {}) => {
-        const { page = 1, limit = 20, search = '', append = false } = opts;
+        const { page = 1, limit = 20, search = '', append = false, force = false } = opts;
         const state = get() as ContainerSlice;
-        
+
         // Skip if already loading
         if ((append && state.isFetchingMore) || (!append && state.isLoading)) return;
-        
-        // Skip if already have containers and not appending/searching
-        if (!append && !search && page === 1 && state.containers.length > 0) return;
 
-        await runRequest(set, get, () => containerApi.getAll({ page, limit, q: search }), {
+        // Skip if already have containers and not appending/searching
+        if (!force && !append && !search && page === 1 && state.containers.length > 0) return;
+
+        await runRequest(set, get, () => containerApi.getAll({ page, limit, search }), {
             loadingKey: append ? 'isFetchingMore' : 'isLoading',
             errorFallback: 'Failed to load containers',
             onSuccess: (response) => {
-                const { data, listingMeta } = calculatePaginationState({
-                    newData: response || [],
+                const { data, total } = response;
+                const { data: newData, listingMeta } = calculatePaginationState({
+                    newData: data || [],
                     currentData: state.containers,
                     page, limit, append,
-                    totalFromApi: response.total,
+                    totalFromApi: total,
                     previousTotal: state.listingMeta.total
                 });
-                set({ containers: data, listingMeta } as Partial<ContainerSlice>);
+                set({ containers: newData, listingMeta } as Partial<ContainerSlice>);
             }
         });
     }

@@ -16,6 +16,7 @@ import './Containers.css';
 const Containers: React.FC = () => {
     const containers = useContainerStore((state) => state.containers);
     const fetchContainers = useContainerStore((state) => state.fetchContainers);
+    const resetContainers = useContainerStore((state) => state.resetContainers);
     // Align loading naming or use store directly
     const loading = useContainerStore((state) => state.isLoading);
     const isFetchingMore = useContainerStore((state) => state.isFetchingMore);
@@ -33,6 +34,13 @@ const Containers: React.FC = () => {
         initialFetchParams: { page: 1, limit: 20 },
         dependencies: [fetchContainers]
     };
+
+    // Reset state on unmount
+    React.useEffect(() => {
+        return () => {
+            resetContainers();
+        };
+    }, [resetContainers]);
 
     const handleControl = useCallback(async (container: Container, action: 'start' | 'stop') => {
         try {
@@ -192,7 +200,7 @@ const Containers: React.FC = () => {
     ], []);
 
     return (
-        <DashboardContainer pageName='Containers' className='d-flex column h-max'>
+        <DashboardContainer className='d-flex column h-max'>
             <DocumentListing
                 title={`Containers(${listingMeta.total || containers.length})`}
                 columns={columns}

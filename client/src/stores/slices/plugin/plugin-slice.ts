@@ -99,6 +99,7 @@ export interface PluginState {
     ) => Promise<RenderableExposure[]>;
 
     fetchPlugin: (slug: string) => Promise<void>;
+    resetPlugins: () => void;
 }
 
 const PLUGINS_TTL_MS = 60_000;
@@ -185,6 +186,20 @@ export const usePluginStore = create<PluginState>((set, get) => ({
     isFetchingMore: false,
     error: null,
     listingMeta: initialListingMeta,
+
+
+
+    resetPlugins: () => {
+        set({
+            plugins: [],
+            pluginsBySlug: {},
+            modifiers: [],
+            listingMeta: initialListingMeta,
+            loading: false,
+            error: null
+        });
+        lastPluginsFetchAtMs = 0;
+    },
 
     async fetchPlugins(options = {}) {
         const {
