@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import { useSSHConnectionStore, type SSHConnection } from '@/stores/slices/ssh';
@@ -45,6 +46,7 @@ const columns: ColumnConfig[] = [
 ];
 
 const SSHConnectionsListing = () => {
+    usePageTitle('SSH Connections');
     const navigate = useNavigate();
     const { showSuccess, showError } = useToast();
     const [editingConnection, setEditingConnection] = useState<SSHConnection | null>(null);

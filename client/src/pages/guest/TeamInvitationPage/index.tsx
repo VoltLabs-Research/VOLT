@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Skeleton } from '@mui/material';
 import teamApi from '@/services/api/team/team';
@@ -15,6 +16,7 @@ import '../SignIn/SignIn.css';
 import './TeamInvitationPage.css';
 
 const TeamInvitationPage: React.FC = () => {
+    usePageTitle('Team Invitation');
     const { token } = useParams<{ token: string }>();
     const navigate = useNavigate();
     const [invitation, setInvitation] = useState<TeamInvitation | null>(null);
@@ -23,57 +25,57 @@ const TeamInvitationPage: React.FC = () => {
     const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
-        const fetchInvitation = async() => {
-            try{
+        const fetchInvitation = async () => {
+            try {
                 const details = await teamApi.invitations.getDetails(token!);
                 setInvitation(details);
-            }catch(err: any){
+            } catch (err: any) {
                 setError(err?.message || 'An error occurred');
-            }finally{
+            } finally {
                 setLoading(false);
             }
         };
 
-        if(token){
+        if (token) {
             fetchInvitation();
         }
     }, [token]);
 
-    const handleAccept = async() => {
-        if(!token) return;
+    const handleAccept = async () => {
+        if (!token) return;
 
         setActionLoading(true);
-        try{
+        try {
             await teamApi.invitations.accept(token);
             setError(null);
             setTimeout(() => {
                 navigate(`/dashboard?team=${invitation?.team._id}`);
             }, 2000);
-        }catch(err: any){
+        } catch (err: any) {
             setError(err?.message || 'An error occurred');
-        }finally{
+        } finally {
             setActionLoading(false);
         }
     };
 
-    const handleReject = async() => {
-        if(!token) return;
+    const handleReject = async () => {
+        if (!token) return;
 
         setActionLoading(true);
-        try{
+        try {
             await teamApi.invitations.reject(token);
             setError(null);
             setTimeout(() => {
                 navigate('/dashboard');
             }, 2000);
-        }catch(err: any){
+        } catch (err: any) {
             setError(err?.message || 'An error occurred');
-        }finally{
+        } finally {
             setActionLoading(false);
         }
     };
 
-    if(loading){
+    if (loading) {
         return (
             <Container className='auth-page-wrapper w-max vh-max overflow-hidden'>
                 <Container className='form-section p-relative gap-1 vh-max'>
@@ -97,7 +99,7 @@ const TeamInvitationPage: React.FC = () => {
         );
     }
 
-    if(error || !invitation || !invitation.team || !invitation.invitedBy){
+    if (error || !invitation || !invitation.team || !invitation.invitedBy) {
         return (
             <Container className='auth-page-wrapper w-max vh-max overflow-hidden'>
                 <Container className='form-section p-relative gap-1 vh-max'>
@@ -116,7 +118,7 @@ const TeamInvitationPage: React.FC = () => {
     const expiresAt = new Date(invitation.expiresAt);
     const isExpired = new Date() > expiresAt;
 
-    if(isExpired){
+    if (isExpired) {
         return (
             <Container className='auth-page-wrapper w-max vh-max overflow-hidden'>
                 <Container className='form-section p-relative gap-1 vh-max'>

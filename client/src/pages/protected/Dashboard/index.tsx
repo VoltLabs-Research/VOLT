@@ -1,4 +1,5 @@
 import React, { memo, useRef, useMemo } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { AnimatePresence, motion } from 'framer-motion';
 import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
 import FileUpload from '@/components/molecules/common/FileUpload';
@@ -22,6 +23,7 @@ import useThemeDetector from '@/hooks/ui/use-theme-detector';
 import './Dashboard.css';
 
 const DashboardPage: React.FC = memo(() => {
+    usePageTitle('Dashboard');
     // Note: useTeamJobs() and useTrajectoryUpdates() are called in use-app-initializer
     // to ensure they persist across navigation
 

@@ -1,24 +1,26 @@
 import { useEffect } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useSearchParams } from 'react-router-dom';
 import { ReactFlowProvider } from '@xyflow/react';
 import PluginBuilder from '@/components/organisms/plugins/PluginBuilder';
 import { usePluginBuilderStore } from '@/stores/slices/plugin/builder-slice';
 
 const PluginBuilderPage = () => {
+    usePageTitle('Plugin Builder');
     const [searchParams] = useSearchParams();
     const pluginId = searchParams.get('id');
     const loadPluginById = usePluginBuilderStore((state) => state.loadPluginById);
     const clearWorkflow = usePluginBuilderStore((state) => state.clearWorkflow);
 
     useEffect(() => {
-        if(pluginId){
+        if (pluginId) {
             loadPluginById(pluginId);
-        }else{
+        } else {
             clearWorkflow();
         }
     }, [pluginId, loadPluginById, clearWorkflow]);
 
-    return(
+    return (
         <ReactFlowProvider>
             <PluginBuilder />
         </ReactFlowProvider>

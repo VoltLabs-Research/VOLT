@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useMemo } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/scene/Scene3D';
 import { useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
@@ -30,6 +31,7 @@ const CANVAS_CONFIG = {
 } as const;
 
 const EditorPage: React.FC = () => {
+    usePageTitle('Canvas');
     const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
     const scene3DRef = useRef<Scene3DRef>(null);
     const trajectoryId = rawTrajectoryId ?? '';

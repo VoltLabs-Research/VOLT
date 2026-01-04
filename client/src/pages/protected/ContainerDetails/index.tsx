@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
@@ -28,6 +29,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 import { IoAdd, IoTrash } from 'react-icons/io5';
 
 const ContainerDetails: React.FC = () => {
+    usePageTitle('Container Details');
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { showSuccess, showError } = useToast();

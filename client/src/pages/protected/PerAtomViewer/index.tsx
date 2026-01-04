@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useParams, useSearchParams } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
 import trajectoryApi from '@/services/api/trajectory/trajectory';
@@ -15,6 +16,7 @@ interface MergedAtomsRow {
 }
 
 const PerAtomViewer = () => {
+    usePageTitle('Per Atom Viewer');
     const { trajectoryId, analysisId, exposureId } = useParams();
 
     const [searchParams] = useSearchParams();

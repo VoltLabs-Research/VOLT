@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState, useRef, useEffect } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine } from 'react-icons/ri';
 import { TbRocket } from 'react-icons/tb';
@@ -15,6 +16,7 @@ import type { IPluginRecord } from '@/services/api/plugin/types';
 import './Plugins.css';
 
 const PluginsListing = () => {
+    usePageTitle('Plugins');
     const navigate = useNavigate();
     const plugins = usePluginStore((s) => s.plugins);
     const fetchPlugins = usePluginStore((s) => s.fetchPlugins);

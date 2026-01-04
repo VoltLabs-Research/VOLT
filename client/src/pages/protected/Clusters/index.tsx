@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePageTitle } from '@/hooks/core/use-page-title'
 import { MetricsCards } from '@/components/molecules/common/MetricsCards'
 import { ResponseTimeChart } from '@/components/molecules/clusters/ResponseTimeChart'
 import { ResourceUsage } from '@/components/molecules/clusters/ResourceUsage'
@@ -21,6 +22,8 @@ export default function DashboardPage() {
     setSelectedClusterId,
     isHistoryLoaded
   } = useServerMetrics()
+
+  usePageTitle('Clusters')
 
   return (
     <Container className="clusters-page vh-max">

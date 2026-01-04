@@ -21,6 +21,7 @@
  */
 
 import { useChatStore } from '@/stores/slices/chat';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import ChatSidebar from '@/components/molecules/chat/ChatSidebar';
 import CreateGroupModal from '@/components/molecules/chat/CreateGroupModal';
 import GroupManagementModal from '@/components/molecules/chat/GroupManagementModal';
@@ -32,6 +33,8 @@ const MessagesPage = () => {
     const {
         showCreateGroup
     } = useChatStore();
+
+    usePageTitle('Messages');
 
     return (
         <Container className='chat-main-container d-flex column h-max w-max flex-1 p-relative overflow-hidden'>

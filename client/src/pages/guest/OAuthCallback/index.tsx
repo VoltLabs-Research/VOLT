@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
@@ -6,19 +7,20 @@ import { useAuthStore } from '@/stores/slices/auth';
 import { TokenStorage } from '@/utilities/auth/token-storage';
 import './OAuthCallback.css';
 
-export default function OAuthCallback(){
+export default function OAuthCallback() {
+    usePageTitle('Authenticating');
     const navigate = useNavigate();
     const initializeAuth = useAuthStore((state) => state.initializeAuth);
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
     useEffect(() => {
-        const handleOAuthCallback = async() => {
-            try{
+        const handleOAuthCallback = async () => {
+            try {
                 // Get token from URL query parameters
                 const params = new URLSearchParams(window.location.search);
                 const token = params.get('token');
 
-                if(!token){
+                if (!token) {
                     throw new Error('No token received from OAuth provider');
                 }
 
@@ -34,7 +36,7 @@ export default function OAuthCallback(){
                 setTimeout(() => {
                     navigate('/dashboard');
                 }, 1500);
-            }catch(error){
+            } catch (error) {
                 console.error('OAuth callback error:', error);
                 setStatus('error');
                 setTimeout(() => {

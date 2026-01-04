@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import useTrajectoryFS, { type FsEntry } from '@/stores/slices/trajectory-vfs';
 import trajectoryApi from '@/services/api/trajectory/trajectory';
 import { formatDistanceToNow } from 'date-fns';
@@ -28,6 +29,7 @@ type TrajectoryFileExplorerProps = {
 };
 
 const TrajectoryFileExplorer = ({ onFileOpen }: TrajectoryFileExplorerProps) => {
+    usePageTitle('File Explorer');
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewFileName, setPreviewFileName] = useState<string>('');

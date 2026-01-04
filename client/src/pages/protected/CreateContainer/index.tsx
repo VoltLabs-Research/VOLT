@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate } from 'react-router-dom';
 import FormField from '@/components/molecules/form/FormField';
 import {
@@ -147,6 +148,7 @@ const TEMPLATES: Template[] = [
 ];
 
 const CreateContainer: React.FC = () => {
+    usePageTitle('Create Container');
     const navigate = useNavigate();
     const { showSuccess, showError } = useToast();
     const [loading, setLoading] = useState(false);
@@ -175,23 +177,23 @@ const CreateContainer: React.FC = () => {
     });
 
     useEffect(() => {
-        const fetchSystemStats = async() => {
-            try{
+        const fetchSystemStats = async () => {
+            try {
                 const stats = await systemApi.getStats();
                 setSystemStats(stats);
-            }catch(error){
+            } catch (error) {
                 console.error('Failed to fetch system stats:', error);
             }
         };
 
-        const fetchTeams = async() => {
-            try{
+        const fetchTeams = async () => {
+            try {
                 const teamsList = await teamApi.getAll();
                 setTeams(teamsList);
-                if(teamsList.length > 0){
+                if (teamsList.length > 0) {
                     setSelectedTeamId(teamsList[0]._id);
                 }
-            }catch(error){
+            } catch (error) {
                 console.error('Failed to fetch teams:', error);
             }
         };
@@ -202,7 +204,7 @@ const CreateContainer: React.FC = () => {
 
     const handleTemplateSelect = (templateId: string) => {
         const template = TEMPLATES.find(t => t.id === templateId);
-        if(template){
+        if (template) {
             setSelectedTemplate(templateId);
             setCustomImage('');
             setConfig(prev => ({
@@ -222,7 +224,7 @@ const CreateContainer: React.FC = () => {
     };
 
     const confirmCustomImage = () => {
-        if(!tempCustomImage.trim()) {
+        if (!tempCustomImage.trim()) {
             showError('Please enter a valid image name');
             return;
         }
@@ -232,24 +234,24 @@ const CreateContainer: React.FC = () => {
         setStep(2);
     };
 
-    const handleCreate = async() => {
+    const handleCreate = async () => {
         setLoading(true);
-        try{
+        try {
             const image = selectedTemplate
                 ? TEMPLATES.find(t => t.id === selectedTemplate)?.image
                 : customImage;
 
-            if(!image){
+            if (!image) {
                 showError('Please select a template or specify an image');
                 return;
             }
 
-            if(!config.name){
+            if (!config.name) {
                 showError('Please give your container a name');
                 return;
             }
 
-            if(!selectedTeamId){
+            if (!selectedTeamId) {
                 showError('Please select a team for this container');
                 return;
             }
@@ -269,16 +271,16 @@ const CreateContainer: React.FC = () => {
             };
 
             // Add custom command if template specifies one
-            if(template?.defaultCmd){
+            if (template?.defaultCmd) {
                 payload.cmd = template.defaultCmd;
             }
 
             await containerApi.create(payload);
             showSuccess('Container created successfully');
             navigate('/dashboard/containers');
-        }catch(error: any){
+        } catch (error: any) {
             showError(error.response?.data?.message || 'Failed to create container');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };

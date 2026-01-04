@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { usePageTitle } from '@/hooks/core/use-page-title'
 import { formatSize } from '@/utilities/glb/scene-utils'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/common/DocumentListing'
@@ -11,6 +12,7 @@ import useListingLifecycle from '@/hooks/common/use-listing-lifecycle'
 import useConfirm from '@/hooks/ui/use-confirm'
 
 const TrajectoriesListing = () => {
+    usePageTitle('Trajectories')
     const getTrajectories = useTrajectoryStore((s) => s.getTrajectories)
     const deleteTrajectoryById = useTrajectoryStore((s) => s.deleteTrajectoryById)
     const team = useTeamStore((s) => s.selectedTeam)

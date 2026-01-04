@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useParams, useNavigate } from 'react-router-dom';
 import trajectoryApi from '@/services/api/trajectory/trajectory';
 import { useTeamStore } from '@/stores/slices/team';
@@ -6,6 +7,7 @@ import PluginExposureTable from '@/components/organisms/common/PluginExposureTab
 import Select from '@/components/atoms/form/Select';
 
 const PluginListing = () => {
+    usePageTitle('Plugin Listing');
     const { pluginSlug, listingSlug, trajectoryId: paramTrajectoryId } = useParams();
     const navigate = useNavigate();
     const team = useTeamStore((s) => s.selectedTeam);
@@ -26,7 +28,7 @@ const PluginListing = () => {
         if (fetchedForTeamRef.current === team._id) return;
         fetchedForTeamRef.current = team._id;
 
-        trajectoryApi.getAll({ })
+        trajectoryApi.getAll({})
             .then(data => setTrajectories(data))
             .catch(err => console.error('Failed to load trajectories', err));
     }, [team?._id]);

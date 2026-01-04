@@ -21,6 +21,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate, useParams } from 'react-router';
 import useUrlState from '@/hooks/core/use-url-state';
 import useAppInitializer from '@/hooks/core/use-app-initializer';
@@ -41,6 +42,7 @@ import './HeadlessRasterizerView.css';
 import './RasterMessages.css';
 
 const HeadlessRasterizerView: React.FC = () => {
+    usePageTitle('Rasterizer');
     const navigate = useNavigate();
     const { trajectoryId } = useParams<{ trajectoryId: string }>();
     const { updateUrlParams, getUrlParam } = useUrlState();

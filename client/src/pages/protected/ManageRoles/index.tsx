@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback, useMemo, useState } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import { IoShieldCheckmarkOutline } from 'react-icons/io5';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
@@ -13,6 +14,7 @@ import Container from '@/components/primitives/Container';
 import './ManageRoles.css';
 
 const ManageRoles: React.FC = () => {
+    usePageTitle('Manage Roles');
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const { roles, isLoading, isSaving, fetchRoles, createRole, updateRole, deleteRole } = useTeamRoleStore();
     const { showSuccess, showError } = useToast();

@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState, useEffect } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
@@ -10,6 +11,7 @@ import useListingLifecycle from '@/hooks/common/use-listing-lifecycle';
 import useConfirm from '@/hooks/ui/use-confirm';
 
 const AnalysisConfigsListing = () => {
+    usePageTitle('Analysis Configs');
     const team = useTeamStore((state) => state.selectedTeam);
     const analysisConfigs = useAnalysisConfigStore((state) => state.analysisConfigs);
     const getAnalysisConfigs = useAnalysisConfigStore((state) => state.getAnalysisConfigs);

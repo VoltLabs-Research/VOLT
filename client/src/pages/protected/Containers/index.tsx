@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate } from 'react-router-dom';
 import { Play, Square, Box } from 'lucide-react';
 import { RiDeleteBin6Line, RiEyeLine, RiTerminalLine } from 'react-icons/ri';
@@ -14,6 +15,7 @@ import useConfirm from '@/hooks/ui/use-confirm';
 import './Containers.css';
 
 const Containers: React.FC = () => {
+    usePageTitle('Containers');
     const containers = useContainerStore((state) => state.containers);
     const fetchContainers = useContainerStore((state) => state.fetchContainers);
     const resetContainers = useContainerStore((state) => state.resetContainers);

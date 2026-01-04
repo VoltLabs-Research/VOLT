@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSSHExplorerStore } from '@/stores/slices/ssh';
 import { useTeamStore } from '@/stores/slices/team';
@@ -19,6 +20,7 @@ import useToast from '@/hooks/ui/use-toast';
 import { FileRowSkeleton, BreadcrumbsSkeleton } from '@/components/organisms/trajectory/FileExplorer/Skeletons';
 
 const SSHFileExplorer = () => {
+    usePageTitle('SSH File Explorer');
     const { connectionId } = useParams<{ connectionId: string }>();
     const navigate = useNavigate();
     const selectedTeam = useTeamStore((state) => state.selectedTeam);

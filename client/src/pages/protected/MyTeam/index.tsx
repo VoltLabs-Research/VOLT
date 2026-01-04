@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useCallback } from 'react';
+import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate } from 'react-router-dom';
 import { useTeamStore } from '@/stores/slices/team';
 import { useTeamRoleStore } from '@/stores/slices/team';
@@ -19,6 +20,7 @@ import dailyActivityApi from '@/services/api/daily-activity/daily-activity';
 import useConfirm from '@/hooks/ui/use-confirm';
 
 const MyTeam: React.FC = () => {
+    usePageTitle('My Team');
     const navigate = useNavigate();
     const { selectedTeam, members, admins, owner, onlineUsers, fetchMembers, initializeSocket, removeMember, updateTeam, isLoading } = useTeamStore();
     const { roles, fetchRoles, assignRole, members: membersWithRoles } = useTeamRoleStore();

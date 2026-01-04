@@ -24,22 +24,43 @@ import logger from '@/logger';
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs/promises';
 
-export interface CLIResult{
+export interface CLIResult {
     code: number;
     stderr: string;
 };
 
-export default class CLIExec{
-    constructor(){}
+export default class CLIExec {
+    private static readonly MAX_ETXTBSY_RETRIES = 1;
+    private static readonly ETXTBSY_RETRY_DELAY_MS = 500;
 
-    run(execPath: string, args: string[]): Promise<CLIResult>{
-        return new Promise(async(resolve, reject) => {
+    constructor() { }
+
+    run(execPath: string, args: string[]): Promise<CLIResult> {
+        return this.runWithRetry(execPath, args, 0);
+    }
+
+    private async runWithRetry(execPath: string, args: string[], attempt: number): Promise<CLIResult> {
+        try {
+            return await this.executeProcess(execPath, args);
+        } catch (err: any) {
+            // Check if it's an ETXTBSY error and we haven't exhausted retries
+            if (err.message?.includes('ETXTBSY') && attempt < CLIExec.MAX_ETXTBSY_RETRIES) {
+                logger.warn(`[CLI Exec] ETXTBSY error, retrying in ${CLIExec.ETXTBSY_RETRY_DELAY_MS}ms (attempt ${attempt + 1}/${CLIExec.MAX_ETXTBSY_RETRIES})`);
+                await new Promise(resolve => setTimeout(resolve, CLIExec.ETXTBSY_RETRY_DELAY_MS));
+                return this.runWithRetry(execPath, args, attempt + 1);
+            }
+            throw err;
+        }
+    }
+
+    private executeProcess(execPath: string, args: string[]): Promise<CLIResult> {
+        return new Promise(async (resolve, reject) => {
             logger.info(`[CLI Exec] ${execPath} ${args.join(' ')}`);
 
             // Verify that the binary exists and is executable before spawning
-            try{
+            try {
                 await fs.access(execPath, fs.constants.X_OK);
-            }catch(err){
+            } catch (err) {
                 return reject(new Error(`Binary not accessible or not executable: ${execPath}`));
             }
 
@@ -57,9 +78,9 @@ export default class CLIExec{
             });
 
             child.on('close', (code) => {
-                if(code === 0){
+                if (code === 0) {
                     resolve({ code: 0, stderr: '' });
-                }else{
+                } else {
                     const errorMessage = `Process exited with code ${code}.\nError log:\n${stderr}`;
                     reject(new Error(errorMessage));
                 }
