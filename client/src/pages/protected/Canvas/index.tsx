@@ -15,7 +15,6 @@ import ShortcutFeedback from '@/components/atoms/common/ShortcutFeedback';
 import { useEditorStore } from '@/stores/slices/editor';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import { useKeyboardShortcutsStore } from '@/stores/slices/ui/keyboard-shortcuts-slice';
-import useTeamJobs from '@/hooks/jobs/use-team-jobs';
 import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
 import Loader from '@/components/atoms/common/Loader';
 import Container from '@/components/primitives/Container';
@@ -35,8 +34,7 @@ const EditorPage: React.FC = () => {
     const scene3DRef = useRef<Scene3DRef>(null);
     const trajectoryId = rawTrajectoryId ?? '';
 
-    // Subscribe to team jobs for real-time updates
-    useTeamJobs();
+    // Note: useTeamJobs() is called in use-app-initializer to persist across navigation
 
     // Initialize keyboard shortcuts for canvas
     useKeyboardShortcuts();

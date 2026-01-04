@@ -1,4 +1,5 @@
 import mongoose, { Schema, Model } from 'mongoose';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 export interface IPluginExposureMeta{
     plugin: mongoose.Types.ObjectId | string;
@@ -16,19 +17,22 @@ const PluginExposureMetaSchema = new Schema<IPluginExposureMeta>({
         type: Schema.Types.ObjectId,
         ref: 'Plugin',
         required: true,
-        index: true
+        index: true,
+        cascade: 'delete'
     },
     trajectory: {
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
         required: true,
-        index: true
+        index: true,
+        cascade: 'delete'
     },
     analysis: {
         type: Schema.Types.ObjectId,
         ref: 'Analysis',
         required: true,
-        index: true
+        index: true,
+        cascade: 'delete'
     },
     exposureId: {
         type: String,
@@ -63,6 +67,8 @@ PluginExposureMetaSchema.index(
     { analysis: 1, exposureId: 1, timestep: 1 },
     { name: 'analysis_exposure_timestep_idx' }
 );
+
+PluginExposureMetaSchema.plugin(useCascadeDelete);
 
 const PluginExposureMeta: Model<IPluginExposureMeta> = mongoose.model<IPluginExposureMeta>('PluginExposureMeta', PluginExposureMetaSchema);
 

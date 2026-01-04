@@ -22,6 +22,7 @@
 
 import { ValidationCodes } from '@/constants/validation-codes';
 import mongoose, { Schema, Model } from 'mongoose';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 export interface ISession {
     _id: string;
@@ -104,6 +105,8 @@ SessionSchema.index({ token: 1 }, { unique: true, partialFilterExpression: { tok
 SessionSchema.index({ lastActivity: -1 });
 SessionSchema.index({ action: 1, createdAt: -1 });
 SessionSchema.index({ success: 1, createdAt: -1 });
+
+SessionSchema.plugin(useCascadeDelete);
 
 const Session: Model<ISession> = mongoose.model<ISession>('Session', SessionSchema);
 

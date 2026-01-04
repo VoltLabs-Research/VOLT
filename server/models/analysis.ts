@@ -71,7 +71,7 @@ const AnalysisSchema: Schema<IAnalysis> = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'Trajectory',
         required: true,
-        cascade: 'delete',
+        cascade: 'unset',
         inverse: { path: 'analysis', behavior: 'addToSet' }
     },
     createdBy: {

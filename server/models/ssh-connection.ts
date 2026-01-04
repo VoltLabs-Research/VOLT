@@ -23,6 +23,7 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
 import { encrypt, decrypt } from '@/utilities/crypto-utils';
 import { ValidationCodes } from '@/constants/validation-codes';
+import useCascadeDelete from '@/utilities/mongo/cascade-delete';
 
 export interface ISSHConnection extends Document {
     name: string;
@@ -96,6 +97,8 @@ export interface ISSHConnection extends Document {
 
 // Index for efficient querying
 SSHConnectionSchema.index({ user: 1, name: 1 });
+
+SSHConnectionSchema.plugin(useCascadeDelete);
 
 // Method to set password(encrypts it)
 SSHConnectionSchema.methods.setPassword = function (this: ISSHConnection, password: string): void {

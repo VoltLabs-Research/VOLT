@@ -22,6 +22,7 @@
 
 import logger from '@/logger';
 import { spawn } from 'node:child_process';
+import * as fs from 'node:fs/promises';
 
 export interface CLIResult{
     code: number;
@@ -34,6 +35,14 @@ export default class CLIExec{
     run(execPath: string, args: string[]): Promise<CLIResult>{
         return new Promise(async(resolve, reject) => {
             logger.info(`[CLI Exec] ${execPath} ${args.join(' ')}`);
+
+            // Verify that the binary exists and is executable before spawning
+            try{
+                await fs.access(execPath, fs.constants.X_OK);
+            }catch(err){
+                return reject(new Error(`Binary not accessible or not executable: ${execPath}`));
+            }
+
             const child = spawn(execPath, args);
 
             let stderr = '';

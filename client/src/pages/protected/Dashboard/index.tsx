@@ -2,8 +2,6 @@ import React, { memo, useRef, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
 import FileUpload from '@/components/molecules/common/FileUpload';
-import useTeamJobs from '@/hooks/jobs/use-team-jobs';
-import useTrajectoryUpdates from '@/hooks/trajectory/use-trajectory-updates';
 import useRequireTeamData from '@/hooks/team/use-require-team-data';
 import TimestepViewer from '@/components/organisms/scene/TimestepViewer';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/scene/Scene3D';
@@ -24,8 +22,8 @@ import useThemeDetector from '@/hooks/ui/use-theme-detector';
 import './Dashboard.css';
 
 const DashboardPage: React.FC = memo(() => {
-    useTeamJobs();
-    useTrajectoryUpdates();
+    // Note: useTeamJobs() and useTrajectoryUpdates() are called in use-app-initializer
+    // to ensure they persist across navigation
 
     // Load team data (trajectories, etc.)
     const { isLoading: isLoadingTeamData } = useRequireTeamData();

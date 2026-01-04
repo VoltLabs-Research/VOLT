@@ -9,6 +9,7 @@ import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { useContainerStore } from '@/stores/slices/container';
 import { useAuthStore } from '@/stores/slices/auth';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
+import useTrajectoryUpdates from '@/hooks/trajectory/use-trajectory-updates';
 import useLogger from '@/hooks/core/use-logger';
 
 const useAppInitializer = () => {
@@ -26,6 +27,9 @@ const useAppInitializer = () => {
 
     // Subscribe to team jobs for real-time updates
     useTeamJobs();
+
+    // Subscribe to trajectory updates (must be at app level to persist across navigation)
+    useTrajectoryUpdates();
 
     // Initialize when user changes (login/logout)
     useEffect(() => {
