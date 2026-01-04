@@ -41,7 +41,7 @@ interface AnalysisSection {
   analysis: Analysis;
   pluginSlug: string;
   plugin: ResolvedModifier;
-  pluginDisplayName: string;    
+  pluginDisplayName: string;
   entry: ExposureEntry;
   isCurrentAnalysis: boolean;
   config: Record<string, any>;
@@ -333,7 +333,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     for (const slug of neededSlugs) {
       const m = modifierBySlug.get(slug);
       if (!m || !m.name || m.name === slug) {
-        return []; 
+        return [];
       }
     }
 
@@ -378,6 +378,8 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     });
     return map;
   }, [filteredSections]);
+
+  console.log('Filtered Sections:', filteredSections)
 
   const defaultOptions = [{
     Icon: TbObjectScan,
@@ -551,15 +553,18 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
                     });
 
                     try {
-                      await loadExposuresForAnalysis(section.analysis._id, section.pluginSlug);
-                      const latest = getEntryLatest(section.analysis._id);
-                      if (latest.state !== 'loaded') return;
+                      // Use getAllExposures for results viewer (no context/canvas/raster filtering)
+                      const allExposures = await usePluginStore.getState().getAllExposures(
+                        trajectoryId,
+                        section.analysis._id,
+                        section.pluginSlug
+                      );
 
                       setResultsViewerData({
                         pluginSlug: section.pluginSlug,
                         pluginName: section.pluginDisplayName,
                         analysisId: section.analysis._id,
-                        exposures: latest.exposures
+                        exposures: allExposures
                       });
                     } finally {
                       setDetailsLoadingByAnalysis(prev => {

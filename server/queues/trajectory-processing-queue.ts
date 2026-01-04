@@ -43,39 +43,36 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
         };
 
         super(options);
-
-        // Listen for job completion to trigger preview generation
-        this.on('jobCompleted', (data: any) => {
-            this.onJobCompleted(data).catch(error => {
-                logger.error(`Unhandled error in onJobCompleted handler: ${error}`);
-            });
-        });
     }
 
-    private async onJobCompleted(data: any): Promise<void> {
-        const job = data.job as TrajectoryProcessingJob;
-
+    /**
+     * Override to add preview generation jobs before trajectory job counter decrements.
+     * This ensures the rasterizer job is counted before this job's count decreases,
+     * preventing premature trajectory completion.
+     */
+    protected async onBeforeDecrement(job: TrajectoryProcessingJob): Promise<number> {
         // Only trigger preview generation once per trajectory
         const trackingKey = `${job.trajectoryId}:preview-scheduled`;
-        if (this.firstChunkProcessed.has(trackingKey)) return;
-
+        if (this.firstChunkProcessed.has(trackingKey)) return 0;
         this.firstChunkProcessed.add(trackingKey);
 
         try {
             const frameInfo = job.file?.frameInfo;
             if (!frameInfo || frameInfo.timestep === undefined) {
                 logger.warn(`No frame data found for trajectory ${job.trajectoryId}`);
-                return;
+                return 0;
             }
 
             const frameGLB = `trajectory-${job.trajectoryId}/previews/timestep-${frameInfo.timestep}.glb`;
             const trajectory = await Trajectory.findById(job.trajectoryId);
             if (!trajectory) throw Error('Trajectory::NotFound');
 
-            // Queue rasterizer jobs (tracking is handled automatically by BaseProcessingQueue.addJobs)
+            // Queue rasterizer jobs (addJobs increments the trajectory job counter)
             await rasterizeGLBs(frameGLB, SYS_BUCKETS.MODELS, SYS_BUCKETS.RASTERIZER, trajectory);
+            return 1; // At least 1 rasterizer job was added
         } catch (error) {
             logger.error(`Failed to queue preview generation for trajectory ${job.trajectoryId}: ${error}`);
+            return 0;
         }
     }
 

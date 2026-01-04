@@ -50,6 +50,7 @@ class SocketIOService {
     private connecting: boolean = false;
     private manualDisconnect: boolean = false;
     private connectionListeners: Array<(connected: boolean) => void> = [];
+    private currentTeamId: string | null = null;
     private logger: Logger = new Logger('socket-io-service');
 
     constructor(baseUrl: string, options: SocketOptions = {}) {
@@ -217,6 +218,7 @@ class SocketIOService {
             return;
         }
 
+        this.currentTeamId = teamId;
         this.logger.log(`Subscribing to team ${teamId}${previousTeamId ? ` (leaving ${previousTeamId})` : ''}`);
         this.socket.emit('subscribe_to_team', { teamId, previousTeamId });
     }
@@ -240,6 +242,12 @@ class SocketIOService {
         this.notifyConnectionListeners(true);
         this.logger.log('Socket connected successfully with ID:', this.socket?.id);
         this.resubscribeToEvents();
+
+        // Re-subscribe to team room after reconnection
+        if (this.currentTeamId) {
+            this.logger.log(`Re-subscribing to team ${this.currentTeamId} after reconnection`);
+            this.socket?.emit('subscribe_to_team', { teamId: this.currentTeamId });
+        }
     }
 
     private handleDisconnect(reason: string) {

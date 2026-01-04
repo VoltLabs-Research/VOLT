@@ -29,7 +29,7 @@ const useTeamJobs = () => {
     const currentTeam = useTeamStore(state => state.selectedTeam);
 
     const {
-        jobs,
+        groups,
         isConnected,
         isLoading,
         subscribeToTeam,
@@ -38,19 +38,15 @@ const useTeamJobs = () => {
     } = useTeamJobsStore();
 
     useEffect(() => {
-        if(currentTeam?._id){
+        if (currentTeam?._id) {
             subscribeToTeam(currentTeam._id);
         }
-
-        return() => {
-            if(currentTeam?._id){
-                unsubscribeFromTeam();
-            }
-        };
-    }, [currentTeam?._id, subscribeToTeam, unsubscribeFromTeam]);
+        // Note: No cleanup here - this hook is at app level and persists across navigation.
+        // Unsubscription only happens on explicit logout via disconnect().
+    }, [currentTeam?._id, subscribeToTeam]);
 
     return {
-        jobs,
+        groups,
         isConnected,
         isLoading,
         disconnect

@@ -452,10 +452,19 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             case 'completed':
                 await this.setJobStatus(job.jobId, 'completed', updateData);
                 this.redis.expire(statusKey, this.TTL);
-                this.emit('jobCompleted', { job, result: message.result, processingTime });
 
                 await this.redis.del(retryCountKey);
                 await this.checkAndCleanupSession(job);
+
+                // Allow subclasses to add dependent jobs before counter decrements
+                try {
+                    const dependentJobsAdded = await this.onBeforeDecrement(job);
+                    if (dependentJobsAdded > 0) {
+                        logger.info(`[${this.queueName}] Added ${dependentJobsAdded} dependent jobs before decrement for job ${job.jobId}`);
+                    }
+                } catch (hookError) {
+                    logger.error(`[${this.queueName}] onBeforeDecrement hook failed: ${hookError}`);
+                }
 
                 // Track job completion at trajectory level
                 try {
@@ -472,6 +481,9 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     logger.error(`[${this.queueName}] Failed to decrement trajectory job counter: ${trackerError}`);
                     logger.error(`[${this.queueName}] Stack: ${trackerError instanceof Error ? trackerError.stack : 'N/A'}`);
                 }
+
+                // Emit event after decrement for non-critical post-processing
+                this.emit('jobCompleted', { job, result: message.result, processingTime });
 
                 await this.finishJob(workerId, rawData);
 
@@ -639,6 +651,17 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     getAvailableWorkerCount(): number {
         return this.workerPool.filter(item => item.isIdle).length;
+    }
+
+    /**
+     * Optional hook called before job counter decrements on job completion.
+     * Override in subclasses to add dependent jobs that must be counted
+     * before this job's count decreases.
+     * @param job The completed job
+     * @returns Number of dependent jobs added (for logging)
+     */
+    protected async onBeforeDecrement(job: T): Promise<number> {
+        return 0;
     }
 
     protected abstract deserializeJob(rawData: string): T;

@@ -276,14 +276,6 @@ const PluginExposureTable = ({
             ]);
         }
 
-        if (item?.analysisId) {
-            options.push([
-                'Delete Analysis',
-                RiDeleteBin6Line,
-                () => handleMenuAction('delete', item)
-            ]);
-        }
-
         return options;
     }, [handleMenuAction, navigate]);
 

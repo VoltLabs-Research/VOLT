@@ -119,6 +119,9 @@ class TrajectoryStatusService {
                 if (trajectoryStatus === 'analyzing') {
                     // Analysis can always update status
                     shouldUpdate = true;
+                } else if (trajectoryStatus === 'rendering' && queueType.includes(Queues.RASTERIZER)) {
+                    // Rasterizer running should always trigger an update to notify frontend
+                    shouldUpdate = true;
                 } else if (currentStatus !== 'rendering' && currentStatus !== 'completed') {
                     shouldUpdate = await this.checkFirstRunningJob(sessionId);
                 }

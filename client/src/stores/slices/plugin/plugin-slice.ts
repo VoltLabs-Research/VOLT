@@ -98,6 +98,12 @@ export interface PluginState {
         pluginSlug?: string
     ) => Promise<RenderableExposure[]>;
 
+    getAllExposures: (
+        trajectoryId: string,
+        analysisId?: string,
+        pluginSlug?: string
+    ) => Promise<RenderableExposure[]>;
+
     fetchPlugin: (slug: string) => Promise<void>;
     resetPlugins: () => void;
 }
@@ -176,6 +182,69 @@ function resolveModifiersFromPlugins(plugins: IPluginRecord[]): ResolvedModifier
             icon: modifierData.icon
         };
     });
+}
+
+/**
+ * Resolve all exposures from a plugin's workflow without any filtering.
+ * This is the core logic shared by getRenderableExposures and getAllExposures.
+ */
+function resolveExposuresFromPlugin(plugin: IPluginRecord, analysisId: string): RenderableExposure[] {
+    const workflowIndex = getWorkflowIndex(plugin);
+    const exposureNodeIds = workflowIndex.nodeIdsByType.get(NodeType.EXPOSURE) ?? [];
+    const exposures: RenderableExposure[] = [];
+
+    for (const exposureNodeId of exposureNodeIds) {
+        const exposureNode = workflowIndex.nodeById.get(exposureNodeId);
+        if (!exposureNode) continue;
+
+        const exposureData = (exposureNode.data?.exposure ?? {}) as IExposureData;
+
+        let supportsCanvas = false;
+        let supportsRaster = false;
+        let exportConfig: IExportData | undefined;
+
+        // Traverse downstream nodes to find visualizers and export config
+        const stack = [...(workflowIndex.outgoingBySource.get(exposureNodeId) ?? [])];
+
+        while (stack.length > 0) {
+            const targetNodeId = stack.pop() as string;
+            const targetNode = workflowIndex.nodeById.get(targetNodeId);
+            if (!targetNode) continue;
+
+            if (targetNode.type === NodeType.VISUALIZERS) {
+                const flags = readVisualizersFlags(targetNode);
+                supportsCanvas = supportsCanvas || flags.canvas;
+                supportsRaster = supportsRaster || flags.raster;
+                continue;
+            }
+
+            if (targetNode.type === NodeType.EXPORT) {
+                exportConfig = targetNode.data?.export as IExportData;
+                continue;
+            }
+
+            const downstream = workflowIndex.outgoingBySource.get(targetNodeId);
+            if (downstream && downstream.length > 0) {
+                stack.push(...downstream);
+            }
+        }
+
+        exposures.push({
+            pluginId: plugin._id,
+            pluginSlug: plugin.slug,
+            analysisId,
+            exposureId: exposureNodeId,
+            modifierId: plugin.slug,
+            name: exposureData.name || exposureNodeId,
+            icon: exposureData.icon,
+            results: exposureData.results || '',
+            canvas: supportsCanvas,
+            raster: supportsRaster,
+            export: exportConfig
+        });
+    }
+
+    return exposures;
 }
 
 export const usePluginStore = create<PluginState>((set, get) => ({
@@ -348,89 +417,43 @@ export const usePluginStore = create<PluginState>((set, get) => ({
             return [];
         }
 
-        const workflowIndex = getWorkflowIndex(plugin);
-        const exposureNodeIds = workflowIndex.nodeIdsByType.get(NodeType.EXPOSURE) ?? [];
+        const allExposures = resolveExposuresFromPlugin(plugin, resolvedAnalysisId);
 
-        const renderables: RenderableExposure[] = [];
+        // Filter by context (canvas/raster support)
+        return allExposures.filter(exposure => {
+            const matchesContext = context === 'canvas' ? exposure.canvas : exposure.raster;
+            if (!matchesContext) return false;
 
-        for (const exposureNodeId of exposureNodeIds) {
-            const exposureNode = workflowIndex.nodeById.get(exposureNodeId);
-            if (!exposureNode) {
-                continue;
-            }
+            // Must export GLB or chart, or have perAtomProperties (indicated by hasPerAtomProperties flag)
+            const exportsGlb = exposure.export?.type === 'glb';
+            const exportsChart = exposure.export?.type === 'chart-png';
+            // Note: hasPerAtomProperties is checked during resolution and affects canvas flag
+            return exportsGlb || exportsChart || exposure.canvas || exposure.raster;
+        });
+    },
 
-            const exposureData = (exposureNode.data?.exposure ?? {}) as IExposureData;
+    /**
+     * Get all exposures from a plugin without filtering by context or canvas/raster support.
+     * Used by Plugin Results Viewer to show all available exposures.
+     */
+    async getAllExposures(trajectoryId: string, analysisId?: string, pluginSlug?: string): Promise<RenderableExposure[]> {
+        const { analysisConfig } = useAnalysisConfigStore.getState();
 
-            let supportsCanvas = false;
-            let supportsRaster = false;
-            let hasPerAtomProperties = false;
-            let exportConfig: IExportData | undefined;
+        const resolvedAnalysisId = analysisId ?? analysisConfig?._id;
+        const resolvedPluginSlug = pluginSlug ?? analysisConfig?.plugin;
 
-            const stack = [...(workflowIndex.outgoingBySource.get(exposureNodeId) ?? [])];
-
-            while (stack.length > 0) {
-                const targetNodeId = stack.pop() as string;
-                const targetNode = workflowIndex.nodeById.get(targetNodeId);
-                if (!targetNode) {
-                    continue;
-                }
-
-                if (targetNode.type === NodeType.VISUALIZERS) {
-                    const flags = readVisualizersFlags(targetNode);
-                    supportsCanvas = supportsCanvas || flags.canvas;
-                    supportsRaster = supportsRaster || flags.raster;
-
-                    // Check for perAtomProperties
-                    const perAtom = targetNode.data?.visualizers?.perAtomProperties;
-                    if (Array.isArray(perAtom) && perAtom.length > 0) {
-                        hasPerAtomProperties = true;
-                    }
-                    continue;
-                }
-
-                if (targetNode.type === NodeType.EXPORT) {
-                    exportConfig = targetNode.data?.export as IExportData;
-                    continue;
-                }
-
-                const downstream = workflowIndex.outgoingBySource.get(targetNodeId);
-                if (downstream && downstream.length > 0) {
-                    stack.push(...downstream);
-                }
-            }
-
-            const matchesContext = context === 'canvas' ? supportsCanvas : supportsRaster;
-            console.log('matches context:', matchesContext, exposureData.name, renderables)
-            const exportsGlb = exportConfig?.type === 'glb';
-            const exportsChart = exportConfig?.type === 'chart-png';
-
-            if (!matchesContext) {
-                continue;
-            }
-            // Include exposure if it matches context and exports GLB or chart, OR if it has perAtomProperties
-            if (!matchesContext && !hasPerAtomProperties) {
-                continue;
-            }
-
-            if (!exportsGlb && !exportsChart && !hasPerAtomProperties) {
-                continue;
-            }
-
-            renderables.push({
-                pluginId: plugin._id,
-                pluginSlug: plugin.slug,
-                analysisId: resolvedAnalysisId,
-                exposureId: exposureNodeId,
-                modifierId: plugin.slug,
-                name: exposureData.name || exposureNodeId,
-                icon: exposureData.icon,
-                results: exposureData.results || '',
-                canvas: supportsCanvas,
-                raster: supportsRaster,
-                export: exportConfig
-            });
+        if (!resolvedAnalysisId || !resolvedPluginSlug) {
+            return [];
         }
 
-        return renderables;
+        await get().fetchPlugins({ force: true });
+
+        const plugin = get().pluginsBySlug[resolvedPluginSlug];
+        if (!plugin) {
+            return [];
+        }
+
+        // Return all exposures without context filtering
+        return resolveExposuresFromPlugin(plugin, resolvedAnalysisId);
     }
 }));

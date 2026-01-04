@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { socketService } from '@/services/websockets/socketio';
 import type { TrajectoryJobGroup, FrameJobGroupStatus, Job } from '@/types/jobs';
 import type { TeamJobsStore } from '@/types/stores/team/jobs';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
 
 const initialState = {
     groups: [] as TrajectoryJobGroup[],
@@ -107,30 +106,6 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
 
                 const allJobs = newFrameGroups.flatMap(f => f.jobs);
                 const newOverallStatus = computeStatus(allJobs);
-                const previousOverallStatus = g.overallStatus;
-
-                // Sync with trajectory store when all jobs complete
-                if (newOverallStatus === 'completed' && previousOverallStatus !== 'completed') {
-                    // Update trajectory status in trajectory store
-                    useTrajectoryStore.setState((state) => {
-                        const existing = state.trajectories.find((t: any) => t._id === trajId);
-                        if (!existing) return state;
-
-                        const nextTrajectories = [
-                            { ...existing, status: 'completed', updatedAt: updatedJob.timestamp || new Date().toISOString() },
-                            ...state.trajectories.filter((t: any) => t._id !== trajId)
-                        ];
-
-                        const nextCurrent = state.trajectory?._id === trajId
-                            ? { ...state.trajectory, status: 'completed', updatedAt: updatedJob.timestamp || new Date().toISOString() }
-                            : state.trajectory;
-
-                        return {
-                            trajectories: nextTrajectories,
-                            trajectory: nextCurrent
-                        };
-                    });
-                }
 
                 return {
                     ...g,
