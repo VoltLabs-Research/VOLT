@@ -88,23 +88,30 @@ class EntrypointHandler implements NodeHandler {
 
     private async getBinaryPath(config: any, context: ExecutionContext): Promise<string> {
         const hash = config.binaryHash;
+
+        // If hash exists, use the binary cache system which has internal locks
+        // to prevent ETXTBSY errors when multiple jobs run in parallel
         if (hash) {
+            // First check if already cached (this waits for pending downloads)
             const cachedPath = await binaryCache.get(hash);
             if (cachedPath) return cachedPath;
+
+            // Download and cache directly using the cache's locking mechanism
+            logger.info(`[EntrypointHandler] Downloading binary to cache: ${config.binaryObjectPath}`);
+            const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, config.binaryObjectPath);
+            // binaryCache.put() handles locking internally - only one process will write
+            return await binaryCache.put(hash, stream);
         }
 
-        logger.info(`[EntrypointHandler] Downloading binary: ${config.binaryObjectPath}`);
+        // Fallback for binaries without hash (legacy behavior)
+        // Each job gets its own copy to avoid conflicts
+        logger.info(`[EntrypointHandler] Downloading binary (no hash): ${config.binaryObjectPath}`);
         const stream = await storage.getStream(SYS_BUCKETS.PLUGINS, config.binaryObjectPath);
         const ext = path.extname(config.binaryFileName || config.binary || '');
         const binaryPath = path.join(tempFileManager.rootPath, `plugin-binary-${context.pluginSlug}-${Date.now()}${ext}`);
 
         const writeStream = createWriteStream(binaryPath);
         await pipeline(stream, writeStream);
-
-        if (hash) {
-            const buffer = await fs.readFile(binaryPath);
-            await binaryCache.putBuffer(hash, buffer);
-        }
 
         context.generatedFiles.push(binaryPath);
         await fs.chmod(binaryPath, 0o755);

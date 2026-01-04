@@ -146,9 +146,11 @@ TrajectorySchema.pre('findOneAndDelete', async function (next) {
             }
         }
 
-        // Note: PluginExposureMeta and PluginListingRow are now automatically cleaned up
-        // via cascade delete in their model definitions, so manual cleanup is not needed
-
+        // TODO:
+        await Promise.all([
+            mongoose.model('PluginExposureMeta').deleteMany({ trajectory: trajectoryId }),
+            mongoose.model('PluginListingRow').deleteMany({ trajectory: trajectoryId })
+        ]);
         next();
     } catch (error) {
         next(error as Error);
