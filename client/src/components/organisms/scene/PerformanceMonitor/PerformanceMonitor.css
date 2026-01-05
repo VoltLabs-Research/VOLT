@@ -8,5 +8,5 @@
 .perf-monitor-grid {
     display: grid;
     grid-template-columns: auto auto;
-    gap: 0.25rem 0.75rem;
+    gap: 0 0.75rem;
 }
