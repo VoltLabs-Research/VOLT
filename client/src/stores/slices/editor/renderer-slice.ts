@@ -7,22 +7,49 @@ export interface RendererSlice {
 
 const INITIAL: RendererSettingsState = {
     create: {
+        // Anti-aliasing & Alpha
         antialias: false,
         alpha: false,
+
+        // Buffers
         depth: true,
         stencil: false,
         logarithmicDepthBuffer: false,
-        preserveDrawingBuffer: false
+        preserveDrawingBuffer: false,
+
+        // Advanced WebGL Context
+        premultipliedAlpha: true,
+        failIfMajorPerformanceCaveat: false,
+        precision: 'highp'
     },
     runtime: {
+        // Tone Mapping & Color
         toneMapping: 'None',
         toneMappingExposure: 1,
         outputColorSpace: 'SRGB',
-        physicallyCorrectLights: false,
-        localClippingEnabled: false,
-        autoClear: true,
+
+        // Shadow Settings
         shadowEnabled: false,
-        shadowType: 'Basic'
+        shadowType: 'PCF',
+        shadowAutoUpdate: true,
+
+        // Clipping & Culling
+        localClippingEnabled: false,
+        sortObjects: true,
+
+        // Buffer Clearing
+        autoClear: true,
+        autoClearColor: true,
+        autoClearDepth: true,
+        autoClearStencil: true,
+
+        // Advanced Rendering
+        useLegacyLights: false,
+
+        // Performance & Quality
+        gammaFactor: 2.0,
+        maxMorphTargets: 8,
+        maxMorphNormals: 4
     }
 };
 

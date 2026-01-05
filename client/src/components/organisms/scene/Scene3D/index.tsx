@@ -319,18 +319,55 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 	}, []);
 
 	const glProps = useMemo(() => ({
+		// Anti-aliasing & Alpha
 		antialias: rCreate.antialias,
 		alpha: rCreate.alpha,
+
+		// Buffers
 		depth: rCreate.depth,
 		stencil: rCreate.stencil,
 		logarithmicDepthBuffer: rCreate.logarithmicDepthBuffer,
 		preserveDrawingBuffer: rCreate.preserveDrawingBuffer,
+
+		// Advanced WebGL Context
+		premultipliedAlpha: rCreate.premultipliedAlpha,
+		failIfMajorPerformanceCaveat: rCreate.failIfMajorPerformanceCaveat,
+		precision: rCreate.precision,
+
+		// Power Preference
 		powerPreference
-	}), [rCreate.antialias, rCreate.alpha, rCreate.depth, rCreate.stencil, rCreate.logarithmicDepthBuffer, rCreate.preserveDrawingBuffer, powerPreference]);
+	}), [
+		rCreate.antialias,
+		rCreate.alpha,
+		rCreate.depth,
+		rCreate.stencil,
+		rCreate.logarithmicDepthBuffer,
+		rCreate.preserveDrawingBuffer,
+		rCreate.premultipliedAlpha,
+		rCreate.failIfMajorPerformanceCaveat,
+		rCreate.precision,
+		powerPreference
+	]);
+
+	// Generate a key for Canvas to force recreation when GL Create settings change
+	const canvasKey = useMemo(() => {
+		return `canvas-${rCreate.antialias}-${rCreate.alpha}-${rCreate.depth}-${rCreate.stencil}-${rCreate.logarithmicDepthBuffer}-${rCreate.preserveDrawingBuffer}-${rCreate.premultipliedAlpha}-${rCreate.failIfMajorPerformanceCaveat}-${rCreate.precision}`;
+	}, [
+		rCreate.antialias,
+		rCreate.alpha,
+		rCreate.depth,
+		rCreate.stencil,
+		rCreate.logarithmicDepthBuffer,
+		rCreate.preserveDrawingBuffer,
+		rCreate.premultipliedAlpha,
+		rCreate.failIfMajorPerformanceCaveat,
+		rCreate.precision
+	]);
 
 	return (
 		<div style={{ width: '100%', height: '100%' }}>
 			<Canvas
+				key={canvasKey}
 				gl={glProps}
 				style={canvasStyle}
 				dpr={dpr}
