@@ -8,6 +8,18 @@ import '@config/env';
 
 const exporter = new AtomisticExporter();
 
+process.on('uncaughtException', (err) => {
+    logger.error(`[Worker #${process.pid}] Uncaught Exception: ${err.message}`);
+    logger.error(`[Worker #${process.pid}] Stack: ${err.stack}`);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error(`[Worker #${process.pid}] Unhandled Rejection at: ${promise} reason: ${reason}`);
+    process.exit(1);
+});
+
+
 const processJob = async (job: TrajectoryProcessingJob) => {
     if (!job?.jobId) throw new Error('MissingJobId');
 

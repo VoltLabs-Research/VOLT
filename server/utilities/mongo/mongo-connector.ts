@@ -23,7 +23,7 @@
 import logger from '@/logger';
 import mongoose from 'mongoose';
 
-const mongoConnector = async() => {
+const mongoConnector = async () => {
     const {
         NODE_ENV,
         PRODUCTION_DATABASE,
@@ -51,11 +51,12 @@ const mongoConnector = async() => {
         retryWrites: true
     };
 
-    try{
+    try {
         await mongoose.connect(uri, options);
         logger.info(`Connected to MongoDB(${databaseName})!`);
-    }catch(error){
+    } catch (error) {
         logger.error(`Error connecting to MongoDB: ${error}`);
+        throw error;
     }
 };
 

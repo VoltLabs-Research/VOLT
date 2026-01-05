@@ -26,6 +26,18 @@ import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import PluginWorkflowEngine from '@/services/plugin/workflow-engine';
 import mongoConnector from '@/utilities/mongo/mongo-connector';
 import logger from '@/logger';
+
+process.on('uncaughtException', (err) => {
+    logger.error(`[Worker #${process.pid}] Uncaught Exception: ${err.message}`);
+    logger.error(`[Worker #${process.pid}] Stack: ${err.stack}`);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error(`[Worker #${process.pid}] Unhandled Rejection at: ${promise} reason: ${reason}`);
+    process.exit(1);
+});
+
 import '@config/env';
 import '@/services/nodes/handlers';
 import { NodeType } from '@/types/models/plugin';
@@ -196,6 +208,9 @@ const main = async () => {
         logger.info(`[Worker #${process.pid}] Connected to MongoDB and ready to process jobs.`);
     } catch (dbError) {
         logger.error(`[Worker #${process.pid}] Failed to connect to MongoDB. Worker will not be able to process jobs: ${dbError}`);
+        if (dbError instanceof Error) {
+            logger.error(`[Worker #${process.pid}] Stack: ${dbError.stack}`);
+        }
         process.exit(1);
     }
 

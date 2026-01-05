@@ -6,7 +6,7 @@ export interface GridSlice {
 }
 
 const INITIAL: CanvasGridSettingsState = {
-    enabled: true,
+    enabled: false,
     infiniteGrid: true,
     cellSize: 0.75,
     sectionSize: 3,

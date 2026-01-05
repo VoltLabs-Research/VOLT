@@ -8,6 +8,17 @@ import logger from '@/logger';
 import * as fs from 'node:fs/promises';
 import tempFileManager from '@/services/temp-file-manager';
 
+process.on('uncaughtException', (err) => {
+    logger.error(`[Worker #${process.pid}] Uncaught Exception: ${err.message}`);
+    logger.error(`[Worker #${process.pid}] Stack: ${err.stack}`);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error(`[Worker #${process.pid}] Unhandled Rejection at: ${promise} reason: ${reason}`);
+    process.exit(1);
+});
+
 const CACHE_CONTROL = 'public, max-age=86400';
 const CONTENT_TYPE = 'image/png';
 
@@ -64,7 +75,7 @@ const processJob = async (job: RasterizerJob): Promise<void> => {
             // Base trajectory preview: trajectory-{id}/previews/timestep-{timestep}.png
             objectName = `trajectory-${job.trajectoryId}/previews/timestep-${job.timestep}.png`;
         }
-        
+
         await storage.put(SYS_BUCKETS.RASTERIZER, objectName, buffer, {
             'Content-Type': CONTENT_TYPE,
             'Cache-Control': CACHE_CONTROL

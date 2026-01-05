@@ -5,6 +5,18 @@ import logger from '@/logger';
 import * as fs from 'node:fs/promises';
 import '@config/env';
 
+process.on('uncaughtException', (err) => {
+    logger.error(`[Worker #${process.pid}] Uncaught Exception: ${err.message}`);
+    logger.error(`[Worker #${process.pid}] Stack: ${err.stack}`);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error(`[Worker #${process.pid}] Unhandled Rejection at: ${promise} reason: ${reason}`);
+    process.exit(1);
+});
+
+
 export const processJob = async (job: CloudUploadJob): Promise<any> => {
     const { jobId, trajectoryId, timestep } = job;
     const localPath = DumpStorage.getCachePath(trajectoryId, timestep);

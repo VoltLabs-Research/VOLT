@@ -10,6 +10,19 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import TrajectoryParserFactory from '@/parsers/factory';
 import DumpStorage from '@/services/trajectory/dump-storage';
+import logger from '@/logger';
+
+process.on('uncaughtException', (err) => {
+    logger.error(`[Worker #${process.pid}] Uncaught Exception: ${err.message}`);
+    logger.error(`[Worker #${process.pid}] Stack: ${err.stack}`);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error(`[Worker #${process.pid}] Unhandled Rejection at: ${promise} reason: ${reason}`);
+    process.exit(1);
+});
+
 
 interface ParseTaskMessage {
     type: 'parse';

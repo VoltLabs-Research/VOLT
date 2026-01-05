@@ -10,6 +10,18 @@ import logger from '@/logger';
 import '@/config/env';
 import tempFileManager from '@/services/temp-file-manager';
 
+process.on('uncaughtException', (err) => {
+    logger.error(`[Worker #${process.pid}] Uncaught Exception: ${err.message}`);
+    logger.error(`[Worker #${process.pid}] Stack: ${err.stack}`);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error(`[Worker #${process.pid}] Unhandled Rejection at: ${promise} reason: ${reason}`);
+    process.exit(1);
+});
+
+
 export const processJob = async (job: SSHImportJob, postMessage?: (msg: any) => void) => {
     const sendMessage = postMessage || ((msg: any) => parentPort?.postMessage(msg));
 
@@ -81,7 +93,12 @@ export const processJob = async (job: SSHImportJob, postMessage?: (msg: any) => 
  * Worker Entry Point
  */
 const main = async () => {
-    await mongoConnector();
+    try {
+        await mongoConnector();
+    } catch (dbError) {
+        logger.error(`[Worker #${process.pid}] Failed to connect to MongoDB: ${dbError}`);
+        process.exit(1);
+    }
 
     parentPort?.on('message', async (message: { job: SSHImportJob }) => {
         try {
