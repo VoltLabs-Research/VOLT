@@ -21,6 +21,7 @@
  **/
 
 import { useRef, useState, useCallback, useEffect } from 'react';
+import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
 import { Raycaster, Plane, Vector3, Euler } from 'three';
 import type { ExtendedSceneState, UseGlbSceneParams } from '@/types/canvas';
@@ -45,6 +46,7 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     const activeModel = useEditorStore((s) => s.activeModel);
     const setModelBounds = useEditorStore((s) => s.setModelBounds);
     const setIsModelLoading = useEditorStore((s) => s.setIsModelLoading);
+    const pointSizeMultiplier = useEditorStore((s) => s.pointSizeMultiplier);
 
     const stateRef = useRef<ExtendedSceneState>({
         model: null,
@@ -184,6 +186,19 @@ export default function useGlbScene(params: UseGlbSceneParams) {
         transformManager.setPosition(x, y, z);
         invalidate();
     }, [params.position?.x, params.position?.y, params.position?.z, transformManager, invalidate, loadingState.isLoading]);
+
+    useEffect(() => {
+        const mesh = stateRef.current.mesh;
+        if (!mesh || !(mesh instanceof THREE.Points) || !mesh.material) return;
+
+        const mat = mesh.material as THREE.ShaderMaterial;
+        const baseScale = mat.userData.basePointScale;
+
+        if (baseScale !== undefined) {
+            mat.uniforms.pointScale.value = baseScale * pointSizeMultiplier;
+            invalidate();
+        }
+    }, [pointSizeMultiplier, invalidate, loadingState.isLoading]);
 
     const getTargetUrl = useCallback((): string | null => {
         return params.url ?? null;

@@ -44,6 +44,7 @@ export interface ModelState {
     activeScenes: ActiveScene[];
     activeModel: ModelData | null;
     isModelLoading: boolean;
+    pointSizeMultiplier: number;
 }
 
 export interface ModelActions {
@@ -56,6 +57,9 @@ export interface ModelActions {
     addScene: (scene: SceneObjectType) => void;
     removeScene: (scene: SceneObjectType) => void;
     toggleScene: (scene: SceneObjectType) => void;
+    setPointSizeMultiplier: (multiplier: number) => void;
+    increasePointSize: () => void;
+    decreasePointSize: () => void;
 }
 
 export type ModelStore = ModelActions & ModelState;

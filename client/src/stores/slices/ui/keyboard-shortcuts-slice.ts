@@ -79,6 +79,10 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     { id: 'slice-plane', keys: ['x'], description: 'Slice plane', category: 'tools', action: () => { }, scope: 'canvas' },
     { id: 'particle-filter', keys: ['p'], description: 'Particle filter', category: 'tools', action: () => { }, scope: 'canvas' },
 
+    // Atom Size
+    { id: 'increase-point-size', keys: ['+'], description: 'Increase atom size', category: 'view', action: () => { }, scope: 'canvas' },
+    { id: 'decrease-point-size', keys: ['-'], description: 'Decrease atom size', category: 'view', action: () => { }, scope: 'canvas' },
+
     // General
     { id: 'show-shortcuts', keys: ['ctrl', 'k'], description: 'Show keyboard shortcuts', category: 'general', action: () => { }, scope: 'global' },
     { id: 'escape', keys: ['escape'], description: 'Close active panel', category: 'general', action: () => { }, scope: 'global' },

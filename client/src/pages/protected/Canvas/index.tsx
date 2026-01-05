@@ -75,6 +75,18 @@ const EditorPage: React.FC = () => {
         };
     }, []);
 
+    // Set active scene with ID when trajectory is loaded
+    const setActiveScene = useEditorStore((s) => s.setActiveScene);
+    useEffect(() => {
+        if (trajectory?._id) {
+            setActiveScene({
+                sceneType: 'trajectory',
+                source: 'default',
+                id: trajectory._id
+            });
+        }
+    }, [trajectory?._id, setActiveScene]);
+
     // Memoize loading state calculation
     const showLoading = useMemo(() =>
         (isModelLoading && !(didPreload && isPlaying)) || !trajectory || currentTimestep === undefined || trajectoryLoading,

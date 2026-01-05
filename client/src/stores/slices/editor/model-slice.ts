@@ -5,7 +5,8 @@ const initialState: ModelState = {
     activeModel: null,
     activeScene: { sceneType: 'trajectory', source: 'default' } as any,
     activeScenes: [{ sceneType: 'trajectory', source: 'default' } as any],
-    isModelLoading: false
+    isModelLoading: false,
+    pointSizeMultiplier: 1.0
 };
 
 export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get) => ({
@@ -84,7 +85,24 @@ export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get
             activeModel: null,
             isModelLoading: false,
             activeScenes: [{ sceneType: 'trajectory', source: 'default' } as any],
-            activeScene: { sceneType: 'trajectory', source: 'default' } as any
+            activeScene: { sceneType: 'trajectory', source: 'default' } as any,
+            pointSizeMultiplier: 1.0
         });
+    },
+
+    setPointSizeMultiplier(multiplier) {
+        set({ pointSizeMultiplier: Math.max(0.1, Math.min(5.0, multiplier)) });
+    },
+
+    increasePointSize() {
+        set((state: ModelState) => ({
+            pointSizeMultiplier: Math.min(5.0, state.pointSizeMultiplier + 0.1)
+        }));
+    },
+
+    decreasePointSize() {
+        set((state: ModelState) => ({
+            pointSizeMultiplier: Math.max(0.1, state.pointSizeMultiplier - 0.1)
+        }));
     }
 });

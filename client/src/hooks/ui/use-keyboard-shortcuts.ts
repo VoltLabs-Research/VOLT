@@ -151,6 +151,14 @@ const useKeyboardShortcuts = () => {
                 useUIStore.getState().toggleModifier('particle-filter');
             },
 
+            'increase-point-size': () => {
+                useEditorStore.getState().increasePointSize();
+            },
+
+            'decrease-point-size': () => {
+                useEditorStore.getState().decreasePointSize();
+            },
+
             'show-shortcuts': () => {
                 togglePanel();
             },
