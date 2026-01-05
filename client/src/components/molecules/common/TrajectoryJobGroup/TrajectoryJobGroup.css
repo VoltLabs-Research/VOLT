@@ -33,6 +33,11 @@
     border-radius: var(--radius-xs);
 }
 
+.overall-status-badge.status-queued {
+    color: var(--status-warning);
+    opacity: 0.8;
+}
+
 .overall-status-badge.status-running {
     color: var(--status-info);
 }
@@ -79,6 +84,11 @@
     font-weight: 600;
     padding: 0.1rem 0.4rem;
     border-radius: var(--radius-xs);
+}
+
+.frame-status-badge.status-queued {
+    color: var(--status-warning);
+    opacity: 0.8;
 }
 
 .frame-status-badge.status-running {

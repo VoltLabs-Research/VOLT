@@ -18,10 +18,14 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
     let isSocketInitialized = false;
 
     const computeStatus = (jobs: Job[]): FrameJobGroupStatus => {
-        const hasRunning = jobs.some(j => j.status === 'running' || j.status === 'queued');
+        const hasRunning = jobs.some(j => j.status === 'running');
+        const hasQueued = jobs.some(j => j.status === 'queued' || j.status === 'retrying');
         const hasFailed = jobs.some(j => j.status === 'failed');
         const allCompleted = jobs.every(j => j.status === 'completed');
+
+        // Priority: running > queued > completed > failed > partial
         if (hasRunning) return 'running';
+        if (hasQueued) return 'queued';
         if (allCompleted) return 'completed';
         if (hasFailed && jobs.filter(j => j.status === 'completed').length === 0) return 'failed';
         return 'partial';

@@ -4,7 +4,7 @@
  */
 
 import mongoose from 'mongoose';
-import { Analysis, User, DailyActivity } from '@/models';
+import { Analysis, User, DailyActivity, Trajectory } from '@/models';
 import { TeamActivityType } from '@/models/daily-activity';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import { IPlugin } from '@/types/models/modifier';
@@ -12,6 +12,8 @@ import { PluginStatus } from '@/types/models/plugin';
 import { getAnalysisQueue } from '@/queues';
 import Plugin from '@/models/plugin';
 import PluginWorkflowEngine from '@/services/plugin/workflow-engine';
+import { createRedisClient } from '@config/redis';
+import logger from '@/logger';
 
 export interface ExecutePluginOptions {
     config: Record<string, any>;
@@ -48,6 +50,35 @@ class PluginExecutionService {
             throw new Error('Plugin::NotValid::CannotExecute');
         }
 
+        // Mark trajectory as 'queued' immediately to provide user feedback
+        const teamId = (trajectory.team && typeof trajectory.team !== 'string')
+            ? trajectory.team.toString()
+            : String(trajectory.team);
+
+        const currentTrajectory = await Trajectory.findById(trajectoryId);
+        if (currentTrajectory && currentTrajectory.status !== 'queued') {
+            await Trajectory.findByIdAndUpdate(
+                trajectoryId,
+                { status: 'queued' },
+                { new: true }
+            );
+
+            // Publish status update via websocket
+            const redis = createRedisClient();
+            try {
+                await redis.publish('trajectory_updates', JSON.stringify({
+                    trajectoryId,
+                    status: 'queued',
+                    teamId,
+                    updatedAt: new Date(),
+                    timestamp: new Date().toISOString()
+                }));
+                logger.info(`[PluginExecution] Marked trajectory ${trajectoryId} as 'queued'`);
+            } finally {
+                redis.disconnect();
+            }
+        }
+
         const analysisId = new mongoose.Types.ObjectId();
 
         const engine = new PluginWorkflowEngine();
@@ -79,10 +110,6 @@ class PluginExecutionService {
         await User.findByIdAndUpdate(userId, {
             $push: { analyses: analysisId }
         });
-
-        const teamId = (trajectory.team && typeof trajectory.team !== 'string')
-            ? trajectory.team.toString()
-            : String(trajectory.team);
 
         await this.recordActivity(teamId, userId, plugin, trajectory);
 

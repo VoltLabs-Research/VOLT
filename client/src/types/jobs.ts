@@ -1,5 +1,5 @@
 export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'retrying' | 'unknown';
-export type FrameJobGroupStatus = 'running' | 'completed' | 'failed' | 'partial';
+export type FrameJobGroupStatus = 'queued' | 'running' | 'completed' | 'failed' | 'partial';
 
 export interface Job {
     jobId: string;

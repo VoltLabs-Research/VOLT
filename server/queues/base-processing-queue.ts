@@ -56,6 +56,14 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     protected redis: IORedis;
     private redisBlocking: IORedis;
 
+    // Crash-loop protection
+    private consecutiveCrashes = 0;
+    private lastCrashTime = 0;
+    private readonly crashWindowMs = 60000; // 1 minute
+    private readonly maxConsecutiveCrashes = 5;
+    private readonly crashBackoffMs = 5000; // 5 seconds
+    private isInCrashLoop = false;
+
     constructor(options: QueueOptions) {
         super();
 
@@ -526,6 +534,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             return worker;
         }
 
+        this.logInfo(`Spawning new worker (current pool size: ${this.workerPool.length}/${this.maxConcurrentJobs})`);
+
         const worker = new Worker(this.workerPath, {
             execArgv: [
                 '-r',
@@ -544,6 +554,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         worker.on('message', (message) => this.handleWorkerMessage(workerId, message));
         worker.on('error', (err: any) => this.handleWorkerError(workerId, err));
         worker.on('exit', (code) => this.handleWorkerExit(workerId, code));
+
+        this.logInfo(`Worker #${workerId} created successfully`);
 
         return worker;
     }
@@ -590,10 +602,43 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
         this.logError(`Worker #${workerId} error: ${msg}`);
         await this.markJobFailed(workerId, msg);
-        this.replaceWorker(workerId);
+        this.replaceWorker(workerId, false);
     }
 
-    private replaceWorker(workerId: number): void {
+    private checkCrashLoop(hadJob: boolean): boolean {
+        const now = Date.now();
+
+        // Reset counter if crash window has passed
+        if (now - this.lastCrashTime > this.crashWindowMs) {
+            this.consecutiveCrashes = 0;
+            this.isInCrashLoop = false;
+        }
+
+        // Only count crashes without jobs (startup errors)
+        if (!hadJob) {
+            this.consecutiveCrashes++;
+            this.lastCrashTime = now;
+
+            if (this.consecutiveCrashes >= this.maxConsecutiveCrashes) {
+                if (!this.isInCrashLoop) {
+                    this.logError(
+                        `CRASH LOOP DETECTED: ${this.consecutiveCrashes} consecutive worker crashes in ${this.crashWindowMs}ms. ` +
+                        `Applying backoff to prevent crash-loop. Check worker startup code for errors.`
+                    );
+                    this.isInCrashLoop = true;
+                }
+                return true;
+            }
+        } else {
+            // Worker had a job, reset counter (not a startup error)
+            this.consecutiveCrashes = 0;
+            this.isInCrashLoop = false;
+        }
+
+        return false;
+    }
+
+    private replaceWorker(workerId: number, hadJob: boolean): void {
         const idx = this.workerPool.findIndex(({ worker }) => worker.threadId === workerId);
         if (idx !== -1) {
             const old = this.workerPool[idx];
@@ -602,29 +647,49 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             this.workerPool.splice(idx, 1);
         }
 
+        // Check for crash-loop before attempting to spawn new worker
+        const inCrashLoop = this.checkCrashLoop(hadJob);
+
         const backlogPromise = this.redis.llen(this.queueKey);
         backlogPromise.then((backlog) => {
             if (this.workerPool.length < this.minWorkers || backlog > 0) {
-                this.spawnWorker();
+                if (inCrashLoop) {
+                    // Apply backoff before respawning
+                    const delay = this.crashBackoffMs * Math.min(this.consecutiveCrashes, 5);
+                    this.logWarn(`Applying ${delay}ms backoff before respawning worker due to crash-loop`);
+                    setTimeout(() => {
+                        this.spawnWorker();
+                    }, delay);
+                } else {
+                    this.spawnWorker();
+                }
             }
         }).catch(() => {
             if (this.workerPool.length < this.minWorkers) {
-                this.spawnWorker();
+                if (inCrashLoop) {
+                    const delay = this.crashBackoffMs * Math.min(this.consecutiveCrashes, 5);
+                    setTimeout(() => {
+                        this.spawnWorker();
+                    }, delay);
+                } else {
+                    this.spawnWorker();
+                }
             }
         });
     }
 
     private async handleWorkerExit(workerId: number, code: number): Promise<void> {
+        let hadJob = true;
         if (code !== 0) {
             this.logError(`Worker #${workerId} exited unexpectedly with code ${code}`);
-            const hadJob = await this.markJobFailed(workerId, `Worker exited with code ${code}`);
+            hadJob = await this.markJobFailed(workerId, `Worker exited with code ${code}`);
             if (!hadJob) {
                 // Worker crashed before processing any job (e.g., TS compilation error)
                 // No need to requeue anything, just log and replace worker
                 this.logWarn(`Worker #${workerId} crashed without an assigned job (likely startup error)`);
             }
         }
-        this.replaceWorker(workerId);
+        this.replaceWorker(workerId, hadJob);
     }
 
     private async fetchJobs(count: number): Promise<string[]> {
@@ -792,6 +857,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     private async startDispatchLoop(): Promise<void> {
         this.logInfo(`Dispatcher started.`);
+        let noWorkersLogCount = 0;
 
         while (!this.isShutdown) {
             const backlog = await this.redis.llen(this.queueKey);
@@ -802,9 +868,21 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
             const available = this.getAvailableWorkerCount();
             if (available === 0) {
+                // Log every 50 iterations (5 seconds) if workers are unavailable but jobs are queued
+                if (backlog > 0 && noWorkersLogCount % 50 === 0) {
+                    this.logWarn(
+                        `No workers available but ${backlog} jobs queued. ` +
+                        `Pool size: ${workers}/${this.maxConcurrentJobs}. ` +
+                        `Crash-loop status: ${this.isInCrashLoop ? 'ACTIVE' : 'inactive'} ` +
+                        `(consecutive crashes: ${this.consecutiveCrashes})`
+                    );
+                }
+                noWorkersLogCount++;
                 await this.sleep(100);
                 continue;
             }
+
+            noWorkersLogCount = 0; // Reset when workers become available
 
             const jobsToProcess = Math.min(available, this.batchSize);
             const jobs = await this.fetchJobs(jobsToProcess);

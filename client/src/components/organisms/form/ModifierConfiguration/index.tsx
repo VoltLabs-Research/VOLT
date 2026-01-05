@@ -10,6 +10,7 @@ import Container from '@/components/primitives/Container';
 import './ModifierConfiguration.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import useToast from '@/hooks/ui/use-toast';
 
 interface ModifierConfigurationProps {
     pluginId: string;
@@ -44,6 +45,7 @@ const ModifierConfiguration = ({
     const configRef = useRef<Record<string, any>>({});
     const getAvailableArguments = usePluginStore((state) => state.getPluginArguments);
     const plugins = usePluginStore((state) => state.plugins);
+    const { showSuccess } = useToast();
 
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const fetchTrajectory = useTrajectoryStore((state) => state.getTrajectoryById);
@@ -171,6 +173,7 @@ const ModifierConfiguration = ({
             console.error('Analysis failed:', error);
             onAnalysisError?.(error);
         } finally {
+            showSuccess('The analyses have been successfully queued. Be patient.');
             setIsLoading(false);
         }
     }, [modifierId, trajectoryId, config, selectedFrameOnly, currentTimestep, onAnalysisStart, onAnalysisSuccess, onAnalysisError]);

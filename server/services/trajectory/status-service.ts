@@ -120,8 +120,9 @@ class TrajectoryStatusService {
                 shouldUpdate = true;
             } else if (jobStatus === 'running') {
                 if (trajectoryStatus === 'analyzing') {
-                    // Analysis can always update status
-                    shouldUpdate = true;
+                    // Analysis jobs can transition to analyzing from ANY state, including 'completed'
+                    // Use session-based deduplication to prevent redundant updates
+                    shouldUpdate = await this.checkFirstRunningJob(sessionId);
                 } else if (trajectoryStatus === 'rendering' && queueType.includes(Queues.RASTERIZER)) {
                     // Rasterizer running should always trigger an update to notify frontend
                     shouldUpdate = true;
@@ -166,6 +167,11 @@ class TrajectoryStatusService {
             }
 
             if (shouldUpdate) {
+                logger.debug(
+                    `[TrajectoryStatusService] Status transition: ${trajectoryId} ` +
+                    `(${currentStatus} → ${trajectoryStatus}) via ${queueType} job:${jobStatus}`
+                );
+
                 const updatedTrajectory = await Trajectory.findByIdAndUpdate(
                     trajectoryId,
                     { status: trajectoryStatus },
@@ -176,7 +182,6 @@ class TrajectoryStatusService {
                     await this.publishStatusUpdate(trajectoryId, trajectoryStatus, teamId, updatedTrajectory.updatedAt);
                 }
 
-                logger.debug(`[TrajectoryStatusService] Updated ${trajectoryId}: ${currentStatus} -> ${trajectoryStatus}`);
                 return true;
             }
 

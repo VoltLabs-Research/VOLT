@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { slugify } from '@/utilities/runtime/runtime';
-import { Team } from '@/models';
+import { Team, Trajectory } from '@/models';
 import { IWorkflowNode, IPlugin } from '@/types/models/modifier';
 import { NodeType, PluginStatus } from '@/types/models/plugin';
 import { Resource } from '@/constants/resources';

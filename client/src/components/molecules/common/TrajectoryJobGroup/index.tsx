@@ -20,6 +20,7 @@ interface TrajectoryJobGroupProps {
 }
 
 const statusConfig = {
+    queued: 'status-queued',
     running: 'status-running',
     completed: 'status-completed',
     failed: 'status-failed',
