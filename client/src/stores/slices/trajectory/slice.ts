@@ -106,13 +106,13 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
 
         const storeSnapshot = get() as TrajectoryStore;
 
-        // Skip if already have trajectories (initial load only)
-        if (!append && !search && page === 1 && storeSnapshot.trajectories.length > 0) {
+        if (append && storeSnapshot.isFetchingMore) {
             return;
         }
 
-        if (append && storeSnapshot.isFetchingMore) {
-            return;
+        // Always show loading state when fetching (not appending)
+        if (!append) {
+            set({ isLoadingTrajectories: true });
         }
 
         const fetchTrajectories = () => {
