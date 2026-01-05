@@ -12,6 +12,7 @@ export interface TeamJobsActions {
     subscribeToTeam: (teamId: string, previousTeamId?: string | null) => void;
     unsubscribeFromTeam: () => void;
     disconnect: () => void;
+    removeTrajectoryGroup: (trajectoryId: string) => void;
     _initializeSocket: () => void;
     _handleConnect: (connected: boolean) => void;
     _handleTeamJobs: (groups: TrajectoryJobGroup[]) => void;

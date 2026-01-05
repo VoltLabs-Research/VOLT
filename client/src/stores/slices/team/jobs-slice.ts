@@ -176,6 +176,12 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
             isSocketInitialized = false;
             socketService.disconnect();
             set({ isConnected: false, currentTeamId: null, groups: [], expiredSessions: new Set(), isLoading: true });
+        },
+
+        removeTrajectoryGroup: (trajectoryId: string) => {
+            const { groups } = get();
+            const newGroups = groups.filter(g => g.trajectoryId !== trajectoryId);
+            set({ groups: newGroups });
         }
     };
 });

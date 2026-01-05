@@ -1,13 +1,18 @@
 import React, { useState, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaChevronRight } from 'react-icons/fa';
+import { FaChevronRight, FaTrash, FaStop, FaRedo } from 'react-icons/fa';
 import type { TrajectoryJobGroup as TrajectoryJobGroupType, FrameJobGroup, Job } from '@/types/jobs';
 import { formatDistanceToNow } from 'date-fns';
 import JobQueue from '@/components/atoms/common/JobQueue';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import Popover from '@/components/molecules/common/Popover';
+import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
+import trajectoryJobsApi from '@/services/api/trajectory-jobs/trajectory-jobs';
+import { useTeamJobsStore } from '@/stores/slices/team';
 import './TrajectoryJobGroup.css';
+import useToast from '@/hooks/ui/use-toast';
 
 interface TrajectoryJobGroupProps {
     group: TrajectoryJobGroupType;
@@ -68,6 +73,9 @@ FrameGroup.displayName = 'FrameGroup';
 
 const TrajectoryJobGroup: React.FC<TrajectoryJobGroupProps> = memo(({ group, defaultExpanded = false }) => {
     const [isExpanded, setIsExpanded] = React.useState(defaultExpanded);
+    const [loadingAction, setLoadingAction] = React.useState<string | null>(null);
+    const removeTrajectoryGroup = useTeamJobsStore((state) => state.removeTrajectoryGroup);
+    const { showSuccess, showInfo, showError, showWarning } = useToast();
 
     React.useEffect(() => {
         setIsExpanded(defaultExpanded);
@@ -75,35 +83,143 @@ const TrajectoryJobGroup: React.FC<TrajectoryJobGroupProps> = memo(({ group, def
 
     const statusClassName = statusConfig[group.overallStatus];
 
-    return (
-        <Container className="trajectory-job-group">
-            <Container
-                className={`trajectory-job-group-header ${statusClassName} ${isExpanded ? 'expanded' : ''}`}
-                onClick={() => setIsExpanded(!isExpanded)}
-            >
-                <Container className="d-flex w-max items-center content-between gap-05 p-1">
-                    <Container className="d-flex column gap-01">
-                        <Title className="font-size-1 font-weight-6 color-primary trajectory-name">
-                            {group.trajectoryName}
-                        </Title>
-                        <Paragraph className="font-size-1 color-secondary">
-                            {group.completedCount}/{group.totalCount} jobs • {formatDistanceToNow(group.latestTimestamp, { addSufix: true })}
-                        </Paragraph>
-                    </Container>
-                    <Container className="d-flex items-center gap-1">
-                        <span className={`overall-status-badge ${statusClassName}`}>
-                            {group.overallStatus}
-                        </span>
-                        <motion.i
-                            className="chevron-icon"
-                            animate={{ rotate: isExpanded ? 90 : 0 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <FaChevronRight />
-                        </motion.i>
-                    </Container>
+    const handleClearHistory = async () => {
+        // Optimistic toast
+        showSuccess('Clearing history...');
+
+        setLoadingAction('clear');
+
+        // Remove group immediately for optimistic UI
+        removeTrajectoryGroup(group.trajectoryId);
+
+        try {
+            const response = await trajectoryJobsApi.clearHistory(group.trajectoryId);
+            showSuccess(`History cleared: ${response.deletedJobs} jobs and ${response.deletedAnalyses} analyses removed`);
+        } catch (error: any) {
+            console.error('Failed to clear history', error);
+            showError(error?.response?.data?.message || 'Failed to clear history');
+        } finally {
+            setLoadingAction(null);
+        }
+    };
+
+    const handleRemoveRunningJobs = async () => {
+        // Optimistic toast
+        showSuccess('Removing running jobs...');
+
+        setLoadingAction('remove');
+        try {
+            const response = await trajectoryJobsApi.removeRunningJobs(group.trajectoryId);
+            if (response.deletedJobs === 0) {
+                showInfo('No running jobs found');
+            } else {
+                showSuccess(`Removed ${response.deletedJobs} running jobs and ${response.deletedAnalyses} analyses`);
+            }
+        } catch (error: any) {
+            console.error('Failed to remove running jobs', error);
+            showError(error?.response?.data?.message || 'Failed to remove running jobs');
+        } finally {
+            setLoadingAction(null);
+        }
+    };
+
+    const handleRetryFailedJobs = async () => {
+        // Optimistic toast
+        showSuccess('Retrying failed jobs...');
+
+        setLoadingAction('retry');
+        try {
+            const response = await trajectoryJobsApi.retryFailedJobs(group.trajectoryId);
+            if (response.retriedFrames === 0) {
+                showInfo('No failed frames found to retry');
+            } else {
+                showSuccess(`Queued ${response.retriedFrames} failed frames for retry`);
+            }
+        } catch (error: any) {
+            console.error('Failed to retry failed jobs', error);
+            showError(error?.response?.data?.message || 'Failed to retry failed jobs');
+        } finally {
+            setLoadingAction(null);
+        }
+    };
+
+    const headerContent = (
+        <Container
+            className={`trajectory-job-group-header ${statusClassName} ${isExpanded ? 'expanded' : ''}`}
+            onClick={() => setIsExpanded(!isExpanded)}
+        >
+            <Container className="d-flex w-max items-center content-between gap-05 p-1">
+                <Container className="d-flex column gap-01">
+                    <Title className="font-size-1 font-weight-6 color-primary trajectory-name">
+                        {group.trajectoryName}
+                    </Title>
+                    <Paragraph className="font-size-1 color-secondary">
+                        {group.completedCount}/{group.totalCount} jobs • {formatDistanceToNow(group.latestTimestamp, { addSuffix: true })}
+                    </Paragraph>
+                </Container>
+                <Container className="d-flex items-center gap-1">
+                    <span className={`overall-status-badge ${statusClassName}`}>
+                        {group.overallStatus}
+                    </span>
+                    <motion.i
+                        className="chevron-icon"
+                        animate={{ rotate: isExpanded ? 90 : 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <FaChevronRight />
+                    </motion.i>
                 </Container>
             </Container>
+        </Container>
+    );
+
+    return (
+        <Container className="trajectory-job-group">
+            <Popover
+                id={`trajectory-job-menu-${group.trajectoryId}`}
+                trigger={headerContent}
+                triggerAction="contextmenu"
+            >
+                {(close) => (
+                    <>
+                        <PopoverMenuItem
+                            icon={<FaTrash />}
+                            onClick={() => {
+                                handleClearHistory();
+                                close();
+                            }}
+                            variant="danger"
+                            isLoading={loadingAction === 'clear'}
+                            disabled={loadingAction !== null}
+                        >
+                            Clear History
+                        </PopoverMenuItem>
+                        <PopoverMenuItem
+                            icon={<FaStop />}
+                            onClick={() => {
+                                handleRemoveRunningJobs();
+                                close();
+                            }}
+                            variant="danger"
+                            isLoading={loadingAction === 'remove'}
+                            disabled={loadingAction !== null}
+                        >
+                            Remove Running Jobs
+                        </PopoverMenuItem>
+                        <PopoverMenuItem
+                            icon={<FaRedo />}
+                            onClick={() => {
+                                handleRetryFailedJobs();
+                                close();
+                            }}
+                            isLoading={loadingAction === 'retry'}
+                            disabled={loadingAction !== null}
+                        >
+                            Retry Failed Jobs
+                        </PopoverMenuItem>
+                    </>
+                )}
+            </Popover>
 
             <AnimatePresence>
                 {isExpanded && (

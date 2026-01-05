@@ -37,7 +37,7 @@ const app = express();
 
 const corsOptions = {
     origin: function (origin: string | undefined, callback: Function) {
-        if(!origin) return callback(null, true);
+        if (!origin) return callback(null, true);
 
         const allowedOrigins = process.env.NODE_ENV === 'production'
             ? [process.env.CLIENT_HOST as string]
@@ -45,9 +45,9 @@ const corsOptions = {
                 process.env.CLIENT_DEV_HOST as string
             ];
 
-        if(allowedOrigins.includes(origin)) {
+        if (allowedOrigins.includes(origin)) {
             callback(null, true);
-        }else{
+        } else {
             logger.info(`CORS blocked origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
@@ -91,6 +91,7 @@ configureApp({
         'team-member',
         'raster',
         'trajectories',
+        'trajectory-jobs',
         'notifications',
         'trajectory-vfs',
         'color-coding',
@@ -111,7 +112,7 @@ configureApp({
         compression({
             filter: (req, res) => {
                 const url = req.url || '';
-                if(
+                if (
                     url.includes('/images-archive') ||
                     url.includes('/glb-archive') ||
                     url.includes('/frame/') ||
