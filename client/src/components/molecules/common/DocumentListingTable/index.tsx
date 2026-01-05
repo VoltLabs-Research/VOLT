@@ -262,8 +262,22 @@ const DocumentListingTable = ({
   listHeight = 600,
 }: DocumentListingTableProps) => {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const [containerHeight, setContainerHeight] = useState(listHeight);
   const lastScrollOffset = useRef(0);
+
+  useEffect(() => {
+    if (!bodyRef.current) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerHeight(entry.contentRect.height);
+      }
+    });
+
+    observer.observe(bodyRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const columnWidths = useMemo(() => columns.map(getColumnWidth), [columns]);
 
@@ -335,133 +349,124 @@ const DocumentListingTable = ({
   const shouldShowEmptyState = hasNoData && !isLoading;
 
   return (
-    <Container className="d-flex column">
-      <div
-        ref={containerRef}
-        className="document-listing-horizontal-scroll-wrapper"
-        style={{
-          width: 'calc(100vw - 280px)',
-          overflowX: useFlexDistribution ? 'hidden' : 'auto',
-          overflowY: 'hidden',
-        }}
-      >
-        {/* Header */}
-        {columns.length > 0 && (
-          <div
-            className="document-listing-table-header-container p-sticky d-flex"
-            style={{
-              width: effectiveWidth,
-              gap: useFlexDistribution ? undefined : `${COLUMN_GAP}px`,
-              justifyContent: useFlexDistribution ? 'space-between' : 'flex-start',
-            }}
-          >
-            {columns.map((col, colIdx) => (
-              <div
-                className={`document-listing-cell header-cell ${col.sortable ? 'sortable' : ''
-                  } overflow-hidden d-flex items-center color-primary`}
-                key={`header-${col.title}-${colIdx}`}
-                onClick={() => onCellClick(col)}
-                style={
-                  useFlexDistribution
-                    ? { flex: 1, minWidth: 0 }
-                    : {
-                      width: columnWidths[colIdx],
-                      minWidth: columnWidths[colIdx],
-                      maxWidth: columnWidths[colIdx],
-                      flexShrink: 0,
-                    }
-                }
-              >
-                <Title className="font-size-2-5 font-weight-5 text-secondary">{getCellTitle(col)}</Title>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Body */}
-        <Container
-          className="d-flex column p-relative document-listing-table-body-container"
-          style={{ minWidth: useFlexDistribution ? undefined : `${totalRowWidth}px` }}
+    <Container className="d-flex column document-listing-table-container" style={{ height: '100%' }}>
+      {/* Header */}
+      {columns.length > 0 && (
+        <div
+          className="document-listing-table-header-container p-sticky d-flex"
+          style={{
+            width: effectiveWidth,
+            gap: useFlexDistribution ? undefined : `${COLUMN_GAP}px`,
+            justifyContent: useFlexDistribution ? 'space-between' : 'flex-start',
+          }}
         >
-          {!hasNoData && useVirtualization && Array.isArray(data) ? (
-            <div style={{ height: listHeight, width: effectiveWidth }} onScroll={handleScroll}>
-              <List
-                rowCount={data.length}
-                rowHeight={ROW_HEIGHT}
-                rowComponent={VirtualizedRow}
-                rowProps={{
-                  data,
-                  columns,
-                  columnWidths,
-                  totalRowWidth,
-                  getMenuOptions,
-                  keyExtractor,
-                  useFlexDistribution,
-                }}
-                style={{ height: listHeight, width: effectiveWidth, overflowX: 'hidden' }}
-              />
+          {columns.map((col, colIdx) => (
+            <div
+              className={`document-listing-cell header-cell ${col.sortable ? 'sortable' : ''
+                } overflow-hidden d-flex items-center color-primary`}
+              key={`header-${col.title}-${colIdx}`}
+              onClick={() => onCellClick(col)}
+              style={
+                useFlexDistribution
+                  ? { flex: 1, minWidth: 0 }
+                  : {
+                    width: columnWidths[colIdx],
+                    minWidth: columnWidths[colIdx],
+                    maxWidth: columnWidths[colIdx],
+                    flexShrink: 0,
+                  }
+              }
+            >
+              <Title className="font-size-2-5 font-weight-5 text-secondary">{getCellTitle(col)}</Title>
             </div>
-          ) : !hasNoData ? (
-            <>
-              {data.map((item, idx) => (
-                <TableRow
-                  key={keyExtractor ? keyExtractor(item, idx) : `item-${idx}`}
-                  item={item}
-                  index={idx}
-                  columns={columns}
-                  columnWidths={columnWidths}
-                  totalRowWidth={totalRowWidth}
-                  getMenuOptions={getMenuOptions}
-                  keyExtractor={keyExtractor}
-                  useFlexDistribution={useFlexDistribution}
-                />
-              ))}
-            </>
-          ) : null}
+          ))}
+        </div>
+      )}
 
-          {!hasNoData && enableInfinite && hasMore && isFetchingMore &&
-            Array.from({ length: skeletonRowsCount }).map((_, index) => (
-              <SkeletonRow
-                key={`append-skeleton-${index}`}
+      {/* Body */}
+      <Container
+        ref={bodyRef}
+        className="d-flex column p-relative document-listing-table-body-container"
+        style={{ minWidth: useFlexDistribution ? undefined : `${totalRowWidth}px`, flex: 1, overflow: 'hidden' }}
+      >
+        {!hasNoData && useVirtualization && Array.isArray(data) ? (
+          <div style={{ height: containerHeight, width: effectiveWidth }} onScroll={handleScroll}>
+            <List
+              rowCount={data.length}
+              rowHeight={ROW_HEIGHT}
+              rowComponent={VirtualizedRow}
+              rowProps={{
+                data,
+                columns,
+                columnWidths,
+                totalRowWidth,
+                getMenuOptions,
+                keyExtractor,
+                useFlexDistribution,
+              }}
+              style={{ height: containerHeight, width: effectiveWidth, overflowX: 'hidden' }}
+            />
+          </div>
+        ) : !hasNoData ? (
+          <>
+            {data.map((item, idx) => (
+              <TableRow
+                key={keyExtractor ? keyExtractor(item, idx) : `item-${idx}`}
+                item={item}
+                index={idx}
                 columns={columns}
                 columnWidths={columnWidths}
+                totalRowWidth={totalRowWidth}
+                getMenuOptions={getMenuOptions}
+                keyExtractor={keyExtractor}
                 useFlexDistribution={useFlexDistribution}
               />
             ))}
+          </>
+        ) : null}
 
-          {/* Infinite scroll sentinel(for non-virtualized) */}
-          {enableInfinite && !useVirtualization && <div ref={sentinelRef} style={{ height: 1 }} />}
+        {!hasNoData && enableInfinite && hasMore && isFetchingMore &&
+          Array.from({ length: skeletonRowsCount }).map((_, index) => (
+            <SkeletonRow
+              key={`append-skeleton-${index}`}
+              columns={columns}
+              columnWidths={columnWidths}
+              useFlexDistribution={useFlexDistribution}
+            />
+          ))}
 
-          {shouldShowEmptyState && (
-            <div className="document-listing-overlay-blur p-absolute">
-              <div className="document-listing-empty-content p-absolute">
-                <EmptyState
-                  title="No Documents"
-                  description={emptyMessage}
-                  buttonText={emptyButtonText}
-                  buttonOnClick={onEmptyButtonClick}
-                  className="document-listing-empty-message"
+        {/* Infinite scroll sentinel(for non-virtualized) */}
+        {enableInfinite && !useVirtualization && <div ref={sentinelRef} style={{ height: 1 }} />}
+
+        {shouldShowEmptyState && (
+          <div className="document-listing-overlay-blur p-absolute">
+            <div className="document-listing-empty-content p-absolute">
+              <EmptyState
+                title="No Documents"
+                description={emptyMessage}
+                buttonText={emptyButtonText}
+                buttonOnClick={onEmptyButtonClick}
+                className="document-listing-empty-message"
+              />
+            </div>
+          </div>
+        )}
+
+        {isInitialLoading && (
+          <div className="document-listing-overlay-blur p-absolute">
+            <div className="document-listing-infinite-skeleton-loader p-absolute overflow-hidden d-flex column">
+              {Array.from({ length: 20 }).map((_, index) => (
+                <SkeletonRow
+                  key={`loading-skeleton-${index}`}
+                  columns={columns}
+                  columnWidths={columnWidths}
+                  useFlexDistribution={useFlexDistribution}
                 />
-              </div>
+              ))}
             </div>
-          )}
-
-          {isInitialLoading && (
-            <div className="document-listing-overlay-blur p-absolute">
-              <div className="document-listing-infinite-skeleton-loader p-absolute overflow-hidden d-flex column">
-                {Array.from({ length: 20 }).map((_, index) => (
-                  <SkeletonRow
-                    key={`loading-skeleton-${index}`}
-                    columns={columns}
-                    columnWidths={columnWidths}
-                    useFlexDistribution={useFlexDistribution}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </Container>
-      </div>
+          </div>
+        )}
+      </Container>
 
       <div className="document-listing-table-footer-container" />
     </Container>
