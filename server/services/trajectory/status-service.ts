@@ -12,8 +12,6 @@ import { createRedisClient } from '@config/redis';
 import logger from '@/logger';
 import IORedis from 'ioredis';
 import { Analysis } from '@/models';
-import storage from '@/services/storage';
-import { SYS_BUCKETS } from '@/config/minio';
 
 export interface StatusUpdateContext {
     trajectoryId: string;
@@ -21,7 +19,6 @@ export interface StatusUpdateContext {
     sessionId?: string;
     jobStatus: string;
     queueType: string;
-    timestep?: number;
 }
 
 class TrajectoryStatusService {
@@ -120,9 +117,8 @@ class TrajectoryStatusService {
                 shouldUpdate = true;
             } else if (jobStatus === 'running') {
                 if (trajectoryStatus === 'analyzing') {
-                    // Analysis jobs can transition to analyzing from ANY state, including 'completed'
-                    // Use session-based deduplication to prevent redundant updates
-                    shouldUpdate = await this.checkFirstRunningJob(sessionId);
+                    // Analysis can always update status
+                    shouldUpdate = true;
                 } else if (trajectoryStatus === 'rendering' && queueType.includes(Queues.RASTERIZER)) {
                     // Rasterizer running should always trigger an update to notify frontend
                     shouldUpdate = true;
@@ -156,22 +152,7 @@ class TrajectoryStatusService {
                 shouldUpdate = true;
             }
 
-            if (shouldUpdate && trajectoryStatus === 'completed' && jobStatus === 'completed') {
-                // If we are about to mark as completed, wait for GLB availability first (background)
-                // We only do this if it's the final rasterization step (Queues.RASTERIZER) or similar final step
-                // Actually, ensure we have the timestep
-                if (queueType.includes(Queues.RASTERIZER) && context.timestep !== undefined) {
-                    this.checkGLBAndFinalize(trajectoryId, teamId, context.timestep, trajectoryStatus);
-                    return false; // Defer update
-                }
-            }
-
             if (shouldUpdate) {
-                logger.debug(
-                    `[TrajectoryStatusService] Status transition: ${trajectoryId} ` +
-                    `(${currentStatus} → ${trajectoryStatus}) via ${queueType} job:${jobStatus}`
-                );
-
                 const updatedTrajectory = await Trajectory.findByIdAndUpdate(
                     trajectoryId,
                     { status: trajectoryStatus },
@@ -182,6 +163,7 @@ class TrajectoryStatusService {
                     await this.publishStatusUpdate(trajectoryId, trajectoryStatus, teamId, updatedTrajectory.updatedAt);
                 }
 
+                logger.debug(`[TrajectoryStatusService] Updated ${trajectoryId}: ${currentStatus} -> ${trajectoryStatus}`);
                 return true;
             }
 
@@ -243,53 +225,6 @@ class TrajectoryStatusService {
             updatedAt: updatedAt || new Date(),
             timestamp: new Date().toISOString()
         }));
-    }
-
-    /**
-     * Polls MinIO for the GLB file and only finalizes status once available.
-     */
-    private async checkGLBAndFinalize(
-        trajectoryId: string,
-        teamId: string,
-        timestep: number,
-        targetStatus: string
-    ): Promise<void> {
-        const glbPath = `trajectory-${trajectoryId}/previews/timestep-${timestep}.glb`;
-
-        // Fire and forget polling
-        (async () => {
-            logger.info(`[TrajectoryStatusService] Waiting for GLB availability: ${glbPath}`);
-            const startWait = Date.now();
-
-            while (true) {
-                try {
-                    // Check if object exists
-                    await storage.stat(SYS_BUCKETS.MODELS, glbPath);
-                    logger.info(`[TrajectoryStatusService] GLB found for ${trajectoryId} after ${Date.now() - startWait}ms`);
-                    break;
-                } catch (e) {
-                    // Not found yet, wait and retry
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-            }
-
-            // Once found, proceed with DB update and notification
-            try {
-                const updatedTrajectory = await Trajectory.findByIdAndUpdate(
-                    trajectoryId,
-                    { status: targetStatus },
-                    { new: true }
-                );
-
-                if (updatedTrajectory && teamId) {
-                    await this.publishStatusUpdate(trajectoryId, targetStatus, teamId, updatedTrajectory.updatedAt);
-                }
-
-                logger.info(`[TrajectoryStatusService] Finalized status for ${trajectoryId} -> ${targetStatus}`);
-            } catch (err) {
-                logger.error(`[TrajectoryStatusService] Failed to finalize status for ${trajectoryId}: ${err}`);
-            }
-        })();
     }
 }
 

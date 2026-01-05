@@ -39,6 +39,7 @@ import ParticleFilter from '@/components/organisms/scene/ParticleFilter';
 import PerformanceMonitor from '@/components/organisms/scene/PerformanceMonitor';
 import { Exporter, ExportType } from '@/types/plugin';
 import type { Trajectory } from '@/types/models';
+import { useNavigate } from 'react-router';
 
 interface CanvasWidgetsProps {
     trajectory: Trajectory;
@@ -52,6 +53,7 @@ const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: C
     const resultsViewerData = useUIStore((store) => store.resultsViewerData);
     const activeScene = useEditorStore((state) => state.activeScene);
     const plugins = usePluginStore((state) => state.plugins);
+    const navigate = useNavigate();
 
     const activeExposure = useMemo(() => {
         if (activeScene.source !== 'plugin') return null;
@@ -174,7 +176,6 @@ const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: C
                         currentTimestep={currentTimestep}
                         className={`plugin-modifier-config-${modifier.modifierId}`}
                         onAnalysisSuccess={(analysisId) => {
-                            console.log('Analysis started:', analysisId);
                             // toggleModifier(modifier.key);
                         }}
                         onAnalysisError={(error) => {

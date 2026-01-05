@@ -21,10 +21,6 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, range = 365 }) 
     const [tooltipPos, setTooltipPos] = React.useState({ x: 0, y: 0 });
     const [tooltipContent, setTooltipContent] = React.useState<React.ReactNode>(null);
 
-    useEffect(() => {
-        console.log('data', data);
-    }, []);
-
     const chartData = useMemo(() => {
         const dataMap = new Map<string, ActivityData>();
         data.forEach(item => {

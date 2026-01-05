@@ -54,13 +54,10 @@ const PluginResultsViewer = ({
 
     // Get exposure names that have listings (visualizers with listing config)
     const listingExposures = useMemo(() => {
-        console.log('[PluginResultsViewer] Received exposures:', JSON.stringify(exposures, null, 2));
         const filtered = exposures.filter(exp => {
             const hasName = Boolean(exp.name);
-            console.log(`  - Exposure ${exp.exposureId}: name="${exp.name}", filtering=${hasName}`);
             return hasName;
         });
-        console.log('[PluginResultsViewer] Filtered count:', filtered.length);
         return filtered;
     }, [exposures]);
 

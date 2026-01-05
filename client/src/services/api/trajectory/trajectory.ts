@@ -148,7 +148,6 @@ const trajectoryApi = {
         total: number;
         hasMore: boolean;
     } | null> {
-        console.log('--------------------------------- trajectory id', trajectoryId);
         const response = await client.request<any>('get', `/${trajectoryId}/analysis/${analysisId}`, {
             query: {
                 timestep: params.timestep,

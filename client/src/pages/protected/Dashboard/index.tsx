@@ -61,6 +61,10 @@ const DashboardPage: React.FC = memo(() => {
         if (!selectedTeam?._id) return;
 
         getTrajectories(selectedTeam._id, { page: 1, limit: 100 });
+
+        return () => {
+            useTrajectoryStore.setState({ trajectories: [] });
+        };
     }, [selectedTeam?._id, getTrajectories]);
 
     return (
