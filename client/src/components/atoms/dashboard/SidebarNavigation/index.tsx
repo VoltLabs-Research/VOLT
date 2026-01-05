@@ -9,13 +9,15 @@ import { HiOutlineServer } from 'react-icons/hi';
 import { BsFiles } from 'react-icons/bs';
 import { MdImportExport } from 'react-icons/md';
 import type { IconType } from 'react-icons';
+import { Skeleton } from '@mui/material';
 import { useTeamStore } from '@/stores/slices/team';
-import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import useTeamStateReset from '@/hooks/team/use-team-state-reset';
 import useToast from '@/hooks/ui/use-toast';
 import Select from '@/components/atoms/form/Select';
 import Container from '@/components/primitives/Container';
 import { IoIosAdd } from 'react-icons/io';
+import pluginApi from '@/services/api/plugin/plugin';
+import type { IListingsWithExposures } from '@/services/api/plugin/types';
 
 interface SidebarNavigationProps {
     setSidebarOpen: (status: boolean) => void;
@@ -26,15 +28,35 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
     const [searchParams, setSearchParams] = useSearchParams();
     const [analysesExpanded, setAnalysesExpanded] = useState(false);
     const [expandedPlugins, setExpandedPlugins] = useState<Set<string>>(new Set());
+    const [exposures, setExposures] = useState<IListingsWithExposures[]>([]);
+    const [isLoadingExposures, setIsLoadingExposures] = useState(true);
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const teams = useTeamStore((state) => state.teams);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
-    const plugins = usePluginStore((state) => state.plugins);
     const { resetAllTeamState } = useTeamStateReset();
     const { showError, showSuccess } = useToast();
     const leaveTeam = useTeamStore((state) => state.leaveTeam);
+
+    useEffect(() => {
+        if (!selectedTeam?._id) return;
+        const fetchExposures = async () => {
+            try {
+                const response = await pluginApi.getPlugins({ limit: 1000 });
+                const exposures = response.data
+                    .filter(p => p.listingsWithExposures)
+                    .map(p => p.listingsWithExposures!);
+                setExposures(exposures);
+            } catch (error) {
+                console.error('Failed to fetch exposures:', error);
+            } finally {
+                setIsLoadingExposures(false);
+            }
+        };
+
+        fetchExposures();
+    }, [selectedTeam]);
 
     const handleTeamChange = (teamId: string) => {
         if (selectedTeam?._id === teamId) return;
@@ -93,13 +115,6 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
         ['Manage Roles', IoKeyOutline, '/dashboard/manage-roles']
     ]), []);
 
-    // Use backend-computed listingsWithExposures instead of workflow traversal
-    const pluginsWithExposures = useMemo(() => {
-        return plugins
-            .filter(p => p.listingsWithExposures)
-            .map(p => p.listingsWithExposures!);
-    }, [plugins]);
-
     return (
         <nav className='sidebar-nav'>
             {mainNavItems.map(([name, Icon, to], index) => (
@@ -145,52 +160,66 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
                     >
                         View all
                     </button>
-                    {pluginsWithExposures.map((plugin) => (
-                        <div key={plugin.pluginSlug} className="sidebar-nested-section">
-                            <button
-                                className={`sidebar-sub-item sidebar-nested-header ${pathname.includes(`/plugins/${plugin.pluginSlug}/listing/`) ? 'is-selected' : ''}`}
-                                onClick={() => {
-                                    setExpandedPlugins(prev => {
-                                        const next = new Set(prev);
-                                        if (next.has(plugin.pluginSlug)) {
-                                            next.delete(plugin.pluginSlug);
-                                        } else {
-                                            next.add(plugin.pluginSlug);
-                                        }
-                                        return next;
-                                    });
-                                }}
-                                title={plugin.pluginName}
-                            >
-                                <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                                    {plugin.pluginName}
-                                </span>
-                                <IoChevronDown
-                                    className={`sidebar-nested-chevron ${expandedPlugins.has(plugin.pluginSlug) ? 'is-expanded' : ''}`}
-                                    size={12}
+                    {isLoadingExposures ? (
+                        Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="sidebar-nested-section" style={{ padding: '4px 12px' }}>
+                                <Skeleton
+                                    animation="wave"
+                                    variant="rectangular"
+                                    height={24}
+                                    width="100%"
+                                    sx={{ borderRadius: 1, devbgcolor: 'rgba(255, 255, 255, 0.05)' }}
                                 />
-                            </button>
-                            {expandedPlugins.has(plugin.pluginSlug) && (
-                                <div className="sidebar-nested-items">
-                                    {plugin.exposures.map((exposure) => (
-                                        <button
-                                            key={exposure.slug}
-                                            className={`sidebar-nested-item ${pathname.includes(`/plugins/${plugin.pluginSlug}/listing/${encodeURIComponent(exposure.slug)}`) ? 'is-selected' : ''}`}
-                                            onClick={() => {
-                                                navigate(`/dashboard/plugins/${plugin.pluginSlug}/listing/${encodeURIComponent(exposure.slug)}`);
-                                                setSidebarOpen(false);
-                                            }}
-                                            title={exposure.name}
-                                        >
-                                            <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {exposure.name}
-                                            </span>
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                            </div>
+                        ))
+                    ) : (
+                        exposures.map((plugin) => (
+                            <div key={plugin.pluginSlug} className="sidebar-nested-section">
+                                <button
+                                    className={`sidebar-sub-item sidebar-nested-header ${pathname.includes(`/plugins/${plugin.pluginSlug}/listing/`) ? 'is-selected' : ''}`}
+                                    onClick={() => {
+                                        setExpandedPlugins(prev => {
+                                            const next = new Set(prev);
+                                            if (next.has(plugin.pluginSlug)) {
+                                                next.delete(plugin.pluginSlug);
+                                            } else {
+                                                next.add(plugin.pluginSlug);
+                                            }
+                                            return next;
+                                        });
+                                    }}
+                                    title={plugin.pluginName}
+                                >
+                                    <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                        {plugin.pluginName}
+                                    </span>
+                                    <IoChevronDown
+                                        className={`sidebar-nested-chevron ${expandedPlugins.has(plugin.pluginSlug) ? 'is-expanded' : ''}`}
+                                        size={12}
+                                    />
+                                </button>
+                                {expandedPlugins.has(plugin.pluginSlug) && (
+                                    <div className="sidebar-nested-items">
+                                        {plugin.exposures.map((exposure) => (
+                                            <button
+                                                key={exposure.slug}
+                                                className={`sidebar-nested-item ${pathname.includes(`/plugins/${plugin.pluginSlug}/listing/${encodeURIComponent(exposure.slug)}`) ? 'is-selected' : ''}`}
+                                                onClick={() => {
+                                                    navigate(`/dashboard/plugins/${plugin.pluginSlug}/listing/${encodeURIComponent(exposure.slug)}`);
+                                                    setSidebarOpen(false);
+                                                }}
+                                                title={exposure.name}
+                                            >
+                                                <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {exposure.name}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
                 </div>
             )}
 
