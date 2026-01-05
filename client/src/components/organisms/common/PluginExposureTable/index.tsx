@@ -248,6 +248,15 @@ const PluginExposureTable = ({
             ]);
         }
 
+        // Delete option - removes all rows for this analysis
+        if (item?.analysisId) {
+            options.push([
+                'Delete',
+                RiDeleteBin6Line,
+                () => handleMenuAction('delete', item)
+            ]);
+        }
+
         return options;
     }, [handleMenuAction, navigate]);
 
