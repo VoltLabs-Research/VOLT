@@ -1,5 +1,6 @@
 import Popover from '@/components/molecules/common/Popover';
 import Notifications from '@/components/organisms/notifications/Notifications';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import useNotificationStore from '@/stores/slices/notification';
 import { IoNotificationsOutline } from 'react-icons/io5';
 
@@ -11,20 +12,22 @@ const NotificationsPopover = () => {
         <Popover
             id="notifications-popover"
             trigger={
-                <button
-                    className='d-flex content-center items-center badge-container as-icon-container over-light-bg dashboard-bell-trigger cursor-pointer p-relative'
-                    type="button"
-                >
-                    <IoNotificationsOutline size={18} />
-                    {unreadCount > 0 && (
-                        <span className='d-flex items-center content-center notification-badge p-absolute'>{unreadCount > 99 ? '99+' : unreadCount}</span>
-                    )}
-                </button>
+                <Tooltip content="Notifications" placement="bottom">
+                    <button
+                        className='d-flex content-center items-center badge-container as-icon-container over-light-bg dashboard-bell-trigger cursor-pointer p-relative'
+                        type="button"
+                    >
+                        <IoNotificationsOutline size={18} />
+                        {unreadCount > 0 && (
+                            <span className='d-flex items-center content-center notification-badge p-absolute'>{unreadCount > 99 ? '99+' : unreadCount}</span>
+                        )}
+                    </button>
+                </Tooltip>
             }
             className="dashboard-notifications-dropdown glass-bg p-0 overflow-auto"
             noPadding
             onOpenChange={(isOpen) => {
-                if(isOpen) markAllAsRead();
+                if (isOpen) markAllAsRead();
             }}
         >
             {(closePopover) => (

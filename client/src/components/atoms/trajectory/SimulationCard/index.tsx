@@ -17,6 +17,7 @@ import useTrajectoryPreview from '@/hooks/trajectory/use-trajectory-preview';
 import { useRasterStore } from '@/stores/slices/raster';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import trajectoryApi from '@/services/api/trajectory/trajectory';
 import type { Trajectory } from '@/types/models';
 import { useUIStore } from '@/stores/slices/ui';
@@ -297,9 +298,11 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                         id={`simulation-card-menu-${trajectory._id}`}
                         className='gap-1'
                         trigger={
-                            <button className='simulation-options-icon-container color-primary cursor-pointer' style={{ background: 'transparent', border: 'none', padding: 0 }}>
-                                <PiDotsThreeVerticalBold />
-                            </button>
+                            <Tooltip content="More Options" placement="left">
+                                <button className='simulation-options-icon-container color-primary cursor-pointer' style={{ background: 'transparent', border: 'none', padding: 0 }}>
+                                    <PiDotsThreeVerticalBold />
+                                </button>
+                            </Tooltip>
                         }
                     >
                         <PopoverMenuItem

@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import React, { useState, useRef, useCallback, useEffect, type ReactNode } from 'react';
+import React, { useState, useRef, useCallback, useEffect, type ReactNode, type ReactElement, cloneElement, isValidElement } from 'react';
 import { createPortal } from 'react-dom';
 import './Tooltip.css';
 
@@ -50,7 +50,7 @@ const Tooltip = ({
     const [position, setPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
     const [actualPlacement, setActualPlacement] = useState<TooltipPlacement>(placement);
 
-    const triggerRef = useRef<HTMLSpanElement>(null);
+    const triggerRef = useRef<HTMLElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -85,7 +85,6 @@ const Tooltip = ({
             }
         };
 
-        // Check if preferred placement fits
         const preferred = positions[placement];
         const fitsTop = preferred.top >= VIEWPORT_PADDING;
         const fitsBottom = preferred.top + tooltipRect.height <= vh - VIEWPORT_PADDING;
@@ -106,14 +105,12 @@ const Tooltip = ({
         top = finalPos.top;
         left = finalPos.left;
 
-        // Clamp horizontal position
         if (left < VIEWPORT_PADDING) {
             left = VIEWPORT_PADDING;
         } else if (left + tooltipRect.width > vw - VIEWPORT_PADDING) {
             left = vw - tooltipRect.width - VIEWPORT_PADDING;
         }
 
-        // Clamp vertical position
         if (top < VIEWPORT_PADDING) {
             top = VIEWPORT_PADDING;
         } else if (top + tooltipRect.height > vh - VIEWPORT_PADDING) {
@@ -124,31 +121,38 @@ const Tooltip = ({
         setActualPlacement(finalPlacement);
     }, [placement]);
 
-    const handleMouseEnter = useCallback(() => {
+    const handleMouseEnter = useCallback((e: React.MouseEvent) => {
         if (disabled) return;
+
+        const child = React.Children.only(children);
+        if (isValidElement(child) && child.props.onMouseEnter) {
+            child.props.onMouseEnter(e);
+        }
 
         timeoutRef.current = setTimeout(() => {
             setIsVisible(true);
         }, delay);
-    }, [delay, disabled]);
+    }, [delay, disabled, children]);
 
-    const handleMouseLeave = useCallback(() => {
+    const handleMouseLeave = useCallback((e: React.MouseEvent) => {
+        const child = React.Children.only(children);
+        if (isValidElement(child) && child.props.onMouseLeave) {
+            child.props.onMouseLeave(e);
+        }
+
         if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
         }
         setIsVisible(false);
-    }, []);
+    }, [children]);
 
-    // Recalculate position when visible
     useEffect(() => {
         if (isVisible) {
-            // Use RAF to ensure tooltip is rendered before calculating
             requestAnimationFrame(calculatePosition);
         }
     }, [isVisible, calculatePosition]);
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
             if (timeoutRef.current) {
@@ -176,18 +180,28 @@ const Tooltip = ({
         document.body
     ) : null;
 
+    const child = React.Children.only(children);
+    if (!isValidElement(child)) {
+        return <>{children}</>;
+    }
+
+    const clonedChild = cloneElement(child as ReactElement<any>, {
+        ref: (node: HTMLElement) => {
+            (triggerRef as React.MutableRefObject<HTMLElement | null>).current = node;
+            const { ref } = child as any;
+            if (typeof ref === 'function') {
+                ref(node);
+            } else if (ref && typeof ref === 'object') {
+                (ref as React.MutableRefObject<HTMLElement | null>).current = node;
+            }
+        },
+        onMouseEnter: handleMouseEnter,
+        onMouseLeave: handleMouseLeave
+    });
+
     return (
         <>
-            <span
-                ref={triggerRef}
-                className="volt-tooltip-trigger"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                onFocus={handleMouseEnter}
-                onBlur={handleMouseLeave}
-            >
-                {children}
-            </span>
+            {clonedChild}
             {tooltipContent}
         </>
     );
