@@ -13,12 +13,11 @@ import { useTeamStore } from '@/stores/slices/team';
 import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import useTeamStateReset from '@/hooks/team/use-team-state-reset';
 import useToast from '@/hooks/ui/use-toast';
-import { NodeType } from '@/types/plugin';
 import Select from '@/components/atoms/form/Select';
 import Container from '@/components/primitives/Container';
 import { IoIosAdd } from 'react-icons/io';
 
-interface SidebarNavigationProps{
+interface SidebarNavigationProps {
     setSidebarOpen: (status: boolean) => void;
     setSettingsExpanded: (status: boolean) => void;
 };
@@ -94,71 +93,13 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
         ['Manage Roles', IoKeyOutline, '/dashboard/manage-roles']
     ]), []);
 
-    // Group plugins with their exposures that have listings or perAtomProperties
+    // Use backend-computed listingsWithExposures instead of workflow traversal
     const pluginsWithExposures = useMemo(() => {
-        const result: Array<{
-            pluginName: string;
-            pluginSlug: string;
-            exposures: Array<{ name: string; slug: string; hasPerAtomProperties: boolean }>;
-        }> = [];
-
-        plugins.forEach(plugin => {
-            if (!plugin.workflow?.nodes || !plugin.workflow?.edges || !plugin.slug) return;
-            const { nodes, edges } = plugin.workflow;
-
-            // Find visualizer nodes with listings OR perAtomProperties
-            const visualizerNodes = nodes.filter(node =>
-                node.type === NodeType.VISUALIZERS && (
-                    (node.data?.visualizers?.listing && Object.keys(node.data.visualizers.listing).length > 0) ||
-                    (node.data?.visualizers?.perAtomProperties && node.data.visualizers.perAtomProperties.length > 0)
-                )
-            );
-
-            if (visualizerNodes.length === 0) return;
-
-            // Trace backward from visualizers to find connected exposures
-            const findConnectedExposure = (nodeId: string, depth = 0): string | null => {
-                if (depth > 5) return null;
-                const incomingEdge = edges.find(e => e.target === nodeId);
-                if (!incomingEdge) return null;
-                const sourceNode = nodes.find(n => n.id === incomingEdge.source);
-                if (!sourceNode) return null;
-                if (sourceNode.type === NodeType.EXPOSURE) {
-                    return sourceNode.data?.exposure?.name || null;
-                }
-                return findConnectedExposure(sourceNode.id, depth + 1);
-            };
-
-            const exposures: Array<{ name: string; slug: string; hasPerAtomProperties: boolean }> = [];
-            const seenExposures = new Set<string>();
-
-            visualizerNodes.forEach(vizNode => {
-                const exposureName = findConnectedExposure(vizNode.id);
-                if (exposureName && !seenExposures.has(exposureName)) {
-                    seenExposures.add(exposureName);
-                    const hasPerAtomProperties = Boolean(
-                        vizNode.data?.visualizers?.perAtomProperties?.length
-                    );
-                    exposures.push({ name: exposureName, slug: exposureName, hasPerAtomProperties });
-                }
-            });
-
-            if (exposures.length === 0) return;
-
-            // Get modifier name for plugin display name
-            const modifierNode = nodes.find(n => n.type === NodeType.MODIFIER);
-            const pluginName = modifierNode?.data?.modifier?.name || plugin.slug;
-
-            result.push({
-                pluginName,
-                pluginSlug: plugin.slug,
-                exposures
-            });
-        });
-
-        return result;
+        return plugins
+            .filter(p => p.listingsWithExposures)
+            .map(p => p.listingsWithExposures!);
     }, [plugins]);
-    
+
     return (
         <nav className='sidebar-nav'>
             {mainNavItems.map(([name, Icon, to], index) => (

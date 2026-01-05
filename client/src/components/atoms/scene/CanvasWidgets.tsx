@@ -55,45 +55,19 @@ const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: C
 
     const activeExposure = useMemo(() => {
         if (activeScene.source !== 'plugin') return null;
-        const { exposureId } = activeScene;
+        const { exposureId } = activeScene as any;
+        if (!exposureId) return null;
 
+        // Use backend-computed exposures instead of workflow traversal
         for (const plugin of plugins) {
-            // Find exposure node
-            const exposureNode = plugin.workflow.nodes.find((n: any) => n.id === exposureId);
-            if (!exposureNode) continue;
-
-            // Build adjacency map for BFS traversal
-            const adjacency = new Map<string, string[]>();
-            for (const edge of plugin.workflow.edges) {
-                const targets = adjacency.get(edge.source) || [];
-                targets.push(edge.target);
-                adjacency.set(edge.source, targets);
+            if (!plugin.exposures) continue;
+            const exposure = plugin.exposures.find(e => e._id === exposureId);
+            if (exposure) {
+                return {
+                    results: exposure.results,
+                    export: exposure.export
+                };
             }
-
-            // BFS to find export node downstream from exposure
-            const visited = new Set<string>();
-            const queue = [exposureId];
-            let exportNode: any = null;
-
-            while (queue.length > 0) {
-                const currentId = queue.shift()!;
-                if (visited.has(currentId)) continue;
-                visited.add(currentId);
-
-                const node = plugin.workflow.nodes.find((n: any) => n.id === currentId);
-                if (node?.type === 'export') {
-                    exportNode = node;
-                    break;
-                }
-
-                const neighbors = adjacency.get(currentId) || [];
-                queue.push(...neighbors);
-            }
-
-            return {
-                results: exposureNode.data?.exposure?.results,
-                export: exportNode?.data?.export
-            };
         }
         return null;
     }, [activeScene, plugins]);
@@ -157,7 +131,7 @@ const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: C
                                 analysisId={(activeScene as any).analysisId}
                                 exposureId={(activeScene as any).exposureId}
                                 timestep={currentTimestep || 0}
-                                title={activeExposure?.export?.options?.title}
+                                title={activeExposure?.export?.options?.title as string | undefined}
                                 onClose={() => setShowChart(false)}
                             />
                         ) : (

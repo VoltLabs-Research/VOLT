@@ -27,7 +27,6 @@ import pluginApi from '@/services/api/plugin/plugin';
 import analysisConfigApi from '@/services/api/analysis/analysis';
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import { formatCellValue, normalizeRows, type ColumnDef } from '@/utilities/plugins/expression-utils';
-import { NodeType } from '@/types/plugin';
 import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import PluginCompactTable from '../PluginCompactTable';
 import useConfirm from '@/hooks/ui/use-confirm';
@@ -77,46 +76,17 @@ const buildColumns = (columnDefs: ColumnDef[], showTrajectory = false): ColumnCo
     return cols;
 };
 
-const extractColumnsFromWorkflow = (plugin: any, listingSlug: string): ColumnDef[] => {
-    const nodes = plugin?.workflow?.nodes || [];
-    const edges = plugin?.workflow?.edges || [];
+// Use backend-computed exposures.listing instead of workflow traversal
+const extractColumnsFromPlugin = (plugin: any, listingSlug: string): ColumnDef[] => {
+    if (!plugin?.exposures) return [];
 
-    const exposureNode = nodes.find((n: any) => n.type === NodeType.EXPOSURE && n.data?.exposure?.name === listingSlug);
-    if (!exposureNode) return [];
+    const exposure = plugin.exposures.find((e: any) => e.name === listingSlug);
+    if (!exposure?.listing) return [];
 
-    const outMap = new Map<string, string[]>();
-    for (const e of edges) {
-        const arr = outMap.get(e.source) || [];
-        arr.push(e.target);
-        outMap.set(e.source, arr);
-    }
-
-    const q = [exposureNode.id];
-    const visited = new Set<string>();
-
-    while (q.length) {
-        const id = q.shift()!;
-        if (visited.has(id)) continue;
-        visited.add(id);
-
-        const children = outMap.get(id) || [];
-        for (const childId of children) {
-            const child = nodes.find((x: any) => x.id === childId);
-            if (!child) continue;
-
-            if (child.type === NodeType.VISUALIZERS && child.data?.visualizers?.listing) {
-                const listingDef = child.data.visualizers.listing || {};
-                const entries = Object.entries(listingDef);
-                if (entries.length) {
-                    return entries.map(([path, label]) => ({ path, label: String(label) }));
-                }
-            }
-
-            q.push(childId);
-        }
-    }
-
-    return [];
+    return Object.entries(exposure.listing).map(([path, label]) => ({
+        path,
+        label: String(label)
+    }));
 };
 
 const PluginExposureTable = ({
@@ -153,12 +123,14 @@ const PluginExposureTable = ({
         }
     }, [pluginsBySlug, fetchPlugins]);
 
+    // Use backend-computed exposures.listing instead of workflow traversal
     const columnDefs = useMemo(() => {
         if (!pluginSlug || !listingSlug) return [];
         const plugin = pluginsBySlug[pluginSlug];
         if (!plugin) return [];
-        return extractColumnsFromWorkflow(plugin, listingSlug);
+        return extractColumnsFromPlugin(plugin, listingSlug);
     }, [pluginsBySlug, pluginSlug, listingSlug]);
+
 
     // Track if initial fetch has been done for current params
     const fetchedForRef = useRef<string | null>(null);

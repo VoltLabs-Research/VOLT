@@ -107,6 +107,7 @@ export interface ISchemaData {
 export interface IVisualizersData {
     canvas?: boolean;
     raster?: boolean;
+    listingTitle?: string;
     listing?: Record<string, string>;
     perAtomProperties?: string[];
 };
@@ -188,6 +189,33 @@ export interface IPluginModel extends Model<IPlugin> {
     getNodesByType(workflow: IWorkflow, type: NodeType): IWorkflowNode[];
 };
 
+export interface IExposureComputed {
+    _id: string;
+    name: string;
+    icon?: string;
+    results: string;
+    iterable?: string;
+    iterableChunkSize?: number;
+    canvas: boolean;
+    raster: boolean;
+    perAtomProperties: string[];
+    listing: Record<string, string> | null;
+    listingTitle: string;
+    export: IExportData | null;
+};
+
+export interface IListingExposure {
+    name: string;
+    slug: string;
+    hasPerAtomProperties: boolean;
+};
+
+export interface IListingsWithExposures {
+    pluginName: string;
+    pluginSlug: string;
+    exposures: IListingExposure[];
+};
+
 export interface IPlugin extends Document {
     slug: string;
     workflow: IWorkflow;
@@ -200,5 +228,7 @@ export interface IPlugin extends Document {
     modifier: IModifierData | null;
     name: string;
     version: string;
-    exposures: Array<{ nodeId: string } & IExposureData>;
+    exposures: IExposureComputed[];
+    arguments: IArgumentDefinition[];
+    listingsWithExposures: IListingsWithExposures | null;
 };

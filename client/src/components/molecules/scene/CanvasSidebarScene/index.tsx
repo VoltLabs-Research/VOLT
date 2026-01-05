@@ -328,7 +328,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     const modifiers = getModifiers();
 
     const neededSlugs = new Set(analyses.map(a => a.plugin));
-    const modifierBySlug = new Map(modifiers.map(m => [m.plugin.slug, m]));
+    const modifierBySlug = new Map(modifiers.map(m => [m.pluginSlug, m]));
 
     for (const slug of neededSlugs) {
       const m = modifierBySlug.get(slug);

@@ -56,44 +56,16 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     const plugins = usePluginStore((state) => state.plugins);
 
     // Helper to check if a scene is a chart export (not a GLB)
+    // Uses backend-computed exposures instead of workflow traversal
     const isChartScene = React.useCallback((scene: any) => {
         if (scene.source !== 'plugin') return false;
         const { exposureId } = scene;
         if (!exposureId) return false;
 
         for (const plugin of plugins) {
-            const exposureNode = plugin.workflow.nodes.find((n: any) => n.id === exposureId);
-            if (!exposureNode) continue;
-
-            // Build adjacency map for BFS traversal
-            const adjacency = new Map<string, string[]>();
-            for (const edge of plugin.workflow.edges) {
-                const targets = adjacency.get(edge.source) || [];
-                targets.push(edge.target);
-                adjacency.set(edge.source, targets);
-            }
-
-            // BFS to find export node downstream from exposure
-            const visited = new Set<string>();
-            const queue = [exposureId];
-            let exportNode: any = null;
-
-            while (queue.length > 0) {
-                const currentId = queue.shift()!;
-                if (visited.has(currentId)) continue;
-                visited.add(currentId);
-
-                const node = plugin.workflow.nodes.find((n: any) => n.id === currentId);
-                if (node?.type === 'export') {
-                    exportNode = node;
-                    break;
-                }
-
-                const neighbors = adjacency.get(currentId) || [];
-                queue.push(...neighbors);
-            }
-
-            if (exportNode?.data?.export?.type === 'chart-png') {
+            if (!plugin.exposures) continue;
+            const exposure = plugin.exposures.find(e => e._id === exposureId);
+            if (exposure?.export?.type === 'chart-png') {
                 return true;
             }
         }

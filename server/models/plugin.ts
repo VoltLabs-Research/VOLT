@@ -461,12 +461,24 @@ PluginSchema.virtual('exposures').get(function () {
         .map((node) => {
             const visualizersNode = findDescendantByType(this.workflow as any, node.id, NodeType.VISUALIZERS);
             const exportNode = findDescendantByType(this.workflow as any, node.id, NodeType.EXPORT);
+            const visualizers = visualizersNode?.data?.visualizers;
+            const exportData = exportNode?.data?.export;
 
             return {
-                nodeId: node.id,
-                ...node.data?.exposure,
-                visualizers: visualizersNode?.data?.visualizers,
-                export: exportNode?.data?.export
+                _id: node.id,
+                name: node.data?.exposure?.name || node.id,
+                icon: node.data?.exposure?.icon,
+                results: node.data?.exposure?.results || '',
+                iterable: node.data?.exposure?.iterable,
+                iterableChunkSize: node.data?.exposure?.iterableChunkSize,
+                // Flattened visualizer flags
+                canvas: visualizers?.canvas || false,
+                raster: visualizers?.raster || false,
+                perAtomProperties: visualizers?.perAtomProperties || [],
+                listing: visualizers?.listing || null,
+                listingTitle: visualizers?.listingTitle || '',
+                // Export configuration
+                export: exportData || null
             };
         });
 });
@@ -474,6 +486,32 @@ PluginSchema.virtual('exposures').get(function () {
 PluginSchema.virtual('arguments').get(function () {
     const argumentsNode = this.workflow?.nodes?.find((node) => node.type === NodeType.ARGUMENTS);
     return argumentsNode?.data?.arguments?.arguments || [];
+});
+
+PluginSchema.virtual('listingsWithExposures').get(function () {
+    if (!this.workflow?.nodes) return null;
+
+    const exposures = (this as any).exposures || [];
+    const listingExposures = exposures
+        .filter((exp: any) =>
+            (exp.listing && Object.keys(exp.listing).length > 0) ||
+            (exp.perAtomProperties && exp.perAtomProperties.length > 0)
+        )
+        .map((exp: any) => ({
+            name: exp.name,
+            slug: exp.name,
+            hasPerAtomProperties: Boolean(exp.perAtomProperties?.length)
+        }));
+
+    if (listingExposures.length === 0) return null;
+
+    const modifierData = (this as any).modifier;
+
+    return {
+        pluginName: modifierData?.name || this.slug,
+        pluginSlug: this.slug,
+        exposures: listingExposures
+    };
 });
 
 const Plugin = mongoose.model<IPlugin, IPluginModel>('Plugin', PluginSchema);

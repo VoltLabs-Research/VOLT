@@ -1,35 +1,14 @@
 import { create } from 'zustand';
 import pluginApi from '@/services/api/plugin/plugin';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
-import { NodeType } from '@/types/plugin';
-import type { IPluginRecord } from '@/services/api/plugin/types';
+import type { IPluginRecord, IExposureComputed, IArgumentDefinition } from '@/services/api/plugin/types';
 import { calculatePaginationState, initialListingMeta } from '@/utilities/api/pagination-utils';
 import { runRequest } from '../../helpers';
 
-interface IModifierData {
-    name?: string;
-    icon?: string;
-    description?: string;
-    version?: string;
-}
-
-interface IExposureData {
-    name?: string;
-    icon?: string;
-    results?: string;
-}
-
-interface IVisualizersData {
-    canvas?: boolean;
-    raster?: boolean;
-}
-
-interface IExportData {
-    exporter?: string;
-    type?: string;
-    options?: Record<string, unknown>;
-}
-
+/**
+ * RenderableExposure - Format used by canvas/scene components
+ * This is derived from IExposureComputed (backend-computed) + context data
+ */
 export interface RenderableExposure {
     pluginId: string;
     pluginSlug: string;
@@ -41,35 +20,29 @@ export interface RenderableExposure {
     results: string;
     canvas: boolean;
     raster: boolean;
-    export?: IExportData;
+    perAtomProperties?: string[];
+    export?: {
+        exporter?: string;
+        type?: string;
+        options?: Record<string, unknown>;
+    };
 }
 
+/**
+ * ResolvedModifier - Format used by modifier selectors
+ * Derived from plugin.modifier (backend-computed)
+ */
 export interface ResolvedModifier {
     plugin: IPluginRecord;
+    pluginSlug: string;
     name: string;
     icon?: string;
 }
 
-export interface PluginArgument {
-    argument: string;
-    type: 'select' | 'number' | 'boolean' | 'string' | 'frame';
-    label: string;
-    default?: unknown;
-    value?: unknown;
-    options?: Array<{ key: string; label: string }>;
-    min?: number;
-    max?: number;
-    step?: number;
-}
-
-type WorkflowNode = IPluginRecord['workflow']['nodes'][number];
-type WorkflowEdge = IPluginRecord['workflow']['edges'][number];
-
-type WorkflowIndex = {
-    nodeById: Map<string, WorkflowNode>;
-    outgoingBySource: Map<string, string[]>;
-    nodeIdsByType: Map<NodeType, string[]>;
-};
+/**
+ * PluginArgument - Re-export of IArgumentDefinition for convenience
+ */
+export type PluginArgument = IArgumentDefinition;
 
 export interface PluginState {
     plugins: IPluginRecord[];
@@ -111,140 +84,43 @@ export interface PluginState {
 const PLUGINS_TTL_MS = 60_000;
 
 let lastPluginsFetchAtMs = 0;
-const workflowIndexByPluginId = new Map<string, { versionKey: string; index: WorkflowIndex }>();
 
-function buildWorkflowIndex(plugin: IPluginRecord): WorkflowIndex {
-    const nodeById = new Map<string, WorkflowNode>();
-    const outgoingBySource = new Map<string, string[]>();
-    const nodeIdsByType = new Map<NodeType, string[]>();
-
-    for (const node of plugin.workflow.nodes as WorkflowNode[]) {
-        nodeById.set(node.id, node);
-
-        const nodeType = node.type as NodeType;
-        const ids = nodeIdsByType.get(nodeType);
-        if (ids) {
-            ids.push(node.id);
-        } else {
-            nodeIdsByType.set(nodeType, [node.id]);
-        }
-    }
-
-    for (const edge of plugin.workflow.edges as WorkflowEdge[]) {
-        const targets = outgoingBySource.get(edge.source);
-        if (targets) {
-            targets.push(edge.target);
-        } else {
-            outgoingBySource.set(edge.source, [edge.target]);
-        }
-    }
-
-    return { nodeById, outgoingBySource, nodeIdsByType };
-}
-
-function getWorkflowIndex(plugin: IPluginRecord): WorkflowIndex {
-    const updatedAt = (plugin as any).updatedAt ?? '';
-    const versionKey = `${plugin._id}:${updatedAt}:${plugin.workflow?.nodes?.length ?? 0}:${plugin.workflow?.edges?.length ?? 0}`;
-
-    const cached = workflowIndexByPluginId.get(plugin._id);
-    if (cached?.versionKey === versionKey) {
-        return cached.index;
-    }
-
-    const index = buildWorkflowIndex(plugin);
-    workflowIndexByPluginId.set(plugin._id, { versionKey, index });
-    return index;
-}
-
-function firstNodeIdOfType(index: WorkflowIndex, type: NodeType): string | null {
-    const ids = index.nodeIdsByType.get(type);
-    return ids && ids.length > 0 ? ids[0] : null;
-}
-
-function readVisualizersFlags(node: WorkflowNode | undefined): { canvas: boolean; raster: boolean } {
-    const visualizers = (node?.data?.visualizers ?? {}) as IVisualizersData;
+/**
+ * Convert backend IExposureComputed to frontend RenderableExposure
+ */
+function toRenderableExposure(
+    plugin: IPluginRecord,
+    exposure: IExposureComputed,
+    analysisId: string
+): RenderableExposure {
     return {
-        canvas: !!visualizers.canvas,
-        raster: !!visualizers.raster
+        pluginId: plugin._id,
+        pluginSlug: plugin.slug,
+        analysisId,
+        exposureId: exposure._id,
+        modifierId: plugin.slug,
+        name: exposure.name,
+        icon: exposure.icon,
+        results: exposure.results,
+        canvas: exposure.canvas,
+        raster: exposure.raster,
+        perAtomProperties: exposure.perAtomProperties,
+        export: exposure.export || undefined
     };
 }
 
-function resolveModifiersFromPlugins(plugins: IPluginRecord[]): ResolvedModifier[] {
-    return plugins.map((plugin) => {
-        const workflowIndex = getWorkflowIndex(plugin);
-        const modifierNodeId = firstNodeIdOfType(workflowIndex, NodeType.MODIFIER);
-        const modifierNode = modifierNodeId ? workflowIndex.nodeById.get(modifierNodeId) : undefined;
-        const modifierData = (modifierNode?.data?.modifier ?? {}) as IModifierData;
-
-        return {
-            plugin,
-            name: modifierData.name || plugin.slug,
-            icon: modifierData.icon
-        };
-    });
-}
-
 /**
- * Resolve all exposures from a plugin's workflow without any filtering.
- * This is the core logic shared by getRenderableExposures and getAllExposures.
+ * Extract modifiers from plugins using backend-computed modifier field
  */
-function resolveExposuresFromPlugin(plugin: IPluginRecord, analysisId: string): RenderableExposure[] {
-    const workflowIndex = getWorkflowIndex(plugin);
-    const exposureNodeIds = workflowIndex.nodeIdsByType.get(NodeType.EXPOSURE) ?? [];
-    const exposures: RenderableExposure[] = [];
-
-    for (const exposureNodeId of exposureNodeIds) {
-        const exposureNode = workflowIndex.nodeById.get(exposureNodeId);
-        if (!exposureNode) continue;
-
-        const exposureData = (exposureNode.data?.exposure ?? {}) as IExposureData;
-
-        let supportsCanvas = false;
-        let supportsRaster = false;
-        let exportConfig: IExportData | undefined;
-
-        // Traverse downstream nodes to find visualizers and export config
-        const stack = [...(workflowIndex.outgoingBySource.get(exposureNodeId) ?? [])];
-
-        while (stack.length > 0) {
-            const targetNodeId = stack.pop() as string;
-            const targetNode = workflowIndex.nodeById.get(targetNodeId);
-            if (!targetNode) continue;
-
-            if (targetNode.type === NodeType.VISUALIZERS) {
-                const flags = readVisualizersFlags(targetNode);
-                supportsCanvas = supportsCanvas || flags.canvas;
-                supportsRaster = supportsRaster || flags.raster;
-                continue;
-            }
-
-            if (targetNode.type === NodeType.EXPORT) {
-                exportConfig = targetNode.data?.export as IExportData;
-                continue;
-            }
-
-            const downstream = workflowIndex.outgoingBySource.get(targetNodeId);
-            if (downstream && downstream.length > 0) {
-                stack.push(...downstream);
-            }
-        }
-
-        exposures.push({
-            pluginId: plugin._id,
+function resolveModifiersFromPlugins(plugins: IPluginRecord[]): ResolvedModifier[] {
+    return plugins
+        .filter(plugin => plugin.modifier)
+        .map(plugin => ({
+            plugin,
             pluginSlug: plugin.slug,
-            analysisId,
-            exposureId: exposureNodeId,
-            modifierId: plugin.slug,
-            name: exposureData.name || exposureNodeId,
-            icon: exposureData.icon,
-            results: exposureData.results || '',
-            canvas: supportsCanvas,
-            raster: supportsRaster,
-            export: exportConfig
-        });
-    }
-
-    return exposures;
+            name: plugin.modifier?.name || plugin.slug,
+            icon: plugin.modifier?.icon
+        }));
 }
 
 export const usePluginStore = create<PluginState>((set, get) => ({
@@ -322,12 +198,12 @@ export const usePluginStore = create<PluginState>((set, get) => ({
 
                 const nextPluginsBySlug = { ...state.pluginsBySlug };
                 for (const plugin of incomingPlugins) {
-                    console.log('plugin.slug =', plugin.slug, plugin)
                     nextPluginsBySlug[plugin.slug] = plugin;
                 }
 
+                // Use backend-computed modifier field
                 const nextModifiers = resolveModifiersFromPlugins(pagination.data);
-                console.log(nextModifiers);
+
                 set({
                     plugins: pagination.data,
                     pluginsBySlug: nextPluginsBySlug,
@@ -353,16 +229,18 @@ export const usePluginStore = create<PluginState>((set, get) => ({
             const nextPluginsBySlug = { ...get().pluginsBySlug };
             nextPluginsBySlug[plugin.slug] = plugin;
 
-            // Also update modifiers if this plugin isn't there
+            // Update modifiers if this plugin isn't there
             const modifiers = get().modifiers;
-            const existingModifier = modifiers.find(m => m.plugin.slug === plugin.slug);
+            const existingModifier = modifiers.find(m => m.pluginSlug === plugin.slug);
             let nextModifiers = modifiers;
 
-            if (!existingModifier) {
-                const newModifiers = resolveModifiersFromPlugins([plugin]);
-                if (newModifiers.length > 0) {
-                    nextModifiers = [...modifiers, newModifiers[0]];
-                }
+            if (!existingModifier && plugin.modifier) {
+                nextModifiers = [...modifiers, {
+                    plugin,
+                    pluginSlug: plugin.slug,
+                    name: plugin.modifier.name,
+                    icon: plugin.modifier.icon
+                }];
             }
 
             set({
@@ -380,23 +258,18 @@ export const usePluginStore = create<PluginState>((set, get) => ({
         return get().modifiers;
     },
 
+    /**
+     * Get plugin arguments using backend-computed arguments field
+     */
     getPluginArguments(pluginSlug) {
         const plugin = get().pluginsBySlug[pluginSlug];
-        if (!plugin) {
-            return [];
-        }
-
-        const workflowIndex = getWorkflowIndex(plugin);
-        const argumentsNodeId = firstNodeIdOfType(workflowIndex, NodeType.ARGUMENTS);
-        if (!argumentsNodeId) {
-            return [];
-        }
-
-        const node = workflowIndex.nodeById.get(argumentsNodeId);
-        const args = (node?.data?.arguments as any)?.arguments;
-        return Array.isArray(args) ? (args as PluginArgument[]) : [];
+        return (plugin?.arguments ?? []) as PluginArgument[];
     },
 
+    /**
+     * Get exposures filtered by context (canvas/raster)
+     * Uses backend-computed exposures field
+     */
     async getRenderableExposures(trajectoryId, analysisId, context = 'canvas', pluginSlug) {
         const { analysisConfig } = useAnalysisConfigStore.getState();
 
@@ -410,29 +283,27 @@ export const usePluginStore = create<PluginState>((set, get) => ({
         await get().fetchPlugins({ force: true });
 
         const plugin = get().pluginsBySlug[resolvedPluginSlug];
-        console.log('getRenderableExposures:', plugin, resolvedPluginSlug);
-        if (!plugin) {
+        if (!plugin?.exposures) {
             return [];
         }
 
-        const allExposures = resolveExposuresFromPlugin(plugin, resolvedAnalysisId);
+        // Filter by context (canvas/raster support) and convert to RenderableExposure
+        return plugin.exposures
+            .filter(exposure => {
+                const matchesContext = context === 'canvas' ? exposure.canvas : exposure.raster;
+                if (!matchesContext) return false;
 
-        // Filter by context (canvas/raster support)
-        return allExposures.filter(exposure => {
-            const matchesContext = context === 'canvas' ? exposure.canvas : exposure.raster;
-            if (!matchesContext) return false;
-
-            // Must export GLB or chart, or have perAtomProperties (indicated by hasPerAtomProperties flag)
-            const exportsGlb = exposure.export?.type === 'glb';
-            const exportsChart = exposure.export?.type === 'chart-png';
-            // Note: hasPerAtomProperties is checked during resolution and affects canvas flag
-            return exportsGlb || exportsChart || exposure.canvas || exposure.raster;
-        });
+                // Must have valid export or visualizer support
+                const exportsGlb = exposure.export?.type === 'glb';
+                const exportsChart = exposure.export?.type === 'chart-png';
+                return exportsGlb || exportsChart || exposure.canvas || exposure.raster;
+            })
+            .map(exposure => toRenderableExposure(plugin, exposure, resolvedAnalysisId));
     },
 
     /**
-     * Get all exposures from a plugin without filtering by context or canvas/raster support.
-     * Used by Plugin Results Viewer to show all available exposures.
+     * Get all exposures without filtering by context
+     * Used by Plugin Results Viewer
      */
     async getAllExposures(trajectoryId: string, analysisId?: string, pluginSlug?: string): Promise<RenderableExposure[]> {
         const { analysisConfig } = useAnalysisConfigStore.getState();
@@ -447,11 +318,13 @@ export const usePluginStore = create<PluginState>((set, get) => ({
         await get().fetchPlugins({ force: true });
 
         const plugin = get().pluginsBySlug[resolvedPluginSlug];
-        if (!plugin) {
+        if (!plugin?.exposures) {
             return [];
         }
 
         // Return all exposures without context filtering
-        return resolveExposuresFromPlugin(plugin, resolvedAnalysisId);
+        return plugin.exposures.map(exposure =>
+            toRenderableExposure(plugin, exposure, resolvedAnalysisId)
+        );
     }
 }));

@@ -64,36 +64,17 @@ const PluginResultsViewer = ({
         return filtered;
     }, [exposures]);
 
+    // Use backend-computed perAtomProperties from exposures instead of workflow traversal
     const perAtomProperties = useMemo(() => {
         const properties = new Set<string>();
+        // Use perAtomProperties from RenderableExposure (which comes from backend)
         exposures.forEach(exp => {
-            const plugin = usePluginStore.getState().pluginsBySlug[pluginSlug];
-            if (!plugin) return;
-            const nodes = plugin.workflow.nodes;
-            const edges = plugin.workflow.edges;
-            const exposureNode = nodes.find((n: any) => n.type === 'exposure' && n.data?.exposure?.name === exp.name);
-            if (!exposureNode) return;
-
-            const findConnectedVisualizer = (nodeId: string, visited = new Set<string>()): any => {
-                if (visited.has(nodeId)) return null;
-                visited.add(nodeId);
-                const outEdges = edges.filter((e: any) => e.source === nodeId);
-                for (const edge of outEdges) {
-                    const target = nodes.find((n: any) => n.id === edge.target);
-                    if (target?.type === 'visualizers') return target;
-                    const result = findConnectedVisualizer(edge.target, visited);
-                    if (result) return result;
-                }
-                return null;
-            };
-
-            const vizNode = findConnectedVisualizer(exposureNode.id);
-            if (vizNode?.data?.visualizers?.perAtomProperties) {
-                vizNode.data.visualizers.perAtomProperties.forEach((p: string) => properties.add(p));
+            if (exp.perAtomProperties) {
+                exp.perAtomProperties.forEach(p => properties.add(p));
             }
         });
         return Array.from(properties);
-    }, [exposures, pluginSlug]);
+    }, [exposures]);
 
     const hasAtomsTab = perAtomProperties.length > 0;
     const atomsTabIndex = listingExposures.length; // Atoms tab is after exposures
@@ -101,27 +82,16 @@ const PluginResultsViewer = ({
     const activeExposure = activeTab < listingExposures.length ? listingExposures[activeTab] : null;
     const isAtomsTabActive = hasAtomsTab && activeTab === atomsTabIndex;
 
+    // Use backend-computed exposures to find one with perAtomProperties
     const atomExposureId = useMemo(() => {
         const plugin = usePluginStore.getState().pluginsBySlug[pluginSlug];
-        if (!plugin) return exposures[0]?.exposureId;
-        const { nodes, edges } = plugin.workflow;
-        const atomVizNode = nodes.find((n: any) =>
-            n.type === 'visualizers' &&
-            n.data?.visualizers?.perAtomProperties &&
-            n.data.visualizers.perAtomProperties.length > 0
+        if (!plugin?.exposures) return exposures[0]?.exposureId;
+
+        // Find exposure with perAtomProperties
+        const atomExposure = plugin.exposures.find(e =>
+            e.perAtomProperties && e.perAtomProperties.length > 0
         );
-        if (!atomVizNode) return exposures[0]?.exposureId;
-        const findExposureNodeId = (nodeId: string, visited = new Set<string>()): string | null => {
-            if (visited.has(nodeId)) return null;
-            visited.add(nodeId);
-            const incomingEdge = edges.find((e: any) => e.target === nodeId);
-            if (!incomingEdge) return null;
-            const sourceNode = nodes.find((n: any) => n.id === incomingEdge.source);
-            if (!sourceNode) return null;
-            if (sourceNode.type === 'exposure') return sourceNode.id;
-            return findExposureNodeId(sourceNode.id, visited);
-        };
-        return findExposureNodeId(atomVizNode.id) || exposures[0]?.exposureId;
+        return atomExposure?._id || exposures[0]?.exposureId;
     }, [exposures, pluginSlug]);
 
     if (listingExposures.length === 0 && !hasAtomsTab) {

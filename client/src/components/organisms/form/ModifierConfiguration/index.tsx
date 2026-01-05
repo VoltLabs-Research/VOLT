@@ -62,16 +62,14 @@ const ModifierConfiguration = ({
         return getAvailableArguments(modifierId);  // Use modifierId(slug) instead of pluginId(_id)
     }, [modifierId, getAvailableArguments]);
 
+    // Use backend-computed modifier instead of workflow traversal
     const modifierInfo = useMemo(() => {
-        const plugin = plugins.find((plugin) => plugin.slug === modifierId);  // Use modifierId(slug)
-        if (!plugin) return null;
-
-        const modifierNode = plugin.workflow.nodes.find((node: any) => node.type === 'modifier');
-        const modifierData = modifierNode?.data?.modifier || {};
+        const plugin = plugins.find((plugin) => plugin.slug === modifierId);
+        if (!plugin?.modifier) return null;
 
         return {
-            displayName: modifierData.name || modifierId,
-            icon: modifierData.icon
+            displayName: plugin.modifier.name || modifierId,
+            icon: plugin.modifier.icon
         };
     }, [plugins, modifierId]);
 
