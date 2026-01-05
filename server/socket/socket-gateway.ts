@@ -61,13 +61,17 @@ class SocketGateway {
             pingInterval: this.pingInterval
         });
 
-        this.adapterPub = createRedisClient();
-        this.adapterSub = createRedisClient();
+        try {
+            this.adapterPub = createRedisClient();
+            this.adapterSub = createRedisClient();
 
-        // Configure Redis adapter with extended timeout for fetchSockets
-        this.io.adapter(createAdapter(this.adapterPub, this.adapterSub, {
-            requestsTimeout: 10000, // 10 seconds timeout for fetchSockets operations
-        }));
+            // Configure Redis adapter with extended timeout for fetchSockets
+            this.io.adapter(createAdapter(this.adapterPub, this.adapterSub, {
+                requestsTimeout: 10000, // 10 seconds timeout for fetchSockets operations
+            }));
+        } catch (error) {
+            logger.error(`[Socket Gateway] Redis adapter initialization error: ${error}`);
+        }
 
         // Add authentication middleware(allows anonymous users for public trajectories)
         this.io.use(async (socket, next) => {
@@ -107,19 +111,36 @@ class SocketGateway {
         this.register(new TeamPresenceModule());
 
         for (const module of this.modules) {
-            module.onInit(this.io);
+            try {
+                module.onInit(this.io);
+            } catch (error) {
+                logger.error(`[Socket Gateway] Module init error (${module.name}): ${error}`);
+            }
         }
 
         // Initialize job updates listener
-        this.jobUpdatesSubscriber = initializeJobUpdatesListener(this.io);
+        try {
+            this.jobUpdatesSubscriber = initializeJobUpdatesListener(this.io);
+        } catch (error) {
+            logger.error(`[Socket Gateway] Job updates listener error: ${error}`);
+        }
 
         // Initialize trajectory updates listener
-        this.trajectoryUpdatesSubscriber = initializeTrajectoryUpdatesListener(this.io);
+        try {
+            this.trajectoryUpdatesSubscriber = initializeTrajectoryUpdatesListener(this.io);
+        } catch (error) {
+            logger.error(`[Socket Gateway] Trajectory updates listener error: ${error}`);
+        }
 
         this.io.on('connection', (socket: Socket) => {
             logger.info(`[Socket Gateway] Connected ${socket.id}`);
             for (const module of this.modules) {
-                module.onConnection(socket);
+                try {
+                    module.onConnection(socket);
+                } catch (error) {
+                    logger.error(`[Socket Gateway] Module connection error (${module.name}) for socket ${socket.id}: ${error}`);
+                    socket.emit('error', 'Socket module error');
+                }
             }
         });
 

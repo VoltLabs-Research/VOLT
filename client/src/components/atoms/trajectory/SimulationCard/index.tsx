@@ -262,7 +262,7 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                                 }}
                                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                             >
-                                <span className='simulation-created-by font-weight-5 color-secondary'>Created by</span>
+                                <span className='simulation-created-by font-weight-5 color-secondary'>Uploaded by</span>
                                 <span className='simulation-user-name overflow-hidden font-weight-5 color-secondary'>
                                     {getUserDisplayName(trajectory.createdBy)}
                                 </span>

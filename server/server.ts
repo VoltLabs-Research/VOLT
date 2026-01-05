@@ -57,9 +57,9 @@ const gateway = new SocketGateway()
     .register(new MetricsModule());
 
 // Background metrics collector
-let metricsCollector: MetricsCollector;
-let collectionInterval: NodeJS.Timeout;
-let cleanupInterval: NodeJS.Timeout;
+let metricsCollector: MetricsCollector | null = null;
+let collectionInterval: NodeJS.Timeout | null = null;
+let cleanupInterval: NodeJS.Timeout | null = null;
 
 const shutodwn = async () => {
     // Stop metrics collection
@@ -70,62 +70,95 @@ const shutodwn = async () => {
     process.exit(0);
 };
 
-server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
-    await initializeRedis();
-    const { redis } = await import('@/config/redis');
+// Global process guards so the server never crashes on unhandled errors
+process.on('unhandledRejection', (reason: any) => {
+    const message = reason instanceof Error ? reason.stack || reason.message : String(reason);
+    logger.error(`[Process] Unhandled rejection: ${message}`);
+});
 
-    // Register the main server as a cluster node
-    // Using a distinct ID or 'main-cluster' if CLUSTER_ID is not set 
-    // (though server handles API requests, it also reports metrics)
+process.on('uncaughtException', (error: Error) => {
+    logger.error(`[Process] Uncaught exception: ${error.stack || error.message}`);
+});
+
+server.on('error', (err) => {
+    logger.error(`[Server] HTTP server error: ${err}`);
+});
+
+server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
     const serverClusterId = process.env.CLUSTER_ID || 'main-cluster';
+    let redisClient: any = null;
+
     try {
-        if (redis) {
-            await redis.zadd('active_clusters', Date.now(), serverClusterId);
+        await initializeRedis();
+        const { redis } = await import('@/config/redis');
+        redisClient = redis;
+
+        if (redisClient) {
+            await redisClient.zadd('active_clusters', Date.now(), serverClusterId);
             logger.info(`[Server] Registered ${serverClusterId} to active_clusters`);
         }
     } catch (err) {
-        logger.error(`[Server] Failed to register to active_clusters: ${err}`);
+        logger.error(`[Server] Redis initialization/register error: ${err}`);
     }
 
-    await initializeMinio();
-    await mongoConnector();
+    try {
+        await initializeMinio();
+    } catch (err) {
+        logger.error(`[Server] MinIO initialization error: ${err}`);
+    }
+
+    try {
+        await mongoConnector();
+    } catch (err) {
+        logger.error(`[Server] Mongo initialization error: ${err}`);
+    }
 
     // Initialize metrics collector in background
-    metricsCollector = new MetricsCollector();
+    try {
+        metricsCollector = new MetricsCollector();
+        collectionInterval = setInterval(async () => {
+            if (!metricsCollector) return;
 
-    // Start collecting metrics every second in background
-    collectionInterval = setInterval(async () => {
-        try {
-            await metricsCollector.collect();
-            // Heartbeat: re-register cluster with fresh timestamp to avoid stale detection
-            if (redis) {
-                await redis.zadd('active_clusters', Date.now(), serverClusterId);
+            try {
+                await metricsCollector.collect();
+                // Heartbeat: re-register cluster with fresh timestamp to avoid stale detection
+                if (redisClient) {
+                    await redisClient.zadd('active_clusters', Date.now(), serverClusterId);
+                }
+            } catch (error) {
+                logger.error(`[Server] Metrics collection error: ${error}`);
             }
-        } catch (error) {
-            logger.error(`[Server] Metrics collection error: ${error}`);
-        }
-    }, 1000);
+        }, 1000);
 
-    // Clean old metrics from Redis every 24 hours
-    cleanupInterval = setInterval(async () => {
-        try {
-            await metricsCollector.cleanOldMetrics();
-            logger.info('[Server] Cleaned old metrics from Redis');
-        } catch (error) {
-            logger.error(`[Server] Metrics cleanup error: ${error}`);
-        }
-    }, 24 * 60 * 60 * 1000);
+        // Clean old metrics from Redis every 24 hours
+        cleanupInterval = setInterval(async () => {
+            if (!metricsCollector) return;
 
-    // Run initial cleanup
-    metricsCollector.cleanOldMetrics().catch(err =>
-        logger.error(`[Server] Initial cleanup error: ${err}`)
-    );
+            try {
+                await metricsCollector.cleanOldMetrics();
+                logger.info('[Server] Cleaned old metrics from Redis');
+            } catch (error) {
+                logger.error(`[Server] Metrics cleanup error: ${error}`);
+            }
+        }, 24 * 60 * 60 * 1000);
 
-    logger.info('[Server] Background metrics collection started');
+        // Run initial cleanup
+        metricsCollector.cleanOldMetrics().catch(err =>
+            logger.error(`[Server] Initial cleanup error: ${err}`)
+        );
+
+        logger.info('[Server] Background metrics collection started');
+    } catch (error) {
+        logger.error(`[Server] Metrics initialization error: ${error}`);
+    }
 
     // Now initialize the Socket Gateway with Redis already running
-    const io = await gateway.initialize(server);
-    app.set('io', io);
+    try {
+        const io = await gateway.initialize(server);
+        app.set('io', io);
+    } catch (error) {
+        logger.error(`[Server] Socket gateway initialization error: ${error}`);
+    }
 
     logger.info(`Server running at http://${SERVER_HOST}:${SERVER_PORT}/`);
 

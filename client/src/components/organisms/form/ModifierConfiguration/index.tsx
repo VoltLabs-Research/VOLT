@@ -238,9 +238,7 @@ const ModifierConfiguration = ({
                         />
                     ))
                 )}
-            </Container>
 
-            <Container className='d-flex column gap-1'>
                 <FormField
                     label='Selected frame only'
                     fieldKey='selectedFrameOnly'
@@ -248,7 +246,9 @@ const ModifierConfiguration = ({
                     fieldValue={selectedFrameOnly}
                     onFieldChange={(_, value) => setSelectedFrameOnly(value)}
                 />
+            </Container>
 
+            <Container className='d-flex column gap-1'>
                 <Button
                     className='start-analysis-btn'
                     isLoading={isLoading}

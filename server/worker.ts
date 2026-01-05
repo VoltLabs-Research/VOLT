@@ -21,8 +21,20 @@ import {
 import { redis } from '@/config/redis';
 
 const CLUSTER_ID = process.env.CLUSTER_ID || 'default';
+let initialized = false;
 
-const main = async () => {
+process.on('unhandledRejection', (reason: any) => {
+    const message = reason instanceof Error ? reason.stack || reason.message : String(reason);
+    logger.error(`[Worker] Unhandled rejection: ${message}`);
+});
+
+process.on('uncaughtException', (error: Error) => {
+    logger.error(`[Worker] Uncaught exception: ${error.stack || error.message}`);
+});
+
+const main = async (): Promise<void> => {
+    if (initialized) return;
+
     logger.info(`[Worker] Starting worker process (Cluster: ${CLUSTER_ID})...`);
 
     try {
@@ -53,10 +65,11 @@ const main = async () => {
         getAnalysisQueue();
         logger.info('[Worker] Analysis Queue initialized');
 
+        initialized = true;
         logger.info(`[Worker] Worker is now running and processing jobs for Cluster: ${CLUSTER_ID}`);
     } catch (error) {
-        logger.error(`[Worker] Fatal error during startup: ${error}`);
-        process.exit(1);
+        logger.error(`[Worker] Fatal error during startup: ${error}. Retrying in 5s...`);
+        setTimeout(main, 5000);
     }
 };
 
