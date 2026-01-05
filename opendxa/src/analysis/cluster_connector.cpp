@@ -76,22 +76,29 @@ bool ClusterConnector::areOrientationsCompatible(int atom1, int atom2, int struc
     const LatticeStructure& latticeStructure = CoordinationStructures::getLatticeStruct(structureType);
     Matrix3 rotationMatrix = quaternionToMatrix(quatDiff);
     
-    if(avgRmsd < 0.1f){
-        for(const auto& symmetryOp : latticeStructure.permutations){
-            if(rotationMatrix.equals(symmetryOp.transformation, CA_TRANSITION_MATRIX_EPSILON)){
-                return true;
-            }
-        }
-        
-        double angle = 2.0 * std::acos(std::abs(quatDiff.w()));
-        const double STRICT_THRESHOLD = 3.0 * M_PI / 180.0; 
+    double thresholdAngle = 0.0;
+    const double STRICT_THRESHOLD = 3.0 * M_PI / 180.0;
+    const double RELAXED_THRESHOLD = 8.0 * M_PI / 180.0;
 
-        return angle < STRICT_THRESHOLD;
+    // TODO: is this correct?
+    if(structureType == StructureType::SC){
+        thresholdAngle = RELAXED_THRESHOLD;
+    } else if(avgRmsd < 0.1f){
+        thresholdAngle = STRICT_THRESHOLD;
+    } else {
+        thresholdAngle = RELAXED_THRESHOLD;
     }
-    
-    double angle = 2.0 * std::acos(std::abs(quatDiff.w()));
-    const double RELAXED_THRESHOLD = 8.0 * M_PI / 180.0; 
-    return angle < RELAXED_THRESHOLD;
+
+    double minTrace = 1.0 + 2.0 * std::cos(thresholdAngle);
+    for(const auto &symmetryOp : latticeStructure.permutations){
+        // Calculate deviation from symmetry: R_dev = R * S^T
+        Matrix3 product = rotationMatrix * symmetryOp.transformation.transposed();
+        if((product(0,0) + product(1,1) + product(2,2)) > minTrace){
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int neighborIndex, Matrix3& outTransition){
@@ -101,19 +108,56 @@ bool ClusterConnector::calculateMisorientation(int atomIndex, int neighbor, int 
     int symIndex = _context.atomSymmetryPermutations->getInt(atomIndex);
     const auto& permutation = latticeStructure.permutations[symIndex].permutation;
 
+    // Special handling for Simple Cubic (SC) using PTM
+    // SC neighbors do not share common first-shell neighbors, so the geometric method fails.
+    if(structureType == StructureType::SC && _sa.usingPTM()){
+        int neighborStructureType = _context.structureTypes->getInt(neighbor);
+        if(neighborStructureType == StructureType::SC){
+            const LatticeStructure& neighborLattice = CoordinationStructures::getLatticeStruct(neighborStructureType);
+            int neighborSymIndex = _context.atomSymmetryPermutations->getInt(neighbor);
+            
+            // Get PTM orientations (Global from Template)
+            Quaternion q1 = getPTMAtomOrientation(atomIndex);
+            Quaternion q2 = getPTMAtomOrientation(neighbor);
+            Matrix3 R1 = quaternionToMatrix(q1);
+            Matrix3 R2 = quaternionToMatrix(q2);
+            
+            // Get Symmetry rotations (Permuted from Template)
+            // L_perm = S * L_template
+            // Global = R * L_template = R * S^T * L_perm
+            Matrix3 S1 = latticeStructure.permutations[symIndex].transformation;
+            Matrix3 S2 = neighborLattice.permutations[neighborSymIndex].transformation;
+            
+            // We want T such that L2_perm = T * L1_perm
+            // Global = R1 * S1^T * L1_perm
+            // Global = R2 * S2^T * L2_perm
+            // => R1 * S1^T * L1_perm = R2 * S2^T * T * L1_perm
+            // => T = (R2 * S2^T)^T * (R1 * S1^T)
+            // => T = S2 * R2^T * R1 * S1^T
+            
+            outTransition = S2 * R2.transposed() * R1 * S1.transposed();
+            return true;
+        }
+    }
+
     Matrix3 tm1, tm2;
     for (int i = 0; i < 3; i++){
         int ai;
         if(i != 2){
-            ai = _sa.getNeighbor(atomIndex, coordStructure.commonNeighbors[neighborIndex][i]);
-            tm1.column(i) = latticeStructure.latticeVectors[permutation[coordStructure.commonNeighbors[neighborIndex][i]]] -
+            int cnIdx = coordStructure.commonNeighbors[neighborIndex][i];
+            if(cnIdx < 0) return false;
+            
+            ai = _sa.getNeighbor(atomIndex, cnIdx);
+            tm1.column(i) = latticeStructure.latticeVectors[permutation[cnIdx]] -
                             latticeStructure.latticeVectors[permutation[neighborIndex]];
         }else{
             ai = atomIndex;
             tm1.column(i) = -latticeStructure.latticeVectors[permutation[neighborIndex]];
         }
-
+        
+        // Check neighbor counts
         if(_sa.numberOfNeighbors(neighbor) != coordStructure.numNeighbors) return false;
+        
         int j = _sa.findNeighbor(neighbor, ai);
         if(j == -1) return false;
 

@@ -525,6 +525,36 @@ void CoordinationStructures::findCommonNeighborsForBond(CoordinationStructure& c
     coordStruct.commonNeighbors[neighborIndex][0] = -1;
     coordStruct.commonNeighbors[neighborIndex][1] = -1;
     
+    // Special case for SC (Simple Cubic) structure:
+    // SC has 6 neighbors along x, y, z. These neighbors don't share common bonds
+    // in the traditional CNA sense (each neighbor is perpendicular to 4 others and 
+    // opposite to 1). We need any 2 orthogonal vectors that form a complete basis 
+    // with the target neighbor vector.
+    if(coordStruct.numNeighbors == 6){
+        // SC_VECTORS ordering: {+x, -x, +y, -y, +z, -z} -> indices {0,1,2,3,4,5}
+        // XOR with 1 gives the opposite: 0↔1, 2↔3, 4↔5
+        for(int i1 = 0; i1 < 6 && !found; i1++){
+            // Skip the target neighbor and its opposite
+            if(i1 == neighborIndex || i1 == (neighborIndex ^ 1)) continue;
+            tm.column(1) = coordStruct.latticeVectors[i1];
+            
+            for(int i2 = i1 + 1; i2 < 6; i2++){
+                // Skip target, its opposite, and opposite of i1
+                if(i2 == neighborIndex || i2 == (neighborIndex ^ 1)) continue;
+                if(i2 == (i1 ^ 1)) continue;
+                tm.column(2) = coordStruct.latticeVectors[i2];
+                
+                if(std::abs(tm.determinant()) > EPSILON){
+                    coordStruct.commonNeighbors[neighborIndex][0] = i1;
+                    coordStruct.commonNeighbors[neighborIndex][1] = i2;
+                    found = true;
+                    break;
+                }
+            }
+        }
+        if(found) return;
+    }
+    
     for(int i1 = 0; i1 < coordStruct.numNeighbors && !found; i1++){
         if(!coordStruct.neighborArray.neighborBond(neighborIndex, i1)) continue;
         tm.column(1) = coordStruct.latticeVectors[i1];
