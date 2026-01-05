@@ -8,6 +8,7 @@ import type { IEntrypointData } from '@/types/plugin';
 import pluginApi from '@/services/api/plugin/plugin';
 import { usePluginBuilderStore } from '@/stores/slices/plugin/builder-slice';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
 import Paragraph from '@/components/primitives/Paragraph';
 import './EntrypointEditor.css';
@@ -106,17 +107,18 @@ const EntrypointEditor: React.FC<EntrypointEditorProps> = ({ node }) => {
                                 <span className='binary-filename overflow-hidden font-size-2 font-weight-5'>{entrypoint.binaryFileName || entrypoint.binary}</span>
                                 <TbCheck size={16} className='binary-check-icon' />
                             </div>
-                            <Button
-                                variant='ghost'
-                                intent='danger'
-                                iconOnly
-                                size='sm'
-                                className='binary-remove-btn cursor-pointer'
-                                onClick={handleRemoveBinary}
-                                title='Remove binary'
-                            >
-                                <TbTrash size={16} />
-                            </Button>
+                            <Tooltip content="Remove Binary" placement="left">
+                                <Button
+                                    variant='ghost'
+                                    intent='danger'
+                                    iconOnly
+                                    size='sm'
+                                    className='binary-remove-btn cursor-pointer'
+                                    onClick={handleRemoveBinary}
+                                >
+                                    <TbTrash size={16} />
+                                </Button>
+                            </Tooltip>
                         </div>
                     ) : (
                         <Button

@@ -2,6 +2,7 @@ import React from 'react';
 import { TbArrowLeft } from 'react-icons/tb';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import './SettingsSidebar.css';
 import Title from '@/components/primitives/Title';
 
@@ -20,14 +21,16 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection, navOpt
 	return (
 		<Container className='d-flex column p-sticky settings-sidebar y-auto'>
 			<Container className='d-flex items-center gap-1 sidebar-header'>
-				<Button
-					variant='ghost'
-					intent='neutral'
-					iconOnly
-					className='back-button color-secondary cursor-pointer'
-				>
-					<TbArrowLeft size={20} />
-				</Button>
+				<Tooltip content="Go Back" placement="right">
+					<Button
+						variant='ghost'
+						intent='neutral'
+						iconOnly
+						className='back-button color-secondary cursor-pointer'
+					>
+						<TbArrowLeft size={20} />
+					</Button>
+				</Tooltip>
 				<Title className='font-size-1 sidebar-title font-size-5 font-weight-6 color-primary'>Settings</Title>
 			</Container>
 

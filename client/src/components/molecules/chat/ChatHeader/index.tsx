@@ -1,5 +1,6 @@
 
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import type { Chat, Participant, Presence } from '@/types/chat';
 import {
     IoCallOutline,
@@ -37,18 +38,25 @@ const ChatHeader = ({ chat, currentParticipant, presence }: ChatHeaderProps) => 
                 </div>
             </div>
             <div className='d-flex items-center gap-075 chat-header-actions'>
-                <Button variant='ghost' intent='neutral' iconOnly size='sm' title='Call'>
-                    <IoCallOutline />
-                </Button>
-                <Button variant='ghost' intent='neutral' iconOnly size='sm' title='Video Call'>
-                    <IoVideocamOutline />
-                </Button>
-                <Button variant='ghost' intent='neutral' iconOnly size='sm' title='More Info'>
-                    <IoInformationCircleOutline />
-                </Button>
+                <Tooltip content="Call" placement="bottom">
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm'>
+                        <IoCallOutline />
+                    </Button>
+                </Tooltip>
+                <Tooltip content="Video Call" placement="bottom">
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm'>
+                        <IoVideocamOutline />
+                    </Button>
+                </Tooltip>
+                <Tooltip content="More Info" placement="bottom">
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm'>
+                        <IoInformationCircleOutline />
+                    </Button>
+                </Tooltip>
             </div>
         </div>
     );
 };
 
 export default ChatHeader;
+

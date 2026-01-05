@@ -35,6 +35,7 @@ import './RecentActivity.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 
 interface RecentActivityProps {
     limit?: number;
@@ -53,21 +54,21 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         sort: '-createdAt'
     });
 
-    const handleRefresh = async() => {
+    const handleRefresh = async () => {
         setRefreshing(true);
         await refetch();
         setRefreshing(false);
     };
 
     const getStatusCodeClass = (statusCode: number) => {
-        if(statusCode >= 200 && statusCode < 300) return 'success';
-        if(statusCode >= 400 && statusCode < 500) return 'client-error';
-        if(statusCode >= 500) return 'server-error';
+        if (statusCode >= 200 && statusCode < 300) return 'success';
+        if (statusCode >= 400 && statusCode < 500) return 'client-error';
+        if (statusCode >= 500) return 'server-error';
         return 'success';
     };
 
     const formatResponseTime = (time: number) => {
-        if(time < 1000) return `${time}ms`;
+        if (time < 1000) return `${time}ms`;
         return `${(time / 1000).toFixed(1)}s`;
     };
 
@@ -82,7 +83,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         return colors[method as keyof typeof colors] || 'var(--accent-gray)';
     };
 
-    if(loading && !data){
+    if (loading && !data) {
         return (
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header mb-1-5">
@@ -106,7 +107,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
         );
     }
 
-    if(error){
+    if (error) {
         return (
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header mb-1-5">
@@ -129,7 +130,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
     // Handle HandlerFactory response format(data is an array)
     const requests = Array.isArray(data.data.requests) ? data.data.requests : [];
 
-    if(requests.length === 0){
+    if (requests.length === 0) {
         return (
             <div className={`recent-activity-container ${className}`}>
                 <div className="recent-activity-header mb-1-5">
@@ -196,26 +197,28 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                         </div>
 
                         <div className="d-flex items-center gap-05 recent-activity-item-actions">
-                            <Button
-                                variant='ghost'
-                                intent='neutral'
-                                iconOnly
-                                size='sm'
-                                title="View details"
-                            >
-                                <HiEye />
-                            </Button>
-                            <Button
-                                variant='ghost'
-                                intent='neutral'
-                                iconOnly
-                                size='sm'
-                                title="Refresh"
-                                onClick={handleRefresh}
-                                disabled={refreshing}
-                            >
-                                <HiRefresh className={refreshing ? 'animate-spin' : ''} />
-                            </Button>
+                            <Tooltip content="View Details" placement="top">
+                                <Button
+                                    variant='ghost'
+                                    intent='neutral'
+                                    iconOnly
+                                    size='sm'
+                                >
+                                    <HiEye />
+                                </Button>
+                            </Tooltip>
+                            <Tooltip content="Refresh" placement="top">
+                                <Button
+                                    variant='ghost'
+                                    intent='neutral'
+                                    iconOnly
+                                    size='sm'
+                                    onClick={handleRefresh}
+                                    disabled={refreshing}
+                                >
+                                    <HiRefresh className={refreshing ? 'animate-spin' : ''} />
+                                </Button>
+                            </Tooltip>
                         </div>
                     </div>
                 ))}

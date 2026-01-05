@@ -11,6 +11,7 @@ import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import type { TeamInvitation } from '@/types/models';
 import './TeamInvitePanel.css';
 
@@ -139,16 +140,18 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     <Button variant='ghost' intent='brand' size='sm'>Share</Button>
                     <Button variant='ghost' intent='neutral' size='sm' disabled style={{ opacity: 0.5 }}>Publish</Button>
                 </Container>
-                <Button
-                    variant='ghost'
-                    intent='neutral'
-                    iconOnly
-                    size='sm'
-                    onClick={onClose}
-                    aria-label='Close'
-                >
-                    <IoClose size={20} />
-                </Button>
+                <Tooltip content="Close" placement="left">
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        iconOnly
+                        size='sm'
+                        onClick={onClose}
+                        aria-label='Close'
+                    >
+                        <IoClose size={20} />
+                    </Button>
+                </Tooltip>
             </Container>
 
             <Container className='team-invite-content d-flex column flex-1 y-auto'>

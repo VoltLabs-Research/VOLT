@@ -6,6 +6,7 @@ import useToast from '@/hooks/ui/use-toast';
 import './CreateContainerModal.css';
 import Title from '@/components/primitives/Title';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import Modal from '@/components/molecules/common/Modal';
 
 interface CreateContainerModalProps {
@@ -24,10 +25,10 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
     const [teams, setTeams] = useState<{ _id: string; name: string }[]>([]);
 
     useEffect(() => {
-        if(isOpen){
+        if (isOpen) {
             teamApi.getAll().then(teamsList => {
                 setTeams(teamsList as { _id: string; name: string }[]);
-                if(teamsList.length > 0){
+                if (teamsList.length > 0) {
                     setTeamId(teamsList[0]._id);
                 }
             });
@@ -66,11 +67,11 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
         (document.getElementById('create-container-modal') as HTMLDialogElement)?.close();
     };
 
-    const handleSubmit = async(e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
-        try{
+        try {
             await containerApi.create({
                 name,
                 image,
@@ -87,14 +88,14 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
             setImage('');
             setEnvVars([]);
             setPorts([]);
-        }catch(error: any){
+        } catch (error: any) {
             showError(error.response?.data?.message || 'Failed to create container');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
 
-    if(!isOpen) return null;
+    if (!isOpen) return null;
 
     return (
         <Modal
@@ -160,9 +161,11 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                                 value={env.value}
                                 onChange={e => handleEnvChange(i, 'value', e.target.value)}
                             />
-                            <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => handleRemoveEnv(i)}>
-                                <IoTrash />
-                            </Button>
+                            <Tooltip content="Remove Variable" placement="left">
+                                <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => handleRemoveEnv(i)}>
+                                    <IoTrash />
+                                </Button>
+                            </Tooltip>
                         </div>
                     ))}
                 </div>
@@ -193,9 +196,11 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                                     onChange={e => handlePortChange(i, 'public', e.target.value)}
                                 />
                             </div>
-                            <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => handleRemovePort(i)}>
-                                <IoTrash />
-                            </Button>
+                            <Tooltip content="Remove Port" placement="left">
+                                <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => handleRemovePort(i)}>
+                                    <IoTrash />
+                                </Button>
+                            </Tooltip>
                         </div>
                     ))}
                 </div>

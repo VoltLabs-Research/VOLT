@@ -4,6 +4,7 @@ import { Skeleton } from '@mui/material'
 import { formatNetworkSpeedWithUnit } from '@/utilities/common/network'
 import Container from '@/components/primitives/Container'
 import Button from '@/components/primitives/Button'
+import Tooltip from '@/components/atoms/common/Tooltip'
 import './MetricsCards.css'
 
 interface MetricsCardsProps {
@@ -93,9 +94,11 @@ export function MetricsCards({ metrics }: MetricsCardsProps) {
               <metric.icon className="metric-card-icon color-muted-foreground" />
               <span className="metric-card-title font-size-2 color-muted-foreground">{metric.title}</span>
             </Container>
-            <Button variant='ghost' intent='neutral' iconOnly size='sm'>
-              <MoreVertical className="metric-card-icon color-muted-foreground" />
-            </Button>
+            <Tooltip content="More Options" placement="bottom">
+              <Button variant='ghost' intent='neutral' iconOnly size='sm'>
+                <MoreVertical className="metric-card-icon color-muted-foreground" />
+              </Button>
+            </Tooltip>
           </Container>
           <Container className="d-flex column gap-05">
             <Container className="d-flex" style={{ alignItems: 'baseline', gap: '0.5rem' }}>

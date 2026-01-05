@@ -7,6 +7,7 @@ import KeyValueEditor from '@/components/molecules/plugins/KeyValueEditor';
 import { usePluginBuilderStore } from '@/stores/slices/plugin/builder-slice';
 import Button from '@/components/primitives/Button';
 import Container from '@/components/primitives/Container';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import { ARGUMENT_TYPE_OPTIONS } from '@/utilities/plugins/node-types';
 import type { IArgumentsData, IArgumentDefinition, ArgumentType } from '@/types/plugin';
 import { TbPlus, TbTrash } from 'react-icons/tb';
@@ -222,15 +223,17 @@ const ArgumentsEditor: React.FC<ArgumentsEditorProps> = ({ node }) => {
                         <div>
                             <Container className='d-flex w-max content-between items-center' style={{ marginBottom: '0.5rem' }}>
                                 <Title className='font-size-3' style={{ fontWeight: 600, color: 'var(--gray-700)' }}>Options</Title>
-                                <Button
-                                    variant='ghost'
-                                    intent='neutral'
-                                    iconOnly
-                                    size='sm'
-                                    onClick={handleAddOption(index, arg.options || [])}
-                                >
-                                    <TbPlus size={16} />
-                                </Button>
+                                <Tooltip content="Add Option" placement="left">
+                                    <Button
+                                        variant='ghost'
+                                        intent='neutral'
+                                        iconOnly
+                                        size='sm'
+                                        onClick={handleAddOption(index, arg.options || [])}
+                                    >
+                                        <TbPlus size={16} />
+                                    </Button>
+                                </Tooltip>
                             </Container>
                             <KeyValueEditor
                                 entries={optionsToEntries(arg.options || [])}

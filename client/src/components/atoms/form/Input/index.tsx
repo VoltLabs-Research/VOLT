@@ -25,6 +25,7 @@ import { createPortal } from 'react-dom';
 import './Input.css';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
+import Tooltip from '@/components/atoms/common/Tooltip';
 
 // Expression autocomplete types
 interface AvailableExpression {
@@ -93,12 +94,12 @@ const Input: React.FC<InputProps> = ({
     const isExpressionEnabled = !!expressionAutocomplete;
 
     const availableExpressions = useMemo(() => {
-        if(!isExpressionEnabled) return [];
+        if (!isExpressionEnabled) return [];
         return expressionAutocomplete.getExpressions(expressionAutocomplete.nodeId);
     }, [isExpressionEnabled, expressionAutocomplete]);
 
     const filteredExpressions = useMemo(() => {
-        if(!filter) return availableExpressions;
+        if (!filter) return availableExpressions;
         const lowerFilter = filter.toLowerCase();
         return availableExpressions.filter(expr =>
             expr.path.toLowerCase().includes(lowerFilter) ||
@@ -110,8 +111,8 @@ const Input: React.FC<InputProps> = ({
     // Group expressions by node
     const groupedExpressions = useMemo(() => {
         const groups: Record<string, AvailableExpression[]> = {};
-        for(const expr of filteredExpressions){
-            if(!groups[expr.nodeName]){
+        for (const expr of filteredExpressions) {
+            if (!groups[expr.nodeName]) {
                 groups[expr.nodeName] = [];
             }
             groups[expr.nodeName].push(expr);
@@ -124,7 +125,7 @@ const Input: React.FC<InputProps> = ({
     }, [groupedExpressions]);
 
     const updateDropdownPosition = useCallback(() => {
-        if(!inputRef.current) return;
+        if (!inputRef.current) return;
         const rect = inputRef.current.getBoundingClientRect();
         setDropdownPosition({
             top: rect.bottom + window.scrollY + 4,
@@ -137,14 +138,14 @@ const Input: React.FC<InputProps> = ({
         const newCursorPos = e.target.selectionStart || 0;
 
         // For number type without expression autocomplete, parse as number
-        if(type === 'number' && !isExpressionEnabled){
+        if (type === 'number' && !isExpressionEnabled) {
             onChange(parseFloat(newValue) || 0);
             return;
         }
 
         onChange(newValue);
 
-        if(!isExpressionEnabled) return;
+        if (!isExpressionEnabled) return;
 
         setCursorPosition(newCursorPos);
 
@@ -153,7 +154,7 @@ const Input: React.FC<InputProps> = ({
         const lastOpenBrace = textBeforeCursor.lastIndexOf('{{');
         const lastCloseBrace = textBeforeCursor.lastIndexOf('}}');
 
-        if(lastOpenBrace !== -1 && lastOpenBrace > lastCloseBrace){
+        if (lastOpenBrace !== -1 && lastOpenBrace > lastCloseBrace) {
             const filterText = textBeforeCursor.slice(lastOpenBrace + 2).trim();
             setFilter(filterText);
             setShowDropdown(true);
@@ -161,16 +162,16 @@ const Input: React.FC<InputProps> = ({
             requestAnimationFrame(() => {
                 updateDropdownPosition();
             });
-        }else{
+        } else {
             setShowDropdown(false);
             setFilter('');
         }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if(!showDropdown || !isExpressionEnabled) return;
+        if (!showDropdown || !isExpressionEnabled) return;
 
-        switch(e.key){
+        switch (e.key) {
             case 'ArrowDown':
                 e.preventDefault();
                 setSelectedIndex(prev => Math.min(prev + 1, flatExpressions.length - 1));
@@ -181,7 +182,7 @@ const Input: React.FC<InputProps> = ({
                 break;
             case 'Enter':
             case 'Tab':
-                if(flatExpressions[selectedIndex]){
+                if (flatExpressions[selectedIndex]) {
                     e.preventDefault();
                     insertExpression(flatExpressions[selectedIndex]);
                 }
@@ -193,7 +194,7 @@ const Input: React.FC<InputProps> = ({
     };
 
     const insertExpression = (expr: AvailableExpression) => {
-        if(!inputRef.current) return;
+        if (!inputRef.current) return;
 
         const stringValue = String(value);
         const textBeforeCursor = stringValue.slice(0, cursorPosition);
@@ -202,8 +203,8 @@ const Input: React.FC<InputProps> = ({
         const lastOpenBrace = textBeforeCursor.lastIndexOf('{{');
 
         const newValue = textBeforeCursor.slice(0, lastOpenBrace) +
-                        expr.fullExpression +
-                        textAfterCursor;
+            expr.fullExpression +
+            textAfterCursor;
 
         onChange(newValue);
         setShowDropdown(false);
@@ -217,14 +218,14 @@ const Input: React.FC<InputProps> = ({
     };
 
     const handleFocus = () => {
-        if(isExpressionEnabled){
+        if (isExpressionEnabled) {
             updateDropdownPosition();
         }
     };
 
     const handleBlur = () => {
         setTimeout(() => {
-            if(!dropdownRef.current?.contains(document.activeElement)) {
+            if (!dropdownRef.current?.contains(document.activeElement)) {
                 setShowDropdown(false);
             }
         }, 150);
@@ -232,10 +233,10 @@ const Input: React.FC<InputProps> = ({
 
     // Close dropdown when clicking outside
     useEffect(() => {
-        if(!isExpressionEnabled) return;
+        if (!isExpressionEnabled) return;
 
         const handleClickOutside = (e: MouseEvent) => {
-            if(
+            if (
                 inputRef.current &&
                 !inputRef.current.contains(e.target as Node) &&
                 dropdownRef.current &&
@@ -246,12 +247,12 @@ const Input: React.FC<InputProps> = ({
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        return() => document.removeEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isExpressionEnabled]);
 
     // Scroll selected item into view
     useEffect(() => {
-        if(showDropdown && dropdownRef.current){
+        if (showDropdown && dropdownRef.current) {
             const selectedEl = dropdownRef.current.querySelector('.expression-item--selected');
             selectedEl?.scrollIntoView({ block: 'nearest' });
         }
@@ -259,7 +260,7 @@ const Input: React.FC<InputProps> = ({
 
     // Update dropdown position when visible
     useEffect(() => {
-        if(showDropdown){
+        if (showDropdown) {
             updateDropdownPosition();
         }
     }, [showDropdown, updateDropdownPosition]);
@@ -269,7 +270,7 @@ const Input: React.FC<InputProps> = ({
     const inputClassName = `${className} ${hasExpression ? 'input--has-expression' : ''}`.trim();
 
     const renderDropdown = () => {
-        if(!showDropdown || !isExpressionEnabled) return null;
+        if (!showDropdown || !isExpressionEnabled) return null;
 
         return createPortal(
             <Container
@@ -293,11 +294,11 @@ const Input: React.FC<InputProps> = ({
                             <Paragraph className='font-size-1'>Connect this node to upstream nodes to access their data.</Paragraph>
                         </Container>
                     ) : (
-                        Object.entries(groupedExpressions).map(([nodeName, expressions]) =>{
+                        Object.entries(groupedExpressions).map(([nodeName, expressions]) => {
                             const nodeType = expressions[0]?.nodeType;
                             const config = expressionAutocomplete.getNodeConfig?.(nodeType);
 
-                            return(
+                            return (
                                 <Container key={nodeName} className="expression-group">
                                     <Container className="d-flex items-center gap-05 expression-group-header">
                                         <span className="expression-group-icon font-size-1">{config?.icon?.replace('Tb', '') || '📦'}</span>
@@ -306,7 +307,7 @@ const Input: React.FC<InputProps> = ({
                                     </Container>
                                     {expressions.map((expr) => {
                                         const globalIndex = flatExpressions.indexOf(expr);
-                                        return(
+                                        return (
                                             <Container
                                                 key={`${expr.nodeId}-${expr.path}`}
                                                 className={`expression-item ${globalIndex === selectedIndex ? 'expression-item--selected' : ''} cursor-pointer`}
@@ -335,8 +336,8 @@ const Input: React.FC<InputProps> = ({
         );
     };
 
-    if(multiline){
-        return(
+    if (multiline) {
+        return (
             <Container className="p-relative w-max input-wrapper flex-1">
                 <textarea
                     ref={inputRef as React.RefObject<HTMLTextAreaElement>}
@@ -353,9 +354,11 @@ const Input: React.FC<InputProps> = ({
                     rows={rows}
                 />
                 {hasExpression && (
-                    <Container className="expression-badge p-absolute font-weight-6" title="Contains dynamic expression">
-                        <span>{'{ }'}</span>
-                    </Container>
+                    <Tooltip content="Contains dynamic expression" placement="left">
+                        <Container className="expression-badge p-absolute font-weight-6">
+                            <span>{'{ }'}</span>
+                        </Container>
+                    </Tooltip>
                 )}
                 {renderDropdown()}
             </Container>
@@ -363,8 +366,8 @@ const Input: React.FC<InputProps> = ({
     }
 
     // If expression autocomplete is enabled, wrap in container
-    if(isExpressionEnabled){
-        return(
+    if (isExpressionEnabled) {
+        return (
             <Container className="p-relative w-max input-wrapper flex-1">
                 <input
                     ref={inputRef as React.RefObject<HTMLInputElement>}
@@ -384,9 +387,11 @@ const Input: React.FC<InputProps> = ({
                     required={required}
                 />
                 {hasExpression && (
-                    <div className="expression-badge p-absolute font-weight-6" title="Contains dynamic expression">
-                        <span>{'{ }'}</span>
-                    </div>
+                    <Tooltip content="Contains dynamic expression" placement="left">
+                        <div className="expression-badge p-absolute font-weight-6">
+                            <span>{'{ }'}</span>
+                        </div>
+                    </Tooltip>
                 )}
                 {renderDropdown()}
             </Container>
@@ -394,7 +399,7 @@ const Input: React.FC<InputProps> = ({
     }
 
     // Standard input without expression support
-    return(
+    return (
         <input
             type={type}
             value={value}

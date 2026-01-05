@@ -4,6 +4,7 @@ import { TbPlus, TbTrash } from 'react-icons/tb';
 import './KeyValueEditor.css';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import Paragraph from '@/components/primitives/Paragraph';
 
 interface KeyValueEditorProps {
@@ -71,16 +72,18 @@ const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
                             expressionNodeId={expressionNodeId}
                         />
                     </Container>
-                    <Button
-                        variant='ghost'
-                        intent='danger'
-                        iconOnly
-                        size='sm'
-                        onClick={() => onRemove(key)}
-                        style={{ marginTop: index === 0 ? '1.25rem' : 0 }}
-                    >
-                        <TbTrash size={14} />
-                    </Button>
+                    <Tooltip content="Remove" placement="left">
+                        <Button
+                            variant='ghost'
+                            intent='danger'
+                            iconOnly
+                            size='sm'
+                            onClick={() => onRemove(key)}
+                            style={{ marginTop: index === 0 ? '1.25rem' : 0 }}
+                        >
+                            <TbTrash size={14} />
+                        </Button>
+                    </Tooltip>
                 </Container>
             ))}
         </Container>

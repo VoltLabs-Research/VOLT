@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { IoAttachOutline, IoHappyOutline, IoPaperPlaneOutline, IoDocumentTextOutline, IoImageOutline } from 'react-icons/io5';
 import EmojiPicker from '@/components/atoms/chat/EmojiPicker';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import { formatSize } from '@/utilities/glb/scene-utils';
 import './ChatInput.css';
 
@@ -129,16 +130,17 @@ const ChatInput = ({
                     multiple
                     style={{ display: 'none' }} />
 
-                <Button
-                    variant='ghost'
-                    intent='neutral'
-                    iconOnly
-                    size='sm'
-                    title='Attach File'
-                    onClick={() => fileRef.current?.click()}
-                >
-                    <IoAttachOutline />
-                </Button>
+                <Tooltip content="Attach File" placement="top">
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        iconOnly
+                        size='sm'
+                        onClick={() => fileRef.current?.click()}
+                    >
+                        <IoAttachOutline />
+                    </Button>
+                </Tooltip>
 
                 <textarea
                     className='chat-input y-auto flex-1 font-size-3 font-weight-4 color-primary line-height-5'
@@ -149,27 +151,29 @@ const ChatInput = ({
                     disabled={disabled}
                 />
 
-                <Button
-                    variant='ghost'
-                    intent='neutral'
-                    iconOnly
-                    size='sm'
-                    title='Emoji'
-                    onClick={() => setShowPicker(v => !v)}
-                >
-                    <IoHappyOutline />
-                </Button>
+                <Tooltip content="Emoji" placement="top">
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        iconOnly
+                        size='sm'
+                        onClick={() => setShowPicker(v => !v)}
+                    >
+                        <IoHappyOutline />
+                    </Button>
+                </Tooltip>
 
-                <Button
-                    variant='solid'
-                    intent='brand'
-                    iconOnly
-                    type='submit'
-                    title='Send Message'
-                    disabled={disabled || (!message.trim() && files.length === 0)}
-                >
-                    <IoPaperPlaneOutline />
-                </Button>
+                <Tooltip content="Send Message" placement="top">
+                    <Button
+                        variant='solid'
+                        intent='brand'
+                        iconOnly
+                        type='submit'
+                        disabled={disabled || (!message.trim() && files.length === 0)}
+                    >
+                        <IoPaperPlaneOutline />
+                    </Button>
+                </Tooltip>
             </div>
 
             {showPicker && (
@@ -183,3 +187,4 @@ const ChatInput = ({
 };
 
 export default ChatInput;
+

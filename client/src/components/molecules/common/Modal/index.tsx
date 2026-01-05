@@ -3,6 +3,7 @@ import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import { IoClose } from 'react-icons/io5';
 import './Modal.css';
 
@@ -54,8 +55,8 @@ const Modal = ({
                     const rect = dialog.getBoundingClientRect();
                     const isInDialog = (rect.top <= e.clientY && e.clientY <= rect.top + rect.height &&
                         rect.left <= e.clientX && e.clientX <= rect.left + rect.width);
-                    if(!isInDialog){
-                        dialog.close(); 
+                    if (!isInDialog) {
+                        dialog.close();
                     }
                 }}
             >
@@ -66,17 +67,19 @@ const Modal = ({
                                 {title && <Title className='font-size-4 font-weight-6'>{title}</Title>}
                                 {description && <Paragraph className='font-size-2 color-secondary'>{description}</Paragraph>}
                             </Container>
-                            <Button
-                                variant='ghost'
-                                intent='neutral'
-                                iconOnly
-                                size='sm'
-                                commandfor={id}
-                                command="close"
-                                aria-label="Close modal"
-                            >
-                                <IoClose size={20} />
-                            </Button>
+                            <Tooltip content="Close" placement="left">
+                                <Button
+                                    variant='ghost'
+                                    intent='neutral'
+                                    iconOnly
+                                    size='sm'
+                                    commandfor={id}
+                                    command="close"
+                                    aria-label="Close modal"
+                                >
+                                    <IoClose size={20} />
+                                </Button>
+                            </Tooltip>
                         </Container>
                     )}
 

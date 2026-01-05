@@ -1,10 +1,11 @@
 import EditableTag from '@/components/atoms/common/EditableTag';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import { useAuthStore } from '@/stores/slices/auth';
 import Title from '@/components/primitives/Title';
 import type { Trajectory } from '@/types/models';
 
-interface EditableTrajectoryNameProps{
+interface EditableTrajectoryNameProps {
     trajectory: Trajectory,
     className: string;
 };
@@ -14,26 +15,27 @@ const EditableTrajectoryName = ({ trajectory, className }: EditableTrajectoryNam
     const user = useAuthStore((state) => state.user);
     const isAuthenticated = !!user;
 
-    const handleNameUpdate = async(newName: string) => {
-        if(!isAuthenticated) return;
-        try{
+    const handleNameUpdate = async (newName: string) => {
+        if (!isAuthenticated) return;
+        try {
             await updateTrajectoryById(trajectory._id, { name: newName });
-        }catch(error: any){
+        } catch (error: any) {
             console.error('Failed to update trajectory name:', error);
             throw error;
         }
     };
 
-    return(
+    return (
         isAuthenticated ? (
-            <EditableTag
-                as='h3'
-                className={className}
-                onSave={handleNameUpdate}
-                title='Double-clic to edit name'
-            >
-                {trajectory?.name}
-            </EditableTag>
+            <Tooltip content="Double-click to edit name" placement="bottom">
+                <EditableTag
+                    as='h3'
+                    className={className}
+                    onSave={handleNameUpdate}
+                >
+                    {trajectory?.name}
+                </EditableTag>
+            </Tooltip>
         ) : (
             <Title className={className}>{trajectory?.name}</Title>
         )
@@ -41,3 +43,4 @@ const EditableTrajectoryName = ({ trajectory, className }: EditableTrajectoryNam
 };
 
 export default EditableTrajectoryName;
+

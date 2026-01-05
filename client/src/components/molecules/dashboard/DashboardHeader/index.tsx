@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import { IoMenuOutline } from 'react-icons/io5';
 import { useLocation } from 'react-router';
 import GlobalSearch from '@/components/molecules/dashboard/GlobalSearch';
@@ -11,7 +12,7 @@ import DashboardHeaderBreadcrumbs from '@/components/atoms/dashboard/HeaderBread
 import TeamInvitePanelPopover from '@/components/molecules/team/TeamInvitePanelPopover';
 import NotificationsPopover from '@/components/molecules/notifications/NotificationsPopover';
 
-interface DashboardHeaderProps{
+interface DashboardHeaderProps {
     setSidebarOpen: (status: boolean) => void;
 };
 
@@ -34,12 +35,12 @@ const DashboardHeader = ({ setSidebarOpen }: DashboardHeaderProps) => {
     const user = useAuthStore((state) => state.user);
     const owner = useTeamStore((state) => state.owner);
     const admins = useTeamStore((state) => state.admins);
-    
+
     const canInvite = useMemo(() => {
-        if(!user || !owner) return false;
-        
+        if (!user || !owner) return false;
+
         // Check if user is owner
-        if(owner.user._id === user._id) return true;
+        if (owner.user._id === user._id) return true;
 
         // Check if user is admin
         return admins.some((admin) => admin.user._id === user._id);
@@ -72,19 +73,20 @@ const DashboardHeader = ({ setSidebarOpen }: DashboardHeaderProps) => {
                 {canInvite ? (
                     <TeamInvitePanelPopover />
                 ) : (
-                    <button
-                        className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
-                        title='You must be an admin or owner to invite members'
-                        style={{ cursor: 'not-allowed', opacity: 0.6 }}
-                        disabled
-                    >
-                        <GoPersonAdd size={18} />
-                    </button>
+                    <Tooltip content="You must be an admin or owner to invite members" placement="bottom">
+                        <button
+                            className='d-flex content-center items-center badge-container as-icon-container over-light-bg'
+                            style={{ cursor: 'not-allowed', opacity: 0.6 }}
+                            disabled
+                        >
+                            <GoPersonAdd size={18} />
+                        </button>
+                    </Tooltip>
                 )}
 
                 <NotificationsPopover />
             </Container>
-        </header>     
+        </header>
     );
 };
 

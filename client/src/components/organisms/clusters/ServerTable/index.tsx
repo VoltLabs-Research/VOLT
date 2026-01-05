@@ -4,6 +4,7 @@ import { Skeleton } from '@mui/material'
 import { formatNetworkSpeed } from '@/utilities/common/network'
 import Container from '@/components/primitives/Container'
 import Button from '@/components/primitives/Button'
+import Tooltip from '@/components/atoms/common/Tooltip'
 import './ServerTable.css'
 import Title from '@/components/primitives/Title'
 
@@ -65,12 +66,16 @@ export function ServerTable({ clusters, selectedClusterId }: ServerTableProps) {
             <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown className="server-table-icon-sm" />}>
               Sort
             </Button>
-            <Button variant='ghost' intent='neutral' iconOnly size='sm'>
-              <RefreshCw className="server-table-icon" />
-            </Button>
-            <Button variant='ghost' intent='neutral' iconOnly size='sm'>
-              <Download className="server-table-icon" />
-            </Button>
+            <Tooltip content="Refresh" placement="bottom">
+              <Button variant='ghost' intent='neutral' iconOnly size='sm'>
+                <RefreshCw className="server-table-icon" />
+              </Button>
+            </Tooltip>
+            <Tooltip content="Download Report" placement="bottom">
+              <Button variant='ghost' intent='neutral' iconOnly size='sm'>
+                <Download className="server-table-icon" />
+              </Button>
+            </Tooltip>
           </Container>
         </Container>
 

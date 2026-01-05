@@ -1,5 +1,6 @@
 import { IoCloseOutline } from 'react-icons/io5';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import './EmojiPicker.css';
 
 const DEFAULT_EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😉', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴'];
@@ -15,7 +16,9 @@ const EmojiPicker = ({ onSelect, onClose, emojis = DEFAULT_EMOJIS }: EmojiPicker
         <div className='chat-emoji-picker p-absolute overflow-hidden'>
             <div className='d-flex items-center content-between chat-emoji-picker-header'>
                 <span>Select an emoji</span>
-                <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={onClose}><IoCloseOutline /></Button>
+                <Tooltip content="Close" placement="left">
+                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={onClose}><IoCloseOutline /></Button>
+                </Tooltip>
             </div>
             <div className='chat-emoji-picker-grid gap-025 y-auto'>
                 {emojis.map((e) => (

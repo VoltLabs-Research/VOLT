@@ -5,6 +5,7 @@ import { IoClose } from 'react-icons/io5';
 import { socketService } from '@/services/websockets/socketio';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import 'xterm/css/xterm.css';
 import './ContainerTerminal.css';
 
@@ -31,12 +32,12 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
 
     useEffect(() => {
         const id = container._id;
-        if(!connectionState[id]){
+        if (!connectionState[id]) {
             connectionState[id] = { count: 0, isAttached: false, detachTimer: null };
         }
         const state = connectionState[id];
 
-        if(state.detachTimer){
+        if (state.detachTimer) {
             clearTimeout(state.detachTimer);
             state.detachTimer = null;
         }
@@ -45,7 +46,7 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
 
         socketService.connect();
 
-        if(terminalRef.current && !xtermRef.current){
+        if (terminalRef.current && !xtermRef.current) {
             // Read CSS variable at runtime
             const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--color-bg').trim() || '#1e1e1e';
 
@@ -98,9 +99,9 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
 
         const attach = () => {
             // Prevent double attach
-            if(isAttached) return;
+            if (isAttached) return;
 
-            if(socketService.isConnected()) {
+            if (socketService.isConnected()) {
                 socketService.emit('container:terminal:attach', { containerId: id });
                 state.isAttached = true;
                 isAttached = true;
@@ -120,13 +121,13 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
 
         // Subscribe to connection changes for reconnection scenarios
         const unsubscribe = socketService.onConnectionChange((connected) => {
-            if(connected && !isAttached){
+            if (connected && !isAttached) {
                 attach();
             }
         });
 
         // Try initial attach only if already connected
-        if(socketService.isConnected()) {
+        if (socketService.isConnected()) {
             attach();
         }
 
@@ -137,9 +138,9 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
 
             state.count--;
 
-            if(state.count === 0){
+            if (state.count === 0) {
                 state.detachTimer = setTimeout(() => {
-                    if(state.count === 0){
+                    if (state.count === 0) {
                         socketService.emit('container:terminal:detach');
                         state.isAttached = false;
                         delete connectionState[id];
@@ -156,16 +157,18 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
                     <span>root@{container.name}:~</span>
                 </Container>
                 {!embedded && (
-                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={onClose}>
-                        <IoClose size={20} />
-                    </Button>
+                    <Tooltip content="Close Terminal" placement="bottom">
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={onClose}>
+                            <IoClose size={20} />
+                        </Button>
+                    </Tooltip>
                 )}
             </Container>
             <Container className='flex-1 overflow-hidden p-relative terminal-body' ref={terminalRef} />
         </Container>
     );
 
-    if(embedded) return content;
+    if (embedded) return content;
 
     return (
         <Container className='p-fixed inset-0 d-flex items-center content-center terminal-overlay'>

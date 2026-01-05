@@ -3,6 +3,7 @@ import FormField from '@/components/molecules/form/FormField';
 import { TbPlus, TbTrash } from 'react-icons/tb';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import Paragraph from '@/components/primitives/Paragraph';
 import './ListEditor.css';
 
@@ -48,15 +49,17 @@ const ListEditor: React.FC<ListEditorProps> = ({
                             inputProps={{ placeholder }}
                         />
                     </Container>
-                    <Button
-                        variant='ghost'
-                        intent='danger'
-                        iconOnly
-                        size='sm'
-                        onClick={() => onRemove(index)}
-                    >
-                        <TbTrash size={14} />
-                    </Button>
+                    <Tooltip content="Remove" placement="left">
+                        <Button
+                            variant='ghost'
+                            intent='danger'
+                            iconOnly
+                            size='sm'
+                            onClick={() => onRemove(index)}
+                        >
+                            <TbTrash size={14} />
+                        </Button>
+                    </Tooltip>
                 </Container>
             ))}
 

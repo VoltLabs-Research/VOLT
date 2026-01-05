@@ -8,6 +8,7 @@ import Draggable from '@/components/atoms/common/Draggable';
 import WindowIcons from '@/components/molecules/common/WindowIcons';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import { formatDistanceToNow } from 'date-fns';
 import {
     LuFolder,
@@ -134,16 +135,24 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
                             <span className="file-explorer-nav-item-title font-weight-4">{conn.name}</span>
                         </div>
                         <div className="d-flex gap-025 ssh-connection-actions" style={{ opacity: 0.5 }}>
-                            <LuSettings
-                                size={14}
-                                onClick={(e) => { e.stopPropagation(); openConnectionModal(conn); }}
-                                style={{ cursor: 'pointer' }}
-                            />
-                            <LuTrash
-                                size={14}
-                                onClick={(e) => { e.stopPropagation(); handleDeleteConnection(conn); }}
-                                style={{ cursor: 'pointer' }}
-                            />
+                            <Tooltip content="Settings" placement="top">
+                                <span>
+                                    <LuSettings
+                                        size={14}
+                                        onClick={(e) => { e.stopPropagation(); openConnectionModal(conn); }}
+                                        style={{ cursor: 'pointer' }}
+                                    />
+                                </span>
+                            </Tooltip>
+                            <Tooltip content="Delete" placement="top">
+                                <span>
+                                    <LuTrash
+                                        size={14}
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteConnection(conn); }}
+                                        style={{ cursor: 'pointer' }}
+                                    />
+                                </span>
+                            </Tooltip>
                         </div>
                     </div>
                 ))}
@@ -164,15 +173,21 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
 
     const headerLeftIcons = (
         <>
-            <i className={`file-explorer-header-icon-container ${!canBack ? 'is-disabled' : ''}`} onClick={back}>
-                <LuArrowLeft size={20} />
-            </i>
-            <i className={`file-explorer-header-icon-container ${!canForward ? 'is-disabled' : ''}`} onClick={forward}>
-                <LuArrowRight size={20} />
-            </i>
-            <i className={`file-explorer-header-icon-container ${(!cwd || cwd === '.') ? 'is-disabled' : ''}`} onClick={up}>
-                <LuArrowUp size={20} />
-            </i>
+            <Tooltip content="Back" placement="bottom">
+                <i className={`file-explorer-header-icon-container ${!canBack ? 'is-disabled' : ''}`} onClick={back}>
+                    <LuArrowLeft size={20} />
+                </i>
+            </Tooltip>
+            <Tooltip content="Forward" placement="bottom">
+                <i className={`file-explorer-header-icon-container ${!canForward ? 'is-disabled' : ''}`} onClick={forward}>
+                    <LuArrowRight size={20} />
+                </i>
+            </Tooltip>
+            <Tooltip content="Go Up" placement="bottom">
+                <i className={`file-explorer-header-icon-container ${(!cwd || cwd === '.') ? 'is-disabled' : ''}`} onClick={up}>
+                    <LuArrowUp size={20} />
+                </i>
+            </Tooltip>
         </>
     );
 
@@ -190,23 +205,26 @@ const SSHFileExplorer = ({ onClose, onImportSuccess }: SSHFileExplorerProps) => 
 
     const headerRightIcons = (
         <>
-            <i className="file-explorer-header-icon-container" onClick={refresh} title="Refresh">
-                <LuRefreshCw size={20} />
-            </i>
+            <Tooltip content="Refresh" placement="bottom">
+                <i className="file-explorer-header-icon-container" onClick={refresh}>
+                    <LuRefreshCw size={20} />
+                </i>
+            </Tooltip>
 
             {selected && (
-                <Button
-                    variant='solid'
-                    intent='brand'
-                    size='sm'
-                    onClick={handleImport}
-                    title="Import Trajectory"
-                    disabled={importing}
-                    isLoading={importing}
-                    leftIcon={<LuDownload />}
-                >
-                    Import
-                </Button>
+                <Tooltip content="Import Trajectory" placement="bottom">
+                    <Button
+                        variant='solid'
+                        intent='brand'
+                        size='sm'
+                        onClick={handleImport}
+                        disabled={importing}
+                        isLoading={importing}
+                        leftIcon={<LuDownload />}
+                    >
+                        Import
+                    </Button>
+                </Tooltip>
             )}
         </>
     );

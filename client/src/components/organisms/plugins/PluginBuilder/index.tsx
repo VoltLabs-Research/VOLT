@@ -10,6 +10,7 @@ import Sidebar from '@/components/organisms/common/Sidebar';
 import PaletteItem from '@/components/atoms/plugins/PaletetteItem';
 import NodeEditor from '@/components/molecules/plugins/NodeEditor';
 import EditableTag from '@/components/atoms/common/EditableTag';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import { TbArrowLeft } from 'react-icons/tb';
@@ -60,14 +61,14 @@ const PluginBuilder = () => {
             }))
         );
 
-    const handleSave = useCallback(async() => {
-        if(isSaving) return;
+    const handleSave = useCallback(async () => {
+        if (isSaving) return;
         setSaveStatus('saving');
         const result = await saveWorkflow();
-        if(result){
+        if (result) {
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 2000);
-        }else{
+        } else {
             setSaveStatus('error');
             setTimeout(() => setSaveStatus('idle'), 3000);
         }
@@ -75,7 +76,7 @@ const PluginBuilder = () => {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if((e.ctrlKey || e.metaKey) && e.key === 's') {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                 e.preventDefault();
                 handleSave();
             }
@@ -98,7 +99,7 @@ const PluginBuilder = () => {
     }, [modifierNode]);
 
     const handlePluginNameChange = useCallback((newName: string) => {
-        if(modifierNode){
+        if (modifierNode) {
             const currentData = modifierNode.data as { modifier?: Record<string, any> } | undefined;
             updateNodeData(modifierNode.id, {
                 modifier: { ...currentData?.modifier, name: newName }
@@ -114,7 +115,7 @@ const PluginBuilder = () => {
     const onDrop = useCallback((event: React.DragEvent) => {
         event.preventDefault();
         const type = event.dataTransfer.getData('application/reactflow') as NodeType;
-        if(!type || !reactFlowInstance) return;
+        if (!type || !reactFlowInstance) return;
         const position = reactFlowInstance.screenToFlowPosition({
             x: event.clientX,
             y: event.clientY
@@ -161,18 +162,21 @@ const PluginBuilder = () => {
                 <Sidebar.Header>
                     {selectedNode ? (
                         <Container className='d-flex items-center gap-075'>
-                            <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleClearSelection}>
-                                <TbArrowLeft size={18} />
-                            </Button>
+                            <Tooltip content="Back to Palette" placement="right">
+                                <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleClearSelection}>
+                                    <TbArrowLeft size={18} />
+                                </Button>
+                            </Tooltip>
                             <Title className='font-weight-6'>{selectedNodeConfig?.label}</Title>
                         </Container>
                     ) : (
-                        <EditableTag
-                            as='h3'
-                            onSave={handlePluginNameChange}
-                            title='Double-click to edit plugin name'
-                            children={pluginName}
-                        />
+                        <Tooltip content="Double-click to edit plugin name" placement="bottom">
+                            <EditableTag
+                                as='h3'
+                                onSave={handlePluginNameChange}
+                                children={pluginName}
+                            />
+                        </Tooltip>
                     )}
                 </Sidebar.Header>
 

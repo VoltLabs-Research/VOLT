@@ -28,6 +28,7 @@ import './LoginActivityModal.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import Modal from '@/components/molecules/common/Modal';
 
 interface LoginActivityModalProps { }
@@ -58,15 +59,17 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = () => {
                     >
                         Refresh
                     </Button>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        iconOnly
-                        commandfor='login-activity-modal'
-                        command='close'
-                    >
-                        <TbX size={20} />
-                    </Button>
+                    <Tooltip content="Close" placement="left">
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            iconOnly
+                            commandfor='login-activity-modal'
+                            command='close'
+                        >
+                            <TbX size={20} />
+                        </Button>
+                    </Tooltip>
                 </div>
 
                 {loading ? (
@@ -112,7 +115,7 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = () => {
                                         </span>
                                         <span className="activity-time font-size-2 color-secondary">
                                             {(() => {
-                                                try{
+                                                try {
                                                     const date = new Date(activity.createdAt);
                                                     return isValid(date) ?
                                                         formatDistanceToNow(date, { addSuffix: true }) :

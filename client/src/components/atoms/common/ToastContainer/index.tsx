@@ -7,6 +7,7 @@ import './ToastContainer.css';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 
 const getIcon = (type: ToastType) => {
   switch (type) {
@@ -32,16 +33,18 @@ const ToastEl: React.FC<{ toast: Toast }> = ({ toast }) => {
         {getIcon(toast.type)}
         <Paragraph className='toast-message font-size-2-5 color-primary'>{toast.message}</Paragraph>
       </div>
-      <Button
-        variant='ghost'
-        intent='neutral'
-        iconOnly
-        size='sm'
-        onClick={() => removeToast(toast.id)}
-        aria-label='Close notification'
-      >
-        <IoCloseOutline />
-      </Button>
+      <Tooltip content="Dismiss" placement="left">
+        <Button
+          variant='ghost'
+          intent='neutral'
+          iconOnly
+          size='sm'
+          onClick={() => removeToast(toast.id)}
+          aria-label='Close notification'
+        >
+          <IoCloseOutline />
+        </Button>
+      </Tooltip>
     </div>
   );
 };

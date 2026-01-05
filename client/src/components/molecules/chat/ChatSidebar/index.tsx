@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/slices/auth';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import './ChatSidebar.css';
 
 const ChatSidebar: React.FC = () => {
@@ -43,27 +44,29 @@ const ChatSidebar: React.FC = () => {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        iconOnly
-                        size='sm'
-                        onClick={() => setShowTeamMembers(!showTeamMembers)}
-                        title='Start new chat'
-                    >
-                        <IoPersonAddOutline />
-                    </Button>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        iconOnly
-                        size='sm'
-                        commandfor='create-group-modal'
-                        command='show-modal'
-                        title='Create group'
-                    >
-                        <IoPeopleOutline />
-                    </Button>
+                    <Tooltip content="Start New Chat" placement="bottom">
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            iconOnly
+                            size='sm'
+                            onClick={() => setShowTeamMembers(!showTeamMembers)}
+                        >
+                            <IoPersonAddOutline />
+                        </Button>
+                    </Tooltip>
+                    <Tooltip content="Create Group" placement="bottom">
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            iconOnly
+                            size='sm'
+                            commandfor='create-group-modal'
+                            command='show-modal'
+                        >
+                            <IoPeopleOutline />
+                        </Button>
+                    </Tooltip>
                 </div>
             </div>
 

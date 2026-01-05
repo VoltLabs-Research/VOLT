@@ -9,14 +9,17 @@ import RasterTrajectoryDetailsSkeleton from '@/components/atoms/raster/RasterTra
 import RasterSceneViewsSkeleton from '@/components/atoms/raster/RasterSceneViewsSkeleton';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
+import Tooltip from '@/components/atoms/common/Tooltip';
 
 const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView3D, onSignIn, connectedUsers }) => {
     return (
         <div className='d-flex content-between items-center raster-scene-header-container color-primary'>
             <div className='d-flex items-center gap-2 raster-scene-header-left-container'>
-                <i className='d-flex flex-center raster-scene-header-go-back-icon-container color-primary cursor-pointer' onClick={onGoBack}>
-                    <BsArrowLeft />
-                </i>
+                <Tooltip content="Go Back" placement="bottom">
+                    <i className='d-flex flex-center raster-scene-header-go-back-icon-container color-primary cursor-pointer' onClick={onGoBack}>
+                        <BsArrowLeft />
+                    </i>
+                </Tooltip>
 
                 <div className='d-flex column gap-05 raster-scene-header-team-container'>
                     {isLoading ? (
@@ -43,7 +46,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                         const getInitials = (u: any) => {
                             const f = u.firstName?.[0] ?? '';
                             const l = u.lastName?.[0] ?? '';
-                            if(f || l) return `${f}${l}`.toUpperCase();
+                            if (f || l) return `${f}${l}`.toUpperCase();
                             const name = u.name ?? u.email ?? '';
                             const parts = String(name).trim().split(/\s+/);
                             return (parts[0]?.[0] ?? '?').toUpperCase();

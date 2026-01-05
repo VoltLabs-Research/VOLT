@@ -4,6 +4,7 @@ import useToast from '@/hooks/ui/use-toast';
 import containerApi from '@/services/api/container/container';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import './ContainerFileExplorer.css';
 import Paragraph from '@/components/primitives/Paragraph';
 
@@ -31,14 +32,14 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         fetchFiles(currentPath);
     }, [containerId, currentPath]);
 
-    const fetchFiles = async(path: string) => {
+    const fetchFiles = async (path: string) => {
         setLoading(true);
-        try{
+        try {
             const data = await containerApi.fileExplorer.list(containerId, path);
             setFiles(data.files);
-        }catch(error){
+        } catch (error) {
             showError('Failed to fetch files');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
@@ -49,23 +50,23 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
     };
 
     const handleGoUp = () => {
-        if(currentPath === '/') return;
+        if (currentPath === '/') return;
         const parts = currentPath.split('/');
         parts.pop();
         const newPath = parts.join('/') || '/';
         setCurrentPath(newPath);
     };
 
-    const handleFileClick = async(fileName: string) => {
+    const handleFileClick = async (fileName: string) => {
         const filePath = currentPath === '/' ? `/${fileName}` : `${currentPath}/${fileName}`;
         setLoading(true);
-        try{
+        try {
             const data = await containerApi.fileExplorer.read(containerId, filePath);
             setFileContent(data.content);
             setViewingFile(fileName);
-        }catch(error){
+        } catch (error) {
             showError('Failed to read file');
-        }finally{
+        } finally {
             setLoading(false);
         }
     };
@@ -75,7 +76,7 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         setFileContent(null);
     };
 
-    if(viewingFile){
+    if (viewingFile) {
         return (
             <Container className='d-flex column h-max gap-1'>
                 <Container className="d-flex items-center gap-1 viewer-header">
@@ -93,9 +94,11 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
         <Container>
             <Container className="d-flex content-between items-center explorer-header">
                 <Container className="d-flex items-center gap-1 flex-1">
-                    <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleGoUp} disabled={currentPath === '/'}>
-                        <IoArrowBack />
-                    </Button>
+                    <Tooltip content="Go to Parent Directory" placement="bottom">
+                        <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleGoUp} disabled={currentPath === '/'}>
+                            <IoArrowBack />
+                        </Button>
+                    </Tooltip>
                     <span className="current-path">{currentPath}</span>
                 </Container>
                 <Button variant='ghost' intent='neutral' size='sm' onClick={() => fetchFiles(currentPath)}>

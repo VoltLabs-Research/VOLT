@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { IoExitOutline } from 'react-icons/io5';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import './Select.css';
 
 export interface SelectOption {
@@ -203,13 +204,14 @@ const Select = ({
                         )}
 
                         {onLeaveTeam && (
-                            <Container
-                                className='volt-select-option-leave color-muted'
-                                title='Leave'
-                                onClick={(e: React.MouseEvent<HTMLDivElement>) => handleLeaveTeam(e, opt.value)}
-                            >
-                                <IoExitOutline size={16} />
-                            </Container>
+                            <Tooltip content="Leave Team" placement="left">
+                                <Container
+                                    className='volt-select-option-leave color-muted'
+                                    onClick={(e: React.MouseEvent<HTMLDivElement>) => handleLeaveTeam(e, opt.value)}
+                                >
+                                    <IoExitOutline size={16} />
+                                </Container>
+                            </Tooltip>
                         )}
                     </div>
                 );

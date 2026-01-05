@@ -23,6 +23,7 @@
 import React from 'react';
 import { CiPlay1, CiPause1 } from 'react-icons/ci';
 import CanvasButton from '@/components/atoms/scene/CanvasButton';
+import Tooltip from '@/components/atoms/common/Tooltip';
 import './PlayControls.css'
 
 interface PlayControlsProps {
@@ -36,14 +37,17 @@ const PlayControls: React.FC<PlayControlsProps> = ({
     onPlayPause,
     disabled = false
 }) => {
-    return(
-        <CanvasButton
-            onClick={onPlayPause}
-            className='editor-timestep-controls-play-pause-button font-size-3 font-size-5 cursor-pointer'
-            disabled={disabled}
-            icon={isPlaying ? CiPause1 : CiPlay1}
-        />
+    return (
+        <Tooltip content={isPlaying ? 'Pause' : 'Play'} placement="top">
+            <CanvasButton
+                onClick={onPlayPause}
+                className='editor-timestep-controls-play-pause-button font-size-3 font-size-5 cursor-pointer'
+                disabled={disabled}
+                icon={isPlaying ? CiPause1 : CiPlay1}
+            />
+        </Tooltip>
     );
 };
 
 export default PlayControls;
+
