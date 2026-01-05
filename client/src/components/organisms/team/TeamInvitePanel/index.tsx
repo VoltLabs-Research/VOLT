@@ -180,7 +180,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
                     {loadingInvitations ? (
                         <>
                             {[1, 2, 3].map((i) => (
-                                <Container key={i} className='team-invite-member-item' style={{ padding: '10px 20px' }}>
+                                <Container key={i} className='team-invite-member-item d-flex content-between items-center' style={{ padding: '10px 20px' }}>
                                     <Container style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                         <Skeleton variant='circular' width={36} height={36} />
                                         <Container>

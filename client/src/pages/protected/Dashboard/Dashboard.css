@@ -143,7 +143,7 @@ body.jobs-history-expanded {
     border-radius: var(--radius-2xl);
     padding: 0;
     cursor: default;
-    width: 360px;
+    width: 340px;
     height: clamp(240px, 30vh, 340px);
     overflow-y: scroll;
 }

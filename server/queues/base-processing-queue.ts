@@ -694,7 +694,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     teamId,
                     sessionId: data.sessionId,
                     jobStatus: status,
-                    queueType: data.queueType || this.queueName
+                    queueType: data.queueType || this.queueName,
+                    timestep: data.timestep
                 });
             } catch (error) {
                 this.logError(`Failed to update trajectory status: ${error}`);

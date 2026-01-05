@@ -1,7 +1,6 @@
 import React from 'react';
 import { TbSearch } from 'react-icons/tb';
 import Container from '@/components/primitives/Container';
-import '../CanvasSidebarScene/CanvasSidebarScene.css'; // Reusing CSS or should extract specific? 
 
 interface AnalysisSearchInputProps {
     value: string;

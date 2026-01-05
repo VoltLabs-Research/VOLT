@@ -11,12 +11,12 @@ interface UseRequireTrajectoryOptions {
 const useRequireTrajectory = (options: UseRequireTrajectoryOptions) => {
     const { trajectoryId, enabled = true } = options;
     const logger = useLogger('use-require-trajectory');
-    
+
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const getTrajectoryById = useTrajectoryStore((state) => state.getTrajectoryById);
     const isLoading = useTrajectoryStore((state) => state.isLoading);
     const error = useTrajectoryStore((state) => state.error);
-    
+
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const requestInFlightRef = useRef(false);
 
@@ -42,7 +42,7 @@ const useRequireTrajectory = (options: UseRequireTrajectoryOptions) => {
         requestInFlightRef.current = true;
 
         logger.log(`Fetching trajectory: ${trajectoryId}`);
-        
+
         getTrajectoryById(trajectoryId)
             .finally(() => {
                 requestInFlightRef.current = false;

@@ -58,11 +58,11 @@ const DashboardPage: React.FC = memo(() => {
     const hasNoTrajectories = !isLoadingTrajectories && trajectories.length === 0;
 
     useEffect(() => {
-        if(!selectedTeam?._id) return;
-        
+        if (!selectedTeam?._id) return;
+
         getTrajectories(selectedTeam._id, { page: 1, limit: 100 });
     }, [selectedTeam?._id, getTrajectories]);
-  
+
     return (
         <FileUpload>
             <DashboardContainer className='d-flex h-max sm:column w-max gap-2 p-1   '>
@@ -97,9 +97,11 @@ const DashboardPage: React.FC = memo(() => {
                                     </Container>
 
                                     <Container className='badge-container scene-preview-natoms-badge primary-surface p-absolute' style={{ pointerEvents: 'auto' }}>
-                                        <Paragraph className='font-size-2 font-weight-5'>
-                                            {formatNumber((trajectory.frames || []).find((f: any) => f.timestep === currentTimestep)?.natoms ?? 0)} atoms
-                                        </Paragraph>
+                                        {trajectory?.natoms && (
+                                            <Paragraph className='font-size-2 font-weight-5'>
+                                                {formatNumber((trajectory.frames || []).find((f: any) => f.timestep === currentTimestep)?.natoms ?? 0)} atoms
+                                            </Paragraph>
+                                        )}
                                     </Container>
 
                                     <Container className='badge-container scene-preview-navigate-icon primary-surface p-absolute font-size-5 d-flex flex-center ' style={{ pointerEvents: 'auto' }}>
