@@ -22,7 +22,7 @@
 
 import { Route } from 'react-router-dom';
 import ProtectedRoute from '@/components/atoms/auth/ProtectedRoute';
-import DashboardLayout from '@/components/atoms/dashboard/DashboardLayout';
+import DashboardLayout from '@/components/organisms/dashboard/DashboardLayout';
 import SettingsLayout from '@/components/organisms/settings/SettingsLayout';
 import PageTransition from '@/components/atoms/animations/PageTransition';
 import { routesConfig } from './config';

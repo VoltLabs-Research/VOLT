@@ -361,6 +361,7 @@
 
 .breadcrumb-item {
     transition: color 0.15s ease;
+    text-transform: capitalize;
 }
 
 .breadcrumb-link:hover {

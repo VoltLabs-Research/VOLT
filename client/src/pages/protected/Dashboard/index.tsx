@@ -1,9 +1,8 @@
-import React, { memo, useRef, useMemo } from 'react';
+import React, { memo, useRef, useMemo, useEffect } from 'react';
 import { usePageTitle } from '@/hooks/core/use-page-title';
 import { AnimatePresence, motion } from 'framer-motion';
 import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
 import FileUpload from '@/components/molecules/common/FileUpload';
-import useRequireTeamData from '@/hooks/team/use-require-team-data';
 import TimestepViewer from '@/components/organisms/scene/TimestepViewer';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/scene/Scene3D';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
@@ -15,24 +14,17 @@ import { useTeamStore } from '@/stores/slices/team';
 import Container from '@/components/primitives/Container';
 import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
 import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';
-import { useEditorStore } from '@/stores/slices/editor';
 import DashboardStats from '@/components/atoms/dashboard/DashboardStats';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
-import useThemeDetector from '@/hooks/ui/use-theme-detector';
 import './Dashboard.css';
 
 const DashboardPage: React.FC = memo(() => {
     usePageTitle('Dashboard');
-    // Note: useTeamJobs() and useTrajectoryUpdates() are called in use-app-initializer
-    // to ensure they persist across navigation
-
-    // Load team data (trajectories, etc.)
-    const { isLoading: isLoadingTeamData } = useRequireTeamData();
 
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const isLoadingTrajectories = useTrajectoryStore((state) => state.isLoadingTrajectories);
-    const setBackgroundColor = useEditorStore((state) => state.environment.setBackgroundColor);
+    const getTrajectories = useTrajectoryStore((state) => state.getTrajectories);
 
     const firstTrajectoryId = useMemo(() => {
         if (!trajectories.length) return;
@@ -65,12 +57,12 @@ const DashboardPage: React.FC = memo(() => {
 
     const hasNoTrajectories = !isLoadingTrajectories && trajectories.length === 0;
 
-    const { isLight } = useThemeDetector({
-        onThemeChange: (isLightTheme) => {
-            setBackgroundColor(isLightTheme ? '#f8f8f8' : '#0a0a0a');
-        }
-    });
-
+    useEffect(() => {
+        if(!selectedTeam?._id) return;
+        
+        getTrajectories(selectedTeam._id, { page: 1, limit: 100 });
+    }, [selectedTeam?._id, getTrajectories]);
+  
     return (
         <FileUpload>
             <DashboardContainer className='d-flex h-max sm:column w-max gap-2 p-1   '>
