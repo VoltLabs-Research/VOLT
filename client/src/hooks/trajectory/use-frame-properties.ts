@@ -11,18 +11,20 @@ const useFrameProperties = ({ analysisId, frame, trajectoryId }: UseFramePropert
     const [isLoading, setIsLoading] = useState(true);
     const [properties, setProperties] = useState<{ base: string[], modifiers: Record<string, string[]> }>({ base: [], modifiers: {} });
 
-    const getProps = async() => {
+    const getProps = async () => {
         setIsLoading(true);
-        try{
-            const data = await rasterApi.colorCoding.getProperties(trajectoryId!, analysisId!, frame!);
+        try {
+            // analysisId is now optional - will return only base properties when absent
+            const data = await rasterApi.colorCoding.getProperties(trajectoryId!, analysisId, frame!);
             setProperties(data);
-        }finally{
+        } finally {
             setIsLoading(false);
         }
     };
 
     useEffect(() => {
-        if(!analysisId || !frame || !trajectoryId) return;
+        // Only require trajectoryId and frame, analysisId is optional
+        if (!frame || !trajectoryId) return;
         getProps();
     }, [analysisId, frame, trajectoryId]);
 

@@ -28,6 +28,12 @@ const usePropertySelector = () => {
         frame: currentTimestep
     });
 
+    // Reset selected property when analysis changes
+    useEffect(() => {
+        setProperty('');
+        setExposureId(null);
+    }, [analysisConfig?._id]);
+
     const propertyOptions = useMemo<PropertyOption[]>(() => [
         ...properties.base.map((prop) => ({ value: prop, title: prop, exposureId: null })),
         ...Object.entries(properties.modifiers).flatMap(([expId, props]) =>

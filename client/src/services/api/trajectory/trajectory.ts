@@ -204,8 +204,11 @@ const trajectoryApi = {
     },
 
     particleFilter: {
-        async getProperties(trajectoryId: string, analysisId: string, timestep: number): Promise<{ dump: string[]; perAtom: string[] }> {
-            const response = await particleFilterClient.request<{ status: 'success'; data: { dump: string[]; perAtom: string[] } }>('get', `/properties/${trajectoryId}/${analysisId}`, {
+        async getProperties(trajectoryId: string, analysisId: string | undefined, timestep: number): Promise<{ dump: string[]; perAtom: string[] }> {
+            const path = analysisId
+                ? `/properties/${trajectoryId}/${analysisId}`
+                : `/properties/${trajectoryId}`;
+            const response = await particleFilterClient.request<{ status: 'success'; data: { dump: string[]; perAtom: string[] } }>('get', path, {
                 query: { timestep }
             });
             return response.data.data;
@@ -213,7 +216,7 @@ const trajectoryApi = {
 
         async preview(params: {
             trajectoryId: string;
-            analysisId: string;
+            analysisId?: string;
             timestep: number;
             property: string;
             operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
@@ -221,10 +224,13 @@ const trajectoryApi = {
             exposureId?: string;
         }): Promise<{ matchCount: number; totalAtoms: number }> {
             const { trajectoryId, analysisId, ...queryParams } = params;
+            const path = analysisId
+                ? `/preview/${trajectoryId}/${analysisId}`
+                : `/preview/${trajectoryId}`;
             const response = await particleFilterClient.request<{
                 status: 'success';
                 data: { matchCount: number; totalAtoms: number };
-            }>('get', `/preview/${trajectoryId}/${analysisId}`, {
+            }>('get', path, {
                 query: queryParams
             });
             return response.data.data;
@@ -232,7 +238,7 @@ const trajectoryApi = {
 
         async applyAction(params: {
             trajectoryId: string;
-            analysisId: string;
+            analysisId?: string;
             timestep: number;
             property: string;
             operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
@@ -241,18 +247,24 @@ const trajectoryApi = {
             exposureId?: string;
         }): Promise<{ fileId: string; atomsResult: number; action: string }> {
             const { trajectoryId, analysisId, timestep, action, ...bodyParams } = params;
+            const path = analysisId
+                ? `/${trajectoryId}/${analysisId}`
+                : `/${trajectoryId}`;
             const response = await particleFilterClient.request<{
                 status: 'success';
                 data: { fileId: string; atomsResult: number; action: string };
-            }>('post', `/${trajectoryId}/${analysisId}`, {
+            }>('post', path, {
                 query: { timestep, action },
                 data: bodyParams
             });
             return response.data.data;
         },
 
-        async getFilteredGLB(trajectoryId: string, analysisId: string, fileId: string): Promise<Blob> {
-            const response = await particleFilterClient.request<Blob>('get', `/${trajectoryId}/${analysisId}`, {
+        async getFilteredGLB(trajectoryId: string, analysisId: string | undefined, fileId: string): Promise<Blob> {
+            const path = analysisId
+                ? `/${trajectoryId}/${analysisId}`
+                : `/${trajectoryId}`;
+            const response = await particleFilterClient.request<Blob>('get', path, {
                 query: { fileId },
                 config: { responseType: 'blob' },
                 dedupe: false

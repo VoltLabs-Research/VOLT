@@ -32,7 +32,7 @@ export default class ParticleFilterController extends BaseController<any> {
         const { trajectoryId, analysisId } = req.params;
         const { timestep } = req.query;
 
-        if (!timestep || !analysisId) {
+        if (!timestep) {
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
         }
 
@@ -44,7 +44,10 @@ export default class ParticleFilterController extends BaseController<any> {
         const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [] });
         const dumpHeaders = parsed.metadata.headers || [];
 
-        const modifierProps = await this.atomProps.getModifierPerAtomProps(String(analysisId));
+        // Only fetch modifier properties if analysisId is provided
+        const modifierProps = analysisId
+            ? await this.atomProps.getModifierPerAtomProps(String(analysisId))
+            : {};
 
         return res.status(200).json({
             status: 'success',
@@ -74,7 +77,7 @@ export default class ParticleFilterController extends BaseController<any> {
 
         const result = await this.atomProps.evaluateFilterExpression(
             trajectoryId,
-            String(analysisId),
+            analysisId ? String(analysisId) : undefined,
             exposureId ? String(exposureId) : null,
             String(timestep),
             expression
@@ -114,7 +117,7 @@ export default class ParticleFilterController extends BaseController<any> {
         // Evaluate filter
         const filterResult = await this.atomProps.evaluateFilterExpression(
             trajectoryId,
-            String(analysisId),
+            analysisId ? String(analysisId) : undefined,
             exposureId ? String(exposureId) : null,
             String(timestep),
             expression
@@ -128,7 +131,8 @@ export default class ParticleFilterController extends BaseController<any> {
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath);
         const exposurePart = exposureId ? String(exposureId) : 'dump';
-        const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${value}-${action}.glb`;
+        const analysisSegment = analysisId || 'no-analysis';
+        const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${value}-${action}.glb`;
 
         let buffer: Buffer;
         let atomsResult: number;
@@ -197,7 +201,8 @@ export default class ParticleFilterController extends BaseController<any> {
 
         const exposurePart = exposureId ? String(exposureId) : 'dump';
         const actionPart = action ? `-${action}` : '-delete';
-        const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${value}${actionPart}.glb`;
+        const analysisSegment = analysisId || 'no-analysis';
+        const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${value}${actionPart}.glb`;
 
         if (!await storage.exists(SYS_BUCKETS.MODELS, objectName)) {
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));

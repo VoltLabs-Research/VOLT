@@ -24,7 +24,7 @@ export default class ColorCodingController extends BaseController<any> {
         const { trajectoryId, analysisId } = req.params;
         const { timestep } = req.query;
 
-        if (!timestep || !analysisId) {
+        if (!timestep) {
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
         }
 
@@ -37,7 +37,10 @@ export default class ColorCodingController extends BaseController<any> {
         const result = parser.parse(dumpPath, { properties: [] });
         const headers = result.metadata.headers || [];
 
-        const modifierProps = await this.atomProps.getModifierPerAtomProps(String(analysisId));
+        // Only fetch modifier properties if analysisId is provided
+        const modifierProps = analysisId
+            ? await this.atomProps.getModifierPerAtomProps(String(analysisId))
+            : {};
 
         return res.status(200).json({
             status: 'success',
@@ -62,7 +65,7 @@ export default class ColorCodingController extends BaseController<any> {
         const propName = String(property);
 
         if (type === 'modifier') {
-            if (!exposureId) {
+            if (!exposureId || !analysisId) {
                 return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
             }
 
@@ -107,8 +110,10 @@ export default class ColorCodingController extends BaseController<any> {
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400));
         }
 
+        // Use 'no-analysis' path segment when no analysis is provided
+        const analysisSegment = analysisId || 'no-analysis';
         const objectName =
-            `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${startValue}-${endValue}/${gradient}.glb`;
+            `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${startValue}-${endValue}/${gradient}.glb`;
 
         if (await storage.exists(SYS_BUCKETS.MODELS, objectName)) {
             return res.status(200).json({ status: 'success' });
@@ -122,7 +127,8 @@ export default class ColorCodingController extends BaseController<any> {
         const exporter = new AtomisticExporter();
         let externalValues: Float32Array | undefined;
 
-        if (exposureId) {
+        // Only fetch modifier data if both analysisId and exposureId are provided
+        if (exposureId && analysisId) {
             const modifierData = await this.atomProps.getModifierAnalysis(
                 String(trajectoryId),
                 String(analysisId),
@@ -152,8 +158,9 @@ export default class ColorCodingController extends BaseController<any> {
         const { trajectoryId, analysisId } = req.params;
         const { property, startValue, endValue, gradient, timestep, exposureId } = req.query;
 
+        const analysisSegment = analysisId || 'no-analysis';
         const objectName =
-            `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${startValue}-${endValue}/${gradient}.glb`;
+            `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${startValue}-${endValue}/${gradient}.glb`;
 
         if (!await storage.exists(SYS_BUCKETS.MODELS, objectName)) {
             return next(new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404));

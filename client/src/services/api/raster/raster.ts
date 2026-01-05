@@ -32,25 +32,31 @@ const rasterApi = {
     colorCoding: {
         async apply(
             trajectoryId: string,
-            analysisId: string,
+            analysisId: string | undefined,
             timestep: number,
             payload: ColorCodingPayload
         ): Promise<void> {
+            const path = analysisId
+                ? `/${trajectoryId}/${analysisId}?timestep=${timestep}`
+                : `/${trajectoryId}?timestep=${timestep}`;
             await colorCodingClient.request(
                 'post',
-                `/${trajectoryId}/${analysisId}?timestep=${timestep}`,
+                path,
                 { data: payload }
             );
         },
 
         async getStats(
             trajectoryId: string,
-            analysisId: string,
+            analysisId: string | undefined,
             params?: { timestep?: number; property?: string; type?: string; exposureId?: string }
         ): Promise<ColorCodingStats> {
+            const path = analysisId
+                ? `/stats/${trajectoryId}/${analysisId}`
+                : `/stats/${trajectoryId}`;
             const response = await colorCodingClient.request<ApiResponse<ColorCodingStats>>(
                 'get',
-                `/stats/${trajectoryId}/${analysisId}`,
+                path,
                 { query: params }
             );
             return response.data.data;
@@ -58,12 +64,15 @@ const rasterApi = {
 
         async getProperties(
             trajectoryId: string,
-            analysisId: string,
+            analysisId: string | undefined,
             timestep: number
         ): Promise<{ base: string[]; modifiers: Record<string, string[]> }> {
+            const path = analysisId
+                ? `/properties/${trajectoryId}/${analysisId}`
+                : `/properties/${trajectoryId}`;
             const response = await colorCodingClient.request<ApiResponse<ColorCodingProperties>>(
                 'get',
-                `/properties/${trajectoryId}/${analysisId}`,
+                path,
                 { query: { timestep } }
             );
             return response.data.data;

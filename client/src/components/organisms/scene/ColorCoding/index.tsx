@@ -40,11 +40,11 @@ const ColorCoding = () => {
 
     const applyColorCoding = async () => {
         try {
-            await rasterApi.colorCoding.apply(trajectory!._id, analysisConfig!._id, currentTimestep!, {
+            await rasterApi.colorCoding.apply(trajectory!._id, analysisConfig?._id, currentTimestep!, {
                 property, startValue, endValue, gradient, exposureId: exposureId || undefined
             });
             setActiveScene({
-                analysisId: analysisConfig?._id || '',
+                analysisId: analysisConfig?._id,
                 endValue,
                 exposureId: exposureId || undefined,
                 gradient,
@@ -60,14 +60,17 @@ const ColorCoding = () => {
     };
 
     const fetchStats = async () => {
-        if (!property || !trajectory?._id || !analysisConfig?._id) return;
+        if (!property || !trajectory?._id) return;
 
         const selectedOption = propertyOptions.find(opt => opt.value === property);
         const type = selectedOption?.exposureId ? 'modifier' : 'base';
 
+        // For modifier type, we need analysisId
+        if (type === 'modifier' && !analysisConfig?._id) return;
+
         setIsStatsLoading(true);
         try {
-            const stats = await rasterApi.colorCoding.getStats(trajectory._id, analysisConfig._id, {
+            const stats = await rasterApi.colorCoding.getStats(trajectory._id, analysisConfig?._id, {
                 timestep: currentTimestep,
                 property,
                 type,

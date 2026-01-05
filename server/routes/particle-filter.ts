@@ -15,11 +15,17 @@ const rbac = new RBACMiddleware(controller, router);
 router.use(middleware.protect);
 
 rbac.groupBy(Action.READ, middleware.protect)
+    // Routes with optional analysisId (base properties only)
+    .route('/properties/:trajectoryId', controller.getProperties)
+    .route('/preview/:trajectoryId', controller.preview)
+    .route('/:trajectoryId', controller.get)
+    // Routes with analysisId (base + modifier properties)
     .route('/properties/:trajectoryId/:analysisId', controller.getProperties)
     .route('/preview/:trajectoryId/:analysisId', controller.preview)
     .route('/:trajectoryId/:analysisId', controller.get);
 
 rbac.groupBy(Action.CREATE, middleware.protect)
+    .route('/:trajectoryId', controller.applyAction)
     .route('/:trajectoryId/:analysisId', controller.applyAction);
 
 export default router;

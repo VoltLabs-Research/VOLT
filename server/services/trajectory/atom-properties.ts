@@ -364,14 +364,15 @@ export default class AtomProperties {
      */
     public async evaluateFilterExpression(
         trajectoryId: string,
-        analysisId: string,
+        analysisId: string | undefined,
         exposureId: string | null | undefined,
         timestep: string,
         expression: FilterExpression
     ): Promise<FilterResult> {
         // Check if property is from per-atom modifier data
+        // Only possible if both analysisId and exposureId are provided
         let isPerAtomProperty = false;
-        if (exposureId) {
+        if (analysisId && exposureId) {
             try {
                 const config = await this.getExposureAtomConfig(analysisId, exposureId);
                 isPerAtomProperty = config.perAtomProperties.includes(expression.property);
@@ -383,7 +384,7 @@ export default class AtomProperties {
 
         let values: Float32Array;
 
-        if (isPerAtomProperty && exposureId) {
+        if (isPerAtomProperty && exposureId && analysisId) {
             // Get from plugin data (indexed by Atom ID)
             const modifierData = await this.getModifierAnalysis(trajectoryId, analysisId, exposureId, timestep);
             const idMap = this.toFloat32ByAtomId(modifierData, expression.property);

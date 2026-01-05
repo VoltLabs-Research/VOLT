@@ -57,8 +57,15 @@ const ParticleFilter = () => {
     }, [baseHandlePropertyChange]);
 
     const handlePreview = useCallback(async () => {
-        if (!property || !trajectory?._id || !analysisConfig?._id || currentTimestep === undefined) {
+        if (!property || !trajectory?._id || currentTimestep === undefined) {
             setError('Missing required parameters');
+            return;
+        }
+
+        // For modifier properties, we need analysisId
+        const selectedOption = propertyOptions.find(opt => opt.value === property);
+        if (selectedOption?.exposureId && !analysisConfig?._id) {
+            setError('Analysis required for modifier properties');
             return;
         }
 
@@ -69,7 +76,7 @@ const ParticleFilter = () => {
         try {
             const result = await trajectoryApi.particleFilter.preview({
                 trajectoryId: trajectory._id,
-                analysisId: analysisConfig._id,
+                analysisId: analysisConfig?._id,
                 timestep: currentTimestep,
                 property,
                 operator,
@@ -85,7 +92,7 @@ const ParticleFilter = () => {
     }, [trajectory, analysisConfig, currentTimestep, property, operator, value, exposureId]);
 
     const handleApplyAction = useCallback(async () => {
-        if (!previewResult || !trajectory?._id || !analysisConfig?._id || currentTimestep === undefined) {
+        if (!previewResult || !trajectory?._id || currentTimestep === undefined) {
             setError('Run preview first');
             return;
         }
@@ -96,7 +103,7 @@ const ParticleFilter = () => {
         try {
             const result = await trajectoryApi.particleFilter.applyAction({
                 trajectoryId: trajectory._id,
-                analysisId: analysisConfig._id,
+                analysisId: analysisConfig?._id,
                 timestep: currentTimestep,
                 property,
                 operator,
@@ -106,7 +113,7 @@ const ParticleFilter = () => {
             });
 
             setActiveScene({
-                analysisId: analysisConfig._id,
+                analysisId: analysisConfig?._id,
                 source: 'particle-filter',
                 fileId: result.fileId,
                 atomsResult: result.atomsResult,
