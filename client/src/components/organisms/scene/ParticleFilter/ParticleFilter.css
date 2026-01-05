@@ -44,3 +44,14 @@
 .particle-filter-preview .preview-summary strong {
     color: var(--accent-blue);
 }
+
+@media screen and (max-width: 768px) {
+
+    .particle-filter-container,
+    .particle-filter-action-panel {
+        bottom: 5rem;
+        right: 0.5rem;
+        left: 0.5rem;
+        width: auto;
+    }
+}

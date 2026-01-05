@@ -37,7 +37,6 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     differingFields,
     headerPopoverCallbacks,
     headerPopoverStates,
-    setTooltip,
     onSelectScene,
     onAddScene,
     onRemoveScene,
@@ -48,7 +47,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     const getPluginArguments = usePluginStore((s) => s.getPluginArguments);
     const setResultsViewerData = useUIStore((s) => s.setResultsViewerData);
 
-    const headerPopoverOpen = headerPopoverStates.get(section.analysis._id) || false;
+
     const handleHeaderPopoverChange = headerPopoverCallbacks.get(section.analysis._id)!;
 
     const labelMap = buildArgumentLabelMap(section.pluginSlug, getPluginArguments);
@@ -59,28 +58,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     const entry = section.entry;
     const isLoaded = entry.state === 'loaded';
 
-    const handleMouseEnter = (e: React.MouseEvent) => {
-        if (headerPopoverOpen) return;
-        const rect = (e.currentTarget as Element).getBoundingClientRect();
 
-        const durationMs = section.analysis.finishedAt && section.analysis.startedAt
-            ? new Date(section.analysis.finishedAt).getTime() - new Date(section.analysis.startedAt).getTime()
-            : null;
-
-        setTooltip(true, { x: rect.left + rect.width / 2, y: rect.top }, { ...section, duration: durationMs });
-    };
-
-    const handleMouseLeave = () => {
-        if (!headerPopoverOpen) {
-            setTooltip(false, { x: 0, y: 0 }, null);
-        }
-    };
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!headerPopoverOpen) setTooltip(true, { x: e.clientX, y: e.clientY }, null); // Content update usually not needed for move unless pos changes
-        // Wait, the parent implementation updated pos on move.
-        // We should probably just pass the pos update up.
-    };
 
     return (
         <Container className='analysis-section'>
@@ -92,12 +70,6 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                     <Container
                         className='analysis-section-header d-flex column cursor-pointer'
                         onClick={() => onToggle(section.analysis._id)}
-                        onMouseEnter={handleMouseEnter}
-                        onMouseLeave={handleMouseLeave}
-                        onMouseMove={(e) => {
-                            // If we pass generic "update pos" callback
-                            if (!headerPopoverOpen) setTooltip(true, { x: e.clientX, y: e.clientY }, undefined); // undefined content means keep existing
-                        }}
                     >
                         <Container className='d-flex items-center gap-05'>
                             <i

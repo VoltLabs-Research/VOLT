@@ -57,30 +57,28 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
             id="user-menu-popover"
             className='gap-1'
             trigger={
-                <Tooltip content="Account Menu" placement="right">
-                    <button
-                        className='sidebar-user-container d-flex items-center gap-1 cursor-pointer button-reset'
-                        onClick={onClick}
-                        style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', width: '100%' }}
+                <button
+                    className='sidebar-user-container d-flex items-center gap-1 cursor-pointer button-reset'
+                    onClick={onClick}
+                    style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', width: '100%' }}
+                >
+                    <Container
+                        className='d-flex flex-center sidebar-user-avatar-container font-weight-5'
+                        data-avatarrounded={avatarrounded}
                     >
-                        <Container
-                            className='d-flex flex-center sidebar-user-avatar-container font-weight-5'
-                            data-avatarrounded={avatarrounded}
-                        >
-                            {user.avatar ? (
-                                <img src={user.avatar} alt="User Avatar" className='sidebar-user-avatar-img w-max h-max' />
-                            ) : (
-                                <span className='sidebar-user-avatar'>{user.firstName?.[0] || '?'}</span>
-                            )}
-                        </Container>
+                        {user.avatar ? (
+                            <img src={user.avatar} alt="User Avatar" className='sidebar-user-avatar-img w-max h-max' />
+                        ) : (
+                            <span className='sidebar-user-avatar'>{user.firstName?.[0] || '?'}</span>
+                        )}
+                    </Container>
 
-                        <Container className='d-flex column gap-01'>
-                            {!hideUsername && (
-                                <span className='sidebar-user-fullname color-primary'>{user.firstName || ''} {user.lastName || ''}</span>
-                            )}
-                        </Container>
-                    </button>
-                </Tooltip>
+                    <Container className='d-flex column gap-01'>
+                        {!hideUsername && (
+                            <span className='sidebar-user-fullname color-primary'>{user.firstName || ''} {user.lastName || ''}</span>
+                        )}
+                    </Container>
+                </button>
             }
         >
             <PopoverMenuItem icon={<CiSettings />} onClick={() => navigate('/dashboard/settings/general')}>
