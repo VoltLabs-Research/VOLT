@@ -256,8 +256,6 @@ export const usePluginStore = create<PluginState>((set, get) => ({
     error: null,
     listingMeta: initialListingMeta,
 
-
-
     resetPlugins: () => {
         set({
             plugins: [],

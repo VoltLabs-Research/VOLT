@@ -7,14 +7,11 @@ import { ErrorCodes } from '@/constants/error-codes';
 import { NodeType } from '@/types/models/modifier';
 import { findAncestorByType, findDescendantByType } from '@/utilities/plugins/workflow-utils';
 import { getMinMaxNative } from '@/parsers/lammps/native-stats';
-import path from 'path';
 import DumpStorage from './dump-storage';
 import TrajectoryParserFactory from '@/parsers/factory';
 import logger from '@/logger';
 
 type AnyPlugin = any;
-
-const particleFilterNative = require(path.join(process.cwd(), 'native/build/Release/particle_filter.node'));
 
 export interface FilterExpression {
     property: string;
@@ -46,12 +43,12 @@ export default class AtomProperties {
         for (const visualizerNode of visualizerNodes) {
             const perAtom = visualizerNode?.data?.visualizers?.perAtomProperties;
             logger.debug(`[AtomProperties.getModifierPerAtomProps] Visualizer ${visualizerNode.id} perAtomProperties: ${JSON.stringify(perAtom)}`);
-            
+
             if (!Array.isArray(perAtom) || perAtom.length === 0) continue;
 
             const exposureNode = findAncestorByType(visualizerNode.id, plugin.workflow, NodeType.EXPOSURE as any);
             logger.debug(`[AtomProperties.getModifierPerAtomProps] Found ancestor exposure for visualizer ${visualizerNode.id}: ${exposureNode?.id || 'none'}`);
-            
+
             if (exposureNode?.id) {
                 props[String(exposureNode.id)] = perAtom;
             }
@@ -281,19 +278,85 @@ export default class AtomProperties {
      * Evaluate filter expression on property values (ultra-fast native implementation)
      * Handles 50M+ atoms efficiently
      */
+    /**
+     * Evaluate filter expression on property values (JS implementation to fix native bug)
+     */
     public evaluateFilter(values: Float32Array, operator: string, compareValue: number): FilterResult {
-        return particleFilterNative.evaluateFilter(values, operator, compareValue);
+        const mask = new Uint8Array(values.length);
+        let matchCount = 0;
+        const val = compareValue;
+
+        // Optimized filtering loops
+        switch (operator) {
+            case '==':
+                for (let i = 0; i < values.length; i++) {
+                    if (values[i] === val) { mask[i] = 1; matchCount++; }
+                }
+                break;
+            case '!=':
+                for (let i = 0; i < values.length; i++) {
+                    if (values[i] !== val) { mask[i] = 1; matchCount++; }
+                }
+                break;
+            case '>':
+                for (let i = 0; i < values.length; i++) {
+                    if (values[i] > val) { mask[i] = 1; matchCount++; }
+                }
+                break;
+            case '>=':
+                for (let i = 0; i < values.length; i++) {
+                    if (values[i] >= val) { mask[i] = 1; matchCount++; }
+                }
+                break;
+            case '<':
+                for (let i = 0; i < values.length; i++) {
+                    if (values[i] < val) { mask[i] = 1; matchCount++; }
+                }
+                break;
+            case '<=':
+                for (let i = 0; i < values.length; i++) {
+                    if (values[i] <= val) { mask[i] = 1; matchCount++; }
+                }
+                break;
+        }
+
+        return { mask, matchCount };
     }
 
     /**
      * Filter positions and types by mask (creates new filtered arrays)
+     */
+    /**
+     * Filter positions and types by mask (JS implementation)
      */
     public filterByMask(positions: Float32Array, types: Uint16Array, mask: Uint8Array): {
         positions: Float32Array;
         types: Uint16Array;
         count: number;
     } {
-        return particleFilterNative.filterByMask(positions, types, mask);
+        // Count valid items
+        let count = 0;
+        for (let i = 0; i < mask.length; i++) {
+            if (mask[i]) count++;
+        }
+
+        const newPos = new Float32Array(count * 3);
+        const newTypes = new Uint16Array(count);
+
+        let idx = 0;
+        for (let i = 0; i < mask.length; i++) {
+            if (mask[i]) {
+                const p3 = i * 3;
+                const n3 = idx * 3;
+                newPos[n3] = positions[p3];
+                newPos[n3 + 1] = positions[p3 + 1];
+                newPos[n3 + 2] = positions[p3 + 2];
+                newTypes[idx] = types[i];
+                idx++;
+            }
+        }
+
+        return { positions: newPos, types: newTypes, count };
     }
 
     /**
@@ -321,17 +384,53 @@ export default class AtomProperties {
         let values: Float32Array;
 
         if (isPerAtomProperty && exposureId) {
-            // Get from plugin data
+            // Get from plugin data (indexed by Atom ID)
             const modifierData = await this.getModifierAnalysis(trajectoryId, analysisId, exposureId, timestep);
-            values = this.toFloat32ByAtomId(modifierData, expression.property) || new Float32Array(0);
+            const idMap = this.toFloat32ByAtomId(modifierData, expression.property);
+
+            // Get dump IDs to map ID-based values to File-Order-based values
+            const dumpFilePath = await DumpStorage.getDump(trajectoryId, timestep);
+            if (!dumpFilePath) throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+
+            // specific: true tells the parser we are looking for specific fields, which triggers column selection in native
+            // includeIds: true ensures we get the IDs column
+            const parsed = await TrajectoryParserFactory.parse(dumpFilePath, { includeIds: true, properties: [] });
+
+            if (!parsed.ids) {
+                // If the dump has no IDs, we cannot map the plugin data (which is ID-based) to the dump order safely.
+                // However, falling back to 0-filled array is better than crashing or using a mismatched array.
+                // Log a warning if possible, but here we just ensure a valid length array.
+                values = new Float32Array(parsed.positions.length / 3);
+            } else {
+                values = new Float32Array(parsed.ids.length);
+                if (idMap) {
+                    for (let i = 0; i < parsed.ids.length; i++) {
+                        const atomId = parsed.ids[i];
+                        // idMap is indexed by ID. idMap[atomId] gives properties for that atom.
+                        // values[i] corresponds to the atom at index i in the dump file.
+                        values[i] = idMap[atomId] || 0;
+                    }
+                }
+            }
         } else {
             const dumpFilePath = await DumpStorage.getDump(trajectoryId, timestep);
             if (!dumpFilePath) throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
 
-            const parsed = await TrajectoryParserFactory.parse(dumpFilePath, { properties: [expression.property] });
-            
-            // Handle base properties that are stored separately (type, x, y, z, id)
             const lowerProp = expression.property.toLowerCase();
+            const isStandard = ['type', 'id', 'x', 'y', 'z'].includes(lowerProp);
+            let parsed;
+
+            if (isStandard) {
+                // Do not optimize standard keys as properties, to ensure full array consistency from native parser
+                parsed = await TrajectoryParserFactory.parse(dumpFilePath, {
+                    includeIds: lowerProp === 'id',
+                    properties: []
+                });
+            } else {
+                parsed = await TrajectoryParserFactory.parse(dumpFilePath, { properties: [expression.property] });
+            }
+
+            // Handle base properties that are stored separately (type, x, y, z, id)
             if (lowerProp === 'type') {
                 // Convert Uint16Array to Float32Array
                 values = new Float32Array(parsed.types.length);

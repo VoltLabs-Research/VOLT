@@ -1,12 +1,9 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- */
-
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import { useEditorStore } from '@/stores/slices/editor';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import useFrameProperties from '@/hooks/trajectory/use-frame-properties';
+import useLogger from '@/hooks/core/use-logger';
 
 export interface PropertyOption {
     value: string;
@@ -14,11 +11,13 @@ export interface PropertyOption {
     exposureId: string | null;
 }
 
+// TODO: ANALYSIS CONFIG SHOULD NOT BE REQUIRED
 const usePropertySelector = () => {
     const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const setActiveScene = useEditorStore((state) => state.setActiveScene);
+    const logger = useLogger('hooks/use-property-selector');
 
     const [property, setProperty] = useState('');
     const [exposureId, setExposureId] = useState<string | null>(null);
@@ -35,6 +34,11 @@ const usePropertySelector = () => {
             props.map((prop) => ({ value: prop, title: prop, exposureId: expId }))
         )
     ], [properties]);
+
+    useEffect(() => {
+        logger.log('properties:', properties, 'isLoading:', isLoading, 'analysisConfig:', analysisConfig, 'trajectory:', trajectory, 'frame:', currentTimestep, 'propertyOptions:', propertyOptions);
+    }, [properties, isLoading, analysisConfig, trajectory, currentTimestep, propertyOptions]);
+
 
     const handlePropertyChange = useCallback((value: string) => {
         setProperty(value);

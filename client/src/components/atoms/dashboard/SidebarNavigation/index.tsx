@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { RiHomeSmile2Fill } from "react-icons/ri";
 import { TbCube3dSphere } from 'react-icons/tb';
@@ -93,7 +93,7 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
         ['My Team', IoPeopleOutline, '/dashboard/my-team'],
         ['Manage Roles', IoKeyOutline, '/dashboard/manage-roles']
     ]), []);
-    
+
     // Group plugins with their exposures that have listings or perAtomProperties
     const pluginsWithExposures = useMemo(() => {
         const result: Array<{
