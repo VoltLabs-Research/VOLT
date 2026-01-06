@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md';
 
@@ -14,6 +14,8 @@ import ExposureOption from '@/components/molecules/scene/ExposureOption';
 import { formatConfigValue, buildArgumentLabelMap } from '@/components/molecules/scene/CanvasSidebarScene/utils';
 import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { useUIStore } from '@/stores/slices/ui';
+import useToast from '@/hooks/ui/use-toast';
+import useAnalysisConfigStore from '@/stores/slices/analysis';
 
 interface AnalysisSectionProps {
     section: any;
@@ -48,7 +50,8 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
     const getPluginArguments = usePluginStore((s) => s.getPluginArguments);
     const setResultsViewerData = useUIStore((s) => s.setResultsViewerData);
-
+    const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
+    const { showSuccess } = useToast();
 
     const handleHeaderPopoverChange = headerPopoverCallbacks.get(section.analysis._id)!;
 
@@ -69,7 +72,14 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                 trigger={
                     <Container
                         className='analysis-section-header d-flex column cursor-pointer'
-                        onClick={() => onToggle(section.analysis._id)}
+                        onClick={() => {
+                            onToggle(section.analysis._id);
+                            if(analysisConfig._id === section.analysis._id){
+                                return;
+                            }
+                            updateAnalysisConfig(section.analysis);
+                            showSuccess(`${section.pluginDisplayName} (${formatDistanceToNow(section.analysis.createdAt, { addSuffix: true })}) selected sucessfully! `);
+                        }}
                         onMouseEnter={(e) => {
                             setTooltipOpen(true);
                             setTooltipPos({ x: e.clientX, y: e.clientY });
