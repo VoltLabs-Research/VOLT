@@ -45,6 +45,11 @@ const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
         yhi: { type: Number, required: true },
         zlo: { type: Number, required: true },
         zhi: { type: Number, required: true },
+    },
+    simulationCell: {
+        type: Schema.Types.ObjectId,
+        ref: 'SimulationCell',
+        required: true
     }
 }, { _id: false });
 

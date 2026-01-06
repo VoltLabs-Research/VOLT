@@ -56,3 +56,24 @@ export interface ICellAnalysis extends Document {
     trajectory: Types.ObjectId;
     analysisConfig: Types.ObjectId;
 }
+
+export interface ISimulationCellGeometry {
+    cell_vectors: number[][];
+    cell_origin: number[];
+    periodic_boundary_conditions: {
+        x: boolean;
+        y: boolean;
+        z: boolean;
+    };
+}
+
+export interface ISimulationCellBoundingBox {
+    width: number;
+    height: number;
+    length: number;
+}
+
+export interface ISimulationCell extends Document {
+    boundingBox: ISimulationCellBoundingBox;
+    geometry: ISimulationCellGeometry;
+}

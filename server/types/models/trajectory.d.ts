@@ -25,7 +25,7 @@ import { IUser } from '@/types/models/user';
 import { IStructureAnalysis } from '@types/model/structureAnalysis';
 import { ICellAnalysis } from '@/types/model/simulation-cell';
 import { IAnalysis } from '@/models/analysis';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 // Defines the limits of the simulation box on the three axes.
 export interface IBoxBounds {
@@ -41,6 +41,7 @@ export interface ITimestepInfo {
     timestep: number;
     natoms: number;
     boxBounds: IBoxBounds;
+    simulationCell: Types.ObjectId;
 }
 
 export interface ITrajectory extends Document {

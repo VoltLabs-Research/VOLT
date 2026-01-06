@@ -4,6 +4,7 @@ import { ErrorCodes } from '@/constants/error-codes';
 import { Types } from 'mongoose';
 import { v4 } from 'uuid';
 import { Trajectory } from '@/models';
+import SimulationCell from '@/models/simulation-cell';
 import { getCloudUploadQueue, getTrajectoryProcessingQueue } from '@/queues';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
@@ -282,7 +283,7 @@ const processFilesInBackground = async (
                     });
 
 
-                    await fs.unlink(zipPath).catch(() => {});
+                    await fs.unlink(zipPath).catch(() => { });
                 } catch (e) {
                     console.error(`[createTrajectory] Failed to extract zip ${file.originalname}:`, e);
                 }
@@ -302,7 +303,16 @@ const processFilesInBackground = async (
     }
 
     const validTotalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
-    const frames = validFiles.map((f) => f.frameInfo);
+
+    const frames: any[] = [];
+    for (const f of validFiles) {
+        const { simulationCell, ...restFrameInfo } = f.frameInfo;
+        const newSimCell = await SimulationCell.create(simulationCell);
+        frames.push({
+            ...restFrameInfo,
+            simulationCell: newSimCell._id
+        });
+    }
 
     const trajectory = await Trajectory.findByIdAndUpdate(
         trajectoryIdStr,

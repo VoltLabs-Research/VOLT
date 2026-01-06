@@ -1,4 +1,4 @@
-export interface FrameMetadata{
+export interface FrameMetadata {
     timestep: number;
     natoms: number;
     boxBounds: {
@@ -10,9 +10,25 @@ export interface FrameMetadata{
         zhi: number;
     };
     headers: string[];
+    simulationCell: {
+        boundingBox: {
+            width: number;
+            height: number;
+            length: number;
+        };
+        geometry: {
+            cell_vectors: number[][];
+            cell_origin: number[];
+            periodic_boundary_conditions: {
+                x: boolean;
+                y: boolean;
+                z: boolean;
+            };
+        };
+    };
 };
 
-export interface ParseResult{
+export interface ParseResult {
     metadata: FrameMetadata;
     positions: Float32Array;
     types: Uint16Array;
