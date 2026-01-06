@@ -13,6 +13,7 @@ import { Resource } from '@/constants/resources';
 import getFrameGlbReadStream from '@/utilities/trajectory/get-glb-read-stream';
 import SimulationAtoms from '@/services/trajectory/atoms';
 import archiver from 'archiver';
+import { asyncForEach } from '@/utilities/runtime/async-loop';
 
 export default class TrajectoryController extends BaseController<any> {
     constructor() {
@@ -165,10 +166,10 @@ export default class TrajectoryController extends BaseController<any> {
         const archive = archiver('zip', { zlib: { level: 5 } });
         archive.pipe(res);
 
-        for (const timestep of timesteps) {
+        await asyncForEach(timesteps, 50, async (timestep) => {
             const stream = await DumpStorage.getDumpStream(trajectoryId, timestep);
             archive.append(stream, { name: `timestep-${timestep}.dump` });
-        }
+        });
 
         await archive.finalize();
     });

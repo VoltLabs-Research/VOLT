@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import { getAnalysisQueue } from '@/queues';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import { PluginStatus } from '@/types/models/plugin';
+import { asyncForEach } from '@/utilities/runtime/async-loop';
 
 export default class AnalysisConfigController extends BaseController<any> {
     constructor() {
@@ -93,9 +94,9 @@ export default class AnalysisConfigController extends BaseController<any> {
             // Create jobs for failed frames
             const jobs: AnalysisJob[] = [];
 
-            for (const timestep of failedTimesteps) {
+            await asyncForEach(failedTimesteps, 100, async (timestep) => {
                 const frameIndex = trajectory.frames.findIndex((f: any) => f.timestep === timestep);
-                if (frameIndex === -1) continue;
+                if (frameIndex === -1) return;
 
                 const frame = trajectory.frames[frameIndex];
 
@@ -118,7 +119,7 @@ export default class AnalysisConfigController extends BaseController<any> {
                     forEachItem: frame,
                     forEachIndex: frameIndex
                 });
-            }
+            });
 
             // Add jobs to queue
             const analysisQueue = getAnalysisQueue();

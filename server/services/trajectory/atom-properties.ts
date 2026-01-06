@@ -10,6 +10,7 @@ import { getMinMaxNative } from '@/parsers/lammps/native-stats';
 import DumpStorage from './dump-storage';
 import TrajectoryParserFactory from '@/parsers/factory';
 import logger from '@/logger';
+import { asyncForEach } from '@/utilities/runtime/async-loop';
 
 type AnyPlugin = any;
 
@@ -176,19 +177,26 @@ export default class AtomProperties {
 
             if (!Array.isArray(pluginData)) continue;
 
-            for (const item of pluginData) {
+            let shouldBreak = false;
+            await asyncForEach(pluginData, 1000, async (item) => {
+                if (shouldBreak) return;
+
                 const id = item?.id;
-                if (id === undefined) continue;
-                if (!targetIds.has(id)) continue;
+                if (id === undefined) return;
+                if (!targetIds.has(id)) return;
 
                 pluginIndex.set(id, item);
 
                 if (pluginIndex.size >= targetIds.size) {
-                    if (typeof (pluginStream as any).destroy === 'function') {
-                        (pluginStream as any).destroy();
-                    }
-                    return pluginIndex;
+                    shouldBreak = true;
                 }
+            });
+
+            if (shouldBreak) {
+                if (typeof (pluginStream as any).destroy === 'function') {
+                    (pluginStream as any).destroy();
+                }
+                return pluginIndex;
             }
         }
 

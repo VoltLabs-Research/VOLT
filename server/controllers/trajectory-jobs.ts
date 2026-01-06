@@ -9,6 +9,7 @@ import { getAnalysisQueue } from '@/queues';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import { Plugin, PluginExposureMeta } from '@/models';
 import { PluginStatus } from '@/types/models/plugin';
+import { asyncForEach } from '@/utilities/runtime/async-loop';
 
 export default class TrajectoryJobsController extends BaseController<any> {
     constructor() {
@@ -248,12 +249,12 @@ export default class TrajectoryJobsController extends BaseController<any> {
             const analysisQueue = getAnalysisQueue();
 
             // Process each analysis
-            for (const analysis of analyses) {
+            await asyncForEach(analyses, 10, async (analysis) => {
                 try {
                     // Get all timesteps from trajectory
                     const allTimesteps = (trajectory.frames || []).map((frame: any) => frame.timestep);
 
-                    if (allTimesteps.length === 0) continue;
+                    if (allTimesteps.length === 0) return;
 
                     // Get completed timesteps from PluginExposureMeta
                     const completedTimesteps = await PluginExposureMeta.distinct('timestep', {
@@ -265,7 +266,7 @@ export default class TrajectoryJobsController extends BaseController<any> {
                         (ts: number) => !completedTimesteps.includes(ts)
                     );
 
-                    if (failedTimesteps.length === 0) continue;
+                    if (failedTimesteps.length === 0) return;
 
                     // Get plugin
                     const plugin = await Plugin.findOne({
@@ -275,15 +276,15 @@ export default class TrajectoryJobsController extends BaseController<any> {
 
                     if (!plugin) {
                         logger.warn(`[TrajectoryJobs] Plugin ${analysis.plugin} not found for analysis ${analysis._id}`);
-                        continue;
+                        return;
                     }
 
                     // Create jobs for failed frames
                     const jobs: AnalysisJob[] = [];
 
-                    for (const timestep of failedTimesteps) {
+                    await asyncForEach(failedTimesteps, 100, async (timestep) => {
                         const frameIndex = trajectory.frames!.findIndex((f: any) => f.timestep === timestep);
-                        if (frameIndex === -1) continue;
+                        if (frameIndex === -1) return;
 
                         const frame = trajectory.frames![frameIndex];
 
@@ -306,7 +307,7 @@ export default class TrajectoryJobsController extends BaseController<any> {
                             forEachItem: frame,
                             forEachIndex: frameIndex
                         });
-                    }
+                    });
 
                     // Add jobs to queue
                     if (jobs.length > 0) {
@@ -317,7 +318,7 @@ export default class TrajectoryJobsController extends BaseController<any> {
                 } catch (error) {
                     logger.error(`[TrajectoryJobs] Failed to retry frames for analysis ${analysis._id}: ${error}`);
                 }
-            }
+            });
 
             return res.json({
                 message: 'Failed jobs queued for retry',

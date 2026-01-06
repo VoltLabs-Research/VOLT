@@ -78,7 +78,9 @@ export default class AtomisticExporter {
         if (externalValues) {
             if (!parsed.ids) throw new Error('Atom IDs required for external values');
             const values = new Float32Array(parsed.metadata.natoms);
-            for (let i = 0; i < parsed.metadata.natoms; i++) values[i] = externalValues[parsed.ids[i]];
+            for (let i = 0; i < parsed.metadata.natoms; i++) {
+                values[i] = externalValues[parsed.ids[i]];
+            }
             colors = exporter.applyPropertyColors(values, startValue, endValue, gradientType);
         } else {
             colors = exporter.applyPropertyColors(parsed.properties![property], startValue, endValue, gradientType);

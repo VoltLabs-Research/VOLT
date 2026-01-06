@@ -32,7 +32,8 @@ class DislocationExporter {
 
             const dir = [p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]];
             const length = Math.sqrt(dir[0] ** 2 + dir[1] ** 2 + dir[2] ** 2);
-            if (length < 1e-6) continue;
+            // TODO: WHAT THE FUCK 
+            // if (length < 1e-6) return { positions: [], normals: [], indices: [] };
 
             dir[0] /= length; dir[1] /= length; dir[2] /= length;
 

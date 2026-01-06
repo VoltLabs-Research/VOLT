@@ -9,6 +9,7 @@ import Plugin from '@/models/plugin';
 import storage from '@/services/storage';
 import logger from '@/logger';
 import AtomProperties from '@/services/trajectory/atom-properties';
+import { asyncForEach } from '@/utilities/runtime/async-loop';
 
 export interface ListingQueryParams {
     pluginSlug: string;
@@ -141,17 +142,17 @@ class PluginListingService {
         const ordered: string[] = [];
         const nonNull = new Set<string>();
 
-        for (const r of rows) {
+        await asyncForEach(rows, 100, async (r) => {
             for (const [k, v] of Object.entries(r)) {
-                if (RESERVED_KEYS.has(k)) continue;
-                if (v === null || v === undefined) continue;
+                if (RESERVED_KEYS.has(k)) return;
+                if (v === null || v === undefined) return;
                 nonNull.add(k);
                 if (!seen.has(k)) {
                     seen.add(k);
                     ordered.push(k);
                 }
             }
-        }
+        });
 
         const columns = ordered
             .filter((k) => nonNull.has(k))

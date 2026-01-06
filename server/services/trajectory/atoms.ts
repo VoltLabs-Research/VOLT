@@ -5,6 +5,7 @@ import RuntimeError from '@/utilities/runtime/runtime-error';
 import DumpStorage from '@/services/trajectory/dump-storage';
 import TrajectoryParserFactory from '@/parsers/factory';
 import AtomProperties, { ExposureAtomConfig } from '@/services/trajectory/atom-properties';
+import { asyncForLoop } from '@/utilities/runtime/async-loop';
 
 export default class SimulationAtoms {
     private readonly atomProps: AtomProperties;
@@ -88,8 +89,7 @@ export default class SimulationAtoms {
         // Build rows
         const rows = new Array(rowCount);
         const discoveredProps = new Set<string>();
-
-        for (let idx = 0; idx < rowCount; idx++) {
+        await asyncForLoop(0, rowCount, 1000, async (idx) => {
             const i = startIndex + idx;
             const base = i * 3;
             const atomId = ids ? ids[i] : i + 1;
@@ -127,7 +127,7 @@ export default class SimulationAtoms {
             }
 
             rows[idx] = row;
-        }
+        });
 
         return {
             data: rows,

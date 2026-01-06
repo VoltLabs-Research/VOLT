@@ -31,6 +31,7 @@ import { VirtualWorker } from '@/utilities/queues/virtual-worker';
 import { publishJobUpdate } from '@/events/job-updates';
 import logger from '@/logger';
 import trajectoryJobTracker from '@/services/trajectory-job-tracker';
+import { asyncForEach } from '@/utilities/runtime/async-loop';
 
 export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitter {
     protected readonly queueName: string;
@@ -117,6 +118,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     private async requeueStaleRunningJobs(): Promise<void> {
         let cursor = '0';
         const match = `${this.statusKeyPrefix}*`;
+        const { setImmediate } = await import('node:timers/promises');
 
         do {
             const resp = await this.redis.scan(cursor, 'MATCH', match, 'COUNT', 500);
@@ -128,11 +130,11 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             keys.forEach(k => pipeline.get(k));
             const results: any = await pipeline.exec();
 
-            for (const [, raw] of results) {
-                if (!raw) continue;
+            await asyncForEach(results, 100, async ([, raw]) => {
+                if (!raw) return;
                 try {
                     const data = JSON.parse(raw);
-                    if (data?.status !== 'running') continue;
+                    if (data?.status !== 'running') return;
                     const jobObj = this.deserializeJob(JSON.stringify(data));
                     const rawData = JSON.stringify(jobObj);
 
@@ -150,7 +152,9 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                     });
                 } catch (_e) {
                 }
-            }
+            });
+
+            await setImmediate();
         } while (cursor !== '0');
     }
 

@@ -4,7 +4,7 @@ import storage from '@/services/storage';
 import { SYS_BUCKETS } from '@/config/minio';
 
 class MeshExporter {
-    public toGLBBuffer(mesh: Mesh, options: DefectMeshExportOptions = {}): Buffer {
+    public async toGLBBuffer(mesh: Mesh, options: DefectMeshExportOptions = {}): Promise<Buffer> {
         const opts: Required<DefectMeshExportOptions> = {
             generateNormals: options.generateNormals ?? true,
             enableDoubleSided: options.enableDoubleSided ?? true,
@@ -21,7 +21,7 @@ class MeshExporter {
             }
         };
 
-        const processed = this.processMeshGeometry(mesh, opts);
+        const processed = await this.processMeshGeometry(mesh, opts);
         const useU16 = processed.vertexCount > 0 && processed.vertexCount <= 65535;
         const indices = useU16 ? new Uint16Array(processed.indices) : processed.indices;
 
@@ -50,11 +50,11 @@ class MeshExporter {
     }
 
     public async toGLBMinIO(mesh: Mesh, objectName: string, options: DefectMeshExportOptions = {}): Promise<void> {
-        const buffer = this.toGLBBuffer(mesh, options);
+        const buffer = await this.toGLBBuffer(mesh, options);
         await storage.put(SYS_BUCKETS.MODELS, objectName, buffer, { 'Content-Type': 'model/gltf-binary' });
     }
 
-    private processMeshGeometry(mesh: Mesh, opts: Required<DefectMeshExportOptions>): ProcessedMesh {
+    private async processMeshGeometry(mesh: Mesh, opts: Required<DefectMeshExportOptions>): Promise<ProcessedMesh> {
         const { points, facets } = mesh.data;
         const vertexCount = points.length;
         const triangleCount = facets.length;
@@ -91,6 +91,7 @@ class MeshExporter {
 
         // Compute normals
         const normals = new Float32Array(vertexCount * 3);
+
         for (let i = 0; i < indices.length; i += 3) {
             const i0 = indices[i], i1 = indices[i + 1], i2 = indices[i + 2];
             const p0 = i0 * 3, p1 = i1 * 3, p2 = i2 * 3;

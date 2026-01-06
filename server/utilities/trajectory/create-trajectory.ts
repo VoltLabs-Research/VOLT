@@ -12,6 +12,7 @@ import { ITrajectory } from '@/types/models/trajectory';
 import { CloudUploadJob } from '@/types/services/cloud-upload';
 import unzipper from 'unzipper';
 import { createReadStream } from 'node:fs';
+import { asyncForEach } from '../runtime/async-loop';
 
 interface CreateTrajectoryOptions {
     files: any[];
@@ -262,14 +263,14 @@ const processFilesInBackground = async (
                     const allFiles = await getFilesRecursive(workingDir);
                     console.log(`[createTrajectory] Found ${allFiles.length} files after extraction in ${workingDir}`);
 
-                    for (const fullPath of allFiles) {
+                    await asyncForEach(allFiles, 50, async (fullPath) => {
                         const filename = path.basename(fullPath);
 
                         // Skip the zip file itself and hidden files
-                        if (filename === path.basename(zipPath)) continue;
-                        if (filename === tempZipName) continue;
-                        if (filename.startsWith('.')) continue;
-                        if (filename === '__MACOSX') continue;
+                        if (filename === path.basename(zipPath)) return;
+                        if (filename === tempZipName) return;
+                        if (filename.startsWith('.')) return;
+                        if (filename === '__MACOSX') return;
 
                         const stats = await fs.stat(fullPath);
 
@@ -278,11 +279,10 @@ const processFilesInBackground = async (
                             originalname: filename,
                             size: stats.size
                         });
-                    }
+                    });
 
 
-                    // Optional: Delete the temp zip file to save space
-                    // await fs.unlink(zipPath).catch(() => {});
+                    await fs.unlink(zipPath).catch(() => {});
                 } catch (e) {
                     console.error(`[createTrajectory] Failed to extract zip ${file.originalname}:`, e);
                 }
