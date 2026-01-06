@@ -300,7 +300,6 @@ const MyTeam: React.FC = () => {
                     <ActivityHeatmap data={activityData} />
                 }
                 gap=""
-                enableInfinite
                 hasMore={hasMore}
                 onLoadMore={handleLoadMore}
             />

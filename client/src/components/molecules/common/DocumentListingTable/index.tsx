@@ -37,6 +37,8 @@ type RowSharedProps = {
   getMenuOptions?: (item: any) => MenuOption[];
   keyExtractor?: (item: any, index: number) => string | number;
   useFlexDistribution: boolean;
+  isFetchingMore?: boolean;
+  skeletonRowsCount?: number;
 };
 
 type RowRenderProps = {
@@ -163,8 +165,20 @@ const RowBase = ({
 };
 
 const VirtualizedRow = ({ index, style, ...props }: RowComponentProps<RowSharedProps>) => {
-  const { data, ...rest } = props;
-  return <RowBase item={data[index]} index={index} style={style} {...rest} />;
+  const { data, isFetchingMore, skeletonRowsCount, columns, columnWidths, useFlexDistribution, ...rest } = props;
+
+  if (index >= data.length) {
+    return (
+      <SkeletonRow
+        columns={columns}
+        columnWidths={columnWidths}
+        useFlexDistribution={useFlexDistribution}
+        style={style}
+      />
+    );
+  }
+
+  return <RowBase item={data[index]} index={index} style={style} columns={columns} columnWidths={columnWidths} useFlexDistribution={useFlexDistribution} {...rest} />;
 };
 
 const TableRow = ({ item, index, ...rest }: Omit<RowRenderProps, 'style'>) => {
@@ -175,15 +189,18 @@ const SkeletonRow = ({
   columns,
   columnWidths,
   useFlexDistribution,
+  style,
 }: {
   columns: ColumnConfig[];
   columnWidths?: number[];
   useFlexDistribution?: boolean;
+  style?: React.CSSProperties;
 }) => {
   return (
     <div
       className="document-listing-table-row-container skeleton-row d-flex"
       style={{
+        ...style,
         gap: useFlexDistribution ? undefined : `${COLUMN_GAP}px`,
         justifyContent: useFlexDistribution ? 'space-between' : 'flex-start',
       }}
@@ -218,7 +235,7 @@ const SkeletonRow = ({
 };
 
 type InfiniteProps = {
-  enableInfinite?: boolean;
+
   hasMore?: boolean;
   onLoadMore?: () => void;
   isFetchingMore?: boolean;
@@ -249,7 +266,6 @@ const DocumentListingTable = ({
   isLoading = false,
   getMenuOptions,
   emptyMessage = 'No documents to show.',
-  enableInfinite = false,
   hasMore = false,
   onLoadMore,
   isFetchingMore = false,
@@ -303,7 +319,7 @@ const DocumentListingTable = ({
 
   // Observe intersection of the sentinel within the provided scroll container(non-virtualized)
   useEffect(() => {
-    if (!enableInfinite || useVirtualization) return;
+    if (!useVirtualization) return;
 
     const root =
       scrollContainerRef && 'current' in scrollContainerRef ? (scrollContainerRef.current as any) : null;
@@ -321,27 +337,44 @@ const DocumentListingTable = ({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [enableInfinite, useVirtualization, scrollContainerRef, hasMore, isFetchingMore, onLoadMore]);
+  }, [scrollContainerRef, hasMore, isFetchingMore, onLoadMore]);
 
   // Handle infinite scroll for virtualized list
   const handleScroll = useCallback(
-    (event: React.UIEvent<HTMLDivElement>) => {
-      if (!enableInfinite || !useVirtualization) return;
+    (eventOrProps: any) => {
+      if (!useVirtualization) return;
 
-      const target = event.target as HTMLElement;
-      const scrollOffset = target.scrollTop;
+      console.log('[DocumentListingTable] Raw Scroll Event:', eventOrProps);
+
+      let scrollOffset = 0;
+      if (typeof eventOrProps.scrollOffset === 'number') {
+        scrollOffset = eventOrProps.scrollOffset;
+      } else if (eventOrProps.target && typeof eventOrProps.target.scrollTop === 'number') {
+        scrollOffset = eventOrProps.target.scrollTop;
+      }
 
       const totalHeight = data.length * ROW_HEIGHT;
       const visibleHeight = listHeight;
       const scrollThreshold = totalHeight - visibleHeight - 200;
 
+      console.log('[DocumentListingTable] Scroll Debug:', {
+        scrollOffset,
+        totalHeight,
+        visibleHeight,
+        scrollThreshold,
+        hasMore,
+        isFetchingMore,
+        shouldTrigger: scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold
+      });
+
       if (scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold && hasMore && !isFetchingMore) {
+        console.log('[DocumentListingTable] Triggering onLoadMore');
         onLoadMore?.();
       }
 
       lastScrollOffset.current = scrollOffset;
     },
-    [enableInfinite, useVirtualization, data.length, listHeight, hasMore, isFetchingMore, onLoadMore]
+    [useVirtualization, data.length, listHeight, hasMore, isFetchingMore, onLoadMore]
   );
 
   const isInitialLoading = isLoading && data.length === 0;
@@ -390,9 +423,10 @@ const DocumentListingTable = ({
         style={{ minWidth: useFlexDistribution ? undefined : `${totalRowWidth}px`, flex: 1, overflow: 'hidden' }}
       >
         {!hasNoData && useVirtualization && Array.isArray(data) ? (
-          <div style={{ height: containerHeight, width: effectiveWidth }} onScroll={handleScroll}>
+          <div style={{ height: containerHeight, width: effectiveWidth }}>
             <List
-              rowCount={data.length}
+              onScroll={handleScroll}
+              rowCount={data.length + (isFetchingMore ? (skeletonRowsCount || 1) : 0)}
               rowHeight={ROW_HEIGHT}
               rowComponent={VirtualizedRow}
               rowProps={{
@@ -403,6 +437,8 @@ const DocumentListingTable = ({
                 getMenuOptions,
                 keyExtractor,
                 useFlexDistribution,
+                isFetchingMore,
+                skeletonRowsCount
               }}
               style={{ height: containerHeight, width: effectiveWidth, overflowX: 'hidden' }}
             />
@@ -425,18 +461,10 @@ const DocumentListingTable = ({
           </>
         ) : null}
 
-        {!hasNoData && enableInfinite && hasMore && isFetchingMore &&
-          Array.from({ length: skeletonRowsCount }).map((_, index) => (
-            <SkeletonRow
-              key={`append-skeleton-${index}`}
-              columns={columns}
-              columnWidths={columnWidths}
-              useFlexDistribution={useFlexDistribution}
-            />
-          ))}
+
 
         {/* Infinite scroll sentinel(for non-virtualized) */}
-        {enableInfinite && !useVirtualization && <div ref={sentinelRef} style={{ height: 1 }} />}
+        {!useVirtualization && <div ref={sentinelRef} style={{ height: 1 }} />}
 
         {shouldShowEmptyState && (
           <div className="document-listing-overlay-blur p-absolute">

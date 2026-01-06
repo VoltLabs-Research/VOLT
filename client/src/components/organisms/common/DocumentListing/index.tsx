@@ -139,7 +139,6 @@ type DocumentListingProps = {
     getMenuOptions?: (item: any) => any[]
     emptyMessage?: string
     keyExtractor?: (item: any, index: number) => string | number
-    enableInfinite?: boolean
     hasMore?: boolean
     isFetchingMore?: boolean
     onLoadMore?: () => void
@@ -166,7 +165,6 @@ const DocumentListing = ({
     getMenuOptions,
     emptyMessage = 'No data available',
     keyExtractor: _keyExtractor = (item, index) => item?._id ?? item?.id ?? index,
-    enableInfinite,
     hasMore,
     isFetchingMore,
     onLoadMore,
@@ -343,7 +341,6 @@ const DocumentListing = ({
                         isLoading={isLoading}
                         getMenuOptions={wrappedGetMenuOptions}
                         emptyMessage={emptyMessage}
-                        enableInfinite={enableInfinite}
                         hasMore={activeHasMore}
                         isFetchingMore={isFetchingMore}
                         onLoadMore={activeLoadMore}

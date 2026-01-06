@@ -23,7 +23,7 @@ export default class AnalysisConfigController extends BaseController<any> {
 
         // Validate teamId is a valid ObjectId
         if (!mongoose.Types.ObjectId.isValid(teamId)) {
-            return { _id: new mongoose.Types.ObjectId() }; // Return impossible filter
+            return { _id: new mongoose.Types.ObjectId() };
         }
 
         // Find all trajectories that belong to this team

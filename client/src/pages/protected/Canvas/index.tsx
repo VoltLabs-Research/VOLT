@@ -36,9 +36,6 @@ const EditorPage: React.FC = () => {
     const scene3DRef = useRef<Scene3DRef>(null);
     const trajectoryId = rawTrajectoryId ?? '';
 
-    // Note: useTeamJobs() is called in use-app-initializer to persist across navigation
-
-    // Initialize keyboard shortcuts for canvas
     useKeyboardShortcuts();
     const setCurrentScope = useKeyboardShortcutsStore((s) => s.setCurrentScope);
 
@@ -74,18 +71,6 @@ const EditorPage: React.FC = () => {
             useEditorStore.getState().resetPlayback();
         };
     }, []);
-
-    // Set active scene with ID when trajectory is loaded
-    const setActiveScene = useEditorStore((s) => s.setActiveScene);
-    useEffect(() => {
-        if (trajectory?._id) {
-            setActiveScene({
-                sceneType: 'trajectory',
-                source: 'default',
-                id: trajectory._id
-            });
-        }
-    }, [trajectory?._id, setActiveScene]);
 
     // Memoize loading state calculation
     const showLoading = useMemo(() =>

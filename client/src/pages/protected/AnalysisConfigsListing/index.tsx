@@ -156,7 +156,6 @@ const AnalysisConfigsListing = () => {
             onMenuAction={handleMenuAction}
             getMenuOptions={getMenuOptions}
             emptyMessage="No analysis configs found"
-            enableInfinite
             {...lifecycleProps}
         />
     );

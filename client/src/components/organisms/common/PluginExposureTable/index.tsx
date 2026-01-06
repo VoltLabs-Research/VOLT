@@ -283,7 +283,6 @@ const PluginExposureTable = ({
             data={rows}
             isLoading={loading}
             emptyMessage={error ?? 'No documents found.'}
-            enableInfinite
             hasMore={listingMeta.hasMore}
             isFetchingMore={isFetchingMore}
             onLoadMore={handleLoadMore}

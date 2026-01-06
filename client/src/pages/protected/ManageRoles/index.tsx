@@ -181,7 +181,6 @@ const ManageRoles: React.FC = () => {
                 getMenuOptions={getMenuOptions}
                 emptyMessage="No roles found. Create your first custom role."
                 keyExtractor={(item) => item._id}
-                enableInfinite
                 hasMore={hasMore}
                 onLoadMore={handleLoadMore}
                 createNew={{

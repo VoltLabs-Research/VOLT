@@ -143,7 +143,6 @@ const SSHConnectionsListing = () => {
                 data={visibleConnections}
                 isLoading={loading}
                 emptyMessage="No SSH connections found. Create one to get started."
-                enableInfinite
                 hasMore={hasMore}
                 onLoadMore={handleLoadMore}
                 getMenuOptions={getMenuOptions}

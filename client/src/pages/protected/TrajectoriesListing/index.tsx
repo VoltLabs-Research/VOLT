@@ -109,8 +109,6 @@ const TrajectoriesListing = () => {
             onMenuAction={handleMenuAction}
             getMenuOptions={getMenuOptions}
             emptyMessage='No trajectories found'
-            enableInfinite
-
             {...lifecycleProps}
         />
     )

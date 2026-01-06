@@ -26,14 +26,14 @@ const PerAtomViewer = () => {
     const [properties, setProperties] = useState<string[]>([]);
     const [listingMeta, setListingMeta] = useState<ListingMeta>({
         page: 1,
-        limit: 50_000,
+        limit: 100,
         hasMore: false,
         total: 0
     });
     const [loading, setLoading] = useState(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const pageSize = 50_000;
+    const pageSize = 100;
 
     const fetchPage = useCallback(async (params: any) => {
         const { page: nextPage, force } = params;
@@ -161,7 +161,6 @@ const PerAtomViewer = () => {
             data={rows}
             isLoading={loading}
             emptyMessage={error ?? 'No atoms data found.'}
-            enableInfinite
             hasMore={listingMeta.hasMore}
             isFetchingMore={isFetchingMore}
             onLoadMore={handleLoadMore}

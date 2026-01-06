@@ -228,7 +228,6 @@ const PluginsListing = () => {
             isLoading={isLoading}
             getMenuOptions={getMenuOptions}
             emptyMessage='No plugins found. Create your first plugin!'
-            enableInfinite
             {...lifecycleProps}
             createNew={{
                 buttonTitle: 'New plugin',

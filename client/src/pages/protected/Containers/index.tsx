@@ -212,7 +212,7 @@ const Containers: React.FC = () => {
                 getMenuOptions={getMenuOptions}
                 emptyMessage='No containers found. Create one to get started.'
                 keyExtractor={(item) => item._id}
-                enableInfinite
+
 
                 {...lifecycleProps}
                 createNew={{
