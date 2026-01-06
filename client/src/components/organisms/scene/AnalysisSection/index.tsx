@@ -7,6 +7,8 @@ import Paragraph from '@/components/primitives/Paragraph';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import ExposureSkeleton from '@/components/atoms/scene/ExposureSkeleton';
+import CursorTooltip from '@/components/atoms/common/CursorTooltip';
+import AnalysisTooltipContent from '@/components/molecules/scene/AnalysisTooltipContent';
 
 import ExposureOption from '@/components/molecules/scene/ExposureOption';
 import { formatConfigValue, buildArgumentLabelMap } from '@/components/molecules/scene/CanvasSidebarScene/utils';
@@ -21,7 +23,6 @@ interface AnalysisSectionProps {
     differingFields: [string, any][];
     headerPopoverCallbacks: Map<string, (isOpen: boolean) => void>; // Callback map
     headerPopoverStates: Map<string, boolean>; // State map
-    setTooltip: (open: boolean, pos: { x: number, y: number }, content: any | null) => void;
     onSelectScene: (scene: any, analysis?: any) => void;
     onAddScene: (scene: any) => void;
     onRemoveScene: (scene: any) => void;
@@ -36,7 +37,6 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     onToggle,
     differingFields,
     headerPopoverCallbacks,
-    headerPopoverStates,
     onSelectScene,
     onAddScene,
     onRemoveScene,
@@ -44,6 +44,8 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     updateAnalysisConfig
 }) => {
     const [detailsLoading, setDetailsLoading] = useState(false);
+    const [tooltipOpen, setTooltipOpen] = useState(false);
+    const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
     const getPluginArguments = usePluginStore((s) => s.getPluginArguments);
     const setResultsViewerData = useUIStore((s) => s.setResultsViewerData);
 
@@ -58,8 +60,6 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     const entry = section.entry;
     const isLoaded = entry.state === 'loaded';
 
-
-
     return (
         <Container className='analysis-section'>
             <Popover
@@ -70,6 +70,14 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                     <Container
                         className='analysis-section-header d-flex column cursor-pointer'
                         onClick={() => onToggle(section.analysis._id)}
+                        onMouseEnter={(e) => {
+                            setTooltipOpen(true);
+                            setTooltipPos({ x: e.clientX, y: e.clientY });
+                        }}
+                        onMouseMove={(e) => {
+                            setTooltipPos({ x: e.clientX, y: e.clientY });
+                        }}
+                        onMouseLeave={() => setTooltipOpen(false)}
                     >
                         <Container className='d-flex items-center gap-05'>
                             <i
@@ -175,6 +183,13 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                     No visualizations available
                 </Paragraph>
             )}
+
+            <CursorTooltip
+                isOpen={tooltipOpen}
+                x={tooltipPos.x}
+                y={tooltipPos.y}
+                content={<AnalysisTooltipContent analysis={section} />}
+            />
         </Container>
     );
 };

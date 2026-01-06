@@ -1,4 +1,3 @@
-
 export const DEFAULT_ENTRY: any = { state: 'idle', exposures: [] };
 
 export const computeDifferingConfigFields = (
