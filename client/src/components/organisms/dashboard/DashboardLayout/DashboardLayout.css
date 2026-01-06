@@ -458,8 +458,8 @@
 /* Notification Badge */
 .notification-badge {
     position: absolute;
-    top: -2px;
-    right: -2px;
+    top: 8px;
+    right: 17px;
     font-size: 9px;
     font-weight: 600;
     min-width: 16px;
