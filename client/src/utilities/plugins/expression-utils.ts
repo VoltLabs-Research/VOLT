@@ -198,7 +198,11 @@ export const formatCellValue = (value: any, path: string): string => {
 
     if (typeof value === 'string') {
         if (path.toLowerCase().includes('createdat') || path.toLowerCase().endsWith('date')) {
-            return formatDistanceToNow(value);
+            try {
+                return formatDistanceToNow(new Date(value), { addSuffix: true });
+            } catch (e) {
+                return value;
+            }
         }
         return value;
     }
@@ -286,8 +290,14 @@ export const resolveDynamicColumns = (rows: any[], columns: ColumnDef[]): { colu
 export const normalizeRows = (rows: any[], columns: ColumnDef[]) => {
     return rows.map((row) => {
         const enriched = { ...row };
-        columns.forEach(({ path }) => {
-            const resolved = getValueByPath(row, path);
+        columns.forEach((col) => {
+            const { path, label } = col;
+            let resolved = getValueByPath(row, path);
+
+            if (resolved === undefined && label) {
+                resolved = getValueByPath(row, label);
+            }
+
             enriched[path] = formatCellValue(resolved, path);
         });
 

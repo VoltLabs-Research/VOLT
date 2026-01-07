@@ -57,7 +57,7 @@ const buildColumns = (columnDefs: ColumnDef[], showTrajectory = false): ColumnCo
         title: label,
         sortable: true,
         render: (_value: any, row: any) => {
-            const value = row[label];
+            const value = row[path];
             return formatCellValue(value, path);
         },
         skeleton: { variant: 'text' as const, width: 120 }
@@ -168,7 +168,7 @@ const PluginExposureTable = ({
                 }
             ) as ListingResponse;
 
-            const defs = (payload as any)?.meta?.columns && Array.isArray((payload as any).meta.columns)
+            const defs = (payload as any)?.meta?.columns && Array.isArray((payload as any).meta.columns) && (payload as any).meta.columns.length > 0
                 ? (payload as any).meta.columns as ColumnDef[]
                 : columnDefs;
 
