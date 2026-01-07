@@ -56,7 +56,6 @@ const DefaultSceneOption: React.FC<DefaultSceneOptionProps> = ({
             </PopoverMenuItem>
             <PopoverMenuItem
                 onClick={() => openExposureSettings(scene)}
-                icon={<TbSettings size={14} />}
             >
                 Settings
             </PopoverMenuItem>

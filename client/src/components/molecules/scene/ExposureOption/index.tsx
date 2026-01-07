@@ -69,7 +69,6 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
             </PopoverMenuItem>
             <PopoverMenuItem
                 onClick={() => openExposureSettings(sceneObject)}
-                icon={<TbSettings size={14} />}
             >
                 Settings
             </PopoverMenuItem>
