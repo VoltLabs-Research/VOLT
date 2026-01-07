@@ -294,7 +294,7 @@ const PluginExposureTable = ({
         <DocumentListing
             title={listingSlug}
             columns={columns}
-            data={rows}
+            data={displayRows}
             isLoading={loading}
             emptyMessage={error ?? 'No documents found.'}
             hasMore={listingMeta.hasMore}
