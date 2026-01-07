@@ -24,7 +24,6 @@ import React, { useMemo, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RiCloseLine } from 'react-icons/ri';
 import { useKeyboardShortcutsStore, type Shortcut } from '@/stores/slices/ui/keyboard-shortcuts-slice';
-import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 import './KeyboardShortcutsPanel.css';
 
@@ -60,7 +59,7 @@ const formatKeyName = (key: string): string => {
  * Visual key combination display
  */
 const KeyCombo: React.FC<{ keys: string[] }> = ({ keys }) => (
-    <div className="key-combo">
+    <div className="d-flex items-center key-combo">
         {keys.map((key, i) => (
             <Fragment key={key}>
                 {i > 0 && <span className="key-separator">+</span>}
@@ -115,7 +114,7 @@ const KeyboardShortcutsPanel: React.FC = () => {
                     onClick={handleBackdropClick}
                 >
                     <motion.div
-                        className="shortcuts-panel"
+                        className="d-flex column shortcuts-panel"
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -124,7 +123,7 @@ const KeyboardShortcutsPanel: React.FC = () => {
                         <header className="shortcuts-panel-header d-flex items-center content-between">
                             <Title className="font-size-4 font-weight-5">Keyboard Shortcuts</Title>
                             <button
-                                className="shortcuts-panel-close"
+                                className="d-flex items-center cursor-pointer shortcuts-panel-close"
                                 onClick={handleClose}
                                 aria-label="Close shortcuts panel"
                             >
@@ -138,9 +137,9 @@ const KeyboardShortcutsPanel: React.FC = () => {
                                     <h3 className="shortcuts-category-title">
                                         {formatCategoryTitle(category)}
                                     </h3>
-                                    <div className="shortcuts-list">
+                                    <div className="d-flex column shortcuts-list">
                                         {shortcuts.map((shortcut: Shortcut) => (
-                                            <div key={shortcut.id} className="shortcut-item">
+                                            <div key={shortcut.id} className="d-flex content-between items-center shortcut-item">
                                                 <span className="shortcut-description">
                                                     {shortcut.description}
                                                 </span>

@@ -163,9 +163,12 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         return {
             scale: boxTransforms.scale,
             position: {
-                x: boxTransforms.position.x + (position.x || 0),
-                y: boxTransforms.position.y + (position.y || 0),
-                z: boxTransforms.position.z + (position.z || 0)
+                // x: boxTransforms.position.x + (position.x || 0),
+                // y: boxTransforms.position.y + (position.y || 0),
+                // z: boxTransforms.position.z + (position.z || 0)
+                x: 0,
+                y: 0,
+                z: 0
             },
             groundOffset
         };
