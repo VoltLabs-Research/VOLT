@@ -8,14 +8,6 @@ interface NativeDataResult {
     metadata: {
         timestep: number;
         natoms: number;
-        boxBounds: {
-            xlo: number;
-            xhi: number;
-            ylo: number;
-            yhi: number;
-            zlo: number;
-            zhi: number;
-        };
         headers: string[];
     };
     min: [number, number, number];

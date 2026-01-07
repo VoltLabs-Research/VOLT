@@ -10,14 +10,6 @@ interface NativeDumpResult {
     metadata: {
         timestep: number;
         natoms: number;
-        boxBounds: {
-            xlo: number;
-            xhi: number;
-            ylo: number;
-            yhi: number;
-            zlo: number;
-            zhi: number;
-        };
         headers: string[];
     };
     min: [number, number, number];
@@ -98,7 +90,6 @@ export default class LammpsDumpParser {
     public parseMetadataOnly(headerLines: string[]): FrameMetadata {
         let timestep = 0;
         let natoms = 0;
-        let boxBounds = { xlo: 0, xhi: 0, ylo: 0, yhi: 0, zlo: 0, zhi: 0 };
         let headers: string[] = [];
         let simulationCell: any = {
             boundingBox: { width: 0, height: 0, length: 0 },
@@ -151,7 +142,6 @@ export default class LammpsDumpParser {
                     const zlo = zlo_bound;
                     const zhi = zhi_bound;
 
-                    boxBounds = { xlo, xhi, ylo, yhi, zlo, zhi };
 
                     simulationCell.geometry.cell_vectors = [
                         [xhi - xlo, 0, 0],
@@ -164,7 +154,6 @@ export default class LammpsDumpParser {
                     simulationCell.boundingBox.height = zhi - zlo;
 
                 } else { // Orthogonal
-                    boxBounds = { xlo: row1[0], xhi: row1[1], ylo: row2[0], yhi: row2[1], zlo: row3[0], zhi: row3[1] };
 
                     const lx = row1[1] - row1[0];
                     const ly = row2[1] - row2[0];
@@ -188,6 +177,6 @@ export default class LammpsDumpParser {
                 break;
             }
         }
-        return { timestep, natoms, boxBounds, headers, simulationCell };
+        return { timestep, natoms, headers, simulationCell };
     }
 }

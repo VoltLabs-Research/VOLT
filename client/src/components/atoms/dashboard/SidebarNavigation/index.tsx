@@ -30,6 +30,8 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
     const [expandedPlugins, setExpandedPlugins] = useState<Set<string>>(new Set());
     const [exposures, setExposures] = useState<IListingsWithExposures[]>([]);
     const [isLoadingExposures, setIsLoadingExposures] = useState(true);
+    const [trajectoriesExpanded, setTrajectoriesExpanded] = useState(false);
+
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const teams = useTeamStore((state) => state.teams);
@@ -102,7 +104,6 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
     const mainNavItems: Array<[string, IconType, string]> = useMemo(() => ([
         ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
         ['Containers', IoCubeOutline, '/dashboard/containers'],
-        ['Trajectories', TbCube3dSphere, '/dashboard/trajectories/list'],
     ]), []);
 
     const secondaryNavItems: Array<[string, IconType, string]> = useMemo(() => ([
@@ -133,6 +134,45 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
                     <span className='sidebar-nav-label'>{name}</span>
                 </button>
             ))}
+
+            {/* Trajectories Dropdown */}
+            <button
+                className={`sidebar-nav-item sidebar-section-header ${pathname.includes('/trajectories') || pathname.includes('/simulation-cells') ? 'is-selected' : ''}`}
+                onClick={() => setTrajectoriesExpanded(!trajectoriesExpanded)}
+            >
+                <span className="sidebar-nav-icon">
+                    <TbCube3dSphere />
+                </span>
+                <span className="sidebar-nav-label">Trajectories</span>
+                <IoChevronDown
+                    className={`sidebar-section-chevron ${trajectoriesExpanded ? 'is-expanded' : ''}`}
+                    size={14}
+                />
+            </button>
+
+            {trajectoriesExpanded && (
+                <div className="sidebar-sub-items">
+                    <button
+                        className={`sidebar-sub-item ${pathname === '/dashboard/trajectories/list' ? 'is-selected' : ''}`}
+                        onClick={() => {
+                            navigate('/dashboard/trajectories/list');
+                            setSidebarOpen(false);
+                        }}
+                    >
+                        View All
+                    </button>
+                    <button
+                        className={`sidebar-sub-item ${pathname === '/dashboard/simulation-cells/list' ? 'is-selected' : ''}`}
+                        onClick={() => {
+                            navigate('/dashboard/simulation-cells/list');
+                            setSidebarOpen(false);
+                        }}
+                    >
+                        Simulation Cells
+                    </button>
+                </div>
+            )}
+
 
             {/* Analysis Configs Dropdown */}
             <button

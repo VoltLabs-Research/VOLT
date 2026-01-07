@@ -1,4 +1,4 @@
-export enum Resource{
+export enum Resource {
     ANALYSIS = 'analysis',
     API_TRACKER = 'api-tracker',
     AUTH = 'authentication',
@@ -21,5 +21,6 @@ export enum Resource{
     TEAM_ROLE = 'team-role',
     TEAM = 'team',
     TRAJECTORY = 'trajectory',
-    TRAJECTORY_VIRTUAL_FS = 'trajectory-virtual-fs'
+    TRAJECTORY_VIRTUAL_FS = 'trajectory-virtual-fs',
+    SIMULATION_CELL = 'simulation-cell'
 };

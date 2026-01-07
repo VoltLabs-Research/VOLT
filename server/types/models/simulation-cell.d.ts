@@ -76,4 +76,7 @@ export interface ISimulationCellBoundingBox {
 export interface ISimulationCell extends Document {
     boundingBox: ISimulationCellBoundingBox;
     geometry: ISimulationCellGeometry;
+    team: Types.ObjectId;
+    trajectory: Types.ObjectId;
+    timestep: number;
 }

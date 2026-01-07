@@ -103,7 +103,9 @@ configureApp({
         'ssh-file-explorer',
         'containers',
         'system',
-        'particle-filter'
+        'system',
+        'particle-filter',
+        'simulation-cells'
     ],
     middlewares: [
         apiTracker,

@@ -20,20 +20,12 @@
  * SOFTWARE.
  */
 
-export interface TimestepInfo{
+export interface TimestepInfo {
     timestep: number;
     natoms: number;
-    boxBounds: {
-        xlo: number;
-        xhi: number;
-        ylo: number;
-        yhi: number;
-        zlo: number;
-        zhi: number;
-    }
 }
 
-export interface LammpsAtom{
+export interface LammpsAtom {
     id: number;
     type: number;
     x: number;

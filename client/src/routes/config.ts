@@ -33,6 +33,7 @@ import PluginListing from '@/pages/protected/PluginListing';
 import Plugins from '@/pages/protected/Plugins';
 import AnalysisConfigsListing from '@/pages/protected/AnalysisConfigsListing';
 import TrajectoriesListing from '@/pages/protected/TrajectoriesListing';
+import SimulationCellsListing from '@/pages/protected/SimulationCellsListing';
 import {
     GeneralPage,
     AuthenticationPage,
@@ -113,6 +114,11 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/trajectories/list',
             component: TrajectoriesListing,
+            requiresLayout: true,
+        },
+        {
+            path: '/dashboard/simulation-cells/list',
+            component: SimulationCellsListing,
             requiresLayout: true,
         },
         {

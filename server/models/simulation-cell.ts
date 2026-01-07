@@ -16,6 +16,20 @@ const SimulationCellSchema: Schema<ISimulationCell> = new Schema({
             y: { type: Boolean, required: true },
             z: { type: Boolean, required: true }
         }
+    },
+    team: {
+        type: Schema.Types.ObjectId,
+        ref: 'Team',
+        required: true
+    },
+    trajectory: {
+        type: Schema.Types.ObjectId,
+        ref: 'Trajectory',
+        required: true
+    },
+    timestep: {
+        type: Number,
+        required: true
     }
 }, {
     timestamps: true

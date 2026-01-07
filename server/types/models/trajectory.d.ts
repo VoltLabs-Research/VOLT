@@ -40,7 +40,6 @@ export interface IBoxBounds {
 export interface ITimestepInfo {
     timestep: number;
     natoms: number;
-    boxBounds: IBoxBounds;
     simulationCell: Types.ObjectId;
 }
 

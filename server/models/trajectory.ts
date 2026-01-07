@@ -38,14 +38,6 @@ import TempFileManager from '@/services/temp-file-manager';
 const TimestepInfoSchema: Schema<ITimestepInfo> = new Schema({
     timestep: { type: Number, required: true },
     natoms: { type: Number, required: true },
-    boxBounds: {
-        xlo: { type: Number, required: true },
-        xhi: { type: Number, required: true },
-        ylo: { type: Number, required: true },
-        yhi: { type: Number, required: true },
-        zlo: { type: Number, required: true },
-        zhi: { type: Number, required: true },
-    },
     simulationCell: {
         type: Schema.Types.ObjectId,
         ref: 'SimulationCell',
