@@ -51,16 +51,6 @@ interface ReadBinaryFileResult {
     metadata: Record<string, any>
 }
 
-export const listGlbFiles = async (dir: string, out: string[] = []): Promise<string[]> => {
-    const entries = await readdir(dir, { withFileTypes: true });
-    for (const e of entries) {
-        if (!e.isFile()) continue;
-        if (!/\.(glb|gltf)$/i.test(e.name)) continue;
-        out.push(join(dir, e.name));
-    }
-    return out;
-};
-
 export const readBinaryFile = async (
     filePath: string,
     options: ReadBinaryFileOptions = {}

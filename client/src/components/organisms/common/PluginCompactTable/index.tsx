@@ -54,6 +54,7 @@ interface PluginCompactTableProps {
     onLoadMore?: () => void;
     error?: string | null;
     rowHeight?: number;
+    onDataReady?: (columns: ColumnConfig[], data: any[]) => void;
 }
 
 const PluginCompactTable = ({
@@ -65,6 +66,7 @@ const PluginCompactTable = ({
     onLoadMore,
     error,
     rowHeight = 28,
+    onDataReady,
 }: PluginCompactTableProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [height, setHeight] = useState(400);
@@ -82,6 +84,13 @@ const PluginCompactTable = ({
         observer.observe(containerRef.current);
         return () => observer.disconnect();
     }, []);
+
+    // Notify parent when data is ready for export
+    useEffect(() => {
+        if (onDataReady && columns.length > 0 && data.length > 0) {
+            onDataReady(columns, data);
+        }
+    }, [columns, data, onDataReady]);
 
     const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
         if (!hasMore || isLoading || isFetchingMore || !onLoadMore) return;
@@ -108,12 +117,12 @@ const PluginCompactTable = ({
     }
 
     return (
-        <div 
-            className="plugin-exposure-table-compact" 
-            ref={containerRef} 
-            style={{ 
-                height: '100%', 
-                display: 'flex', 
+        <div
+            className="plugin-exposure-table-compact"
+            ref={containerRef}
+            style={{
+                height: '100%',
+                display: 'flex',
                 flexDirection: 'column',
                 overflowX: 'auto',
                 overflowY: 'auto'

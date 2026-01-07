@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { BaseProcessingQueue } from '@/queues/base-processing-queue';
+import { BaseProcessingQueue } from '@/queues/base';
 import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { Queues } from '@/constants/queues';
 import { Trajectory } from '@/models';
@@ -28,8 +28,8 @@ import { RasterizerJob } from '@/types/services/rasterizer-queue';
 import path from 'path';
 import logger from '@/logger';
 
-export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
-    constructor(){
+export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob> {
+    constructor() {
         const options: QueueOptions = {
             queueName: Queues.RASTERIZER,
             workerPath: path.resolve(__dirname, '../workers/headless-rasterizer.ts'),
@@ -48,10 +48,10 @@ export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
         });
     }
 
-    private async onJobCompleted(data: any): Promise<void>{
+    private async onJobCompleted(data: any): Promise<void> {
         const job = data.job as RasterizerJob;
 
-        try{
+        try {
             logger.info(`Rasterizer job completed for trajectory ${job.trajectoryId}, updating trajectory updatedAt`);
 
             // Update trajectory to trigger preview refresh on client
@@ -61,15 +61,15 @@ export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob>{
                 { new: true }
             );
 
-            if(trajectory){
+            if (trajectory) {
                 logger.info(`Updated trajectory ${job.trajectoryId} timestamp`);
             }
-        }catch(error){
+        } catch (error) {
             logger.error(`Failed to update trajectory ${job.trajectoryId} after rasterizer completion: ${error}`);
         }
     }
 
-    protected deserializeJob(rawData: string): RasterizerJob{
+    protected deserializeJob(rawData: string): RasterizerJob {
         return JSON.parse(rawData) as RasterizerJob;
     }
 }

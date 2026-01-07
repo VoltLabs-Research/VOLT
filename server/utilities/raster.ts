@@ -150,17 +150,3 @@ export const getAnyTrajectoryPreview = async (
 
     return null;
 };
-
-/**
- * Get a specific timestep's rasterized preview.
- * Used when the user explicitly requests a specific frame's preview.
- */
-export const getTimestepPreview = async (
-    trajectoryId: string,
-    timestep: number
-): Promise<{ buffer: Buffer, etag: string }> => {
-    const objectName = `trajectory-${trajectoryId}/previews/timestep-${timestep}.png`;
-    const buffer = await storage.getBuffer(SYS_BUCKETS.RASTERIZER, objectName);
-    const etag = `"trajectory-preview-${trajectoryId}"`;
-    return { buffer, etag };
-};

@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { BaseProcessingQueue } from '@/queues/base-processing-queue';
+import { BaseProcessingQueue } from '@/queues/base';
 import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { Queues } from '@/constants/queues';
 import { SSHImportJob } from '@/types/services/ssh-import-queue';

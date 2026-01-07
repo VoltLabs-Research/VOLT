@@ -61,7 +61,7 @@ let metricsCollector: MetricsCollector | null = null;
 let collectionInterval: NodeJS.Timeout | null = null;
 let cleanupInterval: NodeJS.Timeout | null = null;
 
-const shutodwn = async () => {
+const shutdown = async () => {
     // Stop metrics collection
     if (collectionInterval) clearInterval(collectionInterval);
     if (cleanupInterval) clearInterval(cleanupInterval);
@@ -162,6 +162,6 @@ server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
 
     logger.info(`Server running at http://${SERVER_HOST}:${SERVER_PORT}/`);
 
-    process.on('SIGTERM', shutodwn);
-    process.on('SIGINT', shutodwn);
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
 });

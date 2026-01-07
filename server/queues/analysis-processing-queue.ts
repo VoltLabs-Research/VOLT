@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { BaseProcessingQueue } from '@/queues/base-processing-queue';
+import { BaseProcessingQueue } from '@/queues/base';
 import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import path from 'path';
@@ -73,6 +73,27 @@ export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob> {
                 await this.processWatchdog();
             } catch (e) { /* ignore */ }
         }, 30000);
+    }
+
+    /**
+     * Process jobs that were waiting for an upload to complete
+     */
+    private async processPendingUploads(trajectoryId: string, timestep: number): Promise<void> {
+        const waitListKey = `waiting:upload:${trajectoryId}:${timestep}`;
+
+        // Move all waiting jobs back to the main queue
+        const lua = `
+            local waiting = redis.call('LRANGE', KEYS[1], 0, -1)
+            if #waiting > 0 then
+                for i, job in ipairs(waiting) do
+                    redis.call('LPUSH', KEYS[2], job)
+                end
+                redis.call('DEL', KEYS[1])
+            end
+            return #waiting
+        `;
+
+        await this.redis.eval(lua, 2, waitListKey, this.queueKey);
     }
 
     private async processWatchdog() {

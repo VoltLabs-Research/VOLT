@@ -49,6 +49,7 @@ export interface PluginExposureTableProps {
     compact?: boolean;
     showTrajectoryColumn?: boolean;
     headerActions?: React.ReactNode;
+    onDataReady?: (columns: any[], data: any[]) => void;
 }
 
 const buildColumns = (columnDefs: ColumnDef[], showTrajectory = false): ColumnConfig[] => {
@@ -96,7 +97,8 @@ const PluginExposureTable = ({
     teamId,
     compact = false,
     showTrajectoryColumn,
-    headerActions
+    headerActions,
+    onDataReady
 }: PluginExposureTableProps) => {
     const navigate = useNavigate();
     const { confirm } = useConfirm();
@@ -272,6 +274,7 @@ const PluginExposureTable = ({
                 isFetchingMore={isFetchingMore}
                 onLoadMore={handleLoadMore}
                 error={error}
+                onDataReady={onDataReady}
             />
         );
     }

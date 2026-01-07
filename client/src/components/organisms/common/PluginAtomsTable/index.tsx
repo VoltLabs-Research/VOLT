@@ -12,6 +12,7 @@ interface PluginAtomsTableProps {
     trajectoryId: string;
     analysisId: string;
     exposureId: string;
+    onDataReady?: (columns: ColumnConfig[], data: any[]) => void;
 }
 
 const TYPE_PALETTE = [
@@ -32,6 +33,7 @@ const PluginAtomsTable = ({
     trajectoryId,
     analysisId,
     exposureId,
+    onDataReady,
 }: PluginAtomsTableProps) => {
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
 
@@ -144,6 +146,7 @@ const PluginAtomsTable = ({
             isFetchingMore={isFetchingMore}
             onLoadMore={handleLoadMore}
             error={error}
+            onDataReady={onDataReady}
         />
     );
 };

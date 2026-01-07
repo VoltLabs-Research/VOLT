@@ -38,18 +38,6 @@ export const findAncestorByType = (nodeId: string, workflow: IWorkflow, type: No
 };
 
 /**
- * Find immediate child node of specified type
- */
-export const findChildByType = (nodeId: string, workflow: IWorkflow, type: NodeType): IWorkflowNode | null => {
-    const childEdges = workflow.edges.filter((edge) => edge.source === nodeId);
-    for(const edge of childEdges){
-        const childNode= workflow.nodes.find((node) => node.id === edge.target);
-        if(childNode?.type === type) return childNode;
-    }
-    return null;
-};
-
-/**
  * Find descendant node of specified type(BFS)
  */
 export const findDescendantByType = (nodeId: string, workflow: IWorkflow, type: NodeType): IWorkflowNode | null => {

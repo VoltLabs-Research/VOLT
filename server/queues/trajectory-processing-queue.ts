@@ -22,7 +22,7 @@
 
 import { QueueOptions } from '@/types/queues/base-processing-queue';
 import { TrajectoryProcessingJob } from '@/types/queues/trajectory-processing-queue';
-import { BaseProcessingQueue } from './base-processing-queue';
+import { BaseProcessingQueue } from '@/queues/base';
 import { Trajectory } from '@/models';
 import { rasterizeGLBs } from '@/utilities/raster';
 import { SYS_BUCKETS } from '@/config/minio';

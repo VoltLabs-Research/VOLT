@@ -53,10 +53,7 @@ const main = async (): Promise<void> => {
         await mongoConnector();
         logger.info('[Worker] MongoDB connection established');
 
-        // Recover trajectory job counters
-        const trajectoryJobTracker = (await import('@/services/trajectory-job-tracker')).default;
-        await trajectoryJobTracker.recoverCounters();
-        logger.info('[Worker] Trajectory job counters recovered');
+        // Job cleanup is now handled automatically via EventBus
 
         // Initialize queues
         // This triggers the startup recovery and dispatch loop for each queue

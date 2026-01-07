@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-import { useState, useMemo } from 'react';
-import { RiCloseLine } from 'react-icons/ri';
+import { useState, useMemo, useCallback, useRef } from 'react';
+import { RiCloseLine, RiDownloadLine } from 'react-icons/ri';
 import PluginExposureTable from '@/components/organisms/common/PluginExposureTable';
 import PluginAtomsTable from '@/components/organisms/common/PluginAtomsTable';
 import Container from '@/components/primitives/Container';
@@ -31,6 +31,7 @@ import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import { useTeamStore } from '@/stores/slices/team';
 import type { RenderableExposure } from '@/stores/slices/plugin/plugin-slice';
+import { exportToXlsx, type ColumnConfig } from '@/utilities/xlsx/export-xlsx';
 import './PluginResultsViewer.css';
 
 interface PluginResultsViewerProps {
@@ -51,6 +52,9 @@ const PluginResultsViewer = ({
     const team = useTeamStore((state) => state.selectedTeam);
 
     const [activeTab, setActiveTab] = useState(0);
+
+    // Refs to store the current data for download
+    const currentDataRef = useRef<{ columns: ColumnConfig[]; data: any[] }>({ columns: [], data: [] });
 
     // Get exposure names that have listings (visualizers with listing config)
     const listingExposures = useMemo(() => {
@@ -91,6 +95,28 @@ const PluginResultsViewer = ({
         return atomExposure?._id || exposures[0]?.exposureId;
     }, [exposures, pluginSlug]);
 
+    // Handle data ready callback from child tables
+    const handleDataReady = useCallback((columns: ColumnConfig[], data: any[]) => {
+        currentDataRef.current = { columns, data };
+    }, []);
+
+    // Handle download button click
+    const handleDownload = useCallback(() => {
+        const { columns, data } = currentDataRef.current;
+        if (columns.length === 0 || data.length === 0) {
+            return; // No data to download
+        }
+
+        // Generate filename based on active tab
+        const tabName = isAtomsTabActive
+            ? 'Atoms'
+            : (activeExposure?.name || 'data');
+        const sanitizedTabName = tabName.replace(/[^a-zA-Z0-9]/g, '_');
+        const filename = `${pluginName}_${sanitizedTabName}`;
+
+        exportToXlsx(columns, data, { filename, sheetName: tabName });
+    }, [isAtomsTabActive, activeExposure, pluginName]);
+
     if (listingExposures.length === 0 && !hasAtomsTab) {
         return (
             <Container className='plugin-results-viewer-container d-flex column'>
@@ -112,9 +138,18 @@ const PluginResultsViewer = ({
             {/* Header */}
             <Container className='plugin-results-header d-flex items-center content-between p-1'>
                 <Title className='font-size-3 font-weight-5'>{pluginName}</Title>
-                <i className='plugin-results-close cursor-pointer' onClick={closeResultsViewer}>
-                    <RiCloseLine size={20} />
-                </i>
+                <Container className='d-flex items-center gap-05'>
+                    <i
+                        className='plugin-results-download cursor-pointer'
+                        onClick={handleDownload}
+                        title='Download as XLSX'
+                    >
+                        <RiDownloadLine size={18} />
+                    </i>
+                    <i className='plugin-results-close cursor-pointer' onClick={closeResultsViewer}>
+                        <RiCloseLine size={20} />
+                    </i>
+                </Container>
             </Container>
 
             {/* Tabs */}
@@ -148,6 +183,7 @@ const PluginResultsViewer = ({
                         trajectoryId={trajectory?._id}
                         teamId={team?._id}
                         compact
+                        onDataReady={handleDataReady}
                     />
                 )}
                 {isAtomsTabActive && (
@@ -155,6 +191,7 @@ const PluginResultsViewer = ({
                         trajectoryId={trajectory!._id}
                         analysisId={analysisId}
                         exposureId={atomExposureId}
+                        onDataReady={handleDataReady}
                     />
                 )}
             </Container>

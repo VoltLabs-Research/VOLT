@@ -282,13 +282,6 @@ export default class AtomProperties {
         return undefined;
     }
 
-    /**
-     * Evaluate filter expression on property values (ultra-fast native implementation)
-     * Handles 50M+ atoms efficiently
-     */
-    /**
-     * Evaluate filter expression on property values (JS implementation to fix native bug)
-     */
     public evaluateFilter(values: Float32Array, operator: string, compareValue: number): FilterResult {
         const mask = new Uint8Array(values.length);
         let matchCount = 0;
