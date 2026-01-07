@@ -108,8 +108,12 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     // Get box bounds from store
     const trajectory = useTrajectoryStore(state => state.trajectory);
     const boxBounds = useMemo(() => {
-        if (!trajectory || !currentTimestep) return undefined;
-        const frame = trajectory.frames?.find(f => f.timestep === currentTimestep);
+        if (!trajectory || currentTimestep === undefined) return undefined;
+        let frame = trajectory.frames?.find(f => f.timestep === currentTimestep);
+
+        if (!frame?.simulationCell) {
+            frame = trajectory.frames?.find(f => f.simulationCell);
+        }
 
         if (frame?.simulationCell) {
             // @ts-ignore
@@ -133,16 +137,7 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     // Calcular transformaciones desde boxBounds
     const boxTransforms = useMemo(() => {
         if (!boxBounds) return { scale: 1, position: { x: 0, y: 0, z: 0 }, maxDimension: 1, center: { x: 0, y: 0, z: 0 } };
-
-        const transforms = calculateBoxTransforms(boxBounds);
-
-        const multiplier = 2.0;
-        transforms.scale *= multiplier;
-        transforms.position.x *= multiplier;
-        transforms.position.y *= multiplier;
-        transforms.position.z *= multiplier;
-
-        return transforms;
+        return calculateBoxTransforms(boxBounds);
     }, [boxBounds]);
 
     // Compute scene key for per-scene settings like opacity
