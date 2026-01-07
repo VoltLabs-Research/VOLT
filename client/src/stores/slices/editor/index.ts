@@ -56,7 +56,7 @@ export const useEditorStore = create<EditorStore>()(
             ...createRendererStatsSlice(...args),
         }),
         {
-            name: 'editor-storage',
+            name: 'editor-storage-v2',
             partialize: (state) => ({
                 camera: state.camera,
                 grid: state.grid,
