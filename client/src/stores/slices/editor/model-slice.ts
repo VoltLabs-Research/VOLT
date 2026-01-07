@@ -6,7 +6,8 @@ const initialState: ModelState = {
     activeScene: { sceneType: 'trajectory', source: 'default' } as any,
     activeScenes: [{ sceneType: 'trajectory', source: 'default' } as any],
     isModelLoading: false,
-    pointSizeMultiplier: 1.0
+    pointSizeMultiplier: 1.0,
+    sceneOpacities: {}
 };
 
 export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get) => ({
@@ -104,5 +105,18 @@ export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get
         set((state: ModelState) => ({
             pointSizeMultiplier: Math.max(0.1, state.pointSizeMultiplier - 0.1)
         }));
+    },
+
+    setSceneOpacity(sceneKey: string, opacity: number) {
+        set((state: ModelState) => ({
+            sceneOpacities: {
+                ...state.sceneOpacities,
+                [sceneKey]: Math.max(0, Math.min(1, opacity))
+            }
+        }));
+    },
+
+    getSceneOpacity(sceneKey: string): number {
+        return get().sceneOpacities[sceneKey] ?? 1.0;
     }
 });

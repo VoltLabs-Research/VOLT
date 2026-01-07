@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { RenderableExposure } from '@/stores/slices/plugin/plugin-slice';
+import type { SceneObjectType } from '@/types/stores/editor/model';
 
 export interface ActiveModifier {
     key: string;
@@ -22,6 +23,7 @@ export interface EditorUIState {
     activeModifiers: ActiveModifier[];
     isSceneInteracting: boolean;
     resultsViewerData: ResultsViewerData | null;
+    exposureSettingsScene: SceneObjectType | null;
 }
 
 export interface EditorUIActions {
@@ -33,6 +35,8 @@ export interface EditorUIActions {
     setResultsViewerData: (data: ResultsViewerData | null) => void;
     closeResultsViewer: () => void;
     resetEditorUI: () => void;
+    openExposureSettings: (scene: SceneObjectType) => void;
+    closeExposureSettings: () => void;
 }
 
 export type EditorUISlice = EditorUIState & EditorUIActions;
@@ -43,7 +47,8 @@ const initialState: EditorUIState = {
     showRenderConfig: false,
     activeModifiers: [],
     isSceneInteracting: false,
-    resultsViewerData: null
+    resultsViewerData: null,
+    exposureSettingsScene: null
 };
 
 export const createEditorUISlice: StateCreator<any, [], [], EditorUISlice> = (set, get) => ({
@@ -101,5 +106,13 @@ export const createEditorUISlice: StateCreator<any, [], [], EditorUISlice> = (se
 
     resetEditorUI() {
         set(initialState);
+    },
+
+    openExposureSettings(scene: SceneObjectType) {
+        set({ exposureSettingsScene: scene });
+    },
+
+    closeExposureSettings() {
+        set({ exposureSettingsScene: null });
     }
 });

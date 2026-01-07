@@ -31,6 +31,7 @@ uniform float specularFactor;
 uniform float shininess;
 uniform float rimFactor;
 uniform float rimPower;
+uniform float opacity;
 
 /**
  * Fragment shader for rendering cicular point sprites with a "fake sphere" normal
@@ -64,18 +65,18 @@ void main(){
     vec3 ambientColor = vColor * ambientFactor;
     vec3 diffuseColor = vColor * diffuse * diffuseFactor;
     
-    // Specular (Blinn-Phong).
+    // Specular (Blinn-Phong) - scaled by opacity to avoid bright highlights on transparent surfaces
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(fakeNormal, halfwayDir), 0.0), shininess);
-    vec3 specularColor = vec3(0.8) * spec * specularFactor;
+    vec3 specularColor = vec3(0.8) * spec * specularFactor * opacity;
     
-    // Rim lighting.
+    // Rim lighting - scaled by opacity to avoid bright edges on transparent surfaces
     float rimDot = 1.0 - max(dot(viewDir, fakeNormal), 0.0);
     float rim = pow(rimDot, rimPower);
-    vec3 rimColor = vec3(0.5) * rim * rimFactor; 
+    vec3 rimColor = vec3(0.5) * rim * rimFactor * opacity; 
     
     // Final mix emphasizes the base color by down-weighting specular and rim.
     vec3 finalColor = ambientColor + diffuseColor + specularColor * 0.3 + rimColor * 0.2;
     
-    gl_FragColor = vec4(finalColor, 1.0);
+    gl_FragColor = vec4(finalColor, opacity);
 }

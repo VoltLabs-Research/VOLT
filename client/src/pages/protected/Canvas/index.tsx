@@ -19,6 +19,7 @@ import { useKeyboardShortcutsStore } from '@/stores/slices/ui/keyboard-shortcuts
 import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
 import Loader from '@/components/atoms/common/Loader';
 import Container from '@/components/primitives/Container';
+import ExposureSettingsWidget from '@/components/molecules/scene/ExposureSettingsWidget';
 import './Canvas.css';
 
 const CANVAS_CONFIG = {
@@ -112,6 +113,9 @@ const EditorPage: React.FC = () => {
             {/* Keyboard Shortcuts UI */}
             <KeyboardShortcutsPanel />
             <ShortcutFeedback />
+
+            {/* Scene Settings Widget */}
+            <ExposureSettingsWidget />
         </Container>
     );
 };

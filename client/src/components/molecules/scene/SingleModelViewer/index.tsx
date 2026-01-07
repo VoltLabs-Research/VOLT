@@ -136,6 +136,14 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         return calculateBoxTransforms(boxBounds);
     }, [boxBounds]);
 
+    // Compute scene key for per-scene settings like opacity
+    const sceneKey = useMemo(() => {
+        if (sceneConfig.source === 'plugin') {
+            return `plugin-${sceneConfig.analysisId}-${sceneConfig.exposureId}`;
+        }
+        return `${sceneConfig.source}-${sceneConfig.sceneType}`;
+    }, [sceneConfig]);
+
     const { modelBounds, deselect, model, setSimBoxMesh } = useGlbScene({
         url,
         sliceClippingPlanes,
@@ -155,7 +163,8 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         onSelect,
         orbitControlsRef,
         onEmptyData: handleEmptyData,
-        disableAutoTransform: true
+        disableAutoTransform: true,
+        sceneKey
     });
 
     React.useEffect(() => {

@@ -74,7 +74,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                         className='analysis-section-header d-flex column cursor-pointer'
                         onClick={() => {
                             onToggle(section.analysis._id);
-                            if(analysisConfig._id === section.analysis._id){
+                            if (analysisConfig._id === section.analysis._id) {
                                 return;
                             }
                             updateAnalysisConfig(section.analysis);

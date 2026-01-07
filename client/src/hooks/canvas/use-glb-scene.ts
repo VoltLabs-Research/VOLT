@@ -38,7 +38,6 @@ import AnimationController from '@/utilities/glb/scene/animation-controller';
 import InteractionController from '@/utilities/glb/scene/interaction-controllers';
 import useThrottledCallback from '@/hooks/ui/use-throttled-callback';
 
-
 export default function useGlbScene(params: UseGlbSceneParams) {
     const { scene, camera, gl, invalidate } = useThree();
     const logger = useLogger('use-glb-scene');
@@ -50,6 +49,7 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     const setModelBounds = useEditorStore((s) => s.setModelBounds);
     const setIsModelLoading = useEditorStore((s) => s.setIsModelLoading);
     const pointSizeMultiplier = useEditorStore((s) => s.pointSizeMultiplier);
+    const sceneOpacities = useEditorStore((s) => s.sceneOpacities);
 
     const stateRef = useRef<ExtendedSceneState>({
         model: null,
@@ -205,6 +205,31 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             invalidate();
         }
     }, [pointSizeMultiplier, invalidate, loadingState.isLoading]);
+
+    // Apply opacity from scene settings
+    useEffect(() => {
+        if (!model || !params.sceneKey) return;
+
+        const opacity = sceneOpacities[params.sceneKey] ?? 1.0;
+
+        model.traverse((child) => {
+            if (child instanceof THREE.Points && child.material) {
+                // Handle point cloud with ShaderMaterial
+                const mat = child.material as THREE.ShaderMaterial;
+                if (mat.uniforms?.opacity) {
+                    mat.uniforms.opacity.value = opacity;
+                }
+            } else if (child instanceof THREE.Mesh && child.material) {
+                // Handle mesh with MeshStandardMaterial or similar
+                const mat = child.material as THREE.Material;
+                mat.transparent = opacity < 1.0;
+                mat.opacity = opacity;
+                mat.needsUpdate = true;
+            }
+        });
+
+        invalidate();
+    }, [model, sceneOpacities, params.sceneKey, invalidate]);
 
     const getTargetUrl = useCallback((): string | null => {
         return params.url ?? null;

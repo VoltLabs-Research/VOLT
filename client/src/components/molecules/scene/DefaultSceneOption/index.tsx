@@ -1,8 +1,9 @@
 import React from 'react';
-import { TbObjectScan } from 'react-icons/tb';
+import { TbObjectScan, TbSettings } from 'react-icons/tb';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
+import { useUIStore } from '@/stores/slices/ui';
 
 interface DefaultSceneOptionProps {
     onSelect: (scene: any) => void;
@@ -17,6 +18,8 @@ const DefaultSceneOption: React.FC<DefaultSceneOptionProps> = ({
     onRemove,
     isSceneActive
 }) => {
+    const openExposureSettings = useUIStore((s) => s.openExposureSettings);
+
     const scene = { sceneType: 'trajectory', source: 'default' as const };
     const option = {
         Icon: TbObjectScan,
@@ -50,6 +53,12 @@ const DefaultSceneOption: React.FC<DefaultSceneOptionProps> = ({
                 disabled={!active}
             >
                 Remove from scene
+            </PopoverMenuItem>
+            <PopoverMenuItem
+                onClick={() => openExposureSettings(scene)}
+                icon={<TbSettings size={14} />}
+            >
+                Settings
             </PopoverMenuItem>
         </Popover>
     );

@@ -1,9 +1,10 @@
 import React from 'react';
-import { TbObjectScan } from 'react-icons/tb';
+import { TbObjectScan, TbSettings } from 'react-icons/tb';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
+import { useUIStore } from '@/stores/slices/ui';
 
 interface ExposureOptionProps {
     exposure: any;
@@ -24,6 +25,8 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
     onRemove,
     isActive
 }) => {
+    const openExposureSettings = useUIStore((s) => s.openExposureSettings);
+
     const sceneObject = {
         sceneType: exposure.exposureId,
         source: 'plugin' as const,
@@ -63,6 +66,12 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
                 disabled={!isActive}
             >
                 Remove from scene
+            </PopoverMenuItem>
+            <PopoverMenuItem
+                onClick={() => openExposureSettings(sceneObject)}
+                icon={<TbSettings size={14} />}
+            >
+                Settings
             </PopoverMenuItem>
         </Popover>
     );

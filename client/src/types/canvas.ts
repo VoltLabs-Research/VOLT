@@ -23,6 +23,7 @@ export type UseGlbSceneParams = {
     orbitControlsRef?: React.RefObject<any>;
     onEmptyData?: () => void;
     disableAutoTransform?: boolean;
+    sceneKey?: string; // Key for scene-specific settings like opacity
 };
 
 export interface ExtendedSceneState extends SceneState {

@@ -45,6 +45,7 @@ export interface ModelState {
     activeModel: ModelData | null;
     isModelLoading: boolean;
     pointSizeMultiplier: number;
+    sceneOpacities: Record<string, number>;
 }
 
 export interface ModelActions {
@@ -60,6 +61,8 @@ export interface ModelActions {
     setPointSizeMultiplier: (multiplier: number) => void;
     increasePointSize: () => void;
     decreasePointSize: () => void;
+    setSceneOpacity: (sceneKey: string, opacity: number) => void;
+    getSceneOpacity: (sceneKey: string) => number;
 }
 
 export type ModelStore = ModelActions & ModelState;
