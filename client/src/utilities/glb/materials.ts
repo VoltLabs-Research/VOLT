@@ -30,8 +30,30 @@ export const configurePointCloudMaterial = (points: THREE.Points) => {
     });
 
     const numPoints = points.geometry.attributes.position.count;
-    const VISUAL_ADJUSTMENT_FACTOR = 17;
-    const dynamicPointScale = VISUAL_ADJUSTMENT_FACTOR / Math.cbrt(numPoints);
+
+    if (!points.geometry.boundingBox) {
+        points.geometry.computeBoundingBox();
+    }
+
+    let volume = 0;
+    if (points.geometry.boundingBox) {
+        const size = new THREE.Vector3();
+        points.geometry.boundingBox.getSize(size);
+        volume = size.x * size.y * size.z;
+    }
+
+    // Fallback for flat structures or empty bounding boxes
+    if (volume === 0) {
+        volume = numPoints * 10.0; // Assume some volume per point
+    }
+
+    // Calculate spacing based on density: d = (V/N)^(1/3)
+    const spacing = Math.pow(volume / numPoints, 1.0 / 3.0);
+
+    // Factor to ensure no overlap (radius ~ spacing / 2, plus some margin)
+    // Adjusted to 1.5 to ensure visibility while minimizing extreme overlap
+    const dynamicPointScale = spacing * 1.5;
+
     (mat.uniforms.pointScale as any).value = dynamicPointScale;
     mat.userData.basePointScale = dynamicPointScale;
 

@@ -198,13 +198,32 @@ export default function useGlbScene(params: UseGlbSceneParams) {
         if (!mesh || !(mesh instanceof THREE.Points) || !mesh.material) return;
 
         const mat = mesh.material as THREE.ShaderMaterial;
-        const baseScale = mat.userData.basePointScale;
+        let baseScale = mat.userData.basePointScale;
+
+        // If boxBounds available, use accurate simulation cell volume for density calculation
+        if (params.boxBounds) {
+            const { xlo, xhi, ylo, yhi, zlo, zhi } = params.boxBounds;
+            const width = xhi - xlo;
+            const height = yhi - ylo;
+            const depth = zhi - zlo;
+            const volume = width * height * depth;
+            const numPoints = mesh.geometry.attributes.position.count;
+
+            if (volume > 0 && numPoints > 0) {
+                // spacing = (V/N)^(1/3)
+                const spacing = Math.pow(volume / numPoints, 1.0 / 3.0);
+                // consistent factor with materials.ts
+                baseScale = spacing * 1.5;
+            }
+        }
+
+        const normScale = params.normalizationScale || 1;
 
         if (baseScale !== undefined) {
-            mat.uniforms.pointScale.value = baseScale * pointSizeMultiplier;
+            mat.uniforms.pointScale.value = baseScale * normScale * pointSizeMultiplier;
             invalidate();
         }
-    }, [pointSizeMultiplier, invalidate, loadingState.isLoading]);
+    }, [pointSizeMultiplier, params.boxBounds, params.normalizationScale, invalidate, loadingState.isLoading]);
 
     // Apply opacity from scene settings
     useEffect(() => {

@@ -1,4 +1,5 @@
 import type { SceneState } from '@/types/scene';
+import type { BoxBounds } from '@/types/models';
 import { Vector3, Euler, Plane } from 'three';
 
 export type Pos3D = {
@@ -24,6 +25,8 @@ export type UseGlbSceneParams = {
     onEmptyData?: () => void;
     disableAutoTransform?: boolean;
     sceneKey?: string; // Key for scene-specific settings like opacity
+    boxBounds?: BoxBounds;
+    normalizationScale?: number;
 };
 
 export interface ExtendedSceneState extends SceneState {

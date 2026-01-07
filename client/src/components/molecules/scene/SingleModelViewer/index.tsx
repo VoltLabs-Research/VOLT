@@ -133,7 +133,16 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     // Calcular transformaciones desde boxBounds
     const boxTransforms = useMemo(() => {
         if (!boxBounds) return { scale: 1, position: { x: 0, y: 0, z: 0 }, maxDimension: 1, center: { x: 0, y: 0, z: 0 } };
-        return calculateBoxTransforms(boxBounds);
+
+        const transforms = calculateBoxTransforms(boxBounds);
+
+        const multiplier = 2.0;
+        transforms.scale *= multiplier;
+        transforms.position.x *= multiplier;
+        transforms.position.y *= multiplier;
+        transforms.position.z *= multiplier;
+
+        return transforms;
     }, [boxBounds]);
 
     // Compute scene key for per-scene settings like opacity
@@ -143,41 +152,6 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         }
         return `${sceneConfig.source}-${sceneConfig.sceneType}`;
     }, [sceneConfig]);
-
-    const { modelBounds, deselect, model, setSimBoxMesh } = useGlbScene({
-        url,
-        sliceClippingPlanes,
-        position: {
-            x: position.x || 0,
-            y: position.y || 0,
-            z: position.z || 0
-        },
-        rotation: {
-            x: rotation.x || 0,
-            y: rotation.y || 0,
-            z: rotation.z || 0
-        },
-        scale,
-        enableInstancing,
-        updateThrottle,
-        onSelect,
-        orbitControlsRef,
-        onEmptyData: handleEmptyData,
-        disableAutoTransform: true,
-        sceneKey
-    });
-
-    React.useEffect(() => {
-        if (!isSelected) {
-            deselect();
-        }
-    }, [isSelected, deselect]);
-
-    React.useEffect(() => {
-        if (modelBounds && onModelLoaded) {
-            onModelLoaded(modelBounds);
-        }
-    }, [modelBounds, onModelLoaded]);
 
     // Calcular groundOffset desde boxBounds transformados
     const groundOffset = useMemo(() => {
@@ -201,6 +175,45 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
             groundOffset
         };
     }, [boxTransforms, groundOffset, position]);
+
+    const { modelBounds, deselect, model, setSimBoxMesh } = useGlbScene({
+        url,
+        sliceClippingPlanes,
+        position: {
+            x: position.x || 0,
+            y: position.y || 0,
+            z: position.z || 0
+        },
+        rotation: {
+            x: rotation.x || 0,
+            y: rotation.y || 0,
+            z: rotation.z || 0
+        },
+        scale,
+        enableInstancing,
+        updateThrottle,
+        onSelect,
+        orbitControlsRef,
+        onEmptyData: handleEmptyData,
+        disableAutoTransform: true,
+        sceneKey,
+        boxBounds,
+        normalizationScale: cellBoxTransforms?.scale
+    });
+
+    React.useEffect(() => {
+        if (!isSelected) {
+            deselect();
+        }
+    }, [isSelected, deselect]);
+
+    React.useEffect(() => {
+        if (modelBounds && onModelLoaded) {
+            onModelLoaded(modelBounds);
+        }
+    }, [modelBounds, onModelLoaded]);
+
+
 
     const shouldRenderCamera = useMemo(() =>
         isPrimary && autoFit && modelBounds,
