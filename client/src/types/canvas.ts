@@ -22,6 +22,7 @@ export type UseGlbSceneParams = {
     onSelect?: () => void;
     orbitControlsRef?: React.RefObject<any>;
     onEmptyData?: () => void;
+    disableAutoTransform?: boolean;
 };
 
 export interface ExtendedSceneState extends SceneState {

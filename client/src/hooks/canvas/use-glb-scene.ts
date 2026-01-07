@@ -43,6 +43,9 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     const { scene, camera, gl, invalidate } = useThree();
     const logger = useLogger('use-glb-scene');
 
+    // State to hold the current model for declarative rendering
+    const [model, setModel] = useState<THREE.Object3D | null>(null);
+
     const activeModel = useEditorStore((s) => s.activeModel);
     const setModelBounds = useEditorStore((s) => s.setModelBounds);
     const setIsModelLoading = useEditorStore((s) => s.setIsModelLoading);
@@ -121,7 +124,8 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             setIsModelLoading,
             invalidate,
             logger,
-            setLoadingState
+            setLoadingState,
+            setModel
         )
     ).current;
 
@@ -179,13 +183,15 @@ export default function useGlbScene(params: UseGlbSceneParams) {
 
     useEffect(() => {
         if (!stateRef.current.model) return;
+        if (params.disableAutoTransform) return;
+
         const x = params.position?.x || 0;
         const y = params.position?.y || 0;
         const z = params.position?.z || 0;
 
         transformManager.setPosition(x, y, z);
         invalidate();
-    }, [params.position?.x, params.position?.y, params.position?.z, transformManager, invalidate, loadingState.isLoading]);
+    }, [params.position?.x, params.position?.y, params.position?.z, params.disableAutoTransform, transformManager, invalidate, loadingState.isLoading]);
 
     useEffect(() => {
         const mesh = stateRef.current.mesh;
@@ -220,6 +226,7 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     }, [throttledUpdateScene]);
 
     return {
+        model,
         meshRef: { current: stateRef.current.mesh },
         modelBounds: activeModel?.modelBounds,
         isLoading: loadingState.isLoading,
@@ -235,6 +242,26 @@ export default function useGlbScene(params: UseGlbSceneParams) {
         }, [resourceManager]),
         deselect: useCallback(() => {
             selectionManager.deselect();
-        }, [selectionManager])
+        }, [selectionManager]),
+        setSimBoxMesh: useCallback((mesh: THREE.Mesh | null) => {
+            console.log('[useGlbScene] setSimBoxMesh', { mesh: !!mesh });
+            stateRef.current.simBoxMesh = mesh;
+            if (mesh) {
+                // Ensure bounding box is computed
+                if (!mesh.geometry.boundingBox) {
+                    mesh.geometry.computeBoundingBox();
+                }
+
+                if (mesh.geometry.boundingBox) {
+                    const size = new THREE.Vector3();
+                    mesh.geometry.boundingBox.getSize(size);
+                    stateRef.current.simBoxSize = size;
+                    stateRef.current.simBoxBaseSize = size.clone();
+                }
+            } else {
+                stateRef.current.simBoxSize = null;
+                stateRef.current.simBoxBaseSize = null;
+            }
+        }, [])
     };
 }

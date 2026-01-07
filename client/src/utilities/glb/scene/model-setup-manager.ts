@@ -45,7 +45,7 @@ export default class ModelSetupManager {
     }
 
     setup(model: Group): Group {
-        // if (this.state.isSetup) return model; // <-- Removed to ensure new models are always setup during swap
+        // if (this.state.isSetup) return model;
 
         const bounds = calculateModelBounds({ scene: model });
         // @ts-ignore
@@ -54,7 +54,11 @@ export default class ModelSetupManager {
         this.setupMaterials(model);
         this.clippingManager.applyToModel(model, this.params.sliceClippingPlanes);
         this.applyTransforms(model, bounds);
-        this.transformManager.adjustToGround(model);
+
+        // Solo ajustar al suelo si NO está disableAutoTransform
+        if (!this.params.disableAutoTransform) {
+            this.transformManager.adjustToGround(model);
+        }
 
         model.updateMatrixWorld(true);
         const finalBounds = calculateModelBounds({ scene: model });
@@ -82,6 +86,15 @@ export default class ModelSetupManager {
 
     private applyTransforms(model: Group, bounds: any): void {
         const { position, rotation, scale } = this.params;
+
+        // Si disableAutoTransform está activo, NO aplicar transformaciones al modelo
+        if (this.params.disableAutoTransform) {
+            // Solo guardar el estado, no transformar
+            this.state.currentRotation.copy(model.rotation);
+            this.state.targetScale = 1;
+            this.state.currentScale = 1;
+            return;
+        }
 
         if (!this.params.useFixedReference) {
             this.applyNormalTransforms(model, bounds, position, /*rotation,*/ scale);

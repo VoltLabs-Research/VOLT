@@ -307,6 +307,13 @@ const processFilesInBackground = async (
     const frames: any[] = [];
     for (const f of validFiles) {
         const { simulationCell, ...restFrameInfo } = f.frameInfo;
+
+        console.log(`[createTrajectory] Creating SimulationCell for timestep ${restFrameInfo.timestep}`, {
+            hasSimCell: !!simulationCell,
+            boundingBox: simulationCell?.boundingBox,
+            geometry: simulationCell?.geometry
+        });
+
         const newSimCell = await SimulationCell.create({
             ...simulationCell,
             team: teamId,

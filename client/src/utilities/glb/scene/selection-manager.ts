@@ -25,66 +25,43 @@ import { makeSelectionGroup, updateSelectionGeometry } from '@/utilities/glb/sel
 import { Box3, Group, Vector3, Scene } from 'three';
 import type { ExtendedSceneState } from '@/types/canvas';
 
-export default class SelectionManager{
+export default class SelectionManager {
     constructor(
         private state: ExtendedSceneState,
         private scene: Scene,
         private invalidate: () => void
-    ){}
+    ) { }
 
-    createSelectionGroup(hover = false): Group{
-        const selection = makeSelectionGroup();
-
-        if(this.state.selection){
-            this.scene.remove(this.state.selection.group);
-        }
-
-        this.scene.add(selection.group);
-        this.state.selection = selection;
-        this.state.showSelection = true;
-        this.state.lastInteractionTime = Date.now();
-
-        if(!this.state.model) return selection.group;
-
-        const box = new Box3().setFromObject(this.state.model);
-        const size = new Vector3();
-        const center = new Vector3();
-
-        box.getSize(size).multiplyScalar(
-            hover ? ANIMATION_CONSTANTS.HOVER_BOX_PADDING : ANIMATION_CONSTANTS.SELECTION_BOX_PADDING);
-        box.getCenter(center);
-
-        selection.group.position.copy(center);
-        updateSelectionGeometry(selection, size, hover);
-
-        return selection.group;
+    createSelectionGroup(hover = false): Group {
+        const group = new Group();
+        return group;
     }
 
-    show(hover = false): void{
-        if(!this.state.model) return;
+    show(hover = false): void {
+        if (!this.state.model) return;
         this.createSelectionGroup(hover);
     }
 
-    hide(): void{
+    hide(): void {
         this.state.showSelection = false;
-        if(this.state.selection){
+        if (this.state.selection) {
             this.scene.remove(this.state.selection.group);
             this.state.selection = null;
         }
     }
 
-    deselect(): void{
+    deselect(): void {
         this.state.isSelectedPersistent = false;
         this.state.selected = null;
         this.hide();
         this.invalidate();
     }
 
-    isSelected(): boolean{
+    isSelected(): boolean {
         return this.state.isSelectedPersistent;
     }
 
-    isHovered(): boolean{
+    isHovered(): boolean {
         return this.state.isHovered;
     }
 };

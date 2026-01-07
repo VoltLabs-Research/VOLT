@@ -15,25 +15,28 @@ export const attachPointerEvents = (params: {
     onSelect?: () => void;
     setOrbitControlsEnabled?: (enabled: boolean) => void;
 }) => {
-    const { 
-        glCanvas, 
-        camera, 
-        raycaster, 
-        groundPlane, 
-        state, 
-        showSelectionBox, 
-        hideSelectionBox, 
-        deselect, 
-        onSelect, 
-        setOrbitControlsEnabled 
+    const {
+        glCanvas,
+        camera,
+        raycaster,
+        groundPlane,
+        state,
+        showSelectionBox,
+        hideSelectionBox,
+        deselect,
+        onSelect,
+        setOrbitControlsEnabled
     } = params;
-    
+
     const mouse = new THREE.Vector3();
     let lastClickTime = 0;
     const dragOffset = new THREE.Vector3();
 
     const handlePointerDown = (event: MouseEvent) => {
-        if (!state.model || !state.simBoxMesh) return;
+        if (!state.model || !state.simBoxMesh) {
+            console.warn('[Interaction] Model or SimBoxMesh missing', { model: !!state.model, simBoxMesh: !!state.simBoxMesh });
+            return;
+        }
 
         const rect = glCanvas.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -42,11 +45,21 @@ export const attachPointerEvents = (params: {
         raycaster.setFromCamera({ x: mouse.x, y: mouse.y }, camera);
 
         if (event.button === 0) {
+            console.log('[Interaction] Ray Check', {
+                rayOrigin: raycaster.ray.origin,
+                rayDirection: raycaster.ray.direction,
+                cameraPos: camera.position,
+                simBoxPos: state.simBoxMesh.position
+            });
             const simHits = raycaster.intersectObject(state.simBoxMesh, false);
+            console.log('[Interaction] PointerDown', { mouse: { x: mouse.x, y: mouse.y }, hits: simHits.length, object: state.simBoxMesh });
+
             if (simHits.length > 0) {
                 if (!state.isSelectedPersistent) {
+                    console.log('[Interaction] Selecting Simulation Box Group');
                     state.isSelectedPersistent = true;
-                    state.selected = state.model;
+                    // Select the parent Group of the mesh, which is the container for the entire simulation box + GLB
+                    state.selected = (state.simBoxMesh.parent as THREE.Group) || state.simBoxMesh;
                     showSelectionBox(false);
                     if (onSelect) onSelect();
                 }
@@ -58,9 +71,8 @@ export const attachPointerEvents = (params: {
 
                     // Calculate offset
                     const intersection = raycaster.ray.intersectPlane(groundPlane, new THREE.Vector3());
-                    if (intersection) {
-                        dragOffset.copy(state.model.position).sub(intersection);
-
+                    if (intersection && state.selected) {
+                        dragOffset.copy(state.selected.position).sub(intersection);
                     }
 
                     if (setOrbitControlsEnabled) setOrbitControlsEnabled(false);

@@ -3,6 +3,9 @@ import CameraManager from '@/components/atoms/scene/CameraManager';
 import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
 import useGlbScene from '@/hooks/canvas/use-glb-scene';
 import { useTeamStore } from '@/stores/slices/team';
+import SimulationCellBox from '@/components/molecules/scene/SimulationCellBox';
+import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { calculateBoxTransforms } from '@/utilities/glb/boxUtils';
 
 interface SingleModelViewerProps {
     trajectoryId: string;
@@ -84,7 +87,7 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
             const newScene = {
                 ...sceneConfig,
                 exposureId: nextExposure.exposureId,
-                analysisId: nextExposure.analysisId, 
+                analysisId: nextExposure.analysisId,
                 sceneType: 'plugin',
                 source: 'plugin'
             };
@@ -102,7 +105,38 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         }
     }, [sceneConfig, trajectoryId, analysisId]);
 
-    const { modelBounds, deselect } = useGlbScene({
+    // Get box bounds from store
+    const trajectory = useTrajectoryStore(state => state.trajectory);
+    const boxBounds = useMemo(() => {
+        if (!trajectory || !currentTimestep) return undefined;
+        const frame = trajectory.frames?.find(f => f.timestep === currentTimestep);
+
+        if (frame?.simulationCell) {
+            // @ts-ignore
+            const { geometry, boundingBox } = frame.simulationCell;
+            if (geometry?.cell_origin && boundingBox) {
+                const [xlo, ylo, zlo] = geometry.cell_origin;
+                return {
+                    xlo,
+                    xhi: xlo + boundingBox.width,
+                    ylo,
+                    yhi: ylo + boundingBox.length,
+                    zlo,
+                    zhi: zlo + boundingBox.height
+                };
+            }
+        }
+
+        return frame?.boxBounds;
+    }, [trajectory, currentTimestep]);
+
+    // Calcular transformaciones desde boxBounds
+    const boxTransforms = useMemo(() => {
+        if (!boxBounds) return { scale: 1, position: { x: 0, y: 0, z: 0 }, maxDimension: 1, center: { x: 0, y: 0, z: 0 } };
+        return calculateBoxTransforms(boxBounds);
+    }, [boxBounds]);
+
+    const { modelBounds, deselect, model, setSimBoxMesh } = useGlbScene({
         url,
         sliceClippingPlanes,
         position: {
@@ -120,7 +154,8 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         updateThrottle,
         onSelect,
         orbitControlsRef,
-        onEmptyData: handleEmptyData
+        onEmptyData: handleEmptyData,
+        disableAutoTransform: true
     });
 
     React.useEffect(() => {
@@ -135,19 +170,52 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         }
     }, [modelBounds, onModelLoaded]);
 
+    // Calcular groundOffset desde boxBounds transformados
+    const groundOffset = useMemo(() => {
+        if (!boxBounds || !boxTransforms) return 0;
+        // Calcular el z mínimo del box en coordenadas mundiales
+        const minZWorld = (boxBounds.zlo * boxTransforms.scale) + boxTransforms.position.z;
+        // El offset necesario para que toque z=0
+        return -minZWorld;
+    }, [boxBounds, boxTransforms]);
+
+    // Combinar transforms con groundOffset y la posición de la escena
+    const cellBoxTransforms = useMemo(() => {
+        if (!boxTransforms) return undefined;
+        return {
+            scale: boxTransforms.scale,
+            position: {
+                x: boxTransforms.position.x + (position.x || 0),
+                y: boxTransforms.position.y + (position.y || 0),
+                z: boxTransforms.position.z + (position.z || 0)
+            },
+            groundOffset
+        };
+    }, [boxTransforms, groundOffset, position]);
+
     const shouldRenderCamera = useMemo(() =>
         isPrimary && autoFit && modelBounds,
         [isPrimary, autoFit, modelBounds]
     );
 
-    if (!shouldRenderCamera) return null;
-
     return (
-        <CameraManager
-            modelBounds={modelBounds || undefined}
-            orbitControlsRef={orbitControlsRef}
-            face='ny'
-        />
+        <>
+            <SimulationCellBox
+                ref={setSimBoxMesh}
+                boxBounds={boxBounds}
+                transforms={cellBoxTransforms}
+            >
+                {model && <primitive object={model} />}
+            </SimulationCellBox>
+
+            {shouldRenderCamera && (
+                <CameraManager
+                    modelBounds={modelBounds || undefined}
+                    orbitControlsRef={orbitControlsRef}
+                    face='ny'
+                />
+            )}
+        </>
     );
 };
 

@@ -8,7 +8,7 @@ import { createInterface } from 'readline';
  * Read only the first few lines of a file for format detection.
  * Stops reading immediately after collecting enough lines.
  */
-async function peekFileHeader(filePath: string, maxLines: number = 50): Promise<string[]> {
+async function peekFileHeader(filePath: string, maxLines: number = 200): Promise<string[]> {
     return new Promise((resolve, reject) => {
         const lines: string[] = [];
         const stream = createReadStream(filePath, {
@@ -47,8 +47,8 @@ export default class TrajectoryParserFactory {
      * Automatically detects the file format and parses using native C++ addon.
      */
     public static async parse(filePath: string, options?: ParseOptions): Promise<ParseResult> {
-        // Peek only first 50 lines for format detection (fast, no memory issues)
-        const headerLines = await peekFileHeader(filePath, 50);
+        // Peek only first 200 lines for format detection (fast, no memory issues)
+        const headerLines = await peekFileHeader(filePath, 200);
 
         // Select parser based on format
         if (this.dumpParser.canParse(headerLines)) {
@@ -65,7 +65,7 @@ export default class TrajectoryParserFactory {
      * Efficiently avoids loading large files into memory.
      */
     public static async parseMetadata(filePath: string): Promise<FrameMetadata> {
-        const headerLines = await peekFileHeader(filePath, 50);
+        const headerLines = await peekFileHeader(filePath, 200);
 
         if (this.dumpParser.canParse(headerLines)) {
             return this.dumpParser.parseMetadataOnly(headerLines);

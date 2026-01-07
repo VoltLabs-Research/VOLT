@@ -21,7 +21,7 @@
  */
 
 import type { ExtendedSceneState } from '@/types/canvas';
-import { Mesh, Points, Scene } from 'three';
+import { Mesh, Points, Scene, Object3D } from 'three';
 import ResourceManager from '@/utilities/glb/scene/resource-manager';
 import ModelSetupManager from '@/utilities/glb/scene/model-setup-manager';
 import loadGLB from '@/utilities/glb/loader';
@@ -36,7 +36,8 @@ export default class ModelLoader {
         private setIsModelLoading: (loading: boolean) => void,
         private invalidate: () => void,
         private logger: any,
-        private onLoadingStateChange: (state: any) => void
+        private onLoadingStateChange: (state: any) => void,
+        private setModel: (model: Object3D) => void
     ) { }
 
 
@@ -124,6 +125,7 @@ export default class ModelLoader {
 
             // Seamless swap
             this.resourceManager.swapModel(this.state.model, newModel);
+            this.setModel(newModel);
 
             this.state.lastLoadedUrl = url;
             this.state.failedUrls?.delete(url);

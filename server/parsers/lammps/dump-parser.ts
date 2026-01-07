@@ -41,8 +41,25 @@ export default class LammpsDumpParser {
             throw new Error('NativeDumpParserFailed');
         }
 
+        const width = result.max[0] - result.min[0];
+        const height = result.max[1] - result.min[1];
+        const length = result.max[2] - result.min[2];
+
+        // Augment metadata with simulation cell derived from native min/max
+        const metadataWithCell = {
+            ...result.metadata,
+            simulationCell: {
+                boundingBox: { width, height, length },
+                geometry: {
+                    cell_vectors: [[width, 0, 0], [0, height, 0], [0, 0, length]],
+                    cell_origin: result.min,
+                    periodic_boundary_conditions: { x: true, y: true, z: true }
+                }
+            }
+        } as FrameMetadata;
+
         return {
-            metadata: result.metadata as FrameMetadata,
+            metadata: metadataWithCell,
             positions: result.positions,
             types: result.types,
             ids: result.ids,

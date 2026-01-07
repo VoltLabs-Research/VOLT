@@ -159,7 +159,7 @@ export interface TeamMemberWithRole {
         lastName: string;
         avatar?: string;
     } | string;
-    role?: TeamRole; 
+    role?: TeamRole;
     joinedAt: string;
 }
 

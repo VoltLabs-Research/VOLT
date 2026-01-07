@@ -3,20 +3,20 @@ import { useThree } from '@react-three/fiber';
 import { Vector3, Box3, MathUtils } from 'three';
 import { calculateModelBounds } from '@/utilities/glb/modelUtils';
 
-type Face = 'px'|'nx'|'py'|'ny'|'pz'|'nz';
+type Face = 'px' | 'nx' | 'py' | 'ny' | 'pz' | 'nz';
 
 const faceNormal = {
-  px: new Vector3( 1, 0, 0),
+  px: new Vector3(1, 0, 0),
   nx: new Vector3(-1, 0, 0),
-  py: new Vector3( 0, 1, 0),
-  ny: new Vector3( 0,-1, 0),
-  pz: new Vector3( 0, 0, 1),
-  nz: new Vector3( 0, 0,-1),
+  py: new Vector3(0, 1, 0),
+  ny: new Vector3(0, -1, 0),
+  pz: new Vector3(0, 0, 1),
+  nz: new Vector3(0, 0, -1),
 } as const;
 
 const faceCenter = (box: Box3, f: Face) => {
   const c = box.getCenter(new Vector3()), { min, max } = box;
-  switch(f){
+  switch (f) {
     case 'px': return new Vector3(max.x, c.y, c.z);
     case 'nx': return new Vector3(min.x, c.y, c.z);
     case 'py': return new Vector3(c.x, max.y, c.z);
@@ -27,7 +27,7 @@ const faceCenter = (box: Box3, f: Face) => {
 };
 
 const planeDims = (size: Vector3, f: Face) => {
-  switch(f){
+  switch (f) {
     case 'px':
     case 'nx': return { w: size.y, h: size.z }; // YZ
     case 'py':
@@ -37,9 +37,9 @@ const planeDims = (size: Vector3, f: Face) => {
   }
 };
 
-const planeUp = (f: Face) => (f === 'pz' || f === 'nz') ? new Vector3(0,1,0) : new Vector3(0,0,1);
+const planeUp = (f: Face) => (f === 'pz' || f === 'nz') ? new Vector3(0, 1, 0) : new Vector3(0, 0, 1);
 
-interface Props{
+interface Props {
   modelBounds?: ReturnType<typeof calculateModelBounds>;
   orbitControlsRef?: any;
   face?: Face;
@@ -57,8 +57,8 @@ const CameraManager: React.FC<Props> = ({
 
   // maybe centro de masa rotate?
   useEffect(() => {
-    if(!modelBounds) return;
-    if(!centerCamera) return;
+    if (!modelBounds) return;
+    if (!centerCamera) return;
 
     const controls = orbitControlsRef?.current ?? defaultControls;
     const box = modelBounds.box;
@@ -78,11 +78,11 @@ const CameraManager: React.FC<Props> = ({
 
     camera.up.copy(up);
     camera.near = Math.max(0.01, dist * 0.01);
-    camera.far  = dist * 100;
+    camera.far = dist * 100;
     camera.updateProjectionMatrix();
-    if(controls?.setLookAt){
+    if (controls?.setLookAt) {
       controls.setLookAt(pos.x, pos.y, pos.z, target.x, target.y, target.z, true);
-    }else{
+    } else {
       // fallback
       controls?.object?.position.copy(pos);
       controls?.target?.copy(target);

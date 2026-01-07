@@ -46,14 +46,7 @@ export default class ResourceManager {
     }
 
     swapModel(activeModel: Object3D | null, newModel: Object3D): void {
-        this.scene.add(newModel);
-        if (activeModel) {
-            this.scene.remove(activeModel);
-            // We do NOT dispose here immediately because of the cache.
-            // If uniqueness is guaranteed by cloning in loader, we *could* dispose, 
-            // but Three.js caching usually handles geometry. Materials might need disposal if unique.
-            // For now, removing from scene is sufficient to stop rendering.
-        }
+        // Scene graph manipulation is now handled by React via <primitive />
         this.state.model = newModel as Group;
     }
 

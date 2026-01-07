@@ -23,7 +23,8 @@ export default class TrajectoryController extends BaseController<any> {
             populate: [
                 { path: 'createdBy', select: 'email firstName lastName' },
                 { path: 'analysis' },
-                { path: 'team', select: '_id name' }
+                { path: 'team', select: '_id name' },
+                { path: 'frames.simulationCell' }
             ]
         });
     }
