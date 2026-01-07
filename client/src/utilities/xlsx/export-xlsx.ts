@@ -30,6 +30,7 @@ export interface ColumnConfig {
 export interface ExportOptions {
     filename?: string;
     sheetName?: string;
+    configuration?: Record<string, any>;
 }
 
 /**
@@ -40,7 +41,7 @@ export const exportToXlsx = (
     rows: any[],
     options: ExportOptions = {}
 ): void => {
-    const { filename = 'export', sheetName = 'Sheet1' } = options;
+    const { filename = 'export', sheetName = 'Sheet1', configuration } = options;
 
     // Create header row from column titles
     const headers = columns.map((col) => col.title);
@@ -65,6 +66,20 @@ export const exportToXlsx = (
 
     // Add the worksheet to the workbook
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+    // Add Configuration sheet if provided
+    if (configuration && Object.keys(configuration).length > 0) {
+        const configRows = [['Parameter', 'Value']];
+        Object.entries(configuration).forEach(([key, value]) => {
+            if (key === 'Analysis Name' || key === 'Modifier' || key === 'Trajectory ID') return;
+            configRows.push([
+                key,
+                typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)
+            ]);
+        });
+        const configWorksheet = XLSX.utils.aoa_to_sheet(configRows);
+        XLSX.utils.book_append_sheet(workbook, configWorksheet, 'Configuration');
+    }
 
     // Generate file and trigger download
     const xlsxFilename = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`;

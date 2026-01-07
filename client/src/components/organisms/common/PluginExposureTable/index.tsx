@@ -45,6 +45,7 @@ export interface PluginExposureTableProps {
     pluginSlug: string;
     listingSlug: string;
     trajectoryId?: string;
+    analysisId?: string;
     teamId?: string;
     compact?: boolean;
     showTrajectoryColumn?: boolean;
@@ -94,6 +95,7 @@ const PluginExposureTable = ({
     pluginSlug,
     listingSlug,
     trajectoryId,
+    analysisId,
     teamId,
     compact = false,
     showTrajectoryColumn,
@@ -213,7 +215,16 @@ const PluginExposureTable = ({
         dependencies: [pluginSlug, listingSlug, trajectoryId, teamId]
     });
 
+    const displayRows = useMemo(() => {
+        if (!analysisId) return rows;
+        return rows.filter((r) => r.analysisId === analysisId);
+    }, [rows, analysisId]);
 
+    useEffect(() => {
+        if (onDataReady) {
+            onDataReady(columns, displayRows);
+        }
+    }, [columns, displayRows, onDataReady]);
 
     const handleMenuAction = useCallback(async (action: string, item: any) => {
         if (action === 'delete') {
@@ -268,7 +279,7 @@ const PluginExposureTable = ({
         return (
             <PluginCompactTable
                 columns={columns}
-                data={rows}
+                data={displayRows}
                 hasMore={listingMeta.hasMore}
                 isLoading={loading}
                 isFetchingMore={isFetchingMore}

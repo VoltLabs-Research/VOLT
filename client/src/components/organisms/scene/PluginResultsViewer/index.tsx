@@ -30,6 +30,7 @@ import { useUIStore } from '@/stores/slices/ui';
 import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import { useTeamStore } from '@/stores/slices/team';
+import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import type { RenderableExposure } from '@/stores/slices/plugin/plugin-slice';
 import { exportToXlsx, type ColumnConfig } from '@/utilities/xlsx/export-xlsx';
 import './PluginResultsViewer.css';
@@ -50,6 +51,13 @@ const PluginResultsViewer = ({
     const closeResultsViewer = useUIStore((state) => state.closeResultsViewer);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const team = useTeamStore((state) => state.selectedTeam);
+
+    // Retrieve the configuration for this analysis
+    const analysisConfig = useAnalysisConfigStore((state) =>
+        state.analysisConfig?._id === analysisId
+            ? state.analysisConfig
+            : state.analysisConfigs.find((c) => c._id === analysisId)
+    );
 
     const [activeTab, setActiveTab] = useState(0);
 
@@ -107,6 +115,15 @@ const PluginResultsViewer = ({
             return; // No data to download
         }
 
+        // Filter data to only include rows belonging to the current analysis
+        const filteredData = data.filter((row) => row.analysisId === analysisId);
+
+        if (filteredData.length === 0) {
+            // Optional: Notify user or handle empty filtered data? 
+            // For now, we proceed to export an empty file or just return
+            return;
+        }
+
         // Generate filename based on active tab
         const tabName = isAtomsTabActive
             ? 'Atoms'
@@ -114,8 +131,20 @@ const PluginResultsViewer = ({
         const sanitizedTabName = tabName.replace(/[^a-zA-Z0-9]/g, '_');
         const filename = `${pluginName}_${sanitizedTabName}`;
 
-        exportToXlsx(columns, data, { filename, sheetName: tabName });
-    }, [isAtomsTabActive, activeExposure, pluginName]);
+        // Prepare configuration data for export (separate sheet)
+        const configuration = analysisConfig ? {
+            'Analysis Name': analysisConfig.name,
+            'Modifier': analysisConfig.modifier,
+            'Trajectory ID': analysisConfig.trajectory,
+            ...analysisConfig.config
+        } : undefined;
+
+        exportToXlsx(columns, filteredData, {
+            filename,
+            sheetName: tabName,
+            configuration
+        });
+    }, [isAtomsTabActive, activeExposure, pluginName, analysisConfig, analysisId]);
 
     if (listingExposures.length === 0 && !hasAtomsTab) {
         return (
@@ -181,6 +210,7 @@ const PluginResultsViewer = ({
                         pluginSlug={pluginSlug}
                         listingSlug={activeExposure.name}
                         trajectoryId={trajectory?._id}
+                        analysisId={analysisId}
                         teamId={team?._id}
                         compact
                         onDataReady={handleDataReady}
