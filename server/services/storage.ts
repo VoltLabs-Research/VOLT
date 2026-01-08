@@ -1,9 +1,7 @@
 import { getMinioClient } from '@/config/minio';
-import { Client, ItemBucketMetadata, BucketItemStat, CopyDestinationOptions, CopySourceOptions } from 'minio';
+import { Client, ItemBucketMetadata, BucketItemStat } from 'minio';
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
-import os from 'node:os';
 import { Readable } from 'node:stream';
 import logger from '@/logger';
 
@@ -17,11 +15,6 @@ export type UploadSource = string | Buffer | Readable;
  * memory spikes, making it suitable for high-throughput environments.
  */
 class StorageService {
-    private static readonly MIN_PART_SIZE = 5 * 1024 * 1024;
-    private static readonly MAX_PARTS = 1000;
-    private static readonly DEFAULT_PART_SIZE = 8 * 1024 * 1024;
-    private static readonly CHUNK_PREFIX = '__chunks__';
-
     private readonly client: Client;
     private readonly config: {
         readonly endpoint: string;
@@ -29,7 +22,6 @@ class StorageService {
         readonly protocol: string;
         readonly urlBase: string;
     };
-    private readonly uploadConcurrency: number;
 
     constructor() {
         this.client = getMinioClient();
@@ -44,7 +36,6 @@ class StorageService {
             protocol,
             urlBase: `${protocol}://${endpoint}${port === 80 || port === 443 ? '' : `:${port}`}`
         };
-        this.uploadConcurrency = Math.max(2, Math.min(8, os.cpus().length));
     }
 
     /**
@@ -60,73 +51,19 @@ class StorageService {
         source: UploadSource,
         metadata: ItemBucketMetadata = {}
     ): Promise<void> {
-        if (this.isChunkObject(objectName)) {
-            await this.putRaw(bucket, objectName, source, metadata);
+        if (typeof source === 'string') {
+            const fileStat = await stat(source);
+            const stream = createReadStream(source);
+            await this.client.putObject(bucket, objectName, stream, fileStat.size, metadata);
             return;
         }
 
-        const sizeHint = await this.getSourceSize(source, metadata);
-        const initialChunkSize = this.resolveChunkSize(sizeHint);
-        const uploadId = randomUUID();
-        const chunkPrefix = `${StorageService.CHUNK_PREFIX}/${uploadId}`;
-        const chunkObjects: string[] = [];
-        const inFlight = new Set<Promise<void>>();
-
-        const headers = this.normalizeHeaders(metadata);
-
-        const cleanupChunks = async () => {
-            if (chunkObjects.length === 0) return;
-            await this.client.removeObjects(bucket, chunkObjects).catch(() => { });
-        };
-
-        const uploadChunk = async (chunk: Buffer, index: number) => {
-            const chunkName = `${chunkPrefix}/part-${String(index).padStart(6, '0')}`;
-            chunkObjects.push(chunkName);
-
-            const promise = this.client
-                .putObject(bucket, chunkName, chunk, chunk.length, { 'Content-Type': 'application/octet-stream' })
-                .then(() => undefined)
-                .finally(() => inFlight.delete(promise));
-
-            inFlight.add(promise);
-            if (inFlight.size >= this.uploadConcurrency) {
-                await Promise.race(inFlight);
-            }
-        };
-
-        try {
-            let partIndex = 0;
-            for await (const chunk of this.iterateChunks(source, initialChunkSize, sizeHint)) {
-                await uploadChunk(chunk, partIndex);
-                partIndex++;
-            }
-
-            if (inFlight.size > 0) {
-                await Promise.all(inFlight);
-            }
-
-            if (chunkObjects.length === 0) {
-                await this.client.putObject(bucket, objectName, Buffer.alloc(0), 0, headers);
-                return;
-            }
-
-            const destOptions = new CopyDestinationOptions({
-                Bucket: bucket,
-                Object: objectName,
-                MetadataDirective: 'REPLACE',
-                Headers: headers
-            });
-            const sources = chunkObjects.map((name) => new CopySourceOptions({ Bucket: bucket, Object: name }));
-            await this.client.composeObject(destOptions, sources);
-        } catch (error) {
-            if (inFlight.size > 0) {
-                await Promise.allSettled(inFlight);
-            }
-            await cleanupChunks();
-            throw error;
+        if (Buffer.isBuffer(source)) {
+            await this.client.putObject(bucket, objectName, source, source.length, metadata);
+            return;
         }
 
-        await cleanupChunks();
+        await this.client.putObject(bucket, objectName, source, undefined, metadata);
     }
 
     /**
@@ -268,156 +205,6 @@ class StorageService {
         if (keys.length === 0) return;
         logger.info(`[Storage] Deleting batch of ${keys.length} items from ${bucket}`);
         await this.client.removeObjects(bucket, keys);
-    }
-
-    private resolveChunkSize(totalBytes: number | null): number {
-        if (!totalBytes || totalBytes <= 0) return StorageService.DEFAULT_PART_SIZE;
-        const byMaxParts = Math.ceil(totalBytes / StorageService.MAX_PARTS);
-        return Math.max(StorageService.MIN_PART_SIZE, byMaxParts);
-    }
-
-    private resolveUnknownChunkSize(bytesProcessed: number): number {
-        const GB = 1024 * 1024 * 1024;
-        if (bytesProcessed >= 8 * GB) return 64 * 1024 * 1024;
-        if (bytesProcessed >= 2 * GB) return 32 * 1024 * 1024;
-        if (bytesProcessed >= 512 * 1024 * 1024) return 16 * 1024 * 1024;
-        return StorageService.DEFAULT_PART_SIZE;
-    }
-
-    private normalizeHeaders(metadata: ItemBucketMetadata): Record<string, string> {
-        const headers: Record<string, string> = {};
-        for (const [key, value] of Object.entries(metadata)) {
-            if (value == null) continue;
-            if (key.toLowerCase() === 'content-length') continue;
-            headers[key] = String(value);
-        }
-        return headers;
-    }
-
-    private async getSourceSize(
-        source: UploadSource,
-        metadata: ItemBucketMetadata
-    ): Promise<number | null> {
-        if (Buffer.isBuffer(source)) return source.length;
-        if (typeof source === 'string') {
-            const fileStat = await stat(source);
-            return fileStat.size;
-        }
-
-        const metaLength = metadata['Content-Length'] || metadata['content-length'];
-        if (metaLength) {
-            const parsed = Number(metaLength);
-            if (Number.isFinite(parsed) && parsed >= 0) return parsed;
-        }
-
-        const pathValue = (source as any)?.path;
-        if (typeof pathValue === 'string') {
-            try {
-                const fileStat = await stat(pathValue);
-                return fileStat.size;
-            } catch {
-                return null;
-            }
-        }
-
-        return null;
-    }
-
-    private async putRaw(
-        bucket: string,
-        objectName: string,
-        source: UploadSource,
-        metadata: ItemBucketMetadata
-    ): Promise<void> {
-        if (typeof source === 'string') {
-            const fileStat = await stat(source);
-            const stream = createReadStream(source, { highWaterMark: StorageService.DEFAULT_PART_SIZE });
-            await this.client.putObject(bucket, objectName, stream, fileStat.size, metadata);
-            return;
-        }
-
-        if (Buffer.isBuffer(source)) {
-            await this.client.putObject(bucket, objectName, source, source.length, metadata);
-            return;
-        }
-
-        await this.client.putObject(bucket, objectName, source, undefined, metadata);
-    }
-
-    private async *iterateChunks(
-        source: UploadSource,
-        initialChunkSize: number,
-        totalBytes: number | null
-    ): AsyncIterable<Buffer> {
-        if (Buffer.isBuffer(source)) {
-            const size = source.length;
-            const chunkSize = totalBytes ? initialChunkSize : this.resolveUnknownChunkSize(size);
-            for (let offset = 0; offset < size; offset += chunkSize) {
-                yield source.subarray(offset, Math.min(size, offset + chunkSize));
-            }
-            return;
-        }
-
-        const stream = typeof source === 'string'
-            ? createReadStream(source, { highWaterMark: Math.min(initialChunkSize, StorageService.DEFAULT_PART_SIZE) })
-            : source;
-
-        const buffers: Buffer[] = [];
-        let bufferedBytes = 0;
-        let bytesProcessed = 0;
-        let chunkSize = initialChunkSize;
-        let chunkCount = 0;
-
-        for await (const chunk of stream as AsyncIterable<Buffer>) {
-            const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-            buffers.push(buf);
-            bufferedBytes += buf.length;
-
-            while (bufferedBytes >= chunkSize) {
-                const out = this.takeBuffers(buffers, chunkSize);
-                bufferedBytes -= out.length;
-                bytesProcessed += out.length;
-                yield out;
-                chunkCount++;
-                if (!totalBytes) {
-                    const sizeByBytes = this.resolveUnknownChunkSize(bytesProcessed);
-                    let sizeByCount = 0;
-                    if (chunkCount >= StorageService.MAX_PARTS * 0.95) sizeByCount = 128 * 1024 * 1024;
-                    else if (chunkCount >= StorageService.MAX_PARTS * 0.9) sizeByCount = 64 * 1024 * 1024;
-                    else if (chunkCount >= StorageService.MAX_PARTS * 0.8) sizeByCount = 32 * 1024 * 1024;
-                    chunkSize = Math.max(sizeByBytes, sizeByCount, StorageService.MIN_PART_SIZE);
-                }
-            }
-        }
-
-        if (bufferedBytes > 0) {
-            const out = this.takeBuffers(buffers, bufferedBytes);
-            yield out;
-        }
-    }
-
-    private takeBuffers(buffers: Buffer[], size: number): Buffer {
-        let remaining = size;
-        const parts: Buffer[] = [];
-
-        while (remaining > 0 && buffers.length > 0) {
-            const buf = buffers[0];
-            if (buf.length <= remaining) {
-                parts.push(buf);
-                buffers.shift();
-                remaining -= buf.length;
-            } else {
-                parts.push(buf.subarray(0, remaining));
-                buffers[0] = buf.subarray(remaining);
-                remaining = 0;
-            }
-        }
-
-        return parts.length === 1 ? parts[0] : Buffer.concat(parts, size);
-    }
-
-    private isChunkObject(objectName: string): boolean {
-        return objectName.startsWith(`${StorageService.CHUNK_PREFIX}/`);
     }
 };
 

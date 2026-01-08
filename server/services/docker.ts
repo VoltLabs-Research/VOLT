@@ -3,16 +3,13 @@ import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import logger from '@/logger';
 
-// Security limit for executive exits(before OOM Crash) - 10 MB
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
 
 class DockerService {
     private readonly docker: Docker;
-    // Mutex to prevent simultaneous downloads of the same image(thundering herd)
     private pullLocks: Map<string, Promise<void>> = new Map();
 
     constructor() {
-        // TODO: should socketPath be a env variable?
         this.docker = new Docker({
             socketPath: '/var/run/docker.sock',
             timeout: 60000

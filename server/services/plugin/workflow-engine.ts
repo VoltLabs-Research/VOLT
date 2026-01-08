@@ -224,11 +224,6 @@ export default class PluginWorkflowEngine {
     }
 
     private async cleanup(files: string[], sessionId?: string): Promise<void> {
-        // Register files with session for fallback cleanup if session ID provided
-        if (sessionId && files.length > 0) {
-            tempFileManager.registerMany(sessionId, files);
-        }
-
         // Immediate cleanup of generated files
         for (const file of files) {
             try {

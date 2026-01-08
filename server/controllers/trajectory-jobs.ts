@@ -1,34 +1,11 @@
 import { Request, Response } from 'express';
-import { Trajectory, Analysis } from '@/models';
+import { Trajectory } from '@/models';
 import BaseController from '@/controllers/base-controller';
 import { Resource } from '@/constants/resources';
-import jobManager from '@/services/jobs';
 import logger from '@/logger';
 import mongoose from 'mongoose';
-import { Queues } from '@/constants/queues';
-
-// Helper to extract analysis IDs from jobs
-function extractAnalysisIds(jobs: any[]): string[] {
-    const ids = new Set<string>();
-    for (const job of jobs) {
-        if (job.queueType === Queues.ANALYSIS_PROCESSING && job.jobId) {
-            const parts = job.jobId.split('-');
-            if (parts.length >= 2) ids.add(parts.slice(0, -1).join('-'));
-        }
-        if (job.analysisId) ids.add(job.analysisId);
-    }
-    return [...ids];
-}
-
-// Helper to delete related analyses
-async function deleteRelatedAnalyses(jobs: any[]): Promise<number> {
-    const ids = extractAnalysisIds(jobs);
-    if (ids.length === 0) return 0;
-    const result = await Analysis.deleteMany({
-        _id: { $in: ids.map(id => new mongoose.Types.ObjectId(id)) }
-    });
-    return result.deletedCount || 0;
-}
+import trajectoryJobsService from '@/services/trajectory-jobs-service';
+import RuntimeError from '@/utilities/runtime/runtime-error';
 
 export default class TrajectoryJobsController extends BaseController<any> {
     constructor() {
@@ -66,22 +43,17 @@ export default class TrajectoryJobsController extends BaseController<any> {
             const ctx = await this.validateTrajectory(req, res);
             if (!ctx) return;
 
-            const result = await jobManager.clearHistory(ctx.trajectoryId, ctx.teamId, {
-                deleteRelated: deleteRelatedAnalyses
-            });
-
-            await Trajectory.findByIdAndUpdate(ctx.trajectoryId, { status: 'completed' });
-
-            return res.json({
-                message: 'History cleared successfully',
-                deletedJobs: result.deletedJobs,
-                deletedAnalyses: result.deletedRelated,
-                trajectoryId: ctx.trajectoryId
-            });
+            const result = await trajectoryJobsService.clearHistory(ctx.trajectoryId, ctx.teamId);
+            return res.json(result);
         } catch (error: any) {
+            if (error instanceof RuntimeError) {
+                return res.status(error.statusCode).json({ message: error.message });
+            }
+            // Fallback for non-RuntimeErrors that might still match the legacy check
             if (error.message === 'LOCK_CONFLICT') {
                 return res.status(409).json({ message: 'Another operation is in progress' });
             }
+
             logger.error(`[TrajectoryJobs] clearHistory failed: ${error.message}`);
             return res.status(500).json({ message: 'Failed', error: error.message });
         }
@@ -92,19 +64,12 @@ export default class TrajectoryJobsController extends BaseController<any> {
             const ctx = await this.validateTrajectory(req, res);
             if (!ctx) return;
 
-            const result = await jobManager.removeActiveJobs(ctx.trajectoryId, ctx.teamId, {
-                deleteRelated: deleteRelatedAnalyses
-            });
-
-            await Trajectory.findByIdAndUpdate(ctx.trajectoryId, { status: 'completed' });
-
-            return res.json({
-                message: result.deletedJobs > 0 ? 'Running jobs removed' : 'No running jobs found',
-                deletedJobs: result.deletedJobs,
-                deletedAnalyses: result.deletedRelated,
-                trajectoryId: ctx.trajectoryId
-            });
+            const result = await trajectoryJobsService.removeRunningJobs(ctx.trajectoryId, ctx.teamId);
+            return res.json(result);
         } catch (error: any) {
+            if (error instanceof RuntimeError) {
+                return res.status(error.statusCode).json({ message: error.message });
+            }
             if (error.message === 'LOCK_CONFLICT') {
                 return res.status(409).json({ message: 'Another operation is in progress' });
             }
@@ -118,14 +83,8 @@ export default class TrajectoryJobsController extends BaseController<any> {
             const ctx = await this.validateTrajectory(req, res);
             if (!ctx) return;
 
-            const failedJobs = await jobManager.getFailedJobs(ctx.trajectoryId);
-
-            // TODO: Re-queue failed jobs
-            return res.json({
-                message: 'Failed jobs found',
-                failedJobs: failedJobs.length,
-                trajectoryId: ctx.trajectoryId
-            });
+            const result = await trajectoryJobsService.retryFailedJobs(ctx.trajectoryId);
+            return res.json(result);
         } catch (error: any) {
             logger.error(`[TrajectoryJobs] retryFailedJobs failed: ${error.message}`);
             return res.status(500).json({ message: 'Failed', error: error.message });

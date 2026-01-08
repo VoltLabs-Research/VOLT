@@ -1,15 +1,3 @@
-/**
- * JobManager - Unified job management for any entity type
- * 
- * @example
- * const manager = new JobManager({
- *     entityType: 'trajectory',
- *     entityField: 'trajectoryId',
- *     queues: [Queues.ANALYSIS, Queues.RASTERIZER],
- *     onCleanup: async (entityId) => { ... }
- * });
- */
-
 import IORedis from 'ioredis';
 import { createRedisClient } from '@/config/redis';
 import { eventBus } from '@/events/event-bus';

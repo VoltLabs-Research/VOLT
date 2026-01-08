@@ -20,7 +20,9 @@ export const trajectoryJobManager = new JobManager({
         if (await Analysis.exists({ trajectory: entityId, finishedAt: { $exists: false } })) {
             throw new Error('Active analyses exist');
         }
-        await tempFileManager.cleanupTrajectoryDumps(entityId);
+
+        const DumpStorage = (await import('@/services/trajectory/dump-storage')).default;
+        await DumpStorage.deleteDumps(entityId);
     },
 });
 

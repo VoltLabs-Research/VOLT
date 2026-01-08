@@ -136,6 +136,7 @@ export const ErrorCodes = {
 
     RASTER_INVALID_TYPE: 'Raster::InvalidType',
     RASTER_NOT_FOUND: 'Raster::NotFound',
+    LOCK_CONFLICT: 'Resource::LockConflict',
     RASTER_FAILED: 'Raster::Failed',
 
     DOCKER_CREATE_MISSING_IMAGE: 'Docker::Create::MissingImage',

@@ -135,10 +135,14 @@ export class SessionManager<T extends BaseJob> {
             return;
         }
 
-        // Cleanup using centralized TempFileManager
+        // Cleanup using specialized services
         try {
             const tempFileManager = (await import('@/services/temp-file-manager')).default;
-            await tempFileManager.cleanupSession(sessionId);
+            const DumpStorage = (await import('@/services/trajectory/dump-storage')).default;
+
+            // Session-level cleanup (files registered during session)
+            // Since we moved away from central registry, consumers should handle their own cleanup
+            // sessionManager doesn't track specific files anymore
 
             // Check if there are any active analyses for this trajectory
             const { Analysis } = await import('@/models');
@@ -148,7 +152,8 @@ export class SessionManager<T extends BaseJob> {
             });
 
             if (!hasActiveAnalyses) {
-                await tempFileManager.cleanupTrajectoryDumps(trajectoryId);
+                // Use specialized service for dump cleanup
+                await DumpStorage.deleteDumps(trajectoryId);
             } else {
                 this.logInfo(`Skipping dump cleanup for trajectory ${trajectoryId} due to active analyses.`);
             }

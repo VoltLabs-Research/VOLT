@@ -23,7 +23,6 @@ class SocketGateway {
     private io?: Server;
     private adapterPub?: Redis;
     private adapterSub?: Redis;
-    private jobUpdatesSubscriber?: Redis;
     private trajectoryUpdatesSubscriber?: Redis;
     private initialized = false;
     private modules: BaseSocketModule[] = [];
@@ -120,7 +119,7 @@ class SocketGateway {
 
         // Initialize job updates listener
         try {
-            this.jobUpdatesSubscriber = initializeJobUpdatesListener(this.io);
+            initializeJobUpdatesListener(this.io);
         } catch (error) {
             logger.error(`[Socket Gateway] Job updates listener error: ${error}`);
         }
@@ -177,17 +176,12 @@ class SocketGateway {
         } catch { }
 
         try {
-            await this.jobUpdatesSubscriber?.quit();
-        } catch { }
-
-        try {
             await this.trajectoryUpdatesSubscriber?.quit();
         } catch { }
 
         this.io = undefined;
         this.adapterPub = undefined;
         this.adapterSub = undefined;
-        this.jobUpdatesSubscriber = undefined;
         this.trajectoryUpdatesSubscriber = undefined;
         this.initialized = false;
     }

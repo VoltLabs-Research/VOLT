@@ -662,14 +662,11 @@ export default class MetricsCollector {
                 if (error.message && error.message.includes('WRONGTYPE')) {
                     logger.warn('Detected legacy active_clusters Set type. Resetting to Sorted Set.');
                     await redis.del('active_clusters');
-                    // Retry cleanup (optional, or just wait for next tick)
                 } else {
                     throw error;
                 }
             }
 
-            // Get list of active clusters
-            // If we just deleted it, this returns empty, which is fine
             const clusters = await redis.zrange('active_clusters', 0, -1);
             if (!clusters.length) return [];
 
@@ -677,25 +674,15 @@ export default class MetricsCollector {
             const allMetrics: any[] = [];
 
             for (const clusterId of clusters) {
-                // Construct the key for this cluster's metrics history
-                const clusterMetricsKey = `${clusterId}/metrics-history`; // Replicate internal logic of `useClusterId` manually or by context
-                // Or better: construct a transient collector or just query redis directly
-                // Logic from `saveToRedis` uses `this.redisMetricsKey` which is `useClusterId(metricsKey)`
-
-                // Fetch latest metric for this cluster
+                const clusterMetricsKey = `${clusterId}/metrics-history`;
                 const metricsData = await redis.zrevrange(clusterMetricsKey, 0, 0);
                 if (metricsData && metricsData.length > 0) {
                     const metric = JSON.parse(metricsData[0]);
 
-                    // Inject analysis count
                     metric.analysisCount = analysisCounts[clusterId] || 0;
-                    // Inject actual clusterId just in case
                     metric.clusterId = clusterId;
 
                     allMetrics.push(metric);
-                } else {
-                    // Cluster is active but has no current metrics? 
-                    // Maybe we push a skeleton or just skip
                 }
             }
 
