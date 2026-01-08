@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react';
 import { useTeamStore } from '@/features/team/stores';
 import { useNotificationStore } from '@/stores/slices/notification';
 import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
-import { useContainerStore } from '@/stores/slices/container';
+import { useContainerStore } from '@/features/container/stores';
 import { useAuthStore } from '@/features/auth/stores';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
 import useTrajectoryUpdates from '@/hooks/trajectory/use-trajectory-updates';

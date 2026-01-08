@@ -17,10 +17,10 @@ import {
 } from 'lucide-react';
 import useToast from '@/hooks/ui/use-toast';
 import useConfirm from '@/hooks/ui/use-confirm';
-import ContainerTerminal from '@/components/organisms/containers/ContainerTerminal';
-import ContainerFileExplorer from '@/components/organisms/containers/ContainerFileExplorer';
-import ContainerProcesses from '@/components/organisms/containers/ContainerProcesses';
-import containerApi from '@/services/api/container/container';
+import ContainerTerminal from '@/features/container/components/organisms/ContainerTerminal';
+import ContainerFileExplorer from '@/features/container/components/organisms/ContainerFileExplorer';
+import ContainerProcesses from '@/features/container/components/organisms/ContainerProcesses';
+import containerApi from '@/features/container/api/container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';

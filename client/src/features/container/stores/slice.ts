@@ -1,8 +1,8 @@
-import type { Container } from '@/services/api/container/types';
-import containerApi from '@/services/api/container/container';
+import type { Container } from '@/features/container/types';
+import containerApi from '@/features/container/api/container';
 import { calculatePaginationState, initialListingMeta, type ListingMeta } from '@/utilities/api/pagination-utils';
-import { runRequest } from '../../helpers';
-import type { SliceCreator } from '../../helpers/create-slice';
+import { runRequest } from '../../../stores/helpers';
+import type { SliceCreator } from '../../../stores/helpers/create-slice';
 
 export interface ContainerState {
     containers: Container[];

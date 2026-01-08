@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IoClose, IoAdd, IoTrash } from 'react-icons/io5';
 import teamApi from '@/features/team/api/team';
-import containerApi from '@/services/api/container/container';
+import containerApi from '@/features/container/api/container';
 import useToast from '@/hooks/ui/use-toast';
 import './CreateContainerModal.css';
 import Title from '@/components/primitives/Title';

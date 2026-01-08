@@ -20,7 +20,7 @@ import Button from '@/components/primitives/Button';
 import Select from '@/components/atoms/form/Select';
 import systemApi from '@/services/api/system/system';
 import teamApi from '@/features/team/api/team';
-import containerApi from '@/services/api/container/container';
+import containerApi from '@/features/container/api/container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import './CreateContainer.css';
