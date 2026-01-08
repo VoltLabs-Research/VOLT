@@ -1,6 +1,6 @@
 import EditableTag from '@/components/atoms/common/EditableTag';
 import Tooltip from '@/components/atoms/common/Tooltip';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import { useAuthStore } from '@/features/auth/stores';
 import Title from '@/components/primitives/Title';
 import type { Trajectory } from '@/types/models';

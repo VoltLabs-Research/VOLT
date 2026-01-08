@@ -3,8 +3,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import trajectoryApi from '@/services/api/trajectory/trajectory';
-import usePropertySelector from '@/hooks/trajectory/use-property-selector';
+import trajectoryApi from '@/features/trajectory/api/trajectory';
+import usePropertySelector from '@/features/trajectory/hooks/use-property-selector';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Button from '@/components/primitives/Button';
 import FormField from '@/components/molecules/form/FormField';

@@ -23,7 +23,7 @@
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { processFileSystemEntry } from '@/utilities/fs/process-file-system-entry';
-import type { FileWithPath } from '@/hooks/trajectory/use-trajectory-upload';
+import type { FileWithPath } from '@/features/trajectory/hooks/use-trajectory-upload';
 import useDragState from '@/hooks/ui/drag-drop/use-drag-state';
 import useFileUpload from '@/hooks/ui/drag-drop/use-file-upload';
 import useLogger from '@/hooks/core/use-logger';

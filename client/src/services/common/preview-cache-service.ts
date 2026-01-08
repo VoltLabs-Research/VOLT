@@ -1,5 +1,5 @@
 import Logger from '@/services/common/logger';
-import trajectoryApi from '@/services/api/trajectory/trajectory';
+import trajectoryApi from '@/features/trajectory/api/trajectory';
 
 class PreviewCacheService{
     private cache = new Map<string, string>();

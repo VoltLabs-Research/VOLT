@@ -1,4 +1,4 @@
-import trajectoryApi from '@/services/api/trajectory/trajectory';
+import trajectoryApi from '@/features/trajectory/api/trajectory';
 import { runRequest } from '../../helpers';
 import type { SliceCreator } from '../../helpers/create-slice';
 import type { Trajectory } from '@/types/models';

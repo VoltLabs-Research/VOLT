@@ -1,6 +1,6 @@
 import VoltClient from '@/api';
 import dailyActivityApi from '../daily-activity/daily-activity';
-import trajectoryApi from '../trajectory/trajectory';
+import trajectoryApi from '@/features/trajectory/api/trajectory';
 import analysis from '../analysis/analysis';
 
 const client = new VoltClient('/team-member', { useRBAC: true });

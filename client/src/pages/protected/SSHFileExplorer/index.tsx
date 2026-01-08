@@ -3,7 +3,7 @@ import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSSHExplorerStore } from '@/stores/slices/ssh';
 import { useTeamStore } from '@/features/team/stores';
-import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
+import FileExplorer from '@/features/trajectory/components/organisms/FileExplorer';
 import Button from '@/components/primitives/Button';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -17,7 +17,7 @@ import {
 } from 'react-icons/lu';
 import { formatSize } from '@/utilities/glb/scene-utils';
 import useToast from '@/hooks/ui/use-toast';
-import { FileRowSkeleton, BreadcrumbsSkeleton } from '@/components/organisms/trajectory/FileExplorer/Skeletons';
+import { FileRowSkeleton, BreadcrumbsSkeleton } from '@/features/trajectory/components/organisms/FileExplorer/Skeletons';
 
 const SSHFileExplorer = () => {
     usePageTitle('SSH File Explorer');

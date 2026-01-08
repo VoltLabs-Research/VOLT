@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import { useRasterStore } from '@/stores/slices/raster';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import { useEditorStore } from '@/stores/slices/editor';

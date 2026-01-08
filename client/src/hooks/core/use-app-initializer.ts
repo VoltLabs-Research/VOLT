@@ -9,7 +9,7 @@ import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
 import { useContainerStore } from '@/features/container/stores';
 import { useAuthStore } from '@/features/auth/stores';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
-import useTrajectoryUpdates from '@/hooks/trajectory/use-trajectory-updates';
+import useTrajectoryUpdates from '@/features/trajectory/hooks/use-trajectory-updates';
 import useLogger from '@/hooks/core/use-logger';
 import { useSearchParams } from 'react-router';
 

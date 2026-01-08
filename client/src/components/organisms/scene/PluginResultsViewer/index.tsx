@@ -28,7 +28,7 @@ import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 import { useUIStore } from '@/stores/slices/ui';
 import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import { useTeamStore } from '@/features/team/stores';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import type { RenderableExposure } from '@/features/plugins/stores/plugin-slice';

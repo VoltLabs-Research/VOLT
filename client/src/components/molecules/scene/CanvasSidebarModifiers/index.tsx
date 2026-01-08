@@ -11,7 +11,7 @@ import { RiSliceFill } from 'react-icons/ri';
 import CanvasSidebarOption from '@/components/atoms/scene/CanvasSidebarOption';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import { useUIStore, type ActiveModifier } from '@/stores/slices/ui';
 import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
 

@@ -23,7 +23,7 @@
 import type { RouteGroup } from './types';
 import Canvas from '@/pages/protected/Canvas';
 import Dashboard from '@/pages/protected/Dashboard';
-import FileExplorer from '@/pages/protected/FileExplorer';
+import FileExplorer from '@/features/trajectory/pages/protected/FileExplorer';
 import SSHConnectionsListing from '@/pages/protected/SSHConnectionsListing';
 import SSHFileExplorer from '@/pages/protected/SSHFileExplorer';
 import MyTeam from '@/features/team/pages/protected/MyTeam';
@@ -32,7 +32,7 @@ import Messages from '@/pages/protected/Messages';
 import PluginListing from '@/features/plugins/pages/protected/PluginListing';
 import Plugins from '@/features/plugins/pages/protected/Plugins';
 import AnalysisConfigsListing from '@/pages/protected/AnalysisConfigsListing';
-import TrajectoriesListing from '@/pages/protected/TrajectoriesListing';
+import TrajectoriesListing from '@/features/trajectory/pages/protected/TrajectoriesListing';
 import SimulationCellsListing from '@/pages/protected/SimulationCellsListing';
 import {
     GeneralPage,
@@ -52,7 +52,7 @@ import Containers from '@/features/container/pages/protected/Containers';
 import ContainerDetails from '@/features/container/pages/protected/ContainerDetails';
 import CreateContainer from '@/features/container/pages/protected/CreateContainer';
 import PluginBuilder from '@/features/plugins/pages/protected/PluginBuilder';
-import PerAtomViewer from '@/pages/protected/PerAtomViewer';
+import PerAtomViewer from '@/features/trajectory/pages/protected/PerAtomViewer';
 import ManageRoles from '@/pages/protected/ManageRoles';
 
 export const routesConfig: RouteGroup = {

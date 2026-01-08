@@ -4,7 +4,7 @@ import FormField from '@/components/molecules/form/FormField';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Button from '@/components/primitives/Button';
 import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import pluginApi from '@/features/plugins/api/plugin';
 import Container from '@/components/primitives/Container';
 import './ModifierConfiguration.css';

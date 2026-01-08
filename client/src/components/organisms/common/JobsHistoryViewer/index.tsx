@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import JobsHistory from '@/components/molecules/common/JobsHistory';
 import { useTeamJobsStore } from '@/features/team/stores';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import { useEditorStore } from '@/stores/slices/editor';
 import useToast from '@/hooks/ui/use-toast';
 import Container from '@/components/primitives/Container';

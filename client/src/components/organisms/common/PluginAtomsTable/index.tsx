@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import trajectoryApi from '@/services/api/trajectory/trajectory';
+import trajectoryApi from '@/features/trajectory/api/trajectory';
 import { useEditorStore } from '@/stores/slices/editor';
 import PluginCompactTable, { type ColumnConfig } from '../PluginCompactTable';
 import useListingLifecycle, { type ListingMeta } from '@/hooks/common/use-listing-lifecycle';

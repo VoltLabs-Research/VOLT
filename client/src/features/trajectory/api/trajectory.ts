@@ -22,7 +22,7 @@
 
 import type { Trajectory } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
-import type { GetTrajectoriesParams, FsListResponse, TrajectoryInfo } from './types';
+import type { GetTrajectoriesParams, FsListResponse, TrajectoryInfo } from '../types';
 import VoltClient from '@/api';
 
 const client = new VoltClient('/trajectories', { useRBAC: true });

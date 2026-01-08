@@ -21,9 +21,9 @@
  */
 
 import { useEffect, useCallback } from 'react';
-import useTrajectoryUpload from '@/hooks/trajectory/use-trajectory-upload';
+import useTrajectoryUpload from '@/features/trajectory/hooks/use-trajectory-upload';
 import { useTeamStore } from '@/features/team/stores';
-import type { FileWithPath } from '@/hooks/trajectory/use-trajectory-upload';
+import type { FileWithPath } from '@/features/trajectory/hooks/use-trajectory-upload';
 import useLogger from '@/hooks/core/use-logger';
 
 const useFileUpload = (

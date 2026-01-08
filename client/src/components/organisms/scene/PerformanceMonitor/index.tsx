@@ -24,7 +24,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Container from '@/components/primitives/Container';
 import { useEditorStore } from '@/stores/slices/editor';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import './PerformanceMonitor.css';
 
 interface RendererStats {

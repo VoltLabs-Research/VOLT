@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { CiLock, CiUnlock } from "react-icons/ci";
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Tooltip from '@/components/atoms/common/Tooltip';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import Button from '@/components/primitives/Button';
 import './TrajectoryVisibilityStatusFloatIcon.css';
 

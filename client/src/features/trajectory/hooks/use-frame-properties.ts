@@ -14,6 +14,7 @@ const useFrameProperties = ({ analysisId, frame, trajectoryId }: UseFramePropert
     const getProps = async () => {
         setIsLoading(true);
         try {
+            // TODO: WHAT THE FUCK WHY RASTERAPI?
             // analysisId is now optional - will return only base properties when absent
             const data = await rasterApi.colorCoding.getProperties(trajectoryId!, analysisId, frame!);
             setProperties(data);

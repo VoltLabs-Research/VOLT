@@ -3,11 +3,11 @@ import type { Trajectory } from '@/types/models';
 import { v4 as uuidv4 } from 'uuid';
 import type { TrajectoryState, TrajectoryStore } from '@/types/stores/trajectories';
 import PreviewCacheService from '@/services/common/preview-cache-service';
-import { clearTrajectoryPreviewCache } from '@/hooks/trajectory/use-trajectory-preview';
-import trajectoryApi from '@/services/api/trajectory/trajectory';
-import { runRequest } from '../../helpers';
+import { clearTrajectoryPreviewCache } from '@/features/trajectory/hooks/use-trajectory-preview';
+import trajectoryApi from '@/features/trajectory/api/trajectory';
+import { runRequest } from '../../../stores/helpers';
 import { extractErrorMessage } from '@/utilities/api/error-extractor';
-import type { SliceCreator } from '../../helpers/create-slice';
+import type { SliceCreator } from '../../../stores/helpers/create-slice';
 import { useUIStore } from '@/stores/slices/ui';
 
 const trajectoryPreviewCache = new PreviewCacheService();

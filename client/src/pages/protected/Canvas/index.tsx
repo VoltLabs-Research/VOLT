@@ -6,7 +6,7 @@ import { AnimatePresence } from 'framer-motion';
 import TimestepViewer from '@/components/organisms/scene/TimestepViewer';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import useCanvasPresence from '@/hooks/canvas/use-canvas-presence';
-import useRequireTrajectory from '@/hooks/trajectory/use-require-trajectory';
+import useRequireTrajectory from '@/features/trajectory/hooks/use-require-trajectory';
 import useKeyboardShortcuts from '@/hooks/ui/use-keyboard-shortcuts';
 import CanvasWidgets from '@/components/atoms/scene/CanvasWidgets';
 import CanvasPresenceAvatars from '@/components/atoms/scene/CanvasPresenceAvatars';

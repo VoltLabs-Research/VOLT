@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useParams, useNavigate } from 'react-router-dom';
-import trajectoryApi from '@/services/api/trajectory/trajectory';
+import trajectoryApi from '@/features/trajectory/api/trajectory';
 import { useTeamStore } from '@/features/team/stores';
 import PluginExposureTable from '@/components/organisms/common/PluginExposureTable';
 import Select from '@/components/atoms/form/Select';

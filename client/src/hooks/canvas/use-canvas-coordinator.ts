@@ -22,7 +22,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useEditorStore } from '@/stores/slices/editor';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import useLogger from '@/hooks/core/use-logger';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 

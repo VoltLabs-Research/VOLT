@@ -4,7 +4,7 @@ import useSlicingPlanes from '@/hooks/canvas/use-slicing-planes';
 import useGlbScene from '@/hooks/canvas/use-glb-scene';
 import { useTeamStore } from '@/features/team/stores';
 import SimulationCellBox from '@/components/molecules/scene/SimulationCellBox';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import { calculateBoxTransforms } from '@/utilities/glb/boxUtils';
 
 interface SingleModelViewerProps {

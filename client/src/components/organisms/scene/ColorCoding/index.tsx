@@ -1,4 +1,4 @@
-import usePropertySelector from '@/hooks/trajectory/use-property-selector';
+import usePropertySelector from '@/features/trajectory/hooks/use-property-selector';
 import EditorWidget from '@/components/organisms/scene/EditorWidget';
 import Button from '@/components/primitives/Button';
 import FormField from '@/components/molecules/form/FormField';

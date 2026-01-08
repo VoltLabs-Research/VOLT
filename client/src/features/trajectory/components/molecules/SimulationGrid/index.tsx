@@ -1,8 +1,8 @@
 import { useEffect, useCallback, memo } from 'react';
 import useConfirm from '@/hooks/ui/use-confirm';
-import SimulationCard from '@/components/atoms/trajectory/SimulationCard';
-import SimulationSkeletonCard from '@/components/atoms/trajectory/SimulationSkeletonCard';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import SimulationCard from '@/features/trajectory/components/atoms/SimulationCard';
+import SimulationSkeletonCard from '@/features/trajectory/components/atoms/SimulationSkeletonCard';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import useAnimationPresence from '@/hooks/ui/animation/use-animation-presence';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import Container from '@/components/primitives/Container';

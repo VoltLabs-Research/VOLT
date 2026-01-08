@@ -4,7 +4,7 @@
 
 import { useEffect } from 'react';
 import { useTeamStore } from '@/features/team/stores';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import useLogger from '@/hooks/core/use-logger';
 
 interface UseRequireTeamDataOptions {

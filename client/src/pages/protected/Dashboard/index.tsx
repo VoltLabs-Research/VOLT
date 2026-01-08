@@ -5,11 +5,11 @@ import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer'
 import FileUpload from '@/components/molecules/common/FileUpload';
 import TimestepViewer from '@/components/organisms/scene/TimestepViewer';
 import Scene3D, { type Scene3DRef } from '@/components/organisms/scene/Scene3D';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import { formatNumber } from '@/components/organisms/common/DocumentListing';
 import { GoArrowRight } from 'react-icons/go';
-import SimulationGrid from '@/components/molecules/trajectory/SimulationGrid';
+import SimulationGrid from '@/features/trajectory/components/molecules/SimulationGrid';
 import { useTeamStore } from '@/features/team/stores';
 import Container from '@/components/primitives/Container';
 import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';

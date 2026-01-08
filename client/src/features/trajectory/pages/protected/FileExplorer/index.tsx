@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { usePageTitle } from '@/hooks/core/use-page-title';
 import useTrajectoryFS, { type FsEntry } from '@/stores/slices/trajectory-vfs';
-import trajectoryApi from '@/services/api/trajectory/trajectory';
+import trajectoryApi from '@/features/trajectory/api/trajectory';
 import { formatDistanceToNow } from 'date-fns';
-import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
+import FileExplorer from '@/features/trajectory/components/organisms/FileExplorer';
 import {
     LuLayoutList,
     LuFolder,
@@ -21,7 +21,7 @@ import { CircularProgress } from '@mui/material';
 import { formatSize } from '@/utilities/glb/scene-utils';
 import './TrajectoryFileExplorer.css';
 import Paragraph from '@/components/primitives/Paragraph';
-import { BreadcrumbsSkeleton, HeaderIconSkeleton, FileRowSkeleton } from '@/components/organisms/trajectory/FileExplorer/Skeletons';
+import { BreadcrumbsSkeleton, HeaderIconSkeleton, FileRowSkeleton } from '@/features/trajectory/components/organisms/FileExplorer/Skeletons';
 
 type TrajectoryFileExplorerProps = {
     height?: number | string;

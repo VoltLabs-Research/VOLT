@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { socketService } from '@/services/websockets/socketio';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import useLogger from '@/hooks/core/use-logger';
-import trajectoryApi from '@/services/api/trajectory/trajectory';
+import trajectoryApi from '@/features/trajectory/api/trajectory';
 
 type PendingUpdate = {
     status: 'queued' | 'processing' | 'rendering' | 'completed' | 'failed';

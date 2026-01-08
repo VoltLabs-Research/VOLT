@@ -23,7 +23,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Logger from '@/services/common/logger';
 import useLogger from '@/hooks/core/use-logger';
-import trajectoryApi from '@/services/api/trajectory/trajectory';
+import trajectoryApi from '@/features/trajectory/api/trajectory';
 
 interface UseTrajectoryPreviewOptions {
     trajectoryId: string;

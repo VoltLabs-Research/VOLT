@@ -1,4 +1,4 @@
-import type { FileWithPath } from '@/hooks/trajectory/use-trajectory-upload';
+import type { FileWithPath } from '@/features/trajectory/hooks/use-trajectory-upload';
 import Logger from '@/services/common/logger';
 
 const extractFolderName = (fullPath: string): string | null => {

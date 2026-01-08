@@ -3,7 +3,7 @@ import { usePageTitle } from '@/hooks/core/use-page-title'
 import { formatSize } from '@/utilities/glb/scene-utils'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/common/DocumentListing'
-import { useTrajectoryStore } from '@/stores/slices/trajectory'
+import { useTrajectoryStore } from '@/features/trajectory/stores'
 import { useTeamStore } from '@/features/team/stores'
 import { formatDistance, formatDistanceToNow } from 'date-fns'
 import { useUIStore } from '@/stores/slices/ui';

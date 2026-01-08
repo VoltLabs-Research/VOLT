@@ -1,11 +1,11 @@
 import Sidebar from '@/components/organisms/common/Sidebar';
-import { useTrajectoryStore } from '@/stores/slices/trajectory';
+import { useTrajectoryStore } from '@/features/trajectory/stores';
 import { useEditorStore } from '@/stores/slices/editor';
 import CanvasSidebarModifiers from '@/components/molecules/scene/CanvasSidebarModifiers';
 import CanvasSidebarScene from '@/components/molecules/scene/CanvasSidebarScene';
 import SidebarUserAvatar from '@/features/auth/components/atoms/SidebarUserAvatar';
 import { useUIStore } from '@/stores/slices/ui';
-import EditableTrajectoryName from '@/components/atoms/trajectory/EditableTrajectoryName';
+import EditableTrajectoryName from '@/features/trajectory/components/atoms/EditableTrajectoryName';
 import { BsArrowLeft } from 'react-icons/bs';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import LightsControls from '@/components/molecules/scene/LightsControls';
