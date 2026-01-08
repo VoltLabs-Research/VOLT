@@ -125,7 +125,7 @@ const RendererSettingsControls: React.FC = () => {
 								onChange={(e) => setRuntime({ toneMappingExposure: parseFloat(e.target.value) })}
 								style={{ width: '100%' }}
 							/>
-							<span className='form-control-value'>{runtime.toneMappingExposure.toFixed(2)}</span>
+							<span className='form-control-value color-muted'>{runtime.toneMappingExposure.toFixed(2)}</span>
 						</div>
 					</div>
 					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Overall scene brightness multiplier</div>
@@ -180,7 +180,7 @@ const RendererSettingsControls: React.FC = () => {
 								onChange={(e) => setRuntime({ gammaFactor: parseFloat(e.target.value) })}
 								style={{ width: '100%' }}
 							/>
-							<span className='form-control-value'>{runtime.gammaFactor.toFixed(1)}</span>
+							<span className='form-control-value color-muted'>{runtime.gammaFactor.toFixed(1)}</span>
 						</div>
 					</div>
 					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Legacy gamma correction (prefer outputColorSpace)</div>
@@ -330,7 +330,7 @@ const RendererSettingsControls: React.FC = () => {
 								onChange={(e) => setRuntime({ maxMorphTargets: parseInt(e.target.value) })}
 								style={{ width: '100%' }}
 							/>
-							<span className='form-control-value'>{runtime.maxMorphTargets}</span>
+							<span className='form-control-value color-muted'>{runtime.maxMorphTargets}</span>
 						</div>
 					</div>
 					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Maximum morph targets per mesh (animation)</div>
@@ -350,7 +350,7 @@ const RendererSettingsControls: React.FC = () => {
 								onChange={(e) => setRuntime({ maxMorphNormals: parseInt(e.target.value) })}
 								style={{ width: '100%' }}
 							/>
-							<span className='form-control-value'>{runtime.maxMorphNormals}</span>
+							<span className='form-control-value color-muted'>{runtime.maxMorphNormals}</span>
 						</div>
 					</div>
 					<div style={{ fontSize: '0.75rem', color: '#888', marginTop: '4px' }}>Maximum morph normals per mesh (lighting)</div>

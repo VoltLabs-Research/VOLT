@@ -38,7 +38,6 @@
 }
 
 .chat-file-download {
-    padding: 0.5rem;
     border-radius: var(--radius-xs);
     transition: all 0.2s ease;
     text-decoration: none;

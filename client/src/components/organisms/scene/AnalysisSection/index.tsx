@@ -64,7 +64,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     const isLoaded = entry.state === 'loaded';
 
     return (
-        <Container className='analysis-section'>
+        <Container className='analysis-section overflow-hidden'>
             <Popover
                 id={`analysis-header-menu-${section.analysis._id}`}
                 triggerAction="contextmenu"
@@ -91,7 +91,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                     >
                         <Container className='d-flex items-center gap-05'>
                             <i
-                                className='analysis-section-arrow'
+                                className='analysis-section-arrow font-size-4'
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     onToggle(section.analysis._id);
@@ -101,12 +101,12 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                             </i>
 
                             <Paragraph
-                                className={`analysis-section-title font-size-2 ${section.isCurrentAnalysis ? 'color-gray' : 'color-secondary'}`}
+                                className={`analysis-section-title font-size-2 ${section.isCurrentAnalysis ? 'color-gray' : 'color-secondary'} overflow-hidden font-weight-5`}
                             >
                                 {section.pluginDisplayName}
                                 {section.isCurrentAnalysis && ' (Active)'}
                                 {section.analysis?.createdAt && (
-                                    <span className='analysis-section-date'>
+                                    <span className='analysis-section-date font-weight-4'>
                                         {' • '}{formatDistanceToNow(new Date(section.analysis.createdAt), { addSuffix: true })}
                                     </span>
                                 )}
@@ -114,7 +114,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                         </Container>
 
                         {configDescription && (
-                            <Paragraph className='analysis-section-description color-tertiary font-size-1'>
+                            <Paragraph className='analysis-section-description color-tertiary font-size-1 w-max overflow-hidden'>
                                 {configDescription}
                             </Paragraph>
                         )}

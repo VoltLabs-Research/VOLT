@@ -167,7 +167,7 @@ const ContainerDetails: React.FC = () => {
     return (
         <div className="details-page-layout d-flex overflow-hidden">
             <div className="details-sidebar d-flex column f-shrink-0">
-                <div className="sidebar-header-details d-flex column gap-1 items-start">
+                <div className="sidebar-header-details d-flex column gap-1 items-start p-1-5">
                     <Button variant='ghost' intent='neutral' size='sm' leftIcon={<ArrowLeft size={16} />} onClick={() => navigate('/dashboard/containers')}>Back</Button>
                     <div className="d-flex items-center gap-1 container-identity">
                         <div className="d-flex items-center content-center container-icon-large">
@@ -180,7 +180,7 @@ const ContainerDetails: React.FC = () => {
                     </div>
                 </div>
 
-                <nav className="sidebar-nav d-flex column gap-1 flex-1">
+                <nav className="sidebar-nav d-flex column gap-1 flex-1 y-auto">
                     <Button
                         variant={activeTab === 'overview' ? 'soft' : 'ghost'}
                         intent={activeTab === 'overview' ? 'brand' : 'neutral'}
@@ -219,7 +219,7 @@ const ContainerDetails: React.FC = () => {
                     >Files & Storage</Button>
                 </nav>
 
-                <div className="sidebar-actions d-flex column gap-075">
+                <div className="sidebar-actions d-flex column gap-075 p-1-5">
                     {container.status !== 'running' ? (
                         <Button variant='solid' intent='success' block leftIcon={<Play size={16} />} onClick={() => handleAction('start')} disabled={actionLoading}>Start Container</Button>
                     ) : (
@@ -249,7 +249,7 @@ const ContainerDetails: React.FC = () => {
                         </div>
 
                         <div className="stats-grid gap-2">
-                            <div className="stat-card">
+                            <div className="stat-card p-1-5">
                                 <div className="d-flex content-between items-center card-header-row mb-1-5">
                                     <Title className="font-size-3 font-weight-6">CPU Usage</Title>
                                     <span className="limit-badge font-size-1 font-weight-6">Limit: {container.cpus || 1} vCPU</span>
@@ -309,7 +309,7 @@ const ContainerDetails: React.FC = () => {
                                     </ResponsiveContainer>
                                 </div>
                             </div>
-                            <div className="stat-card">
+                            <div className="stat-card p-1-5">
                                 <div className="d-flex content-between items-center card-header-row mb-1-5">
                                     <Title className="font-size-3 font-weight-6">Memory Usage</Title>
                                     <span className="limit-badge font-size-1 font-weight-6">Limit: {container.memory || 512} MB</span>
@@ -371,7 +371,7 @@ const ContainerDetails: React.FC = () => {
                         </div>
 
                         <div className="config-grid gap-2">
-                            <div className="config-card">
+                            <div className="config-card p-1-5">
                                 <div className="d-flex content-between items-center mb-1">
                                     <Title className="font-size-3 font-weight-6">Environment Variables</Title>
                                     <div className="d-flex gap-05">
@@ -381,7 +381,7 @@ const ContainerDetails: React.FC = () => {
                                                 <Button variant='ghost' intent='neutral' size='sm' onClick={() => { setEditingEnv(false); setEnvVars(container.env || []); }}>Cancel</Button>
                                             </>
                                         ) : (
-                                            <button className="icon-btn-edit" onClick={() => setEditingEnv(true)}>
+                                            <button className="icon-btn-edit color-muted-foreground cursor-pointer" onClick={() => setEditingEnv(true)}>
                                                 <Settings size={16} />
                                             </button>
                                         )}
@@ -395,7 +395,7 @@ const ContainerDetails: React.FC = () => {
                                                     <input
                                                         placeholder="Key"
                                                         value={e.key}
-                                                        className="config-input"
+                                                        className="config-input font-size-2"
                                                         onChange={(ev) => {
                                                             const newEnv = [...envVars];
                                                             newEnv[i].key = ev.target.value;
@@ -405,19 +405,19 @@ const ContainerDetails: React.FC = () => {
                                                     <input
                                                         placeholder="Value"
                                                         value={e.value}
-                                                        className="config-input"
+                                                        className="config-input font-size-2"
                                                         onChange={(ev) => {
                                                             const newEnv = [...envVars];
                                                             newEnv[i].value = ev.target.value;
                                                             setEnvVars(newEnv);
                                                         }}
                                                     />
-                                                    <button className="icon-btn-delete" onClick={() => setEnvVars(envVars.filter((_, idx) => idx !== i))}>
+                                                    <button className="icon-btn-delete cursor-pointer" onClick={() => setEnvVars(envVars.filter((_, idx) => idx !== i))}>
                                                         <IoTrash size={18} />
                                                     </button>
                                                 </div>
                                             ))}
-                                            <button className="add-row-btn" onClick={() => setEnvVars([...envVars, { key: '', value: '' }])}>
+                                            <button className="add-row-btn gap-05 w-max font-size-2 font-weight-5 color-muted-foreground cursor-pointer" onClick={() => setEnvVars([...envVars, { key: '', value: '' }])}>
                                                 <IoAdd size={16} /> Add Variable
                                             </button>
                                         </>
@@ -437,7 +437,7 @@ const ContainerDetails: React.FC = () => {
                                     )}
                                 </div>
                             </div>
-                            <div className="config-card">
+                            <div className="config-card p-1-5">
                                 <div className="d-flex content-between items-center mb-1">
                                     <Title className="font-size-3 font-weight-6">Port Bindings</Title>
                                     <div className="d-flex gap-05">
@@ -447,7 +447,7 @@ const ContainerDetails: React.FC = () => {
                                                 <Button variant='ghost' intent='neutral' size='sm' onClick={() => { setEditingPorts(false); setPorts(container.ports || []); }}>Cancel</Button>
                                             </>
                                         ) : (
-                                            <button className="icon-btn-edit" onClick={() => setEditingPorts(true)}>
+                                            <button className="icon-btn-edit color-muted-foreground cursor-pointer" onClick={() => setEditingPorts(true)}>
                                                 <Settings size={16} />
                                             </button>
                                         )}
@@ -462,7 +462,7 @@ const ContainerDetails: React.FC = () => {
                                                         type="number"
                                                         placeholder="Container Port"
                                                         value={p.private}
-                                                        className="config-input"
+                                                        className="config-input font-size-2"
                                                         onChange={(ev) => {
                                                             const newPorts = [...ports];
                                                             newPorts[i].private = parseInt(ev.target.value) || 0;
@@ -473,19 +473,19 @@ const ContainerDetails: React.FC = () => {
                                                         type="number"
                                                         placeholder="Host Port"
                                                         value={p.public}
-                                                        className="config-input"
+                                                        className="config-input font-size-2"
                                                         onChange={(ev) => {
                                                             const newPorts = [...ports];
                                                             newPorts[i].public = parseInt(ev.target.value) || 0;
                                                             setPorts(newPorts);
                                                         }}
                                                     />
-                                                    <button className="icon-btn-delete" onClick={() => setPorts(ports.filter((_, idx) => idx !== i))}>
+                                                    <button className="icon-btn-delete cursor-pointer" onClick={() => setPorts(ports.filter((_, idx) => idx !== i))}>
                                                         <IoTrash size={18} />
                                                     </button>
                                                 </div>
                                             ))}
-                                            <button className="add-row-btn" onClick={() => setPorts([...ports, { private: 0, public: 0 }])}>
+                                            <button className="add-row-btn gap-05 w-max font-size-2 font-weight-5 color-muted-foreground cursor-pointer" onClick={() => setPorts([...ports, { private: 0, public: 0 }])}>
                                                 <IoAdd size={16} /> Add Port
                                             </button>
                                         </>

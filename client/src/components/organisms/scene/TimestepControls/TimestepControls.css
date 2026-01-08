@@ -26,20 +26,16 @@
 
 /* Frame Loading Indicator */
 .frame-loading-indicator {
-    position: absolute;
     bottom: -6px;
     left: 0;
     right: 0;
     height: 3px;
     background: rgba(255, 255, 255, 0.08);
     border-radius: 2px;
-    overflow: hidden;
     transform-origin: left center;
 }
 
 .frame-loading-bar {
-    position: absolute;
-    inset: 0;
     background: linear-gradient(90deg,
             #9ca3af 0%,
             #d1d5db 50%,

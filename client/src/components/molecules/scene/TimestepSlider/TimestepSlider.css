@@ -1,12 +1,10 @@
 .timestep-display {
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
-    color: var(--color-text-secondary);
     min-width: max-content;
 }
 
 .editor-timesteps-controls-slider {
-    width: 100%;
 }
 
 .editor-timestep-controls-slider {

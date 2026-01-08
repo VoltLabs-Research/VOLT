@@ -85,7 +85,7 @@ const ContainerFileExplorer: React.FC<ContainerFileExplorerProps> = ({ container
                     </Button>
                     <span>{viewingFile}</span>
                 </Container>
-                <pre className="file-content overflow-auto flex-1">{fileContent}</pre>
+                <pre className="file-content overflow-auto flex-1 p-1">{fileContent}</pre>
             </Container>
         );
     }

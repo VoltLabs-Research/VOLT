@@ -164,7 +164,7 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
                     </Tooltip>
                 )}
             </Container>
-            <Container className='flex-1 overflow-hidden p-relative terminal-body' ref={terminalRef} />
+            <Container className='flex-1 overflow-hidden p-relative terminal-body p-1' ref={terminalRef} />
         </Container>
     );
 

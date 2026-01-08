@@ -225,9 +225,9 @@ const IconSelect: React.FC<IconSelectProps> = ({
 
             <div className="flex-1 icon-select-list y-auto" ref={listContainerRef}>
                 {loading ? (
-                    <div className="d-flex flex-center gap-05 icon-select-loading color-muted">Loading all icons...</div>
+                    <div className="d-flex flex-center gap-05 icon-select-loading color-muted p-1">Loading all icons...</div>
                 ) : filteredIcons.length === 0 ? (
-                    <div className="d-flex flex-center icon-select-empty color-muted">No icons found</div>
+                    <div className="d-flex flex-center icon-select-empty color-muted p-1-5">No icons found</div>
                 ) : (
                     <div style={{ height: LIST_HEIGHT, overflow: 'auto' }}>
                         <List

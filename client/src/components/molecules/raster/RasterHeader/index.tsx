@@ -14,7 +14,7 @@ import Tooltip from '@/components/atoms/common/Tooltip';
 const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView3D, onSignIn, connectedUsers }) => {
     return (
         <div className='d-flex content-between items-center raster-scene-header-container color-primary'>
-            <div className='d-flex items-center gap-2 raster-scene-header-left-container'>
+            <div className='d-flex items-center gap-2 raster-scene-header-left-container p-1'>
                 <Tooltip content="Go Back" placement="bottom">
                     <i className='d-flex flex-center raster-scene-header-go-back-icon-container color-primary cursor-pointer' onClick={onGoBack}>
                         <BsArrowLeft />
@@ -58,7 +58,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
                                     <div
                                         key={(u as any).id ?? u._id}
                                         title={[u.firstName, u.lastName].filter(Boolean).join(' ') || (u as any).name || u.email}
-                                        className="d-flex flex-center connected-user-container"
+                                        className="d-flex flex-center connected-user-container color-primary"
                                         aria-label={`Usuario conectado: ${u.firstName ?? ''} ${u.lastName ?? ''}`.trim()}
                                     >
                                         {u.avatar ? (
@@ -71,7 +71,7 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
 
                                 {extra > 0 && (
                                     <div
-                                        className="d-flex flex-center connected-user-container connected-user-extra"
+                                        className="d-flex flex-center connected-user-container connected-user-extra color-primary"
                                         title={`${extra} más`}
                                         aria-label={`${extra} usuarios más`}
                                     >
@@ -85,13 +85,13 @@ const Header: React.FC<HeaderProps> = ({ trajectory, isLoading, onGoBack, onView
 
                 <div className='dashboard-search-container'>
                     <div className='d-flex gap-1 search-container color-primary'>
-                        <i className='search-icon-container'>
+                        <i className='search-icon-container font-size-3 color-muted'>
                             <IoSearchOutline />
                         </i>
 
                         <input
                             placeholder='Search uploaded team trajectories'
-                            className='search-input h-max' />
+                            className='search-input h-max w-max font-size-2 color-primary' />
                     </div>
                 </div>
 

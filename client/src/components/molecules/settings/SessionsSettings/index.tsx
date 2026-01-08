@@ -29,7 +29,7 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
 
             {loading ? (
                 <Container className='d-flex column gap-1'>
-                    <Container className='session-skeleton d-flex items-center gap-1'>
+                    <Container className='session-skeleton d-flex items-center gap-1 p-1'>
                         <Container className='session-skeleton-icon'></Container>
                         <Container className='flex-1 d-flex column gap-05 session-skeleton-content'>
                             <Container className='session-skeleton-line'></Container>
@@ -42,7 +42,7 @@ const SessionsSettings: React.FC<SessionsSettingsProps> = ({ sessions, loading, 
                     {sessions.map((session, index) => (
                         <Container
                             key={session._id}
-                            className={`d-flex b-soft p-1-5 b-radius-08 items-center content-between session-item sm:column sm:items-start sm:gap-1 ${index === 0 ? 'current' : ''}`}
+                            className={`d-flex b-soft p-1-5 b-radius-08 items-center content-between session-item sm:column sm:items-start sm:gap-1 ${index === 0 ? 'current' : ''} p-1`}
                         >
                             <Container className='d-flex items-center gap-1'>
                                 <Container className='d-flex flex-center session-icon'>

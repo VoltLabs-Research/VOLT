@@ -37,7 +37,7 @@ const SharedFilesList = ({ messages, currentChatId }: SharedFilesListProps) => {
     }, [fileMessages.map(f => f._id).join(','), currentChatId]);
     if (!fileMessages.length)
         return (
-            <div className='chat-empty-state h-max text-center color-secondary'>
+            <div className='chat-empty-state h-max text-center color-secondary p-2'>
                 <div className='chat-empty-description font-size-2-5 line-height-5'>No shared files yet</div>
             </div>
         );

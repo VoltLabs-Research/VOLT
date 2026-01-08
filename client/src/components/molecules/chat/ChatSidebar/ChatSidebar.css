@@ -27,7 +27,6 @@
 }
 
 .chat-sidebar-header-container {
-    padding: 1.5rem;
     border-bottom: 1px solid var(--color-border-soft);
     background: var(--color-surface-1);
     backdrop-filter: blur(10px);
@@ -226,7 +225,6 @@
 
 /* Empty State */
 .chat-empty-state {
-    padding: 2rem;
 }
 
 /* Dark Mode */

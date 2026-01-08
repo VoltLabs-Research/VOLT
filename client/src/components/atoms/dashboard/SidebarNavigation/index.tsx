@@ -117,18 +117,18 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
     ]), []);
 
     return (
-        <nav className='sidebar-nav'>
+        <nav className='sidebar-nav y-auto'>
             {mainNavItems.map(([name, Icon, to], index) => (
                 <button
                     key={index}
-                    className={`sidebar-nav-item ${(to === '/dashboard' ? pathname === to : pathname.startsWith(to)) ? 'is-selected' : ''}`}
+                    className={`sidebar-nav-item ${(to === '/dashboard' ? pathname === to : pathname.startsWith(to)) ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer`}
                     onClick={() => {
                         navigate(to);
                         setSidebarOpen(false);
                         setSettingsExpanded(false);
                     }}
                 >
-                    <span className='sidebar-nav-icon'>
+                    <span className='sidebar-nav-icon font-size-4'>
                         <Icon />
                     </span>
                     <span className='sidebar-nav-label'>{name}</span>
@@ -137,15 +137,15 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
 
             {/* Trajectories Dropdown */}
             <button
-                className={`sidebar-nav-item sidebar-section-header ${pathname.includes('/trajectories') || pathname.includes('/simulation-cells') ? 'is-selected' : ''}`}
+                className={`sidebar-nav-item sidebar-section-header ${pathname.includes('/trajectories') || pathname.includes('/simulation-cells') ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer`}
                 onClick={() => setTrajectoriesExpanded(!trajectoriesExpanded)}
             >
-                <span className="sidebar-nav-icon">
+                <span className="sidebar-nav-icon font-size-4">
                     <TbCube3dSphere />
                 </span>
                 <span className="sidebar-nav-label">Trajectories</span>
                 <IoChevronDown
-                    className={`sidebar-section-chevron ${trajectoriesExpanded ? 'is-expanded' : ''}`}
+                    className={`sidebar-section-chevron ${trajectoriesExpanded ? 'is-expanded' : ''} color-muted`}
                     size={14}
                 />
             </button>
@@ -153,7 +153,7 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
             {trajectoriesExpanded && (
                 <div className="sidebar-sub-items">
                     <button
-                        className={`sidebar-sub-item ${pathname === '/dashboard/trajectories/list' ? 'is-selected' : ''}`}
+                        className={`sidebar-sub-item ${pathname === '/dashboard/trajectories/list' ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                         onClick={() => {
                             navigate('/dashboard/trajectories/list');
                             setSidebarOpen(false);
@@ -162,7 +162,7 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
                         View All
                     </button>
                     <button
-                        className={`sidebar-sub-item ${pathname === '/dashboard/simulation-cells/list' ? 'is-selected' : ''}`}
+                        className={`sidebar-sub-item ${pathname === '/dashboard/simulation-cells/list' ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                         onClick={() => {
                             navigate('/dashboard/simulation-cells/list');
                             setSidebarOpen(false);
@@ -176,15 +176,15 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
 
             {/* Analysis Configs Dropdown */}
             <button
-                className={`sidebar-nav-item sidebar-section-header ${pathname.includes('/analysis-configs') ? 'is-selected' : ''}`}
+                className={`sidebar-nav-item sidebar-section-header ${pathname.includes('/analysis-configs') ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer`}
                 onClick={() => setAnalysesExpanded(!analysesExpanded)}
             >
-                <span className="sidebar-nav-icon">
+                <span className="sidebar-nav-icon font-size-4">
                     <IoAnalytics />
                 </span>
                 <span className="sidebar-nav-label">Analysis</span>
                 <IoChevronDown
-                    className={`sidebar-section-chevron ${analysesExpanded ? 'is-expanded' : ''}`}
+                    className={`sidebar-section-chevron ${analysesExpanded ? 'is-expanded' : ''} color-muted`}
                     size={14}
                 />
             </button>
@@ -192,7 +192,7 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
             {analysesExpanded && (
                 <div className="sidebar-sub-items">
                     <button
-                        className={`sidebar-sub-item ${pathname === '/dashboard/analysis-configs/list' && !searchParams.get('plugin') ? 'is-selected' : ''}`}
+                        className={`sidebar-sub-item ${pathname === '/dashboard/analysis-configs/list' && !searchParams.get('plugin') ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                         onClick={() => {
                             navigate('/dashboard/analysis-configs/list');
                             setSidebarOpen(false);
@@ -234,7 +234,7 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
                                         {plugin.pluginName}
                                     </span>
                                     <IoChevronDown
-                                        className={`sidebar-nested-chevron ${expandedPlugins.has(plugin.pluginSlug) ? 'is-expanded' : ''}`}
+                                        className={`sidebar-nested-chevron ${expandedPlugins.has(plugin.pluginSlug) ? 'is-expanded' : ''} color-muted`}
                                         size={12}
                                     />
                                 </button>
@@ -266,14 +266,14 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
             {secondaryNavItems.map(([name, Icon, to], index) => (
                 <button
                     key={index}
-                    className={`sidebar-nav-item ${(to === '/dashboard' ? pathname === to : pathname.startsWith(to)) ? 'is-selected' : ''}`}
+                    className={`sidebar-nav-item ${(to === '/dashboard' ? pathname === to : pathname.startsWith(to)) ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer`}
                     onClick={() => {
                         navigate(to);
                         setSidebarOpen(false);
                         setSettingsExpanded(false);
                     }}
                 >
-                    <span className='sidebar-nav-icon'>
+                    <span className='sidebar-nav-icon font-size-4'>
                         <Icon />
                     </span>
                     <span className='sidebar-nav-label'>{name}</span>
@@ -294,11 +294,11 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
             </Container>
 
             <button
-                className='sidebar-nav-item'
+                className='sidebar-nav-item p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer'
                 commandfor="team-creator-modal"
                 command="show-modal"
             >
-                <span className='sidebar-nav-icon'>
+                <span className='sidebar-nav-icon font-size-4'>
                     <IoIosAdd />
                 </span>
                 <span className='sidebar-nav-label'>Create Team</span>

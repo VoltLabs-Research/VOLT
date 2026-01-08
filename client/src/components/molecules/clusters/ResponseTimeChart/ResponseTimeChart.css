@@ -5,7 +5,6 @@
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
   max-height: 400px;
   box-shadow: var(--shadow-card);
 }
@@ -49,14 +48,9 @@
 }
 
 .response-chart-legend-label {
-  color: var(--color-text-secondary);
-  font-size: 0.75rem;
 }
 
 .response-chart-legend-value {
-  color: var(--color-text-primary);
-  font-size: 0.875rem;
-  font-weight: 500;
   font-feature-settings: 'tnum' on, 'lnum' on;
 }
 
@@ -77,6 +71,5 @@
 }
 
 .response-chart-y-label {
-  color: var(--color-text-muted);
   font-size: 0.625rem;
 }

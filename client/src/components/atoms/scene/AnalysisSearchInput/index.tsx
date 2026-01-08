@@ -11,10 +11,10 @@ const AnalysisSearchInput: React.FC<AnalysisSearchInputProps> = ({ value, onChan
     return (
         <Container className='analysis-search-container'>
             <Container className='analysis-search-input-wrapper d-flex items-center gap-05'>
-                <TbSearch className='analysis-search-icon' />
+                <TbSearch className='analysis-search-icon font-size-3' />
                 <input
                     type='text'
-                    className='analysis-search-input'
+                    className='analysis-search-input font-size-2'
                     placeholder='Search analyses...'
                     value={value}
                     onChange={(e) => onChange(e.target.value)}

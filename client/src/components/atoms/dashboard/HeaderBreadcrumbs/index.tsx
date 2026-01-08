@@ -20,7 +20,7 @@ const DashboardHeaderBreadcrumbs = () => {
     }, [pathname]);
 
     return (
-        <nav className='breadcrumb-nav d-flex items-center gap-05'>
+        <nav className='breadcrumb-nav d-flex items-center gap-05 font-size-2'>
             <span
                 className='breadcrumb-item breadcrumb-link color-secondary cursor-pointer'
                 onClick={() => navigate('/dashboard')}

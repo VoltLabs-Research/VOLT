@@ -47,12 +47,12 @@ const ExposureSettingsWidget: React.FC = () => {
         >
             <div className="d-flex column w-max ">
                 <div className="exposure-settings-widget-header">
-                    <span className="exposure-settings-widget-title">
+                    <span className="exposure-settings-widget-title gap-05 font-weight-5">
                         <TbSettings size={14} />
                         Settings
                     </span>
                     <button
-                        className="exposure-settings-widget-close"
+                        className="exposure-settings-widget-close cursor-pointer"
                         onClick={closeExposureSettings}
                         type="button"
                     >
@@ -60,7 +60,7 @@ const ExposureSettingsWidget: React.FC = () => {
                     </button>
                 </div>
 
-                <div className="exposure-settings-widget-content">
+                <div className="exposure-settings-widget-content gap-05">
                     <FormRow
                         label="Opacity"
                         value={opacity}

@@ -1,11 +1,9 @@
 .code-editor-label {
-    color: var(--color-text-primary);
     margin: 0;
 }
 
 .code-editor-description {
     font-size: 0.7rem;
-    color: var(--color-text-secondary);
     margin: 0;
     line-height: 1.4;
 }

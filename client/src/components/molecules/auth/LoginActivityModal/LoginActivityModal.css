@@ -29,7 +29,6 @@
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(8px);
     z-index: 1000;
-    padding: 1rem;
 }
 
 .login-activity-modal {
@@ -42,7 +41,6 @@
 }
 
 .login-activity-modal-header {
-    padding: 1.5rem;
     border-bottom: 1px solid var(--color-border-soft);
     background: var(--color-surface-2);
 }
@@ -56,12 +54,10 @@
 
 .login-activity-modal-content {
 
-    padding: 1.5rem;
 }
 
 /* Activity Loading Skeleton */
 .activity-skeleton {
-    padding: 1rem;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-md);

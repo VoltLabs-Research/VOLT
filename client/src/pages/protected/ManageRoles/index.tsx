@@ -172,7 +172,7 @@ const ManageRoles: React.FC = () => {
     }
 
     return (
-        <Container className="manage-roles-page dashboard-content-padding h-100">
+        <Container className="manage-roles-page dashboard-content-padding h-100 h-max">
             <DocumentListing
                 title={`Manage Roles (${roles.length})`}
                 columns={columns}

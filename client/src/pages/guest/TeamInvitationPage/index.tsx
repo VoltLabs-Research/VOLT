@@ -78,7 +78,7 @@ const TeamInvitationPage: React.FC = () => {
     if (loading) {
         return (
             <Container className='auth-page-wrapper w-max vh-max overflow-hidden'>
-                <Container className='form-section p-relative gap-1 vh-max'>
+                <Container className='form-section p-relative gap-1 vh-max p-1-5'>
                     <Container className='form-container d-flex column gap-1-5 skeleton-details p-relative w-max'>
                         <Skeleton variant='rectangular' width={150} height={30} sx={{ borderRadius: '100px', mx: 'auto' }} />
                         <Skeleton variant='rectangular' width='80%' height={56} sx={{ borderRadius: '12px', mx: 'auto' }} />
@@ -102,7 +102,7 @@ const TeamInvitationPage: React.FC = () => {
     if (error || !invitation || !invitation.team || !invitation.invitedBy) {
         return (
             <Container className='auth-page-wrapper w-max vh-max overflow-hidden'>
-                <Container className='form-section p-relative gap-1 vh-max'>
+                <Container className='form-section p-relative gap-1 vh-max p-1-5'>
                     <EmptyState
                         icon={<XCircle size={48} />}
                         title='Invalid Invitation'
@@ -121,7 +121,7 @@ const TeamInvitationPage: React.FC = () => {
     if (isExpired) {
         return (
             <Container className='auth-page-wrapper w-max vh-max overflow-hidden'>
-                <Container className='form-section p-relative gap-1 vh-max'>
+                <Container className='form-section p-relative gap-1 vh-max p-1-5'>
                     <EmptyState
                         icon={<Clock size={48} />}
                         title='Invitation Expired'
@@ -136,10 +136,10 @@ const TeamInvitationPage: React.FC = () => {
 
     return (
         <Container className='auth-page-wrapper w-max vh-max overflow-hidden'>
-            <Container className='form-section p-relative gap-1 vh-max'>
+            <Container className='form-section p-relative gap-1 vh-max p-1-5'>
                 <Container className='form-container text-center p-relative w-max'>
                     <Container className='form-header'>
-                        <Container className='user-badge d-flex flex-center gap-05 invitation-badge'>
+                        <Container className='user-badge d-flex flex-center gap-05 invitation-badge p-1'>
                             <CheckCircle size={20} color='var(--color-zinc-400)' />
                             <span className='invitation-badge-text'>You've been invited!</span>
                         </Container>
@@ -155,7 +155,7 @@ const TeamInvitationPage: React.FC = () => {
                     <Container className='d-flex gap-1 flex-center flex-wrap invitation-details'>
                         <Container className='detail-item text-center'>
                             <span className='detail-label'>Your Role</span>
-                            <Container className='user-badge role-badge'>{invitation.role}</Container>
+                            <Container className='user-badge role-badge p-1'>{invitation.role}</Container>
                         </Container>
                         <Container className='detail-item text-center'>
                             <span className='detail-label'>Email</span>
@@ -208,7 +208,7 @@ const TeamInvitationPage: React.FC = () => {
                     </Container>
 
                     {error && (
-                        <Container className='user-badge error-badge'>{error}</Container>
+                        <Container className='user-badge error-badge p-1'>{error}</Container>
                     )}
                 </Container>
             </Container>

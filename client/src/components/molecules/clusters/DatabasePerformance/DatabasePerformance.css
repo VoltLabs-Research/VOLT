@@ -12,12 +12,8 @@
 
 .db-tooltip-label {
   margin-bottom: 0.5rem;
-  color: var(--color-text-primary);
-  font-weight: 500;
 }
 
 .db-tooltip-item {
   margin: 0.25rem 0;
-  color: var(--color-text-secondary);
-  font-size: 0.75rem;
 }

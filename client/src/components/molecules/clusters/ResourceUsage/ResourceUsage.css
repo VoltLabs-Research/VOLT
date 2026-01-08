@@ -5,14 +5,11 @@
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
   box-shadow: var(--shadow-card);
 }
 
 .resource-usage-title {
-  color: var(--color-text-primary);
   margin: 0;
-  font-weight: 600;
 }
 
 .resource-usage-menu {
@@ -20,8 +17,6 @@
   background: none;
   border: none;
   padding: 0;
-  color: var(--color-text-muted);
-  cursor: pointer;
 }
 
 .resource-usage-menu:hover {
@@ -31,7 +26,6 @@
 .resource-usage-icon {
   width: 1rem;
   height: 1rem;
-  color: var(--color-text-muted);
 }
 
 .resource-usage-list {
@@ -43,13 +37,9 @@
 }
 
 .resource-usage-item-label {
-  color: var(--color-text-secondary);
-  font-size: 0.75rem;
 }
 
 .resource-usage-item-value {
-  color: var(--color-text-primary);
-  font-weight: 600;
   font-feature-settings: 'tnum' on, 'lnum' on;
 }
 
@@ -57,11 +47,9 @@
   height: 6px;
   background-color: var(--color-border-soft);
   border-radius: var(--radius-full);
-  overflow: hidden;
 }
 
 .resource-usage-bar-segment {
-  height: 100%;
   border-radius: var(--radius-full);
   transition: width 0.3s ease;
 }

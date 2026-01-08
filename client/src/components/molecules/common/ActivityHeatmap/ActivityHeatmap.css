@@ -2,7 +2,6 @@
     width: auto;
     min-width: 850px;
     /* Ensure enough space for 365 days (~53 columns) */
-    height: 100%;
     display: flex;
     align-items: center;
 }

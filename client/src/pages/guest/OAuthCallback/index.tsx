@@ -59,7 +59,7 @@ export default function OAuthCallback() {
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="oauth-card p-relative w-max text-center"
+                className="oauth-card p-relative w-max text-center p-2"
             >
                 <div className="d-flex flex-center mb-1-5 oauth-status-icon">
                     {status === 'loading' && (

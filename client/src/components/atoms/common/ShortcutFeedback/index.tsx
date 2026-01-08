@@ -58,21 +58,21 @@ const ShortcutFeedback: React.FC = () => {
         <AnimatePresence>
             {lastTriggered && shortcut && (
                 <motion.div
-                    className="shortcut-feedback"
+                    className="shortcut-feedback p-fixed gap-075"
                     initial={{ opacity: 0, y: 20, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 >
-                    <div className="shortcut-feedback-keys">
+                    <div className="shortcut-feedback-keys gap-025">
                         {shortcut.keys.map((key, i) => (
                             <Fragment key={key}>
                                 {i > 0 && <span className="shortcut-feedback-separator">+</span>}
-                                <kbd className="shortcut-feedback-key">{formatKeyName(key)}</kbd>
+                                <kbd className="shortcut-feedback-key font-size-1 font-weight-5">{formatKeyName(key)}</kbd>
                             </Fragment>
                         ))}
                     </div>
-                    <span className="shortcut-feedback-description">
+                    <span className="shortcut-feedback-description font-weight-5">
                         {lastTriggered.description}
                     </span>
                 </motion.div>

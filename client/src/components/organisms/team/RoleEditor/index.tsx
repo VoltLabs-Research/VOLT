@@ -155,9 +155,9 @@ const RoleEditor = ({ role, onSave, isSaving = false }: RoleEditorProps) => {
 
                     <Container className="role-editor-permissions-grid">
                         {/* Header Row */}
-                        <div className="role-editor-grid-header">Resource</div>
+                        <div className="role-editor-grid-header p-05 text-center font-size-1 font-weight-6 color-secondary">Resource</div>
                         {actions.map(action => (
-                            <div key={action.key} className="role-editor-grid-header">
+                            <div key={action.key} className="role-editor-grid-header p-05 text-center font-size-1 font-weight-6 color-secondary">
                                 {action.label}
                             </div>
                         ))}
@@ -166,7 +166,7 @@ const RoleEditor = ({ role, onSave, isSaving = false }: RoleEditorProps) => {
                         {resources.map(resource => (
                             <React.Fragment key={resource.key}>
                                 <div
-                                    className="role-editor-grid-resource"
+                                    className="role-editor-grid-resource font-size-2 font-weight-5 color-primary"
                                     onClick={() => !isSystemRole && handleToggleResourceAll(resource.key)}
                                     style={{ cursor: isSystemRole ? 'default' : 'pointer' }}
                                     title={isSystemRole ? undefined : 'Click to toggle all'}

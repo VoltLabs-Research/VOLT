@@ -7,7 +7,6 @@
 }
 
 .chat-details-header {
-    padding: 1.5rem;
     border-bottom: 1px solid var(--color-border-soft);
     backdrop-filter: blur(10px);
 }
@@ -17,7 +16,6 @@
 }
 
 .chat-details-content {
-    padding: 1.5rem;
 }
 
 .chat-details-section {
@@ -33,7 +31,6 @@
 
 /* User Info */
 .chat-details-user-info {
-    padding: 1.5rem;
 }
 
 .chat-details-avatar {
@@ -110,7 +107,6 @@
 
 /* Group Info */
 .chat-group-info {
-    padding: 1.5rem;
 }
 
 .chat-group-avatar {

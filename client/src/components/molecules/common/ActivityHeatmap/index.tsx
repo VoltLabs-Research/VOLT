@@ -69,7 +69,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, range = 365 }) 
     }, [data, range]);
 
     return (
-        <div className="activity-heatmap-container">
+        <div className="activity-heatmap-container h-max">
             <CalendarHeatmap
                 startDate={startDate}
                 endDate={today}
@@ -91,7 +91,7 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, range = 365 }) 
                                 setTooltipContent(
                                     <Container className='d-flex column gap-1'>
                                         {value.data.activity.map((act: any, idx: number) => (
-                                            <div key={idx} className="team-activity-item d-flex column gap-025">
+                                            <div key={idx} className="team-activity-item d-flex column gap-025 y-scroll">
                                                 <div className="team-activity-time color-secondary">{format(new Date(act.createdAt), 'HH:mm')}</div>
                                                 <div className="team-activity-desc">{act.description}</div>
                                             </div>

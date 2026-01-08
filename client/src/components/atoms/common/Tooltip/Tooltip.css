@@ -5,7 +5,6 @@
     line-height: 1.4;
     white-space: nowrap;
     max-width: 280px;
-    overflow: hidden;
     text-overflow: ellipsis;
 
     /* Glassmorphism styling */

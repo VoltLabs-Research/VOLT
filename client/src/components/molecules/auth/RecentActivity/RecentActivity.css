@@ -3,7 +3,6 @@
     background: var(--card-bg);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    padding: 1.5rem;
     box-shadow: var(--shadow-elevated);
     transition: all 0.3s ease;
 }
@@ -44,7 +43,6 @@
 }
 
 .recent-activity-item {
-    padding: 1rem;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-md);
@@ -130,7 +128,6 @@
 }
 
 .recent-activity-action-button {
-    padding: 0.5rem;
     border: none;
     background: var(--color-surface-1);
     border: 1px solid var(--color-border);
@@ -166,7 +163,6 @@
 
 .recent-activity-skeleton {
 
-    padding: 1rem;
     background: var(--color-surface-2);
     border-radius: var(--radius-md);
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;

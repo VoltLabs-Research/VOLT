@@ -74,7 +74,6 @@
 }
 
 .brand-icon {
-    padding: 0.5rem;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
@@ -105,7 +104,6 @@
 .form-section {
     background-color: var(--color-black);
     color: var(--color-white);
-    padding: 1.5rem;
     min-height: 100vh;
 }
 
@@ -245,7 +243,6 @@
 }
 
 .user-badge {
-    padding: 1rem;
     border-radius: var(--radius-md);
     background: var(--color-zinc-900);
     border: 1px solid var(--color-zinc-800);

@@ -26,7 +26,7 @@ export default function DashboardPage() {
   usePageTitle('Clusters')
 
   return (
-    <Container className="clusters-page vh-max">
+    <Container className="clusters-page vh-max color-primary">
       <Container className="clusters-main d-flex column gap-2 w-max">
 
         {/* Cluster Selector Header */}
@@ -37,7 +37,7 @@ export default function DashboardPage() {
             <select
               value={selectedClusterId}
               onChange={(e) => setSelectedClusterId(e.target.value)}
-              className="cluster-selector-input"
+              className="cluster-selector-input font-size-2 color-primary cursor-pointer"
               style={{
                 padding: '8px 12px',
                 borderRadius: '6px',

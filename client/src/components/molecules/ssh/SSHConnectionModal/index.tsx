@@ -150,7 +150,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
             className='ssh-connection-modal overflow-hidden'
         >
             <form onSubmit={handleSubmit} className="d-flex column gap-1 ssh-connection-modal-form overflow-hidden">
-                <div className="flex-1 ssh-connection-modal-body y-auto">
+                <div className="flex-1 ssh-connection-modal-body y-auto p-1-5">
                     {error && (
                         <div className="ssh-connection-modal-error font-size-2">
                             {error}
@@ -256,7 +256,7 @@ const SSHConnectionModal: React.FC<SSHConnectionModalProps> = ({
                     )}
                 </div>
 
-                <div className="d-flex content-end gap-075 ssh-connection-modal-footer">
+                <div className="d-flex content-end gap-075 ssh-connection-modal-footer p-1-5">
                     <Button
                         variant="outline"
                         intent="neutral"

@@ -166,7 +166,7 @@ const Tooltip = ({
     const tooltipContent = isVisible ? createPortal(
         <div
             ref={tooltipRef}
-            className={`volt-tooltip volt-tooltip-${actualPlacement} ${className}`}
+            className={`volt-tooltip volt-tooltip-${actualPlacement} ${className} overflow-hidden`}
             style={{
                 position: 'fixed',
                 top: `${position.top}px`,

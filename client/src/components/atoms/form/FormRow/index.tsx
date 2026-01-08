@@ -24,7 +24,7 @@ const FormRow = ({
                     step={step}
                     value={value}
                     onChange={onChange} />
-                <span className='form-control-value'>{format(value)}</span>
+                <span className='form-control-value color-muted'>{format(value)}</span>
             </Container>
         </Container>
     );

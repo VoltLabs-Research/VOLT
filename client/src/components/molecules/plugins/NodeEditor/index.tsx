@@ -52,7 +52,7 @@ const NodeEditor: React.FC<NodeEditorProps> = ({ node }) => {
     };
 
     return (
-        <Container className='p-2 node-editor-container'>
+        <Container className='p-2 node-editor-container y-auto'>
             <Container>
                 {EditorComponent ? (
                     <EditorComponent node={node} />

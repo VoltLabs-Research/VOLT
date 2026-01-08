@@ -69,7 +69,7 @@ const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUserna
                         {user.avatar ? (
                             <img src={user.avatar} alt="User Avatar" className='sidebar-user-avatar-img w-max h-max' />
                         ) : (
-                            <span className='sidebar-user-avatar'>{user.firstName?.[0] || '?'}</span>
+                            <span className='sidebar-user-avatar font-size-2 font-weight-6'>{user.firstName?.[0] || '?'}</span>
                         )}
                     </Container>
 

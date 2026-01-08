@@ -1,6 +1,5 @@
 /* ChatHeader Component Styles */
 .chat-box-header-container {
-    padding: 1.5rem;
     border-bottom: 1px solid var(--color-border-soft);
     background: var(--glass-bg);
     z-index: 2;

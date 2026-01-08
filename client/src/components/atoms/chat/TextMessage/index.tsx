@@ -35,7 +35,7 @@ const TextMessage = ({ msg, onSave }: TextMessageProps) => {
 
     return (
         <Container className='d-flex column gap-05'>
-            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} className='chat-message-edit-input w-max color-primary' autoFocus />
+            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} className='chat-message-edit-input w-max color-primary p-05' autoFocus />
             <Container className='d-flex gap-05 content-end'>
                 <Tooltip content="Save" placement="top">
                     <Button

@@ -27,7 +27,7 @@ const TableRow = ({ index, style, data: rows, columns }: { index: number; style:
             {columns.map((col) => (
                 <div
                     key={col.key}
-                    className="plugin-compact-table-cell"
+                    className="plugin-compact-table-cell overflow-hidden font-size-1 color-secondary"
                     style={{
                         width: col.width ? `${col.width}px` : 'auto',
                         flex: col.width ? '0 0 auto' : '1'
@@ -118,7 +118,7 @@ const PluginCompactTable = ({
 
     return (
         <div
-            className="plugin-exposure-table-compact"
+            className="plugin-exposure-table-compact w-max h-max overflow-hidden"
             ref={containerRef}
             style={{
                 height: '100%',
@@ -129,11 +129,11 @@ const PluginCompactTable = ({
             }}
         >
             <div style={{ minWidth: `${totalWidth}px`, display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <div className="plugin-compact-table-header">
+                <div className="plugin-compact-table-header p-sticky">
                     {columns.map((col) => (
                         <div
                             key={col.key}
-                            className="plugin-compact-table-header-cell"
+                            className="plugin-compact-table-header-cell overflow-hidden font-weight-5"
                             style={{
                                 width: col.width ? `${col.width}px` : 'auto',
                                 flex: col.width ? '0 0 auto' : '1'

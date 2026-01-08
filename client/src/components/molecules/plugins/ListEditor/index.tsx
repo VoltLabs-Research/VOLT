@@ -38,7 +38,7 @@ const ListEditor: React.FC<ListEditorProps> = ({
 
             {items.map((item, index) => (
                 <Container key={index} className="d-flex gap-05 w-max content-between items-center">
-                    <Container className="d-flex column input-container">
+                    <Container className="d-flex column input-container w-max">
                         {index === 0 && label && <label className="kv-editor-label font-weight-5">{label}</label>}
                         <FormField
                             label=""

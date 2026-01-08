@@ -40,7 +40,7 @@ const ExposureSkeletonItem: React.FC<{ index: number; staggerDelay: number; comp
     compact
 }) => (
     <motion.div
-        className={`exposure-skeleton-item d-flex items-center gap-075 ${compact ? 'compact' : ''}`}
+        className={`exposure-skeleton-item d-flex items-center gap-075 ${compact ? 'compact' : ''} p-05`}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
@@ -52,7 +52,7 @@ const ExposureSkeletonItem: React.FC<{ index: number; staggerDelay: number; comp
         <div className="exposure-skeleton-icon shimmer" />
         <Container className="exposure-skeleton-content flex-1">
             <div className="exposure-skeleton-title shimmer" />
-            {!compact && <div className="exposure-skeleton-subtitle shimmer" />}
+            {!compact && <div className="exposure-skeleton-subtitle shimmer w-50" />}
         </Container>
     </motion.div>
 );

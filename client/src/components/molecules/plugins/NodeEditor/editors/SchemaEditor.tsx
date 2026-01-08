@@ -215,7 +215,7 @@ const SchemaEditor: React.FC<SchemaEditorProps> = ({ node }) => {
                     </div>
 
                     {showTemplates && (
-                        <div className="d-flex flex-wrap gap-05 schema-templates">
+                        <div className="d-flex flex-wrap gap-05 schema-templates p-05">
                             {SCHEMA_TEMPLATES.map((template, idx) => (
                                 <Button
                                     key={idx}

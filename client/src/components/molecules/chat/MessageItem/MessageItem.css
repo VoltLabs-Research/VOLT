@@ -127,7 +127,6 @@
     border-radius: var(--radius-sm);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 1000;
-    padding: 0.5rem;
     animation: reactionsSlideIn 0.2s ease;
 }
 

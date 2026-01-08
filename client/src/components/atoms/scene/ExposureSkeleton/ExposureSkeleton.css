@@ -3,7 +3,6 @@
 }
 
 .exposure-skeleton-item {
-    padding: 0.5rem;
     border-radius: var(--radius-md);
 }
 
@@ -59,7 +58,6 @@
 
 .exposure-skeleton-subtitle {
     height: 10px;
-    width: 50%;
     border-radius: 3px;
 }
 

@@ -35,15 +35,15 @@ const FrameGroup: React.FC<{ frame: FrameJobGroup }> = memo(({ frame }) => {
     return (
         <Container className="frame-job-group">
             <Container
-                className={`frame-job-group-header ${statusClassName}`}
+                className={`frame-job-group-header ${statusClassName} u-select-none cursor-pointer`}
                 onClick={() => setIsExpanded(!isExpanded)}
             >
                 <Container className="d-flex items-center content-between w-max">
                     <Paragraph className="font-size-1 color-secondary">{label}</Paragraph>
                     <Container className="d-flex items-center gap-05">
-                        <span className={`frame-status-badge ${statusClassName}`}>{frame.jobs.length}</span>
+                        <span className={`frame-status-badge ${statusClassName} font-weight-6`}>{frame.jobs.length}</span>
                         <motion.i
-                            className="chevron-icon"
+                            className="chevron-icon font-size-1 color-secondary"
                             animate={{ rotate: isExpanded ? 90 : 0 }}
                             transition={{ duration: 0.15 }}
                         >
@@ -146,12 +146,12 @@ const TrajectoryJobGroup: React.FC<TrajectoryJobGroupProps> = memo(({ group, def
 
     const headerContent = (
         <Container
-            className={`trajectory-job-group-header ${statusClassName} ${isExpanded ? 'expanded' : ''}`}
+            className={`trajectory-job-group-header ${statusClassName} ${isExpanded ? 'expanded' : ''} u-select-none cursor-pointer`}
             onClick={() => setIsExpanded(!isExpanded)}
         >
             <Container className="d-flex w-max items-center content-between gap-05 p-1">
                 <Container className="d-flex column gap-01">
-                    <Title className="font-size-1 font-weight-6 color-primary trajectory-name">
+                    <Title className="font-size-1 font-weight-6 color-primary trajectory-name overflow-hidden">
                         {group.trajectoryName}
                     </Title>
                     <Paragraph className="font-size-1 color-secondary">
@@ -159,11 +159,11 @@ const TrajectoryJobGroup: React.FC<TrajectoryJobGroupProps> = memo(({ group, def
                     </Paragraph>
                 </Container>
                 <Container className="d-flex items-center gap-1">
-                    <span className={`overall-status-badge ${statusClassName}`}>
+                    <span className={`overall-status-badge ${statusClassName} font-weight-6`}>
                         {group.overallStatus}
                     </span>
                     <motion.i
-                        className="chevron-icon"
+                        className="chevron-icon font-size-1 color-secondary"
                         animate={{ rotate: isExpanded ? 90 : 0 }}
                         transition={{ duration: 0.2 }}
                     >

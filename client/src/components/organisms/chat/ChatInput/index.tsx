@@ -80,12 +80,12 @@ const ChatInput = ({
     };
 
     return (
-        <form onSubmit={handleSend} className='chat-input-container p-relative'>
+        <form onSubmit={handleSend} className='chat-input-container p-relative p-1-5'>
             {previews.length > 0 && (
-                <div className='chat-file-previews-container mb-1'>
+                <div className='chat-file-previews-container mb-1 p-relative y-auto'>
                     <div className='d-flex column gap-05'>
                         {previews.map((item, index) => (
-                            <div key={index} className='chat-file-preview-item d-flex items-center gap-075 p-relative'>
+                            <div key={index} className='chat-file-preview-item d-flex items-center gap-075 p-relative p-05 w-max'>
                                 <div className='f-shrink-0'>
                                     {item.file.type.startsWith('image/') && item.preview ? (
                                         <div className='chat-file-preview-image-container overflow-hidden border-radius-sm border-soft'>

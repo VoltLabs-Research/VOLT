@@ -39,16 +39,16 @@ const DashboardLayout = () => {
 
             {/* Sidebar Overlay for Mobile */}
             <div
-                className={`sidebar-overlay ${sidebarOpen ? 'is-open' : ''}`}
+                className={`sidebar-overlay ${sidebarOpen ? 'is-open' : ''} p-fixed inset-0`}
                 onClick={() => setSidebarOpen(false)}
             />
 
             <DashboardSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-            <Container className='dashboard-content-wrapper'>
+            <Container className='dashboard-content-wrapper vh-max overflow-hidden'>
                 <DashboardHeader setSidebarOpen={setSidebarOpen} />
 
-                <Container className='dashboard-content-main'>
+                <Container className='dashboard-content-main overflow-hidden'>
                     <Outlet />
                 </Container>
             </Container>

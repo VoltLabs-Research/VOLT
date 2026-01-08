@@ -151,7 +151,7 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
           )}
           <Container
             ref={arrowRef}
-            className="d-flex flex-center editor-sidebar-item-arrow"
+            className="d-flex flex-center editor-sidebar-item-arrow color-muted"
           >
             <ChevronDown size={20} />
           </Container>

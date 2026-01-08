@@ -162,7 +162,7 @@ const CanvasSidebarModifiers = () => {
   // Skeleton UI (MUI) mientras bootstrapLoading
   if (bootstrapLoading) {
     return (
-      <div className='editor-sidebar-scene-container'>
+      <div className='editor-sidebar-scene-container p-1-5'>
         <div className='editor-sidebar-scene-options-container d-flex gap-1 column'>
           {Array.from({ length: SKELETON_ROWS }).map((_, i) => (
             <div key={`modifier-skel-${i}`} className="canvas-sidebar-modifier-skeleton">
@@ -178,7 +178,7 @@ const CanvasSidebarModifiers = () => {
   }
 
   return (
-    <div className='editor-sidebar-scene-container'>
+    <div className='editor-sidebar-scene-container p-1-5'>
       <div className='editor-sidebar-scene-options-container d-flex gap-1 column'>
         {allModifiers.map((option) => (
           <CanvasSidebarOption

@@ -31,7 +31,6 @@
     z-index: 10;
     max-width: 28rem;
     /* max-w-md */
-    padding: 2rem;
     background-color: rgba(24, 24, 27, 0.5);
     /* zinc-900/50 */
     backdrop-filter: blur(24px);

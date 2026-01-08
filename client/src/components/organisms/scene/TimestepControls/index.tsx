@@ -62,13 +62,13 @@ const TimestepControls: React.FC = () => {
                 <AnimatePresence>
                     {isModelLoading && (
                         <motion.div
-                            className="frame-loading-indicator"
+                            className="frame-loading-indicator p-absolute overflow-hidden"
                             initial={{ opacity: 0, scaleX: 0 }}
                             animate={{ opacity: 1, scaleX: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
                         >
-                            <div className="frame-loading-bar" />
+                            <div className="frame-loading-bar p-absolute inset-0" />
                         </motion.div>
                     )}
                 </AnimatePresence>

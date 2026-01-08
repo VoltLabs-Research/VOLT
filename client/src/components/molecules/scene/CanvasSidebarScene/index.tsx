@@ -314,7 +314,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
   }, []);
 
   return (
-    <div className='editor-sidebar-scene-container'>
+    <div className='editor-sidebar-scene-container p-1-5'>
       <div className='editor-sidebar-scene-options-container d-flex gap-1 column'>
         {/* Default option */}
         <DefaultSceneOption

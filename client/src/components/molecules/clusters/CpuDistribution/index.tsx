@@ -104,7 +104,7 @@ export function CpuDistribution({ metrics }: CpuDistributionProps) {
   if (!hasCoreData && !isLoading) {
     return (
       <ChartContainer icon={Cpu} title="CPU" isLoading={false}>
-        <div className="d-flex flex-center flex-1 cpu-loading font-size-2 color-muted-foreground">Waiting for per-core data...</div>
+        <div className="d-flex flex-center flex-1 cpu-loading font-size-2 color-muted-foreground color-muted">Waiting for per-core data...</div>
       </ChartContainer>
     )
   }

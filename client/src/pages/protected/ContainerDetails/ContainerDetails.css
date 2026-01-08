@@ -12,7 +12,6 @@
 }
 
 .sidebar-header-details {
-    padding: 1.5rem;
     border-bottom: 1px solid var(--border);
     background: linear-gradient(to bottom, var(--background-secondary), rgba(0, 0, 0, 0.02));
 }
@@ -135,7 +134,6 @@
 
 /* Sidebar Actions */
 .sidebar-actions {
-    padding: 1.5rem;
     border-top: 1px solid var(--border);
 
     background: linear-gradient(to top, var(--background-secondary), rgba(0, 0, 0, 0.02));
@@ -265,7 +263,6 @@
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 1.5rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -302,7 +299,6 @@
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 1.5rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
@@ -353,7 +349,6 @@
 
 .empty-text {
     font-style: italic;
-    padding: 2rem;
     background: var(--background-secondary);
     border-radius: 8px;
     border: 1px dashed var(--border);
@@ -458,10 +453,8 @@
 .icon-btn-edit {
     background: transparent;
     border: none;
-    color: var(--muted-foreground);
     padding: 0.4rem;
     border-radius: 6px;
-    cursor: pointer;
     transition: all 0.15s ease;
     display: flex;
     align-items: center;
@@ -479,7 +472,6 @@
     color: var(--destructive);
     padding: 0.4rem;
     border-radius: 6px;
-    cursor: pointer;
     transition: all 0.15s ease;
     display: flex;
     align-items: center;
@@ -499,7 +491,6 @@
     padding: 0.6rem 0.75rem;
     border-radius: 6px;
     color: var(--foreground);
-    font-size: 0.875rem;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -512,17 +503,11 @@
 .add-row-btn {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
     padding: 0.65rem 1rem;
     background: var(--background-secondary);
     border: 1px dashed var(--border);
     border-radius: 6px;
-    color: var(--muted-foreground);
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
     transition: all 0.2s;
-    width: 100%;
 }
 
 .add-row-btn:hover {

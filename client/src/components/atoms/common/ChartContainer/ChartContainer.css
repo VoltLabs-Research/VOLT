@@ -16,19 +16,16 @@
 }
 
 .chart-title {
-  color: var(--color-text-primary);
   margin: 0;
 }
 
 .chart-stat-label {
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: var(--color-text-muted);
   font-size: 0.625rem;
 }
 
 .chart-stat-value {
   font-weight: 700;
-  color: var(--color-text-primary);
   font-feature-settings: 'tnum' on, 'lnum' on;
 }

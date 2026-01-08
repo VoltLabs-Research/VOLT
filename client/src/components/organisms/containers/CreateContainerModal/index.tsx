@@ -142,7 +142,7 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                     </select>
                 </div>
 
-                <div className='d-flex column gap-075 form-section p-relative gap-1 vh-max'>
+                <div className='d-flex column gap-075 form-section p-relative gap-1 vh-max p-1-5'>
                     <div className='d-flex content-between items-center section-header'>
                         <label>Environment Variables</label>
                         <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddEnv}>
@@ -170,7 +170,7 @@ const CreateContainerModal: React.FC<CreateContainerModalProps> = ({ isOpen, onS
                     ))}
                 </div>
 
-                <div className='form-section p-relative gap-1 vh-max'>
+                <div className='form-section p-relative gap-1 vh-max p-1-5'>
                     <div className='d-flex content-between items-center section-header'>
                         <label>Port Mapping</label>
                         <Button variant='ghost' intent='neutral' size='sm' leftIcon={<IoAdd />} onClick={handleAddPort}>

@@ -22,7 +22,7 @@ import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 
 const RenderConfig = () => (
-    <Container className='d-flex column editor-render-options-container y-auto'>
+    <Container className='d-flex column editor-render-options-container y-auto p-1-5'>
         <LightsControls />
         <EffectsControls />
         <PerformanceSettingsControls />
@@ -95,7 +95,7 @@ const EditorSidebar = () => {
             </Sidebar.Header>
 
             <Sidebar.Bottom>
-                <Container className='editor-sidebar-user-avatar-wrapper'>
+                <Container className='editor-sidebar-user-avatar-wrapper p-1-5'>
                     <SidebarUserAvatar
                         avatarrounded={false}
                         hideEmail={true}

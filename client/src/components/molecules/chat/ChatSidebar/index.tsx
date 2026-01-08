@@ -30,7 +30,7 @@ const ChatSidebar: React.FC = () => {
 
     return (
         <div className='d-flex column chat-sidebar-container p-relative'>
-            <div className='d-flex column gap-075 chat-sidebar-header-container p-relative'>
+            <div className='d-flex column gap-075 chat-sidebar-header-container p-relative p-1-5'>
                 <Title className='chat-sidebar-header-title font-size-5 font-weight-6 color-primary'>Messages</Title>
                 <div className='d-flex items-center gap-075 chat-sidebar-actions-row'>
                     <div className='d-flex items-center flex-1 chat-sidebar-search-container p-relative overflow-hidden'>
@@ -106,7 +106,7 @@ const ChatSidebar: React.FC = () => {
                         <ChatListSkeleton key={`chat-skeleton-${index}`} />
                     ))
                 ) : filteredChats.length === 0 ? (
-                    <div className='d-flex column flex-center chat-empty-state h-max text-center color-secondary'>
+                    <div className='d-flex column flex-center chat-empty-state h-max text-center color-secondary p-2'>
                         <Paragraph>No conversations yet</Paragraph>
                         <Paragraph>Start a chat with a team member!</Paragraph>
                     </div>

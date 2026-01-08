@@ -85,7 +85,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
 
     if (loading && !data) {
         return (
-            <div className={`recent-activity-container ${className}`}>
+            <div className={`recent-activity-container ${className} p-1-5`}>
                 <div className="recent-activity-header mb-1-5">
                     <Title className="font-size-3 recent-activity-title font-size-4 font-weight-6 color-primary">
                         <HiChartBar className="recent-activity-icon" />
@@ -94,7 +94,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
                 </div>
                 <div className="d-flex column gap-075 recent-activity-loading">
                     {Array.from({ length: 3 }).map((_, index) => (
-                        <div key={index} className="d-flex items-center gap-1 recent-activity-skeleton">
+                        <div key={index} className="d-flex items-center gap-1 recent-activity-skeleton p-1">
                             <div className="recent-activity-skeleton-method" />
                             <div className="d-flex column gap-05 flex-1 recent-activity-skeleton-content">
                                 <div className="recent-activity-skeleton-line short" />
@@ -109,7 +109,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
 
     if (error) {
         return (
-            <div className={`recent-activity-container ${className}`}>
+            <div className={`recent-activity-container ${className} p-1-5`}>
                 <div className="recent-activity-header mb-1-5">
                     <Title className="font-size-3 recent-activity-title font-size-4 font-weight-6 color-primary">
                         <HiChartBar className="recent-activity-icon" />
@@ -132,7 +132,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
 
     if (requests.length === 0) {
         return (
-            <div className={`recent-activity-container ${className}`}>
+            <div className={`recent-activity-container ${className} p-1-5`}>
                 <div className="recent-activity-header mb-1-5">
                     <Title className="font-size-3 recent-activity-title font-size-4 font-weight-6 color-primary">
                         <HiChartBar className="recent-activity-icon" />
@@ -151,7 +151,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
     }
 
     return (
-        <div className={`recent-activity-container ${className}`}>
+        <div className={`recent-activity-container ${className} p-1-5`}>
             <div className="d-flex items-center content-between sm:column sm:item-start sm:gap-1 recent-activity-header mb-1-5">
                 <Title className="d-flex items-center gap-1 font-size-3 recent-activity-title font-size-4 font-weight-6 color-primary">
                     <HiChartBar className="recent-activity-icon" />
@@ -161,7 +161,7 @@ const RecentActivity: React.FC<RecentActivityProps> = ({
 
             <div className="d-flex column gap-075 recent-activity-list y-auto">
                 {requests.map((request) => (
-                    <div key={request._id} className="d-flex items-center gap-1 sm:column sm:item-start sm:gap-075 recent-activity-item cursor-pointer">
+                    <div key={request._id} className="d-flex items-center gap-1 sm:column sm:item-start sm:gap-075 recent-activity-item cursor-pointer p-1">
                         <div className="flex-1 d-flex column gap-05 recent-activity-item-content">
                             <div className="d-flex items-center gap-075 recent-activity-item-header">
                                 <span

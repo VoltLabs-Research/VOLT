@@ -78,15 +78,15 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
             width='600px'
             className='edit-container-modal'
         >
-            <form onSubmit={handleSubmit} className="d-flex column modal-form gap-1-5 y-auto">
-                <div className="d-flex column form-section p-relative gap-1 vh-max">
+            <form onSubmit={handleSubmit} className="d-flex column modal-form gap-1-5 y-auto p-1-5">
+                <div className="d-flex column form-section p-relative gap-1 vh-max p-1-5">
                     <div className="section-header d-flex items-center content-between">
                         <label>Environment Variables</label>
-                        <button type="button" className="icon-btn-add" onClick={handleAddEnv}>
+                        <button type="button" className="icon-btn-add cursor-pointer" onClick={handleAddEnv}>
                             <IoAdd size={20} />
                         </button>
                     </div>
-                    {env.length === 0 && <div className="empty-message color-muted font-size-2">No environment variables</div>}
+                    {env.length === 0 && <div className="empty-message color-muted font-size-2 p-1 text-center">No environment variables</div>}
                     {env.map((e, i) => (
                         <div key={i} className="d-flex items-center gap-075 row-inputs">
                             <input
@@ -99,21 +99,21 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                                 value={e.value}
                                 onChange={(ev) => handleEnvChange(i, 'value', ev.target.value)}
                             />
-                            <button type="button" className="icon-btn-delete" onClick={() => handleRemoveEnv(i)}>
+                            <button type="button" className="icon-btn-delete cursor-pointer" onClick={() => handleRemoveEnv(i)}>
                                 <IoTrash size={18} />
                             </button>
                         </div>
                     ))}
                 </div>
 
-                <div className="d-flex column form-section p-relative gap-1 vh-max">
+                <div className="d-flex column form-section p-relative gap-1 vh-max p-1-5">
                     <div className="section-header d-flex items-center content-between">
                         <label>Port Bindings</label>
-                        <button type="button" className="icon-btn-add" onClick={handleAddPort}>
+                        <button type="button" className="icon-btn-add cursor-pointer" onClick={handleAddPort}>
                             <IoAdd size={20} />
                         </button>
                     </div>
-                    {ports.length === 0 && <div className="empty-message color-muted font-size-2">No ports exposed</div>}
+                    {ports.length === 0 && <div className="empty-message color-muted font-size-2 p-1 text-center">No ports exposed</div>}
                     {ports.map((p, i) => (
                         <div key={i} className="d-flex items-center gap-075 row-inputs">
                             <input
@@ -128,14 +128,14 @@ const EditContainerModal: React.FC<EditContainerModalProps> = ({ container, onSu
                                 value={p.public}
                                 onChange={(ev) => handlePortChange(i, 'public', ev.target.value)}
                             />
-                            <button type="button" className="icon-btn-delete" onClick={() => handleRemovePort(i)}>
+                            <button type="button" className="icon-btn-delete cursor-pointer" onClick={() => handleRemovePort(i)}>
                                 <IoTrash size={18} />
                             </button>
                         </div>
                     ))}
                 </div>
 
-                <div className="d-flex content-end gap-1 modal-actions">
+                <div className="d-flex content-end gap-1 modal-actions p-1-5 gap-075">
                     <Button
                         variant='ghost'
                         intent='neutral'

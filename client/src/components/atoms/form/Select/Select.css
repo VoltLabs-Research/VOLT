@@ -5,8 +5,6 @@
     transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
     border: 1px solid var(--color-border-soft);
     text-align: left;
-    cursor: pointer;
-    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -39,7 +37,6 @@
 .volt-select-value {
     flex: 1 1 auto;
     min-width: 0;
-    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -61,7 +58,6 @@
     border-radius: var(--radius-xl);
     padding: .35rem;
     max-height: 300px;
-    overflow-y: auto;
 
     /* Animation */
     animation: selectDropdownIn .15s cubic-bezier(0.16, 1, 0.3, 1);
@@ -82,8 +78,6 @@
 .volt-select-option {
     padding: .5rem .6rem;
     border-radius: .5rem;
-    cursor: pointer;
-    color: var(--color-text-primary);
     transition: background .12s ease;
     min-height: 40px;
 }
@@ -98,13 +92,11 @@
 }
 
 .volt-select-option-check {
-    color: var(--color-text-muted);
     margin-left: auto;
     flex-shrink: 0;
 }
 
 .volt-select-option-description {
-    font-size: 0.75rem;
     margin-top: 2px;
 }
 

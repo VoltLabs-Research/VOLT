@@ -76,7 +76,7 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
 
     return (
         <Container className="d-flex h-max column overflow-hidden processes-container">
-            <Container className="d-flex content-between items-center processes-header">
+            <Container className="d-flex content-between items-center processes-header p-1">
                 <Title className='font-size-3'>Running Processes</Title>
                 <Button variant='ghost' intent='neutral' size='sm' leftIcon={<RefreshCw size={14} />} onClick={fetchProcesses}>
                     Refresh

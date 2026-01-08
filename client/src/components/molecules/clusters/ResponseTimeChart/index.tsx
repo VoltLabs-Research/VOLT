@@ -112,8 +112,8 @@ export function ResponseTimeChart({ metrics }: ResponseTimeChartProps) {
         {regions.map((region) => (
           <div key={region.name} className="d-flex items-center gap-05 response-chart-legend-item">
             <div className="response-chart-legend-dot" style={{ backgroundColor: region.color }} />
-            <span className="response-chart-legend-label font-size-2 color-muted-foreground">{region.name}</span>
-            <span className="response-chart-legend-value font-size-2 font-weight-5">{region.value}ms</span>
+            <span className="response-chart-legend-label font-size-2 color-muted-foreground font-size-1 color-secondary">{region.name}</span>
+            <span className="response-chart-legend-value font-size-2 font-weight-5 color-primary">{region.value}ms</span>
           </div>
         ))}
       </div>
@@ -160,7 +160,7 @@ export function ResponseTimeChart({ metrics }: ResponseTimeChartProps) {
         <div className="d-flex column content-between response-chart-y-labels p-absolute">
           {Array.from({ length: 6 }, (_, i) => {
             const value = Math.round(maxValue - (maxValue / 5) * i)
-            return <span key={i} className="response-chart-y-label font-size-1 color-muted-foreground">{value}ms</span>
+            return <span key={i} className="response-chart-y-label font-size-1 color-muted-foreground color-muted">{value}ms</span>
           })}
         </div>
       </div>

@@ -349,7 +349,7 @@ const CreateContainer: React.FC = () => {
             </div>
 
             <div className="d-flex create-layout overflow-hidden flex-1">
-                <div className="d-flex column gap-05 steps-sidebar">
+                <div className="d-flex column gap-05 steps-sidebar p-1-5">
                     <div className={`d-flex items-center gap-1 step-item ${step >= 1 ? 'active' : ''} cursor-pointer`} onClick={() => setStep(1)}>
                         <div className="d-flex flex-center step-number font-weight-6 color-muted-foreground">1</div>
                         <div className="d-flex column gap-025 step-label">
@@ -379,7 +379,7 @@ const CreateContainer: React.FC = () => {
                     {step === 1 && (
                         <div className="fade-in d-flex column gap-2">
                             <Title className="font-size-5 font-weight-6">Select a Template</Title>
-                            <div className="templates-grid gap-1-5">
+                            <div className="templates-grid gap-1-5 gap-1">
                                 {TEMPLATES.map(template => (
                                     <div
                                         key={template.id}
@@ -439,7 +439,7 @@ const CreateContainer: React.FC = () => {
                                             placeholder="my-container-app"
                                             value={config.name}
                                             onChange={(val) => setConfig(prev => ({ ...prev, name: val as string }))}
-                                            className="field-input w-max"
+                                            className="field-input w-max color-primary"
                                         />
                                     </div>
                                 </div>
@@ -470,10 +470,10 @@ const CreateContainer: React.FC = () => {
                                     <div className="config-section-header">
                                         <h3>Resources</h3>
                                     </div>
-                                    <div className="resource-row">
+                                    <div className="resource-row p-1">
                                         <div className="resource-header">
-                                            <span className="resource-label"><Cpu size={16} /> CPU Cores</span>
-                                            <span className="resource-value">{config.cpus} vCPU</span>
+                                            <span className="resource-label gap-05 font-size-2 font-weight-5 color-secondary"><Cpu size={16} /> CPU Cores</span>
+                                            <span className="resource-value font-weight-6">{config.cpus} vCPU</span>
                                         </div>
                                         <Slider
                                             min={0.5}
@@ -482,15 +482,15 @@ const CreateContainer: React.FC = () => {
                                             value={config.cpus}
                                             onChange={(val) => setConfig(prev => ({ ...prev, cpus: val }))}
                                         />
-                                        <div className="resource-limits">
+                                        <div className="resource-limits font-size-1 color-muted">
                                             <span>0.5 vCPU</span>
                                             <span>{maxCpus} vCPU(Max)</span>
                                         </div>
                                     </div>
-                                    <div className="resource-row">
+                                    <div className="resource-row p-1">
                                         <div className="resource-header">
-                                            <span className="resource-label"><HardDrive size={16} /> Memory</span>
-                                            <span className="resource-value">{config.memory} MB</span>
+                                            <span className="resource-label gap-05 font-size-2 font-weight-5 color-secondary"><HardDrive size={16} /> Memory</span>
+                                            <span className="resource-value font-weight-6">{config.memory} MB</span>
                                         </div>
                                         <Slider
                                             min={128}
@@ -499,7 +499,7 @@ const CreateContainer: React.FC = () => {
                                             value={config.memory}
                                             onChange={(val) => setConfig(prev => ({ ...prev, memory: val }))}
                                         />
-                                        <div className="resource-limits">
+                                        <div className="resource-limits font-size-1 color-muted">
                                             <span>128 MB</span>
                                             <span>{maxMemory} MB(Max)</span>
                                         </div>
@@ -514,14 +514,14 @@ const CreateContainer: React.FC = () => {
                                     </div>
                                     {config.ports.length > 0 ? (
                                         config.ports.map((port, i) => (
-                                            <div key={i} className="mapping-row">
+                                            <div key={i} className="mapping-row gap-05">
                                                 <div className="mapping-input">
                                                     <label>Private</label>
                                                     <Input
                                                         type="number"
                                                         value={port.private}
                                                         onChange={(val) => updatePort(i, 'private', val as string)}
-                                                        className="field-input"
+                                                        className="field-input w-max color-primary"
                                                     />
                                                 </div>
                                                 <div className="mapping-input">
@@ -531,7 +531,7 @@ const CreateContainer: React.FC = () => {
                                                         placeholder="Auto"
                                                         value={port.public || ''}
                                                         onChange={(val) => updatePort(i, 'public', val as string)}
-                                                        className="field-input"
+                                                        className="field-input w-max color-primary"
                                                     />
                                                 </div>
                                                 <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => removePort(i)}>
@@ -540,7 +540,7 @@ const CreateContainer: React.FC = () => {
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="empty-state">No ports exposed</div>
+                                        <div className="empty-state p-1 text-center color-muted">No ports exposed</div>
                                     )}
                                 </div>
 
@@ -552,7 +552,7 @@ const CreateContainer: React.FC = () => {
                                     </div>
                                     {config.env.length > 0 ? (
                                         config.env.map((env, i) => (
-                                            <div key={i} className="mapping-row">
+                                            <div key={i} className="mapping-row gap-05">
                                                 <div className="mapping-input">
                                                     <label>Key</label>
                                                     <Input
@@ -560,7 +560,7 @@ const CreateContainer: React.FC = () => {
                                                         placeholder="KEY"
                                                         value={env.key}
                                                         onChange={(val) => updateEnv(i, 'key', val as string)}
-                                                        className="field-input"
+                                                        className="field-input w-max color-primary"
                                                     />
                                                 </div>
                                                 <div className="mapping-input">
@@ -570,7 +570,7 @@ const CreateContainer: React.FC = () => {
                                                         placeholder="VALUE"
                                                         value={env.value}
                                                         onChange={(val) => updateEnv(i, 'value', val as string)}
-                                                        className="field-input"
+                                                        className="field-input w-max color-primary"
                                                     />
                                                 </div>
                                                 <Button variant='ghost' intent='danger' iconOnly size='sm' onClick={() => removeEnv(i)}>
@@ -579,11 +579,11 @@ const CreateContainer: React.FC = () => {
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="empty-state">No environment variables</div>
+                                        <div className="empty-state p-1 text-center color-muted">No environment variables</div>
                                     )}
                                 </div>
 
-                                <div className="config-card d-flex column gap-05">
+                                <div className="config-card d-flex column gap-05 p-1-5">
                                     <FormField
                                         label="Enable Docker Access"
                                         fieldKey="mountDockerSocket"
@@ -606,7 +606,7 @@ const CreateContainer: React.FC = () => {
                     {step === 3 && (
                         <div className="fade-in review-step">
                             <Title className="font-size-5 font-weight-6">Review & Deploy</Title>
-                            <div className="review-card">
+                            <div className="review-card overflow-hidden">
                                 <div className="review-item">
                                     <span className="label">Name</span>
                                     <span className="value">{config.name}</span>
@@ -645,9 +645,9 @@ const CreateContainer: React.FC = () => {
 
             {
                 showCustomImageModal && (
-                    <div className="modal-overlay p-fixed d-flex items-center content-center">
-                        <div className="modal-content custom-image-modal">
-                            <div className="modal-header">
+                    <div className="modal-overlay p-fixed d-flex items-center content-center inset-0">
+                        <div className="modal-content custom-image-modal w-max overflow-hidden">
+                            <div className="modal-header p-1-5">
                                 <Title className="font-size-4 font-weight-6">Custom Docker Image</Title>
                                 <Button variant='ghost' intent='neutral' iconOnly onClick={() => setShowCustomImageModal(false)}>
                                     <X size={24} />
@@ -664,7 +664,7 @@ const CreateContainer: React.FC = () => {
                                     autoFocus
                                 />
                             </div>
-                            <div className="modal-actions">
+                            <div className="modal-actions p-1-5 gap-075">
                                 <Button variant='outline' intent='neutral' onClick={() => setShowCustomImageModal(false)}>Cancel</Button>
                                 <Button variant='solid' intent='brand' onClick={confirmCustomImage}>Confirm</Button>
                             </div>

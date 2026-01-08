@@ -41,9 +41,9 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen }: DashboardSidebarProps
     };
 
     return (
-        <aside className={`dashboard-sidebar ${sidebarOpen ? 'is-open' : ''}`}>
+        <aside className={`dashboard-sidebar ${sidebarOpen ? 'is-open' : ''} p-fixed vh-max`}>
             <button
-                className='sidebar-close-btn'
+                className='sidebar-close-btn p-05 p-absolute color-primary cursor-pointer'
                 onClick={() => setSidebarOpen(false)}
             >
                 <IoCloseOutline size={20} />
@@ -66,10 +66,10 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen }: DashboardSidebarProps
                     className='gap-1'
                     trigger={
                         <button
-                            className='sidebar-user-section'
+                            className='sidebar-user-section gap-075 cursor-pointer'
                             style={{ background: 'none', border: 'none', textAlign: 'left', width: '100%' }}
                         >
-                            <div className='sidebar-user-avatar'>
+                            <div className='sidebar-user-avatar font-size-2 font-weight-6'>
                                 {user?.avatar ? (
                                     <img src={user.avatar} alt={user.firstName} />
                                 ) : (
@@ -77,14 +77,14 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen }: DashboardSidebarProps
                                 )}
                             </div>
                             <div className='sidebar-user-info'>
-                                <Paragraph className='sidebar-user-name'>
+                                <Paragraph className='sidebar-user-name overflow-hidden font-size-2 font-weight-6 color-primary'>
                                     {user?.firstName} {user?.lastName}
                                 </Paragraph>
-                                <Paragraph className='sidebar-user-email'>
+                                <Paragraph className='sidebar-user-email overflow-hidden font-size-1 color-muted'>
                                     {user?.email}
                                 </Paragraph>
                             </div>
-                            <div className='sidebar-user-menu'>
+                            <div className='sidebar-user-menu color-muted'>
                                 <HiOutlineDotsVertical size={16} />
                             </div>
                         </button>

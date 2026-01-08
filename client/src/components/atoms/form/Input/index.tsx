@@ -284,8 +284,8 @@ const Input: React.FC<InputProps> = ({
                 }}
             >
                 <Container className="d-flex content-between items-center expression-dropdown-header">
-                    <span className="expression-dropdown-title font-weight-6">Available Data</span>
-                    <span className="expression-dropdown-hint">↑↓ Navigate • Enter Select • Esc Close</span>
+                    <span className="expression-dropdown-title font-weight-6 color-muted">Available Data</span>
+                    <span className="expression-dropdown-hint color-muted">↑↓ Navigate • Enter Select • Esc Close</span>
                 </Container>
                 <Container className="y-auto p-05">
                     {flatExpressions.length === 0 ? (
@@ -302,8 +302,8 @@ const Input: React.FC<InputProps> = ({
                                 <Container key={nodeName} className="expression-group">
                                     <Container className="d-flex items-center gap-05 expression-group-header">
                                         <span className="expression-group-icon font-size-1">{config?.icon?.replace('Tb', '') || '📦'}</span>
-                                        <span className="expression-group-name flex-1 font-size-1 font-weight-6">{nodeName}</span>
-                                        <span className="expression-group-type">{config?.label || nodeType}</span>
+                                        <span className="expression-group-name flex-1 font-size-1 font-weight-6 color-primary">{nodeName}</span>
+                                        <span className="expression-group-type color-muted">{config?.label || nodeType}</span>
                                     </Container>
                                     {expressions.map((expr) => {
                                         const globalIndex = flatExpressions.indexOf(expr);
@@ -321,7 +321,7 @@ const Input: React.FC<InputProps> = ({
                                                     </span>
                                                 </Container>
                                                 {expr.description && (
-                                                    <span className="expression-item-description">{expr.description}</span>
+                                                    <span className="expression-item-description color-muted">{expr.description}</span>
                                                 )}
                                             </Container>
                                         );

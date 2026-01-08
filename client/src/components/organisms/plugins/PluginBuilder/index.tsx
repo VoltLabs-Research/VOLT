@@ -23,7 +23,7 @@ import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';
 const nodeTypesList = Object.values(NODE_CONFIGS);
 
 const PaletteContent: React.FC<{ onDragStart: (e: React.DragEvent, type: NodeType) => void }> = ({ onDragStart }) => (
-    <Container className='d-flex column gap-1-5 plugin-builder-palette-list-container'>
+    <Container className='d-flex column gap-1-5 plugin-builder-palette-list-container p-2'>
         {nodeTypesList.map((config) => (
             <PaletteItem config={config} onDragStart={onDragStart} key={config.type} />
         ))}
@@ -181,7 +181,7 @@ const PluginBuilder = () => {
                 </Sidebar.Header>
 
                 <Sidebar.Bottom>
-                    <Container className='editor-sidebar-user-avatar-wrapper'>
+                    <Container className='editor-sidebar-user-avatar-wrapper p-1-5'>
                         <SidebarUserAvatar
                             avatarrounded={false}
                             hideEmail={true}

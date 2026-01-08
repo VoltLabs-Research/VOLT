@@ -59,11 +59,11 @@ const formatKeyName = (key: string): string => {
  * Visual key combination display
  */
 const KeyCombo: React.FC<{ keys: string[] }> = ({ keys }) => (
-    <div className="d-flex items-center key-combo">
+    <div className="d-flex items-center key-combo gap-025">
         {keys.map((key, i) => (
             <Fragment key={key}>
                 {i > 0 && <span className="key-separator">+</span>}
-                <kbd className="key">{formatKeyName(key)}</kbd>
+                <kbd className="key font-size-1 font-weight-5">{formatKeyName(key)}</kbd>
             </Fragment>
         ))}
     </div>
@@ -106,7 +106,7 @@ const KeyboardShortcutsPanel: React.FC = () => {
         <AnimatePresence>
             {showPanel && (
                 <motion.div
-                    className="shortcuts-panel-overlay"
+                    className="shortcuts-panel-overlay p-fixed inset-0"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -114,7 +114,7 @@ const KeyboardShortcutsPanel: React.FC = () => {
                     onClick={handleBackdropClick}
                 >
                     <motion.div
-                        className="d-flex column shortcuts-panel"
+                        className="d-flex column shortcuts-panel overflow-hidden"
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -131,16 +131,16 @@ const KeyboardShortcutsPanel: React.FC = () => {
                             </button>
                         </header>
 
-                        <div className="shortcuts-panel-content">
+                        <div className="shortcuts-panel-content y-auto">
                             {groupedShortcuts.map(({ category, shortcuts }) => (
                                 <section key={category} className="shortcuts-category">
-                                    <h3 className="shortcuts-category-title">
+                                    <h3 className="shortcuts-category-title font-weight-5">
                                         {formatCategoryTitle(category)}
                                     </h3>
                                     <div className="d-flex column shortcuts-list">
                                         {shortcuts.map((shortcut: Shortcut) => (
                                             <div key={shortcut.id} className="d-flex content-between items-center shortcut-item">
-                                                <span className="shortcut-description">
+                                                <span className="shortcut-description font-size-2">
                                                     {shortcut.description}
                                                 </span>
                                                 <KeyCombo keys={shortcut.keys} />
@@ -151,9 +151,9 @@ const KeyboardShortcutsPanel: React.FC = () => {
                             ))}
                         </div>
 
-                        <footer className="shortcuts-panel-footer">
+                        <footer className="shortcuts-panel-footer text-center">
                             <span className="shortcuts-hint color-tertiary font-size-1">
-                                Press <kbd className="key">CTRL</kbd><span className="key-separator">+</span><kbd className="key">K</kbd> to toggle this panel
+                                Press <kbd className="key font-size-1 font-weight-5">CTRL</kbd><span className="key-separator">+</span><kbd className="key font-size-1 font-weight-5">K</kbd> to toggle this panel
                             </span>
                         </footer>
                     </motion.div>

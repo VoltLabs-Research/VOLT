@@ -2,7 +2,6 @@
 .metrics-cards {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
 }
 
 @media (min-width: 768px) {
@@ -41,7 +40,6 @@
 }
 
 .metric-card-title {
-  color: var(--color-text-secondary);
 }
 
 .metric-card-menu {
@@ -49,8 +47,6 @@
   background: none;
   border: none;
   padding: 0;
-  color: var(--color-text-muted);
-  cursor: pointer;
 }
 
 .metric-card-menu:hover {
@@ -58,17 +54,14 @@
 }
 
 .metric-card-value {
-  color: var(--color-text-primary);
   letter-spacing: -0.02em;
   font-feature-settings: 'tnum' on, 'lnum' on;
 }
 
 .metric-card-unit {
-  color: var(--color-text-muted);
 }
 
 .metric-card-subtitle {
-  color: var(--color-text-secondary);
 }
 
 .metric-card-trend-icon {

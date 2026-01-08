@@ -1,6 +1,5 @@
 /* MessageLists Component Styles */
 .chat-box-messages-container {
-    padding: 1.5rem;
 
     background: var(--color-bg);
     backdrop-filter: blur(10px);
@@ -29,7 +28,6 @@
 /* Empty Messages */
 .chat-empty-messages {
 
-    padding: 2rem;
 }
 
 .chat-empty-messages p {

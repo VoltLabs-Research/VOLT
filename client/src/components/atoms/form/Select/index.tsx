@@ -162,7 +162,7 @@ const Select = ({
     const dropdown = isOpen ? createPortal(
         <div
             ref={dropdownRef}
-            className="volt-select-dropdown"
+            className="volt-select-dropdown y-auto"
             style={dropdownStyle}
         >
             {options.map((opt) => {
@@ -171,7 +171,7 @@ const Select = ({
                 return (
                     <div
                         key={opt.value}
-                        className={`volt-select-option d-flex items-center content-between gap-05 ${optionClassName} ${isSelected ? 'selected' : ''}`}
+                        className={`volt-select-option d-flex items-center content-between gap-05 ${optionClassName} ${isSelected ? 'selected' : ''} color-primary cursor-pointer`}
                         onClick={(e) => handleSelect(e, opt.value)}
                     >
                         <Container className='d-flex column'>
@@ -188,7 +188,7 @@ const Select = ({
 
                         {showSelectionIcon && isSelected && (
                             <svg
-                                className='volt-select-option-check'
+                                className='volt-select-option-check color-muted'
                                 width='16'
                                 height='16'
                                 viewBox='0 0 24 24'
@@ -226,14 +226,14 @@ const Select = ({
                 ref={triggerRef}
                 id={uid}
                 type='button'
-                className={`volt-select-trigger d-flex items-center gap-05 ${onDark ? 'on-dark' : ''} ${className} ${isOpen ? 'open' : ''}`}
+                className={`volt-select-trigger d-flex items-center gap-05 ${onDark ? 'on-dark' : ''} ${className} ${isOpen ? 'open' : ''} overflow-hidden cursor-pointer`}
                 style={style}
                 onClick={handleToggle}
                 disabled={disabled}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
             >
-                <span className='volt-select-value'>
+                <span className='volt-select-value overflow-hidden'>
                     {selectedOption ? selectedOption.title : (
                         <span className='color-text-muted'>{placeholder}</span>
                     )}

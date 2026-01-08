@@ -20,9 +20,9 @@ const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="traffic-tooltip">
-        <Paragraph className="traffic-tooltip-label font-size-2 font-weight-6">{payload[0].payload.time}</Paragraph>
+        <Paragraph className="traffic-tooltip-label font-size-2 font-weight-6 font-weight-5 color-primary">{payload[0].payload.time}</Paragraph>
         {payload.map((entry: any, index: number) => (
-          <Paragraph key={index} className="traffic-tooltip-item font-size-1" style={{ color: entry.color }}>
+          <Paragraph key={index} className="traffic-tooltip-item font-size-1 color-secondary" style={{ color: entry.color }}>
             {entry.name}: <strong>{formatNetworkSpeed(entry.value)}</strong>
           </Paragraph>
         ))}

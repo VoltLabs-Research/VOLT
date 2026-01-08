@@ -66,11 +66,11 @@ export function ResourceUsage({ metrics }: ResourceUsageProps) {
   ]
 
   return (
-    <div className="d-flex column resource-usage h-max">
+    <div className="d-flex column resource-usage h-max p-1-5">
       <div className="d-flex items-start content-between resource-usage-header mb-1-5 f-shrink-0">
-        <Title className='font-size-3 resource-usage-title font-weight-6'>Resource Usage</Title>
+        <Title className='font-size-3 resource-usage-title font-weight-6 color-primary'>Resource Usage</Title>
         <Button variant='ghost' intent='neutral' iconOnly size='sm'>
-          <MoreVertical className="resource-usage-icon" />
+          <MoreVertical className="resource-usage-icon color-muted" />
         </Button>
       </div>
 
@@ -97,15 +97,15 @@ export function ResourceUsage({ metrics }: ResourceUsageProps) {
             return (
               <div key={resource.name} className="d-flex column resource-usage-item">
                 <div className="d-flex items-center content-between resource-usage-item-header">
-                  <span className="resource-usage-item-label font-size-2">{resource.name}</span>
+                  <span className="resource-usage-item-label font-size-2 font-size-1 color-secondary">{resource.name}</span>
                   <span
-                    className="resource-usage-item-value font-size-2 font-weight-6"
+                    className="resource-usage-item-value font-size-2 font-weight-6 color-primary"
                     style={{ color }}
                   >
                     {resource.value}%
                   </span>
                 </div>
-                <div className="d-flex gap-0125 resource-usage-bar">
+                <div className="d-flex gap-0125 resource-usage-bar overflow-hidden">
                   {Array.from({ length: 40 }).map((_, i) => (
                     <div
                       key={i}

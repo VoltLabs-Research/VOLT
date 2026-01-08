@@ -53,27 +53,27 @@ export function ServerTable({ clusters, selectedClusterId }: ServerTableProps) {
 
   return (
     <>
-      <Container className="server-table-container">
+      <Container className="server-table-container p-1-5">
         <Container className="d-flex items-center content-between server-table-header mb-1-5">
           <Container className="d-flex items-center gap-075">
             <Container className="server-table-title-bar" />
-            <Title className='font-size-3 server-table-title font-weight-6'>Server Summary</Title>
+            <Title className='font-size-3 server-table-title font-weight-6 color-primary'>Server Summary</Title>
           </Container>
           <Container className="d-flex items-center gap-05">
-            <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown className="server-table-icon-sm" />}>
+            <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown className="server-table-icon-sm color-muted" />}>
               Status
             </Button>
-            <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown className="server-table-icon-sm" />}>
+            <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown className="server-table-icon-sm color-muted" />}>
               Sort
             </Button>
             <Tooltip content="Refresh" placement="bottom">
               <Button variant='ghost' intent='neutral' iconOnly size='sm'>
-                <RefreshCw className="server-table-icon" />
+                <RefreshCw className="server-table-icon color-secondary" />
               </Button>
             </Tooltip>
             <Tooltip content="Download Report" placement="bottom">
               <Button variant='ghost' intent='neutral' iconOnly size='sm'>
-                <Download className="server-table-icon" />
+                <Download className="server-table-icon color-secondary" />
               </Button>
             </Tooltip>
           </Container>
@@ -124,11 +124,11 @@ export function ServerTable({ clusters, selectedClusterId }: ServerTableProps) {
                   <td>
                     <Container className="d-flex items-center gap-05">
                       <Container className="server-table-status-dot" />
-                      <span className="server-table-id font-size-2">{server.id}</span>
+                      <span className="server-table-id font-size-2 color-primary">{server.id}</span>
                     </Container>
                   </td>
                   <td>
-                    <span className={`server-table-status ${server.statusColor === 'text-emerald-500' ? 'server-table-status-healthy' : server.statusColor === 'text-red-500' ? 'server-table-status-critical' : 'server-table-status-warning'} font-size-2 font-weight-5`}>{server.status}</span>
+                    <span className={`server-table-status ${server.statusColor === 'text-emerald-500' ? 'server-table-status-healthy' : server.statusColor === 'text-red-500' ? 'server-table-status-critical' : 'server-table-status-warning'} font-size-2 font-weight-5 font-size-1`}>{server.status}</span>
                   </td>
                   <td>
                     <Container className="d-flex items-center gap-05">

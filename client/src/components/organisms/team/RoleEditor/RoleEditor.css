@@ -15,12 +15,7 @@
 
 .role-editor-grid-header {
     background: transparent;
-    padding: 0.5rem;
-    font-size: 0.75rem;
     /* font-size-1 replacement */
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    text-align: center;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     display: flex;
@@ -44,10 +39,7 @@
 .role-editor-grid-resource {
     background: transparent;
     padding: 0.625rem 0;
-    font-size: 0.875rem;
     /* font-size-2 replacement */
-    font-weight: 500;
-    color: var(--color-text-primary);
     display: flex;
     align-items: center;
     border-bottom: 1px solid var(--color-border-soft);
@@ -71,12 +63,8 @@
     border-bottom: none;
 }
 
-
 /* Helper utility class for the Title replacement */
 .role-editor-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
 }
 
 @media (max-width: 768px) {

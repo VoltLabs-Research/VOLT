@@ -243,7 +243,7 @@ const PluginsListing = () => {
                         style={{ display: 'none' }}
                     />
                     <button
-                        className='import-plugin-btn'
+                        className='import-plugin-btn cursor-pointer'
                         onClick={() => importInputRef.current?.click()}
                         disabled={isImporting}
                         title='Import Plugin'

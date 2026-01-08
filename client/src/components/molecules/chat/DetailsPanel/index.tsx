@@ -26,10 +26,10 @@ const DetailsPanel = ({
 }: DetailsPanelProps) => {
     return (
         <div className='d-flex column chat-details-container p-relative'>
-            <div className='chat-details-header'>
+            <div className='chat-details-header p-1-5'>
                 <Title className='chat-details-title font-size-4 font-weight-6 color-primary'>{chat?.isGroup ? 'Group Info' : 'Contact Info'}</Title>
             </div>
-            <div className='chat-details-content y-auto flex-1'>
+            <div className='chat-details-content y-auto flex-1 p-1-5'>
                 {!chat ? (
                     <div className='d-flex column flex-center chat-no-selection h-max text-center'>
                         <div className='d-flex flex-center chat-no-selection-icon font-size-5 color-secondary'>
@@ -42,7 +42,7 @@ const DetailsPanel = ({
                     <MessageSkeleton variant='contact' />
                 ) : chat.isGroup ? (
                     <div className='chat-details-section'>
-                        <div className='d-flex column items-center chat-group-info text-center'>
+                        <div className='d-flex column items-center chat-group-info text-center p-1-5'>
                             <div className='d-flex flex-center chat-group-avatar font-size-6'>
                                 <IoPeopleOutline />
                             </div>
@@ -53,7 +53,7 @@ const DetailsPanel = ({
                     </div>
                 ) : (
                     <div className='chat-details-section'>
-                        <div className='d-flex column items-center chat-details-user-info text-center'>
+                        <div className='d-flex column items-center chat-details-user-info text-center p-1-5'>
                             <div className='d-flex flex-center chat-details-avatar font-size-6 font-weight-6 overflow-hidden'>
                                 {currentParticipant?.avatar
                                     ? <img src={currentParticipant.avatar} alt="" className='w-max h-max object-cover' />

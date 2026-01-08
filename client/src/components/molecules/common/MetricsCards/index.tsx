@@ -92,7 +92,7 @@ export function MetricsCards({ metrics }: MetricsCardsProps) {
           <Container className="d-flex items-start content-between" style={{ marginBottom: '0.75rem' }}>
             <Container className="d-flex items-center gap-05">
               <metric.icon className="metric-card-icon color-muted-foreground" />
-              <span className="metric-card-title font-size-2 color-muted-foreground">{metric.title}</span>
+              <span className="metric-card-title font-size-2 color-muted-foreground color-secondary">{metric.title}</span>
             </Container>
             <Tooltip content="More Options" placement="bottom">
               <Button variant='ghost' intent='neutral' iconOnly size='sm'>
@@ -102,11 +102,11 @@ export function MetricsCards({ metrics }: MetricsCardsProps) {
           </Container>
           <Container className="d-flex column gap-05">
             <Container className="d-flex" style={{ alignItems: 'baseline', gap: '0.5rem' }}>
-              <span className="metric-card-value font-size-6 font-weight-6">{metric.value}</span>
-              {metric.unit && <span className="metric-card-unit font-size-2 font-weight-5 color-muted-foreground">{metric.unit}</span>}
+              <span className="metric-card-value font-size-6 font-weight-6 color-primary">{metric.value}</span>
+              {metric.unit && <span className="metric-card-unit font-size-2 font-weight-5 color-muted-foreground color-muted">{metric.unit}</span>}
             </Container>
             <Container className="d-flex items-center content-between">
-              <span className="metric-card-subtitle font-size-1 color-muted-foreground">{metric.subtitle}</span>
+              <span className="metric-card-subtitle font-size-1 color-muted-foreground color-secondary">{metric.subtitle}</span>
               <span className="d-flex items-center" style={{ fontSize: '0.75rem', gap: '0.25rem', color: metric.trendUp ? 'rgba(52, 199, 89, 1)' : 'rgba(255, 69, 58, 1)' }}>
                 {metric.trendUp ? <TrendingUp className="metric-card-trend-icon" /> : <TrendingDown className="metric-card-trend-icon" />}
                 {metric.trend}

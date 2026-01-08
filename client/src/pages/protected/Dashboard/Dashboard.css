@@ -49,7 +49,6 @@
 .scene-preview-container {
     box-shadow: var(--shadow-elevated);
     border-radius: 0.75rem;
-    height: 100vh;
 }
 
 .dashboard-stat-arrow-icon-container {

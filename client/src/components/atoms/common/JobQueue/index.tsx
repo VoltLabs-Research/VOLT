@@ -70,11 +70,11 @@ const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => 
                     </span>
                 </Container>
                 <Container className='d-flex items-center gap-05'>
-                    <Paragraph className='job-message color-secondary'>
+                    <Paragraph className='job-message color-secondary font-size-1'>
                         {job.message || job.status}
                     </Paragraph>
                     {job.processingTimeMs && job.status === 'completed' && (
-                        <span className='job-meta'>• {formatDuration(job.processingTimeMs)}</span>
+                        <span className='job-meta color-muted'>• {formatDuration(job.processingTimeMs)}</span>
                     )}
                 </Container>
                 {job.error && (
@@ -82,12 +82,12 @@ const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => 
                 )}
             </Container>
             {(job.progress !== undefined && job.progress > 0 && job.status === 'running') && (
-                <Container className='job-progress-bar'>
+                <Container className='job-progress-bar p-relative overflow-hidden'>
                     <Container
-                        className='job-progress-fill'
+                        className='job-progress-fill p-absolute h-max'
                         style={{ width: `${Math.min(100, job.progress)}%` }}
                     />
-                    <span className='job-progress-text'>{Math.round(job.progress)}%</span>
+                    <span className='job-progress-text p-absolute font-weight-6 color-primary'>{Math.round(job.progress)}%</span>
                 </Container>
             )}
         </Container>

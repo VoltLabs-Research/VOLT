@@ -31,10 +31,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     fileListContent
 }) => {
     return (
-        <Container className='d-flex overflow-hidden file-explorer-wrapper h-max'>
+        <Container className='d-flex overflow-hidden file-explorer-wrapper h-max w-max'>
             {(navItems && bottomNavItems) && (
                 <Container className='d-flex column content-between'>
-                    <Container className='d-flex column gap-3 file-explorer-left-top-container'>
+                    <Container className='d-flex column gap-3 file-explorer-left-top-container p-1'>
                         <Container>
                             <Container className='d-flex column gap-05'>
                                 <Title className='font-size-3 file-explorer-nav-title font-weight-5 u-select-none'>{title}</Title>

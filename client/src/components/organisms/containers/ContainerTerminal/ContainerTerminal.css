@@ -49,7 +49,6 @@
 }
 
 .terminal-body {
-    padding: 1rem;
     background-color: var(--color-bg);
     border: 1px solid var(--color-border-soft);
 }

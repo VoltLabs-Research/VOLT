@@ -18,7 +18,7 @@ const NotificationsPopover = () => {
                 >
                     <IoNotificationsOutline size={18} />
                     {unreadCount > 0 && (
-                        <span className='d-flex items-center content-center notification-badge p-absolute'>{unreadCount > 99 ? '99+' : unreadCount}</span>
+                        <span className='d-flex items-center content-center notification-badge p-absolute font-weight-6'>{unreadCount > 99 ? '99+' : unreadCount}</span>
                     )}
                 </button>
             }

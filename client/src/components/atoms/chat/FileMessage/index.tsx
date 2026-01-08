@@ -66,7 +66,7 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
                         <Paragraph className='chat-file-name overflow-hidden font-weight-6 color-primary'>{meta.fileName}</Paragraph>
                         <Paragraph className='chat-file-size color-muted'>{formatSize(meta.fileSize ?? 0)}</Paragraph>
                     </div>
-                    <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download font-size-3 color-muted'><IoDownloadOutline /></a>
+                    <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download font-size-3 color-muted p-05'><IoDownloadOutline /></a>
                 </div>
             </div>
         );
@@ -79,7 +79,7 @@ const FileMessage: React.FC<FileMessageProps> = ({ msg, currentChatId }: FileMes
                 <Paragraph className='chat-file-name overflow-hidden font-weight-6 color-primary'>{meta.fileName}</Paragraph>
                 <Paragraph className='chat-file-size color-muted'>{formatSize(meta.fileSize ?? 0)}</Paragraph>
             </div>
-            <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download font-size-3 color-muted'><IoDownloadOutline /></a>
+            <a href={meta.fileUrl} download={meta.fileName} className='chat-file-download font-size-3 color-muted p-05'><IoDownloadOutline /></a>
         </div>
     );
 };

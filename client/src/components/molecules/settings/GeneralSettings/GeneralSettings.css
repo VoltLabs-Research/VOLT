@@ -60,7 +60,6 @@
 }
 
 .danger-item {
-    padding: 1rem;
     background: rgba(239, 68, 68, 0.05);
     border: 1px solid rgba(239, 68, 68, 0.2);
     border-radius: var(--radius-md);

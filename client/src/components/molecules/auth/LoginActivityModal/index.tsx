@@ -47,7 +47,7 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = () => {
             width='600px'
             className='login-activity-modal w-max overflow-hidden'
         >
-            <div className="d-flex column flex-1 login-activity-modal-content y-auto">
+            <div className="d-flex column flex-1 login-activity-modal-content y-auto p-1-5">
                 <div className="d-flex items-center content-end gap-075 login-activity-modal-actions mb-1">
                     <Button
                         variant='ghost'
@@ -75,7 +75,7 @@ const LoginActivityModal: React.FC<LoginActivityModalProps> = () => {
                 {loading ? (
                     <div className="d-flex column gap-1 activity-loading">
                         {Array.from({ length: 5 }).map((_, index) => (
-                            <div key={index} className="d-flex items-center gap-1 activity-skeleton">
+                            <div key={index} className="d-flex items-center gap-1 activity-skeleton p-1">
                                 <div className="activity-skeleton-icon"></div>
                                 <div className="d-flex column gap-05 flex-1 activity-skeleton-content">
                                     <div className="activity-skeleton-line"></div>

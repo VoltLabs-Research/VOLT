@@ -2,7 +2,6 @@
     background-color: rgba(30, 30, 30, 0.3);
     backdrop-filter: blur(35px) saturate(160%);
     z-index: 200;
-    padding: 1rem;
     border-radius: var(--radius-lg);
     color: #cacaca;
     line-height: 1.6rem;

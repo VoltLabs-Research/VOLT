@@ -56,7 +56,7 @@ const TimestepSlider: React.FC<TimestepSliderProps> = ({
     const progress = maxIndex > 0 ? (safeCurrentIndex / maxIndex) * 100 : 0;
 
     return (
-        <div className='d-flex items-center gap-05 editor-timesteps-controls-slider'>
+        <div className='d-flex items-center gap-05 editor-timesteps-controls-slider w-max'>
             <Slider
                 min={minIndex}
                 max={maxIndex}
@@ -69,7 +69,7 @@ const TimestepSlider: React.FC<TimestepSliderProps> = ({
                     '--progress': `${progress}%`
                 } as React.CSSProperties}
             />
-            <span className="timestep-display">
+            <span className="timestep-display color-secondary">
                 {currentTimestep} / {maxTimestep}
             </span>
         </div>

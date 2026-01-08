@@ -1,6 +1,5 @@
 /* Session list uses .settings-card from general.css */
 .session-item {
-    padding: 1rem;
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-md);
@@ -34,7 +33,6 @@
 }
 
 .session-skeleton {
-    padding: 1rem;
     background: var(--color-surface-1);
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-md);

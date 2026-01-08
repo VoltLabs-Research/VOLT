@@ -130,14 +130,14 @@ const PluginResultsViewer = ({
 
     if (listingExposures.length === 0 && !hasAtomsTab) {
         return (
-            <Container className='plugin-results-viewer-container d-flex column'>
+            <Container className='plugin-results-viewer-container d-flex column p-absolute h-max overflow-hidden'>
                 <Container className='plugin-results-header d-flex items-center content-between p-1'>
                     <Title className='font-size-3 font-weight-5'>{pluginName}</Title>
                     <i className='plugin-results-close cursor-pointer' onClick={closeResultsViewer}>
                         <RiCloseLine size={20} />
                     </i>
                 </Container>
-                <Container className='plugin-results-empty d-flex items-center content-center flex-1'>
+                <Container className='plugin-results-empty d-flex items-center content-center flex-1 p-1 text-center font-size-1 color-muted'>
                     <span className='color-muted font-size-2'>No listings available for this analysis</span>
                 </Container>
             </Container>
@@ -145,7 +145,7 @@ const PluginResultsViewer = ({
     }
 
     return (
-        <Container className='plugin-results-viewer-container d-flex column'>
+        <Container className='plugin-results-viewer-container d-flex column p-absolute h-max overflow-hidden'>
             {/* Header */}
             <Container className='plugin-results-header d-flex items-center content-between p-1'>
                 <Title className='font-size-3 font-weight-5'>{pluginName}</Title>
@@ -164,28 +164,28 @@ const PluginResultsViewer = ({
             </Container>
 
             {/* Tabs */}
-            <Container className='plugin-results-tabs-container d-flex gap-05 px-1'>
+            <Container className='plugin-results-tabs-container d-flex gap-05 px-1 w-max'>
                 {listingExposures.map((exposure, index) => (
                     <button
                         key={`${exposure.exposureId}-${index}`}
-                        className={`plugin-results-tab ${activeTab === index ? 'active' : ''}`}
+                        className={`plugin-results-tab ${activeTab === index ? 'active' : ''} font-size-1 font-weight-4 cursor-pointer`}
                         onClick={() => setActiveTab(index)}
                     >
-                        <span className='plugin-results-tab-name'>{exposure.name}</span>
+                        <span className='plugin-results-tab-name overflow-hidden'>{exposure.name}</span>
                     </button>
                 ))}
                 {hasAtomsTab && (
                     <button
-                        className={`plugin-results-tab ${isAtomsTabActive ? 'active' : ''}`}
+                        className={`plugin-results-tab ${isAtomsTabActive ? 'active' : ''} font-size-1 font-weight-4 cursor-pointer`}
                         onClick={() => setActiveTab(atomsTabIndex)}
                     >
-                        <span className='plugin-results-tab-name'>Atoms</span>
+                        <span className='plugin-results-tab-name overflow-hidden'>Atoms</span>
                     </button>
                 )}
             </Container>
 
             {/* Content */}
-            <Container className='plugin-results-content flex-1'>
+            <Container className='plugin-results-content flex-1 y-auto'>
                 {activeExposure && (
                     <PluginExposureTable
                         key={`${activeExposure.exposureId}-${analysisId}`}

@@ -8,18 +8,15 @@
 }
 
 .editor-sidebar-scene-container {
-    padding: 1.5rem;
     height: 64vh;
     overflow: scroll;
 }
 
 .editor-render-options-container {
     height: 79vh;
-    padding: 1.5rem;
 }
 
 .editor-sidebar-user-avatar-wrapper {
-    padding: 1.5rem;
 }
 
 .editor-sidebar-user-avatar-wrapper .sidebar-user-fullname {

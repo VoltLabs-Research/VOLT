@@ -47,9 +47,9 @@ const DashboardHeader = ({ setSidebarOpen }: DashboardHeaderProps) => {
     }, [user, owner, admins]);
 
     return (
-        <header className='dashboard-top-header'>
+        <header className='dashboard-top-header p-sticky gap-1'>
             <button
-                className='mobile-sidebar-trigger'
+                className='mobile-sidebar-trigger p-05 color-primary cursor-pointer'
                 onClick={() => setSidebarOpen(true)}
             >
                 <IoMenuOutline size={20} />
@@ -57,7 +57,7 @@ const DashboardHeader = ({ setSidebarOpen }: DashboardHeaderProps) => {
 
             <Container className='dashboard-header-left'>
                 {pathname === '/dashboard' ? (
-                    <Title className='header-greeting color-primary'>
+                    <Title className='header-greeting color-primary font-weight-5'>
                         {getGreeting()}, {capitalize(user?.firstName)}
                     </Title>
                 ) : (
@@ -69,7 +69,7 @@ const DashboardHeader = ({ setSidebarOpen }: DashboardHeaderProps) => {
                 <GlobalSearch />
             </Container>
 
-            <Container className='dashboard-header-right'>
+            <Container className='dashboard-header-right gap-05'>
                 {canInvite ? (
                     <TeamInvitePanelPopover />
                 ) : (

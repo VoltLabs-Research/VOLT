@@ -11,7 +11,7 @@ const BootstrapSkeleton: React.FC<BootstrapSkeletonProps> = ({ count = 3 }) => {
     return (
         <>
             {Array.from({ length: Math.min(3, Math.max(1, count)) }).map((_, i) => (
-                <Container key={`bootstrap-skel-${i}`} className='analysis-section'>
+                <Container key={`bootstrap-skel-${i}`} className='analysis-section overflow-hidden'>
                     <Container className='analysis-section-header d-flex column gap-05 p-1'>
                         <Container className='d-flex items-center gap-05'>
                             <Skeleton variant="circular" width={16} height={16} />

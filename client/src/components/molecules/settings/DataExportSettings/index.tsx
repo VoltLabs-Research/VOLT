@@ -45,7 +45,7 @@ const DataExportSettings: React.FC = () => {
                                 {item.right}
                             </Container>
                         }
-                        className="data-item sm:column sm:items-start sm:gap-1"
+                        className="data-item sm:column sm:items-start sm:gap-1 p-1"
                         infoClassName="data-info"
                         rightClassName=""
                     />

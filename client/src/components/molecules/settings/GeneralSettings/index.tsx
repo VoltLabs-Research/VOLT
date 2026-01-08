@@ -213,7 +213,7 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                     title="Danger Zone"
                     description="Irreversible and destructive actions" />
 
-                <Container className="danger-item d-flex items-center content-between">
+                <Container className="danger-item d-flex items-center content-between p-1">
                     <Container className="danger-info">
                         <Title className='font-size-2-5'>Delete Account</Title>
                         <Paragraph>Permanently delete your account and all associated data. This action cannot be undone.</Paragraph>

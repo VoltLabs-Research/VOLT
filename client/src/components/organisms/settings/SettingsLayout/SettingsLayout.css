@@ -2,7 +2,6 @@
 /* Shared settings layout styles */
 
 .settings-main {
-    padding: 2rem;
 }
 
 .settings-content-wrapper {
@@ -10,7 +9,6 @@
     margin: 0 auto;
 }
 
-.settings-layout-container{
-    height: 100%;
+.settings-layout-container {
     overflow: scroll;
 }

@@ -27,7 +27,6 @@
   background-color: var(--color-bg);
   overflow: scroll;
   height: 100% !important;
-  color: var(--color-text-primary);
 }
 
 .clusters-main {
@@ -43,10 +42,7 @@
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  color: var(--color-text-primary);
   min-width: 200px;
-  font-size: 0.875rem;
-  cursor: pointer;
   transition: all 0.2s ease;
 }
 

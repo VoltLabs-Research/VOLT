@@ -14,17 +14,17 @@ const Notifications = ({ closePopover }: NotificationsProps) => {
 
     return (
         <>
-            <Container className='d-flex items-center content-between color-primary font-weight-6 dashboard-notifications-header'>
+            <Container className='d-flex items-center content-between color-primary font-weight-6 dashboard-notifications-header font-size-2'>
                 <span>Notifications</span>
                 <button
-                    className='dashboard-notifications-close color-secondary cursor-pointer'
+                    className='dashboard-notifications-close color-secondary cursor-pointer color-muted'
                     onClick={(e) => {
                         e.stopPropagation();
                         closePopover();
                     }}
                 >×</button>
             </Container>
-            <Container className='dashboard-notifications-body'>
+            <Container className='dashboard-notifications-body p-05'>
                 {loading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                         <div key={`notif-skel-${i}`} className='dashboard-notification-item'>
@@ -35,7 +35,7 @@ const Notifications = ({ closePopover }: NotificationsProps) => {
                 ) : (
                     <>
                         {notifications.length === 0 && (
-                            <div className='dashboard-notifications-empty text-center color-secondary'>No notifications</div>
+                            <div className='dashboard-notifications-empty text-center color-secondary p-1-5 font-size-2'>No notifications</div>
                         )}
                         {notifications.map((n) => (
                             <div
@@ -46,7 +46,7 @@ const Notifications = ({ closePopover }: NotificationsProps) => {
                                     closePopover();
                                 }}
                             >
-                                <div className='dashboard-notification-title font-weight-6 color-primary'>{n.title}</div>
+                                <div className='dashboard-notification-title font-weight-6 color-primary font-size-2'>{n.title}</div>
                                 <div className='dashboard-notification-content color-secondary'>{n.content}</div>
                             </div>
                         ))}

@@ -28,7 +28,7 @@ const ToastEl: React.FC<{ toast: Toast }> = ({ toast }) => {
   const removeToast = useUIStore((s) => s.removeToast);
 
   return (
-    <div className={`d-flex items-center content-between gap-1 toast toast-${toast.type}`}>
+    <div className={`d-flex items-center content-between gap-1 toast toast-${toast.type} p-1`}>
       <div className='d-flex items-center gap-075 flex-1 toast-content'>
         {getIcon(toast.type)}
         <Paragraph className='toast-message font-size-2-5 color-primary'>{toast.message}</Paragraph>

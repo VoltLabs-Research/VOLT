@@ -11,7 +11,6 @@
 .trajectory-share-status-container {
     right: 1rem;
     width: auto;
-    padding: 1rem;
     border-radius: var(--radius-full);
     top: 2rem;
     z-index: 200;

@@ -7,7 +7,6 @@
 }
 
 .toast {
-  padding: 1rem;
   border-radius: var(--radius-md);
   backdrop-filter: blur(5px);
   border: 1px solid var(--color-border-soft);

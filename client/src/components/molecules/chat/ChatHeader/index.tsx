@@ -19,7 +19,7 @@ export type ChatHeaderProps = {
 
 const ChatHeader = ({ chat, currentParticipant, presence }: ChatHeaderProps) => {
     return (
-        <div className='d-flex items-center content-between chat-box-header-container p-relative'>
+        <div className='d-flex items-center content-between chat-box-header-container p-relative p-1-5'>
             <div className='d-flex items-center gap-1 chat-header-user'>
                 <div className={`d-flex flex-center chat-header-avatar ${chat.isGroup ? 'group-avatar' : ''} font-size-3 font-weight-6 overflow-hidden`}>
                     {chat.isGroup

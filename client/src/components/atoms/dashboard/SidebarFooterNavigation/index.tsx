@@ -27,15 +27,15 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded }: Side
     return (
         <Container className='sidebar-footer-nav'>
             <button
-                className={`sidebar-nav-item sidebar-section-header ${pathname.startsWith('/dashboard/settings') ? 'is-selected' : ''}`}
+                className={`sidebar-nav-item sidebar-section-header ${pathname.startsWith('/dashboard/settings') ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer`}
                 onClick={() => setSettingsExpanded(!settingsExpanded)}
             >
-                <span className='sidebar-nav-icon'>
+                <span className='sidebar-nav-icon font-size-4'>
                     <IoSettingsOutline />
                 </span>
                 <span className='sidebar-nav-label'>Settings</span>
                 <IoChevronDown
-                    className={`sidebar-section-chevron ${settingsExpanded ? 'is-expanded' : ''}`}
+                    className={`sidebar-section-chevron ${settingsExpanded ? 'is-expanded' : ''} color-muted`}
                     size={14}
                 />
             </button>
@@ -54,8 +54,8 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded }: Side
                 </Container>
             )}
 
-            <button className='sidebar-nav-item'>
-                <span className='sidebar-nav-icon'>
+            <button className='sidebar-nav-item p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer'>
+                <span className='sidebar-nav-icon font-size-4'>
                     <TbHelp />
                 </span>
                 <span className='sidebar-nav-label'>Support</span>

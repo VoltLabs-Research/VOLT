@@ -1,6 +1,5 @@
 .form-control-value {
     font-size: 11px;
-    color: var(--color-text-muted);
     min-width: 40px;
     text-align: right;
 }

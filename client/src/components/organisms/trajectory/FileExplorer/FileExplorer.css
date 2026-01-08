@@ -1,10 +1,8 @@
 .file-explorer-wrapper {
-    width: 100%;
     border-radius: .5rem;
 }
 
 .file-explorer-left-top-container {
-    padding: 1rem;
     min-width: 220px;
     width: 20%;
 }

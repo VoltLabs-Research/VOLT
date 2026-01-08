@@ -19,7 +19,6 @@
 }
 
 .modal-header {
-    padding: 1.5rem;
     border-bottom: 1px solid var(--border-color);
 
 }
@@ -34,7 +33,6 @@
     background: transparent;
     border: none;
     color: var(--text-secondary);
-    padding: 0.5rem;
     border-radius: var(--radius-xs);
     transition: all 0.2s;
 }
@@ -45,7 +43,6 @@
 }
 
 .modal-form {
-    padding: 1.5rem;
 }
 
 .form-section {}
@@ -92,7 +89,6 @@
     background: transparent;
     border: none;
     color: #ef4444;
-    padding: 0.5rem;
     border-radius: var(--radius-xs);
 }
 
@@ -106,7 +102,6 @@
     color: var(--primary);
     padding: 0.4rem;
     border-radius: var(--radius-xs);
-    cursor: pointer;
     transition: all 0.15s ease;
     display: flex;
     align-items: center;
@@ -124,7 +119,6 @@
     color: var(--danger);
     padding: 0.4rem;
     border-radius: var(--radius-xs);
-    cursor: pointer;
     transition: all 0.15s ease;
     display: flex;
     align-items: center;
@@ -138,14 +132,11 @@
 }
 
 .empty-message {
-    padding: 1rem;
-    text-align: center;
     border: 1px dashed var(--border);
     border-radius: var(--radius-xs);
 }
 
 .modal-actions {
-    padding: 1.5rem;
     border-top: 1px solid var(--border-color);
 
 }

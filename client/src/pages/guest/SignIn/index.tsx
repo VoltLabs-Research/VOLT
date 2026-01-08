@@ -190,7 +190,7 @@ export default function AuthPage() {
 
           <div className="d-flex column content-between h-max hero-content-wrapper p-relative h-max">
             <div className="d-flex items-center gap-075 hero-brand font-size-5">
-              <div className="brand-icon d-flex flex-center">
+              <div className="brand-icon d-flex flex-center p-05">
                 <LayoutGrid size={24} color="white" />
               </div>
               <span>Volterra</span>
@@ -207,7 +207,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <div className="d-flex column form-section p-relative gap-1 vh-max">
+        <div className="d-flex column form-section p-relative gap-1 vh-max p-1-5">
           <div className="form-bg-glow p-absolute" />
 
           <div className="d-flex column content-center gap-2 flex-1 form-container p-relative w-max">
@@ -320,7 +320,7 @@ export default function AuthPage() {
                   exit={{ opacity: 0, x: 20 }}
                   className="space-y-4"
                 >
-                  <div className="user-badge">
+                  <div className="user-badge p-1">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       <CheckCircle2 size={20} color="#22c55e" />
                       <div className="d-flex column">
@@ -378,7 +378,7 @@ export default function AuthPage() {
                   exit={{ opacity: 0, x: 20 }}
                   className="space-y-4"
                 >
-                  <div className="d-flex content-between items-center user-badge">
+                  <div className="d-flex content-between items-center user-badge p-1">
                     <div className="d-flex items-center gap-075">
                       <div style={{ background: 'var(--color-zinc-800)', borderRadius: '50%', padding: '4px' }}>
                         <CheckCircle2 size={16} color="#22c55e" />

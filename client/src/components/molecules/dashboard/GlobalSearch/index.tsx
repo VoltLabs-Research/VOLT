@@ -69,14 +69,14 @@ const GlobalSearch: React.FC = () => {
     };
 
     return (
-        <Container className='global-search-wrapper' ref={containerRef}>
+        <Container className='global-search-wrapper p-relative w-max' ref={containerRef}>
             <Container className='d-flex gap-1 search-container'>
-                <i className='search-icon-container'>
+                <i className='search-icon-container font-size-3 color-muted'>
                     <IoSearchOutline />
                 </i>
                 <input
                     placeholder='Search...'
-                    className='search-input h-max'
+                    className='search-input h-max w-max font-size-2 color-primary'
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => query && setShowResults(true)}
@@ -84,7 +84,7 @@ const GlobalSearch: React.FC = () => {
             </Container>
 
             {showResults && (
-                <Container className='global-search-results'>
+                <Container className='global-search-results p-absolute y-auto'>
                     {isLoading && (
                         <Container className='global-search-loading'>
                             <Paragraph className='color-muted font-size-1'>Searching...</Paragraph>
@@ -101,7 +101,7 @@ const GlobalSearch: React.FC = () => {
                         <>
                             {results.analyses?.length > 0 && (
                                 <Container className='global-search-section'>
-                                    <Container className='global-search-section-header'>
+                                    <Container className='global-search-section-header gap-05 font-size-3 color-muted'>
                                         <GoWorkflow />
                                         <Paragraph className='font-size-1 font-weight-5'>Analyses</Paragraph>
                                     </Container>
@@ -109,7 +109,7 @@ const GlobalSearch: React.FC = () => {
                                         <button
                                             key={item._id}
                                             onClick={() => handleNavigation(`/dashboard/analysis-configs`)}
-                                            className='global-search-item'
+                                            className='global-search-item gap-025 w-max cursor-pointer'
                                         >
                                             <Paragraph className='font-size-2 font-weight-5'>{item.plugin}</Paragraph>
                                             <Paragraph className='font-size-1 color-muted'>
@@ -122,7 +122,7 @@ const GlobalSearch: React.FC = () => {
 
                             {results.trajectories?.length > 0 && (
                                 <Container className='global-search-section'>
-                                    <Container className='global-search-section-header'>
+                                    <Container className='global-search-section-header gap-05 font-size-3 color-muted'>
                                         <TbObjectScan />
                                         <Paragraph className='font-size-1 font-weight-5'>Trajectories</Paragraph>
                                     </Container>
@@ -130,7 +130,7 @@ const GlobalSearch: React.FC = () => {
                                         <button
                                             key={item._id}
                                             onClick={() => handleNavigation(`/dashboard/trajectories/${item._id}`)}
-                                            className='global-search-item'
+                                            className='global-search-item gap-025 w-max cursor-pointer'
                                         >
                                             <Paragraph className='font-size-2 font-weight-5'>{item.name}</Paragraph>
                                             <Paragraph className='font-size-1 color-muted'>{item.status}</Paragraph>
@@ -141,7 +141,7 @@ const GlobalSearch: React.FC = () => {
 
                             {results.containers?.length > 0 && (
                                 <Container className='global-search-section'>
-                                    <Container className='global-search-section-header'>
+                                    <Container className='global-search-section-header gap-05 font-size-3 color-muted'>
                                         <IoCubeOutline />
                                         <Paragraph className='font-size-1 font-weight-5'>Containers</Paragraph>
                                     </Container>
@@ -149,7 +149,7 @@ const GlobalSearch: React.FC = () => {
                                         <button
                                             key={item._id}
                                             onClick={() => handleNavigation(`/dashboard/containers`)}
-                                            className='global-search-item'
+                                            className='global-search-item gap-025 w-max cursor-pointer'
                                         >
                                             <Paragraph className='font-size-2 font-weight-5'>{item.name}</Paragraph>
                                             <Paragraph className='font-size-1 color-muted'>{item.image}</Paragraph>
@@ -160,7 +160,7 @@ const GlobalSearch: React.FC = () => {
 
                             {results.plugins?.length > 0 && (
                                 <Container className='global-search-section'>
-                                    <Container className='global-search-section-header'>
+                                    <Container className='global-search-section-header gap-05 font-size-3 color-muted'>
                                         <TbCube3dSphere />
                                         <Paragraph className='font-size-1 font-weight-5'>Plugins</Paragraph>
                                     </Container>
@@ -168,7 +168,7 @@ const GlobalSearch: React.FC = () => {
                                         <button
                                             key={item._id}
                                             onClick={() => handleNavigation(`/dashboard/plugins/${item.slug}`)}
-                                            className='global-search-item'
+                                            className='global-search-item gap-025 w-max cursor-pointer'
                                         >
                                             <Paragraph className='font-size-2 font-weight-5'>
                                                 {item.modifier?.name || item.slug}
@@ -183,7 +183,7 @@ const GlobalSearch: React.FC = () => {
 
                             {results.teams?.length > 0 && (
                                 <Container className='global-search-section'>
-                                    <Container className='global-search-section-header'>
+                                    <Container className='global-search-section-header gap-05 font-size-3 color-muted'>
                                         <IoPeopleOutline />
                                         <Paragraph className='font-size-1 font-weight-5'>Teams</Paragraph>
                                     </Container>
@@ -191,7 +191,7 @@ const GlobalSearch: React.FC = () => {
                                         <button
                                             key={item._id}
                                             onClick={() => handleNavigation(`/dashboard`)}
-                                            className='global-search-item'
+                                            className='global-search-item gap-025 w-max cursor-pointer'
                                         >
                                             <Paragraph className='font-size-2 font-weight-5'>{item.name}</Paragraph>
                                             <Paragraph className='font-size-1 color-muted'>{item.description}</Paragraph>
@@ -202,7 +202,7 @@ const GlobalSearch: React.FC = () => {
 
                             {results.chats?.length > 0 && (
                                 <Container className='global-search-section'>
-                                    <Container className='global-search-section-header'>
+                                    <Container className='global-search-section-header gap-05 font-size-3 color-muted'>
                                         <CiChat1 />
                                         <Paragraph className='font-size-1 font-weight-5'>Chats</Paragraph>
                                     </Container>
@@ -210,7 +210,7 @@ const GlobalSearch: React.FC = () => {
                                         <button
                                             key={item._id}
                                             onClick={() => handleNavigation(`/dashboard/messages`)}
-                                            className='global-search-item'
+                                            className='global-search-item gap-025 w-max cursor-pointer'
                                         >
                                             <Paragraph className='font-size-2 font-weight-5'>
                                                 {item.participants?.map((p: any) => 

@@ -45,7 +45,7 @@ const FormInput: React.FC<FormInputProps> = ({ label, error, showError = true, v
             )}
 
             <Container className={`form-input-container ${error ? 'form-input-error' : ''} ${variantClass} w-max`}>
-                <input className={`form-input ${className} w-max h-max font-size-2-5`} {...props} />
+                <input className={`form-input ${className} w-max h-max font-size-2-5 p-1`} {...props} />
             </Container>
 
             {error && showError && (

@@ -1,5 +1,4 @@
 .shortcut-feedback {
-    position: fixed;
     bottom: 7rem;
     left: 46%;
     transform: translateX(-50%);
@@ -7,7 +6,6 @@
 
     display: flex;
     align-items: center;
-    gap: 0.75rem;
 
     background: rgba(26, 26, 26, 0.95);
     backdrop-filter: blur(12px) saturate(150%);
@@ -25,7 +23,6 @@
 .shortcut-feedback-keys {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
     flex-shrink: 0;
 }
 
@@ -39,9 +36,7 @@
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 5px;
-    font-size: 0.75rem;
     font-family: inherit;
-    font-weight: 500;
     color: var(--color-primary);
     box-shadow:
         0 1px 2px rgba(0, 0, 0, 0.2),
@@ -57,7 +52,6 @@
 .shortcut-feedback-description {
     color: var(--color-secondary);
     font-size: 0.9375rem;
-    font-weight: 500;
     white-space: nowrap;
 }
 

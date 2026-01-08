@@ -80,7 +80,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                                 onDelete={() => onDelete(msg._id)}
                             />
                             {isReactionsOpen && (
-                                <div className='d-flex gap-025 chat-message-reactions-menu p-absolute'>
+                                <div className='d-flex gap-025 chat-message-reactions-menu p-absolute p-05'>
                                     {['👍', '❤️', '😂', '😮', '😢', '😡'].map(e =>
                                         <Button key={e} variant='ghost' intent='neutral' iconOnly size='sm' onClick={() => {
                                             onToggleReaction(msg._id, e);

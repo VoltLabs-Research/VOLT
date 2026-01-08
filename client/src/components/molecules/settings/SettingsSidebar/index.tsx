@@ -34,7 +34,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ activeSection, navOpt
 				<Title className='font-size-1 sidebar-title font-size-5 font-weight-6 color-primary'>Settings</Title>
 			</Container>
 
-			<Container className='sidebar-nav d-flex column gap-025 flex-1'>
+			<Container className='sidebar-nav d-flex column gap-025 flex-1 y-auto'>
 				{navOptions.map((option) => {
 					const Icon = option.icon;
 					const isActive = activeSection === option.title;

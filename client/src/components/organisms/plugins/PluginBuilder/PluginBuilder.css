@@ -1,6 +1,5 @@
 .plugin-builder-palette-list-container {
     overflow: scroll;
-    padding: 2rem;
     /* TODO: */
     height: 64vh;
 }

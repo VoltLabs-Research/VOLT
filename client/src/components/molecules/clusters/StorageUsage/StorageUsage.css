@@ -5,7 +5,6 @@
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
   max-height: 400px;
   box-shadow: var(--shadow-card);
 }
@@ -17,19 +16,16 @@
 }
 
 .storage-usage-title {
-  color: var(--color-text-primary);
   margin: 0;
 }
 
 .storage-total-value {
   font-size: 0.9rem;
-  color: var(--color-text-primary);
   line-height: 1;
 }
 
 .storage-total-label {
   font-size: 0.7rem;
-  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -46,11 +42,8 @@
 
 .storage-tooltip-label {
   margin-bottom: 0.5rem;
-  color: var(--color-text-primary);
-  font-weight: 500;
 }
 
 .storage-tooltip-item {
   margin: 0.25rem 0;
-  color: var(--color-text-secondary);
 }
