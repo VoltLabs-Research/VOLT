@@ -12,7 +12,7 @@ import containerApi from '@/features/container/api/container';
 import useContainerStore, { type Container } from '@/features/container/stores';
 import useListingLifecycle from '@/hooks/common/use-listing-lifecycle';
 import useConfirm from '@/hooks/ui/use-confirm';
-import './Containers.css';
+import '@/features/container/pages/protected/Containers/Containers.css';
 
 const Containers: React.FC = () => {
     usePageTitle('Containers');

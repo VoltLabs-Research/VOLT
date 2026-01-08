@@ -14,14 +14,14 @@ import { useTrajectoryStore } from '@/features/trajectory/stores';
 import useConfirm from '@/hooks/ui/use-confirm';
 import useCardInteractions from '@/hooks/ui/interaction/use-card-interaction';
 import useTrajectoryPreview from '@/features/trajectory/hooks/use-trajectory-preview';
-import { useRasterStore } from '@/stores/slices/raster';
+import { useRasterStore } from '@/features/raster/stores';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
 import Tooltip from '@/components/atoms/common/Tooltip';
 import trajectoryApi from '@/features/trajectory/api/trajectory';
 import type { Trajectory } from '@/types/models';
 import { useUIStore } from '@/stores/slices/ui';
-import './SimulationCard.css';
+import '@/features/trajectory/components/atoms/SimulationCard/SimulationCard.css';
 
 interface SimulationCardProps {
     trajectory: Trajectory;

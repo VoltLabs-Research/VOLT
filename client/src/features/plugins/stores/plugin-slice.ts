@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import pluginApi from '@/features/plugins/api/plugin';
-import { useAnalysisConfigStore } from '@/stores/slices/analysis';
+import { useAnalysisConfigStore } from '@/features/analysis/stores';
 import type { IPluginRecord, IExposureComputed, IArgumentDefinition } from '@/features/plugins/types';
 import { calculatePaginationState, initialListingMeta } from '@/utilities/api/pagination-utils';
-import { runRequest } from '../../../stores/helpers';
+import { runRequest } from '@/stores/helpers';
 
 /**
  * RenderableExposure - Format used by canvas/scene components

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IoClose, IoAdd, IoTrash } from 'react-icons/io5';
 import containerApi from '@/features/container/api/container';
 import useToast from '@/hooks/ui/use-toast';
-import './EditContainerModal.css';
+import '@/features/container/components/organisms/EditContainerModal/EditContainerModal.css';
 import Title from '@/components/primitives/Title';
 import Button from '@/components/primitives/Button';
 import Modal from '@/components/molecules/common/Modal';

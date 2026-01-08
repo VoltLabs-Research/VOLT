@@ -18,8 +18,8 @@ import {
     LuDownload
 } from 'react-icons/lu';
 import { CircularProgress } from '@mui/material';
-import { formatSize } from '@/utilities/glb/scene-utils';
-import './TrajectoryFileExplorer.css';
+import { formatSize } from '@/features/canvas/utilities/scene-utils';
+import '@/features/trajectory/pages/protected/FileExplorer/TrajectoryFileExplorer.css';
 import Paragraph from '@/components/primitives/Paragraph';
 import { BreadcrumbsSkeleton, HeaderIconSkeleton, FileRowSkeleton } from '@/features/trajectory/components/organisms/FileExplorer/Skeletons';
 

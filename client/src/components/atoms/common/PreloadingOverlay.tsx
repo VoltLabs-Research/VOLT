@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
-import TetrahedronLoader from './TetrahedronLoader';
-import { useEditorStore } from '@/stores/slices/editor';
+import TetrahedronLoader from '@/features/canvas/components/atoms/TetrahedronLoader';
+import { useEditorStore } from '@/features/canvas/stores/editor';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
 import Title from '@/components/primitives/Title';

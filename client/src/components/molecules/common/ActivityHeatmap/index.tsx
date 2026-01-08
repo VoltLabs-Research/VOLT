@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import CalendarHeatmap from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
-import './ActivityHeatmap.css';
+import '@/components/molecules/common/ActivityHeatmap/ActivityHeatmap.css';
 import { type ActivityData } from '@/features/team/api/team';
 import { addDays, format, subDays } from 'date-fns';
 import CursorTooltip from '@/components/atoms/common/CursorTooltip';

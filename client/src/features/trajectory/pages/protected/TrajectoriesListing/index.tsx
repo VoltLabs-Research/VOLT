@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { usePageTitle } from '@/hooks/core/use-page-title'
-import { formatSize } from '@/utilities/glb/scene-utils'
+import { formatSize } from '@/features/canvas/utilities/scene-utils'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/common/DocumentListing'
 import { useTrajectoryStore } from '@/features/trajectory/stores'

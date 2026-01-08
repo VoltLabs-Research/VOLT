@@ -1,10 +1,10 @@
 import { memo, useMemo } from 'react';
 import { useTeamJobsStore } from '@/features/team/stores';
-import JobSkeleton from '@/components/atoms/common/JobSkeleton';
-import TrajectoryJobGroup from '@/components/molecules/common/TrajectoryJobGroup';
+import JobSkeleton from '@/features/jobs/components/atoms/JobSkeleton';
+import TrajectoryJobGroup from '@/features/jobs/components/molecules/TrajectoryJobGroup';
 import Container from '@/components/primitives/Container';
 import type { TrajectoryJobGroup as TJG, Job } from '@/types/jobs';
-import './JobsHistory.css';
+import '@/components/molecules/common/JobsHistory/JobsHistory.css';
 
 interface JobsHistoryProps {
     trajectoryId?: string;

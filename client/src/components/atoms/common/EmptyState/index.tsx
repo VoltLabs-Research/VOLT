@@ -1,7 +1,7 @@
 import React from 'react';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
-import './EmptyState.css';
+import '@/components/atoms/common/EmptyState/EmptyState.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 

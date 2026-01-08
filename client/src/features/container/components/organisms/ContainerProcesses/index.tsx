@@ -3,7 +3,7 @@ import containerApi from '@/features/container/api/container';
 import { RefreshCw, Activity } from 'lucide-react';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
-import './ContainerProcesses.css';
+import '@/features/container/components/organisms/ContainerProcesses/ContainerProcesses.css';
 import Paragraph from '@/components/primitives/Paragraph';
 import Title from '@/components/primitives/Title';
 

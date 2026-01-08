@@ -1,7 +1,7 @@
 import React from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { Skeleton } from '@mui/material'
-import './ChartContainer.css'
+import '@/components/atoms/common/ChartContainer/ChartContainer.css'
 import Title from '@/components/primitives/Title';
 import Container from '@/components/primitives/Container';
 

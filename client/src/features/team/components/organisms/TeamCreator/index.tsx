@@ -7,8 +7,8 @@ import Loader from '@/components/atoms/common/Loader';
 import { useUIStore } from '@/stores/slices/ui';
 import useToast from '@/hooks/ui/use-toast';
 import Modal from '@/components/molecules/common/Modal';
-import { useFormValidation } from '@/hooks/useFormValidation';
-import './TeamCreator.css';
+import { useFormValidation } from '@/hooks/common/use-form-validation';
+import '@/features/team/components/organisms/TeamCreator/TeamCreator.css';
 import Container from '@/components/primitives/Container';
 
 interface TeamCreatorProps {

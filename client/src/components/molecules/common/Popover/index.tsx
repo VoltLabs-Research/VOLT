@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import './Popover.css';
+import '@/components/molecules/common/Popover/Popover.css';
 
 interface PopoverProps {
     id: string;

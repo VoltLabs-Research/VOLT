@@ -1,13 +1,13 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { IoIosArrowDown } from 'react-icons/io';
 import FormField from '@/components/molecules/form/FormField';
-import EditorWidget from '@/components/organisms/scene/EditorWidget';
+import EditorWidget from '@/features/canvas/components/organisms/EditorWidget';
 import Button from '@/components/primitives/Button';
 import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
 import { useTrajectoryStore } from '@/features/trajectory/stores';
 import pluginApi from '@/features/plugins/api/plugin';
 import Container from '@/components/primitives/Container';
-import './ModifierConfiguration.css';
+import '@/components/organisms/form/ModifierConfiguration/ModifierConfiguration.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import useToast from '@/hooks/ui/use-toast';

@@ -10,7 +10,7 @@ import useAuthStore from '@/features/auth/stores';
 import { GoPersonAdd } from 'react-icons/go';
 import DashboardHeaderBreadcrumbs from '@/components/atoms/dashboard/HeaderBreadcrumbs';
 import TeamInvitePanelPopover from '@/features/team/components/molecules/TeamInvitePanelPopover';
-import NotificationsPopover from '@/components/molecules/notifications/NotificationsPopover';
+import NotificationsPopover from '@/features/notification/components/molecules/NotificationsPopover';
 
 interface DashboardHeaderProps {
     setSidebarOpen: (status: boolean) => void;

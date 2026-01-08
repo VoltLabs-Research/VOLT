@@ -4,7 +4,7 @@ import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
 import CodeEditor from '@/components/atoms/common/CodeEditor';
 import { usePluginBuilderStore } from '@/features/plugins/stores/builder-slice';
-import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/utilities/plugins/node-types';
+import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/features/plugins/utilities/node-types';
 import type { IExportData, Exporter as ExporterType, ExportType, IChartExportOptions, ChartType } from '@/types/plugin';
 import { Exporter } from '@/types/plugin';
 

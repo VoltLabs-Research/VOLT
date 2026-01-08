@@ -5,7 +5,7 @@ import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import Tooltip from '@/components/atoms/common/Tooltip';
 import { IoClose } from 'react-icons/io5';
-import './Modal.css';
+import '@/components/molecules/common/Modal/Modal.css';
 
 declare module 'react' {
     interface ButtonHTMLAttributes<T> extends React.HTMLAttributes<T> {

@@ -11,7 +11,7 @@ import DynamicIcon from '@/components/atoms/common/DynamicIcon'
 import Title from '@/components/primitives/Title'
 import Paragraph from '@/components/primitives/Paragraph'
 import getValueByPath from '@/utilities/common/getValueByPath'
-import './DocumentListing.css'
+import '@/components/organisms/common/DocumentListing/DocumentListing.css'
 
 // TODO: REFACTOR
 const sortDataWorker = (

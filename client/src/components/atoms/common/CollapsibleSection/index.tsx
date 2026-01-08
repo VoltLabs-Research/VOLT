@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { gsap } from 'gsap';
 import { ChevronDown, Trash2, Plus } from 'lucide-react';
-import './CollapsibleSection.css';
+import '@/components/atoms/common/CollapsibleSection/CollapsibleSection.css';
 import Title from '@/components/primitives/Title';
 import Container from '@/components/primitives/Container';
 

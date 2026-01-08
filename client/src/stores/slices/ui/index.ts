@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { createDashboardSearchSlice, type DashboardSearchSlice } from './dashboard-search-slice';
-import { createEditorUISlice, type EditorUISlice } from './editor-slice';
-import { createToastSlice, type ToastSlice } from './toast-slice';
-import { createWindowsSlice, type WindowsSlice } from './windows-slice';
+import { createDashboardSearchSlice, type DashboardSearchSlice } from '@/stores/slices/ui/dashboard-search-slice';
+import { createEditorUISlice, type EditorUISlice } from '@/features/canvas/stores/ui/editor-slice';
+import { createToastSlice, type ToastSlice } from '@/stores/slices/ui/toast-slice';
+import { createWindowsSlice, type WindowsSlice } from '@/stores/slices/ui/windows-slice';
 
 // Combined UI Store Type
 export type UISlice = DashboardSearchSlice & EditorUISlice & ToastSlice & WindowsSlice;
@@ -16,10 +16,10 @@ export const useUIStore = create<UISlice>()((...args) => ({
 }));
 
 // Re-export types
-export type { DashboardSearchState, DashboardSearchActions, DashboardSearchSlice } from './dashboard-search-slice';
-export type { EditorUIState, EditorUIActions, EditorUISlice, ActiveModifier } from './editor-slice';
-export type { ToastState, ToastActions, ToastSlice, Toast, ToastType } from './toast-slice';
-export type { WindowsState, WindowsActions, WindowsSlice } from './windows-slice';
+export type { DashboardSearchState, DashboardSearchActions, DashboardSearchSlice } from '@/stores/slices/ui/dashboard-search-slice';
+export type { EditorUIState, EditorUIActions, EditorUISlice, ActiveModifier } from '@/features/canvas/stores/ui/editor-slice';
+export type { ToastState, ToastActions, ToastSlice, Toast, ToastType } from '@/stores/slices/ui/toast-slice';
+export type { WindowsState, WindowsActions, WindowsSlice } from '@/stores/slices/ui/windows-slice';
 
 export default useUIStore;
 

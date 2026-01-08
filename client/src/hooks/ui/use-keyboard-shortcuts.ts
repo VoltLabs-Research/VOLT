@@ -22,7 +22,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useKeyboardShortcutsStore } from '@/stores/slices/ui/keyboard-shortcuts-slice';
-import { useEditorStore } from '@/stores/slices/editor';
+import { useEditorStore } from '@/features/canvas/stores/editor';
 import { useUIStore } from '@/stores/slices/ui';
 
 /**

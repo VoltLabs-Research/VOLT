@@ -4,7 +4,7 @@ import { IoExitOutline } from 'react-icons/io5';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
 import Tooltip from '@/components/atoms/common/Tooltip';
-import './Select.css';
+import '@/components/atoms/form/Select/Select.css';
 
 export interface SelectOption {
     value: string;

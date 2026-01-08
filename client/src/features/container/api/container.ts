@@ -8,7 +8,7 @@ import type {
     ContainerStats,
     GetContainerStats,
     GetContainerProcesses
-} from '../types';
+} from '@/features/container/types';
 
 const client = new VoltClient('/containers', { useRBAC: true });
 

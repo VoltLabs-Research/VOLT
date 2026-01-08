@@ -23,7 +23,7 @@
 import React, { Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useKeyboardShortcutsStore } from '@/stores/slices/ui/keyboard-shortcuts-slice';
-import './ShortcutFeedback.css';
+import '@/components/atoms/common/ShortcutFeedback/ShortcutFeedback.css';
 
 /**
  * Format key name for display

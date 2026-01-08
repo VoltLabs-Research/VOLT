@@ -5,7 +5,7 @@ import { formatNetworkSpeedWithUnit } from '@/utilities/common/network'
 import Container from '@/components/primitives/Container'
 import Button from '@/components/primitives/Button'
 import Tooltip from '@/components/atoms/common/Tooltip'
-import './MetricsCards.css'
+import '@/components/molecules/common/MetricsCards/MetricsCards.css'
 
 interface MetricsCardsProps {
   metrics: any;

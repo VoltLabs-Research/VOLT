@@ -1,7 +1,7 @@
 import React from 'react';
 import FormField from '@/components/molecules/form/FormField';
 import { TbPlus, TbTrash } from 'react-icons/tb';
-import './KeyValueEditor.css';
+import '@/features/plugins/components/molecules/KeyValueEditor/KeyValueEditor.css';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import Tooltip from '@/components/atoms/common/Tooltip';

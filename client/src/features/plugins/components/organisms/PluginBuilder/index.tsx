@@ -3,7 +3,7 @@ import { Background, ReactFlow, type ReactFlowInstance } from '@xyflow/react';
 import { useShallow } from 'zustand/react/shallow';
 import { nodeTypes } from '@/features/plugins/components/molecules/nodes';
 import { NodeType } from '@/types/plugin';
-import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
+import { NODE_CONFIGS } from '@/features/plugins/utilities/node-types';
 import { usePluginBuilderStore } from '@/features/plugins/stores/builder-slice';
 import SidebarUserAvatar from '@/features/auth/components/atoms/SidebarUserAvatar';
 import Sidebar from '@/components/organisms/common/Sidebar';
@@ -16,7 +16,7 @@ import Button from '@/components/primitives/Button';
 import { TbArrowLeft } from 'react-icons/tb';
 import Paragraph from '@/components/primitives/Paragraph';
 import '@xyflow/react/dist/style.css';
-import './PluginBuilder.css';
+import '@/features/plugins/components/organisms/PluginBuilder/PluginBuilder.css';
 import Title from '@/components/primitives/Title';
 import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';
 

@@ -21,7 +21,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import './EditableTag.css';
+import '@/components/atoms/common/EditableTag/EditableTag.css';
 
 interface EditableTagProps {
     as: keyof React.JSX.IntrinsicElements;

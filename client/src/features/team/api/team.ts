@@ -1,7 +1,7 @@
 import type { Team } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
 import type { TeamInvitation } from '@/types/models';
-import type { CreateTeamPayload } from '../types';
+import type { CreateTeamPayload } from '@/features/team/types';
 import VoltClient from '@/api';
 
 const client = new VoltClient('/teams');

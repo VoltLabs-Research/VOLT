@@ -22,7 +22,7 @@
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import './Input.css';
+import '@/components/atoms/form/Input/Input.css';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
 import Tooltip from '@/components/atoms/common/Tooltip';

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import authApi from "@/features/auth/api/auth";
 import useAuthStore from "@/features/auth/stores";
-import { useFormValidation } from "@/hooks/useFormValidation";
+import { useFormValidation } from "@/hooks/common/use-form-validation";
 import FormInput from "@/components/atoms/form/FormInput";
 import {
   Github,
@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Title from "@/components/primitives/Title";
 import Paragraph from "@/components/primitives/Paragraph";
-import './SignIn.css';
+import '@/features/auth/pages/guest/SignIn/SignIn.css';
 
 const WireframeBackground = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);

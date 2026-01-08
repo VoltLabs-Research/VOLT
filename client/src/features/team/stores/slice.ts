@@ -1,9 +1,9 @@
 import type { TeamState, TeamStore } from '@/types/stores/team/team';
 import teamApi from '@/features/team/api/team';
 import { socketService } from '@/services/websockets/socketio';
-import teamMember from '@/services/api/team-member/team-member';
-import { runRequest } from '../../../stores/helpers';
-import type { SliceCreator } from '../../../stores/helpers/create-slice';
+import teamMember from '@/features/team/api/team-member';
+import { runRequest } from '@/stores/helpers';
+import type { SliceCreator } from '@/stores/helpers/create-slice';
 
 export const initialState: TeamState = {
     teams: [],

@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/stores';
-import { TokenStorage } from '@/utilities/auth/token-storage';
-import './OAuthCallback.css';
+import { TokenStorage } from '@/features/auth/utilities/token-storage';
+import '@/features/auth/pages/guest/OAuthCallback/OAuthCallback.css';
 
 export default function OAuthCallback() {
     usePageTitle('Authenticating');

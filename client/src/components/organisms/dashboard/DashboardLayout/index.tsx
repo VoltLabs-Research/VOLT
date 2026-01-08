@@ -27,7 +27,7 @@ import TeamCreator from '@/features/team/components/organisms/TeamCreator';
 import Container from '@/components/primitives/Container';
 import DashboardSidebar from '@/components/organisms/dashboard/Sidebar';
 import DashboardHeader from '@/components/molecules/dashboard/DashboardHeader';
-import './DashboardLayout.css';
+import '@/components/organisms/dashboard/DashboardLayout/DashboardLayout.css';
 
 const DashboardLayout = () => {
     const teams = useTeamStore((state) => state.teams);

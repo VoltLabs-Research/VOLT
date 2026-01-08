@@ -22,7 +22,7 @@
 
 import React, { useState, useRef, useCallback, useEffect, type ReactNode, type ReactElement, cloneElement, isValidElement } from 'react';
 import { createPortal } from 'react-dom';
-import './Tooltip.css';
+import '@/components/atoms/common/Tooltip/Tooltip.css';
 
 export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right';
 

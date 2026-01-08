@@ -22,7 +22,7 @@
 
 import React from 'react';
 import Container from '@/components/primitives/Container';
-import './ProcessingLoader.css';
+import '@/components/atoms/common/ProcessingLoader/ProcessingLoader.css';
 import Paragraph from '@/components/primitives/Paragraph';
 
 interface ProcessingLoaderProps {

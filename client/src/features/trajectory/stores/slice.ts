@@ -5,9 +5,9 @@ import type { TrajectoryState, TrajectoryStore } from '@/types/stores/trajectori
 import PreviewCacheService from '@/services/common/preview-cache-service';
 import { clearTrajectoryPreviewCache } from '@/features/trajectory/hooks/use-trajectory-preview';
 import trajectoryApi from '@/features/trajectory/api/trajectory';
-import { runRequest } from '../../../stores/helpers';
+import { runRequest } from '@/stores/helpers';
 import { extractErrorMessage } from '@/utilities/api/error-extractor';
-import type { SliceCreator } from '../../../stores/helpers/create-slice';
+import type { SliceCreator } from '@/stores/helpers/create-slice';
 import { useUIStore } from '@/stores/slices/ui';
 
 const trajectoryPreviewCache = new PreviewCacheService();

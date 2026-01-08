@@ -1,4 +1,4 @@
-import { TokenStorage } from '@/utilities/auth/token-storage';
+import { TokenStorage } from '@/features/auth/utilities/token-storage';
 import { clearErrorHistory } from '@/api/error-notification';
 import type { User } from '@/types/models';
 import authApi from '@/features/auth/api/auth';

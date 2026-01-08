@@ -22,7 +22,7 @@
 
 import type { RefObject } from 'react';
 import { socketService } from '@/services/websockets/socketio';
-import { useChatStore } from '@/stores/slices/chat';
+import { useChatStore } from '@/features/chat/stores';
 import type { MessagesRead, TypingUser } from '@/types/chat';
 
 const SOCKET_EVENTS = {

@@ -20,20 +20,20 @@
  * SOFTWARE.
  */
 
-import type { RouteGroup } from './types';
-import Canvas from '@/pages/protected/Canvas';
+import type { RouteGroup } from '@/routes/types';
+import Canvas from '@/features/canvas/pages/protected/Canvas';
 import Dashboard from '@/pages/protected/Dashboard';
 import FileExplorer from '@/features/trajectory/pages/protected/FileExplorer';
-import SSHConnectionsListing from '@/pages/protected/SSHConnectionsListing';
-import SSHFileExplorer from '@/pages/protected/SSHFileExplorer';
+import SSHConnectionsListing from '@/features/ssh/pages/protected/SSHConnectionsListing';
+import SSHFileExplorer from '@/features/ssh/pages/protected/SSHFileExplorer';
 import MyTeam from '@/features/team/pages/protected/MyTeam';
-import HeadlessRasterizerView from '@/pages/protected/HeadlessRasterizerView';
-import Messages from '@/pages/protected/Messages';
+import HeadlessRasterizerView from '@/features/raster/pages/protected/HeadlessRasterizerView';
+import Messages from '@/features/chat/pages/protected/Messages';
 import PluginListing from '@/features/plugins/pages/protected/PluginListing';
 import Plugins from '@/features/plugins/pages/protected/Plugins';
-import AnalysisConfigsListing from '@/pages/protected/AnalysisConfigsListing';
+import AnalysisConfigsListing from '@/features/analysis/pages/protected/AnalysisConfigsListing';
 import TrajectoriesListing from '@/features/trajectory/pages/protected/TrajectoriesListing';
-import SimulationCellsListing from '@/pages/protected/SimulationCellsListing';
+import SimulationCellsListing from '@/features/simulation-cell/pages/SimulationCellsListing';
 import {
     GeneralPage,
     AuthenticationPage,
@@ -44,16 +44,16 @@ import {
     DataExportPage,
     AdvancedPage
 } from '@/pages/protected/settings';
-import Clusters from '@/pages/protected/Clusters';
+import Clusters from '@/features/clusters/pages/protected/Clusters';
 import SignIn from '@/features/auth/pages/guest/SignIn';
-import TeamInvitationPage from '@/pages/guest/TeamInvitationPage';
+import TeamInvitationPage from '@/features/team-invitation/pages/guest/TeamInvitationPage';
 import OAuthCallback from '@/features/auth/pages/guest/OAuthCallback';
 import Containers from '@/features/container/pages/protected/Containers';
 import ContainerDetails from '@/features/container/pages/protected/ContainerDetails';
 import CreateContainer from '@/features/container/pages/protected/CreateContainer';
 import PluginBuilder from '@/features/plugins/pages/protected/PluginBuilder';
 import PerAtomViewer from '@/features/trajectory/pages/protected/PerAtomViewer';
-import ManageRoles from '@/pages/protected/ManageRoles';
+import ManageRoles from '@/features/team-role/pages/protected/ManageRoles';
 
 export const routesConfig: RouteGroup = {
     public: [

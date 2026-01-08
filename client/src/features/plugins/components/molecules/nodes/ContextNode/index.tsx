@@ -2,7 +2,7 @@ import { memo } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
 import BaseNode from '@/features/plugins/components/atoms/BaseNode';
-import { CONTEXT_OPTIONS } from '@/utilities/plugins/node-types';
+import { CONTEXT_OPTIONS } from '@/features/plugins/utilities/node-types';
 
 const ContextNode = memo((props: NodeProps) => {
     const { data } = props;

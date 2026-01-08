@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { IoWarningOutline } from 'react-icons/io5';
 import useRBACStore from '@/stores/slices/rbac';
-import type { TeamRole, TeamRolePayload } from '@/types/team-role';
+import type { TeamRole, TeamRolePayload } from '@/types/models';
 import Button from '@/components/primitives/Button';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 import Modal from '@/components/molecules/common/Modal';
 import FormInput from '@/components/atoms/form/FormInput';
-import './RoleEditor.css';
+import '@/features/team/components/organisms/RoleEditor/RoleEditor.css';
 
 interface RoleEditorProps {
     role?: TeamRole | null;

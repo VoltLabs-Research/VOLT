@@ -4,20 +4,19 @@
 
 import { useEffect, useRef } from 'react';
 import { useTeamStore } from '@/features/team/stores';
-import { useNotificationStore } from '@/stores/slices/notification';
-import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
-import { useContainerStore } from '@/features/container/stores';
 import { useAuthStore } from '@/features/auth/stores';
-import useTeamJobs from '@/hooks/jobs/use-team-jobs';
+import useTeamJobs from '@/features/jobs/hooks/use-team-jobs';
 import useTrajectoryUpdates from '@/features/trajectory/hooks/use-trajectory-updates';
 import useLogger from '@/hooks/core/use-logger';
 import { useSearchParams } from 'react-router';
+import useNotificationStore from '@/features/notification/stores';
 
 const useAppInitializer = () => {
     const logger = useLogger('use-app-initializer');
 
     const user = useAuthStore((state) => state.user);
     const getUserTeams = useTeamStore((state) => state.getUserTeams);
+    // TODO: FIX
     const { initializeSocket: initNotificationSocket } = useNotificationStore();
     const { fetch: fetchNotifications } = useNotificationStore();
 

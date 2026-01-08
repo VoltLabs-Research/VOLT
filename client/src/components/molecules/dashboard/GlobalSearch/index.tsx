@@ -8,7 +8,7 @@ import { GoWorkflow } from 'react-icons/go';
 import { searchApi } from '@/services/api/search/search';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
-import './GlobalSearch.css';
+import '@/components/molecules/dashboard/GlobalSearch/GlobalSearch.css';
 
 const GlobalSearch: React.FC = () => {
     const [query, setQuery] = useState('');

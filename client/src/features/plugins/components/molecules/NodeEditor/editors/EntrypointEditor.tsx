@@ -11,7 +11,7 @@ import Button from '@/components/primitives/Button';
 import Tooltip from '@/components/atoms/common/Tooltip';
 import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
 import Paragraph from '@/components/primitives/Paragraph';
-import './EntrypointEditor.css';
+import '@/features/plugins/components/molecules/NodeEditor/editors/EntrypointEditor.css';
 
 interface EntrypointEditorProps {
     node: Node;

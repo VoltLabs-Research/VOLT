@@ -28,7 +28,7 @@ import { CiLogout, CiSettings } from 'react-icons/ci';
 import { useNavigate } from 'react-router';
 import Container from '@/components/primitives/Container';
 import { useState } from 'react';
-import './SidebarUserAvatar.css';
+import '@/features/auth/components/atoms/SidebarUserAvatar/SidebarUserAvatar.css';
 
 // TODO: USER AVATAR SHOULD BE A NEW COMPONENT
 const SidebarUserAvatar = ({ avatarrounded = false, hideEmail = true, hideUsername = false, onClick = () => { } }) => {

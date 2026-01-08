@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
-import './WindowIcons.css';
+import '@/components/molecules/common/WindowIcons/WindowIcons.css';
 import Container from '@/components/primitives/Container';
 
 type IconDef = {

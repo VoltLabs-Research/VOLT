@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { List } from 'react-window';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import { ICON_LIB_LOADERS } from '@/components/atoms/common/DynamicIcon/loaders';
-import './IconSelect.css';
+import '@/components/molecules/form/IconSelect/IconSelect.css';
 
 type IconLib = keyof typeof ICON_LIB_LOADERS;
 

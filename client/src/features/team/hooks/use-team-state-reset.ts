@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useTrajectoryStore } from '@/features/trajectory/stores';
-import { useRasterStore } from '@/stores/slices/raster';
-import { useAnalysisConfigStore } from '@/stores/slices/analysis';
-import { useEditorStore } from '@/stores/slices/editor';
+import { useRasterStore } from '@/features/raster/stores';
+import { useAnalysisConfigStore } from '@/features/analysis/stores';
+import { useEditorStore } from '@/features/canvas/stores/editor';
 import { useUIStore } from '@/stores/slices/ui';
 
 /**

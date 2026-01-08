@@ -3,21 +3,21 @@ import { usePageTitle } from '@/hooks/core/use-page-title';
 import { AnimatePresence, motion } from 'framer-motion';
 import DashboardContainer from '@/components/atoms/dashboard/DashboardContainer';
 import FileUpload from '@/components/molecules/common/FileUpload';
-import TimestepViewer from '@/components/organisms/scene/TimestepViewer';
-import Scene3D, { type Scene3DRef } from '@/components/organisms/scene/Scene3D';
+import TimestepViewer from '@/features/canvas/components/organisms/TimestepViewer';
+import Scene3D, { type Scene3DRef } from '@/features/canvas/components/organisms/Scene3D';
 import { useTrajectoryStore } from '@/features/trajectory/stores';
-import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
+import useCanvasCoordinator from '@/features/canvas/hooks/use-canvas-coordinator';
 import { formatNumber } from '@/components/organisms/common/DocumentListing';
 import { GoArrowRight } from 'react-icons/go';
 import SimulationGrid from '@/features/trajectory/components/molecules/SimulationGrid';
 import { useTeamStore } from '@/features/team/stores';
 import Container from '@/components/primitives/Container';
-import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
+import JobsHistoryViewer from '@/features/jobs/components/organisms/JobsHistoryViewer';
 import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';
 import DashboardStats from '@/components/atoms/dashboard/DashboardStats';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
-import './Dashboard.css';
+import '@/pages/protected/Dashboard/Dashboard.css';
 
 const DashboardPage: React.FC = memo(() => {
     usePageTitle('Dashboard');

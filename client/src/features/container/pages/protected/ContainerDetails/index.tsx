@@ -24,7 +24,7 @@ import containerApi from '@/features/container/api/container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';
-import './ContainerDetails.css';
+import '@/features/container/pages/protected/ContainerDetails/ContainerDetails.css';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { IoAdd, IoTrash } from 'react-icons/io5';
 

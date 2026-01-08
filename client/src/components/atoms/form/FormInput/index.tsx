@@ -22,7 +22,7 @@
 
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
-import './FormInput.css';
+import '@/components/atoms/form/FormInput/FormInput.css';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 

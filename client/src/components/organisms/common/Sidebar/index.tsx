@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import EditorWidget from '@/components/organisms/scene/EditorWidget';
-import CanvasSidebarTab from '@/components/atoms/scene/CanvasSidebarTab';
+import EditorWidget from '@/features/canvas/components/organisms/EditorWidget';
+import CanvasSidebarTab from '@/features/canvas/components/atoms/CanvasSidebarTab';
 import SidebarHeader from '@/components/molecules/common/SidebarHeader';
 import SidebarBottom from '@/components/molecules/common/SidebarBottom';
 import Container from '@/components/primitives/Container';
-import './Sidebar.css';
+import '@/components/organisms/common/Sidebar/Sidebar.css';
 
 const MOBILE_BREAKPOINT = 768;
 

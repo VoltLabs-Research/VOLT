@@ -13,7 +13,7 @@ import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import Tooltip from '@/components/atoms/common/Tooltip';
 import type { TeamInvitation } from '@/types/models';
-import './TeamInvitePanel.css';
+import '@/features/team/components/organisms/TeamInvitePanel/TeamInvitePanel.css';
 
 interface TeamInvitePanelProps {
     teamName: string;

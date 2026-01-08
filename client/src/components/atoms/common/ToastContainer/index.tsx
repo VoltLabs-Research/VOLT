@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { IoCloseOutline } from 'react-icons/io5';
 import { MdError, MdCheckCircle, MdWarning, MdInfo } from 'react-icons/md';
 import { useUIStore, type Toast, type ToastType } from '@/stores/slices/ui';
-import './ToastContainer.css';
+import '@/components/atoms/common/ToastContainer/ToastContainer.css';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';

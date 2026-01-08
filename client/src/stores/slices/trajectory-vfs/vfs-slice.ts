@@ -1,6 +1,6 @@
 import trajectoryApi from '@/features/trajectory/api/trajectory';
-import { runRequest } from '../../helpers';
-import type { SliceCreator } from '../../helpers/create-slice';
+import { runRequest } from '@/stores/helpers';
+import type { SliceCreator } from '@/stores/helpers/create-slice';
 import type { Trajectory } from '@/types/models';
 
 type EntryType = 'file' | 'dir';

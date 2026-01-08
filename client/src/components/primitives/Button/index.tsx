@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { HTMLMotionProps } from 'framer-motion';
-import './Button.css';
+import '@/components/primitives/Button/Button.css';
 
 export interface ButtonProps extends HTMLMotionProps<"button"> {
     /**

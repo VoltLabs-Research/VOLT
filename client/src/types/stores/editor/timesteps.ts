@@ -1,5 +1,5 @@
 import type { Trajectory } from '@/types/models';
-import type { TimelineGLBMap } from '@/utilities/glb/modelUtils';
+import type { TimelineGLBMap } from '@/features/canvas/utilities/modelUtils';
 
 export interface TimestepData {
     timesteps: number[];

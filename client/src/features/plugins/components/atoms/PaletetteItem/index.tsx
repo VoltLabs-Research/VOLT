@@ -1,11 +1,11 @@
 import React from 'react';
 import type { NodeType } from '@/types/plugin';
-import type { NodeTypeConfig } from '@/utilities/plugins/node-types';
+import type { NodeTypeConfig } from '@/features/plugins/utilities/node-types';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
-import './PaletteItem.css';
+import '@/features/plugins/components/atoms/PaletetteItem/PaletteItem.css';
 
 interface PaletteItemProps{
     onDragStart(event: React.DragEvent, nodeType: NodeType): void,

@@ -1,6 +1,6 @@
 import React, { type ReactNode } from 'react';
 import Button from '@/components/primitives/Button';
-import './PopoverMenuItem.css';
+import '@/components/atoms/common/PopoverMenuItem/PopoverMenuItem.css';
 
 import Loader from '@/components/atoms/common/Loader';
 

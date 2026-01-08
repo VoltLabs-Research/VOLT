@@ -22,7 +22,7 @@
 
 import React from 'react';
 import { BsThreeDots } from 'react-icons/bs';
-import './FileItem.css';
+import '@/components/molecules/common/FileItem/FileItem.css';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 

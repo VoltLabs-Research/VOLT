@@ -5,7 +5,7 @@ import containerApi from '@/features/container/api/container';
 import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import Tooltip from '@/components/atoms/common/Tooltip';
-import './ContainerFileExplorer.css';
+import '@/features/container/components/organisms/ContainerFileExplorer/ContainerFileExplorer.css';
 import Paragraph from '@/components/primitives/Paragraph';
 
 interface FileItem {

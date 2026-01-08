@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useAnalysisConfigStore } from '@/stores/slices/analysis';
-import { useEditorStore } from '@/stores/slices/editor';
+import { useAnalysisConfigStore } from '@/features/analysis/stores';
+import { useEditorStore } from '@/features/canvas/stores/editor';
 import { useTrajectoryStore } from '@/features/trajectory/stores';
 import useFrameProperties from '@/features/trajectory/hooks/use-frame-properties';
 import useLogger from '@/hooks/core/use-logger';

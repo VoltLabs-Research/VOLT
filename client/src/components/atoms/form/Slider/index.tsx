@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
-import "./Slider.css";
+import "@/components/atoms/form/Slider/Slider.css";
 
 export interface SliderProps {
     min: number;

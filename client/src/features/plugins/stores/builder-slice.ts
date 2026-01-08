@@ -2,11 +2,11 @@ import { create } from 'zustand';
 import type { Node, Edge, Connection, NodeChange, EdgeChange, XYPosition } from '@xyflow/react';
 import { applyNodeChanges, applyEdgeChanges, addEdge } from '@xyflow/react';
 import { NodeType, type IWorkflow } from '@/types/plugin';
-import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
-import { createNode } from '@/utilities/plugins/node-factory';
+import { NODE_CONFIGS } from '@/features/plugins/utilities/node-types';
+import { createNode } from '@/features/plugins/utilities/node-factory';
 import pluginApi from '@/features/plugins/api/plugin';
 import { useTeamStore } from '@/features/team/stores';
-import { runRequest } from '../../../stores/helpers';
+import { runRequest } from '@/stores/helpers';
 import type { IPluginRecord } from '@/features/plugins/types';
 
 type ValidationResult = {

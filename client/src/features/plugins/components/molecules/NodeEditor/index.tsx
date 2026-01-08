@@ -16,8 +16,8 @@ import {
     VisualizersEditor,
     ExportEditor,
     IfStatementEditor
-} from './editors';
-import './NodeEditor.css';
+} from '@/features/plugins/components/molecules/NodeEditor/editors';
+import '@/features/plugins/components/molecules/NodeEditor/NodeEditor.css';
 import useConfirm from '@/hooks/ui/use-confirm';
 
 interface NodeEditorProps {

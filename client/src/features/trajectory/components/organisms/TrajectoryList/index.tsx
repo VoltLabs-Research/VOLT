@@ -25,11 +25,11 @@ import useConfirm from '@/hooks/ui/use-confirm';
 import { IoIosArrowDown } from 'react-icons/io';
 import FileItem from '@/components/molecules/common/FileItem';
 import Loader from '@/components/atoms/common/Loader';
-import EditorWidget from '@/components/organisms/scene/EditorWidget';
+import EditorWidget from '@/features/canvas/components/organisms/EditorWidget';
 import { useTrajectoryStore } from '@/features/trajectory/stores';
 import useLogger from '@/hooks/core/use-logger';
 import Container from '@/components/primitives/Container';
-import './TrajectoryList.css';
+import '@/features/trajectory/components/organisms/TrajectoryList/TrajectoryList.css';
 import Title from '@/components/primitives/Title';
 
 interface TrajectoryListProps {

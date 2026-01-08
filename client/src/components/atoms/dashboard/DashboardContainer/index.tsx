@@ -21,7 +21,7 @@
  */
 
 import Container from '@/components/primitives/Container';
-import './DashboardContainer.css';
+import '@/components/atoms/dashboard/DashboardContainer/DashboardContainer.css';
 
 import type { ReactNode } from 'react';
 

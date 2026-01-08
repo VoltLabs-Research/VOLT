@@ -15,8 +15,8 @@ import ActivityHeatmap from '@/components/molecules/common/ActivityHeatmap';
 import type { ActivityData } from '@/features/team/api/team';
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import './MyTeam.css';
-import dailyActivityApi from '@/services/api/daily-activity/daily-activity';
+import '@/features/team/pages/protected/MyTeam/MyTeam.css';
+import dailyActivityApi from '@/features/daily-activity/api/daily-activity';
 import useConfirm from '@/hooks/ui/use-confirm';
 
 const MyTeam: React.FC = () => {

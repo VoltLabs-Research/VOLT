@@ -3,14 +3,14 @@ import Input from '@/components/atoms/form/Input';
 import Select, { type SelectOption } from '@/components/atoms/form/Select';
 import IconSelect from '@/components/molecules/form/IconSelect';
 import LiquidToggle from '@/components/atoms/form/LiquidToggle';
-import { getAvailableExpressions, type NodeOutputSchema } from '@/utilities/plugins/expression-utils';
-import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
+import { getAvailableExpressions, type NodeOutputSchema } from '@/features/plugins/utilities/expression-utils';
+import { NODE_CONFIGS } from '@/features/plugins/utilities/node-types';
 import { NodeType } from '@/types/plugin';
 import pluginApi from '@/features/plugins/api/plugin';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 import { usePluginBuilderStore } from '@/features/plugins/stores/builder-slice';
-import './FormField.css';
+import '@/components/molecules/form/FormField/FormField.css';
 
 interface FormFieldProps {
     label: string;

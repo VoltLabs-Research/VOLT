@@ -1,6 +1,6 @@
 import Slider from '@/components/atoms/form/Slider';
 import Container from '@/components/primitives/Container';
-import './FormRow.css';
+import '@/components/atoms/form/FormRow/FormRow.css';
 
 const FormRow = ({
     label,

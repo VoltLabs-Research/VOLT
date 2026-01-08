@@ -1,9 +1,9 @@
 import React, { memo, type ReactNode } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
-import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
+import { NODE_CONFIGS } from '@/features/plugins/utilities/node-types';
 import DynamicIcon from '@/components/atoms/common/DynamicIcon';
-import './BaseNode.css';
+import '@/features/plugins/components/atoms/BaseNode/BaseNode.css';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';

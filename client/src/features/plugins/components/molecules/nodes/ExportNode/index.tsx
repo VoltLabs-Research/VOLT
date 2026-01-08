@@ -2,7 +2,7 @@ import { memo, useEffect } from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
 import BaseNode from '@/features/plugins/components/atoms/BaseNode';
-import { EXPORT_TYPE_OPTIONS } from '@/utilities/plugins/node-types';
+import { EXPORT_TYPE_OPTIONS } from '@/features/plugins/utilities/node-types';
 
 const ExportNode = memo((props: NodeProps) => {
     const { data } = props;

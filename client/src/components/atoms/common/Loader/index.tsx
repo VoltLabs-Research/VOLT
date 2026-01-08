@@ -22,7 +22,7 @@
 
 import React from 'react';
 import Container from '@/components/primitives/Container';
-import './Loader.css';
+import '@/components/atoms/common/Loader/Loader.css';
 
 interface LoaderProps {
     scale: number;

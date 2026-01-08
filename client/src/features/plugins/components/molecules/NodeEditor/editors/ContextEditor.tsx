@@ -3,7 +3,7 @@ import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/components/atoms/common/CollapsibleSection';
 import FormField from '@/components/molecules/form/FormField';
 import { useNodeData } from '@/features/plugins/hooks/use-node-data';
-import { CONTEXT_OPTIONS } from '@/utilities/plugins/node-types';
+import { CONTEXT_OPTIONS } from '@/features/plugins/utilities/node-types';
 import type { IContextData, ModifierContext } from '@/types/plugin';
 
 interface ContextEditorProps {

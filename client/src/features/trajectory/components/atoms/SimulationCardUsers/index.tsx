@@ -23,7 +23,7 @@
 import React, { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTrajectoryPresence, type CardPresenceUser } from '@/hooks/socket/use-trajectory-presence';
-import './SimulationCardUsers.css';
+import '@/features/trajectory/components/atoms/SimulationCardUsers/SimulationCardUsers.css';
 import Container from '@/components/primitives/Container';
 
 interface SimulationCardUsersProps {

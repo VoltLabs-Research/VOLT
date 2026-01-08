@@ -5,7 +5,7 @@ import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import Tooltip from '@/components/atoms/common/Tooltip';
 import Paragraph from '@/components/primitives/Paragraph';
-import './ListEditor.css';
+import '@/features/plugins/components/molecules/ListEditor/ListEditor.css';
 
 interface ListEditorProps {
     items: string[];

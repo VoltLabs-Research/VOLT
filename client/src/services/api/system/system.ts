@@ -1,5 +1,5 @@
 import VoltClient from '@/api';
-import type { SystemStats, GetSystemStats, RBACConfig } from './types';
+import type { SystemStats, GetSystemStats, RBACConfig } from '@/services/api/system/types';
 import type { ApiResponse } from '@/types/api';
 
 const client = new VoltClient('/system');

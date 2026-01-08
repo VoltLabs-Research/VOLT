@@ -1,7 +1,7 @@
 import React from 'react';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
-import './FileExplorer.css';
+import '@/features/trajectory/components/organisms/FileExplorer/FileExplorer.css';
 
 interface FileExplorerProps {
     title: string;

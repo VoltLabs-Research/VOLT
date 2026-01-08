@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import './CursorTooltip.css';
+import '@/components/atoms/common/CursorTooltip/CursorTooltip.css';
 
 interface CursorTooltipProps {
     isOpen: boolean;

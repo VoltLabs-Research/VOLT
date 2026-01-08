@@ -8,7 +8,7 @@ import Button from '@/components/primitives/Button';
 import type { ISchemaData } from '@/types/plugin';
 import Paragraph from '@/components/primitives/Paragraph';
 import { TbCheck, TbCopy, TbSparkles } from 'react-icons/tb';
-import './SchemaEditor.css';
+import '@/features/plugins/components/molecules/NodeEditor/editors/SchemaEditor.css';
 
 interface SchemaEditorProps {
     node: Node;

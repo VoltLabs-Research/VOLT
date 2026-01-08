@@ -23,7 +23,7 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/stores';
-import './ProtectedRoute.css';
+import '@/features/auth/components/atoms/ProtectedRoute/ProtectedRoute.css';
 
 type UserRole = 'user' | 'admin';
 

@@ -31,7 +31,7 @@ import {
 } from 'react-icons/hi';
 import { formatDistanceToNow } from 'date-fns';
 import useApiTracker from '@/hooks/api/use-api-tracker';
-import './RecentActivity.css';
+import '@/features/auth/components/molecules/RecentActivity/RecentActivity.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';

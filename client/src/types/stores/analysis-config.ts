@@ -1,4 +1,4 @@
-import type { AnalysisConfig } from '@/services/api/analysis/types';
+import type { AnalysisConfig } from '@/features/analysis/types';
 
 export interface AnalysisConfigState {
     analysisConfig: AnalysisConfig | null;

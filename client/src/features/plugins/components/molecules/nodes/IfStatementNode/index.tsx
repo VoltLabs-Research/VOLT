@@ -3,7 +3,7 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { NodeType } from '@/types/plugin';
 import type { IIfStatementData } from '@/types/plugin';
 import BaseNode from '@/features/plugins/components/atoms/BaseNode';
-import './IfStatementNode.css';
+import '@/features/plugins/components/molecules/nodes/IfStatementNode/IfStatementNode.css';
 
 const IfStatementNode = memo((props: NodeProps) => {
     const { data } = props;

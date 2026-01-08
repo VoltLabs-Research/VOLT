@@ -3,7 +3,7 @@ import { IoClose, IoAdd, IoTrash } from 'react-icons/io5';
 import teamApi from '@/features/team/api/team';
 import containerApi from '@/features/container/api/container';
 import useToast from '@/hooks/ui/use-toast';
-import './CreateContainerModal.css';
+import '@/features/container/components/organisms/CreateContainerModal/CreateContainerModal.css';
 import Title from '@/components/primitives/Title';
 import Button from '@/components/primitives/Button';
 import Tooltip from '@/components/atoms/common/Tooltip';

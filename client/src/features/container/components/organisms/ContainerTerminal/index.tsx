@@ -7,7 +7,7 @@ import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
 import Tooltip from '@/components/atoms/common/Tooltip';
 import 'xterm/css/xterm.css';
-import './ContainerTerminal.css';
+import '@/features/container/components/organisms/ContainerTerminal/ContainerTerminal.css';
 
 interface ContainerTerminalProps {
     container: {

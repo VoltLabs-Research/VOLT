@@ -1,6 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState } from 'react';
 import useDraggable, { type DraggableOptions, type DraggableHandle } from '@/hooks/ui/drag-drop/use-draggable';
-import './Draggable.css';
+import '@/components/atoms/common/Draggable/Draggable.css';
 
 export interface DraggableProps extends Omit<DraggableOptions, 'ondragStart' | 'onDrag' | 'onDragEnd'>{
     className?: string;

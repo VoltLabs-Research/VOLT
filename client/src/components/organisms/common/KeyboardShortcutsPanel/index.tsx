@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { RiCloseLine } from 'react-icons/ri';
 import { useKeyboardShortcutsStore, type Shortcut } from '@/stores/slices/ui/keyboard-shortcuts-slice';
 import Title from '@/components/primitives/Title';
-import './KeyboardShortcutsPanel.css';
+import '@/components/organisms/common/KeyboardShortcutsPanel/KeyboardShortcutsPanel.css';
 
 /**
  * Format key name for display (e.g., 'arrowleft' -> '←')

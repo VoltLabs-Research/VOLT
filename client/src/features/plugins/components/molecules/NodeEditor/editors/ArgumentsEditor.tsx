@@ -8,7 +8,7 @@ import { usePluginBuilderStore } from '@/features/plugins/stores/builder-slice';
 import Button from '@/components/primitives/Button';
 import Container from '@/components/primitives/Container';
 import Tooltip from '@/components/atoms/common/Tooltip';
-import { ARGUMENT_TYPE_OPTIONS } from '@/utilities/plugins/node-types';
+import { ARGUMENT_TYPE_OPTIONS } from '@/features/plugins/utilities/node-types';
 import type { IArgumentsData, IArgumentDefinition, ArgumentType } from '@/types/plugin';
 import { TbPlus, TbTrash } from 'react-icons/tb';
 import Title from '@/components/primitives/Title';

@@ -23,7 +23,7 @@ import teamApi from '@/features/team/api/team';
 import containerApi from '@/features/container/api/container';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
-import './CreateContainer.css';
+import '@/features/container/pages/protected/CreateContainer/CreateContainer.css';
 
 interface Template {
     id: string;

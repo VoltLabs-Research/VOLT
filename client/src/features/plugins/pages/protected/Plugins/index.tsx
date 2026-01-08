@@ -13,7 +13,7 @@ import useToast from '@/hooks/ui/use-toast';
 import useListingLifecycle from '@/hooks/common/use-listing-lifecycle';
 import useConfirm from '@/hooks/ui/use-confirm';
 import type { IPluginRecord } from '@/features/plugins/types';
-import './Plugins.css';
+import '@/features/plugins/pages/protected/Plugins/Plugins.css';
 
 const PluginsListing = () => {
     usePageTitle('Plugins');

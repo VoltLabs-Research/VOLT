@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { gsap } from 'gsap';
-import './LiquidToggle.css';
+import '@/components/atoms/form/LiquidToggle/LiquidToggle.css';
 
 const LiquidToggle = ({
     className,

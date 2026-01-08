@@ -1,6 +1,6 @@
 import type { AxiosRequestConfig } from 'axios';
 import type { IWorkflow, PluginStatus } from '@/types/plugin';
-import type { GetPluginsResponse, IPluginRecord, GetPluginResponse, ExecutePluginResponse } from '../types';
+import type { GetPluginsResponse, IPluginRecord, GetPluginResponse, ExecutePluginResponse } from '@/features/plugins/types';
 import VoltClient from '@/api';
 
 const client = new VoltClient('/plugins', { useRBAC: true });

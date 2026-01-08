@@ -6,7 +6,7 @@ import { useTrajectoryStore } from '@/features/trajectory/stores';
 import useAnimationPresence from '@/hooks/ui/animation/use-animation-presence';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import Container from '@/components/primitives/Container';
-import './SimulationGrid.css';
+import '@/features/trajectory/components/molecules/SimulationGrid/SimulationGrid.css';
 
 const SimulationGrid = memo(() => {
     const { confirm } = useConfirm();

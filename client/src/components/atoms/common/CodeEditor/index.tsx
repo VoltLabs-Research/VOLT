@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import type { Monaco } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
-import './CodeEditor.css';
+import '@/components/atoms/common/CodeEditor/CodeEditor.css';
 import Container from '@/components/primitives/Container';
 import Paragraph from '@/components/primitives/Paragraph';
 

@@ -24,7 +24,7 @@ import React from 'react';
 import { TbX, TbCheck, TbActivity, TbRefresh } from 'react-icons/tb';
 import { formatDistanceToNow, isValid } from 'date-fns';
 import useLoginActivity from '@/features/auth/hooks/use-login-activity';
-import './LoginActivityModal.css';
+import '@/features/auth/components/molecules/LoginActivityModal/LoginActivityModal.css';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';
