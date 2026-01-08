@@ -3,7 +3,7 @@
  */
 
 import { Router } from 'express';
-import ParticleFilterController from '@/controllers/particle-filter';
+import ParticleFilterController from '@/controllers/trajectory/atoms/particle-filter';
 import * as middleware from '@/middlewares/authentication';
 import RBACMiddleware from '@/middlewares/rbac';
 import { Action } from '@/constants/permissions';

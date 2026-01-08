@@ -21,7 +21,7 @@
  */
 
 import { Router } from 'express';
-import SSHFileExplorerController from '@/controllers/ssh-file-explorer';
+import SSHFileExplorerController from '@/controllers/docker/ssh-file-explorer';
 import * as authMiddleware from '@/middlewares/authentication';
 import * as middleware from '@/middlewares/ssh-connection';
 import * as teamMiddleware from '@/middlewares/team';

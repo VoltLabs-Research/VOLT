@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import BaseSocketModule from '@/socket/base-socket-module';
-import ContainerController from '@/controllers/container';
+import ContainerController from '@/controllers/docker/container';
 import logger from '@/logger';
 
 class ContainerModule extends BaseSocketModule{

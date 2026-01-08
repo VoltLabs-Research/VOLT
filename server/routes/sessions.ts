@@ -22,7 +22,7 @@
 
 import { Router } from 'express';
 import { protect } from '@/middlewares/authentication';
-import SessionController from '@/controllers/session';
+import SessionController from '@/controllers/auth/session';
 
 const router = Router();
 const controller = new SessionController();

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import TeamMemberController from '@/controllers/team-member';
+import TeamMemberController from '@/controllers/team/team-member';
 import * as authMiddleware from '@/middlewares/authentication';
 import * as teamMiddleware from '@/middlewares/team';
 import RBACMiddleware from '@/middlewares/rbac';

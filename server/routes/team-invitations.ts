@@ -21,7 +21,7 @@
  */
 
 import { Router } from 'express';
-import TeamInvitationController from '@controllers/team-invitation';
+import TeamInvitationController from '@/controllers/team/team-invitation';
 import * as authMiddleware from '@middlewares/authentication';
 import * as middleware from '@middlewares/team-invitation';
 import RBACMiddleware from '@/middlewares/rbac';

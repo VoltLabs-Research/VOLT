@@ -21,7 +21,7 @@
  */
 
 import { Router } from 'express';
-import TrajectoryJobsController from '@/controllers/trajectory-jobs';
+import TrajectoryJobsController from '@/controllers/trajectory/trajectory-jobs';
 import * as authMiddleware from '@/middlewares/authentication';
 import RBACMiddleware from '@/middlewares/rbac';
 import { Action } from '@/constants/permissions';

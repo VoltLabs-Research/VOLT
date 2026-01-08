@@ -21,7 +21,7 @@
  */
 
 import { Router } from 'express';
-import TrajectoryVfsController from '@/controllers/trajectory-vfs';
+import TrajectoryVfsController from '@/controllers/trajectory/trajectory-vfs';
 import * as authMiddleware from '@/middlewares/authentication';
 import RBACMiddleware from '@/middlewares/rbac';
 import { Action } from '@/constants/permissions';

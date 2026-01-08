@@ -31,8 +31,8 @@ import {
 } from '@/middlewares/chat';
 
 import * as auth from '@/middlewares/authentication';
-import ChatController from '@/controllers/chat';
-import GroupChatController from '@/controllers/group-chat';
+import ChatController from '@/controllers/chat/chat';
+import GroupChatController from '@/controllers/chat/group-chat';
 
 const router = Router();
 const previewController = new FilePreviewController();

@@ -21,7 +21,7 @@
  */
 
 import { Router } from 'express';
-import ColorCodingController from '@/controllers/color-coding';
+import ColorCodingController from '@/controllers/trajectory/atoms/color-coding';
 import * as midldeware from '@/middlewares/authentication';
 import RBACMiddleware from '@/middlewares/rbac';
 import { Action } from '@/constants/permissions';

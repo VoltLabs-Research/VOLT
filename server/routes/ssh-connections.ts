@@ -21,7 +21,7 @@
  */
 
 import { Router } from 'express';
-import SSHConnectionsController from '@/controllers/ssh-connections';
+import SSHConnectionsController from '@/controllers/docker/ssh-connections';
 import * as authMiddleware from '@/middlewares/authentication';
 import * as middleware from '@/middlewares/ssh-connection';
 import RBACMiddleware from '@/middlewares/rbac';

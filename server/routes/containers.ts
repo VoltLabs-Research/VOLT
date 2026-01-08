@@ -21,7 +21,7 @@
  */
 
 import express from 'express';
-import ContainerController from '@/controllers/container';
+import ContainerController from '@/controllers/docker/container';
 import { protect } from '@/middlewares/authentication';
 import * as middleware from '@/middlewares/container';
 import RBACMiddleware from '@/middlewares/rbac';

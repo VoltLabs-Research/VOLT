@@ -1,5 +1,5 @@
 import express from 'express';
-import TeamController from '@/controllers/team';
+import TeamController from '@/controllers/team/team';
 import teamRolesRouter from '@/routes/team-roles';
 import * as authMiddleware from '@middlewares/authentication';
 import * as middleware from '@middlewares/team';

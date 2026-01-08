@@ -1,6 +1,6 @@
 
 import { Router } from 'express';
-import SimulationCellController from '@controllers/simulation-cells';
+import SimulationCellController from '@/controllers/trajectory/simulation-cells';
 import * as authMiddleware from '@middlewares/authentication';
 import RBACMiddleware from '@/middlewares/rbac';
 import { Action } from '@/constants/permissions';

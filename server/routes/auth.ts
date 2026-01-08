@@ -21,7 +21,7 @@
  */
 
 import express from 'express';
-import AuthController from '@controllers/authentication';
+import AuthController from '@/controllers/auth/authentication';
 import * as middleware from '@middlewares/authentication';
 import passport from '@config/passport';
 import multer from 'multer';
