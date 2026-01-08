@@ -21,7 +21,7 @@
  */
 
 import { Plugin, Trajectory } from '@models/index';
-import Analysis from '@/models/analysis';
+import Analysis from '@/models/trajectory/analysis';
 import MongoListingCountAggregator from '@/services/metrics/mongo-listing-count-aggregator';
 import { IWorkflowNode, NodeType } from '@/types/models/modifier';
 

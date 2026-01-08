@@ -5,7 +5,7 @@ import { IWorkflowNode } from '@/types/models/modifier';
 import { NodeType } from '@/types/models/plugin';
 import { slugify } from '@/utilities/runtime/runtime';
 import { Analysis, PluginListingRow } from '@/models';
-import Plugin from '@/models/plugin';
+import Plugin from '@/models/plugin/plugin';
 import storage from '@/services/storage';
 import logger from '@/logger';
 import AtomProperties from '@/services/trajectory/atoms/atom-properties';

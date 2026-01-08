@@ -24,7 +24,7 @@ import { ITeam } from '@types/models/team';
 import { IUser } from '@/types/models/user';
 import { IStructureAnalysis } from '@types/model/structureAnalysis';
 import { ICellAnalysis } from '@/types/model/simulation-cell';
-import { IAnalysis } from '@/models/analysis';
+import { IAnalysis } from '@/models/trajectory/analysis';
 import { Document, Types } from 'mongoose';
 
 // Defines the limits of the simulation box on the three axes.

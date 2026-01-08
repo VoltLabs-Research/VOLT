@@ -7,7 +7,7 @@ import { catchAsync } from '@/utilities/runtime/runtime';
 import { ErrorCodes } from '@/constants/error-codes';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { Resource } from '@/constants/resources';
-import authService from '@/services/authentication';
+import authService from '@/services/user/authentication';
 
 export default class AuthController extends BaseController<IUser> {
     constructor() {

@@ -5,7 +5,7 @@ import { eventBus, EventChannels } from '@/events/event-bus';
 export const initializeJobUpdatesListener = (io: Server) => {
     eventBus.on(EventChannels.JOB_UPDATES, (message: any) => {
         try {
-            const { teamId, payload } = JSON.parse(message);
+            const { teamId, payload } = message;
             if (!teamId || !payload) return;
 
             if (payload.type === 'session_completed') {

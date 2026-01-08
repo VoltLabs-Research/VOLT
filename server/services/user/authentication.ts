@@ -4,7 +4,7 @@ import { User, Session } from '@/models';
 import { IUser } from '@/types/models/user';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
-import { AvatarService } from '@/services/avatar';
+import { AvatarService } from '@/services/user/avatar';
 import { generateRandomName } from '@/utilities/runtime/name-generator';
 
 export class AuthenticationService {

@@ -40,7 +40,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     protected readonly queueName: string;
     protected readonly workerPath: string;
     protected readonly maxConcurrentJobs: number;
-    protected readonly useStreamingAdd: boolean;
     protected readonly options: QueueOptions;
 
     readonly queueKey: string;
@@ -59,6 +58,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
     private recoveryManager: RecoveryManager<T>;
     private jobHandler: JobHandler<T>;
 
+    private mapping: Record<string, string>;
+
     constructor(options: QueueOptions) {
         super();
 
@@ -66,12 +67,18 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         this.workerPath = options.workerPath;
         this.options = options;
 
+        this.mapping = options.customStatusMapping || {
+            completed: 'completed',
+            queued: 'queued',
+            running: 'running',
+            failed: 'failed'
+        };
+
         this.queueKey = `${this.queueName}_queue`;
         this.processingKey = `${this.queueKey}:processing`;
         this.statusKeyPrefix = `${this.queueKey}:status:`;
 
         this.maxConcurrentJobs = options.maxConcurrentJobs || Math.max(2, Math.floor(os.cpus().length * 0.75));
-        this.useStreamingAdd = options.useStreamingAdd || false;
 
         const clusterId = process.env.CLUSTER_ID ? `[Cluster: ${process.env.CLUSTER_ID}] ` : '';
         this.logPrefix = `${clusterId}[${this.queueName}]`;
@@ -107,7 +114,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
             maxConsecutiveCrashes: QUEUE_DEFAULTS.MAX_CONSECUTIVE_CRASHES,
             crashBackoffMs: QUEUE_DEFAULTS.CRASH_BACKOFF_MS,
             useWorkerThreads: options.useWorkerThreads,
-            processor: options.processor,
+
             logPrefix: this.logPrefix,
             maxOldGenerationSizeMb: QUEUE_DEFAULTS.WORKER_MAX_OLD_GENERATION_SIZE_MB
         };
@@ -135,24 +142,11 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         logger.warn(`${this.logPrefix} ${message}`);
     }
 
-    // =====================
-    // Abstract methods
-    // =====================
-
     protected abstract deserializeJob(rawData: string): T;
 
-    /**
-     * Optional hook called before job counter decrements on job completion.
-     * Override in subclasses to add dependent jobs that must be counted
-     * before this job's count decreases.
-     */
     protected async onBeforeDecrement(job: T): Promise<number> {
         return 0;
     }
-
-    // =====================
-    // Public API
-    // =====================
 
     getAvailableWorkerCount(): number {
         return this.workerPool.getAvailableWorkerCount();
@@ -160,6 +154,36 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
     async getJobStatus(jobId: string): Promise<any | null> {
         return this.jobHandler.getJobStatus(jobId);
+    }
+
+    getMappedStatus(jobStatus: string): string {
+        return this.mapping[jobStatus] || jobStatus;
+    }
+
+    async hasActiveJobsForTrajectory(trajectoryId: string): Promise<boolean> {
+        const jobs = await this.redis.lrange(this.processingKey, 0, -1);
+        for (const raw of jobs) {
+            try {
+                const job = JSON.parse(raw);
+                if (job.trajectoryId === trajectoryId) {
+                    return true;
+                }
+            } catch (e) { }
+        }
+        return false;
+    }
+
+    async hasQueuedJobsForTrajectory(trajectoryId: string): Promise<boolean> {
+        const jobs = await this.redis.lrange(this.queueKey, 0, -1);
+        for (const raw of jobs) {
+            try {
+                const job = JSON.parse(raw);
+                if (job.trajectoryId === trajectoryId) {
+                    return true;
+                }
+            } catch (e) { }
+        }
+        return false;
     }
 
     public async addJobs(jobs: T[]): Promise<void> {
@@ -183,16 +207,8 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }
         this.logInfo(`Successfully incremented counter for ${jobs.length} jobs`);
 
-        if (this.useStreamingAdd) {
-            await this.addJobsStreaming(jobsWithSession, sessionId, sessionStartTime);
-        } else {
-            await this.addJobsBatch(jobsWithSession, sessionId, sessionStartTime);
-        }
+        await this.addJobsBatch(jobsWithSession, sessionId, sessionStartTime);
     }
-
-    // =====================
-    // Worker message handling
-    // =====================
 
     protected async handleWorkerMessage(workerId: number, message: any): Promise<void> {
         const jobInfo = this.jobMap.get(workerId);
@@ -232,8 +248,20 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 }
 
                 await this.jobHandler.trackJobCompletion(job, 'completed');
-                this.emit('jobCompleted', { job, result: message.result, processingTime });
                 await this.finishJob(workerId, rawData);
+                this.emit('jobCompleted', { job, result: message.result, processingTime });
+
+                // Race condition fix: Update status AFTER job is removed from Redis active list
+                if (job.trajectoryId && job.teamId) {
+                    const trajectoryStatusService = (await import('@/services/trajectory/status-service')).default;
+                    await trajectoryStatusService.updateFromJobStatus({
+                        trajectoryId: job.trajectoryId,
+                        teamId: job.teamId,
+                        sessionId: job.sessionId,
+                        jobStatus: 'completed',
+                        queueType: this.queueName
+                    });
+                }
                 break;
 
             case 'failed':
@@ -246,8 +274,20 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 }
 
                 await this.jobHandler.trackJobCompletion(job, 'failed');
-                this.emit('jobFailed', { job, error: message.error, processingTime });
                 await this.finishJob(workerId, rawData);
+                this.emit('jobFailed', { job, error: message.error, processingTime });
+
+                // Race condition fix: Update status AFTER job is removed from Redis active list
+                if (job.trajectoryId && job.teamId) {
+                    const trajectoryStatusService = (await import('@/services/trajectory/status-service')).default;
+                    await trajectoryStatusService.updateFromJobStatus({
+                        trajectoryId: job.trajectoryId,
+                        teamId: job.teamId,
+                        sessionId: job.sessionId,
+                        jobStatus: 'failed',
+                        queueType: this.queueName
+                    });
+                }
                 break;
         }
     }
@@ -425,19 +465,11 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
         }
     }
 
-    // =====================
-    // Initialization
-    // =====================
-
     private async initializeQueue(): Promise<void> {
         await this.workerPool.scaleUp(QUEUE_DEFAULTS.MIN_WORKERS);
         await this.recoveryManager.recoverOnStartup();
         await this.startDispatchLoop();
     }
-
-    // =====================
-    // Job adding helpers
-    // =====================
 
     private async addJobsBatch(jobs: T[], sessionId: string, sessionStartTime: string): Promise<void> {
         const regularJobs: string[] = [];
@@ -465,20 +497,6 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
 
         await Promise.all(statusPromises);
         this.emit('jobsAdded', { count: jobs.length, regular: regularJobs.length });
-    }
-
-    private async addJobsStreaming(jobs: T[], sessionId: string, sessionStartTime: string): Promise<void> {
-        for (const job of jobs) {
-            await this.redis.lpush(this.queueKey, JSON.stringify(job));
-
-            await this.jobHandler.setJobStatus(job.jobId, 'queued', {
-                ...job,
-                sessionId,
-                sessionStartTime,
-            });
-
-            await this.sleep(50);
-        }
     }
 
     protected async setJobStatus(jobId: string, status: string, data: any): Promise<void> {

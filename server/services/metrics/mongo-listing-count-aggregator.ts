@@ -21,10 +21,10 @@
  */
 
 import BaseListingAggregator, { AggregatorConfig } from '@/services/metrics/base-listing-aggregator';
-import Plugin from '@/models/plugin';
+import Plugin from '@/models/plugin/plugin';
 import { NodeType } from '@/types/models/plugin';
 import { Model } from 'mongoose';
-import PluginListingRow from '@/models/plugin-listing-row';
+import PluginListingRow from '@/models/plugin/plugin-listing-row';
 
 export type ListingEntry = {
     aggregators?: {

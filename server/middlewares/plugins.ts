@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
-import Plugin from '@/models/plugin';
+import Plugin from '@/models/plugin/plugin';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 
 /**

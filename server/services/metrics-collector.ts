@@ -629,7 +629,7 @@ export default class MetricsCollector {
      */
     async getClusterAnalysisCounts(): Promise<Record<string, number>> {
         try {
-            const { default: Analysis } = await import('@/models/analysis');
+            const { default: Analysis } = await import('@/models/trajectory/analysis');
             const aggregation = await Analysis.aggregate([
                 { $group: { _id: '$clusterId', count: { $sum: '$completedFrames' } } }
             ]);

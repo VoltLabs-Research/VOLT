@@ -35,7 +35,10 @@ export class RasterizerQueue extends BaseProcessingQueue<RasterizerJob> {
             workerPath: path.resolve(__dirname, '../workers/headless-rasterizer.ts'),
             maxConcurrentJobs: Number(process.env.RASTERIZER_QUEUE_MAX_CONCURRENT_JOBS),
             cpuLoadThreshold: Number(process.env.RASTERIZER_QUEUE_CPU_LOAD_THRESHOLD),
-            ramLoadThreshold: Number(process.env.RASTERIZER_QUEUE_RAM_LOAD_THRESHOLD)
+            ramLoadThreshold: Number(process.env.RASTERIZER_QUEUE_RAM_LOAD_THRESHOLD),
+            customStatusMapping: {
+                running: 'rendering'
+            }
         };
 
         super(options);

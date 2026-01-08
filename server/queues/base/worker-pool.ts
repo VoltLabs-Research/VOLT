@@ -1,30 +1,6 @@
-/**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files(the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
 import util from 'util';
 import { Worker } from 'worker_threads';
 import { WorkerPoolItem } from '@/types/queues/base-processing-queue';
-import { VirtualWorker } from '@/utilities/queues/virtual-worker';
-import { QUEUE_DEFAULTS } from '@/config/queue-defaults';
 import logger from '@/logger';
 
 export interface WorkerPoolConfig {
@@ -36,7 +12,6 @@ export interface WorkerPoolConfig {
     maxConsecutiveCrashes: number;
     crashBackoffMs: number;
     useWorkerThreads?: boolean;
-    processor?: (job: any) => Promise<any>;
     logPrefix: string;
     maxOldGenerationSizeMb: number;
 }
@@ -188,17 +163,9 @@ export class WorkerPool {
     }
 
     /**
-     * Create a new worker (thread or virtual)
+     * Create a new worker thread
      */
-    private createWorker(): Worker | VirtualWorker {
-        if (this.config.useWorkerThreads === false && this.config.processor) {
-            const worker = new VirtualWorker(this.config.processor);
-            const workerId = worker.threadId;
-
-            worker.on('message', (message: any) => this.onMessage(workerId, message));
-            return worker;
-        }
-
+    private createWorker(): Worker {
         this.logInfo(`Spawning new worker (current pool size: ${this.workerPool.length}/${this.config.maxConcurrentJobs})`);
 
         const worker = new Worker(this.config.workerPath, {

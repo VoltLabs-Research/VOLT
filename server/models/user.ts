@@ -127,7 +127,7 @@ UserSchema.pre('save', async function (this: IUser & { isNew: boolean }, next) {
     if (this.isNew && !this.avatar) {
         try {
             // Generate default avatar using email as seed
-            const { AvatarService } = await import('@services/avatar');
+            const { AvatarService } = await import('@/services/user/avatar');
             this.avatar = await AvatarService.generateAndUploadDefaultAvatar(
                 this._id.toString(),
                 this.email

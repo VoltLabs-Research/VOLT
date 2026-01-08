@@ -1,7 +1,7 @@
 
 import { Request } from 'express';
 import BaseController from '@controllers/base-controller';
-import SimulationCell from '@/models/simulation-cell';
+import SimulationCell from '@/models/trajectory/simulation-cell';
 import { Resource } from '@/constants/resources';
 import { ISimulationCell } from '@/types/models/simulation-cell';
 

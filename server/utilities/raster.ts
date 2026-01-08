@@ -35,11 +35,11 @@ export const rasterizeGLBs = async (
 
         // Extract model name from filename (e.g., "dislocations.glb" -> "dislocations")
         const modelName = path.basename(filename, '.glb');
-        
+
         // Extract timestep from path: .../glb/{timestep}/{model}.glb or timestep-{ts}.glb
         const parts = key.split('/');
         let timestep: number;
-        
+
         // Check if path contains /glb/{timestep}/ pattern
         const glbIdx = parts.indexOf('glb');
         if (glbIdx !== -1 && parts.length > glbIdx + 1) {
@@ -61,19 +61,19 @@ export const rasterizeGLBs = async (
 
         const task = async () => {
             try {
-                const tempPath = tempFileManager.generateFilePath({ 
-                    prefix: `glb_${timestep}_`, 
-                    extension: '.glb' 
+                const tempPath = tempFileManager.generateFilePath({
+                    prefix: `glb_${timestep}_`,
+                    extension: '.glb'
                 });
 
                 await storage.download(prefixBucketName, key, tempPath);
-                
+
                 // Determine if this is a base preview or an analysis model
                 const isBasePreview = !analysisId || modelName.startsWith('timestep-');
-                
+
                 // Determine job name based on context
-                const name = isBasePreview 
-                    ? 'Generate Preview' 
+                const name = isBasePreview
+                    ? 'Generate Preview'
                     : (jobName || `Preview for ${modelName}`);
 
                 jobs.push({
@@ -111,7 +111,7 @@ export const rasterizeGLBs = async (
     }
 
     const queueService = getRasterizerQueue();
-    queueService.addJobs(jobs);
+    await queueService.addJobs(jobs);
 };
 
 export const sendImage = (res: Response, etag: string, buffer: Buffer) => {

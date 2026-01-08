@@ -39,7 +39,10 @@ export class TrajectoryProcessingQueue extends BaseProcessingQueue<TrajectoryPro
             workerPath: path.resolve(__dirname, '../workers/trajectory-processing.ts'),
             maxConcurrentJobs: Number(process.env.TRAJECTORY_QUEUE_MAX_CONCURRENT_JOBS),
             cpuLoadThreshold: Number(process.env.TRAJECTORY_QUEUE_CPU_LOAD_THRESHOLD),
-            ramLoadThreshold: Number(process.env.TRAJECTORY_QUEUE_RAM_LOAD_THREHOLD)
+            ramLoadThreshold: Number(process.env.TRAJECTORY_QUEUE_RAM_LOAD_THREHOLD),
+            customStatusMapping: {
+                running: 'processing'
+            }
         };
 
         super(options);

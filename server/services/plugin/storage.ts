@@ -7,7 +7,7 @@ import { SYS_BUCKETS } from '@/config/minio';
 import { IWorkflowNode, IPlugin } from '@/types/models/modifier';
 import { NodeType, PluginStatus } from '@/types/models/plugin';
 import { slugify } from '@/utilities/runtime/runtime';
-import Plugin from '@/models/plugin';
+import Plugin from '@/models/plugin/plugin';
 import storage from '@/services/storage';
 import logger from '@/logger';
 import workflowValidator from '@/services/nodes/workflow-validator';

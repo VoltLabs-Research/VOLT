@@ -21,7 +21,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import Container from '@/models/container';
+import Container from '@/models/docker/container';
 import { Team } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';

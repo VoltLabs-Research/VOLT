@@ -1,6 +1,6 @@
 import { Request } from 'express';
 import { TeamMember, Team } from '@/models';
-import { ITeamMember } from '@/models/team-member';
+import { ITeamMember } from '@/models/team/team-member';
 import { FilterQuery, Types } from 'mongoose';
 import { ErrorCodes } from '@/constants/error-codes';
 import RuntimeError from '@/utilities/runtime/runtime-error';

@@ -21,7 +21,7 @@
  */
 
 import mongoose, { Document } from 'mongoose';
-import { ITeam } from '@models/team';
+import { ITeam } from '@/models/team/team';
 
 export interface IUser extends Document {
     email: string;

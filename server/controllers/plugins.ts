@@ -5,7 +5,7 @@ import { Team } from '@/models';
 import { IWorkflowNode, IPlugin } from '@/types/models/modifier';
 import { NodeType, PluginStatus } from '@/types/models/plugin';
 import { Resource } from '@/constants/resources';
-import Plugin from '@/models/plugin';
+import Plugin from '@/models/plugin/plugin';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import BaseController from './base-controller';
 import nodeRegistry from '@/services/nodes/node-registry';

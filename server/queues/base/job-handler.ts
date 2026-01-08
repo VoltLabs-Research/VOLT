@@ -79,7 +79,9 @@ export class JobHandler<T extends BaseJob> {
         }
 
         // Update trajectory status using centralized service
-        if (data.trajectoryId && teamId) {
+        // Race condition fix: Don't update for completed/failed here.
+        // The QueueCore will handle it after removing the job from Redis.
+        if (data.trajectoryId && teamId && !['completed', 'failed'].includes(status)) {
             try {
                 const trajectoryStatusService = (await import('@/services/trajectory/status-service')).default;
                 await trajectoryStatusService.updateFromJobStatus({

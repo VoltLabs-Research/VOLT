@@ -4,11 +4,11 @@ import { ErrorCodes } from '@/constants/error-codes';
 import { Types } from 'mongoose';
 import { v4 } from 'uuid';
 import { Trajectory } from '@/models';
-import SimulationCell from '@/models/simulation-cell';
+import SimulationCell from '@/models/trajectory/simulation-cell';
 import { getCloudUploadQueue, getTrajectoryProcessingQueue } from '@/queues';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { Worker } from 'worker_threads';
+
 import { ITrajectory } from '@/types/models/trajectory';
 import { CloudUploadJob } from '@/types/services/cloud-upload';
 import unzipper from 'unzipper';
@@ -24,111 +24,63 @@ interface CreateTrajectoryOptions {
     onProgress?: (progress: number) => void;
 };
 
-interface ParseResult {
-    frameInfo: any;
-    srcPath: string;
-    originalSize: number;
-    originalName: string;
-}
 
-const WORKER_PATH = path.join(process.cwd(), 'workers/trajectory-parser.worker.ts');
+
+import { processTrajectoryFile, ParseResult as FileParseResult } from '@/parsers/process-file';
 
 /**
- * Spawns a worker thread and processes files in parallel batches.
+ * Processes files sequentially (or concurrently) in the main thread.
  * Returns parsed results for all valid files.
  */
-const parseFilesWithWorker = async (
+const parseFiles = async (
     trajectoryId: string,
     files: any[],
     workingDir: string,
     onProgress?: (progress: number) => void
-): Promise<ParseResult[]> => {
-    return new Promise(async (resolve, reject) => {
-        const worker = new Worker(WORKER_PATH, {
-            execArgv: ['-r', 'ts-node/register', '-r', 'tsconfig-paths/register']
-        });
+): Promise<FileParseResult['data'][]> => {
+    const results: FileParseResult[] = [];
+    const totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
+    let processedSize = 0;
 
-        const results: (ParseResult | null)[] = new Array(files.length).fill(null);
-        let completedCount = 0;
-        let sentCount = 0;
-        const totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        let tempPath = file.path;
 
-        const pendingTasks = new Map<number, { resolve: (v: any) => void }>();
-
-        worker.on('message', (message: any) => {
-            if (message.type !== 'result') return;
-
-            const { taskId, success, data, error } = message;
-            completedCount++;
-
-            if (success && data) {
-                results[taskId] = data;
-            } else if (!success) {
-                console.error(`[createTrajectory] Worker parsing failed for task ${taskId}:`, error);
-            }
-
-            // Report progress
-            if (onProgress && totalSize > 0) {
-                const processed = results
-                    .filter(Boolean)
-                    .reduce((acc, r) => acc + (r?.originalSize || 0), 0);
-                onProgress(Math.min(1, processed / totalSize));
-            }
-
-            // Check if all done
-            if (completedCount === files.length) {
-                worker.terminate();
-                resolve(results.filter(Boolean) as ParseResult[]);
-            }
-        });
-
-        worker.on('error', (err) => {
-            worker.terminate();
-            reject(err);
-        });
-
-        worker.on('exit', (code) => {
-            if (code !== 0 && completedCount < files.length) {
-                reject(new Error(`Worker exited with code ${code}`));
-            }
-        });
-
-        // Send tasks to worker
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            let tempPath = file.path;
-
-            // If we only have a buffer, write to disk briefly
-            if (!tempPath && file.buffer) {
-                tempPath = path.join(workingDir, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
-                await fs.writeFile(tempPath, file.buffer);
-            }
-
-            if (!tempPath) {
-                completedCount++;
-                continue;
-            }
-
-            const fileSize = file.size || 0;
-
-            worker.postMessage({
-                type: 'parse',
-                taskId: i,
-                trajectoryId,
-                tempPath,
-                originalName: file.originalname || file.name || `frame_${i}`,
-                fileSize
-            });
-
-            sentCount++;
+        // If we only have a buffer, write to disk briefly
+        if (!tempPath && file.buffer) {
+            tempPath = path.join(workingDir, `temp_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+            await fs.writeFile(tempPath, file.buffer);
         }
 
-        // If no tasks were sent, resolve immediately
-        if (sentCount === 0) {
-            worker.terminate();
-            resolve([]);
+        if (!tempPath) {
+            continue;
         }
-    });
+
+        const fileSize = file.size || 0;
+
+        const result = await processTrajectoryFile({
+            taskId: i,
+            trajectoryId,
+            tempPath,
+            originalName: file.originalname || file.name || `frame_${i}`,
+            fileSize
+        });
+
+        if (result.success) {
+            results.push(result);
+        } else {
+            console.error(`[createTrajectory] Parsing failed for file ${file.originalname}:`, result.error);
+        }
+
+        processedSize += fileSize;
+        if (onProgress && totalSize > 0) {
+            onProgress(Math.min(1, processedSize / totalSize));
+        }
+    }
+
+    return results
+        .filter(r => r.success && r.data)
+        .map(r => r.data!);
 };
 
 const dispatchTrajectoryJobs = async (validFiles: any[], trajectory: ITrajectory, teamId: string) => {
@@ -294,19 +246,18 @@ const processFilesInBackground = async (
         }
     }
 
-    // Use worker thread for parsing (non-blocking)
-    const validFiles = await parseFilesWithWorker(trajectoryIdStr, finalFiles, workingDir, onProgress);
+    const validFiles = await parseFiles(trajectoryIdStr, finalFiles, workingDir, onProgress);
 
     if (validFiles.length === 0) {
         await Trajectory.findByIdAndUpdate(trajectoryIdStr, { status: 'failed' });
         throw new RuntimeError(ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES, 400);
     }
 
-    const validTotalSize = validFiles.reduce((acc, f) => acc + f.originalSize, 0);
+    const validTotalSize = validFiles.reduce((acc, f) => acc + (f?.originalSize || 0), 0);
 
     const frames: any[] = [];
     for (const f of validFiles) {
-        const { simulationCell, ...restFrameInfo } = f.frameInfo;
+        const { simulationCell, ...restFrameInfo } = f!.frameInfo;
 
         console.log(`[createTrajectory] Creating SimulationCell for timestep ${restFrameInfo.timestep}`, {
             hasSimCell: !!simulationCell,

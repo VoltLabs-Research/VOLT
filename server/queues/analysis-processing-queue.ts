@@ -42,6 +42,9 @@ export class AnalysisProcessingQueue extends BaseProcessingQueue<AnalysisJob> {
             maxConcurrentJobs: Number(process.env.ANALYSIS_QUEUE_MAX_CONCURRENT_JOBS),
             cpuLoadThreshold: Number(process.env.ANALYSIS_QUEUE_CPU_LOAD_THRESHOLD),
             ramLoadThreshold: Number(process.env.ANALYSIS_QUEUE_RAM_LOAD_THRESHOLD),
+            customStatusMapping: {
+                running: 'analyzing'
+            }
         };
 
         super(options);

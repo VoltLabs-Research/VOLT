@@ -10,7 +10,7 @@ import { AnalysisJob } from '@/types/queues/analysis-processing-queue';
 import { IPlugin } from '@/types/models/modifier';
 import { PluginStatus } from '@/types/models/plugin';
 import { getAnalysisQueue } from '@/queues';
-import Plugin from '@/models/plugin';
+import Plugin from '@/models/plugin/plugin';
 import PluginWorkflowEngine from '@/services/plugin/workflow-engine';
 import { createRedisClient } from '@config/redis';
 import logger from '@/logger';
