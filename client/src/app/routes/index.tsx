@@ -20,6 +20,6 @@
  * SOFTWARE.
  */
 
-export * from '@/routes/config';
-export * from '@/routes/types';
-export * from '@/routes/RouteRenderer';
+export * from '@/app/routes/config';
+export * from '@/app/routes/types';
+export * from '@/app/routes/RouteRenderer';

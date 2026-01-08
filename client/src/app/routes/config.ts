@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import type { RouteGroup } from '@/routes/types';
+import type { RouteGroup } from '@/app/routes/types';
 import Canvas from '@/features/canvas/pages/protected/Canvas';
 import Dashboard from '@/pages/protected/Dashboard';
 import FileExplorer from '@/features/trajectory/pages/protected/FileExplorer';
@@ -43,7 +43,7 @@ import {
     IntegrationsPage,
     DataExportPage,
     AdvancedPage
-} from '@/pages/protected/settings';
+} from '@/features/settings/pages/protected/';
 import Clusters from '@/features/clusters/pages/protected/Clusters';
 import SignIn from '@/features/auth/pages/guest/SignIn';
 import TeamInvitationPage from '@/features/team-invitation/pages/guest/TeamInvitationPage';

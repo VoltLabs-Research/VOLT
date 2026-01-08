@@ -29,7 +29,7 @@ import ToastContainer from '@/components/atoms/common/ToastContainer';
 import { useAuthStore } from '@/features/auth/stores';
 import useToast from '@/hooks/ui/use-toast';
 import useAppInitializer from '@/hooks/core/use-app-initializer';
-import { renderPublicRoutes, renderProtectedRoutes, renderGuestRoutes } from '@/routes';
+import { renderPublicRoutes, renderProtectedRoutes, renderGuestRoutes } from '@/app/routes';
 import NotFoundRedirect from '@/components/atoms/common/NotFoundRedirect';
 
 const AuthLoadingOverlay = () => (

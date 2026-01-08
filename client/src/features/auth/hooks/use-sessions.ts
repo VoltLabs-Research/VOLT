@@ -21,7 +21,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import sessionApi from '@/services/api/session/session';
+import sessionApi from '@/features/auth/api/session';
 
 export interface SessionsResponse {
     status: 'success' | 'error';

@@ -25,8 +25,8 @@ import ProtectedRoute from '@/features/auth/components/atoms/ProtectedRoute';
 import DashboardLayout from '@/components/organisms/dashboard/DashboardLayout';
 import SettingsLayout from '@/features/settings/components/organisms/SettingsLayout';
 import PageTransition from '@/components/atoms/animations/PageTransition';
-import { routesConfig } from '@/routes/config';
-import type { RouteConfig } from '@/routes/types';
+import { routesConfig } from '@/app/routes/config';
+import type { RouteConfig } from '@/app/routes/types';
 
 const wrapWithPageWrapper = (Component: React.ComponentType) => (
     <PageTransition>

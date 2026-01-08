@@ -1,5 +1,5 @@
 import VoltClient from '@/api';
-import type { Session, GetLoginActivityParams, LoginActivity } from '@/services/api/session/types';
+import type { Session, GetLoginActivityParams, LoginActivity } from '@/features/auth/types/session';
 import type { ApiResponse } from '@/types/api';
 
 const client = new VoltClient('/sessions');
