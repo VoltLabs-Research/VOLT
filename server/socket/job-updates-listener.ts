@@ -3,7 +3,6 @@ import logger from '@/logger';
 import { eventBus, EventChannels } from '@/events/event-bus';
 
 export const initializeJobUpdatesListener = (io: Server) => {
-    // Session Completion Handler
     eventBus.on(EventChannels.JOB_UPDATES, (message: any) => {
         try {
             const { teamId, payload } = JSON.parse(message);
@@ -15,9 +14,6 @@ export const initializeJobUpdatesListener = (io: Server) => {
                 return;
             }
 
-            // Standard Job Update - Pass through directly
-            // The frontend is robust enough to handle the raw payload or we can minimally shape it if needed
-            // But removing the normalization reduces verbosity significantly
             logger.info(`[JobUpdate] ${payload.jobId?.slice(-8)} | ${payload.status}`);
             io.to(`team-${teamId}`).emit('job_update', payload);
 

@@ -195,15 +195,7 @@ class SocketIOService {
         });
     }
 
-    public subscribeToTrajectory(trajectoryId: string, user: any, previousTrajectoryId?: string) {
-        if (!this.socket?.connected) {
-            this.logger.error('Cannot subscribe to trajectory: Socket not connected');
-            return Promise.reject(new Error('not connected'));
-        }
-
-        this.logger.log(`Subscribing to trajectory ${trajectoryId}`);
-        return this.emit('subscribe_to_trajectory', { trajectoryId, user, previousTrajectoryId });
-    }
+    // subscribeToTrajectory removed as it is unused. Presence is handled by module-specific subscriptions.
 
     public onConnectionChange(listener: (connected: boolean) => void): () => void {
         this.connectionListeners.push(listener);

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { catchAsync } from '@/utilities/runtime/runtime';
 import { slugify } from '@/utilities/runtime/runtime';
-import { Team, Trajectory } from '@/models';
+import { Team } from '@/models';
 import { IWorkflowNode, IPlugin } from '@/types/models/modifier';
 import { NodeType, PluginStatus } from '@/types/models/plugin';
 import { Resource } from '@/constants/resources';
@@ -200,8 +200,6 @@ export default class PluginsController extends BaseController<IPlugin> {
             });
         }
     });
-
-    // === Listing ===
 
     public getPluginListingDocuments = catchAsync(async (req: Request, res: Response) => {
         const { pluginSlug, listingSlug } = req.params;

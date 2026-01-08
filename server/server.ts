@@ -26,7 +26,6 @@ import mongoConnector from '@/utilities/mongo/mongo-connector';
 import SocketGateway from '@/socket/socket-gateway';
 import JobsModule from '@/socket/modules/jobs';
 import CursorModule from '@/socket/modules/cursor';
-import TrajectoryModule from '@/socket/modules/trajectory';
 import ChatModule from '@/socket/modules/chat';
 import NotificationsModule from '@/socket/modules/notifications';
 import CanvasPresenceModule from '@/socket/modules/canvas-presence';
@@ -49,7 +48,6 @@ server.headersTimeout = 35 * 60 * 1000;
 const gateway = new SocketGateway()
     .register(new JobsModule())
     .register(new CursorModule())
-    .register(new TrajectoryModule())
     .register(new ChatModule())
     .register(new NotificationsModule())
     .register(new CanvasPresenceModule())

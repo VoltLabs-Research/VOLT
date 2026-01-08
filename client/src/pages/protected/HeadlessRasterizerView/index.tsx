@@ -335,21 +335,8 @@ const HeadlessRasterizerView: React.FC = () => {
 
     const subscribedKeyRef = useRef<string | null>(null);
 
-    useEffect(() => {
-        if (!trajectory?._id || !trajectoryId) return;
-
-        // Wait for cursorUser to be ready(either from auth or guest fetch)
-        if (!cursorUser) return;
-
-        const presenceUser = cursorUser;
-
-        const key = `${trajectory._id}:${presenceUser.id}`;
-        if (subscribedKeyRef.current === key) return;
-
-        const prevTrajectory = subscribedKeyRef.current?.split(':')[0];
-        socketService.subscribeToTrajectory(trajectory._id, presenceUser, prevTrajectory);
-        subscribedKeyRef.current = key;
-    }, [trajectory?._id, trajectoryId, cursorUser]);
+    // Removed unused subscribeToTrajectory effect
+    // Presence is handled by useRasterConnectedUsers via subscribe_to_raster
 
     const leftScene = useRasterFrame(
         trajectoryId,

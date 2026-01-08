@@ -1,7 +1,3 @@
-/**
-* Copyright(C) Rodolfo Herrera Hernandez. All rights reserved.
-*/
-
 import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { FilterQuery } from 'mongoose';
 import BaseController from '@/controllers/base-controller';
