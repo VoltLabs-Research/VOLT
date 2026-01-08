@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuthStore } from '@/stores/slices/auth';
-import authApi from '@/services/api/auth/auth';
+import { useAuthStore } from '@/features/auth/stores';
+import authApi from '@/features/auth/api/auth';
 import GeneralSettings from '@/components/molecules/settings/GeneralSettings';
 
 import useConfirm from '@/hooks/ui/use-confirm';

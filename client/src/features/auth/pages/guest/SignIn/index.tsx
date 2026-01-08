@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { usePageTitle } from '@/hooks/core/use-page-title';
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import authApi from "@/services/api/auth/auth";
-import useAuthStore from "@/stores/slices/auth";
+import authApi from "@/features/auth/api/auth";
+import useAuthStore from "@/features/auth/stores";
 import { useFormValidation } from "@/hooks/useFormValidation";
 import FormInput from "@/components/atoms/form/FormInput";
 import {

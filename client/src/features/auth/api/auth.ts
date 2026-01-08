@@ -1,6 +1,6 @@
 import VoltClient from '@/api';
 import type { ApiResponse } from '@/types/api';
-import type { SignInCredentials, AuthResponse, User, PasswordInfo, ChangePasswordPayload, SignUpDetails } from './types';
+import type { SignInCredentials, AuthResponse, User, PasswordInfo, ChangePasswordPayload, SignUpDetails } from '@/features/auth/types';
 
 const client = new VoltClient('/auth');
 

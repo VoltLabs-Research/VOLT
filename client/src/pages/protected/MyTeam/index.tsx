@@ -3,7 +3,7 @@ import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate } from 'react-router-dom';
 import { useTeamStore } from '@/stores/slices/team';
 import { useTeamRoleStore } from '@/stores/slices/team';
-import { useAuthStore } from '@/stores/slices/auth';
+import { useAuthStore } from '@/features/auth/stores';
 import Container from '@/components/primitives/Container';
 import DocumentListing from '@/components/organisms/common/DocumentListing';
 import type { ColumnConfig } from '@/components/organisms/common/DocumentListing';

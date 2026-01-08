@@ -1,5 +1,5 @@
 import { v4 } from 'uuid';
-import authApi from '@/services/api/auth/auth';
+import authApi from '@/features/auth/api/auth';
 
 export type GuestUser = {
     id: string;

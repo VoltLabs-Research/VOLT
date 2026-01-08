@@ -45,9 +45,9 @@ import {
     AdvancedPage
 } from '@/pages/protected/settings';
 import Clusters from '@/pages/protected/Clusters';
-import SignIn from '@/pages/guest/SignIn';
+import SignIn from '@/features/auth/pages/guest/SignIn';
 import TeamInvitationPage from '@/pages/guest/TeamInvitationPage';
-import OAuthCallback from '@/pages/guest/OAuthCallback';
+import OAuthCallback from '@/features/auth/pages/guest/OAuthCallback';
 import Containers from '@/pages/protected/Containers';
 import ContainerDetails from '@/pages/protected/ContainerDetails';
 import CreateContainer from '@/pages/protected/CreateContainer';

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import FormInput from "@/components/atoms/form/FormInput";
-import RecentActivity from "@/components/molecules/auth/RecentActivity";
+import RecentActivity from "@/features/auth/components/molecules/RecentActivity";
 import { TbCheck, TbTrash, TbX, TbActivity, TbCamera } from "react-icons/tb";
-import authApi from "@/services/api/auth/auth";
+import authApi from "@/features/auth/api/auth";
 import Section from "@/components/atoms/settings/Section";
 import SectionHeader from "@/components/atoms/settings/SectionHeader";
 import StatusBadge from "@/components/atoms/common/StatusBadge";

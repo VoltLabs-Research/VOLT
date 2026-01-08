@@ -8,11 +8,11 @@ import Button from '@/components/primitives/Button';
 import EmptyState from '@/components/atoms/common/EmptyState';
 import Container from '@/components/primitives/Container';
 import useToast from '@/hooks/ui/use-toast';
-import { useAuthStore } from '@/stores/slices/auth';
+import { useAuthStore } from '@/features/auth/stores';
 import { CheckCircle, XCircle, Mail, Clock } from 'lucide-react';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
-import '../SignIn/SignIn.css';
+import '../../../features/auth/pages/guest/SignIn/SignIn.css';
 import './TeamInvitationPage.css';
 
 const TeamInvitationPage: React.FC = () => {

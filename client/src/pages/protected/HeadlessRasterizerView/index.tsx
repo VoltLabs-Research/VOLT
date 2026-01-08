@@ -26,7 +26,7 @@ import { useNavigate, useParams } from 'react-router';
 import useUrlState from '@/hooks/core/use-url-state';
 import useAppInitializer from '@/hooks/core/use-app-initializer';
 import { useRasterStore } from '@/stores/slices/raster';
-import { useAuthStore } from '@/stores/slices/auth';
+import { useAuthStore } from '@/features/auth/stores';
 import { useTeamStore } from '@/stores/slices/team';
 import useRasterFrame from '@/hooks/raster/use-raster-frame';
 import type { AnalysisSelectProps, ModelRailProps, PlaybackControlsProps, Scene } from '@/types/raster';

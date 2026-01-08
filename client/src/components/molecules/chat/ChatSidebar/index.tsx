@@ -4,7 +4,7 @@ import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/slices/chat';
 import { formatDistanceToNow } from 'date-fns';
 import ChatListSkeleton from '@/components/atoms/chat/messages/ChatListSkeleton';
-import { useAuthStore } from '@/stores/slices/auth';
+import { useAuthStore } from '@/features/auth/stores';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Button from '@/components/primitives/Button';

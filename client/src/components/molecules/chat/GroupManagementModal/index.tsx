@@ -35,7 +35,7 @@ import {
     IoStarOutline,
     IoCheckmarkCircleOutline
 } from 'react-icons/io5';
-import { useAuthStore } from '@/stores/slices/auth';
+import { useAuthStore } from '@/features/auth/stores';
 import Modal from '@/components/molecules/common/Modal';
 import Button from '@/components/primitives/Button';
 import FormInput from '@/components/atoms/form/FormInput';

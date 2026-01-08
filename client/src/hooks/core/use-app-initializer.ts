@@ -7,7 +7,7 @@ import { useTeamStore } from '@/stores/slices/team';
 import { useNotificationStore } from '@/stores/slices/notification';
 import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
 import { useContainerStore } from '@/stores/slices/container';
-import { useAuthStore } from '@/stores/slices/auth';
+import { useAuthStore } from '@/features/auth/stores';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
 import useTrajectoryUpdates from '@/hooks/trajectory/use-trajectory-updates';
 import useLogger from '@/hooks/core/use-logger';

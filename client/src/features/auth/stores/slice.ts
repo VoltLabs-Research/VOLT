@@ -1,7 +1,7 @@
 import { TokenStorage } from '@/utilities/auth/token-storage';
 import { clearErrorHistory } from '@/api/error-notification';
 import type { User } from '@/types/models';
-import authApi from '@/services/api/auth/auth';
+import authApi from '@/features/auth/api/auth';
 import { runRequest } from '@/stores/helpers';
 import type { SliceCreator } from '@/stores/helpers';
 

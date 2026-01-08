@@ -5,7 +5,7 @@ import { nodeTypes } from '@/components/molecules/plugins/nodes';
 import { NodeType } from '@/types/plugin';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import { usePluginBuilderStore } from '@/stores/slices/plugin/builder-slice';
-import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
+import SidebarUserAvatar from '@/features/auth/components/atoms/SidebarUserAvatar';
 import Sidebar from '@/components/organisms/common/Sidebar';
 import PaletteItem from '@/components/atoms/plugins/PaletetteItem';
 import NodeEditor from '@/components/molecules/plugins/NodeEditor';

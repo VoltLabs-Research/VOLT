@@ -20,7 +20,7 @@
  * SOFTWARE.
  */
 
-import { useAuthStore } from '@/stores/slices/auth';
+import { useAuthStore } from '@/features/auth/stores';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import Tooltip from '@/components/atoms/common/Tooltip';

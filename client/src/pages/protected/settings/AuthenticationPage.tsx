@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuthStore } from '@/stores/slices/auth';
+import { useAuthStore } from '@/features/auth/stores';
 import AuthenticationSettings from '@/components/molecules/settings/AuthenticationSettings';
-import LoginActivityModal from '@/components/molecules/auth/LoginActivityModal';
-import useLoginActivity from '@/hooks/auth/use-login-activity';
+import LoginActivityModal from '@/features/auth/components/molecules/LoginActivityModal';
+import useLoginActivity from '@/features/auth/hooks/use-login-activity';
 
 const AuthenticationPage: React.FC = () => {
     const {

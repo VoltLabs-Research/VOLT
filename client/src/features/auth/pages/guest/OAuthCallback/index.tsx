@@ -3,7 +3,7 @@ import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { useAuthStore } from '@/stores/slices/auth';
+import { useAuthStore } from '@/features/auth/stores';
 import { TokenStorage } from '@/utilities/auth/token-storage';
 import './OAuthCallback.css';
 

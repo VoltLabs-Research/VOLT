@@ -21,7 +21,7 @@
  */
 
 import { Route } from 'react-router-dom';
-import ProtectedRoute from '@/components/atoms/auth/ProtectedRoute';
+import ProtectedRoute from '@/features/auth/components/atoms/ProtectedRoute';
 import DashboardLayout from '@/components/organisms/dashboard/DashboardLayout';
 import SettingsLayout from '@/components/organisms/settings/SettingsLayout';
 import PageTransition from '@/components/atoms/animations/PageTransition';

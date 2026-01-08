@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { IoSettingsOutline, IoCloseOutline } from 'react-icons/io5';
 import { HiOutlineDotsVertical } from 'react-icons/hi';
 import Container from '@/components/primitives/Container';
-import useAuthStore from '@/stores/slices/auth';
+import useAuthStore from '@/features/auth/stores';
 import Popover from '@/components/molecules/common/Popover';
 import Paragraph from '@/components/primitives/Paragraph';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';

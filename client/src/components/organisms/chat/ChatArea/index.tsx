@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/slices/chat';
 import type { Chat, Message, Participant } from '@/types/chat';
-import { useAuthStore } from '@/stores/slices/auth';
+import { useAuthStore } from '@/features/auth/stores';
 import useAutoScroll from '@/hooks/ui/use-auto-scroll';
 import useToggleId from '@/hooks/ui/use-toggle-id';
 import MessageItem from '@/components/molecules/chat/MessageItem';

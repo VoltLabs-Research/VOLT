@@ -1,4 +1,4 @@
-import type { User } from '@/services/api/auth/types';
+import type { User } from '@/features/auth/api/types';
 import type { Chat, Message } from '@/types/chat';
 
 export interface GetChatsResponse {

@@ -3,7 +3,7 @@ import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import { useEditorStore } from '@/stores/slices/editor';
 import CanvasSidebarModifiers from '@/components/molecules/scene/CanvasSidebarModifiers';
 import CanvasSidebarScene from '@/components/molecules/scene/CanvasSidebarScene';
-import SidebarUserAvatar from '@/components/atoms/auth/SidebarUserAvatar';
+import SidebarUserAvatar from '@/features/auth/components/atoms/SidebarUserAvatar';
 import { useUIStore } from '@/stores/slices/ui';
 import EditableTrajectoryName from '@/components/atoms/trajectory/EditableTrajectoryName';
 import { BsArrowLeft } from 'react-icons/bs';
