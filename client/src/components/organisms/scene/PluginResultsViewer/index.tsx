@@ -32,7 +32,9 @@ import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import { useTeamStore } from '@/stores/slices/team';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import type { RenderableExposure } from '@/stores/slices/plugin/plugin-slice';
-import { exportToXlsx, type ColumnConfig } from '@/utilities/xlsx/export-xlsx';
+import pluginApi from '@/services/api/plugin/plugin';
+import Loader from '@/components/atoms/common/Loader';
+import { useToast } from '@/hooks/ui/use-toast';
 import './PluginResultsViewer.css';
 
 interface PluginResultsViewerProps {
@@ -52,6 +54,9 @@ const PluginResultsViewer = ({
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const team = useTeamStore((state) => state.selectedTeam);
 
+    const [isDownloading, setIsDownloading] = useState(false);
+    const { showSuccess } = useToast();
+
     // Retrieve the configuration for this analysis
     const analysisConfig = useAnalysisConfigStore((state) =>
         state.analysisConfig?._id === analysisId
@@ -60,9 +65,6 @@ const PluginResultsViewer = ({
     );
 
     const [activeTab, setActiveTab] = useState(0);
-
-    // Refs to store the current data for download
-    const currentDataRef = useRef<{ columns: ColumnConfig[]; data: any[] }>({ columns: [], data: [] });
 
     // Get exposure names that have listings (visualizers with listing config)
     const listingExposures = useMemo(() => {
@@ -103,48 +105,28 @@ const PluginResultsViewer = ({
         return atomExposure?._id || exposures[0]?.exposureId;
     }, [exposures, pluginSlug]);
 
-    // Handle data ready callback from child tables
-    const handleDataReady = useCallback((columns: ColumnConfig[], data: any[]) => {
-        currentDataRef.current = { columns, data };
-    }, []);
 
     // Handle download button click
-    const handleDownload = useCallback(() => {
-        const { columns, data } = currentDataRef.current;
-        if (columns.length === 0 || data.length === 0) {
-            return; // No data to download
+    const handleDownload = useCallback(async () => {
+        try {
+            setIsDownloading(true);
+            const blob = await pluginApi.exportAnalysisResults(pluginSlug, analysisId);
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${pluginSlug}_analysis_${analysisId}.zip`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            showSuccess('Analysis results downloaded successfully');
+        } catch (error) {
+            console.error('Failed to download results:', error);
+            // Optionally add a toast notification here
+        } finally {
+            setIsDownloading(false);
         }
-
-        // Filter data to only include rows belonging to the current analysis
-        const filteredData = data.filter((row) => row.analysisId === analysisId);
-
-        if (filteredData.length === 0) {
-            // Optional: Notify user or handle empty filtered data? 
-            // For now, we proceed to export an empty file or just return
-            return;
-        }
-
-        // Generate filename based on active tab
-        const tabName = isAtomsTabActive
-            ? 'Atoms'
-            : (activeExposure?.name || 'data');
-        const sanitizedTabName = tabName.replace(/[^a-zA-Z0-9]/g, '_');
-        const filename = `${pluginName}_${sanitizedTabName}`;
-
-        // Prepare configuration data for export (separate sheet)
-        const configuration = analysisConfig ? {
-            'Analysis Name': analysisConfig.name,
-            'Modifier': analysisConfig.modifier,
-            'Trajectory ID': analysisConfig.trajectory,
-            ...analysisConfig.config
-        } : undefined;
-
-        exportToXlsx(columns, filteredData, {
-            filename,
-            sheetName: tabName,
-            configuration
-        });
-    }, [isAtomsTabActive, activeExposure, pluginName, analysisConfig, analysisId]);
+    }, [pluginSlug, analysisId, showSuccess]);
 
     if (listingExposures.length === 0 && !hasAtomsTab) {
         return (
@@ -173,7 +155,7 @@ const PluginResultsViewer = ({
                         onClick={handleDownload}
                         title='Download as XLSX'
                     >
-                        <RiDownloadLine size={18} />
+                        {isDownloading ? <Loader scale={0.4} /> : <RiDownloadLine size={18} />}
                     </i>
                     <i className='plugin-results-close cursor-pointer' onClick={closeResultsViewer}>
                         <RiCloseLine size={20} />
@@ -213,7 +195,6 @@ const PluginResultsViewer = ({
                         analysisId={analysisId}
                         teamId={team?._id}
                         compact
-                        onDataReady={handleDataReady}
                     />
                 )}
                 {isAtomsTabActive && (
@@ -221,7 +202,6 @@ const PluginResultsViewer = ({
                         trajectoryId={trajectory!._id}
                         analysisId={analysisId}
                         exposureId={atomExposureId}
-                        onDataReady={handleDataReady}
                     />
                 )}
             </Container>

@@ -241,6 +241,7 @@ export default class DumpStorage {
         const prefix = `trajectory-${trajectoryId}/`;
         const timesteps: string[] = [];
 
+        logger.info(`[DumpStorage] Listing dumps with prefix: ${prefix} in bucket: ${SYS_BUCKETS.DUMPS}`);
         for await (const name of storage.listByPrefix(SYS_BUCKETS.DUMPS, prefix)) {
             const match = name.match(/timestep-(\d+)\.dump\.gz$/);
             if (match) {
@@ -248,6 +249,7 @@ export default class DumpStorage {
             }
         }
 
+        logger.info(`[DumpStorage] Found ${timesteps.length} dumps for trajectory ${trajectoryId}`);
         return timesteps.sort((a, b) => Number(a) - Number(b));
     }
 

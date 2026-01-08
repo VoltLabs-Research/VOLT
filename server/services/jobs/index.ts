@@ -21,8 +21,11 @@ export const trajectoryJobManager = new JobManager({
             throw new Error('Active analyses exist');
         }
 
-        const DumpStorage = (await import('@/services/trajectory/dump-storage')).default;
-        await DumpStorage.deleteDumps(entityId);
+        // Dumps should persist after trajectory processing so plugins can run on them.
+        // Auto-deletion here is causing Plugin::ForEach::NoItems errors because the data is gone
+        // before the user can even start an analysis.
+        // const DumpStorage = (await import('@/services/trajectory/dump-storage')).default;
+        // await DumpStorage.deleteDumps(entityId);
     },
 });
 

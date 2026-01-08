@@ -39,6 +39,7 @@ rbac.groupBy(Action.READ)
     .route('/schemas', controller.getNodeSchemas)
     .route('/listing/:pluginSlug/:listingSlug', controller.getPluginListingDocuments)
     .route('/:id', controller.getOne)
+    .route('/:pluginSlug/analysis/:analysisId/export-results', controller.exportAnalysisResults)
     .route('/:id/export', controller.exportPlugin);
 
 rbac.groupBy(Action.UPDATE)

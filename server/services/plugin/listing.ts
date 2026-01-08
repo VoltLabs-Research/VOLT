@@ -307,6 +307,170 @@ class PluginListingService {
 
         stream.pipe(res);
     }
+
+    async exportAnalysisResults(
+        pluginSlug: string,
+        analysisId: string,
+        res: Response
+    ): Promise<void> {
+        // Validate plugin existence first
+        const plugin = await Plugin.findOne({ slug: pluginSlug });
+        if (!plugin) throw new Error('Plugin::NotFound');
+
+        // Look for valid listing exposures
+        const exposures = (plugin.exposures || []).filter(e => e.name);
+        const hasAtoms = (plugin.exposures || []).some(e => e.perAtomProperties && e.perAtomProperties.length > 0);
+
+        if (exposures.length === 0 && !hasAtoms) {
+            throw new Error('Plugin::NoExposuresToExport');
+        }
+
+        const archiver = require('archiver');
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        res.attachment(`${pluginSlug}_analysis_${analysisId}.zip`);
+
+        // Handle stream errors
+        archive.on('error', (err: any) => {
+            logger.error(`[ExportAnalysis] Archive error: ${err}`);
+            if (!res.headersSent) {
+                res.status(500).send({ error: 'Archive generation failed' });
+            } else {
+                res.end();
+            }
+        });
+
+        res.on('close', () => {
+            logger.info('[ExportAnalysis] Response stream closed');
+            archive.abort();
+        });
+
+        archive.pipe(res);
+
+        // Helper to process an exposure and append to zip
+        const processExposure = async (listingSlug: string, exposureId: string, isAtoms: boolean = false) => {
+            const baseQuery: any = {
+                plugin: plugin._id,
+                analysis: analysisId,
+                exposureId: exposureId
+            };
+
+            const distinctTimesteps = await PluginListingRow.distinct('timestep', baseQuery);
+            distinctTimesteps.sort((a, b) => a - b);
+
+            if (distinctTimesteps.length === 0) return;
+
+            // Create a simple string buffer/stream for the CSV content
+            // We'll write to a manually managed PassThrough to allow async writing
+            const { PassThrough } = require('stream');
+            const jsonStream = new PassThrough();
+
+            archive.append(jsonStream, { name: `${isAtoms ? 'Atoms' : listingSlug}.json` });
+
+            let isFirstItem = true;
+            jsonStream.write('[\n');
+
+            // Find trajectoryId once
+            let trajectoryId = '';
+            const sample = await PluginListingRow.findOne(baseQuery).select('trajectory');
+            if (sample) trajectoryId = String(sample.trajectory);
+
+            if (!trajectoryId) {
+                jsonStream.write(']');
+                jsonStream.end();
+                return;
+            }
+
+            // Iterate timesteps
+            for (const timestep of distinctTimesteps) {
+                try {
+                    const items = await this.getPerFrameListing({
+                        trajectoryId,
+                        analysisId,
+                        exposureId,
+                        timestep: String(timestep),
+                        limit: 1000000
+                    });
+
+                    if (items.rows.length === 0) continue;
+
+                    // Write Rows
+                    for (const row of items.rows) {
+                        const prefix = isFirstItem ? '  ' : ',\n  ';
+                        jsonStream.write(prefix + JSON.stringify(row));
+                        isFirstItem = false;
+                    }
+                } catch (err) {
+                    logger.error(`[ExportAnalysis] Error processing timestep ${timestep}: ${err}`);
+                }
+            }
+
+            jsonStream.write('\n]');
+            jsonStream.end();
+        };
+
+        try {
+            // Process configured exposures
+            for (const exp of exposures) {
+                await processExposure(exp.name, exp._id); // Use _id as per virtual
+            }
+
+            // Process atoms if present
+            if (hasAtoms) {
+                const atomExp = (plugin.exposures || []).find(e => e.perAtomProperties && e.perAtomProperties.length > 0);
+                if (atomExp) {
+                    await processExposure('Atoms', atomExp._id, true);
+                }
+            }
+
+            // Export raw listing rows
+            await this.exportListingRows(plugin._id, analysisId, archive);
+
+            await archive.finalize();
+        } catch (err) {
+            logger.error(`[ExportAnalysis] Processing failed: ${err}`);
+            archive.abort();
+            throw err;
+        }
+    }
+
+    private async exportListingRows(
+        pluginId: any,
+        analysisId: string,
+        archive: any
+    ): Promise<void> {
+        const distinctSlugs = await PluginListingRow.distinct('listingSlug', {
+            plugin: pluginId,
+            analysis: analysisId
+        });
+
+        if (!distinctSlugs || distinctSlugs.length === 0) return;
+
+        const { PassThrough } = require('stream');
+
+        for (const slug of distinctSlugs) {
+            const stream = new PassThrough();
+            archive.append(stream, { name: `listing_rows/${slug}.json` });
+
+            stream.write('[\n');
+            let isFirst = true;
+
+            const cursor = PluginListingRow.find({
+                plugin: pluginId,
+                analysis: analysisId,
+                listingSlug: slug
+            }).cursor();
+
+            for await (const doc of cursor) {
+                const prefix = isFirst ? '  ' : ',\n  ';
+                stream.write(prefix + JSON.stringify(doc));
+                isFirst = false;
+            }
+
+            stream.write('\n]');
+            stream.end();
+        }
+    }
 }
 
 export default new PluginListingService();

@@ -157,6 +157,18 @@ const pluginApi = {
         return response.data;
     },
 
+    async exportAnalysisResults(pluginSlug: string, analysisId: string): Promise<Blob> {
+        const response = await client.request<Blob>(
+            'get',
+            `/${pluginSlug}/analysis/${analysisId}/export-results`,
+            {
+                config: { responseType: 'blob' as AxiosRequestConfig['responseType'] },
+                dedupe: false
+            }
+        );
+        return response.data;
+    },
+
     async importPlugin(file: File, teamId?: string): Promise<IPluginRecord> {
         const formData = new FormData();
         formData.append('plugin', file);

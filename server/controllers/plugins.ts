@@ -287,6 +287,16 @@ export default class PluginsController extends BaseController<IPlugin> {
         await pluginStorageService.exportPlugin(plugin as any, res);
     });
 
+    public exportAnalysisResults = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+        const { pluginSlug, analysisId } = req.params;
+
+        try {
+            await pluginListingService.exportAnalysisResults(pluginSlug, analysisId, res);
+        } catch (err: any) {
+            return next(new RuntimeError(err.message, 500));
+        }
+    });
+
     public importPluginMiddleware = zipUpload.single('plugin');
 
     public importPlugin = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
