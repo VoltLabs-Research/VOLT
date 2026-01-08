@@ -82,6 +82,7 @@ json StructureAnalysis::getAtomsData(
         
         json atomJson;
         atomJson["id"] = i;
+        atomJson["structure_type"] = structureType;
 
         if(usingPTM()){
             //Quaternion quat = getPTMAtomOrientation(i);

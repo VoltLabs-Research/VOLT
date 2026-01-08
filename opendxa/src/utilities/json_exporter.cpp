@@ -665,7 +665,8 @@ json DXAJsonExporter::getAtomsData(
         std::string typeName = tracer->mesh().structureAnalysis().getStructureTypeName(structureType);
         
         json atomJson;
-        atomJson["id"] = i;
+        atomJson["id"] = frame.ids[i];
+        atomJson["structure_type"] = structureType;
 
         if(tracer->mesh().structureAnalysis().usingPTM()){
             //Quaternion quat = tracer->mesh().structureAnalysis().getPTMAtomOrientation(i);
@@ -842,6 +843,10 @@ json DXAJsonExporter::getPTMData(
         json atomData;
         atomData["id"] = ids[i];
         atomData["correspondence"] = corrProp->getInt64(i);
+        
+        if(context.structureTypes && i < context.structureTypes->size()){
+            atomData["structure_type"] = context.structureTypes->getInt(i);
+        }
         
         json orient = json::array();
         for(int c = 0; c < 4; ++c) orient.push_back(ptmProp->getDoubleComponent(i, c));
