@@ -5,6 +5,8 @@
 #include <opendxa/utilities/memory_pool.h>
 #include <opendxa/structures/dislocation_network.h>
 #include <opendxa/geometry/interface_mesh.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/spin_mutex.h>
 #include <unordered_set>
 #include <unordered_map>
 #include <random>
@@ -46,7 +48,7 @@ public:
 	void traceDislocationSegments();
 	void finishDislocationSegments(int crystalStructure);
 
-	const std::vector<DislocationNode*>& danglingNodes() const{
+	const tbb::concurrent_vector<DislocationNode*>& danglingNodes() const{
 		return _danglingNodes;
 	}
 	
@@ -108,9 +110,11 @@ private:
 
 	MemoryPool<BurgersCircuit> _circuitPool;
 	std::mt19937 rng;
-	std::vector<DislocationNode*> _danglingNodes;
+	tbb::concurrent_vector<DislocationNode*> _danglingNodes;
 	BurgersCircuit* _unusedCircuit;
     mutable std::mutex _builderMutex;
+    mutable tbb::spin_mutex _networkMutex;  // Protects _network access
+    mutable tbb::spin_mutex _circuitCreationMutex;  // Protects circuit creation (edge pointers)
 };
 
 }

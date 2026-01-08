@@ -89,7 +89,7 @@ void BurgersLoopBuilder::traceDislocationSegments(){
 	// Incrementally extend search radius for new Burgers circuit and extend existing segments by enlarging
 	// the maximim circuit size until segments meet at a junction.
     for(int circuitLength : std::views::iota(3, _maxExtendedBurgersCircuitSize + 1)){
-        dangling = _danglingNodes;
+        dangling.assign(_danglingNodes.begin(), _danglingNodes.end());
 
 		for(auto* node : dangling){
 			//assert(node->circuit->isDangling);
@@ -294,79 +294,92 @@ void BurgersLoopBuilder::findPrimarySegments(int maxBurgersCircuitSize){
         }
     });
     
-    // Sequential circuit creation from candidates (maintains determinism)
-    // Sort by vertex index to ensure reproducible order
+    // PARALLEL circuit creation from candidates
+    // Each thread builds BFS locally, then acquires mutex for circuit creation
     std::vector<CircuitCandidate> sortedCandidates(candidates.begin(), candidates.end());
     std::sort(sortedCandidates.begin(), sortedCandidates.end(), 
         [](const CircuitCandidate& a, const CircuitCandidate& b){
             return a.vertexIndex < b.vertexIndex;
         });
     
-    // Process candidates sequentially with fresh visited_map per candidate
-    MemoryPool<SearchNode> pool(1024);
-    std::vector<SearchNode*> queue;
-    std::unordered_map<InterfaceMesh::Vertex*, SearchNode*> visited_map;
-    
-    for(const auto& candidate : sortedCandidates){
-        auto* edge = candidate.edge;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, sortedCandidates.size(), 32),
+        [&](const tbb::blocked_range<size_t>& r){
+        // Thread-local data structures for BFS
+        MemoryPool<SearchNode> pool(1024);
+        std::vector<SearchNode*> queue;
+        std::unordered_map<InterfaceMesh::Vertex*, SearchNode*> visited_map;
         
-        // Skip if edge was already claimed by another circuit
-        if(edge->nextCircuitEdge || (edge->face() && edge->face()->circuit)) continue;
-        
-        auto* startVert = mesh().vertex(candidate.vertexIndex);
-        queue.clear();
-        visited_map.clear();
-        pool.clear(true);
+        for(size_t idx = r.begin(); idx < r.end(); ++idx){
+            const auto& candidate = sortedCandidates[idx];
+            auto* edge = candidate.edge;
+            
+            // Quick check without lock - skip if obviously already used
+            if(edge->nextCircuitEdge || (edge->face() && edge->face()->circuit)) continue;
+            
+            auto* startVert = mesh().vertex(candidate.vertexIndex);
+            queue.clear();
+            visited_map.clear();
+            pool.clear(true);
 
-        auto* root = pool.construct();
-        root->node = startVert;
-        root->coord = Point3::Origin();
-        root->tm.setIdentity();
-        root->depth = 0;
-        root->viaEdge = nullptr;
-        visited_map[startVert] = root;
-        queue.push_back(root);
+            auto* root = pool.construct();
+            root->node = startVert;
+            root->coord = Point3::Origin();
+            root->tm.setIdentity();
+            root->depth = 0;
+            root->viaEdge = nullptr;
+            visited_map[startVert] = root;
+            queue.push_back(root);
 
-        // Rebuild visited_map up to the edge
-        bool found = false;
-        for(size_t qi = 0; qi < queue.size() && !found; ++qi){
-            auto* cur = queue[qi];
+            // Rebuild visited_map up to the edge (read-only traversal, safe in parallel)
+            bool shouldCreate = false;
+            for(size_t qi = 0; qi < queue.size() && !shouldCreate; ++qi){
+                auto* cur = queue[qi];
 
-            for(auto* e = cur->node->edges(); e != nullptr && !found; e = e->nextVertexEdge()){
-                if(e->nextCircuitEdge || (e->face() && e->face()->circuit)) continue;
+                for(auto* e = cur->node->edges(); e != nullptr && !shouldCreate; e = e->nextVertexEdge()){
+                    if(e->nextCircuitEdge || (e->face() && e->face()->circuit)) continue;
 
-                auto* nbVert = e->vertex2();
-                Point3 nbCoord = cur->coord + cur->tm * e->clusterVector;
+                    auto* nbVert = e->vertex2();
+                    Point3 nbCoord = cur->coord + cur->tm * e->clusterVector;
 
-                auto it = visited_map.find(nbVert);
-                if(it != visited_map.end()){
-                    auto* prevStruct = it->second;
-                    Vector3 b = prevStruct->coord - nbCoord;
-                    if(!b.isZero(CA_LATTICE_VECTOR_EPSILON)){
-                        Matrix3 R = cur->tm * e->clusterTransition->reverse->tm;
-                        if(R.equals(prevStruct->tm, CA_TRANSITION_MATRIX_EPSILON)){
-                            if(!e->nextCircuitEdge && !(e->face() && e->face()->circuit)){
-                                if(e == edge){
-                                    found = createBurgersCircuit(e, maxBurgersCircuitSize, visited_map);
+                    auto it = visited_map.find(nbVert);
+                    if(it != visited_map.end()){
+                        auto* prevStruct = it->second;
+                        Vector3 b = prevStruct->coord - nbCoord;
+                        if(!b.isZero(CA_LATTICE_VECTOR_EPSILON)){
+                            Matrix3 R = cur->tm * e->clusterTransition->reverse->tm;
+                            if(R.equals(prevStruct->tm, CA_TRANSITION_MATRIX_EPSILON)){
+                                if(!e->nextCircuitEdge && !(e->face() && e->face()->circuit)){
+                                    if(e == edge){
+                                        shouldCreate = true;
+                                    }
                                 }
                             }
                         }
+                    }else if(cur->depth < searchDepth){
+                        auto* nb = pool.construct();
+                        nb->node = nbVert;
+                        nb->coord = nbCoord;
+                        nb->depth = cur->depth + 1;
+                        nb->viaEdge = e;
+                        nb->tm = e->clusterTransition->isSelfTransition()
+                            ? cur->tm
+                            : cur->tm * e->clusterTransition->reverse->tm;
+                        visited_map[nbVert] = nb;
+                        queue.push_back(nb);
                     }
-                }else if(cur->depth < searchDepth){
-                    auto* nb = pool.construct();
-                    nb->node = nbVert;
-                    nb->coord = nbCoord;
-                    nb->depth = cur->depth + 1;
-                    nb->viaEdge = e;
-                    nb->tm = e->clusterTransition->isSelfTransition()
-                        ? cur->tm
-                        : cur->tm * e->clusterTransition->reverse->tm;
-                    visited_map[nbVert] = nb;
-                    queue.push_back(nb);
+                }
+            }
+            
+            // If we found a valid circuit candidate, acquire lock and create it
+            if(shouldCreate){
+                tbb::spin_mutex::scoped_lock lock(_circuitCreationMutex);
+                // Re-check after acquiring lock (another thread may have claimed it)
+                if(!edge->nextCircuitEdge && !(edge->face() && edge->face()->circuit)){
+                    createBurgersCircuit(edge, maxBurgersCircuitSize, visited_map);
                 }
             }
         }
-    }
+    });
 }
 
 
@@ -490,14 +503,21 @@ void BurgersLoopBuilder::createAndTraceSegment(const ClusterVector& burgersVecto
         return;
     }
 
-	// Create new dislocation segment.
-	DislocationSegment* segment = network().createSegment(burgersVector);
+	// Create new dislocation segment (protected by mutex for thread safety)
+	DislocationSegment* segment;
+	{
+		tbb::spin_mutex::scoped_lock lock(_networkMutex);
+		segment = network().createSegment(burgersVector);
+	}
 	segment->forwardNode().circuit = forwardCircuit;
 	segment->backwardNode().circuit = backwardCircuit;
 	forwardCircuit->dislocationNode = &segment->forwardNode();
 	backwardCircuit->dislocationNode = &segment->backwardNode();
+	
+	// _danglingNodes is now tbb::concurrent_vector, safe for parallel push_back
 	_danglingNodes.push_back(&segment->forwardNode());
 	_danglingNodes.push_back(&segment->backwardNode());
+	
 	// Add the first point to the line.
 	segment->line.push_back(backwardCircuit->calculateCenter());
 	segment->coreSize.push_back(backwardCircuit->countEdges());
@@ -1228,16 +1248,19 @@ void BurgersLoopBuilder::circuitCircuitIntersection(
 // by (1) creating secondary loops in adjacent holes, (2) marking fully blocked circuits
 // as junctions candidates, and (3) either fusing two arms or forming multi-arm junctions
 void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
-	std::erase_if(_danglingNodes, [](DislocationNode* node){
-		if(!node){
-			return true;
+	// Remove invalid nodes (concurrent_vector doesn't support std::erase_if)
+	{
+		tbb::concurrent_vector<DislocationNode*> validNodes;
+		for(auto* node : _danglingNodes){
+			if(!node) continue;
+			if(!isCircuitWellFormed(node->circuit)){
+				spdlog::warn("joinSegments: dropping invalid dangling node {}", (void*)node);
+				continue;
+			}
+			validNodes.push_back(node);
 		}
-		if(!isCircuitWellFormed(node->circuit)){
-			spdlog::warn("joinSegments: dropping invalid dangling node {}", (void*)node);
-			return true;
-		}
-		return false;
-	});
+		_danglingNodes.swap(validNodes);
+	}
 
 	// Sort danglingNodes for deterministic processing order
 	std::sort(_danglingNodes.begin(), _danglingNodes.end(),
@@ -1513,9 +1536,14 @@ void BurgersLoopBuilder::joinSegments(int maxCircuitLength){
 	}
 
 	// Clean up list of dangling nodes. Remove joined nodes.
-	std::erase_if(_danglingNodes, [](DislocationNode* node){
-		return !node->isDangling();
-	});
+	// Note: concurrent_vector doesn't support std::erase_if, use manual approach
+	tbb::concurrent_vector<DislocationNode*> remainingNodes;
+	for(auto* node : _danglingNodes){
+		if(node->isDangling()){
+			remainingNodes.push_back(node);
+		}
+	}
+	_danglingNodes.swap(remainingNodes);
 }
 
 // When a dangling circuit borders an unvisited hole, trace that hole boundary as a

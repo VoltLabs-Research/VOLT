@@ -25,6 +25,20 @@ struct InterfaceMeshEdge{
     ClusterTransition* clusterTransition = nullptr;
     BurgersCircuit* circuit = nullptr;
     HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>::Edge* nextCircuitEdge = nullptr;
+    
+    // Atomic flag for thread-safe edge claiming during parallel circuit creation
+    std::atomic<bool> _claimedForCircuit{false};
+    
+    // Try to atomically claim this edge for circuit creation
+    // Returns true if successfully claimed, false if already claimed
+    bool tryClaimForCircuit(){
+        bool expected = false;
+        return _claimedForCircuit.compare_exchange_strong(expected, true);
+    }
+    
+    void releaseCircuitClaim(){
+        _claimedForCircuit.store(false);
+    }
 };
 
 class InterfaceMesh : public HalfEdgeMesh<InterfaceMeshEdge, InterfaceMeshFace, InterfaceMeshVertex>{
