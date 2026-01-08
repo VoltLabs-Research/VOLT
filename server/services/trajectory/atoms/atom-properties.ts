@@ -7,7 +7,7 @@ import { ErrorCodes } from '@/constants/error-codes';
 import { NodeType } from '@/types/models/modifier';
 import { findAncestorByType, findDescendantByType } from '@/utilities/plugins/workflow-utils';
 import { getMinMaxNative } from '@/parsers/lammps/native-stats';
-import DumpStorage from './dump-storage';
+import DumpStorage from '../dump-storage';
 import TrajectoryParserFactory from '@/parsers/factory';
 import logger from '@/logger';
 import { asyncForEach } from '@/utilities/runtime/async-loop';

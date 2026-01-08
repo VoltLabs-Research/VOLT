@@ -4,7 +4,7 @@ import { NodeType } from '@/types/models/modifier';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import DumpStorage from '@/services/trajectory/dump-storage';
 import TrajectoryParserFactory from '@/parsers/factory';
-import AtomProperties, { ExposureAtomConfig } from '@/services/trajectory/atom-properties';
+import AtomProperties, { ExposureAtomConfig } from '@/services/trajectory/atoms/atom-properties';
 import { asyncForLoop } from '@/utilities/runtime/async-loop';
 
 export default class SimulationAtoms {

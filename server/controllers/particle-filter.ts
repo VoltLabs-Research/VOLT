@@ -5,8 +5,8 @@ import { ErrorCodes } from '@/constants/error-codes';
 import BaseController from '@/controllers/base-controller';
 import { Resource } from '@/constants/resources';
 import { Trajectory } from '@/models';
-import { FilterExpression } from '@/services/trajectory/atom-properties';
-import particleFilterService from '@/services/particle-filter';
+import { FilterExpression } from '@/services/trajectory/atoms/atom-properties';
+import particleFilterService from '@/services/trajectory/atoms/particle-filter';
 
 export default class ParticleFilterController extends BaseController<any> {
     constructor() {

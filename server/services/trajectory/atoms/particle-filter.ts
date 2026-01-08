@@ -1,17 +1,15 @@
 import DumpStorage from '@/services/trajectory/dump-storage';
 import storage from '@/services/storage';
-import AtomisticExporter from '@/utilities/export/atoms';
 import exporter from '@/utilities/export/exporter';
 import { SYS_BUCKETS } from '@/config/minio';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
-import AtomProperties, { FilterExpression } from '@/services/trajectory/atom-properties';
+import AtomProperties, { FilterExpression } from '@/services/trajectory/atoms/atom-properties';
 import TrajectoryParserFactory from '@/parsers/factory';
 import { Readable } from 'node:stream';
 
-// Highlight color (bright magenta/pink to stand out)
-const HIGHLIGHT_COLOR = [1.0, 0.2, 0.6]; // RGB normalized
-const DEFAULT_COLOR = [0.8, 0.8, 0.8]; // Light gray for non-selected
+const HIGHLIGHT_COLOR = [1.0, 0.2, 0.6];
+const DEFAULT_COLOR = [0.8, 0.8, 0.8];
 
 export class ParticleFilterService {
     private readonly atomProps: AtomProperties;

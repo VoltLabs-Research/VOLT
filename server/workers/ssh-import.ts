@@ -1,121 +1,76 @@
-import { parentPort } from 'node:worker_threads';
-import mongoConnector from '@/utilities/mongo/mongo-connector';
+
+import { BaseWorker } from './base-worker';
 import { SSHImportJob } from '@/types/services/ssh-import-queue';
 import { SSHConnection } from '@/models';
 import { ErrorCodes } from '@/constants/error-codes';
 import sshService from '@/services/ssh';
+import tempFileManager from '@/services/temp-file-manager';
 import * as fs from 'fs/promises';
 import * as path from 'node:path';
-import logger from '@/logger';
-import '@/config/env';
-import tempFileManager from '@/services/temp-file-manager';
 
-process.on('uncaughtException', (err) => {
-    logger.error(`[Worker #${process.pid}] Uncaught Exception: ${err.message}`);
-    logger.error(`[Worker #${process.pid}] Stack: ${err.stack}`);
-    process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    logger.error(`[Worker #${process.pid}] Unhandled Rejection at: ${promise} reason: ${reason}`);
-    process.exit(1);
-});
-
-
-export const processJob = async (job: SSHImportJob, postMessage?: (msg: any) => void) => {
-    const sendMessage = postMessage || ((msg: any) => parentPort?.postMessage(msg));
-
-    const { jobId, sshConnectionId, remotePath, teamId, userId } = job;
-
-    const connection = await SSHConnection.findById(sshConnectionId).select('+encryptedPassword');
-    if (!connection) {
-        throw new Error(ErrorCodes.SSH_CONNECTION_NOT_FOUND);
+class SSHImportWorker extends BaseWorker<SSHImportJob> {
+    protected async setup(): Promise<void> {
+        await this.connectDB();
     }
 
-    const fileStats = await sshService.getFileStats(connection, remotePath);
-    if (!fileStats) {
-        throw new Error(ErrorCodes.SSH_PATH_NOT_FOUND);
-    }
+    protected async perform(job: SSHImportJob): Promise<void> {
+        const { jobId, sshConnectionId, remotePath, teamId, userId } = job;
 
-    let localFiles: string[] = [];
-    const trajectoryName = fileStats.name || 'SSH Import';
+        const connection = await SSHConnection.findById(sshConnectionId).select('+encryptedPassword');
+        if (!connection) throw new Error(ErrorCodes.SSH_CONNECTION_NOT_FOUND);
 
-    const tempBaseDir = tempFileManager.getDirPath('imports');
-    const localFolder = path.join(tempBaseDir, jobId);
+        const fileStats = await sshService.getFileStats(connection, remotePath);
+        if (!fileStats) throw new Error(ErrorCodes.SSH_PATH_NOT_FOUND);
 
-    if (fileStats.isDirectory) {
-        localFiles = await sshService.downloadDirectory(
-            connection,
-            remotePath,
-            localFolder,
-            (progress) => {
-                const percentage = Math.round((progress.downloadedBytes / progress.totalBytes) * 100);
-                sendMessage({
-                    jobId,
-                    status: 'progress',
-                    progress: percentage,
-                    message: `Downloading ${progress.downloadedBytes} of ${progress.totalBytes}b (${percentage}%)`
-                });
-            }
-        );
-    } else {
-        const localFilePath = path.join(localFolder, fileStats.name);
-        await sshService.downloadFile(connection, remotePath, localFilePath);
-        localFiles = [localFilePath];
-    }
+        let localFiles: string[] = [];
+        const trajectoryName = fileStats.name || 'SSH Import';
 
-    if (localFiles.length === 0) {
-        await fs.rm(localFolder, { recursive: true, force: true });
-        throw new Error(ErrorCodes.SSH_IMPORT_NO_FILES);
-    }
+        const tempBaseDir = tempFileManager.getDirPath('imports');
+        const localFolder = path.join(tempBaseDir, jobId);
 
-    const filesToProcess = localFiles.map((filePath) => ({
-        path: filePath,
-        originalname: path.basename(filePath),
-        size: 0
-    }));
-
-    const result = {
-        files: filesToProcess,
-        teamId,
-        userId,
-        trajectoryName
-    };
-
-    return {
-        status: 'completed',
-        jobId,
-        result
-    };
-};
-
-/**
- * Worker Entry Point
- */
-const main = async () => {
-    try {
-        await mongoConnector();
-    } catch (dbError) {
-        logger.error(`[Worker #${process.pid}] Failed to connect to MongoDB: ${dbError}`);
-        process.exit(1);
-    }
-
-    parentPort?.on('message', async (message: { job: SSHImportJob }) => {
-        try {
-            const result = await processJob(message.job, (msg) => parentPort?.postMessage(msg));
-            if (result) {
-                parentPort?.postMessage(result);
-            }
-        } catch (error) {
-            // TODO: Duplicated code
-            logger.error(`[Worker #${process.pid}] Fatal Exception: ${error}`);
-            parentPort?.postMessage({
-                status: 'failed',
-                jobId: message.job?.jobId || 'unknown',
-                error: 'Fatal worker exception'
-            });
+        if (fileStats.isDirectory) {
+            localFiles = await sshService.downloadDirectory(
+                connection,
+                remotePath,
+                localFolder,
+                (progress) => {
+                    const percentage = Math.round((progress.downloadedBytes / progress.totalBytes) * 100);
+                    this.sendMessage({
+                        jobId,
+                        status: 'progress',
+                        progress: percentage,
+                        message: `Downloading ${progress.downloadedBytes} of ${progress.totalBytes}b (${percentage}%)`
+                    });
+                }
+            );
+        } else {
+            const localFilePath = path.join(localFolder, fileStats.name);
+            await sshService.downloadFile(connection, remotePath, localFilePath);
+            localFiles = [localFilePath];
         }
-    });
-};
 
-main();
+        if (localFiles.length === 0) {
+            await fs.rm(localFolder, { recursive: true, force: true });
+            throw new Error(ErrorCodes.SSH_IMPORT_NO_FILES);
+        }
+
+        const filesToProcess = localFiles.map((filePath) => ({
+            path: filePath,
+            originalname: path.basename(filePath),
+            size: 0
+        }));
+
+        this.sendMessage({
+            status: 'completed',
+            jobId,
+            result: {
+                files: filesToProcess,
+                teamId,
+                userId,
+                trajectoryName
+            }
+        });
+    }
+}
+
+BaseWorker.start(SSHImportWorker);

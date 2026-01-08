@@ -4,7 +4,7 @@ import BaseController from '@/controllers/base-controller';
 import { Resource } from '@/constants/resources';
 import logger from '@/logger';
 import mongoose from 'mongoose';
-import trajectoryJobsService from '@/services/trajectory-jobs-service';
+import trajectoryJobsService from '@/services/trajectory/jobs-service';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 
 export default class TrajectoryJobsController extends BaseController<any> {

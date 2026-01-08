@@ -5,7 +5,7 @@ import { ErrorCodes } from '@/constants/error-codes';
 import BaseController from '@/controllers/base-controller';
 import { Resource } from '@/constants/resources';
 import { Trajectory } from '@/models';
-import colorCodingService from '@/services/color-coding';
+import colorCodingService from '@/services/trajectory/atoms/color-coding';
 
 export default class ColorCodingController extends BaseController<any> {
     constructor() {

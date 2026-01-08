@@ -11,7 +11,7 @@ import { TeamActivityType } from '@/models/daily-activity';
 import { getAnyTrajectoryPreview, sendImage } from '@/utilities/raster';
 import { Resource } from '@/constants/resources';
 import getFrameGlbReadStream from '@/utilities/trajectory/get-glb-read-stream';
-import SimulationAtoms from '@/services/trajectory/atoms';
+import SimulationAtoms from '@/services/trajectory/atoms/atoms';
 import archiver from 'archiver';
 import { asyncForEach } from '@/utilities/runtime/async-loop';
 

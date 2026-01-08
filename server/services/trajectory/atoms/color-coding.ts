@@ -6,7 +6,7 @@ import { SYS_BUCKETS } from '@/config/minio';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';
 import { Readable } from 'node:stream';
-import AtomProperties from '@/services/trajectory/atom-properties';
+import AtomProperties from '@/services/trajectory/atoms/atom-properties';
 import TrajectoryParserFactory from '@/parsers/factory';
 
 export class ColorCodingService {

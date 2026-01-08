@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { Socket } from 'socket.io';
 import { Container } from '@/models/index';
-import { terminalManager } from '@/services/terminal';
-import containerService from '@/services/container';
+import { terminalManager } from '@/services/docker/terminal';
+import containerService from '@/services/docker/container';
 import { Resource } from '@/constants/resources';
 import RuntimeError from '@/utilities/runtime/runtime-error';
 import { ErrorCodes } from '@/constants/error-codes';

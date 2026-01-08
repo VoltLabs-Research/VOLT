@@ -8,7 +8,7 @@ import { Analysis, PluginListingRow } from '@/models';
 import Plugin from '@/models/plugin';
 import storage from '@/services/storage';
 import logger from '@/logger';
-import AtomProperties from '@/services/trajectory/atom-properties';
+import AtomProperties from '@/services/trajectory/atoms/atom-properties';
 import { asyncForEach } from '@/utilities/runtime/async-loop';
 
 export interface ListingQueryParams {

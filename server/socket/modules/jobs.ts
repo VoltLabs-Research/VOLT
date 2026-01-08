@@ -3,7 +3,7 @@ import { publishJobUpdate } from '@/events/job-updates';
 import { ClientData } from '@/types/config/socket';
 import BaseSocketModule from '@/socket/base-socket-module';
 import logger from '@/logger';
-import trajectoryJobsService from '@/services/trajectory-jobs-service';
+import trajectoryJobsService from '@/services/trajectory/jobs-service';
 
 class JobsModule extends BaseSocketModule {
     private initializingClients = new Map<string, ClientData>();
