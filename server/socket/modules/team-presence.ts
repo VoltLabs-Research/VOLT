@@ -50,13 +50,6 @@ class TeamPresenceModule extends BaseSocketModule {
                     const startOfDay = new Date();
                     startOfDay.setHours(0, 0, 0, 0);
 
-                    // Update metrics for all teams this user is part of
-                    // Or realistically, we should split the time or track per-team focus.
-                    // For simplicity as per req "amount of time connected to the platform", 
-                    // we'll attribute it to all their teams or just aggregate.
-                    // The prompt implies "user activity by day... time connected".
-                    // We'll update for each team since the chart is per-team.
-
                     const operations = user.teams.map(teamId => ({
                         updateOne: {
                             filter: { team: teamId, user: user._id, date: startOfDay },

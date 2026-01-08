@@ -168,6 +168,55 @@ export class ChatService {
 
         return { stat, stream };
     }
+
+    async hasAccess(userId: string, chatId: string): Promise<boolean> {
+        const hasAccess = await Chat.exists({
+            _id: chatId,
+            participants: userId,
+            $or: [
+                { isGroup: false },
+                { isGroup: true, isActive: true }
+            ]
+        });
+        return !!hasAccess;
+    }
+
+    async toggleReaction(userId: string, chatId: string, messageId: string, emoji: string) {
+        const message: any = await Message.findOne({ _id: messageId, chat: chatId });
+        if (!message) return null;
+
+        const reactions = message.reactions || [];
+
+        const filteredReactions = reactions.map((reaction: any) => ({
+            ...reaction,
+            users: reaction.users.filter((u: any) => u.toString() !== userId)
+        })).filter((reaction: any) => reaction.users.length > 0);
+
+        const currentUserReaction = reactions.find((reaction: any) =>
+            reaction.users.some((u: any) => u.toString() === userId)
+        );
+
+        if (currentUserReaction && currentUserReaction.emoji === emoji) {
+            message.reactions = filteredReactions;
+        } else {
+            const existingEmojiIndex = filteredReactions.findIndex((r: any) => r.emoji === emoji);
+
+            if (existingEmojiIndex !== -1) {
+                filteredReactions[existingEmojiIndex].users.push(userId);
+            } else {
+                filteredReactions.push({ emoji, users: [userId] });
+            }
+
+            message.reactions = filteredReactions;
+        }
+
+        message.markModified('reactions');
+        await message.save();
+
+        return await Message.findById(messageId)
+            .populate('sender', 'firstName lastName email avatar')
+            .lean();
+    }
 }
 
 export default new ChatService();
