@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
         return filename.empty() ? 1 : 0;
     }
     
-    auto parallel = initParallelism(opts, true);
+    auto parallel = initParallelism(opts, false);
     initLogging("opendxa-dxa", parallel.threads);
     
     LammpsParser::Frame frame;
