@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSSHExplorerStore } from '@/stores/slices/ssh';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
 import Button from '@/components/primitives/Button';
 import { formatDistanceToNow } from 'date-fns';

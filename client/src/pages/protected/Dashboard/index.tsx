@@ -10,7 +10,7 @@ import useCanvasCoordinator from '@/hooks/canvas/use-canvas-coordinator';
 import { formatNumber } from '@/components/organisms/common/DocumentListing';
 import { GoArrowRight } from 'react-icons/go';
 import SimulationGrid from '@/components/molecules/trajectory/SimulationGrid';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import Container from '@/components/primitives/Container';
 import JobsHistoryViewer from '@/components/organisms/common/JobsHistoryViewer';
 import ProcessingLoader from '@/components/atoms/common/ProcessingLoader';

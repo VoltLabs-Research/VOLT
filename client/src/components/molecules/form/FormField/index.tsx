@@ -6,10 +6,10 @@ import LiquidToggle from '@/components/atoms/form/LiquidToggle';
 import { getAvailableExpressions, type NodeOutputSchema } from '@/utilities/plugins/expression-utils';
 import { NODE_CONFIGS } from '@/utilities/plugins/node-types';
 import { NodeType } from '@/types/plugin';
-import pluginApi from '@/services/api/plugin/plugin';
+import pluginApi from '@/features/plugins/api/plugin';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
-import { usePluginBuilderStore } from '@/stores/slices/plugin/builder-slice';
+import { usePluginBuilderStore } from '@/features/plugins/stores/builder-slice';
 import './FormField.css';
 
 interface FormFieldProps {

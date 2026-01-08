@@ -33,7 +33,7 @@ import ChartImageViewer from '@/components/organisms/common/ChartImageViewer';
 import PluginResultsViewer from '@/components/organisms/scene/PluginResultsViewer';
 import Draggable from '@/components/atoms/common/Draggable';
 import { useEditorStore } from '@/stores/slices/editor';
-import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
+import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
 import ColorCoding from '@/components/organisms/scene/ColorCoding';
 import ParticleFilter from '@/components/organisms/scene/ParticleFilter';
 import PerformanceMonitor from '@/components/organisms/scene/PerformanceMonitor';

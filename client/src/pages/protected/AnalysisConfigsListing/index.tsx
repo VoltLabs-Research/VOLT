@@ -3,7 +3,7 @@ import { usePageTitle } from '@/hooks/core/use-page-title';
 import { useNavigate } from 'react-router-dom';
 import { RiDeleteBin6Line, RiEyeLine, RiRefreshLine } from 'react-icons/ri';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import analysisConfigApi from '@/services/api/analysis/analysis';
 import { formatDistanceToNow } from 'date-fns';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';

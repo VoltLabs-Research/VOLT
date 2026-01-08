@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useChat } from '@/hooks/chat/useChat';
 import { useChatStore } from '@/stores/slices/chat';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import { IoCheckmarkOutline } from 'react-icons/io5';
 import { useAuthStore } from '@/features/auth/stores';
 import Modal from '@/components/molecules/common/Modal';

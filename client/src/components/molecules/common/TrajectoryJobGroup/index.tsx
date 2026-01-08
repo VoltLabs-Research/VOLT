@@ -10,7 +10,7 @@ import Paragraph from '@/components/primitives/Paragraph';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import trajectoryJobsApi from '@/services/api/trajectory-jobs/trajectory-jobs';
-import { useTeamJobsStore } from '@/stores/slices/team';
+import { useTeamJobsStore } from '@/features/team/stores';
 import './TrajectoryJobGroup.css';
 import useToast from '@/hooks/ui/use-toast';
 

@@ -23,11 +23,11 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DocumentListing, { type ColumnConfig } from '@/components/organisms/common/DocumentListing';
-import pluginApi from '@/services/api/plugin/plugin';
+import pluginApi from '@/features/plugins/api/plugin';
 import analysisConfigApi from '@/services/api/analysis/analysis';
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import { formatCellValue, normalizeRows, type ColumnDef } from '@/utilities/plugins/expression-utils';
-import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
+import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
 import PluginCompactTable from '../PluginCompactTable';
 import useConfirm from '@/hooks/ui/use-confirm';
 import useListingLifecycle, { type ListingMeta } from '@/hooks/common/use-listing-lifecycle';

@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import JobsHistory from '@/components/molecules/common/JobsHistory';
-import { useTeamJobsStore } from '@/stores/slices/team';
+import { useTeamJobsStore } from '@/features/team/stores';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import { useEditorStore } from '@/stores/slices/editor';

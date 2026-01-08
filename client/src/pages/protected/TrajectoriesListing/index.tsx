@@ -4,7 +4,7 @@ import { formatSize } from '@/utilities/glb/scene-utils'
 import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/common/DocumentListing'
 import { useTrajectoryStore } from '@/stores/slices/trajectory'
-import { useTeamStore } from '@/stores/slices/team'
+import { useTeamStore } from '@/features/team/stores'
 import { formatDistance, formatDistanceToNow } from 'date-fns'
 import { useUIStore } from '@/stores/slices/ui';
 import { useNavigate } from 'react-router'

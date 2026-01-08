@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import FormInput from '@/components/atoms/form/FormInput';
 
 import Button from '@/components/primitives/Button';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import Loader from '@/components/atoms/common/Loader';
 import { useUIStore } from '@/stores/slices/ui';
 import useToast from '@/hooks/ui/use-toast';

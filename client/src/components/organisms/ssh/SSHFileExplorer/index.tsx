@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSSHExplorerStore, useSSHConnectionStore, type SSHConnection } from '@/stores/slices/ssh';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import FileExplorer from '@/components/organisms/trajectory/FileExplorer';
 import SSHConnectionModal from '@/components/molecules/ssh/SSHConnectionModal';
 import Draggable from '@/components/atoms/common/Draggable';

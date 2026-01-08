@@ -5,7 +5,7 @@ import Tooltip from '@/components/atoms/common/Tooltip';
 import { IoMenuOutline } from 'react-icons/io5';
 import { useLocation } from 'react-router';
 import GlobalSearch from '@/components/molecules/dashboard/GlobalSearch';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import useAuthStore from '@/features/auth/stores';
 import { GoPersonAdd } from 'react-icons/go';
 import DashboardHeaderBreadcrumbs from '@/components/atoms/dashboard/HeaderBreadcrumbs';

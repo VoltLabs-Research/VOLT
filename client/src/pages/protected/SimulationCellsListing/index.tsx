@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { usePageTitle } from '@/hooks/core/use-page-title';
 import DocumentListing, { type ColumnConfig, formatNumber } from '@/components/organisms/common/DocumentListing';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import { useUIStore } from '@/stores/slices/ui';
 import simulationCellApi from '@/services/api/simulation-cells';
 import { formatDistanceToNow } from 'date-fns';

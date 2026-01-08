@@ -13,7 +13,7 @@ import DynamicIcon from '@/components/atoms/common/DynamicIcon';
 
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
 import { useUIStore, type ActiveModifier } from '@/stores/slices/ui';
-import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
+import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
 
 import useLogger from '@/hooks/core/use-logger';
 

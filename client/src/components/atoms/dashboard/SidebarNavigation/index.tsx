@@ -10,14 +10,14 @@ import { BsFiles } from 'react-icons/bs';
 import { MdImportExport } from 'react-icons/md';
 import type { IconType } from 'react-icons';
 import { Skeleton } from '@mui/material';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import useTeamStateReset from '@/features/team/hooks/use-team-state-reset';
 import useToast from '@/hooks/ui/use-toast';
 import Select from '@/components/atoms/form/Select';
 import Container from '@/components/primitives/Container';
 import { IoIosAdd } from 'react-icons/io';
-import pluginApi from '@/services/api/plugin/plugin';
-import type { IListingsWithExposures } from '@/services/api/plugin/types';
+import pluginApi from '@/features/plugins/api/plugin';
+import type { IListingsWithExposures } from '@/features/plugins/types';
 
 interface SidebarNavigationProps {
     setSidebarOpen: (status: boolean) => void;

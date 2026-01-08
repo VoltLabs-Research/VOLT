@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { useTeamJobsStore } from '@/stores/slices/team';
+import { useTeamJobsStore } from '@/features/team/stores';
 import JobSkeleton from '@/components/atoms/common/JobSkeleton';
 import TrajectoryJobGroup from '@/components/molecules/common/TrajectoryJobGroup';
 import Container from '@/components/primitives/Container';

@@ -1,5 +1,5 @@
 import type { StateCreator } from 'zustand';
-import type { RenderableExposure } from '@/stores/slices/plugin/plugin-slice';
+import type { RenderableExposure } from '@/features/plugins/stores/plugin-slice';
 import type { SceneObjectType } from '@/types/stores/editor/model';
 
 export interface ActiveModifier {

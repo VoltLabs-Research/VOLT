@@ -22,7 +22,7 @@
 
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import TeamCreator from '@/features/team/components/organisms/TeamCreator';
 import Container from '@/components/primitives/Container';
 import DashboardSidebar from '@/components/organisms/dashboard/Sidebar';

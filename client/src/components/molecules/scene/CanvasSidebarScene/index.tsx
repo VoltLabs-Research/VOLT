@@ -5,7 +5,7 @@ import Container from '@/components/primitives/Container';
 import CursorTooltip from '@/components/atoms/common/CursorTooltip';
 
 import { useEditorStore } from '@/stores/slices/editor';
-import { usePluginStore, type RenderableExposure, type ResolvedModifier } from '@/stores/slices/plugin/plugin-slice';
+import { usePluginStore, type RenderableExposure, type ResolvedModifier } from '@/features/plugins/stores/plugin-slice';
 import { useAnalysisConfigStore } from '@/stores/slices/analysis';
 
 import type { Analysis, Trajectory } from '@/types/models';

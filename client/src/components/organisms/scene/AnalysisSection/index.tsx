@@ -12,7 +12,7 @@ import AnalysisTooltipContent from '@/components/molecules/scene/AnalysisTooltip
 
 import ExposureOption from '@/components/molecules/scene/ExposureOption';
 import { formatConfigValue, buildArgumentLabelMap } from '@/components/molecules/scene/CanvasSidebarScene/utils';
-import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
+import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
 import { useUIStore } from '@/stores/slices/ui';
 import useToast from '@/hooks/ui/use-toast';
 import useAnalysisConfigStore from '@/stores/slices/analysis';

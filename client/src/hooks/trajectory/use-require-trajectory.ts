@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useTrajectoryStore } from '@/stores/slices/trajectory';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import useLogger from '@/hooks/core/use-logger';
 
 interface UseRequireTrajectoryOptions {

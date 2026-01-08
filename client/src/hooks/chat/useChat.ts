@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef, useMemo } from 'react';
 import { useChatStore } from '@/stores/slices/chat';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import ChatSocketManager from '@/services/websockets/chat-socket-manager';
 
 const TYPING_TIMEOUT_MS = 1000;

@@ -27,7 +27,7 @@ import useUrlState from '@/hooks/core/use-url-state';
 import useAppInitializer from '@/hooks/core/use-app-initializer';
 import { useRasterStore } from '@/stores/slices/raster';
 import { useAuthStore } from '@/features/auth/stores';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import useRasterFrame from '@/hooks/raster/use-raster-frame';
 import type { AnalysisSelectProps, ModelRailProps, PlaybackControlsProps, Scene } from '@/types/raster';
 import { getOrCreateGuestUser } from '@/utilities/api/guest';

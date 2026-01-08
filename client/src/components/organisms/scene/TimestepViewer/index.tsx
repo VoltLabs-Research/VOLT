@@ -1,6 +1,6 @@
 import React, { useMemo, forwardRef, useImperativeHandle } from 'react';
 import { useEditorStore } from '@/stores/slices/editor';
-import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
+import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
 import SingleModelViewer from '@/components/molecules/scene/SingleModelViewer';
 
 interface TimestepViewerProps {

@@ -50,7 +50,7 @@ export const createTimestepSlice: StateCreator<any, [], [], TimestepStore> = (se
 
         const state = get(); // Access other slices if merged, but safer to use global stores if independent
 
-        const { useTeamStore } = await import('@/stores/slices/team');
+        const { useTeamStore } = await import('@/features/team/stores');
         const { useTrajectoryStore } = await import('@/stores/slices/trajectory');
         const { loadGLB } = await import('@/utilities/glb/loader');
         const { computeGlbUrl } = await import('@/utilities/glb/scene-utils');

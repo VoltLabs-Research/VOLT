@@ -3,9 +3,9 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { useTeamStore } from '@/stores/slices/team';
+import { useTeamStore } from '@/features/team/stores';
 import { useNotificationStore } from '@/stores/slices/notification';
-import { usePluginStore } from '@/stores/slices/plugin/plugin-slice';
+import { usePluginStore } from '@/features/plugins/stores/plugin-slice';
 import { useContainerStore } from '@/stores/slices/container';
 import { useAuthStore } from '@/features/auth/stores';
 import useTeamJobs from '@/hooks/jobs/use-team-jobs';
