@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IoClose, IoAdd, IoTrash } from 'react-icons/io5';
-import teamApi from '@/services/api/team/team';
+import teamApi from '@/features/team/api/team';
 import containerApi from '@/services/api/container/container';
 import useToast from '@/hooks/ui/use-toast';
 import './CreateContainerModal.css';

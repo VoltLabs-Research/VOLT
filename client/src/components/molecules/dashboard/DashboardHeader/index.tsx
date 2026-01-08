@@ -9,7 +9,7 @@ import { useTeamStore } from '@/stores/slices/team';
 import useAuthStore from '@/features/auth/stores';
 import { GoPersonAdd } from 'react-icons/go';
 import DashboardHeaderBreadcrumbs from '@/components/atoms/dashboard/HeaderBreadcrumbs';
-import TeamInvitePanelPopover from '@/components/molecules/team/TeamInvitePanelPopover';
+import TeamInvitePanelPopover from '@/features/team/components/molecules/TeamInvitePanelPopover';
 import NotificationsPopover from '@/components/molecules/notifications/NotificationsPopover';
 
 interface DashboardHeaderProps {

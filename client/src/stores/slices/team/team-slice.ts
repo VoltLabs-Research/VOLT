@@ -1,5 +1,5 @@
 import type { TeamState, TeamStore } from '@/types/stores/team/team';
-import teamApi from '@/services/api/team/team';
+import teamApi from '@/features/team/api/team';
 import { socketService } from '@/services/websockets/socketio';
 import teamMember from '@/services/api/team-member/team-member';
 import { runRequest } from '../../helpers';

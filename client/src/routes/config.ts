@@ -26,7 +26,7 @@ import Dashboard from '@/pages/protected/Dashboard';
 import FileExplorer from '@/pages/protected/FileExplorer';
 import SSHConnectionsListing from '@/pages/protected/SSHConnectionsListing';
 import SSHFileExplorer from '@/pages/protected/SSHFileExplorer';
-import MyTeam from '@/pages/protected/MyTeam';
+import MyTeam from '@/features/team/pages/protected/MyTeam';
 import HeadlessRasterizerView from '@/pages/protected/HeadlessRasterizerView';
 import Messages from '@/pages/protected/Messages';
 import PluginListing from '@/pages/protected/PluginListing';

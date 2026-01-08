@@ -6,7 +6,7 @@ import { IoBook } from 'react-icons/io5';
 import { IoCheckmark } from 'react-icons/io5';
 import { Skeleton } from '@mui/material';
 import useToast from '@/hooks/ui/use-toast';
-import teamApi from '@/services/api/team/team';
+import teamApi from '@/features/team/api/team';
 import Title from '@/components/primitives/Title';
 import Paragraph from '@/components/primitives/Paragraph';
 import Container from '@/components/primitives/Container';

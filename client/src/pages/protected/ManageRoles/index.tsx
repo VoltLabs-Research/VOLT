@@ -8,7 +8,7 @@ import { useTeamStore } from '@/stores/slices/team';
 import { useTeamRoleStore } from '@/stores/slices/team';
 import useToast from '@/hooks/ui/use-toast';
 import { formatDistanceToNow } from 'date-fns';
-import RoleEditor, { openRoleEditorModal } from '@/components/organisms/team/RoleEditor';
+import RoleEditor, { openRoleEditorModal } from '@/features/team/components/organisms/RoleEditor';
 import type { TeamRole, TeamRolePayload } from '@/types/team-role';
 import Container from '@/components/primitives/Container';
 import './ManageRoles.css';

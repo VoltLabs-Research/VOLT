@@ -1,5 +1,5 @@
 import Popover from '@/components/molecules/common/Popover';
-import TeamInvitePanel from '@/components/organisms/team/TeamInvitePanel';
+import TeamInvitePanel from '@/features/team/components/organisms/TeamInvitePanel';
 import { useTeamStore } from '@/stores/slices/team';
 import { GoPersonAdd } from 'react-icons/go';
 

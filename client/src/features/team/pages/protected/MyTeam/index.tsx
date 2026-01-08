@@ -12,7 +12,7 @@ import { IoChatbubbleOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import EditableTag from '@/components/atoms/common/EditableTag';
 import useToast from '@/hooks/ui/use-toast';
 import ActivityHeatmap from '@/components/molecules/common/ActivityHeatmap';
-import type { ActivityData } from '@/services/api/team/team';
+import type { ActivityData } from '@/features/team/api/team';
 import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import './MyTeam.css';
