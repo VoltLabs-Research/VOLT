@@ -22,7 +22,7 @@ export interface PaginationOptions{
     limit: number;
 };
 
-export interface IBaseRepository<T>{
+export interface IBaseRepository<T, TProps>{
     /**
      * Find a single entity by its ID.
      */
@@ -35,34 +35,34 @@ export interface IBaseRepository<T>{
      * Find a single entity matching the filter.
      */
     findOne(
-        filter: Partial<T>,
-        options?: Pick<FindOptions<T>, 'populate' | 'select'>
+        filter: Partial<TProps>,
+        options?: Pick<FindOptions<TProps>, 'populate' | 'select'>
     ): Promise<T | null>;
 
     /**
      * Find all entities matching the filter.
      */
-    findAll(options?: FindOptions<T> & PaginationOptions): Promise<T[]>;
+    findAll(options?: FindOptions<TProps> & PaginationOptions): Promise<T[]>;
 
     /**
      * Create new entity.
      */
-    create(entity: Partial<T>): Promise<T>;
+    create(data: Partial<TProps>): Promise<T>;
 
     /**
      * Update an entity by ID.
      */
     updateById(
         id: string,
-        data: Partial<T>
+        data: Partial<TProps>
     ): Promise<T | null>;
 
     /**
      * Update first entity matching the filter.
      */
     updateMany(
-        filter: Partial<T>,
-        data: Partial<T>
+        filter: Partial<TProps>,
+        data: Partial<TProps>
     ): Promise<number>;
 
     /**
@@ -73,15 +73,15 @@ export interface IBaseRepository<T>{
     /**
      * Delete all entities matching filter.
      */
-    deleteMany(filter: Partial<T>): Promise<number>;
+    deleteMany(filter: Partial<TProps>): Promise<number>;
 
     /**
      * Count entities matching fiter.
      */
-    count(filter?: Partial<T>): Promise<number>;
+    count(filter?: Partial<TProps>): Promise<number>;
 
     /**
      * Check if any entity matches the filter.
      */
-    exists(filter: Partial<T>): Promise<boolean>;
+    exists(filter: Partial<TProps>): Promise<boolean>;
 };

@@ -23,4 +23,8 @@ export default class ApplicationError extends Error{
     public static notFound(code: string, message: string): ApplicationError{
         return new ApplicationError(code, message, 404);
     }
+
+    public static conflict(code: string, message: string): ApplicationError {
+        return new ApplicationError(code, message, 409);
+    }
 };
