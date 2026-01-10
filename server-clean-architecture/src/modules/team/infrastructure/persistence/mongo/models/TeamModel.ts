@@ -69,6 +69,6 @@ const TeamSchema: Schema<TeamDocument> = new Schema({
 
 TeamSchema.index({ name: 'text', description: 'text' });
 
-const Team: Model<TeamDocument> = mongoose.model<TeamDocument>('Team', TeamSchema);
+const TeamModel: Model<TeamDocument> = mongoose.model<TeamDocument>('Team', TeamSchema);
 
-export default Team;
+export default TeamModel;

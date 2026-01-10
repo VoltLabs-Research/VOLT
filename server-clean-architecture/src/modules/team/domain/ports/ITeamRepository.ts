@@ -9,4 +9,12 @@ export interface ITeamRepository extends IBaseRepository<Team, TeamProps>{
         userId: string,
         teamId: string
     ): Promise<void>;
+
+    /**
+     * Checks if user has access to the specified team.
+     */
+    hasAccess(
+        userId: string,
+        teamId: string
+    ): Promise<boolean>;
 };

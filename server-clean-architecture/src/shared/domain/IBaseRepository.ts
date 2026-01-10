@@ -1,8 +1,12 @@
-import { PopulateOptions } from 'mongoose';
+export interface PopulatePath{
+    path: string;
+    select?: string[];
+    populate?: PopulatePath | PopulatePath[];
+}
 
 export interface FindOptions<T>{
     filter?: Partial<T>;
-    populate?: PopulateOptions | string | (PopulateOptions | string)[];
+    populate?: string | string[] | PopulatePath | PopulatePath[]; 
     select?: string[];
     sort?: Record<string, 1 | -1>;
     limit?: number;

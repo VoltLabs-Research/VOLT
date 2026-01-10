@@ -35,6 +35,6 @@ TeamMemberSchema.index({ team: 1, user: 1 }, { unique: true });
 TeamMemberSchema.index({ team: 1 });
 TeamMemberSchema.index({ user: 1 });
 
-const TeamMember: Model<TeamMemberDocument> = mongoose.model<TeamMemberDocument>('TeamMember', TeamMemberSchema);
+const TeamMemberModel: Model<TeamMemberDocument> = mongoose.model<TeamMemberDocument>('TeamMember', TeamMemberSchema);
 
-export default TeamMember;
+export default TeamMemberModel;

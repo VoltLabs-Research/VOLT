@@ -32,6 +32,6 @@ TeamRoleSchema.index({ team: 1, name: 1 }, { unique: true });
 TeamRoleSchema.index({ team: 1, isSystem: 1 });
 TeamRoleSchema.index({ name: 'text' });
 
-const TeamRole: Model<TeamRoleDocument> = mongoose.model<TeamRoleDocument>('TeamRole', TeamRoleSchema);
+const TeamRoleModel: Model<TeamRoleDocument> = mongoose.model<TeamRoleDocument>('TeamRole', TeamRoleSchema);
 
-export default TeamRole;
+export default TeamRoleModel;
