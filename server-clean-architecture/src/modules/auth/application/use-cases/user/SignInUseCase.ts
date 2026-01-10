@@ -6,12 +6,15 @@ import { SignInInputDTO, SignInOutputDTO } from "../../dtos/user/SignInDTO";
 import { IUserRepository } from "../../../domain/ports/IUserRepository";
 import { IPasswordHasher } from "../../../domain/ports/IPasswordHasher";
 import { ITokenService } from "../../../domain/ports/ITokenService";
+import { ISessionRepository } from "../../../domain/ports/ISessionRepository";
+import { SessionActivityType } from "../../../domain/entities/Session";
 
 export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOutputDTO, ApplicationError>{
     constructor(
         private readonly userRepository: IUserRepository,
         private readonly passwordHasher: IPasswordHasher,
-        private readonly tokenService: ITokenService
+        private readonly tokenService: ITokenService,
+        private readonly sessionRepository: ISessionRepository
     ){}
 
     async execute(input: SignInInputDTO): Promise<Result<SignInOutputDTO, ApplicationError>>{
@@ -24,6 +27,13 @@ export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOut
 
         const user = await this.userRepository.findByEmailWithPassword(input.email);
         if(!user){
+            await this.sessionRepository.createFailedLogin(
+                null,
+                input.userAgent,
+                input.ip,
+                'User not found'
+            );
+
             return Result.fail(ApplicationError.unauthorized(
                 ErrorCodes.AUTH_CREDENTIALS_INVALID,
                 'Invalid email or password'
@@ -32,6 +42,13 @@ export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOut
 
         const isPasswordValid = await this.passwordHasher.compare(input.password, user.password);
         if(!isPasswordValid){
+            await this.sessionRepository.createFailedLogin(
+                user.id,
+                input.userAgent,
+                input.ip,
+                'Invalid password'
+            );
+
             return Result.fail(ApplicationError.unauthorized(
                 ErrorCodes.AUTH_CREDENTIALS_INVALID,
                 'Invalid email or password'
@@ -41,6 +58,19 @@ export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOut
         await this.userRepository.updateLastLogin(user.id);
         
         const token = this.tokenService.sign(user.id);
+
+        await this.sessionRepository.create({
+            user: user.id,
+            token,
+            userAgent: input.userAgent,
+            ip: input.ip,
+            isActive: true,
+            lastActivity: new Date(),
+            action: SessionActivityType.Login,
+            success: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
 
         return Result.ok({
             token,

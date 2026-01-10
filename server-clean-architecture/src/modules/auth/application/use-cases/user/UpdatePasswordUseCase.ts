@@ -2,16 +2,19 @@ import { IUseCase } from "../../../../../shared/application/IUseCase";
 import { Result } from "../../../../../shared/domain/Result";
 import ApplicationError from "../../../../../shared/application/errors/ApplicationErrors";
 import { ErrorCodes } from "../../../../../core/constants/error-codes";
-import { UpdatePasswordInputDTO, UpdatePasswordOutputDTO } from "../dtos/UpdatePasswordDTO";
+import { UpdatePasswordInputDTO, UpdatePasswordOutputDTO } from "../../dtos/user/UpdatePasswordDTO";
 import { IUserRepository } from "../../../domain/ports/IUserRepository";
 import { IPasswordHasher } from "../../../domain/ports/IPasswordHasher";
 import { ITokenService } from "../../../domain/ports/ITokenService";
+import { SessionActivityType } from "../../../domain/entities/Session";
+import { ISessionRepository } from "../../../domain/ports/ISessionRepository";
 
 export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInputDTO, UpdatePasswordOutputDTO, ApplicationError>{
     constructor(
         private readonly useRepository: IUserRepository,
         private readonly passwordHasher: IPasswordHasher,
-        private readonly tokenService: ITokenService
+        private readonly tokenService: ITokenService,
+        private readonly sessionRepository: ISessionRepository
     ){}
 
     async execute(input: UpdatePasswordInputDTO): Promise<Result<UpdatePasswordOutputDTO, ApplicationError>>{
@@ -42,6 +45,19 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
 
         const token = this.tokenService.sign(input.user.id);
 
+        await this.sessionRepository.create({
+            user: user.id,
+            token,
+            userAgent: input.userAgent,
+            ip: input.ip,
+            isActive: true,
+            lastActivity: new Date(),
+            action: SessionActivityType.PasswordUpdate,
+            success: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+        
         // TODO:
         // @ts-ignore
         return Result.ok({

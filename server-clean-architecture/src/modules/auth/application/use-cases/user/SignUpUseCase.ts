@@ -8,12 +8,15 @@ import { ITokenService } from "../../../domain/ports/ITokenService";
 import validator from 'validator';
 import { ErrorCodes } from "../../../../../core/constants/error-codes";
 import { UserRole } from "../../../domain/entities/User";
+import { SessionActivityType } from "../../../domain/entities/Session";
+import { ISessionRepository } from "../../../domain/ports/ISessionRepository";
 
 export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOutputDTO, ApplicationError>{
     constructor(
         private readonly userRepository: IUserRepository,
         private readonly passwordHasher: IPasswordHasher,
-        private readonly tokenService: ITokenService
+        private readonly tokenService: ITokenService,
+        private readonly sessionRepository: ISessionRepository
     ){}
 
     async execute(input: SignUpInputDTO): Promise<Result<SignUpOutputDTO, ApplicationError>>{
@@ -64,6 +67,19 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
 
         const token = this.tokenService.sign(newUser.id);
 
+        await this.sessionRepository.create({
+            user: newUser.id,
+            token,
+            userAgent: input.userAgent,
+            ip: input.ip,
+            isActive: true,
+            lastActivity: new Date(),
+            action: SessionActivityType.Login,
+            success: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        });
+        
         return Result.ok({
             token,
             user: newUser.props

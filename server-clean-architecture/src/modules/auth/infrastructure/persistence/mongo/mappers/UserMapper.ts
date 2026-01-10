@@ -28,16 +28,16 @@ export default class UserMapper{
         return Object.assign(user, { password: doc.password || '' });
     }
 
-    static toPersistence(entity: Partial<UserProps>): Partial<UserDocument>{
+    static toPersistence(data: Partial<UserProps>): Partial<UserDocument>{
         return {
-            email: entity.email,
-            firstName: entity.firstName,
-            lastName: entity.lastName,
-            role: entity.role,
-            password: entity.password,
-            oauthProvider: entity.oauthProvider,
-            oauthId: entity.oauthId,
-            avatar: entity.avatar
+            email: data.email,
+            firstName: data.firstName,
+            lastName: data.lastName,
+            role: data.role,
+            password: data.password,
+            oauthProvider: data.oauthProvider,
+            oauthId: data.oauthId,
+            avatar: data.avatar
         };
     }
 }
