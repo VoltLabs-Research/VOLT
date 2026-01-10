@@ -1,9 +1,12 @@
 import { HydratedDocument } from "mongoose";
 import User, { OAuthProvider, UserProps } from "../../../../domain/entities/User";
 import { UserDocument } from "../models/UserModel";
+import { IMapper } from "@/src/shared/infrastructure/persistence/IMapper";
 
-export default class UserMapper{
-    static toDomain(doc: HydratedDocument<UserDocument>): User{
+class UserMapper
+    implements IMapper<User, UserProps, UserDocument>{
+
+    toDomain(doc: UserDocument): User{
         const props = {
             email: doc.email,
             firstName: doc.firstName,
@@ -23,12 +26,12 @@ export default class UserMapper{
         return User.create(doc._id.toString(), props);
     }
 
-    static toDomainWithPassword(doc: HydratedDocument<UserDocument>): User & { password: string } {
-        const user = UserMapper.toDomain(doc);
+    toDomainWithPassword(doc: HydratedDocument<UserDocument>): User & { password: string } {
+        const user = this.toDomain(doc);
         return Object.assign(user, { password: doc.password || '' });
     }
 
-    static toPersistence(data: Partial<UserProps>): Partial<UserDocument>{
+    toPersistence(data: UserProps): Partial<UserDocument>{
         return {
             email: data.email,
             firstName: data.firstName,
@@ -40,4 +43,6 @@ export default class UserMapper{
             avatar: data.avatar
         };
     }
-}
+};
+
+export default new UserMapper();

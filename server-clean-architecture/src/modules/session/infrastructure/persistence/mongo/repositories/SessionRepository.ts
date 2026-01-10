@@ -1,77 +1,17 @@
 import { ISessionRepository } from "../../../../domain/ports/ISessionRepository";
 import Session, { SessionProps } from "../../../../domain/entities/Session";
-import SessionModel from '../models/SessionModel';
-import SessionMapper from "../mappers/SessionMapper";
-import { PaginationOptions } from "../../../../../../shared/domain/IBaseRepository";
+import SessionModel, { SessionDocument } from '../models/SessionModel';
+import sessionMapper from "../mappers/SessionMapper";
 import { injectable } from 'tsyringe';
+import { MongooseBaseRepository } from "@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository";
 
 @injectable()
-export default class SessionRepository implements ISessionRepository{
-    async findById(id: string): Promise<Session | null>{
-        const doc = await SessionModel.findById(id);
-        return doc ? SessionMapper.toDomain(doc): null;
-    }
+export default class SessionRepository
+    extends MongooseBaseRepository<Session, SessionProps, SessionDocument>
+    implements ISessionRepository{
 
-    async findOne(filter: Partial<SessionProps>): Promise<Session | null>{
-        const doc = await SessionModel.findOne(filter);
-        return doc ? SessionMapper.toDomain(doc) : null;
-    }
-
-    async findAll(options: PaginationOptions): Promise<any>{
-        const { page, limit } = options;
-        const skip = (page - 1) * limit;
-
-        const [docs, total] = await Promise.all([
-            SessionModel.find().skip(skip).limit(limit),
-            SessionModel.countDocuments() 
-        ]);
-
-        return {
-            data: docs.map(SessionMapper.toDomain),
-            total,
-            page,
-            totalPages: Math.ceil(total / limit),
-            limit
-        };
-    }
-
-    async create(data: SessionProps): Promise<Session>{
-        const doc = await SessionModel.create(SessionMapper.toPersistence(data));
-        return SessionMapper.toDomain(doc);
-    }
-
-    async updateById(id: string, data: Partial<SessionProps>): Promise<Session | null>{
-        const doc = await SessionModel.findByIdAndUpdate(id, data, { new: true });
-        return doc ? SessionMapper.toDomain(doc) : null;
-    }
-
-    async updateMany(filter: Partial<SessionProps>, data: Partial<SessionProps>): Promise<number>{
-        const result = await SessionModel.updateMany(filter, data);
-        return result.modifiedCount;
-    }
-
-    async deleteById(id: string): Promise<boolean>{
-        const result = await SessionModel.findByIdAndDelete(id);
-        return !!result;
-    }
-
-    async deleteMany(filter: Partial<SessionProps>): Promise<number> {
-        const result = await SessionModel.deleteMany(filter);
-        return result.deletedCount;
-    }
-
-    async count(filter?: Partial<SessionProps>): Promise<number>{
-        return SessionModel.countDocuments(filter);
-    }
-
-    async exists(filter: Partial<SessionProps>): Promise<boolean>{
-        const count = await SessionModel.countDocuments(filter);
-        return count > 0;
-    }
-
-    async findByToken(token: string): Promise<Session | null>{
-        const doc = await SessionModel.findOne({ token, isActive: true });
-        return doc ? SessionMapper.toDomain(doc) : null;
+    constructor(){
+        super(SessionModel, sessionMapper);
     }
 
     async findActiveByUserId(userId: string): Promise<Session[]> {
@@ -79,7 +19,7 @@ export default class SessionRepository implements ISessionRepository{
             .find({ user: userId, isActive: true })
             .sort({ lastActivity: -1 });
 
-        return docs.map(SessionMapper.toDomain);
+        return docs.map(sessionMapper.toDomain);
     }
 
     async findLoginActivity(userId: string, limit: number): Promise<Session[]> {
@@ -87,7 +27,7 @@ export default class SessionRepository implements ISessionRepository{
             .find({ user: userId })
             .sort({ createdAt: -1 })
             .limit(limit);
-        return docs.map(SessionMapper.toDomain);
+        return docs.map(sessionMapper.toDomain);
     }
 
     async deactivateByToken(token: string): Promise<void> {
@@ -130,7 +70,12 @@ export default class SessionRepository implements ISessionRepository{
             failureReason: reason
         });
 
-        return SessionMapper.toDomain(doc);
+        return sessionMapper.toDomain(doc);
+    }
+
+    async findByToken(token: string): Promise<Session | null>{
+        const doc = await SessionModel.findOne({ token, isActive: true });
+        return doc ? sessionMapper.toDomain(doc) : null;
     }
 
     async updateActivity(sessionId: string): Promise<void> {

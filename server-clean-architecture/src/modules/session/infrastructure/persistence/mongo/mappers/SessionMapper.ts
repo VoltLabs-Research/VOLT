@@ -1,9 +1,12 @@
 import { HydratedDocument } from "mongoose";
 import { SessionDocument } from "../models/SessionModel";
 import Session, { SessionProps } from "../../../../domain/entities/Session";
+import { IMapper } from "@/src/shared/infrastructure/persistence/IMapper";
 
-export default class SessionMapper{
-    static toDomain(doc: HydratedDocument<SessionDocument>): Session{
+class SessionMapper 
+    implements IMapper<Session, SessionProps, SessionDocument>{
+
+    toDomain(doc: HydratedDocument<SessionDocument>): Session{
         const props = {
             user: doc.user._id.toString(),
             token: doc.token,
@@ -21,7 +24,7 @@ export default class SessionMapper{
         return new Session(doc._id.toString(), props);
     }
 
-    static toPersistence(data: Partial<SessionProps>): Partial<SessionDocument>{
+    toPersistence(data: SessionProps): Partial<SessionDocument>{
         return {
             user: data.user as any,
             token: data.token,
@@ -35,3 +38,5 @@ export default class SessionMapper{
         };
     }
 };
+
+export default new SessionMapper();
