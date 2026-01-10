@@ -4,4 +4,5 @@ export interface GetActiveSessionsInputDTO{
     userId: string;
 };
 
+// TODO: SessionProp[]
 export interface GetActiveSessionsOutputDTO extends Session{}

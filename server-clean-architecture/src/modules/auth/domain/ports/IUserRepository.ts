@@ -10,6 +10,14 @@ export interface IUserRepository extends IBaseRepository<User, UserProps>{
     ): Promise<(User & { password: string }) | null>;
 
     /**
+     * Delete the specified team from the user.
+     */
+    removeTeamFromUser(
+        userId: string,
+        teamId: string
+    ): Promise<void>;
+
+    /**
      * Find user by email.
      */
     findByEmail(email: string): Promise<User | null>;

@@ -18,4 +18,8 @@ export default class Team{
         public readonly id: string,
         public props: TeamProps
     ){}
+
+    public isOwner(userId: string): boolean{
+        return this.props.owner === userId;
+    }
 };

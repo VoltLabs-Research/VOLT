@@ -11,6 +11,11 @@ export interface ITeamRepository extends IBaseRepository<Team, TeamProps>{
     ): Promise<void>;
 
     /**
+     * Get all teams for the specified user.
+     */
+    findUserTeams(userId: string): Promise<TeamProps[]>;
+
+    /**
      * Checks if user has access to the specified team.
      */
     hasAccess(

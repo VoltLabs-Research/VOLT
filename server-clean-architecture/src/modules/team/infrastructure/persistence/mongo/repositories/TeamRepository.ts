@@ -36,4 +36,9 @@ export default class TeamRepository
             }
         });
     }
+
+    async findUserTeams(userId: string): Promise<TeamProps[]> {
+        const docs = await this.model.find({ members: userId });
+        return docs.map((doc) => this.mapper.toDomain(doc).props);
+    }
 }

@@ -29,6 +29,14 @@ export default class UserRepository
         return doc ? userMapper.toDomainWithPassword(doc) : null;
     }
 
+    async removeTeamFromUser(userId: string, teamId: string): Promise<void>{
+        await this.model.findByIdAndUpdate(userId, {
+            $pull: {
+                teams: teamId
+            }
+        });
+    }
+
     async emailExists(email: string): Promise<boolean>{
         return await this.exists({ email: email.toLowerCase() });
     }

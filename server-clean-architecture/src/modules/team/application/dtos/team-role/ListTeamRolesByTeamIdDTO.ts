@@ -5,4 +5,4 @@ export interface ListTeamRolesByTeamIdInputDTO extends PaginationOptions{
     teamId: string;
 };
 
-export interface ListTeamRolesByTeamIdOutputDTO extends TeamRoleProps{}
+export interface ListTeamRolesByTeamIdOutputDTO extends PaginatedResult<TeamRoleProps>{}
