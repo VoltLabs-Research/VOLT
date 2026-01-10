@@ -44,14 +44,14 @@ export default class RemoveUserFromTeamUseCase implements IUseCase<RemoveUserFro
             ));
         }
 
-        if(team.isOwner(userId)){
+        if(team.isOwner(toRemoveUserId)){
             return Result.fail(ApplicationError.forbidden(
                 ErrorCodes.TEAM_CANNOT_REMOVE_OWNER,
                 'Cannot remove team owner'
             ));
         }
 
-        const member = await this.teamMemberRepository.findOne({ team: teamId, user: userId });
+        const member = await this.teamMemberRepository.findOne({ team: teamId, user: toRemoveUserId });
         if(!member){
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TEAM_MEMBER_NOT_FOUND,
@@ -61,9 +61,9 @@ export default class RemoveUserFromTeamUseCase implements IUseCase<RemoveUserFro
         
         await Promise.all([
             // $pull from members and admins
-            this.teamRepository.removeUserFromTeam(userId, teamId),
+            this.teamRepository.removeUserFromTeam(toRemoveUserId, teamId),
             this.teamMemberRepository.deleteById(member.id),
-            this.userRepository.removeTeamFromUser(userId, teamId) 
+            this.userRepository.removeTeamFromUser(toRemoveUserId, teamId) 
         ]);
 
         return Result.ok(null);
