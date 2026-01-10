@@ -1,11 +1,11 @@
-import mongoose, { Schema, Model, Document, Types } from 'mongoose';
+import mongoose, { Schema, Model, Document } from 'mongoose';
 import { ValidationCodes } from '@/src/core/constants/validation-codes';
 import { TeamProps } from '@/src/modules/team/domain/entities/Team';
 import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
 
 type TeamRelations = 'owner' | 'admins' | 'members' | 'invitations' | 'containers' | 'trajectories' | 'chats' | 'plugins';
 
-export interface TeamDocument extends Persistable<TeamProps, TeamRelations>, mongoose.Document{}
+export interface TeamDocument extends Persistable<TeamProps, TeamRelations>, Document{}
 
 const TeamSchema: Schema<TeamDocument> = new Schema({
     name: {
