@@ -1,10 +1,11 @@
-import mongoose from 'mongoose';
 import { IUserRepository } from '../../../../domain/ports/IUserRepository';
-import User, { OAuthProvider, UserProps } from '../../../../domain/entities/User';
+import User, { UserProps } from '../../../../domain/entities/User';
 import UserModel from '../models/UserModel';
 import UserMapper from '../mappers/UserMapper';
-import { PaginatedResult, PaginationOptions } from '../../../../../../shared/domain/IBaseRepository';
+import { PaginationOptions } from '../../../../../../shared/domain/IBaseRepository';
+import { injectable } from 'tsyringe';
 
+@injectable()
 export default class UserRepository implements IUserRepository{
     async findById(id: string): Promise<User | null>{
         const doc = await UserModel.findById(id);

@@ -1,4 +1,4 @@
-import { UserProps } from '../../../domain/entities/User';
+import { UserProps } from "../../domain/entities/User";
 
 export interface SignUpInputDTO{
     email: string;

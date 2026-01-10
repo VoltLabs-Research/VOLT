@@ -1,12 +1,16 @@
-import { ISessionRepository } from "../../../domain/ports/ISessionRepository";
-import { Result } from "../../../../../shared/domain/Result";
-import ApplicationError from "../../../../../shared/application/errors/ApplicationErrors";
-import { IUseCase } from "../../../../../shared/application/IUseCase";
-import { ErrorCodes } from "../../../../../core/constants/error-codes";
-import { RevokeSessionInputDTO } from "../../dtos/session/RevokeSessionDTO";
+import { ISessionRepository } from "../../domain/ports/ISessionRepository";
+import { Result } from "../../../../shared/domain/Result";
+import ApplicationError from "../../../../shared/application/errors/ApplicationErrors";
+import { IUseCase } from "../../../../shared/application/IUseCase";
+import { ErrorCodes } from "../../../../core/constants/error-codes";
+import { RevokeSessionInputDTO } from "../dtos/RevokeSessionDTO";
+import { SESSION_TOKENS } from "../../infrastructure/di/SessionTokens";
+import { injectable, inject } from 'tsyringe';
 
+@injectable()
 export default class RevokeSessionUseCase implements IUseCase<RevokeSessionInputDTO, void, ApplicationError>{
     constructor(
+        @inject(SESSION_TOKENS.SessionRepository)
         private sessionRepository: ISessionRepository
     ){}
 

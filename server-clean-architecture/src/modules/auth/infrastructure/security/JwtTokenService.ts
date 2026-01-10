@@ -1,6 +1,8 @@
 import jwt, { Secret } from 'jsonwebtoken';
 import { ITokenService, TokenPayload } from '../../domain/ports/ITokenService';
+import { injectable } from 'tsyringe';
 
+@injectable()
 export default class JwtTokenService implements ITokenService{
     constructor(
         private readonly secret: Secret,

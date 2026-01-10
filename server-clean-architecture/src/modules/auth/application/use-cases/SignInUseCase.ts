@@ -1,19 +1,26 @@
-import { IUseCase } from "../../../../../shared/application/IUseCase";
-import { Result } from "../../../../../shared/domain/Result";
-import ApplicationError from "../../../../../shared/application/errors/ApplicationErrors";
-import { ErrorCodes } from "../../../../../core/constants/error-codes";
-import { SignInInputDTO, SignInOutputDTO } from "../../dtos/user/SignInDTO";
-import { IUserRepository } from "../../../domain/ports/IUserRepository";
-import { IPasswordHasher } from "../../../domain/ports/IPasswordHasher";
-import { ITokenService } from "../../../domain/ports/ITokenService";
-import { ISessionRepository } from "../../../domain/ports/ISessionRepository";
-import { SessionActivityType } from "../../../domain/entities/Session";
+import { IUseCase } from "../../../../shared/application/IUseCase";
+import { Result } from "../../../../shared/domain/Result";
+import ApplicationError from "../../../../shared/application/errors/ApplicationErrors";
+import { ErrorCodes } from "../../../../core/constants/error-codes";
+import { SignInInputDTO, SignInOutputDTO } from "../dtos/SignInDTO";
+import { IUserRepository } from "../../domain/ports/IUserRepository";
+import { IPasswordHasher } from "../../domain/ports/IPasswordHasher";
+import { ITokenService } from "../../domain/ports/ITokenService";
+import { ISessionRepository } from "../../../session/domain/ports/ISessionRepository";
+import { SessionActivityType } from "@/src/modules/session/domain/entities/Session";
+import { injectable, inject } from 'tsyringe';
+import { AUTH_TOKENS } from "../../infrastructure/di/AuthTokens";
 
+@injectable()
 export default class SignInUseCase implements IUseCase<SignInInputDTO, SignInOutputDTO, ApplicationError>{
     constructor(
+        @inject(AUTH_TOKENS.UserRepository)
         private readonly userRepository: IUserRepository,
+        @inject(AUTH_TOKENS.BcryptPasswordHasher)
         private readonly passwordHasher: IPasswordHasher,
+        @inject(AUTH_TOKENS.JwtTokenService)
         private readonly tokenService: ITokenService,
+        @inject(AUTH_TOKENS.SessionRepository)
         private readonly sessionRepository: ISessionRepository
     ){}
 

@@ -1,6 +1,8 @@
 import bcrypt from 'bcryptjs';
 import { IPasswordHasher } from '../../domain/ports/IPasswordHasher';
+import { injectable } from 'tsyringe';
 
+@injectable()
 export default class BcryptPasswordHasher implements IPasswordHasher{
     private readonly saltRounds: number;
 

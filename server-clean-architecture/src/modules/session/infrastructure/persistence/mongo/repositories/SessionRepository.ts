@@ -3,7 +3,9 @@ import Session, { SessionProps } from "../../../../domain/entities/Session";
 import SessionModel from '../models/SessionModel';
 import SessionMapper from "../mappers/SessionMapper";
 import { PaginationOptions } from "../../../../../../shared/domain/IBaseRepository";
+import { injectable } from 'tsyringe';
 
+@injectable()
 export default class SessionRepository implements ISessionRepository{
     async findById(id: string): Promise<Session | null>{
         const doc = await SessionModel.findById(id);

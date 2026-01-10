@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import sharp from 'sharp';
 import Identicon from 'identicon.js';
 import logger from '../../../../shared/infrastructure/logger';
+import { injectable } from 'tsyringe';
 
 export interface AvatarResult{
     buffer: Buffer;
@@ -11,6 +12,7 @@ export interface AvatarResult{
     extension: string;
 };
 
+@injectable()
 export default class AvatarService{
     private static readonly AVATAR_SIZE_PX = 420;
     private static readonly COMPRESSION_QUALITY_PCT = 80;

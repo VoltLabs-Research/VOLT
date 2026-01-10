@@ -1,5 +1,3 @@
-import { UserProps } from "./User";
-
 export enum SessionActivityType{
     Login = 'login',
     Logout = 'logout',

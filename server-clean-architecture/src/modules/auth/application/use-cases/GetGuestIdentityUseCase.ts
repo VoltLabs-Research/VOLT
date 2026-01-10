@@ -1,13 +1,17 @@
-import { IUseCase } from "../../../../../shared/application/IUseCase";
-import { Result } from "../../../../../shared/domain/Result";
-import ApplicationError from "../../../../../shared/application/errors/ApplicationErrors";
-import { ErrorCodes } from "../../../../../core/constants/error-codes";
-import { GetGuestIdentityInputDTO, GetGuestIdentityOutputDTO } from "../../dtos/user/GetGuestIdentityDTO";
-import { IAvatarService } from "../../../domain/ports/IAvatarService";
+import { IUseCase } from "../../../../shared/application/IUseCase";
+import { Result } from "../../../../shared/domain/Result";
+import ApplicationError from "../../../../shared/application/errors/ApplicationErrors";
+import { ErrorCodes } from "../../../../core/constants/error-codes";
+import { injectable, inject } from 'tsyringe';
+import { GetGuestIdentityInputDTO, GetGuestIdentityOutputDTO } from "../dtos/GetGuestIdentityDTO";
+import { IAvatarService } from "../../domain/ports/IAvatarService";
 import crypto from 'node:crypto';
+import { AUTH_TOKENS } from "../../infrastructure/di/AuthTokens";
 
+@injectable()
 export default class GetGuestIdentityUseCase implements IUseCase<GetGuestIdentityInputDTO, GetGuestIdentityOutputDTO, ApplicationError>{
     constructor(
+        @inject(AUTH_TOKENS.AvatarService)
         private avatarService: IAvatarService
     ){}
 
