@@ -2,18 +2,19 @@ import { Response } from 'express';
 import { injectable } from 'tsyringe';
 import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
 import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
-import GetLoginActivityUseCase from '../../../application/use-cases/GetLoginActivityUseCase';
+import RevokeSessionUseCase from '../../../application/use-cases/RevokeSessionUseCase';
 
 @injectable()
-export default class GetMyLoginActivityController{
+export default class RevokeSessionController{
     constructor(
-        private getLoginActivityUseCase: GetLoginActivityUseCase
+        private revokeSessionUseCase: RevokeSessionUseCase
     ){}
 
     async handle(req: AuthenticatedRequest, res: Response): Promise<void>{
-        const result = await this.getLoginActivityUseCase.execute({ 
-            userId: req.userId!, 
-            limit: 100 
+        const sessionId = req.params.id as string;
+        const result = await this.revokeSessionUseCase.execute({
+            sessionId,
+            userId: req.userId!
         });
 
         if(!result.success){
@@ -21,6 +22,6 @@ export default class GetMyLoginActivityController{
             return;
         }
 
-        BaseResponse.success(res, result.value.activites, 200);
+        BaseResponse.success(res, result.value, 200);
     }
 };

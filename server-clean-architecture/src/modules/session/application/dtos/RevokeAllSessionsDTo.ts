@@ -1,6 +1,6 @@
 export interface RevokeAllSessionsInputDTO{
     userId: string;
-    currentSessionId: string;
+    token: string;
 };
 
 export interface RevokeAllSessionsOutputDTO{

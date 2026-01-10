@@ -16,7 +16,7 @@ export default class RevokeAllSessionsUseCase implements IUseCase<RevokeAllSessi
     async execute(input: RevokeAllSessionsInputDTO): Promise<Result<RevokeAllSessionsOutputDTO, ApplicationError>>{
         const revokedCount = await this.sessionRepository.deactivateAllExcept(
             input.userId,
-            input.currentSessionId
+            input.token
         );
 
         return Result.ok({ revokedCount });
