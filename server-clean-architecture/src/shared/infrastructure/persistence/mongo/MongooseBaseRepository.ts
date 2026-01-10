@@ -1,5 +1,5 @@
 import { Model, Document } from 'mongoose';
-import { IBaseRepository, PaginationOptions } from '@/src/shared/domain/IBaseRepository';
+import { IBaseRepository, PaginationOptions, FindOptions } from '@/src/shared/domain/IBaseRepository';
 import { IMapper } from '../IMapper';
 
 export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends Document> implements IBaseRepository<TDomain, TProps>{
@@ -18,7 +18,7 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
         return doc ? this.mapper.toDomain(doc) : null;
     }
 
-    async findAll(options: PaginationOptions): Promise<any>{
+    async findAll(options: FindOptions<TProps> & PaginationOptions): Promise<any>{
         const { page, limit } = options;
         const skip = (page - 1) * limit;
         

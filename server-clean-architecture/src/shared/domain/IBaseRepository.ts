@@ -87,5 +87,5 @@ export interface IBaseRepository<T, TProps>{
     /**
      * Check if any entity matches the filter.
      */
-    exists(filter: Partial<TProps>): Promise<boolean>;
+    exists(filter: Partial<TProps> & { _id: string }): Promise<boolean>;
 };
