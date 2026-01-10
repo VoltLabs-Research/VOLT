@@ -191,7 +191,10 @@ export const ErrorCodes = {
 
     TEAM_MEMBER_NOT_FOUND: 'TeamMember::NotFound',
     TEAM_MEMBER_ALREADY_EXISTS: 'TeamMember::AlreadyExists',
-    TEAM_MEMBER_ROLE_REQUIRED: 'TeamMember::RoleRequired'
+    TEAM_MEMBER_ROLE_REQUIRED: 'TeamMember::RoleRequired',
+
+    OAUTH_GITHUB_EMAIL_NOT_FOUND: 'OAuth::Github::Email::NotFound',
+    OAUTH_STRATEGY_ERROR: 'OAuth::Strategy::Error'
 } as const;
 
 export type ErrorCode = typeof ErrorCodes[keyof typeof ErrorCodes];

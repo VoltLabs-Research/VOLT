@@ -25,6 +25,7 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^25.0.3",
     "@types/nodemailer": "^7.0.4",
+    "@types/passport-microsoft": "^2.1.1",
     "@types/socket.io": "^3.0.1",
     "@types/stream-json": "^1.7.8",
     "@types/three": "^0.181.0",

@@ -1,11 +1,17 @@
-import User from "../../domain/entities/User";
+import { OAuthProvider, UserProps } from "../../domain/entities/User";
 
 export interface OAuthLoginInputDTO{
-    user: User,
-    userAgent: string,
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    oauthProvider: OAuthProvider;
+    oauthId: string;
+    avatar?: string;
     ip: string;
+    userAgent: string;
 };
 
 export interface OAuthLoginOutputDTO{
     token: string;
+    user: UserProps;
 };

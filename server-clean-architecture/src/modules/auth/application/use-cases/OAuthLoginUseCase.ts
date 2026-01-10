@@ -8,6 +8,7 @@ import { SessionActivityType } from "@/src/modules/session/domain/entities/Sessi
 import { ISessionRepository } from "../../../session/domain/ports/ISessionRepository";
 import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from "../../infrastructure/di/AuthTokens";
+import generateRandomName from "@/src/shared/infrastructure/utilities/generate-random-name";
 
 @injectable()
 export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, OAuthLoginOutputDTO, ApplicationError>{
@@ -21,12 +22,43 @@ export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, O
     ){}
 
     async execute(input: OAuthLoginInputDTO): Promise<Result<OAuthLoginOutputDTO, ApplicationError>>{
-        await this.userRepository.updateLastLogin(input.user.id);
-        
-        const token = this.tokenService.sign(input.user.id);
+        // Check if user exists with this OAuth provider
+        let user = await this.userRepository.findOne({
+            oauthProvider: input.oauthProvider,
+            oauthId: input.oauthId
+        });
+
+        if(!user){
+            // Check if user exists with this emaill
+            user = await this.userRepository.findByEmail(input.email);
+            
+            if(user){
+                // Link the OAuthProvider with the existing user account
+                await this.userRepository.updateById(user.id, {
+                    oauthProvider: input.oauthProvider,
+                    oauthId: input.oauthId,
+                    avatar: input.avatar || user.props.avatar
+                });
+            }else{
+                // Create new user and link the OAuthProvider
+                const randomName = generateRandomName(input.oauthId);
+                user = await this.userRepository.create({
+                    email: input.email,
+                    firstName: input.firstName ?? randomName.firstName,
+                    lastName: input.lastName ?? randomName.lastName,
+                    oauthProvider: input.oauthProvider,
+                    oauthId: input.oauthId,
+                    teams: [],
+                    analyses: []
+                });
+            }
+        }
+
+        await this.userRepository.updateLastLogin(user.id);
+        const token = this.tokenService.sign(user.id);
 
         await this.sessionRepository.create({
-            user: input.user.id,
+            user: user.id,
             token,
             userAgent: input.userAgent,
             ip: input.ip,
@@ -38,9 +70,9 @@ export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, O
             updatedAt: new Date()
         });
 
-        return Result.ok({
-            token,
-            user: input.user
+        return Result.ok({ 
+            user: user.props, 
+            token 
         });
     }
 };
