@@ -1,8 +1,6 @@
-import { Request } from "express";
 import OAuthLoginUseCase from "../../../application/use-cases/OAuthLoginUseCase";
 import { OAuthProvider } from "../../../domain/entities/User";
 import { AuthenticatedRequest } from "@/src/shared/infrastructure/http/middleware/authentication";
-import BaseResponse from "@/src/shared/infrastructure/http/BaseResponse";
 import { ErrorCodes } from "@/src/core/constants/error-codes";
 
 export interface OAuthMappedProfile{

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import container from '../../di/container';
+import { container } from 'tsyringe';
 import avatarUpload from '../middlewares/avatar-upload';
 import CheckEmailController from '../controllers/CheckEmailController';
 import DeleteMyAccountController from '../controllers/DeleteMyAccountController';

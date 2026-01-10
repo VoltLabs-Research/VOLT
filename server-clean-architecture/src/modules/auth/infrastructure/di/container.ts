@@ -12,5 +12,3 @@ container.registerSingleton(AUTH_TOKENS.SessionRepository, SessionRepository);
 container.registerSingleton(AUTH_TOKENS.AvatarService, AvatarService);
 container.registerSingleton(AUTH_TOKENS.BcryptPasswordHasher, BcryptPasswordHasher);
 container.registerSingleton(AUTH_TOKENS.JwtTokenService, JwtTokenService);
-
-export default container;
