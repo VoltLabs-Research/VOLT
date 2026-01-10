@@ -4,15 +4,15 @@ import ApplicationError from "@/src/shared/application/errors/ApplicationErrors"
 import { CreateTeamMemberInputDTO, CreateTeamMemberOutputDTO } from "../../dtos/team-member/CreateTeamMemberDTO";
 import { injectable, inject } from 'tsyringe';
 import { TEAM_TOKENS } from "../../../infrastructure/di/TeamTokens";
-import TeamMemberRepository from "../../../infrastructure/persistence/mongo/repositories/TeamMemberRepository";
-import { ITeamRoleRepository } from "../../../domain/ports/ITeamRoleRepository";
 import { ErrorCodes } from "@/src/core/constants/error-codes";
+import { ITeamRoleRepository } from "../../../domain/ports/ITeamRoleRepository";
+import { ITeamMemberRepository } from "../../../domain/ports/ITeamMemberRepository";
 
 @injectable()
 export default class CreateTeamMemberUseCase implements IUseCase<CreateTeamMemberInputDTO, CreateTeamMemberOutputDTO, ApplicationError>{
     constructor(
         @inject(TEAM_TOKENS.TeamMemberRepository)
-        private teamMemberRepository: TeamMemberRepository,
+        private teamMemberRepository: ITeamMemberRepository,
         @inject(TEAM_TOKENS.TeamRoleRepository)
         private teamRoleRepository: ITeamRoleRepository
     ){}

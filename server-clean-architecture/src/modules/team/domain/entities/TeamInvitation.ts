@@ -27,4 +27,9 @@ export default class TeamInvitation{
         public id: string,
         public props: TeamInvitationProps
     ){}
+
+    public isExpired(): boolean{
+        const now = new Date();
+        return now > this.props.expiresAt;
+    }
 };

@@ -3,15 +3,15 @@ import { IUseCase } from "@/src/shared/application/IUseCase";
 import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
 import { injectable, inject } from 'tsyringe';
 import { TEAM_TOKENS } from "../../../infrastructure/di/TeamTokens";
-import TeamMemberRepository from "../../../infrastructure/persistence/mongo/repositories/TeamMemberRepository";
 import { ErrorCodes } from "@/src/core/constants/error-codes";
 import { UpdateTeamMemberByIdInputDTO, UpdateTeamMemberByIdOutputDTO } from "../../dtos/team-member/UpdateTeamMemberByIdDTO";
+import { ITeamMemberRepository } from "../../../domain/ports/ITeamMemberRepository";
 
 @injectable()
 export default class UpdateTeamMemberByIdUseCase implements IUseCase<UpdateTeamMemberByIdInputDTO, UpdateTeamMemberByIdOutputDTO, ApplicationError>{
     constructor(
         @inject(TEAM_TOKENS.TeamMemberRepository)
-        private teamMemberRepository: TeamMemberRepository
+        private teamMemberRepository: ITeamMemberRepository
     ){}
 
     async execute(input: UpdateTeamMemberByIdInputDTO): Promise<Result<UpdateTeamMemberByIdOutputDTO, ApplicationError>>{

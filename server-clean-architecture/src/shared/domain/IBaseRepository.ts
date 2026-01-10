@@ -46,7 +46,7 @@ export interface IBaseRepository<T, TProps>{
     /**
      * Find all entities matching the filter.
      */
-    findAll(options?: FindOptions<TProps> & PaginationOptions): Promise<T[]>;
+    findAll(options?: FindOptions<TProps> & PaginationOptions): Promise<PaginatedResult<TProps>>;
 
     /**
      * Create new entity.
@@ -87,5 +87,5 @@ export interface IBaseRepository<T, TProps>{
     /**
      * Check if any entity matches the filter.
      */
-    exists(filter: Partial<TProps> & { _id: string }): Promise<boolean>;
+    exists(filter: Partial<TProps> | { _id: string }): Promise<boolean>;
 };
