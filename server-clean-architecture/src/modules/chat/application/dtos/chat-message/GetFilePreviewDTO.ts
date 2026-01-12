@@ -1,15 +1,12 @@
 import { ChatMessageMetadata } from "../../../domain/entities/ChatMessage";
 
 export interface GetFilePreviewInputDTO{
-    userId: string;
-    filename: string;
-    chatId?: string;
+    messageId: string;
 };
 
 export interface GetFilePreviewOutputDTO{
-    stream: NodeJS.ReadableStream;
-    stat: {
-        size: number;
-        metadata: ChatMessageMetadata
-    };
+    dataUrl: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
 };

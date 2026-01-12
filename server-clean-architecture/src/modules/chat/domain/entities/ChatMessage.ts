@@ -44,6 +44,10 @@ export default class ChatMessage{
         return this.props.sender !== userId;
     }
 
+    public isFile(): boolean{
+        return this.props.messageType === ChatMessageType.File;
+    }
+
     public toggleReaction(userId: string, emoji: string): void{
         const existingReactionIndex = this.props.reactions.findIndex((reaction) => reaction.emoji === emoji);
         if(existingReactionIndex === -1){
