@@ -15,7 +15,7 @@ export default class DeleteAccountUseCase implements IUseCase<DeleteAccountInput
     ){}
 
     async execute(input: DeleteAccountInputDTO): Promise<Result<DeleteAccountOutputDTO, ApplicationError>>{
-        const user = await this.userRepository.findById(input.id);
+        const user = await this.userRepository.findById(input.userId);
         if(!user){
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,
@@ -23,7 +23,7 @@ export default class DeleteAccountUseCase implements IUseCase<DeleteAccountInput
             ));
         }
 
-        await this.userRepository.deleteById(input.id);
+        await this.userRepository.deleteById(input.userId);
         return Result.ok({ success: true });
     }
 };

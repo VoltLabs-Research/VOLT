@@ -1,34 +1,23 @@
-import { Request, Response } from 'express';
 import { injectable } from 'tsyringe';
-import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
+import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
+import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { SignUpInputDTO } from '../../../application/dtos/SignUpDTO';
 import SignUpUseCase from '../../../application/use-cases/SignUpUseCase';
+import getUserAgent from '@/src/shared/infrastructure/http/utilities/get-user-agent';
+import getClientIP from '@/src/shared/infrastructure/http/utilities/get-client-ip';
 
 @injectable()
-export default class SignUpController{
+export default class SignUpController extends BaseController<SignUpUseCase>{
     constructor(
-        private signUpUseCase: SignUpUseCase
-    ){}
+        useCase: SignUpUseCase
+    ){
+        super(useCase);
+    }
 
-    async handle(req: Request, res: Response): Promise<void>{
+    protected getParams(req: AuthenticatedRequest): SignUpInputDTO {
         const { email, password, firstName, lastName } = req.body;
-
-        const userAgent = req.headers['user-agent'] || 'unknown';
-        const ip = req.ip || 'unknown';
-
-        const result = await this.signUpUseCase.execute({
-            email,
-            password,
-            firstName,
-            lastName,
-            userAgent,
-            ip
-        });
-
-        if(!result.success){
-            BaseResponse.error(res, result.error.message, result.error.statusCode);
-            return;
-        }
-
-        BaseResponse.success(res, result.value, 201);
+        const userAgent = getUserAgent(req);
+        const ip = getClientIP(req);
+        return { email, password, firstName, lastName, userAgent, ip };
     }
 };

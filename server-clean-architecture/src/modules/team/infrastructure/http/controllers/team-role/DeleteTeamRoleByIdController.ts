@@ -1,23 +1,13 @@
-import { Response } from 'express';
 import { injectable } from 'tsyringe';
-import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
-import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
+import { HttpStatus } from '@/src/shared/infrastructure/http/HttpStatus';
 import DeleteTeamRoleByIdUseCase from '@/src/modules/team/application/use-cases/team-role/DeleteTeamRoleByIdUseCase';
 
 @injectable()
-export default class DeleteTeamRoleByIdController{
+export default class DeleteTeamRoleByIdController extends BaseController<DeleteTeamRoleByIdUseCase>{
     constructor(
-        private useCase: DeleteTeamRoleByIdUseCase
-    ){}
-
-    async handle(req: AuthenticatedRequest, res: Response): Promise<void>{
-        const { roleId } = req.params;
-        const result = await this.useCase.execute({ roleId });
-        if(!result.success){
-            BaseResponse.error(res, result.error.message, result.error.statusCode);
-            return;
-        }
-
-        BaseResponse.success(res, null, 200);
+        useCase: DeleteTeamRoleByIdUseCase
+    ){
+        super(useCase, HttpStatus.Deleted);
     }
 };

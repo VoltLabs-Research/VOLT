@@ -1,26 +1,21 @@
-import { Response } from 'express';
 import { injectable } from 'tsyringe';
-import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
 import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
+import { RevokeAllSessionsInputDTO } from '../../../application/dtos/RevokeAllSessionsDTo';
 import RevokeAllSessionsUseCase from '../../../application/use-cases/RevokeAllSessionsUseCase';
 
 @injectable()
-export default class RevokeAllSessionsController{
+export default class RevokeAllSessionsController extends BaseController<RevokeAllSessionsUseCase>{
     constructor(
-        private revokeAllSessionsUseCase: RevokeAllSessionsUseCase
-    ){}
+        useCase: RevokeAllSessionsUseCase
+    ){
+        super(useCase);
+    }
 
-    async handle(req: AuthenticatedRequest, res: Response): Promise<void>{
-        const result = await this.revokeAllSessionsUseCase.execute({
+    protected getParams(req: AuthenticatedRequest): RevokeAllSessionsInputDTO{
+        return {
             token: req.token!,
             userId: req.userId!
-        });
-
-        if(!result.success){
-            BaseResponse.error(res, result.error.message, result.error.statusCode);
-            return;
-        }
-
-        BaseResponse.success(res, null, 200);
+        };
     }
 };

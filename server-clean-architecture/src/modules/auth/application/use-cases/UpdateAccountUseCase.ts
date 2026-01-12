@@ -16,7 +16,7 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
     ){}
 
     async execute(input: UpdateAccountInputDTO): Promise<Result<UpdateAccountOutputDTO, ApplicationError>>{
-        const user = this.userRepository.findById(input.id);
+        const user = this.userRepository.findById(input.userId);
         if(!user){
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,
@@ -28,7 +28,7 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
         if(input.firstName) updateData.firstName = input.firstName;
         if(input.lastName) updateData.lastName = input.lastName;
 
-        const updatedUser = await this.userRepository.updateById(input.id, updateData);
+        const updatedUser = await this.userRepository.updateById(input.userId, updateData);
         if(!updatedUser){
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,

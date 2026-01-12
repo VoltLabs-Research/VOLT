@@ -25,7 +25,7 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
     ){}
 
     async execute(input: UpdatePasswordInputDTO): Promise<Result<UpdatePasswordOutputDTO, ApplicationError>>{
-        const user = await this.useRepository.findByIdWithPassword(input.user.id);
+        const user = await this.useRepository.findByIdWithPassword(input.userId);
         if(!user){
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.USER_NOT_FOUND,
@@ -46,11 +46,11 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
         }
 
         const hashedPassword = await this.passwordHasher.hash(input.password);
-        await this.useRepository.updatePassword(input.user.id, hashedPassword);
+        await this.useRepository.updatePassword(input.userId, hashedPassword);
 
-        await this.useRepository.updateLastLogin(input.user.id);
+        await this.useRepository.updateLastLogin(input.userId);
 
-        const token = this.tokenService.sign(input.user.id);
+        const token = this.tokenService.sign(input.userId);
 
         await this.sessionRepository.create({
             user: user.id,

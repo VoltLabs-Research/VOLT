@@ -1,5 +1,5 @@
 export interface DeleteAccountInputDTO{
-    id: string;
+    userId: string;
 };
 
 export interface DeleteAccountOutputDTO{

@@ -1,7 +1,7 @@
 import User from "../../domain/entities/User";
 
 export interface UpdateAccountInputDTO{
-    id: string;
+    userId: string;
     firstName?: string;
     lastName?: string;
     avatar?: any;

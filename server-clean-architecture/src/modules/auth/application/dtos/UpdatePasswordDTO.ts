@@ -1,7 +1,7 @@
-import User, { UserProps } from "../../domain/entities/User";
+import { UserProps } from "../../domain/entities/User";
 
 export interface UpdatePasswordInputDTO{
-    user: User;
+    userId: string;
     passwordCurrent: string,
     password: string;
     userAgent: string;

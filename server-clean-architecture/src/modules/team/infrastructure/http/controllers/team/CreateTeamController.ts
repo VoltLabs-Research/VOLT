@@ -1,27 +1,24 @@
-import { Response } from 'express';
 import { injectable } from 'tsyringe';
-import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
 import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
+import { CreateTeamInputDTO } from '@/src/modules/team/application/dtos/team/CreateTeamDTO';
+import { HttpStatus } from '@/src/shared/infrastructure/http/HttpStatus';
 import CreateTeamUseCase from '@/src/modules/team/application/use-cases/team/CreateTeamUseCase';
 
 @injectable()
-export default class CreateTeamController{
+export default class CreateTeamController extends BaseController<CreateTeamUseCase>{
     constructor(
-        private useCase: CreateTeamUseCase
-    ){}
+        useCase: CreateTeamUseCase
+    ){
+        super(useCase, HttpStatus.Created);
+    }
 
-    async handle(req: AuthenticatedRequest, res: Response): Promise<void>{
+    protected getParams(req: AuthenticatedRequest): CreateTeamInputDTO{
         const { name, description } = req.body;
-        const result = await this.useCase.execute({
+        return {
             name,
             description,
             ownerId: req.userId!
-        });
-
-        if(!result.success){
-            return BaseResponse.error(res, result.error.message, result.error.statusCode);
         }
-
-        BaseResponse.success(res, result.value, 201);
     }
 };

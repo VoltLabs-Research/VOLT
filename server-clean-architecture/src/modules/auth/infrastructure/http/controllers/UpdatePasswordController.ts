@@ -1,33 +1,24 @@
-import { Response } from 'express';
-import { inject, injectable } from 'tsyringe';
-import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
+import { injectable } from 'tsyringe';
 import UpdatePasswordUseCase from '../../../application/use-cases/UpdatePasswordUseCase';
 import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
+import { UpdatePasswordInputDTO } from '../../../application/dtos/UpdatePasswordDTO';
+import getUserAgent from '@/src/shared/infrastructure/http/utilities/get-user-agent';
+import getClientIP from '@/src/shared/infrastructure/http/utilities/get-client-ip';
 
 @injectable()
-export default class UpdatePasswordController{
+export default class UpdatePasswordController extends BaseController<UpdatePasswordUseCase>{
     constructor(
-        private updatePasswordUseCase: UpdatePasswordUseCase
-    ){}
+        useCase: UpdatePasswordUseCase
+    ){
+        super(useCase);
+    }
 
-    async handle(req: AuthenticatedRequest, res: Response): Promise<void>{
+    protected getParams(req: AuthenticatedRequest): UpdatePasswordInputDTO {
         const { passwordCurrent, password } = req.body;
-        const userAgent = req.headers['user-agent'] || 'unknown';
-        const ip = req.ip || 'unknown';
-
-        const result = await this.updatePasswordUseCase.execute({
-            user: req.user,
-            passwordCurrent,
-            password,
-            userAgent,
-            ip
-        });
-
-        if(!result.success){
-            BaseResponse.error(res, result.error.message ,result.error.statusCode);
-            return;
-        }
-
-        BaseResponse.success(res, result.value);
+        const userAgent = getUserAgent(req);
+        const ip = getClientIP(req);
+        const userId = req.userId!;
+        return { userId, password, passwordCurrent, userAgent, ip };
     }
 };

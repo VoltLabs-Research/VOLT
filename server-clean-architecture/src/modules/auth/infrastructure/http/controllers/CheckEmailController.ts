@@ -1,22 +1,12 @@
-import { Request, Response } from 'express';
 import { injectable } from 'tsyringe';
-import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
 import CheckEmailUseCase from '../../../application/use-cases/CheckEmailUseCase';
+import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
 
 @injectable()
-export default class CheckEmailController{
+export default class CheckEmailController extends BaseController<CheckEmailUseCase>{
     constructor(
-        private checkEmailUseCase: CheckEmailUseCase
-    ){}
-
-    async handle(req: Request, res: Response): Promise<void>{
-        const result = await this.checkEmailUseCase.execute({ email: req.body.email });
-
-        if(!result.success){
-            BaseResponse.error(res, result.error.message, result.error.statusCode);
-            return;
-        }
-
-        BaseResponse.success(res, result.value);
+        useCase: CheckEmailUseCase
+    ){
+        super(useCase);
     }
 };

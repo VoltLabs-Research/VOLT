@@ -16,7 +16,7 @@ const router = Router();
 router.use(protect);
 
 router.get('/', getActiveSessionsController.handle);
-router.patch('/:id', revokeSessionController.handle);
+router.patch('/:sessionId', revokeSessionController.handle);
 
 router.get('/activity', getMyLoginActivityController.handle);
 router.get('/all/others', revokeAllSessionsController.handle);

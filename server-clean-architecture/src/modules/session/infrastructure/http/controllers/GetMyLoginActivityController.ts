@@ -1,26 +1,12 @@
-import { Response } from 'express';
 import { injectable } from 'tsyringe';
-import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
-import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
 import GetLoginActivityUseCase from '../../../application/use-cases/GetLoginActivityUseCase';
 
 @injectable()
-export default class GetMyLoginActivityController{
+export default class GetMyLoginActivityController extends BaseController<GetLoginActivityUseCase>{
     constructor(
-        private getLoginActivityUseCase: GetLoginActivityUseCase
-    ){}
-
-    async handle(req: AuthenticatedRequest, res: Response): Promise<void>{
-        const result = await this.getLoginActivityUseCase.execute({ 
-            userId: req.userId!, 
-            limit: 100 
-        });
-
-        if(!result.success){
-            BaseResponse.error(res, result.error.message, result.error.statusCode);
-            return;
-        }
-
-        BaseResponse.success(res, result.value.activites, 200);
+        useCase: GetLoginActivityUseCase
+    ){
+        super(useCase);
     }
 };
