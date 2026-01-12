@@ -1,4 +1,4 @@
-import { IBaseRepository } from "../../../../shared/domain/IBaseRepository";
+import { IBaseRepository } from "../../../../shared/domain/ports/IBaseRepository";
 import Session, { SessionProps } from "../entities/Session";
 
 export interface ISessionRepository extends IBaseRepository<Session, SessionProps>{

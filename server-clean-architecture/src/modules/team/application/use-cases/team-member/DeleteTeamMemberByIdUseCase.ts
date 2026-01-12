@@ -1,4 +1,4 @@
-import { Result } from "@/src/shared/domain/Result";
+import { Result } from "@/src/shared/domain/ports/Result";
 import { IUseCase } from "@/src/shared/application/IUseCase";
 import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
 import { injectable, inject } from 'tsyringe';

@@ -1,5 +1,5 @@
 import { IDailyActivityRepository } from "../../domain/ports/IDailyActivityRepository";
-import { Result } from "@/src/shared/domain/Result";
+import { Result } from "@/src/shared/domain/ports/Result";
 import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
 import { IUseCase } from "@/src/shared/application/IUseCase";
 import { AddDailyActivityInputDTO } from "../dto/AddDailyActivityDTO";

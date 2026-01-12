@@ -1,5 +1,5 @@
 import { Model, Document } from 'mongoose';
-import { IBaseRepository, PaginationOptions, FindOptions } from '@/src/shared/domain/IBaseRepository';
+import { IBaseRepository, PaginationOptions, FindOptions } from '@/src/shared/domain/ports/IBaseRepository';
 import { IMapper } from '../IMapper';
 
 export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends Document> implements IBaseRepository<TDomain, TProps>{

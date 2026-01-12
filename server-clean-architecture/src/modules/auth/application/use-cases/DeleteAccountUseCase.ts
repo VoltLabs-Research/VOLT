@@ -1,5 +1,5 @@
 import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/Result";
+import { Result } from "@/src/shared/domain/ports/Result";
 import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
 import { DeleteAccountInputDTO, DeleteAccountOutputDTO } from "../dtos/DeleteAccountDTO";
 import { IUserRepository } from "../../domain/ports/IUserRepository";

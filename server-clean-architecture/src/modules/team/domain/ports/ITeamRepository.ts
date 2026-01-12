@@ -1,4 +1,4 @@
-import { IBaseRepository } from "@/src/shared/domain/IBaseRepository";
+import { IBaseRepository } from "@/src/shared/domain/ports/IBaseRepository";
 import Team, { TeamProps } from '../entities/Team';
 
 export interface ITeamRepository extends IBaseRepository<Team, TeamProps>{

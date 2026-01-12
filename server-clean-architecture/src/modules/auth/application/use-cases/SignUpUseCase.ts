@@ -1,5 +1,5 @@
 import { IUseCase } from "../../../../shared/application/IUseCase";
-import { Result } from "../../../../shared/domain/Result";
+import { Result } from "../../../../shared/domain/ports/Result";
 import { SignUpInputDTO, SignUpOutputDTO } from "../dtos/SignUpDTO";
 import { IUserRepository } from "../../domain/ports/IUserRepository";
 import ApplicationError from "../../../../shared/application/errors/ApplicationErrors";

@@ -1,4 +1,4 @@
-import { PaginatedResult, PaginationOptions } from "@/src/shared/domain/IBaseRepository";
+import { PaginatedResult, PaginationOptions } from "@/src/shared/domain/ports/IBaseRepository";
 import { TeamMemberProps } from "../../../domain/entities/TeamMember";
 
 export interface ListTeamMembersByTeamIdInputDTO extends PaginationOptions{

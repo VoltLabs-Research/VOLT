@@ -1,4 +1,4 @@
-import { IBaseRepository } from "@/src/shared/domain/IBaseRepository";
+import { IBaseRepository } from "@/src/shared/domain/ports/IBaseRepository";
 import Analysis, { AnalysisProps } from '../entities/Analysis';
 
 export interface IAnalysisRepository extends IBaseRepository<Analysis, AnalysisProps>{

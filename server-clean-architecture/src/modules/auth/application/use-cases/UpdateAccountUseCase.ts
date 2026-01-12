@@ -1,5 +1,5 @@
 import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/Result";
+import { Result } from "@/src/shared/domain/ports/Result";
 import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
 import { ErrorCodes } from "@/src/core/constants/error-codes";
 import { UpdateAccountInputDTO, UpdateAccountOutputDTO } from "../dtos/UpdateAccountDTO";

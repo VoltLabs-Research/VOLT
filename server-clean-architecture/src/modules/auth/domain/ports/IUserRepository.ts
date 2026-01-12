@@ -1,4 +1,4 @@
-import { IBaseRepository } from '../../../../shared/domain/IBaseRepository';
+import { IBaseRepository } from '../../../../shared/domain/ports/IBaseRepository';
 import User, { UserProps } from '../entities/User';
 
 export interface IUserRepository extends IBaseRepository<User, UserProps>{

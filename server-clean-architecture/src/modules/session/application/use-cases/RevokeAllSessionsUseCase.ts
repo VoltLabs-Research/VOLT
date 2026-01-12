@@ -1,5 +1,5 @@
 import { IUseCase } from "../../../../shared/application/IUseCase";
-import { Result } from "../../../../shared/domain/Result";
+import { Result } from "../../../../shared/domain/ports/Result";
 import ApplicationError from "../../../../shared/application/errors/ApplicationErrors";
 import { RevokeAllSessionsInputDTO, RevokeAllSessionsOutputDTO } from "../dtos/RevokeAllSessionsDTo";
 import { ISessionRepository } from "../../domain/ports/ISessionRepository";

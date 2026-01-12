@@ -1,5 +1,5 @@
 import { ISessionRepository } from "../../domain/ports/ISessionRepository";
-import { Result } from "../../../../shared/domain/Result";
+import { Result } from "../../../../shared/domain/ports/Result";
 import ApplicationError from "../../../../shared/application/errors/ApplicationErrors";
 import { IUseCase } from "../../../../shared/application/IUseCase";
 import { GetActiveSessionsInputDTO, GetActiveSessionsOutputDTO } from "../dtos/GetActiveSessionsDTO";

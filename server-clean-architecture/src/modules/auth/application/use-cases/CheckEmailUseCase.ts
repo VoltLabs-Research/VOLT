@@ -1,5 +1,5 @@
 import { IUseCase } from '../../../../shared/application/IUseCase';
-import { Result } from '../../../../shared/domain/Result';
+import { Result } from '../../../../shared/domain/ports/Result';
 import { CheckEmailInputDTO, CheckEmailOutputDTO } from '../dtos/CheckEmailDTO';
 import { IUserRepository } from '../../domain/ports/IUserRepository';
 import { injectable, inject } from 'tsyringe';

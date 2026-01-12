@@ -1,4 +1,4 @@
-import { PaginatedResult, PaginationOptions } from "@/src/shared/domain/IBaseRepository";
+import { PaginatedResult, PaginationOptions } from "@/src/shared/domain/ports/IBaseRepository";
 import { TeamRoleProps } from "../../../domain/entities/TeamRole";
 
 export interface ListTeamRolesByTeamIdInputDTO extends PaginationOptions{

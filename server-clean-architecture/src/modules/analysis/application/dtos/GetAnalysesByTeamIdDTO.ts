@@ -1,4 +1,4 @@
-import { PaginatedResult } from "@/src/shared/domain/IBaseRepository";
+import { PaginatedResult } from "@/src/shared/domain/ports/IBaseRepository";
 import { AnalysisProps } from "../../domain/entities/Analysis";
 
 export interface GetAnalysesByTeamIdInputDTO{
