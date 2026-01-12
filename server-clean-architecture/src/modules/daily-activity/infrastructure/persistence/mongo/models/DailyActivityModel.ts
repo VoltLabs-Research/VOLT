@@ -1,4 +1,4 @@
-import mongoose, { Schema, Model, Document, Types } from 'mongoose';
+import mongoose, { Schema, Model, Document } from 'mongoose';
 import { ActivityType, DailyActivityProps } from '@/src/modules/daily-activity/domain/entities/DailyActivity';
 import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
 
