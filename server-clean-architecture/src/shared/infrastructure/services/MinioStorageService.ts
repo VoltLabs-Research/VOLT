@@ -84,6 +84,13 @@ export default class MinioStorageService implements IStorageService{
         };
     }
 
+    async *listByPrefix(bucket: string, prefix: string, recursive: boolean = true): AsyncIterable<string>{
+        const stream = this.client.listObjectsV2(bucket, prefix, recursive);
+        for await(const obj of stream){
+            if(obj.name) yield obj.name;
+        }
+    };
+
     async deleteByPrefix(bucket: string, prefix: string): Promise<void>{
         const stream = this.client.listObjectsV2(bucket, prefix, true);
         const BATCH_SIZE = 1000;

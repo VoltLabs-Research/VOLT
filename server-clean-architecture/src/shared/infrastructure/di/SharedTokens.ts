@@ -1,3 +1,4 @@
 export const SHARED_TOKENS = {
-    StorageService: Symbol.for('StorageService')
+    StorageService: Symbol.for('StorageService'),
+    TempFileService: Symbol.for('TempFileService')
 };

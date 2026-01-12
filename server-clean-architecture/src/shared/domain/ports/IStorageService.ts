@@ -18,6 +18,12 @@ export interface IStorageService{
         metadata?: Record<string, string>
     ): Promise<void>;
 
+    listByPrefix(
+        bucket: string,
+        prefix: string,
+        recursive?: boolean
+    ): AsyncIterable<string>;
+
     getStream(
         bucket: string,
         objectName: string
