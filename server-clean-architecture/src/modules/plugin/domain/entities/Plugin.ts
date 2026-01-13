@@ -1,4 +1,4 @@
-import Workflow from "./workflow";
+import Workflow from "./workflow/Workflow";
 
 export enum PluginStatus{
     Draft = 'draft',
