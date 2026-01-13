@@ -1,5 +1,5 @@
 export interface EntrypointNodeData{
-    binary: string;
+    binary?: string;
     binaryObjectPath?: string;
     binaryFileName?: string;
     binaryHash?: string;

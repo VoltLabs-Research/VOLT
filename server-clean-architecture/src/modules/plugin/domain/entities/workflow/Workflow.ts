@@ -1,3 +1,4 @@
+import { EntrypointNodeData } from "./nodes/EntrypointNode";
 import { WorkflowEdge } from "./WorkflowEdge";
 import { WorkflowNode, WorkflowNodeType } from "./WorkflowNode";
 
@@ -18,6 +19,18 @@ export default class Workflow{
         public id: string,
         public props: WorkflowProps
     ){}
+
+    updateEntrypoint(update: Partial<EntrypointNodeData>){
+        const entrypointNode = this.props.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
+        if(!entrypointNode || !entrypointNode.data?.entrypoint){
+            return;
+        }
+    
+        entrypointNode.data.entrypoint = {
+            ...entrypointNode.data.entrypoint,
+            ...update
+        };
+    }
 
     /**
      * Find immediate parent node of specified type.
