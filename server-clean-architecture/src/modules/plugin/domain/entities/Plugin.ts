@@ -7,6 +7,7 @@ export enum PluginStatus{
 };
 
 export interface PluginProps{
+    team: string;
     slug: string;
     workflow: Workflow,
     status: PluginStatus;
