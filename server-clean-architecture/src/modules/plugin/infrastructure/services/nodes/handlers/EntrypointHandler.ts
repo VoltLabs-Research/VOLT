@@ -1,25 +1,21 @@
 import { injectable, inject } from 'tsyringe';
-import { pipeline } from 'node:stream/promises';
-import { NodeType } from '@/src/modules/plugin/domain/entities/Plugin';
-import { WorkflowNode } from '@/src/modules/plugin/domain/entities/Plugin';
+import { WorkflowNodeType, WorkflowNode } from '@/src/modules/plugin/domain/entities/workflow/WorkflowNode';
 import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@/src/modules/plugin/domain/ports/INodeRegistry';
 import { PLUGIN_TOKENS } from '../../../di/PluginTokens';
 import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
 import { IPluginBinaryCacheService } from '@/src/modules/plugin/domain/ports/IPluginBinaryCacheService';
 import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
-import { findParentByType, parseArgumentString } from '@/src/modules/plugin/domain/utilities/workflow-utils';
 import path from 'node:path';
 import logger from '@/src/shared/infrastructure/logger';
-import { IProcessExecutorService } from '@/src/modules/plugin/domain/ports/IProcessorExecutorService';
 
 @injectable()
 export default class EntrypointHandler implements INodeHandler{
-    readonly type = NodeType.Entrypoint;
+    readonly type = WorkflowNodeType.Entrypoint;
 
     constructor(
         @inject(PLUGIN_TOKENS.NodeRegistry)
         private registry: INodeRegistry,
-        @inject(PLUGIN_TOKENS.PluginBinaryStorageService)
+        @inject(PLUGIN_TOKENS.PluginBinaryCacheService)
         private binaryCache: IPluginBinaryCacheService,
         @inject(PLUGIN_TOKENS.ProcessExecutor)
         private processExecutor: IProcessExecutorService,
@@ -49,7 +45,7 @@ export default class EntrypointHandler implements INodeHandler{
         const binaryPath = await this.binaryCache.getBinaryPath({
             pluginSlug: context.pluginSlug,
             binaryObjectPath: config.binaryObjectPath,
-            binaryHash: config.binaryHash,
+            binaryHash: config.binaryHash!,
             binaryFileName: config.binaryFileName
         });
 
@@ -58,7 +54,7 @@ export default class EntrypointHandler implements INodeHandler{
 
         // Resolve arguments
         const rawArgs = this.registry.resolveTemplate(config.arguments, context);
-        const args = parseArgumentString(rawArgs);
+        const args = this.parseArguments(rawArgs);
 
         logger.info(`@entrypoint-handler: executing job #${index} using binary: ${path.basename(binaryPath)}`);
 
@@ -91,7 +87,7 @@ export default class EntrypointHandler implements INodeHandler{
     }
 
     private async prepareContext(nodeId: string, context: ExecutionContext){
-        const forEachNode = findParentByType(nodeId, context.workflow, NodeType.ForEach);
+        const forEachNode = context.workflow.findParentByType(nodeId, WorkflowNodeType.ForEach);
         if(!forEachNode) throw new Error('Entrypoint: Must be inside a ForEach loop');
 
         const output = context.outputs.get(forEachNode.id);
@@ -108,5 +104,12 @@ export default class EntrypointHandler implements INodeHandler{
         output!.outputPath = outputDir;
 
         return { item, index, outputDir };
+    }
+
+
+    private parseArguments(str: string): string[]{
+        if(!str) return [];
+        const regex = /"([^"]*)"|'([^']*)'|(\S+)/g;
+        return [...str.matchAll(regex)].map(m => m[1] ?? m[2] ?? m[3]);
     }
 };
