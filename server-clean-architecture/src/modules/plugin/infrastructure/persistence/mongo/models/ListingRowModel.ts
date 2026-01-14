@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
 import { ListingRowProps } from '@/src/modules/plugin/domain/entities/ListingRow';
 import { ListingRowSchema } from '../schemas/ListingRowSchema';
@@ -14,6 +14,6 @@ ListingRowSchema.index({
     timestep: 1
 }, { unique: true });
 
-const ListingRowModel = mongoose.model('PluginListingRow', ListingRowSchema);
+const ListingRowModel: Model<ListingRowDocument> = mongoose.model<ListingRowDocument>('PluginListingRow', ListingRowSchema);
 
 export default ListingRowModel;

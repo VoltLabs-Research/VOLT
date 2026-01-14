@@ -13,4 +13,4 @@ export default class ListingRowRepository
     constructor(){
         super(ListingRowModel, listingRowMapper);
     }
-}
+};

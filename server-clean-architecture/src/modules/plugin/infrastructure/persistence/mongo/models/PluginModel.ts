@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
 import { PluginProps } from '@/src/modules/plugin/domain/entities/Plugin';
 import { PluginSchema } from '../schemas/PluginSchema';
@@ -12,6 +12,6 @@ PluginSchema.index({
     'modifier.description': 'text' 
 });
 
-const PluginModel = mongoose.model<PluginDocument>('Plugin', PluginSchema);
+const PluginModel: Model<PluginDocument> = mongoose.model<PluginDocument>('Plugin', PluginSchema);
 
 export default PluginModel;
