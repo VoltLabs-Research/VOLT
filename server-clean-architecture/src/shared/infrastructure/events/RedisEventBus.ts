@@ -3,8 +3,10 @@ import { IEventBus } from '../../application/events/IEventBus';
 import { IDomainEvent } from '../../application/events/IDomainEvent';
 import { IEventHandler } from '../../application/events/IEventHandler';
 import { createRedisClient } from '@/src/core/redis';
+import { singleton } from 'tsyringe';
 import logger from '../logger';
 
+@singleton()
 export default class RedisEvent implements IEventBus{
     private publisher: Redis;
     private subscriber: Redis;

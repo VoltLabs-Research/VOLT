@@ -6,6 +6,7 @@ import { AddDailyActivityInputDTO } from "../dto/AddDailyActivityDTO";
 import { DAILY_ACTIVITY_TOKENS } from "../../infrastructure/di/DailyActivityTokens";
 import { injectable, inject } from 'tsyringe';
 
+// TODO: MAYBE UNUSED AND HANDLED BY EVENTS
 @injectable()
 export default class AddDailyActivityUseCase implements IUseCase<AddDailyActivityInputDTO, void, ApplicationError>{
     constructor(
