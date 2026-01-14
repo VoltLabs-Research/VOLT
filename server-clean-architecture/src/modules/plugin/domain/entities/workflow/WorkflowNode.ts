@@ -10,7 +10,7 @@ export enum WorkflowNodeType{
     Schema = 'schema',
     Visualizers = 'visualizers',
     Export = 'export',
-    IfStatment = 'if-statement'
+    IfStatement = 'if-statement'
 };
 
 export interface WorkflowNode{

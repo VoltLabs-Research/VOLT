@@ -33,6 +33,107 @@ export default class Workflow{
     }
 
     /**
+     * Node lookup map.
+     */
+    getNodeMap(): Map<string, any>{
+        const map = new Map();
+        for(const node of this.props.nodes){
+            map.set(node.id, node);
+        }
+        return map;
+    }
+
+    /**
+     * Edge lookup for finding connected exposures.
+     */
+    getParentMap(): Map<string, string[]>{
+        const map = new Map<string, string[]>();
+        for(const edge of this.props.edges){
+            const parents = map.get(edge.target) || [];
+            parents.push(edge.source);
+            map.set(edge.target, parents);
+        }
+        return map;
+    }
+
+    /**
+     * Traverse the graph from a specific handle (branch) to find all downstream nodes.
+     */
+    findDescendantNodesOnBranch(startNodeId: string, sourceHandle: string): string[]{
+        const result: string[] = [];
+        const visited = new Set<string>();
+
+        // Find immediate children connected to the specific handle (e.g., "False" handle)
+        const initialChildren = this.props.edges
+            .filter((edge) => edge.source === startNodeId && edge.sourceHandle === sourceHandle)
+            .map((edge) => edge.target);
+
+        const queue = [...initialChildren];
+
+        // BFS to find all descendants of those children
+        while(queue.length > 0){
+            const nodeId = queue.shift()!;
+            if(visited.has(nodeId)) continue;
+
+            visited.add(nodeId);
+            result.push(nodeId);
+
+            const downstreamChildren = this.props.edges
+                .filter((edge) => edge.source === nodeId)
+                .map((edge) => edge.target);
+
+            queue.push(...downstreamChildren);
+        }
+
+        return result;
+    }
+
+    /**
+     * Traverses the workflow graph downwards from the exposure node
+     * looking for a node of type visualizer. If found, it extracts the column
+     * definitions configured within it.
+     */
+    findColumnsDefinitionsFromExposureVisualizer(listingSlug: string){
+        // TODO: Refactor 
+        const exposureNodeId = this.findExposureByListingSlug(listingSlug);
+        if(!exposureNodeId) return [];
+
+        const visited = new Set<string>();
+        const queue = [exposureNodeId];
+
+        while(queue.length){
+            const id = queue.shift()!;
+            if(visited.has(id)) continue;
+            visited.add(id);
+
+            const outEdges = this.props.edges.filter((edge) => edge.source === id);
+            for(const edge of outEdges){
+                const target = this.props.nodes.find((node) => node.id === edge.target);
+                if(!target) continue;
+
+                if(target.type === WorkflowNodeType.Visualizers && target.data.visualizers?.listing){
+                    const listingDefinition = target.data.visualizers.listing || {};
+                    return Object
+                        .entries(listingDefinition)
+                        .map(([ path, label ]) => ({ path, label }));
+                }
+
+                queue.push(edge.target);
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Locates the ID of the exposure node corresponding to the requested listing slug.
+     */
+    findExposureByListingSlug(listingSlug: string): string | null{
+        const node = this.props.nodes.find((node) => node.type === WorkflowNodeType.Exposure && node?.data?.exposure?.name === listingSlug);
+        return node?.id ?? null;
+    }
+
+    /**
      * Find immediate parent node of specified type.
      */
     findParentByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null{
