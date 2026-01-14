@@ -7,7 +7,7 @@ import { ISessionManagerService } from '../../domain/ports/ISessionManagerServic
 import { IRecoveryManagerService } from '../../domain/ports/IRecoveryManagerService';
 import { IJobHandlerService, JobInfo } from '../../domain/ports/IJobHandlerService';
 import { IEventBus } from '../../../../shared/application/events/IEventBus';
-import { JOBS_TOKENS } from './di/JobsTokens';
+import { JOBS_TOKENS } from '../di/JobsTokens';
 import Job, { JobStatus } from '../../domain/entities/Job';
 import JobsAddedEvent from '../../application/events/JobsAddedEvent';
 import JobProgressEvent from '../../application/events/JobProgressEvent';

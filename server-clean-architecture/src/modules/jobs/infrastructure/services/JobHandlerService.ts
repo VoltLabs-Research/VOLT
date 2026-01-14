@@ -4,7 +4,7 @@ import { IJobHandlerService } from '../../domain/ports/IJobHandlerService';
 import { IJobRepository } from '../../domain/ports/IJobRepository';
 import { SHARED_TOKENS } from '../../../../shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '../../../../shared/application/events/IEventBus';
-import { JOBS_TOKENS } from './di/JobsTokens';
+import { JOBS_TOKENS } from '../di/JobsTokens';
 import JobStatusChangedEvent from '../../application/events/JobStatusChangedEvent';
 import JobCompletedEvent from '../../application/events/JobCompletedEvent';
 import JobFailedEvent from '../../application/events/JobFailedEvent';

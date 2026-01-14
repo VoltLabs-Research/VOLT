@@ -6,7 +6,7 @@ import { IJobRepository } from "../../domain/ports/IJobRepository";
 import { SHARED_TOKENS } from "../../../../shared/infrastructure/di/SharedTokens";
 import { IEventBus } from "../../../../shared/application/events/IEventBus";
 import SessionCompletedEvent from "../../application/events/SessionCompletedEvent";
-import { JOBS_TOKENS } from "./di/JobsTokens";
+import { JOBS_TOKENS } from "../di/JobsTokens";
 
 @injectable()
 export default class SessionManagerService implements ISessionManagerService{
@@ -54,14 +54,9 @@ export default class SessionManagerService implements ISessionManagerService{
         await pipeline.exec();
     }
 
-    async executeCleanupScript(
-        sessionId: string,
-        trajectoryId: string
-    ): Promise<[number, number, string]> {
+    async executeCleanupScript(sessionId: string): Promise<[number, number, string]> {
         const luaScript = `
             local sessionId = ARGV[1]
-            local trajectoryId = ARGV[2]
-
             local sessionKey = "session:" .. sessionId
             local counterKey = sessionKey .. ":remaining"
 
@@ -70,18 +65,16 @@ export default class SessionManagerService implements ISessionManagerService{
             if remaining <= 0 then
                 redis.call('DEL', sessionKey)
                 redis.call('DEL', counterKey)
-
                 return {1, 0, "cleaned"}
             else
                 return {0, remaining, "pending"}
             end
         `;
 
-        return await this.jobRepository.evalScript(
+       return await this.jobRepository.evalScript(
             luaScript,
             0,
-            sessionId,
-            trajectoryId
+            sessionId
         ) as [number, number, string];
     }
 
@@ -118,7 +111,7 @@ export default class SessionManagerService implements ISessionManagerService{
         const { sessionId } = job.props;
 
         try {
-            const result = await this.executeCleanupScript(sessionId, job.props.teamId);
+            const result = await this.executeCleanupScript(sessionId);
             const [shouldClean] = result;
 
             if (shouldClean === 1) {

@@ -3,7 +3,7 @@ import Job, { JobStatus } from '../../domain/entities/Job';
 import { IRecoveryManagerService } from '../../domain/ports/IRecoveryManagerService';
 import { IJobRepository } from '../../domain/ports/IJobRepository';
 import { setImmediate } from 'node:timers/promises';
-import { JOBS_TOKENS } from './di/JobsTokens';
+import { JOBS_TOKENS } from '../di/JobsTokens';
 
 export interface RecoveryManagerConfig{
     queueKey: string;
