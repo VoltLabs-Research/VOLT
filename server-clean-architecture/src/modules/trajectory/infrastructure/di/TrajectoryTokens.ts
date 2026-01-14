@@ -3,5 +3,6 @@ export const TRAJECTORY_TOKENS = {
     TrajectoryDumpStorageService: Symbol.for('TrajectoryDumpStorageService'),
     AtomisticExporter: Symbol.for('AtomisticExporter'),
     DislocationExporter: Symbol.for('DislocationExporter'),
-    MeshExporter: Symbol.for('MeshExporter')
+    MeshExporter: Symbol.for('MeshExporter'),
+    ChartExporter: Symbol.for('ChartExporter')
 };

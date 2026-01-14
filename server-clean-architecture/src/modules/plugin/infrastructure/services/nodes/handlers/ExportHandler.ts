@@ -1,10 +1,13 @@
 import { injectable, inject } from 'tsyringe';
 import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@/src/modules/plugin/domain/ports/INodeRegistry';
 import { PLUGIN_TOKENS } from '../../../di/PluginTokens';
-import { IAtomisticExporter, IChartExporter, IDislocationExporter, IMeshExporter } from '@/src/modules/trajectory/domain/port/IExporters';
 import { TRAJECTORY_TOKENS } from '@/src/modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { WorkflowNodeType, WorkflowNode } from '@/src/modules/plugin/domain/entities/workflow/WorkflowNode';
 import { Exporter, ExportType } from '@/src/modules/plugin/domain/entities/workflow/nodes/ExportNode';
+import { IAtomisticExporter } from '@/src/modules/trajectory/domain/port/exporters/AtomisticExporter';
+import { IChartExporter } from '@/src/modules/trajectory/domain/port/exporters/ChartExporter';
+import { IDislocationExporter } from '@/src/modules/trajectory/domain/port/exporters/DislocationExporter';
+import { IMeshExporter } from '@/src/modules/trajectory/domain/port/exporters/MeshExporter';
 import slugify from '@/src/shared/infrastructure/utilities/slugify';
 
 @injectable()
@@ -40,7 +43,7 @@ export default class ExportHandler implements INodeHandler{
 
     async execute(node: WorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
         const config = node.data.export!;
-        const exposureNode = findAncestorByType(node.id, context.workflow, NodeType.Exposure);
+        const exposureNode = context.workflow.findAncestorByType(node.id, WorkflowNodeType.Exposure);
         if(!exposureNode) throw new Error('ExportHandler: Orphaned export node');
 
         const exposureOutput = context.outputs.get(exposureNode.id);
