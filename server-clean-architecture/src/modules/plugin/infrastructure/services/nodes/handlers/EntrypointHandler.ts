@@ -5,6 +5,7 @@ import { PLUGIN_TOKENS } from '../../../di/PluginTokens';
 import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
 import { IPluginBinaryCacheService } from '@/src/modules/plugin/domain/ports/IPluginBinaryCacheService';
 import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
+import { IProcessExecutorService } from '@/src/modules/plugin/domain/ports/IProcessExecutorService';
 import path from 'node:path';
 import logger from '@/src/shared/infrastructure/logger';
 
@@ -17,7 +18,7 @@ export default class EntrypointHandler implements INodeHandler{
         private registry: INodeRegistry,
         @inject(PLUGIN_TOKENS.PluginBinaryCacheService)
         private binaryCache: IPluginBinaryCacheService,
-        @inject(PLUGIN_TOKENS.ProcessExecutor)
+        @inject(PLUGIN_TOKENS.ProcessExecutorService)
         private processExecutor: IProcessExecutorService,
         @inject(SHARED_TOKENS.TempFileService)
         private tempFileService: ITempFileService
@@ -105,7 +106,6 @@ export default class EntrypointHandler implements INodeHandler{
 
         return { item, index, outputDir };
     }
-
 
     private parseArguments(str: string): string[]{
         if(!str) return [];
