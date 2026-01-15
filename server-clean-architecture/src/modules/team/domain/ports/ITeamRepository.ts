@@ -11,6 +11,11 @@ export interface ITeamRepository extends IBaseRepository<Team, TeamProps>{
     ): Promise<void>;
 
     /**
+     * Remove a user from all teams (members and admins arrays).
+     */
+    removeUserFromAllTeams(userId: string): Promise<void>;
+
+    /**
      * Get all teams for the specified user.
      */
     findUserTeams(userId: string): Promise<TeamProps[]>;

@@ -14,6 +14,20 @@ export default class TeamRepository
         super(TeamModel, teamMapper);
     }
 
+    async removeUserFromAllTeams(userId: string): Promise<void> {
+        // Remove user from members arrays of all teams
+        await this.model.updateMany(
+            { members: userId },
+            { $pull: { members: userId } }
+        );
+
+        // Remove user from admins arrays of all teams
+        await this.model.updateMany(
+            { admins: userId },
+            { $pull: { admins: userId } }
+        );
+    }
+
     async hasAccess(userId: string, teamId: string): Promise<boolean>{
         const result = await this.model.exists({
             _id: teamId,
