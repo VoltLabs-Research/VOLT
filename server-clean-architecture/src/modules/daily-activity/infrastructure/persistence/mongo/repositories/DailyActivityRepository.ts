@@ -14,6 +14,22 @@ export default class DailyActivityRepository
         super(DailyActivityModel, dailyActitvityMapper);
     }
 
+    async updateOnlineMinutes(
+        teamId: string,
+        userId: string,
+        date: Date,
+        minutes: number
+    ): Promise<void>{
+        await this.model.updateOne(
+            { team: teamId, user: userId, date },
+            {
+                $inc: { minutesOnline: minutes },
+                $setOnInsert: { activity: [] }
+            },
+            { upsert: true }
+        );
+    }
+
     async findActivityByTeamId(teamId: string, range: number): Promise<DailyActivityProps[]>{
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - range);

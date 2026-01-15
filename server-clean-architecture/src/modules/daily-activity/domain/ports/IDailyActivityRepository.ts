@@ -19,4 +19,11 @@ export interface IDailyActivityRepository extends IBaseRepository<DailyActivity,
         teamId: string, 
         range: number
     ): Promise<DailyActivityProps[]>;
+
+    updateOnlineMinutes(
+        teamId: string,
+        userId: string,
+        date: Date,
+        minutes: number
+    ): Promise<void>;
 };
