@@ -13,4 +13,9 @@ export default class SSHConnectionRepository
     constructor(){
         super(SSHConnectionModel, sshConnectionMapper);
     }
+
+    async findByIdWithCredentials(id: string): Promise<SSHConnection | null> {
+        const doc = await this.model.findById(id).select('+encryptedPassword');
+        return doc ? this.mapper.toDomain(doc) : null;
+    }
 };

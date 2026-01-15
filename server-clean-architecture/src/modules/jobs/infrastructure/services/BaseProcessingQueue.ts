@@ -27,7 +27,7 @@ interface QueueConstants{
     BATCH_SIZE: number;
 };
 
-export default abstract class BaseProcessingQueue<T extends Job> implements IJobQueueService{
+export default abstract class BaseProcessingQueue<T extends Job = Job> implements IJobQueueService {
     protected readonly queueName: string;
     protected readonly workerPath: string;
     protected readonly maxConcurrentJobs: number;
@@ -128,7 +128,10 @@ export default abstract class BaseProcessingQueue<T extends Job> implements IJob
         });
     }
 
-    protected abstract deserializeJob(rawData: string): T;
+    protected deserializeJob(rawData: string): T {
+        const data = JSON.parse(rawData);
+        return new Job(data.props || data) as unknown as T;
+    }
 
     protected async onBeforeDecrement(job: T): Promise<number>{
         return 0;
