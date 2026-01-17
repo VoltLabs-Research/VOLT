@@ -1,22 +1,22 @@
 import { injectable, inject } from 'tsyringe';
-import { ITrajectoryBackgroundProcessor } from '../../domain/port/ITrajectoryBackgroundProcessor';
+import { ITrajectoryBackgroundProcessor, ProcessorContext } from '../../domain/port/ITrajectoryBackgroundProcessor';
 import TrajectoryParserFactory from '../parsers/TrajectoryParserFactory';
 import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
 import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@/src/shared/application/events/IEventBus';
 import { TRAJECTORY_TOKENS } from '../di/TrajectoryTokens';
 import { ITrajectoryRepository } from '../../domain/port/ITrajectoryRepository';
-
 import TrajectoryUpdatedEvent from '../../application/events/TrajectoryUpdatedEvent';
 import { ISimulationCellRepository } from '@/src/modules/simulation-cell/domain/ports/ISimulationCellRepository';
 import { SIMULATION_CELL_TOKENS } from '@/src/modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import { IJobQueueService } from '@/src/modules/jobs/domain/ports/IJobQueueService';
 import { TrajectoryStatus } from '../../domain/entities/Trajectory';
-import { v4 as uuidv4 } from 'uuid';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import logger from '@/src/shared/infrastructure/logger';
+import { v4 } from 'uuid';
 import { IFileExtractorService } from '@/src/shared/domain/ports/IFileExtractorService';
+import { ErrorCodes } from '@/src/core/constants/error-codes';
+import fs from 'node:fs/promises';
+import logger from '@/src/shared/infrastructure/logger';
+import path from 'node:path';
 
 @injectable()
 export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgroundProcessor {
@@ -41,188 +41,225 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         @inject(SHARED_TOKENS.FileExtractorService)
         private readonly extractor: IFileExtractorService
-    ) { }
+    ){}
 
-    public async process(trajectoryId: string, files: any[], teamId: string): Promise<void> {
+    /**
+     * Entry point for trajectory background processing.
+     */
+    public async process(
+        trajectoryId: string,
+        files: any[],
+        teamId: string
+    ): Promise<void>{
+        const ctx = await this.createContext(trajectoryId);
+
+        try{
+            const trajectory = await this.loadTrajectory(trajectoryId);
+            await this.updateStatus(
+                trajectoryId,
+                teamId,
+                TrajectoryStatus.Processing
+            );
+            
+            const extractedFiles = await this.extractor.extractFiles(files, ctx.workingDir);
+            const frames = await this.buildFrames(trajectoryId, teamId, extractedFiles);
+            this.ensureValidFrames(frames);
+
+            await this.persistTrajectory(trajectoryId, frames);
+            await this.dispatchJobs(frames, trajectory, teamId);
+        }catch(error){
+            logger.error(`@trajectory-background-processor: ${String(error)}`);
+            await this.updateStatus(
+                trajectoryId,
+                teamId,
+                TrajectoryStatus.Failed
+            );
+        }finally{
+            await this.cleanup(ctx);
+        }
+    }
+
+    /**
+     * Creates an insolated working directory for trajectory processing.
+     */
+    private async createContext(trajectoryId: string): Promise<ProcessorContext>{
         const workingDir = this.tempFileService.getDirPath(`trajectory-uploads/${trajectoryId}`);
         await fs.mkdir(workingDir, { recursive: true });
+        return { workingDir };
+    }
 
-        try {
-            const trajectory = await this.trajectoryRepo.findById(trajectoryId);
-            if (!trajectory) {
-                throw new Error(`Trajectory not found: ${trajectoryId}`);
-            }
+    /**
+     * Removes temporary resources created during processing.
+     * Cleanup failures are intentionally ignored.
+     */
+    private async cleanup(ctx: ProcessorContext){
+        await fs.rm(ctx.workingDir, {
+            recursive: true,
+            force: true
+        }).catch(() => {});
+    }
 
-            const finalFiles = await this.extractor.extractFiles(files, workingDir);
-            const validFrames = await this.parseFrames(trajectoryId, teamId, finalFiles);
+    /**
+     * Loads a trajectory by id or throws if not found.
+     */
+    private async loadTrajectory(trajectoryId: string){
+        const trajectory = await this.trajectoryRepo.findById(trajectoryId);
+        if(!trajectory){
+            throw new Error(ErrorCodes.TRAJECTORY_NOT_FOUND);
+        }
+        return trajectory;
+    }
 
-            if (validFrames.length === 0) {
-                await this.updateStatus(trajectoryId, teamId, TrajectoryStatus.Failed);
-                return;
-            }
-
-            // Update Trajectory entity with frames and Processing status
-            await this.trajectoryRepo.updateById(trajectoryId, {
-                frames: validFrames.map(({ cachePath, ...rest }) => rest) as any,
-                status: TrajectoryStatus.Processing,
-                stats: {
-                    totalFiles: validFrames.length,
-                    totalSize: validFrames.reduce((acc, f) => acc + (f.natoms || 0), 0)
-                }
-            });
-
-            await this.updateStatus(trajectoryId, teamId, TrajectoryStatus.Processing);
-
-            // Dispatch Jobs to queues - EXACTLY LIKE OLD SERVER
-            // Note: These jobs are for internal worker processing only, not exposed to frontend
-            await this.dispatchTrajectoryJobs(validFrames, trajectory, teamId);
-            await this.dispatchCloudUploadJobs(validFrames, trajectory, teamId);
-
-        } catch (error) {
-            logger.error(`@trajectory-background-processor: critical error: ${error}`);
-            await this.updateStatus(trajectoryId, teamId, TrajectoryStatus.Failed);
-        } finally {
-            await fs.rm(workingDir, { recursive: true, force: true }).catch(() => { });
+    /**
+     * Ensures at lesat one valid frame exists.
+     */
+    private ensureValidFrames(frames: any[]){
+        if(frames.length === 0){
+            throw new Error(ErrorCodes.TRAJECTORY_CREATION_NO_VALID_FILES);
         }
     }
 
-    private async parseFrames(trajectoryId: string, teamId: string, files: any[]): Promise<any[]> {
-        const validFrames: any[] = [];
-
-        for (const file of files) {
-            try {
-                const result = await TrajectoryParserFactory.parse(file.path);
-                if (!result || !result.metadata) continue;
-
-                const { simulationCell, ...restMetadata } = result.metadata;
-
-                const simCellId = await this.createSimulationCell(trajectoryId, teamId, restMetadata.timestep, simulationCell);
-
-                const cachePath = path.join(this.tempFileService.rootPath, 'trajectory-cache', trajectoryId, `${restMetadata.timestep}.dump`);
-                await fs.mkdir(path.dirname(cachePath), { recursive: true });
-                await fs.copyFile(file.path, cachePath);
-
-                validFrames.push({
-                    ...restMetadata,
-                    simulationCell: simCellId,
-                    cachePath
-                });
-            } catch (e) {
-                logger.error(`@trajectory-background-processor: error parsing file ${file.originalname}: ${e}`);
-            }
-        }
-
-        return validFrames.sort((a, b) => a.timestep - b.timestep);
+    /**
+     * Builds and sort valid trajectory frames.
+     * Invalid or failed frames are skipped.
+     */
+    private async buildFrames(
+        trajectoryId: string,
+        teamId: string,
+        files: any[]
+    ): Promise<any[]>{
+        const frames = await Promise.all(files.map(
+            (file) => this.parseFrame(trajectoryId, teamId, file)));
+        return frames
+            .filter((frame: any) => frame !== null)
+            .sort((a: any, b: any) => a.timestep - b.timestep);
     }
 
-    private async createSimulationCell(trajectoryId: string, teamId: string, timestep: number, data: any): Promise<string | null> {
-        if (!data) return null;
-        try {
-            const newSimCell = await this.simulationCellRepo.create({
-                ...data,
-                team: teamId,
-                trajectory: trajectoryId,
-                timestep
-            });
-            return newSimCell.id;
-        } catch (e) {
-            logger.error(`@trajectory-background-processor: error creating simulation cell for ${trajectoryId}:${timestep}: ${e}`);
+    /**
+     * Attempts to parse a single trajectory frame.
+     * Failures are logged and result in a skipped frame.
+     */
+    private async parseFrame(
+        trajectoryId: string,
+        teamId: string,
+        file: any
+    ): Promise<any | null>{
+        try{
+            const result = await TrajectoryParserFactory.parse(file.path);
+            if(!result?.metadata) return null;
+
+            const { simulationCell, ...metadata } = result.metadata;
+
+            const simulationCellId = await this.createSimulationCell(
+                trajectoryId,
+                teamId,
+                metadata.timestep,
+                simulationCell
+            );
+
+            const cachePath = await this.cacheFrame(
+                trajectoryId,
+                metadata.timestep,
+                file.path
+            );
+
+            return {
+                ...metadata,
+                size: file.size,
+                simulationCell: simulationCellId,
+                cachePath
+            };
+        }catch(error){
+            logger.warn(`@trajectory-background-processor: skipping file ${file.originalname}: ${error}`);
             return null;
         }
     }
 
     /**
-     * Dispatch trajectory processing jobs - REPLICATED FROM OLD SERVER PATTERN
-     * Creates job objects with exact same structure as old server
+     * Copies a frame file into the trajectory cache.
      */
-    private async dispatchTrajectoryJobs(frames: any[], trajectory: any, teamId: string): Promise<void> {
-        const jobs: any[] = [];
-        const sessionId = uuidv4();
+    private async cacheFrame(
+        trajectoryId: string,
+        timestep: number,
+        sourcePath: string
+    ): Promise<string>{
+        const cachePath = path.join(
+            this.tempFileService.rootPath,
+            'trajectory-cache',
+            trajectoryId,
+            `${timestep}.dump`
+        );
 
-        for (const frame of frames) {
-            const timestep = frame.timestep ?? 0;
+        await fs.mkdir(path.dirname(cachePath), { recursive: true });
+        await fs.copyFile(sourcePath, cachePath);
 
-            // Extract frameInfo without cachePath (exactly like old server)
-            const { cachePath, ...frameInfo } = frame;
-
-            jobs.push({
-                jobId: uuidv4(),
-                trajectoryId: trajectory.id,
-                trajectoryName: trajectory.props.name,
-                timestep,
-                teamId,
-                name: 'Convert to GLB',
-                message: trajectory.props.name,
-                sessionId,
-                sessionStartTime: new Date().toISOString(),
-                file: {
-                    frameInfo,
-                    frameFilePath: cachePath
-                },
-                folderPath: '',
-                tempFolderPath: '',
-                queueType: 'trajectory_processing',
-                metadata: {
-                    trajectoryId: trajectory.id,
-                    trajectoryName: trajectory.props.name,
-                    timestep,
-                    name: 'Convert to GLB',
-                    file: {
-                        frameInfo,
-                        frameFilePath: cachePath
-                    }
-                }
-            });
-        }
-
-        logger.info(`@trajectory-background-processor: Dispatching ${jobs.length} trajectory processing jobs for trajectory ${trajectory.id}`);
-        await this.processingQueue.addJobs(jobs);
+        return cachePath;
     }
 
     /**
-     * Dispatch cloud upload jobs - REPLICATED FROM OLD SERVER PATTERN
+     * Attempts to persist a simulation cell.
+     * Failure is tolerated and results in a null reference.
      */
-    private async dispatchCloudUploadJobs(frames: any[], trajectory: any, teamId: string): Promise<void> {
-        const jobs: any[] = [];
-        const sessionId = uuidv4();
-
-        for (const frame of frames) {
-            const { cachePath, ...frameInfo } = frame;
-            const timestep = frame.timestep ?? 0;
-
-            jobs.push({
-                jobId: uuidv4(),
-                teamId,
-                timestep,
-                trajectoryId: trajectory.id,
-                trajectoryName: trajectory.props.name,
-                name: 'Upload Frame',
-                message: trajectory.props.name,
-                sessionId,
-                sessionStartTime: new Date().toISOString(),
-                file: {
-                    frameInfo,
-                    frameFilePath: cachePath
-                },
-                queueType: 'cloud-upload',
-                metadata: {
-                    trajectoryId: trajectory.id,
-                    trajectoryName: trajectory.props.name,
-                    timestep,
-                    name: 'Upload Frame',
-                    file: {
-                        frameInfo,
-                        frameFilePath: cachePath
-                    }
-                }
+    private async createSimulationCell(
+        trajectoryId: string,
+        teamId: string,
+        timestep: number,
+        data: any
+    ): Promise<string | null>{
+        if(!data) return null;
+        try{
+            const cell = await this.simulationCellRepo.create({
+                ...data,
+                team: teamId,
+                trajectory: trajectoryId,
+                timestep
             });
+            return cell.id;
+        }catch{
+            logger.warn(`@trajectory-background-processor: simulation cell failed ${trajectoryId}:${timestep}`);
+            return null;
         }
-
-        logger.info(`@trajectory-background-processor: Dispatching ${jobs.length} cloud upload jobs for trajectory ${trajectory.id}`);
-        await this.cloudUploadQueue.addJobs(jobs);
     }
 
-    private async updateStatus(trajectoryId: string, teamId: string, status: TrajectoryStatus): Promise<void> {
+    /**
+     * Persists trajectory frames and statistics.
+     */
+    private async persistTrajectory(
+        trajectoryId: string,
+        frames: any[]
+    ): Promise<void>{
+        const totalSize = frames.reduce((acc, f) => acc + (f.size ?? 0), 0);
+
+        await this.trajectoryRepo.updateById(trajectoryId, {
+            frames: frames.map(({ cachePath, ...rest }) => rest),
+            status: TrajectoryStatus.Processing,
+            stats: {
+                totalFiles: frames.length,
+                totalSize
+            }
+        });
+    }
+
+    /**
+     * Dispatches all background jobs for a trajectory.
+     */
+    private async dispatchJobs(
+        frames: any[],
+        trajectory: any,
+        teamId: string
+    ): Promise<void>{
+        await this.dispatchTrajectoryJobs(frames, trajectory, teamId);
+        await this.dispatchCloudUploadJobs(frames, trajectory, teamId);
+    }
+
+    /**
+     * Updates trajectory status and emits a domain event.
+     */
+    private async updateStatus(
+        trajectoryId: string,
+        teamId: string,
+        status: TrajectoryStatus
+    ): Promise<void>{
         await this.trajectoryRepo.updateById(trajectoryId, { status });
         await this.eventBus.publish(new TrajectoryUpdatedEvent({
             trajectoryId,
@@ -231,4 +268,76 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
             updatedAt: new Date()
         }));
     }
-}
+
+    /**
+     * Dispatches trajectory processing jobs.
+     */
+    private async dispatchTrajectoryJobs(
+        frames: any[],
+        trajectory: any,
+        teamId: string
+    ): Promise<void>{
+        const jobs: any[] = [];
+        const sessionId = v4();
+
+        for(const frame of frames){
+            const { cachePath, timestep, ...frameInfo } = frame;
+            jobs.push({
+                jobId: v4(),
+                teamId,
+                name: 'Convert to GLB',
+                message: trajectory.props.name,
+                sessionId,
+                queueType: 'trajectory_processing',
+                metadata: {
+                    trajectoryId: trajectory.id,
+                    trajectoryName: trajectory.props.name,
+                    timestep,
+                    file: {
+                        frameInfo,
+                        frameFilePath: cachePath
+                    }                    
+                }
+            });
+        }
+
+        logger.info(`@trajectory-background-processor: Dispatching ${jobs.length} trajectory processing jobs`);
+        await this.processingQueue.addJobs(jobs);
+    }
+
+    /**
+     * Dispatches cloud upload jobs.
+     */    
+    private async dispatchCloudUploadJobs(
+        frames: any[],
+        trajectory: any,
+        teamId: string
+    ): Promise<void>{
+        const jobs: any[] = [];
+        const sessionId = v4();
+
+        for(const frame of frames){
+            const { cachePath, timestep, ...frameInfo } = frame;
+            jobs.push({
+                jobId: v4(),
+                teamId,
+                name: 'Upload Frame',
+                message: trajectory.props.name,
+                sessionId,
+                queueType: 'cloud-upload',
+                metadata: {
+                    trajectoryId: trajectory.id,
+                    trajectoryName: trajectory.props.name,
+                    timestep,
+                    file: {
+                        frameInfo,
+                        frameFilePath: cachePath
+                    }
+                }
+            });
+        }
+
+        logger.info(`@trajectory-background-processor: Dispatching ${jobs.length} cloud upload jobs`);
+        await this.cloudUploadQueue.addJobs(jobs);
+    }
+};

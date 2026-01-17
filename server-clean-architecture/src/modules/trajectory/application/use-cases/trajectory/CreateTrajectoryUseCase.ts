@@ -21,19 +21,13 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
     async execute(input: CreateTrajectoryInputDTO): Promise<Result<CreateTrajectoryOutputDTO, ApplicationError>> {
         const { name, teamId, userId, files } = input;
 
-        const totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
-        const totalFiles = files.length;
-
         const trajectory = await this.trajectoryRepo.create({
             name,
             team: teamId,
             createdBy: userId,
             status: TrajectoryStatus.WaitingForProcess,
             frames: [],
-            stats: {
-                totalFiles,
-                totalSize
-            },
+            stats: { totalFiles: 0, totalSize: 0 },
             analysis: [],
             rasterSceneViews: 0,
             isPublic: true,
