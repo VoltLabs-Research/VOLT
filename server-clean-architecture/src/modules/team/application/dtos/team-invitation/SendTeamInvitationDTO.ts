@@ -4,7 +4,7 @@ export interface SendTeamInvitationInputDTO {
     teamId: string;
     invitedByUserId: string;
     email: string;
-    role: string;
+    roleId: string;
 }
 
 export interface SendTeamInvitationOutputDTO extends TeamInvitationProps {}

@@ -15,7 +15,6 @@ export default class ListTeamRolesByTeamIdUseCase implements IUseCase<ListTeamRo
 
     async execute(input: ListTeamRolesByTeamIdInputDTO): Promise<Result<ListTeamRolesByTeamIdOutputDTO, ApplicationError>> {
         const { teamId, page, limit } = input;
-        console.log('List Team Roles by Team Id Use Caes', teamId)
         const results = await this.teamRoleRepository.findAll({ filter: { team: teamId }, page, limit });
         return Result.ok({
             ...results,

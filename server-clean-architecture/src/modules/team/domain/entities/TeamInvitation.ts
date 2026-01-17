@@ -1,9 +1,3 @@
-export enum TeamInvitationRole{
-    CanView = 'can-view',
-    CanEdit = 'can-edit',
-    FullAccess = 'full-access'
-};
-
 export enum TeamInvitationStatus{
     Pending = 'pending',
     Accepted = 'accepted',
@@ -16,7 +10,7 @@ export interface TeamInvitationProps{
     invitedUser: string;
     email: string;
     token: string;
-    role: TeamInvitationRole;
+    role: string;
     expiresAt: Date;
     acceptedAt: Date;
     status: TeamInvitationStatus;

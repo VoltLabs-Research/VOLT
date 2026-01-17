@@ -1,35 +1,22 @@
 import { Router } from 'express';
-import { container } from 'tsyringe';
 import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
 import { checkTeamMembership } from '../middlewares/check-team-membership';
-import CreateTeamController from '../controllers/team/CreateTeamController';
-import DeleteTeamByIdController from '../controllers/team/DeleteTeamByIdController';
-import GetTeamByIdController from '../controllers/team/GetTeamByIdController';
-import ListUserTeamsController from '../controllers/team/ListUserTeamsController';
-import RemoveUserFromTeamController from '../controllers/team/RemoveUserFromTeamController';
-import UpdateTeamByIdController from '../controllers/team/UpdateTeamByIdController';
-
-const createTeamController = container.resolve(CreateTeamController);
-const deleteTeamByIdController = container.resolve(DeleteTeamByIdController);
-const getTeamByIdController = container.resolve(GetTeamByIdController);
-const listUserTeamsController = container.resolve(ListUserTeamsController);
-const removeUserFromTeamController = container.resolve(RemoveUserFromTeamController);
-const updateTeamByIdController = container.resolve(UpdateTeamByIdController);
+import controllers from '../controllers/team';
 
 const router = Router();
 
 router.use(protect);
 
 router.route('/')
-    .get(listUserTeamsController.handle)
-    .post(createTeamController.handle);
+    .get(controllers.listUserTeams.handle)
+    .post(controllers.create.handle);
 
 router.route('/:teamId')
     .all(checkTeamMembership)
-    .get(getTeamByIdController.handle)
-    .patch(updateTeamByIdController.handle)
-    .delete(deleteTeamByIdController.handle);
+    .get(controllers.getById.handle)
+    .patch(controllers.updateById.handle)
+    .delete(controllers.deleteById.handle);
 
-router.post('/:id/members/remove', removeUserFromTeamController.handle);
+router.post('/:teamId/members/remove', controllers.removeUserFromTeam.handle);
 
 export default router;

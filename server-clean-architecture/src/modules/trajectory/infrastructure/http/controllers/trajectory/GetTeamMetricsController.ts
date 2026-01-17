@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { injectable } from 'tsyringe';
-import TrajectoryModel from '../../persistence/mongo/models/TrajectoryModel';
+import TrajectoryModel from '../../../persistence/mongo/models/TrajectoryModel';
 import PluginModel from '@/src/modules/plugin/infrastructure/persistence/mongo/models/PluginModel';
 import AnalysisModel from '@/src/modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
 

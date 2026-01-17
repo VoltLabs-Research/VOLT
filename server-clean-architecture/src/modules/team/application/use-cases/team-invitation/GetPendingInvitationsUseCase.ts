@@ -17,17 +17,21 @@ export default class GetPendingInvitationsUseCase implements IUseCase<GetPending
     async execute(input: GetPendingInvitationsInputDTO): Promise<Result<GetPendingInvitationsOutputDTO, ApplicationError>> {
         const { teamId } = input;
 
-        const result = await this.invitationRepository.findAll({
+        const results = await this.invitationRepository.findAll({
             filter: {
                 team: teamId,
                 status: TeamInvitationStatus.Pending
             },
+            populate: {
+                path: 'invitedUser'
+            },
             page: 1,
-            limit: 100 // Fetch acceptable amount of pending invitations
+            limit: 100 
         });
 
-        const invitationProps = result.data.map(inv => inv.props);
-
-        return Result.ok({ invitations: invitationProps });
+        return Result.ok({
+            ...results,
+            data: results.data.map(a => a.props)
+        });
     }
 }

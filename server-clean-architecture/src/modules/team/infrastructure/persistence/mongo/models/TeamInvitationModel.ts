@@ -1,9 +1,9 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
 import { ValidationCodes } from '@/src/core/constants/validation-codes';
-import { TeamInvitationProps, TeamInvitationRole, TeamInvitationStatus } from '@/src/modules/team/domain/entities/TeamInvitation';
+import { TeamInvitationProps, TeamInvitationStatus } from '@/src/modules/team/domain/entities/TeamInvitation';
 import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
 
-type TeamInvitationRelations = 'team' | 'invitedBy' | 'invitedUser';
+type TeamInvitationRelations = 'team' | 'invitedBy' | 'invitedUser' | 'role';
 
 export interface TeamInvitationDocument extends Persistable<TeamInvitationProps, TeamInvitationRelations>, Document{}
 
@@ -41,12 +41,8 @@ const TeamInvitationSchema: Schema<TeamInvitationDocument> = new Schema({
         index: true
     },
     role: {
-        type: String,
-        enum: {
-            values: Object.values(TeamInvitationRole),
-            message: ValidationCodes.TEAM_INVITATION_ROLE_INVALID
-        },
-        default: TeamInvitationRole.CanView,
+        type: Schema.Types.ObjectId,
+        ref: 'TeamRole',
         required: true
     },
     expiresAt: {

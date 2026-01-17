@@ -11,20 +11,26 @@ import { IUserRepository } from '@/src/modules/auth/domain/ports/IUserRepository
 import { SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO } from '../../dtos/team-invitation/SendTeamInvitationDTO';
 import crypto from 'crypto';
 import { TeamInvitationStatus } from '../../../domain/entities/TeamInvitation';
+import { ITeamRoleRepository } from '../../../domain/ports/ITeamRoleRepository';
 
 @injectable()
 export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository)
         private readonly invitationRepository: ITeamInvitationRepository,
+
         @inject(TEAM_TOKENS.TeamRepository)
         private readonly teamRepository: ITeamRepository,
+
         @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository
-    ) { }
+        private readonly userRepository: IUserRepository,
+
+        @inject(TEAM_TOKENS.TeamRoleRepository)
+        private readonly teamRoleRepository: ITeamRoleRepository
+    ){}
 
     async execute(input: SendTeamInvitationInputDTO): Promise<Result<SendTeamInvitationOutputDTO, ApplicationError>> {
-        const { teamId, invitedByUserId, email, role } = input;
+        const { teamId, invitedByUserId, email, roleId } = input;
 
         const team = await this.teamRepository.findById(teamId);
         if (!team) {
@@ -35,6 +41,13 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
         }
 
         const user = await this.userRepository.findByEmail(email.toLowerCase());
+        if(!user){
+            return Result.fail(ApplicationError.notFound(
+                ErrorCodes.USER_NOT_FOUND,
+                'User not found'
+            ));
+        }
+        
         if (user && team.props.members.includes(user.id)) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.TEAM_INVITATION_USER_ALREADY_MEMBER,
@@ -55,16 +68,24 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
             ));
         }
 
+        const role = await this.teamRoleRepository.findById(roleId);
+        if(!role){
+            return Result.fail(ApplicationError.notFound(
+                ErrorCodes.TEAM_ROLE_NOT_FOUND,
+                'Team role not found'
+            ));
+        }
+
         const token = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
         const invitation = await this.invitationRepository.create({
             team: teamId,
             invitedBy: invitedByUserId,
-            invitedUser: user?.id || '',
+            invitedUser: user.id,
             email: email.toLowerCase(),
             token,
-            role: role as any,
+            role: role.id,
             expiresAt,
             acceptedAt: new Date(),
             status: TeamInvitationStatus.Pending
