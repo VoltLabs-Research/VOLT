@@ -1,0 +1,15 @@
+import { container } from 'tsyringe';
+import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@/src/shared/application/events/IEventBus';
+import TeamDeletedEventHandler from '../../application/events/TeamDeletedEventHandler';
+import PluginDeletedEventHandler from '../../application/events/PluginDeletedEventHandler';
+
+export const registerPluginSubscribers = async (): Promise<void> => {
+    const eventBus = container.resolve<IEventBus>(SHARED_TOKENS.EventBus);
+
+    const teamDeletedHandler = container.resolve(TeamDeletedEventHandler);
+    const pluginDeletedHandler = container.resolve(PluginDeletedEventHandler);
+
+    await eventBus.subscribe('team.deleted', teamDeletedHandler);
+    await eventBus.subscribe('plugin.deleted', pluginDeletedHandler);
+};

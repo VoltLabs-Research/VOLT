@@ -4,7 +4,7 @@ import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/Mongo
 
 type AnalysisRelations = 'trajectory' | 'createdBy' | 'team';
 
-export interface AnalysisDocument extends Persistable<AnalysisProps, AnalysisRelations>, Document{}
+export interface AnalysisDocument extends Persistable<AnalysisProps, AnalysisRelations>, Document { }
 
 const AnalysisSchema: Schema<AnalysisDocument> = new Schema({
     plugin: {
@@ -27,6 +27,11 @@ const AnalysisSchema: Schema<AnalysisDocument> = new Schema({
     completedFrames: {
         type: Number,
         default: 0
+    },
+    status: {
+        type: String,
+        enum: ['pending', 'running', 'completed', 'failed'],
+        default: 'pending'
     },
     startedAt: Date,
     finishedAt: Date,

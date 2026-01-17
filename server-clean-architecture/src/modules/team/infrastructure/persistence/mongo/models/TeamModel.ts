@@ -5,7 +5,7 @@ import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/Mongo
 
 type TeamRelations = 'owner' | 'admins' | 'members' | 'invitations' | 'containers' | 'trajectories' | 'chats' | 'plugins';
 
-export interface TeamDocument extends Persistable<TeamProps, TeamRelations>, Document{}
+export interface TeamDocument extends Persistable<TeamProps, TeamRelations>, Document { }
 
 const TeamSchema: Schema<TeamDocument> = new Schema({
     name: {
@@ -32,8 +32,7 @@ const TeamSchema: Schema<TeamDocument> = new Schema({
     }],
     members: [{
         type: Schema.Types.ObjectId,
-        ref: 'User',
-        inverse: { path: 'teams', behavior: 'addToSet' },
+        ref: 'TeamMember',
         cascade: 'pull'
     }],
     invitations: [{

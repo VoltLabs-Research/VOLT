@@ -20,4 +20,4 @@ export const WorkflowEdgeSchema = new Schema({
     targetHandle: {
         type: String
     }
-}, { _id: false });
+}, { _id: false, strict: false });

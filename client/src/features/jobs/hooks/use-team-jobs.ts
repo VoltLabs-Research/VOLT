@@ -41,8 +41,6 @@ const useTeamJobs = () => {
         if (currentTeam?._id) {
             subscribeToTeam(currentTeam._id);
         }
-        // Note: No cleanup here - this hook is at app level and persists across navigation.
-        // Unsubscription only happens on explicit logout via disconnect().
     }, [currentTeam?._id, subscribeToTeam]);
 
     return {

@@ -9,7 +9,7 @@ import SessionCompletedEvent from "../../application/events/SessionCompletedEven
 import { JOBS_TOKENS } from "../di/JobsTokens";
 
 @injectable()
-export default class SessionManagerService implements ISessionManagerService{
+export default class SessionManagerService implements ISessionManagerService {
     private sessionsBeingCleaned = new Set<string>();
     private config!: SessionManagerConfig;
 
@@ -19,20 +19,20 @@ export default class SessionManagerService implements ISessionManagerService{
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
-    ){}
+    ) { }
 
-    initialize(config: SessionManagerConfig): void{
+    initialize(config: SessionManagerConfig): void {
         this.config = config;
     }
 
-    generateSessionID(): string{
+    generateSessionID(): string {
         return JobSession.generateSessionId();
     }
 
     async initializeSession(
-        sessionId: string, 
-        sessionStartTime: Date, 
-        jobCount: number, 
+        sessionId: string,
+        sessionStartTime: Date,
+        jobCount: number,
         firstJob: Job
     ): Promise<void> {
         const sessionKey = `session:${sessionId}`;
@@ -44,6 +44,7 @@ export default class SessionManagerService implements ISessionManagerService{
             totalJobs: jobCount,
             metadata: firstJob.props.metadata || {},
             teamId: firstJob.props.teamId,
+            queueType: firstJob.props.queueType,
             status: 'active'
         };
 
@@ -54,7 +55,7 @@ export default class SessionManagerService implements ISessionManagerService{
         await pipeline.exec();
     }
 
-    async executeCleanupScript(sessionId: string): Promise<[number, number, string]> {
+    async executeCleanupScript(sessionId: string): Promise<[number, number, string, string | null]> {
         const luaScript = `
             local sessionId = ARGV[1]
             local sessionKey = "session:" .. sessionId
@@ -63,28 +64,27 @@ export default class SessionManagerService implements ISessionManagerService{
             local remaining = redis.call('DECR', counterKey)
 
             if remaining <= 0 then
+                local sessionData = redis.call('GET', sessionKey)
                 redis.call('DEL', sessionKey)
                 redis.call('DEL', counterKey)
-                return {1, 0, "cleaned"}
+                return {1, 0, "cleaned", sessionData}
             else
-                return {0, remaining, "pending"}
+                return {0, remaining, "pending", nil}
             end
         `;
 
-       return await this.jobRepository.evalScript(
+        return await this.jobRepository.evalScript(
             luaScript,
             0,
             sessionId
-        ) as [number, number, string];
+        ) as [number, number, string, string | null];
     }
 
-     async emitSessionCompleted(
+    async emitSessionCompleted(
         teamId: string,
-        sessionId: string
+        sessionId: string,
+        sessionDataRaw: string
     ): Promise<void> {
-        const sessionKey = `session:${sessionId}`;
-        const sessionDataRaw = await this.jobRepository.get(sessionKey);
-
         if (!sessionDataRaw) {
             console.warn(`Session data not found for ${sessionId}`);
             return;
@@ -101,6 +101,7 @@ export default class SessionManagerService implements ISessionManagerService{
             metadata: sessionData.metadata
         });
 
+        console.log(`[SessionManagerService] Emitting session.completed event: sessionId=${sessionId}, queueType=${sessionData.queueType}, trajectoryId=${sessionData.metadata?.trajectoryId}`);
         await this.eventBus.publish(event);
     }
 
@@ -112,11 +113,11 @@ export default class SessionManagerService implements ISessionManagerService{
 
         try {
             const result = await this.executeCleanupScript(sessionId);
-            const [shouldClean] = result;
+            const [shouldClean, , , sessionData] = result;
 
-            if (shouldClean === 1) {
+            if (shouldClean === 1 && sessionData) {
                 this.sessionsBeingCleaned.add(sessionId);
-                await this.emitSessionCompleted(job.props.teamId, sessionId);
+                await this.emitSessionCompleted(job.props.teamId, sessionId, sessionData);
 
                 setTimeout(() => {
                     this.sessionsBeingCleaned.delete(sessionId);

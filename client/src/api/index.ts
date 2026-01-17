@@ -33,6 +33,8 @@ export const setGetTeamId = (fn: () => string | null) => {
     globalGetTeamId = fn;
 };
 
+export const getTeamId = () => globalGetTeamId?.() ?? null;
+
 export default class VoltClient {
     private readonly basePath: string;
     private readonly useRBAC: boolean;

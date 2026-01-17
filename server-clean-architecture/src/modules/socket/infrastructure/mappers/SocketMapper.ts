@@ -4,7 +4,7 @@ import { injectable } from 'tsyringe';
 import { ISocketMapper } from '../../domain/ports/ISocketMapper';
 
 @injectable()
-export default class SocketMapper implements ISocketMapper{
+export default class SocketMapper implements ISocketMapper {
     /**
      * Convert a Socket.IO socket to ISocketConnection.
      */
@@ -22,7 +22,8 @@ export default class SocketMapper implements ISocketMapper{
                 teams: user.teams?.map((t: any) => t.toString())
             } : undefined,
             data: socket.data || {},
-            rooms: socket.rooms
+            rooms: socket.rooms,
+            nativeSocket: socket
         };
     }
 };

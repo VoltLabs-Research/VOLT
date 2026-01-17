@@ -15,9 +15,16 @@ const client = new VoltClient('/containers', { useRBAC: true });
 const containerApi = {
     async getAll(params?: GetContainersParams): Promise<{ data: Container[], total: number }> {
         const response = await client.request<any>('get', '/', { query: params });
-        const data = response.data?.data || [];
-        const total = response.data?.results?.total || response.data?.page?.total || data.length;
+        // Backend returns { status: 'success', data: { containers: [...] } }
+        const data = response.data?.data?.containers || [];
+        const total = data.length;
         return { data, total };
+    },
+
+    async getOne(id: string): Promise<Container> {
+        const response = await client.request<any>('get', `/${id}`);
+        // Backend returns { status: 'success', data: { container: {...} } }
+        return response.data.data.container;
     },
 
     async create(data: CreateContainerPayload): Promise<Container> {
@@ -48,7 +55,7 @@ const containerApi = {
     },
 
     async getProcesses(id: string): Promise<ContainerProcess[]> {
-        const response = await client.request<ApiResponse<GetContainerProcesses>>('get', `/${id}/top`);
+        const response = await client.request<ApiResponse<GetContainerProcesses>>('get', `/${id}/processes`);
         return response.data.data.processes;
     },
 
@@ -61,7 +68,7 @@ const containerApi = {
         },
 
         async read(containerId: string, path: string): Promise<any> {
-            const response = await client.request('get', `/${containerId}/read`, {
+            const response = await client.request('get', `/${containerId}/files/read`, {
                 query: { path }
             });
             return response.data.data;

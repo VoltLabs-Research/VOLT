@@ -1,15 +1,19 @@
 import { parentPort } from 'node:worker_threads';
 import logger from '@/src/shared/infrastructure/logger';
-import '@/src/core/env';
 import mongoConnector from '../utilities/mongo-connector';
+import '@/src/core/env';
 
-export default abstract class BaseWorker<TJob>{
-    constructor(){
+export default abstract class BaseWorker<TJob> {
+    constructor() {
         this.setupProcessHandlers();
+    }
+
+    public async init(): Promise<void> {
+        await this.setup();
         this.listen();
     }
 
-    private setupProcessHandlers(){
+    private setupProcessHandlers() {
         process.on('uncaughtException', (error) => {
             logger.error(`@worker #${process.pid} - uncaught exception: ${error.message}`);
             logger.error(`@worker #${process.pid} - stack: ${error.stack}`);
@@ -22,16 +26,16 @@ export default abstract class BaseWorker<TJob>{
         });
     }
 
-    private listen(){
+    private listen() {
         parentPort?.on('message', async (message: { job: TJob }) => {
-            if(!message?.job){
+            if (!message?.job) {
                 logger.error(`@worker #${process.pid} - received invalid message payload`);
                 return;
             }
 
-            try{
+            try {
                 await this.perform(message.job);
-            }catch(fatalError: any){
+            } catch (fatalError: any) {
                 logger.error(`@worker #${process.pid} - fatal unhandled error: ${fatalError}`);
                 parentPort?.postMessage({
                     status: 'failed',
@@ -42,20 +46,20 @@ export default abstract class BaseWorker<TJob>{
         });
     }
 
-    protected async connectDB(){
-        try{
+    protected async connectDB() {
+        try {
             await mongoConnector();
             logger.info(`@worker #${process.pid} - connected to database`);
-        }catch(dbError: any){
+        } catch (dbError: any) {
             logger.error(`@worker #${process.pid} - failed to connect to database: ${dbError}`);
         }
     }
 
-    protected sendMessage(message: any){
+    protected sendMessage(message: any) {
         parentPort?.postMessage(message);
     }
 
-    protected async setup(): Promise<void>{
+    protected async setup(): Promise<void> {
         // Default implementation
     }
 
@@ -64,9 +68,9 @@ export default abstract class BaseWorker<TJob>{
      */
     protected abstract perform(job: TJob): Promise<void>;
 
-    public static start<T extends BaseWorker<any>>(WorkerClass: new () => T){
+    public static start<T extends BaseWorker<any>>(WorkerClass: new () => T) {
         const worker = new WorkerClass();
-        worker.setup().then(() => {
+        worker.init().then(() => {
             logger.info(`@worker #${process.pid} - online ${WorkerClass.name} ready`);
         }).catch((error) => {
             logger.error(`@worker #${process.pid} - failed to initialize ${WorkerClass.name}: ${error.message}`);

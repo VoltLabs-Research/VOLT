@@ -1,12 +1,12 @@
-import { injectable } from "tsyringe";
+import { injectable, inject, delay } from "tsyringe";
 import { BaseController } from "@/src/shared/infrastructure/http/BaseController";
-import TestSSHConnectionsByIdUseCase from "../../../application/use-cases/TestSSHConnectionsByIdUseCase";
+import { GetSSHConnectionsByTeamIdUseCase } from "../../../application/use-cases/GetSSHConnectionsByTeamIdUseCase";
 
 @injectable()
-export default class GetSSHConnectionsByTeamIdController extends BaseController<TestSSHConnectionsByIdUseCase>{
+export default class GetSSHConnectionsByTeamIdController extends BaseController<GetSSHConnectionsByTeamIdUseCase> {
     constructor(
-        useCase: TestSSHConnectionsByIdUseCase
-    ){
+        @inject(delay(() => GetSSHConnectionsByTeamIdUseCase)) useCase: GetSSHConnectionsByTeamIdUseCase
+    ) {
         super(useCase);
     }
 };

@@ -1,12 +1,13 @@
-import { injectable } from "tsyringe";
+import { injectable, inject, delay } from "tsyringe";
 import { BaseController } from "@/src/shared/infrastructure/http/BaseController";
-import RemoveUsersFromGroupUseCase from "@/src/modules/chat/application/use-cases/chat/RemoveUsersFromGroupUseCase";
+import { RemoveUsersFromGroupUseCase } from "@/src/modules/chat/application/use-cases/chat/RemoveUsersFromGroupUseCase";
 
 @injectable()
-export default class RemoveUsersFromGroupController extends BaseController<RemoveUsersFromGroupUseCase>{
+export default class RemoveUsersFromGroupController extends BaseController<RemoveUsersFromGroupUseCase> {
     constructor(
+        @inject(delay(() => RemoveUsersFromGroupUseCase))
         useCase: RemoveUsersFromGroupUseCase
-    ){
+    ) {
         super(useCase);
     }
 };

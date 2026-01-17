@@ -11,25 +11,25 @@ import { CHAT_TOKENS } from "../../../infrastructure/di/ChatTokens";
 import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
 
 @injectable()
-export default class GetFilePreviewUseCase implements IUseCase<GetFilePreviewInputDTO, GetFilePreviewOutputDTO, ApplicationError>{
+export class GetFilePreviewUseCase implements IUseCase<GetFilePreviewInputDTO, GetFilePreviewOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository,
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ){}
+    ) { }
 
-    async execute(input: GetFilePreviewInputDTO): Promise<Result<GetFilePreviewOutputDTO, ApplicationError>>{
+    async execute(input: GetFilePreviewInputDTO): Promise<Result<GetFilePreviewOutputDTO, ApplicationError>> {
         const { messageId } = input;
         const message = await this.messageRepo.findById(messageId);
-        if(!message){
+        if (!message) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.MESSAGE_NOT_FOUND,
                 'Chat message not found'
             ));
         }
 
-        if(!message.isFile()){
+        if (!message.isFile()) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.FILE_NOT_FOUND,
                 'File not found'

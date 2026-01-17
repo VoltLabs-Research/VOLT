@@ -29,6 +29,7 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
     const terminalRef = useRef<HTMLDivElement>(null);
     const xtermRef = useRef<Terminal | null>(null);
     const fitAddonRef = useRef<FitAddon | null>(null);
+    const isAttachedRef = useRef(false);
 
     useEffect(() => {
         const id = container._id;
@@ -95,16 +96,15 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
     useEffect(() => {
         const id = container._id;
         const state = connectionState[id];
-        let isAttached = false;
 
         const attach = () => {
-            // Prevent double attach
-            if (isAttached) return;
+            // Prevent double attach (check both local ref and global state)
+            if (isAttachedRef.current || state.isAttached) return;
 
             if (socketService.isConnected()) {
                 socketService.emit('container:terminal:attach', { containerId: id });
                 state.isAttached = true;
-                isAttached = true;
+                isAttachedRef.current = true;
             }
         };
 
@@ -121,7 +121,7 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
 
         // Subscribe to connection changes for reconnection scenarios
         const unsubscribe = socketService.onConnectionChange((connected) => {
-            if (connected && !isAttached) {
+            if (connected && !isAttachedRef.current) {
                 attach();
             }
         });
@@ -143,6 +143,7 @@ const ContainerTerminal: React.FC<ContainerTerminalProps> = ({ container, onClos
                     if (state.count === 0) {
                         socketService.emit('container:terminal:detach');
                         state.isAttached = false;
+                        isAttachedRef.current = false;
                         delete connectionState[id];
                     }
                 }, 100);

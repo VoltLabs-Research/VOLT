@@ -8,25 +8,32 @@ import { ErrorCodes } from "@/src/core/constants/error-codes";
 import { RemoveUsersFromGroupInputDTO, RemoveUsersFromGroupOutputDTO } from "../../dtos/chat/RemoveUsersFromGroupDTO";
 
 @injectable()
-export default class RemoveUsersFromGroupUseCase implements IUseCase<RemoveUsersFromGroupInputDTO, RemoveUsersFromGroupOutputDTO, ApplicationError>{
+export class RemoveUsersFromGroupUseCase implements IUseCase<RemoveUsersFromGroupInputDTO, RemoveUsersFromGroupOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ){}
+    ) { }
 
-    async execute(input: RemoveUsersFromGroupInputDTO): Promise<Result<RemoveUsersFromGroupOutputDTO, ApplicationError>>{
+    async execute(input: RemoveUsersFromGroupInputDTO): Promise<Result<RemoveUsersFromGroupOutputDTO, ApplicationError>> {
         const { requesterId, chatId, userIdsToRemove } = input;
         const chat = await this.chatRepo.findById(chatId);
 
-        if(!chat || !chat.props.isGroup){
+        if (!chat || !chat.props.isGroup || !chat.props.isActive) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.CHAT_NOT_FOUND,
                 'Chat not found'
             ));
         }
 
+        if (!chat.isAdmin(requesterId)) {
+            return Result.fail(ApplicationError.unauthorized(
+                ErrorCodes.AUTH_UNAUTHORIZED,
+                'Only admins can remove users'
+            ));
+        }
+
         const newParticipants = chat.props.participants.filter((participant) => !userIdsToRemove.includes(participant));
-        if(newParticipants.length < 2){
+        if (newParticipants.length < 2) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.CHAT_GROUP_MIN_PARTICIPANTS,
                 'The group must have at least 2 members'
@@ -39,7 +46,7 @@ export default class RemoveUsersFromGroupUseCase implements IUseCase<RemoveUsers
             admins: newAdmins
         });
 
-        if(!updatedChat){
+        if (!updatedChat) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.CHAT_NOT_FOUND,
                 'Chat not found'

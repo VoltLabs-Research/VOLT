@@ -2,15 +2,16 @@ import util from 'node:util';
 import { Worker } from 'node:worker_threads';
 import { injectable } from 'tsyringe';
 import { WorkerPoolItem } from '../../domain/entities/WorkerStatus';
-import { 
-    IWorkerPoolService, 
-    WorkerPoolConfig, 
+import {
+    IWorkerPoolService,
+    WorkerPoolConfig,
     WorkerMessageHandler,
-    WorkerErrorHandler, 
-    WorkerExitHandler } from '../../domain/ports/IWorkerPool';
+    WorkerErrorHandler,
+    WorkerExitHandler
+} from '../../domain/ports/IWorkerPool';
 
 @injectable()
-export default class WorkerPoolService implements IWorkerPoolService{
+export default class WorkerPoolService implements IWorkerPoolService {
     private workerPool: WorkerPoolItem[] = [];
     private consecutiveCrashes = 0;
     private lastCrashTime = 0;
@@ -21,14 +22,13 @@ export default class WorkerPoolService implements IWorkerPoolService{
     private onExit!: WorkerExitHandler;
     private getBacklogCount!: () => Promise<number>;
 
-    // TODO: there's something called "constructor" bruh
     initialize(
-        config: WorkerPoolConfig, 
-        onMessage: WorkerMessageHandler, 
-        onError: WorkerErrorHandler, 
-        onExit: WorkerExitHandler, 
+        config: WorkerPoolConfig,
+        onMessage: WorkerMessageHandler,
+        onError: WorkerErrorHandler,
+        onExit: WorkerExitHandler,
         getBacklogCount: () => Promise<number>
-    ): void{
+    ): void {
         this.config = config;
         this.onMessage = onMessage;
         this.onError = onError;
@@ -36,13 +36,13 @@ export default class WorkerPoolService implements IWorkerPoolService{
         this.getBacklogCount = getBacklogCount;
     }
 
-    scheduleScaleDown(item: WorkerPoolItem): void{
+    scheduleScaleDown(item: WorkerPoolItem): void {
         const timeout = setTimeout(() => {
-            if(!item.isIdle) return;
-            if(this.workerPool.length <= this.config.minWorkers) return;
+            if (!item.isIdle) return;
+            if (this.workerPool.length <= this.config.minWorkers) return;
 
             const idx = this.workerPool.findIndex(({ worker }) => worker.threadId === item.worker.threadId);
-            if(idx !== -1){
+            if (idx !== -1) {
                 const [gone] = this.workerPool.splice(idx, 1);
                 gone.timeouts.forEach(clearTimeout);
                 gone.worker.terminate();
@@ -65,21 +65,21 @@ export default class WorkerPoolService implements IWorkerPoolService{
         return item;
     }
 
-    async scaleUp(n: number): Promise<void>{
+    async scaleUp(n: number): Promise<void> {
         const canSpawn = Math.max(0, this.config.maxConcurrentJobs - this.workerPool.length);
         const toSpawn = Math.min(n, canSpawn);
 
-        for(let i = 0; i < toSpawn; i++){
+        for (let i = 0; i < toSpawn; i++) {
             this.spawnWorker();
         }
     }
 
-    private createWorker(): Worker{
+    private createWorker(): Worker {
+        console.log(`[WorkerPool] Creating worker from path: ${this.config.workerPath}`);
         const worker = new Worker(this.config.workerPath, {
             execArgv: [
                 '-r',
-                'ts-node/register',
-                '-r',
+                'tsx',
                 'tsconfig-paths/register'
             ],
             resourceLimits: {
@@ -88,36 +88,39 @@ export default class WorkerPoolService implements IWorkerPoolService{
         });
 
         const workerId = worker.threadId;
-        
+        console.log(`[WorkerPool] Worker created with threadId: ${workerId} `);
+
         worker.on('message', (message) => this.onMessage(workerId, message));
         worker.on('error', (err: any) => this.handleWorkerError(workerId, err));
         worker.on('exit', (code) => this.handleWorkerExit(workerId, code));
 
         return worker;
-    }   
+    }
 
-    private async handleWorkerError(workerId: number, error: Error): Promise<void>{
+    private async handleWorkerError(workerId: number, error: Error): Promise<void> {
         let msg = 'Unknown error';
-        try{
-            if(error instanceof Error){
+        try {
+            if (error instanceof Error) {
                 msg = error.message;
-                if(error.stack) msg += `\nStack: ${error.stack}`;
-            }else if(typeof error === 'string'){
+                if (error.stack) msg += `\nStack: ${error.stack} `;
+            } else if (typeof error === 'string') {
                 msg = error;
-            }else{
+            } else {
                 msg = util.inspect(error, { depth: null, colors: false, breakLength: Infinity });
             }
-        }catch{
+        } catch {
             msg = 'Non-inspectable error';
         }
 
+        console.error(`[WorkerPool] Worker ${workerId} error: `, msg);
         await this.onError(workerId, new Error(msg));
         this.replaceWorker(workerId, false);
     }
 
-    private async handleWorkerExit(workerId: number, code: number): Promise<void>{
+    private async handleWorkerExit(workerId: number, code: number): Promise<void> {
+        console.log(`[WorkerPool] Worker ${workerId} exited with code ${code} `);
         let hadJob = true;
-        if(code !== 0){
+        if (code !== 0) {
             await this.onExit(workerId, code);
             hadJob = true;
         }
@@ -125,34 +128,34 @@ export default class WorkerPoolService implements IWorkerPoolService{
         this.replaceWorker(workerId, hadJob);
     }
 
-    private checkCrashLoop(hadJob: boolean): boolean{
+    private checkCrashLoop(hadJob: boolean): boolean {
         const now = Date.now();
-        
-        if(now - this.lastCrashTime > this.config.crashWindowMs){
+
+        if (now - this.lastCrashTime > this.config.crashWindowMs) {
             this.consecutiveCrashes = 0;
             this.isInCrashLoop = false;
         }
 
-        if(!hadJob){
+        if (!hadJob) {
             this.consecutiveCrashes++;
             this.lastCrashTime = now;
 
-            if(this.consecutiveCrashes >= this.config.maxConsecutiveCrashes){
-                if(!this.isInCrashLoop){
+            if (this.consecutiveCrashes >= this.config.maxConsecutiveCrashes) {
+                if (!this.isInCrashLoop) {
                     this.isInCrashLoop = true;
                 }
                 return true;
             }
-        }else{
+        } else {
             this.consecutiveCrashes = 0;
             this.isInCrashLoop = false;
         }
         return false;
     }
 
-    private replaceWorker(workerId: number, hadJob: boolean): void{
+    private replaceWorker(workerId: number, hadJob: boolean): void {
         const idx = this.workerPool.findIndex(({ worker }) => worker.threadId === workerId);
-        if(idx !== -1){
+        if (idx !== -1) {
             const old = this.workerPool[idx];
             old.worker.terminate();
             old.timeouts.forEach(clearTimeout);
@@ -162,20 +165,20 @@ export default class WorkerPoolService implements IWorkerPoolService{
         const isInCrashLoop = this.checkCrashLoop(hadJob);
 
         this.getBacklogCount().then((backlog) => {
-            if(this.workerPool.length < this.config.minWorkers || backlog > 0){
-                if(isInCrashLoop){
+            if (this.workerPool.length < this.config.minWorkers || backlog > 0) {
+                if (isInCrashLoop) {
                     const delay = this.config.crashBackoffMs * Math.min(this.consecutiveCrashes, 5);
                     setTimeout(this.spawnWorker, delay);
-                }else{
+                } else {
                     this.spawnWorker();
                 }
             }
         }).catch(() => {
-            if(this.workerPool.length < this.config.minWorkers){
-                if(isInCrashLoop){
+            if (this.workerPool.length < this.config.minWorkers) {
+                if (isInCrashLoop) {
                     const delay = this.config.crashBackoffMs * Math.min(this.consecutiveCrashes, 5);
                     setTimeout(this.spawnWorker, delay);
-                }else{
+                } else {
                     this.spawnWorker();
                 }
             }
@@ -183,7 +186,7 @@ export default class WorkerPoolService implements IWorkerPoolService{
     }
 
     terminateAll(): void {
-        for(const item of this.workerPool){
+        for (const item of this.workerPool) {
             item.timeouts.forEach(clearTimeout);
             item.worker.terminate();
         }
@@ -191,7 +194,7 @@ export default class WorkerPoolService implements IWorkerPoolService{
         this.workerPool = [];
     }
 
-    getWorkers(): WorkerPoolItem[]{
+    getWorkers(): WorkerPoolItem[] {
         return this.workerPool;
     }
 

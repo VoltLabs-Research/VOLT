@@ -8,11 +8,11 @@ import { IDislocationExporter, DislocationExportOptions, ProcessedDislocationGeo
 import calculateDislocationType from '../../utilities/calculate-dislocation-type';
 
 @injectable()
-export default class DislocationExporter implements IDislocationExporter{
+export default class DislocationExporter implements IDislocationExporter {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ){}
+    ) { }
 
     private readonly TYPE_COLORS: Record<string, [number, number, number, number]> = {
         'Other': [0.95, 0.1, 0.1, 1.0],
@@ -40,8 +40,6 @@ export default class DislocationExporter implements IDislocationExporter{
 
             const dir = [p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]];
             const length = Math.sqrt(dir[0] ** 2 + dir[1] ** 2 + dir[2] ** 2);
-            // TODO: WHAT THE FUCK 
-            // if (length < 1e-6) return { positions: [], normals: [], indices: [] };
 
             dir[0] /= length; dir[1] /= length; dir[2] /= length;
 
@@ -150,8 +148,8 @@ export default class DislocationExporter implements IDislocationExporter{
     }
 
     public async toStorage(
-        data: any, 
-        objectName: string, 
+        data: any,
+        objectName: string,
         options: DislocationExportOptions = {}
     ): Promise<void> {
         const opts: Required<DislocationExportOptions> = {

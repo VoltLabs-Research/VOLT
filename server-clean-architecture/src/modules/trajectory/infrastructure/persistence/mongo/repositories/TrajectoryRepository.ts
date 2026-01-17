@@ -3,14 +3,33 @@ import Trajectory, { TrajectoryProps } from "@/src/modules/trajectory/domain/ent
 import TrajectoryModel, { TrajectoryDocument } from "../models/TrajectoryModel";
 import trajectoryMapper from '../mappers/TrajectoryMapper';
 import { MongooseBaseRepository } from "@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository";
-import { injectable } from "tsyringe";
+import { injectable, inject } from "tsyringe";
+import { IEventBus } from "@/src/shared/application/events/IEventBus";
+import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
+import TrajectoryDeletedEvent from "../../../../domain/events/TrajectoryDeletedEvent";
 
 @injectable()
 export default class TrajectoryRepository
     extends MongooseBaseRepository<Trajectory, TrajectoryProps, TrajectoryDocument>
-    implements ITrajectoryRepository{
+    implements ITrajectoryRepository {
 
-    constructor(){
+    constructor(
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
+    ) {
         super(TrajectoryModel, trajectoryMapper);
+    }
+
+    async deleteById(id: string): Promise<boolean> {
+        const result = await this.model.findByIdAndDelete(id);
+
+        if (result) {
+            await this.eventBus.publish(new TrajectoryDeletedEvent({
+                trajectoryId: id,
+                teamId: result.team?.toString()
+            }));
+        }
+
+        return !!result;
     }
 };

@@ -9,13 +9,13 @@ import SSHConnection from '../../domain/entities/SSHConnection';
 import { v4 } from 'uuid';
 
 @injectable()
-export default class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionInputDTO, CreateSSHConnectionOutputDTO, ApplicationError>{
+export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionInputDTO, CreateSSHConnectionOutputDTO, ApplicationError> {
     constructor(
         @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
         private sshConnectionRepo: ISSHConnectionRepository
-    ){}
+    ) { }
 
-    async execute(input: CreateSSHConnectionInputDTO): Promise<Result<CreateSSHConnectionOutputDTO, ApplicationError>>{
+    async execute(input: CreateSSHConnectionInputDTO): Promise<Result<CreateSSHConnectionOutputDTO, ApplicationError>> {
         const connectionId = v4();
         const sshConnection = SSHConnection.create(connectionId, input);
         await this.sshConnectionRepo.create(sshConnection.props);

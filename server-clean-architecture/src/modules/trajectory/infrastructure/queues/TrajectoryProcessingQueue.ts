@@ -5,13 +5,14 @@ import { ISessionManagerService } from '@/src/modules/jobs/domain/ports/ISession
 import { IRecoveryManagerService } from '@/src/modules/jobs/domain/ports/IRecoveryManagerService';
 import { IJobHandlerService } from '@/src/modules/jobs/domain/ports/IJobHandlerService';
 import { IEventBus } from '@/src/shared/application/events/IEventBus';
+import { IQueueRegistry } from '@/src/modules/jobs/domain/ports/IQueueRegistry';
 import { JOBS_TOKENS } from '@/src/modules/jobs/infrastructure/di/JobsTokens';
 import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
 import BaseProcessingQueue from '@/src/modules/jobs/infrastructure/services/BaseProcessingQueue';
 import path from 'path';
 
 @injectable()
-export default class TrajectoryProcessingQueue extends BaseProcessingQueue{
+export default class TrajectoryProcessingQueue extends BaseProcessingQueue {
     constructor(
         @inject(JOBS_TOKENS.JobRepository)
         jobRepository: IJobRepository,
@@ -32,12 +33,17 @@ export default class TrajectoryProcessingQueue extends BaseProcessingQueue{
         constants: any,
 
         @inject(SHARED_TOKENS.EventBus)
-        eventBus: IEventBus
+        eventBus: IEventBus,
+
+        @inject(JOBS_TOKENS.QueueRegistry)
+        queueRegistry: IQueueRegistry
     ) {
+        const workerPath = path.join(__dirname, '../workers/TrajectoryProcessingWorker.ts');
+        console.log(`[TrajectoryProcessingQueue] Initializing with worker path: ${workerPath}`);
         super(
             {
                 queueName: 'trajectory_processing',
-                workerPath: path.join(__dirname, '../workers/TrajectoryProcessingWorker.ts'),
+                workerPath: workerPath,
                 maxConcurrentJobs: 4
             },
             jobRepository,
@@ -46,7 +52,8 @@ export default class TrajectoryProcessingQueue extends BaseProcessingQueue{
             recoveryManager,
             jobHandler,
             constants,
-            eventBus
+            eventBus,
+            queueRegistry
         );
     }
 };

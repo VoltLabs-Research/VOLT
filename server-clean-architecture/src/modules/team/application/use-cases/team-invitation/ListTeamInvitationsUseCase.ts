@@ -7,13 +7,13 @@ import { ITeamInvitationRepository } from '../../../domain/ports/ITeamInvitation
 import { ListTeamInvitationsInputDTO, ListTeamInvitationsOutputDTO } from '../../dtos/team-invitation/ListTeamInvitationsDTO';
 
 @injectable()
-export default class ListTeamInvitationsUseCase implements IUseCase<ListTeamInvitationsInputDTO, ListTeamInvitationsOutputDTO, ApplicationError>{
+export default class ListTeamInvitationsUseCase implements IUseCase<ListTeamInvitationsInputDTO, ListTeamInvitationsOutputDTO, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository)
         private invitationRepo: ITeamInvitationRepository
-    ){}
+    ) { }
 
-    async execute(input: ListTeamInvitationsInputDTO): Promise<Result<ListTeamInvitationsOutputDTO, ApplicationError>>{
+    async execute(input: ListTeamInvitationsInputDTO): Promise<Result<ListTeamInvitationsOutputDTO, ApplicationError>> {
         const { teamId, status } = input;
         const results = await this.invitationRepo.findAll({
             filter: { team: teamId, status },
@@ -21,6 +21,9 @@ export default class ListTeamInvitationsUseCase implements IUseCase<ListTeamInvi
             page: 1
         });
 
-        return Result.ok(results);
+        return Result.ok({
+            ...results,
+            data: results.data.map(inv => inv.props)
+        });
     }
 };

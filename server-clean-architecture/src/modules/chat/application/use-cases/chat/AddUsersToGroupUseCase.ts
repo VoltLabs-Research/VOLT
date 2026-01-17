@@ -8,24 +8,24 @@ import { ErrorCodes } from "@/src/core/constants/error-codes";
 import { AddUsersToGroupInputDTO, AddUsersToGroupOutputDTO } from "../../dtos/chat/AddUsersToGroupDTO";
 
 @injectable()
-export default class AddUsersToGroupUseCase implements IUseCase<AddUsersToGroupInputDTO, AddUsersToGroupOutputDTO, ApplicationError>{
+export class AddUsersToGroupUseCase implements IUseCase<AddUsersToGroupInputDTO, AddUsersToGroupOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ){}
+    ) { }
 
-    async execute(input: AddUsersToGroupInputDTO): Promise<Result<AddUsersToGroupOutputDTO, ApplicationError>>{
+    async execute(input: AddUsersToGroupInputDTO): Promise<Result<AddUsersToGroupOutputDTO, ApplicationError>> {
         const { requesterId, chatId, userIdsToAdd } = input;
         const chat = await this.chatRepo.findById(chatId);
 
-        if(!chat){
+        if (!chat) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.CHAT_NOT_FOUND,
                 'Chat not found'
             ));
         }
 
-        if(!chat.isAdmin(requesterId)){
+        if (!chat.isAdmin(requesterId)) {
             return Result.fail(ApplicationError.unauthorized(
                 ErrorCodes.AUTH_UNAUTHORIZED,
                 'Unauthorized'
@@ -33,10 +33,10 @@ export default class AddUsersToGroupUseCase implements IUseCase<AddUsersToGroupI
         }
 
         // TODO: this.teamRepo.validateMembers(teamId, userIdsToaADd)
-        const newParticipants = new Set([ ...chat.props.participants, ...userIdsToAdd ]);
+        const newParticipants = new Set([...chat.props.participants, ...userIdsToAdd]);
 
         const updatedChat = await this.chatRepo.updateById(chat.id, { participants: Array.from(newParticipants) });
-        if(!updatedChat){
+        if (!updatedChat) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,
                 'Chat not found after update'

@@ -1,7 +1,7 @@
 import { Result } from "@/src/shared/domain/ports/Result";
 import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
 import { IUseCase } from "@/src/shared/application/IUseCase";
-import { PrecomputeListingRowsForTimestepsInputDTO } from "../../dtos/listing-row/PrecomputeListingRowsForTimestepsDTO";
+import { PrecomputeListingRowsForTimestepsInputDTO } from '../../dtos/listing-row/PrecomputeListingRowsForTimestepsDTO';
 import { PLUGIN_TOKENS } from "../../../infrastructure/di/PluginTokens";
 import { injectable, inject } from 'tsyringe';
 import { IPluginRepository } from "../../../domain/ports/IPluginRepository";
@@ -14,7 +14,7 @@ import { IAnalysisRepository } from "@/src/modules/analysis/domain/port/IAnalysi
 import { IExposureMetaRepository } from "../../../domain/ports/IExposureMetaRepository";
 
 @injectable()
-export default class PrecomputeListingRowsForTimestepsUseCase implements IUseCase<PrecomputeListingRowsForTimestepsInputDTO, null, ApplicationError>{
+export default class PrecomputeListingRowsForTimestepsUseCase implements IUseCase<PrecomputeListingRowsForTimestepsInputDTO, null, ApplicationError> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository)
         private pluginRepo: IPluginRepository,
@@ -27,12 +27,12 @@ export default class PrecomputeListingRowsForTimestepsUseCase implements IUseCas
 
         @inject(PLUGIN_TOKENS.ExposureMetaRepository)
         private exposureMetaRepo: IExposureMetaRepository
-    ){}
+    ) { }
 
-    async execute(input: PrecomputeListingRowsForTimestepsInputDTO): Promise<Result<null, ApplicationError>>{
+    async execute(input: PrecomputeListingRowsForTimestepsInputDTO): Promise<Result<null, ApplicationError>> {
         const { pluginId, teamId, trajectoryId, analysisId, listingSlug, timesteps } = input;
         const plugin = await this.pluginRepo.findById(pluginId);
-        if(!plugin){
+        if (!plugin) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
@@ -40,7 +40,7 @@ export default class PrecomputeListingRowsForTimestepsUseCase implements IUseCas
         }
 
         const trajectory = await this.trajectoryRepo.findById(trajectoryId);
-        if(!trajectory){
+        if (!trajectory) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
@@ -48,7 +48,7 @@ export default class PrecomputeListingRowsForTimestepsUseCase implements IUseCas
         }
 
         const analysis = await this.analysisRepo.findById(analysisId);
-        if(!analysis){
+        if (!analysis) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.ANALYSIS_NOT_FOUND,
                 'Analysis not found'
@@ -56,14 +56,14 @@ export default class PrecomputeListingRowsForTimestepsUseCase implements IUseCas
         }
 
         const columns = plugin.props.workflow.findColumnsDefinitionsFromExposureVisualizer(listingSlug);
-        if(!columns.length) return Result.ok(null);
+        if (!columns.length) return Result.ok(null);
 
         const exposureIds = plugin.props.workflow.props.nodes
             .filter((node) => node.type === WorkflowNodeType.Exposure)
             .map((node) => node.id);
-        
+
         const primaryExposureId = plugin.props.workflow.findExposureByListingSlug(listingSlug);
-        if(!primaryExposureId) return Result.ok(null);
+        if (!primaryExposureId) return Result.ok(null);
 
         const nodeMap = plugin.props.workflow.getNodeMap();
         const parentMap = plugin.props.workflow.getParentMap();
@@ -81,23 +81,23 @@ export default class PrecomputeListingRowsForTimestepsUseCase implements IUseCas
         });
 
         const byTimestep = new Map<number, Map<string, any>>();
-        for(const meta of metadatas.data){
-            const timestep = meta.timestep;
+        for (const meta of metadatas.data) {
+            const timestep = meta.props.timestep;
             let map = byTimestep.get(timestep);
-            if(!map){
+            if (!map) {
                 map = new Map();
                 byTimestep.set(timestep, map);
             }
 
-            map.set(meta.exposureId, meta.metadata || {});
+            map.set(meta.props.exposureId, meta.props.metadata || {});
         }
 
         const operations: any[] = [];
-        for(const timestep of timesteps){
+        for (const timestep of timesteps) {
             const perExposure = byTimestep.get(timestep);
             // Build exposureData even if no metas exist
             const exposureData = new Map<string, any>();
-            for(const id of exposureIds){
+            for (const id of exposureIds) {
                 exposureData.set(id, perExposure?.get(id) ?? {});
             }
 
@@ -109,7 +109,9 @@ export default class PrecomputeListingRowsForTimestepsUseCase implements IUseCas
                 timestep
             };
 
-            // TODO:
+            // TODO: Logic implementation
         }
+
+        return Result.ok(null);
     }
 };

@@ -12,7 +12,7 @@ import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from "../../infrastructure/di/AuthTokens";
 
 @injectable()
-export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInputDTO, UpdatePasswordOutputDTO, ApplicationError>{
+export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInputDTO, UpdatePasswordOutputDTO, ApplicationError> {
     constructor(
         @inject(AUTH_TOKENS.UserRepository)
         private readonly useRepository: IUserRepository,
@@ -22,11 +22,11 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
         private readonly tokenService: ITokenService,
         @inject(AUTH_TOKENS.SessionRepository)
         private readonly sessionRepository: ISessionRepository
-    ){}
+    ) { }
 
-    async execute(input: UpdatePasswordInputDTO): Promise<Result<UpdatePasswordOutputDTO, ApplicationError>>{
+    async execute(input: UpdatePasswordInputDTO): Promise<Result<UpdatePasswordOutputDTO, ApplicationError>> {
         const user = await this.useRepository.findByIdWithPassword(input.userId);
-        if(!user){
+        if (!user) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.USER_NOT_FOUND,
                 'User not found'
@@ -38,7 +38,7 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
             user.password
         );
 
-        if(!isCurrentPasswordValid){
+        if (!isCurrentPasswordValid) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.AUTHENTICATION_UPDATE_PASSWORD_INCORRECT,
                 'Current password is incorrect'
@@ -64,8 +64,7 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
             createdAt: new Date(),
             updatedAt: new Date()
         });
-        
-        // TODO:
+
         // @ts-ignore
         return Result.ok({
             token,

@@ -50,4 +50,10 @@ const corsOptions = {
     optionsSuccessStatus: 200
 };
 
+app.use(helmet());
+app.use(cors(corsOptions));
+app.use(compression());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
 export default app;

@@ -1,10 +1,10 @@
-import mongoose, { Model } from 'mongoose';
+import mongoose, { Model, Document } from 'mongoose';
 import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
 import { ExposureMetaProps } from '@/src/modules/plugin/domain/entities/ExposureMeta';
 import { ExposureMetaSchema } from '../schemas/ExposureSchema';
 
 type ExposureMetaRelations = 'plugin' | 'trajectory' | 'analysis';
-export interface ExposureMetaDocument extends Persistable<ExposureMetaProps, ExposureMetaRelations>, Document{};
+export interface ExposureMetaDocument extends Persistable<ExposureMetaProps, ExposureMetaRelations>, Document { };
 
 ExposureMetaSchema.index(
     { analysis: 1, exposureId: 1, timestep: 1 },

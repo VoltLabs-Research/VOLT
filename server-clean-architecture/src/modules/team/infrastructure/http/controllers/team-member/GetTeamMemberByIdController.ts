@@ -1,12 +1,12 @@
-import { injectable } from "tsyringe";
+import { injectable, inject } from "tsyringe";
 import { BaseController } from "@/src/shared/infrastructure/http/BaseController";
 import GetTeamMemberByIdUseCase from "@/src/modules/team/application/use-cases/team-member/GetTeamMemberByIdUseCase";
 
 @injectable()
-export default class GetTeamMemberByIdController extends BaseController<GetTeamMemberByIdUseCase>{
+export default class GetTeamMemberByIdController extends BaseController<GetTeamMemberByIdUseCase> {
     constructor(
-        useCase: GetTeamMemberByIdUseCase
-    ){
+        @inject(GetTeamMemberByIdUseCase) useCase: GetTeamMemberByIdUseCase
+    ) {
         super(useCase);
     }
 };

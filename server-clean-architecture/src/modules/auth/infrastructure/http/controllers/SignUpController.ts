@@ -1,4 +1,4 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
 import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
 import { SignUpInputDTO } from '../../../application/dtos/SignUpDTO';
@@ -7,10 +7,10 @@ import getUserAgent from '@/src/shared/infrastructure/http/utilities/get-user-ag
 import getClientIP from '@/src/shared/infrastructure/http/utilities/get-client-ip';
 
 @injectable()
-export default class SignUpController extends BaseController<SignUpUseCase>{
+export default class SignUpController extends BaseController<SignUpUseCase> {
     constructor(
-        useCase: SignUpUseCase
-    ){
+        @inject(SignUpUseCase) useCase: SignUpUseCase
+    ) {
         super(useCase);
     }
 

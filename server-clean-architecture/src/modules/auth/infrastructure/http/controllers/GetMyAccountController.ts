@@ -4,6 +4,9 @@ import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middlewar
 
 export default class GetMyAccountController{
     async handle(req: AuthenticatedRequest, res: Response): Promise<void>{
-        BaseResponse.success(res, req.user);
+        BaseResponse.success(res, {
+            _id: req.userId,
+            ...req.user.props
+        });
     }
 };

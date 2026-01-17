@@ -4,5 +4,8 @@ export const TRAJECTORY_TOKENS = {
     AtomisticExporter: Symbol.for('AtomisticExporter'),
     DislocationExporter: Symbol.for('DislocationExporter'),
     MeshExporter: Symbol.for('MeshExporter'),
-    ChartExporter: Symbol.for('ChartExporter')
+    ChartExporter: Symbol.for('ChartExporter'),
+    TrajectoryProcessingQueue: Symbol.for('TrajectoryProcessingQueue'),
+    TrajectoryBackgroundProcessor: Symbol.for('TrajectoryBackgroundProcessor'),
+    CloudUploadQueue: Symbol.for('CloudUploadQueue'),
 };

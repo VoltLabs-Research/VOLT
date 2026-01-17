@@ -3,21 +3,21 @@ import { ITokenService, TokenPayload } from '../../domain/ports/ITokenService';
 import { injectable } from 'tsyringe';
 
 @injectable()
-export default class JwtTokenService implements ITokenService{
-    constructor(
-        private readonly secret: Secret,
-        private readonly expiresIn?: number
-    ){}
+export default class JwtTokenService implements ITokenService {
+    private readonly secret: Secret = process.env.SECRET_KEY || 'default_secret';
+    private readonly expiresIn: string = process.env.JWT_EXPIRE || '7d';
 
-    public sign(id: string): string{
-        return jwt.sign({ id }, this.secret, { expiresIn: this.expiresIn });
+    constructor() { }
+
+    public sign(id: string): string {
+        return jwt.sign({ id }, this.secret, { expiresIn: this.expiresIn } as jwt.SignOptions);
     }
 
-    public verify(token: string): TokenPayload | null{
-        try{
+    public verify(token: string): TokenPayload | null {
+        try {
             const decoded = jwt.verify(token, this.secret) as TokenPayload;
             return decoded;
-        }catch{
+        } catch {
             return null;
         }
     }

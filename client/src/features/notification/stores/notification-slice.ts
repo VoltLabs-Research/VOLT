@@ -39,10 +39,11 @@ export const createNotificationSlice: SliceCreator<NotificationSlice> = (set, ge
             loadingKey: 'loading',
             errorFallback: 'Failed to load notifications',
             onSuccess: (notifications: Notification[]) => {
-                const unreadCount = notifications.filter((n) => !n.read).length;
+                console.log('notification--------------------------', notifications)
+                const unreadCount = notifications.data.filter((n) => !n.read).length;
 
                 set({
-                    notifications,
+                    notifications: notifications.data,
                     unreadCount
                 } as Partial<NotificationSlice>);
             }

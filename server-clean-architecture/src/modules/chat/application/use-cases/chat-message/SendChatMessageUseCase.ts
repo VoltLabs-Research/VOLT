@@ -8,15 +8,15 @@ import { SendChatMessageInputDTO, SendChatMessageOutputDTO } from "../../dtos/ch
 import { IChatMessageRepository } from "../../../domain/port/IChatMessageRepository";
 
 @injectable()
-export default class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO, SendChatMessageOutputDTO, ApplicationError>{
+export class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO, SendChatMessageOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository,
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ){}
+    ) { }
 
-    async execute(input: SendChatMessageInputDTO): Promise<Result<SendChatMessageOutputDTO, ApplicationError>>{
+    async execute(input: SendChatMessageInputDTO): Promise<Result<SendChatMessageOutputDTO, ApplicationError>> {
         const { userId, chatId, content, messageType, metadata } = input;
         const message = await this.messageRepo.create({
             chat: chatId,

@@ -30,6 +30,7 @@ export interface TrajectoryActions {
     getMetrics: (id: string, opts?: { force?: boolean }) => void;
     reset: () => void;
     clearCurrentTrajectory: () => void;
+    initializeSocket?: (teamId: string) => (() => void) | void;
 }
 
 export type TrajectoryStore = TrajectoryState & TrajectoryActions;

@@ -14,7 +14,7 @@ export default class CreateTeamMemberUseCase implements IUseCase<CreateTeamMembe
         @inject(TEAM_TOKENS.TeamMemberRepository)
         private teamMemberRepository: ITeamMemberRepository,
         @inject(TEAM_TOKENS.TeamRoleRepository)
-        private teamRoleRepository: ITeamRoleRepository
+        private teamRoleRepository: ITeamRoleRepository,
     ){}
 
     async execute(input: CreateTeamMemberInputDTO): Promise<Result<CreateTeamMemberOutputDTO, ApplicationError>>{

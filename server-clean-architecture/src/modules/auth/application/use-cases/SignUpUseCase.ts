@@ -12,9 +12,13 @@ import { SessionActivityType } from "@/src/modules/session/domain/entities/Sessi
 import { ISessionRepository } from "../../../session/domain/ports/ISessionRepository";
 import { injectable, inject } from 'tsyringe';
 import { AUTH_TOKENS } from "../../infrastructure/di/AuthTokens";
+import { SHARED_TOKENS } from "../../../../shared/infrastructure/di/SharedTokens";
+import { IEventBus } from "../../../../shared/application/events/IEventBus";
+import UserCreatedEvent from "../../domain/events/UserCreatedEvent";
+import { IAvatarService } from "../../domain/ports/IAvatarService";
 
 @injectable()
-export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOutputDTO, ApplicationError>{
+export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOutputDTO, ApplicationError> {
     constructor(
         @inject(AUTH_TOKENS.UserRepository)
         private readonly userRepository: IUserRepository,
@@ -23,16 +27,20 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
         @inject(AUTH_TOKENS.JwtTokenService)
         private readonly tokenService: ITokenService,
         @inject(AUTH_TOKENS.SessionRepository)
-        private readonly sessionRepository: ISessionRepository
-    ){}
+        private readonly sessionRepository: ISessionRepository,
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus,
+        @inject(AUTH_TOKENS.AvatarService)
+        private readonly avatarService: IAvatarService
+    ) { }
 
-    async execute(input: SignUpInputDTO): Promise<Result<SignUpOutputDTO, ApplicationError>>{
+    async execute(input: SignUpInputDTO): Promise<Result<SignUpOutputDTO, ApplicationError>> {
         /**
          * Validate email.
          */
-        if(!validator.isEmail(input.email)){
+        if (!validator.isEmail(input.email)) {
             return Result.fail(ApplicationError.badRequest(
-                ErrorCodes.AUTH_CREDENTIALS_INVALID, 
+                ErrorCodes.AUTH_CREDENTIALS_INVALID,
                 'Invalid email format'
             ));
         }
@@ -41,7 +49,7 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
          * Check if email already exists.
          */
         const emailExists = await this.userRepository.emailExists(input.email);
-        if(emailExists){
+        if (emailExists) {
             return Result.fail(ApplicationError.conflict(
                 ErrorCodes.AUTH_CREDENTIALS_INVALID,
                 'Email already registered'
@@ -51,7 +59,7 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
         /**
          * Validate password.
          */
-        if(!input.password){
+        if (!input.password) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.AUTH_CREDENTIALS_MISSING,
                 'Missing password'
@@ -72,6 +80,17 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
             updatedAt: new Date()
         });
 
+        const avatar = await this.avatarService.generateAndUploadDefaultAvatar(newUser.id, newUser.props.email);
+        await this.userRepository.updateById(newUser.id, { avatar });
+        newUser.props.avatar = avatar;
+
+        await this.eventBus.publish(new UserCreatedEvent({
+            id: newUser.id,
+            email: newUser.props.email,
+            firstName: newUser.props.firstName,
+            lastName: newUser.props.lastName
+        }));
+
         const token = this.tokenService.sign(newUser.id);
 
         await this.sessionRepository.create({
@@ -86,7 +105,7 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
             createdAt: new Date(),
             updatedAt: new Date()
         });
-        
+
         return Result.ok({
             token,
             user: newUser.props

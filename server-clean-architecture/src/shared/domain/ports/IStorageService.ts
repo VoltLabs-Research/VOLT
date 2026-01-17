@@ -2,7 +2,7 @@ import { Readable } from 'node:stream';
 
 export type UploadSource = string | Buffer | Readable;
 
-export interface FileMetadata{
+export interface FileMetadata {
     size: number;
     mimetype?: string;
     etag?: string;
@@ -10,7 +10,7 @@ export interface FileMetadata{
     [key: string]: any;
 };
 
-export interface IStorageService{
+export interface IStorageService {
     upload(
         bucket: string,
         objectName: string,
@@ -58,4 +58,10 @@ export interface IStorageService{
         bucket: string,
         objectName: string
     ): Promise<FileMetadata>;
+
+    download(
+        bucket: string,
+        objectName: string,
+        destPath: string
+    ): Promise<void>;
 };

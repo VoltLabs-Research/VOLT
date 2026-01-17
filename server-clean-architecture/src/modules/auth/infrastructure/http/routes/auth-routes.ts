@@ -35,15 +35,15 @@ router.get('/guest-identity', getGuestIdentityController.handle);
 // OAuth
 router.get('/github', passport.authenticate(OAuthProvider.GitHub, { session: false, scope: ['user:email'] }));
 router.get(
-    '/github/callback', 
-    passport.authenticate(OAuthProvider.GitHub, { session: false, failureRedirect: '/auth/error' }), 
+    '/github/callback',
+    passport.authenticate(OAuthProvider.GitHub, { session: false, failureRedirect: '/auth/error' }),
     oauthLoginCallbackController.handle
 );
 
 router.get('/google', passport.authenticate(OAuthProvider.Google, { session: false, scope: ['profile', 'email'] }));
 router.get(
-    '/google/callback', 
-    passport.authenticate(OAuthProvider.Google, { session: false, failureRedirect: '/auth/error' }), 
+    '/google/callback',
+    passport.authenticate(OAuthProvider.Google, { session: false, failureRedirect: '/auth/error' }),
     oauthLoginCallbackController.handle
 );
 
@@ -61,3 +61,5 @@ router.route('/me')
     .get(getMyAccountController.handle)
     .patch(avatarUpload.single('avatar'), updateMyAccountController.handle)
     .delete(deleteMyAccountController.handle);
+
+export default router;

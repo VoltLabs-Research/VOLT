@@ -15,7 +15,7 @@ const pluginApi = {
         const response = await client.request<GetPluginsResponse>('get', '/', {
             query: params
         });
-        return response.data;
+        return response.data.data;
     },
 
     async getPlugin(idOrSlug: string): Promise<IPluginRecord> {
@@ -87,7 +87,7 @@ const pluginApi = {
         onProgress?: (progess: number) => void
     ): Promise<{ objectPath: string; fileName: string; size: number }> {
         const formData = new FormData();
-        formData.append('binary', file);
+        formData.append('file', file);
 
         const response = await client.request<{
             status: string;
@@ -166,12 +166,12 @@ const pluginApi = {
                 dedupe: false
             }
         );
-        return response.data;
+        return response.data.data;
     },
 
     async importPlugin(file: File, teamId?: string): Promise<IPluginRecord> {
         const formData = new FormData();
-        formData.append('plugin', file);
+        formData.append('file', file);
         if (teamId) {
             formData.append('teamId', teamId);
         }

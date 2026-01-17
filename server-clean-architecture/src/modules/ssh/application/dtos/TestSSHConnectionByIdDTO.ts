@@ -1,7 +1,8 @@
-export interface TestSSHConnectionByIdInputDTO{
+export interface TestSSHConnectionByIdInputDTO {
     sshConnectionId: string;
 };
 
-export interface TestSSHConnectionByIdOutputDTO{
+export interface TestSSHConnectionByIdOutputDTO {
     valid: boolean;
+    error?: string;
 };

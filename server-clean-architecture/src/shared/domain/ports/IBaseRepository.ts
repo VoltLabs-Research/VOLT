@@ -1,19 +1,19 @@
-export interface PopulatePath{
+export interface PopulatePath {
     path: string;
     select?: string[];
     populate?: PopulatePath | PopulatePath[];
 }
 
-export interface FindOptions<T>{
+export interface FindOptions<T> {
     filter?: Partial<T>;
-    populate?: string | string[] | PopulatePath | PopulatePath[]; 
+    populate?: string | string[] | PopulatePath | PopulatePath[];
     select?: string[];
     sort?: Record<string, 1 | -1>;
     limit?: number;
     skip?: number;
 };
 
-export interface PaginatedResult<T>{
+export interface PaginatedResult<T> {
     data: T[];
     total: number;
     page: number;
@@ -21,12 +21,12 @@ export interface PaginatedResult<T>{
     limit: number;
 };
 
-export interface PaginationOptions{
+export interface PaginationOptions {
     page: number;
     limit: number;
 };
 
-export interface IBaseRepository<T, TProps>{
+export interface IBaseRepository<T, TProps> {
     /**
      * Find a single entity by its ID.
      */
@@ -46,7 +46,7 @@ export interface IBaseRepository<T, TProps>{
     /**
      * Find all entities matching the filter.
      */
-    findAll(options?: FindOptions<TProps> & PaginationOptions): Promise<PaginatedResult<TProps>>;
+    findAll(options?: FindOptions<TProps> & PaginationOptions): Promise<PaginatedResult<T>>;
 
     /**
      * Create new entity.
@@ -58,7 +58,8 @@ export interface IBaseRepository<T, TProps>{
      */
     updateById(
         id: string,
-        data: Partial<TProps>
+        data: Partial<TProps>,
+        options?: Pick<FindOptions<TProps>, 'populate' | 'select'>
     ): Promise<T | null>;
 
     /**
@@ -68,6 +69,8 @@ export interface IBaseRepository<T, TProps>{
         filter: Partial<TProps>,
         data: Partial<TProps>
     ): Promise<number>;
+
+    insertMany(data: Partial<TProps>): Promise<void>;
 
     /**
      * Delete an entity by ID.

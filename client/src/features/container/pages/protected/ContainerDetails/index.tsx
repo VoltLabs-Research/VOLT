@@ -58,8 +58,7 @@ const ContainerDetails: React.FC = () => {
 
     const fetchContainer = async () => {
         try {
-            const containers = await containerApi.getAll();
-            const found = containers.find((c: any) => c._id === id);
+            const found = await containerApi.getOne(id!);
             if (found) {
                 setContainer(found);
                 setEnvVars(found.env || []);
@@ -291,7 +290,7 @@ const ContainerDetails: React.FC = () => {
                                                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                                                 }}
                                                 itemStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
-                                                formatter={(value: number) => [`${value.toFixed(2)}%`, 'CPU Usage']}
+                                                formatter={(value: number | undefined) => [`${(value ?? 0).toFixed(2)}%`, 'CPU Usage']}
                                                 labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '0.5rem', fontSize: '0.8rem' }}
                                                 cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
                                             />
@@ -350,7 +349,7 @@ const ContainerDetails: React.FC = () => {
                                                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                                                 }}
                                                 itemStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
-                                                formatter={(value: number) => [`${value.toFixed(2)} MB`, 'Memory Usage']}
+                                                formatter={(value: number | undefined) => [`${(value ?? 0).toFixed(2)} MB`, 'Memory Usage']}
                                                 labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '0.5rem', fontSize: '0.8rem' }}
                                                 cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
                                             />

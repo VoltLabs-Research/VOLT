@@ -1,6 +1,14 @@
 import { IBaseRepository } from "@/src/shared/domain/ports/IBaseRepository";
 import Team, { TeamProps } from '../entities/Team';
 
+export interface TeamMemberInfo{
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    avatar?: string;
+};
+
 export interface ITeamRepository extends IBaseRepository<Team, TeamProps>{
     /**
      * Remove a user from the specified team.
@@ -9,6 +17,9 @@ export interface ITeamRepository extends IBaseRepository<Team, TeamProps>{
         userId: string,
         teamId: string
     ): Promise<void>;
+
+    addMemberToTeam(memberId: string, teamId: string): Promise<void>;
+    addRoleToTeam(roleId: string, teamId: string): Promise<void>;
 
     /**
      * Remove a user from all teams (members and admins arrays).
@@ -27,4 +38,9 @@ export interface ITeamRepository extends IBaseRepository<Team, TeamProps>{
         userId: string,
         teamId: string
     ): Promise<boolean>;
+
+    /**
+     * Get team members with populated user data.
+     */
+    getTeamMembersWithUserData(teamId: string): Promise<TeamMemberInfo[]>;
 };

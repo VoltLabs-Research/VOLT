@@ -17,7 +17,7 @@ import ApplicationError from "@/src/shared/application/errors/ApplicationErrors"
 import PluginExecutionRequestEvent from "../../../domain/events/PluginExecutionRequestEvent";
 
 @injectable()
-export default class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, null, ApplicationError>{
+export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, null, ApplicationError> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository)
         private pluginRepo: IPluginRepository,
@@ -33,9 +33,9 @@ export default class ExecutePluginUseCase implements IUseCase<ExecutePluginInput
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private trajectoryRepo: ITrajectoryRepository
-    ){}
+    ) { }
 
-    async execute(input: ExecutePluginInputDTO): Promise<Result<null, ApplicationError>>{
+    async execute(input: ExecutePluginInputDTO): Promise<Result<null, ApplicationError>> {
         const [trajectory, plugin] = await Promise.all([
             this.trajectoryRepo.findById(input.trajectoryId),
             this.pluginRepo.findOne({
@@ -44,21 +44,21 @@ export default class ExecutePluginUseCase implements IUseCase<ExecutePluginInput
             })
         ]);
 
-        if(!plugin){
+        if (!plugin) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'
             ));
         }
 
-        if(!plugin.props.validated){
+        if (!plugin.props.validated) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
                 'Plugin not validated'
             ));
         }
 
-        if(!trajectory){
+        if (!trajectory) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.TRAJECTORY_NOT_FOUND,
                 'Trajectory not found'
@@ -94,7 +94,7 @@ export default class ExecutePluginUseCase implements IUseCase<ExecutePluginInput
             }
         });
 
-        if(!planResult || planResult.items.length === 0){
+        if (!planResult || planResult.items.length === 0) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
                 'No items after ForEach node evaluation'

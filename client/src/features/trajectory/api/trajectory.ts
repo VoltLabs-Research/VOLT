@@ -27,6 +27,7 @@ import VoltClient from '@/api';
 
 const client = new VoltClient('/trajectories', { useRBAC: true });
 const vfsClient = new VoltClient('/trajectory-vfs', { useRBAC: true });
+const vfsOpsClient = new VoltClient('/trajectory-vfs', { useRBAC: false });
 const particleFilterClient = new VoltClient('/particle-filter', { useRBAC: true });
 
 const trajectoryApi = {
@@ -37,10 +38,8 @@ const trajectoryApi = {
         return response.data.data;
     },
 
-    async getOne(id: string, populate?: string): Promise<Trajectory> {
-        const response = await client.request<ApiResponse<Trajectory>>('get', `/${id}`, {
-            query: populate ? { populate } : undefined
-        });
+    async getOne(id: string): Promise<Trajectory> {
+        const response = await client.request<ApiResponse<Trajectory>>('get', `/${id}`);
         return response.data.data;
     },
 
@@ -120,15 +119,17 @@ const trajectoryApi = {
     }> {
         const response = await client.request<{
             status: string;
-            data: Trajectory[];
-            page: number;
-            limit: number;
-            total: number;
+            data: {
+                data: Trajectory[];
+                page: number;
+                limit: number;
+                total: number;
+            };
         }>('get', '/', {
             query: params
         });
 
-        return response.data;
+        return response.data.data;
     },
 
     async getMetrics(): Promise<any> {
@@ -157,7 +158,7 @@ const trajectoryApi = {
             }
         });
 
-        const result = response.data;
+        const result = response.data.data;
         if (!result || result.status !== 'success') {
             return null;
         }
@@ -174,16 +175,19 @@ const trajectoryApi = {
 
     vfs: {
         async list(params: { connectionId: string; path: string }): Promise<FsListResponse> {
-            const response = await vfsClient.request<{ status: 'success'; data: FsListResponse }>('get', '/', {
-                query: params
+            // connectionId is the trajectoryId
+            const response = await vfsOpsClient.request<{ status: 'success'; data: FsListResponse }>('get', `/${params.connectionId}`, {
+                query: { path: params.path }
             });
 
             return response.data.data;
         },
 
         async download(params: { connectionId: string; path: string }): Promise<Blob> {
-            const response = await vfsClient.request<Blob>('get', '/download', {
-                query: params,
+            // Map download to /files endpoint for single file download
+            // Note: If path implies a directory, we might want /archive, but usually download implies file in this context.
+            const response = await vfsOpsClient.request<Blob>('get', `/${params.connectionId}/files`, {
+                query: { path: params.path },
                 config: {
                     responseType: 'blob'
                 },
@@ -194,6 +198,7 @@ const trajectoryApi = {
         },
 
         async getTrajectories(): Promise<TrajectoryInfo[]> {
+            // usage of useRBAC: true is correct here as backend expects /:teamId/trajectories
             const response = await vfsClient.request<{ status: 'success'; data: { trajectories: TrajectoryInfo[] } }>(
                 'get',
                 '/trajectories'

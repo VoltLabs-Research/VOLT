@@ -9,24 +9,24 @@ import { ChatProps } from "../../../domain/entities/Chat";
 import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
 
 @injectable()
-export default class UpdateGroupInfoUseCase implements IUseCase<UpdateGroupInfoInputDTO, UpdateGroupInfoOutputDTO, ApplicationError>{
+export class UpdateGroupInfoUseCase implements IUseCase<UpdateGroupInfoInputDTO, UpdateGroupInfoOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ){}
+    ) { }
 
-    async execute(input: UpdateGroupInfoInputDTO): Promise<Result<UpdateGroupInfoOutputDTO, ApplicationError>>{
+    async execute(input: UpdateGroupInfoInputDTO): Promise<Result<UpdateGroupInfoOutputDTO, ApplicationError>> {
         const { userId, chatId, groupName, groupDescription } = input;
         const chat = await this.chatRepo.findById(input.chatId);
 
-        if(!chat){
+        if (!chat) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.CHAT_NOT_FOUND,
                 'Chat not found'
             ));
         }
 
-        if(!chat.isAdmin(userId)){
+        if (!chat.isAdmin(userId)) {
             return Result.fail(ApplicationError.unauthorized(
                 ErrorCodes.AUTH_UNAUTHORIZED,
                 'Only admins can update info'
@@ -34,11 +34,11 @@ export default class UpdateGroupInfoUseCase implements IUseCase<UpdateGroupInfoI
         }
 
         const updateData: Partial<ChatProps> = {};
-        if(groupName) updateData.groupName = groupName;
-        if(groupDescription) updateData.groupDescription = groupDescription;
+        if (groupName) updateData.groupName = groupName;
+        if (groupDescription) updateData.groupDescription = groupDescription;
 
         const updatedChat = await this.chatRepo.updateById(input.chatId, updateData);
-        if(!updatedChat){
+        if (!updatedChat) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,
                 'Chat not found after update'

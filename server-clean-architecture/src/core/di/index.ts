@@ -28,7 +28,9 @@ import { registerSimulationCellDependencies } from '@/src/modules/simulation-cel
 export const registerDependencies = () => {
     // Shared Services
     container.registerSingleton(SHARED_TOKENS.EventBus, RedisEventBus);
+    container.registerSingleton('IEventBus', RedisEventBus);
     container.registerSingleton(SHARED_TOKENS.StorageService, MinioStorageService);
+    container.registerSingleton('IStorageService', MinioStorageService);
     container.registerSingleton(SHARED_TOKENS.TempFileService, TempFileService);
     container.registerSingleton(SHARED_TOKENS.FileExtractorService, FileExtractorService);
 

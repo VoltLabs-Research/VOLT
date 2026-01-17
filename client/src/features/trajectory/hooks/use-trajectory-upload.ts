@@ -40,7 +40,7 @@ const useTrajectoryUpload = () => {
             formData.append('trajectoryFiles', file, path);
         });
 
-        formData.append('originalFolderName', originalFolderName);
+        formData.append('name', originalFolderName);
         formData.append('teamId', teamId);
 
         await createTrajectory(formData);

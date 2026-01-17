@@ -1,12 +1,12 @@
 import Workflow from "./workflow/Workflow";
 
-export enum PluginStatus{
+export enum PluginStatus {
     Draft = 'draft',
     Published = 'published',
     Disabled = 'disabled'
 };
 
-export interface PluginProps{
+export interface PluginProps {
     team: string;
     slug: string;
     workflow: Workflow,
@@ -15,11 +15,12 @@ export interface PluginProps{
     validationErrors: string[];
     createdAt: Date;
     updatedAt: Date;
+    binaryPath?: string | null;
 };
 
-export default class Plugin{
+export default class Plugin {
     constructor(
         public id: string,
         public props: PluginProps
-    ){}
+    ) { }
 };

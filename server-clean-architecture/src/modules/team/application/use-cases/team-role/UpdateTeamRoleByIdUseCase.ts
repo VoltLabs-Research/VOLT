@@ -15,15 +15,32 @@ export default class UpdateTeamRoleByIdUseCase implements IUseCase<UpdateTeamRol
     ){}
 
     async execute(input: UpdateTeamRoleByIdInputDTO): Promise<Result<UpdateTeamRoleByIdOutputDTO, ApplicationError>>{
-        const teamRole = await this.teamRoleRepository.updateById(input.roleId, {
-            name: input.name,
-            permissions: input.permissions
-        });
+        const currentRole = await this.teamRoleRepository.findById(input.roleId);
 
-        if(!teamRole){
+        if (!currentRole) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TEAM_ROLE_NOT_FOUND,
                 'Team role not found'
+            ));
+        }
+
+        if (currentRole.props.isSystem && input.name && input.name !== currentRole.props.name) {
+            return Result.fail(ApplicationError.forbidden(
+                ErrorCodes.TEAM_ROLE_IS_SYSTEM,
+                'Cannot rename system roles'
+            ));
+        }
+
+        const updateData = currentRole.props.isSystem
+            ? { permissions: input.permissions }
+            : { name: input.name, permissions: input.permissions };
+
+        const teamRole = await this.teamRoleRepository.updateById(input.roleId, updateData);
+
+        if (!teamRole) {
+            return Result.fail(ApplicationError.notFound(
+                ErrorCodes.TEAM_ROLE_NOT_FOUND,
+                'Failed to update team role'
             ));
         }
 

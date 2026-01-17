@@ -2,7 +2,7 @@ import VoltClient from '@/api';
 import type { AnalysisConfig } from '@/features/analysis/api/types';
 import type { PaginatedResponse } from '@/types/api';
 
-const client = new VoltClient('/analysis-config', { useRBAC: true });
+const client = new VoltClient('/analyses', { useRBAC: true });
 
 export interface RetryFailedFramesResponse {
     message: string;
@@ -12,17 +12,17 @@ export interface RetryFailedFramesResponse {
 }
 
 export default {
-    async getByTeamId(params?: { page?: number; limit?: number; q?: string }): Promise<PaginatedResponse<AnalysisConfig>>{
+    async getByTeamId(params?: { page?: number; limit?: number; q?: string }): Promise<PaginatedResponse<AnalysisConfig>> {
         const response = await client.request('get', '/', { query: params });
-        return response.data;
+        return response.data.data;
     },
 
-    async delete(id: string): Promise<void>{
+    async delete(id: string): Promise<void> {
         await client.request('delete', `/${id}`);
     },
 
-    async retryFailedFrames(id: string): Promise<RetryFailedFramesResponse>{
+    async retryFailedFrames(id: string): Promise<RetryFailedFramesResponse> {
         const response = await client.request('post', `/${id}/retry-failed-frames`);
-        return response.data;
+        return response.data.data;
     }
 };

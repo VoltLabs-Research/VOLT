@@ -58,9 +58,19 @@ export interface TimestepInfo {
     boxBounds: BoxBounds;
 }
 
+export interface TrajectoryProcessingProgress {
+    stage: 'parsing' | 'processing' | 'uploading' | 'rasterizing' | 'completed' | 'failed';
+    currentStep: number;
+    totalSteps: number;
+    percentage: number;
+    message?: string;
+}
+
 export interface TrajectoryStats {
     totalFiles: number;
     totalSize: number;
+    processedFrames?: number;
+    uploadedFrames?: number;
 }
 
 export interface Trajectory {
@@ -73,6 +83,7 @@ export interface Trajectory {
     preview?: any;
     isPublic?: boolean;
     status?: 'waiting_for_proccess' | 'queued' | 'processing' | 'rendering' | 'completed' | 'failed';
+    processingProgress?: TrajectoryProcessingProgress;
     createdAt: string;
     updatedAt: string;
     users: (User | string)[];

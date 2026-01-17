@@ -47,6 +47,7 @@ export const ErrorCodes = {
     TEAM_MEMBERSHIP_FORBIDDEN: 'Team::Membership::Forbidden',
     TEAM_OWNERSHIP_FORBIDDEN: 'Team::Ownership::Forbidden',
     TEAM_CANNOT_REMOVE_OWNER: 'Team::CannotRemoveOwner',
+    TEAM_OWNER_CANNOT_LEAVE: 'Team::OwnerCannotLeave',
     TEAM_USER_NOT_MEMBER: 'Team::UserNotAMember',
     TEAM_NOT_AUTHORIZED: 'Team::NotAuthorized',
     TEAM_INSUFFICIENT_PERMISSIONS: 'Team::InsufficientPermissions',

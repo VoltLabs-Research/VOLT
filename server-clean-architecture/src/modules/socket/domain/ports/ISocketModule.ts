@@ -1,7 +1,7 @@
 /**
  * Interface representing a socket connection.
  */
-export interface ISocketConnection{
+export interface ISocketConnection {
     /** Unique identifier for this socket connection */
     readonly id: string;
 
@@ -23,6 +23,9 @@ export interface ISocketConnection{
 
     /** Rooms this socket has joined */
     readonly rooms: Set<string>;
+
+    /** Native socket object */
+    nativeSocket?: any;
 };
 
 /**

@@ -8,8 +8,8 @@ const findActivityByTeamIdController = container.resolve(FindActivityByTeamIdCon
 
 const router = Router();
 
-router.use(protect, checkTeamMembership);
+router.use(protect);
 
-router.get('/:teamId/', findActivityByTeamIdController.handle);
+router.get('/:teamId/', checkTeamMembership, findActivityByTeamIdController.handle);
 
 export default router;

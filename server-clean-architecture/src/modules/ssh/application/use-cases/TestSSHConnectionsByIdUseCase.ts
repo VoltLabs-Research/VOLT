@@ -9,24 +9,31 @@ import { ErrorCodes } from '@/src/core/constants/error-codes';
 import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
 
 @injectable()
-export default class TestSSHConnectionsByIdUseCase implements IUseCase<TestSSHConnectionByIdInputDTO, TestSSHConnectionByIdOutputDTO, ApplicationError>{
+export class TestSSHConnectionsByIdUseCase implements IUseCase<TestSSHConnectionByIdInputDTO, TestSSHConnectionByIdOutputDTO, ApplicationError> {
     constructor(
         @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
         private sshConnRepository: ISSHConnectionRepository,
         @inject(SSH_CONN_TOKENS.SSHConnectionService)
         private sshConnService: ISSHConnectionService
-    ){}
+    ) { }
 
-    async execute(input: TestSSHConnectionByIdInputDTO): Promise<Result<TestSSHConnectionByIdOutputDTO, ApplicationError>>{
+    async execute(input: TestSSHConnectionByIdInputDTO): Promise<Result<TestSSHConnectionByIdOutputDTO, ApplicationError>> {
         const { sshConnectionId } = input;
-        const sshConnection = await this.sshConnRepository.findById(sshConnectionId);
-        if(!sshConnection){
+        const sshConnection = await this.sshConnRepository.findByIdWithCredentials(sshConnectionId);
+        if (!sshConnection) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.SSH_CONNECTION_NOT_FOUND,
                 'SSH connection not found'
             ));
         }
-        const result = await this.sshConnService.testConnection(sshConnection);
-        return Result.ok({ valid: result });
+        try {
+            const result = await this.sshConnService.testConnection(sshConnection);
+            return Result.ok({ valid: result });
+        } catch (error: any) {
+            return Result.ok({
+                valid: false,
+                error: error.message || 'Connection failed'
+            });
+        }
     }
 };

@@ -10,14 +10,14 @@ import TrajectoryParserFactory from '../../parsers/TrajectoryParserFactory';
 import { GradientType, AtomsGroupedByType, IAtomisticExporter } from '../../../domain/port/exporters/AtomisticExporter';
 
 @injectable()
-export default class AtomisticExporter implements IAtomisticExporter{
+export default class AtomisticExporter implements IAtomisticExporter {
     constructor(
         @inject(SHARED_TOKENS.TempFileService)
         private tempFileService: ITempFileService,
 
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ){}
+    ) { }
 
     private readonly STRUCTURE_COLORS: Record<string, number[]> = {
         'FCC': [102, 255, 102],
@@ -33,7 +33,7 @@ export default class AtomisticExporter implements IAtomisticExporter{
         'HEX_DIAMOND_SECOND_NEIGH': [204, 229, 81],
         'GRAPHENE': [50, 205, 50],
         'UNKNOWN': [128, 128, 128],
-        'OTHER': [242, 242, 242]    
+        'OTHER': [242, 242, 242]
     };
 
     private readonly GRAIN_PALETTE = [
@@ -42,10 +42,10 @@ export default class AtomisticExporter implements IAtomisticExporter{
         [25, 140, 25], [179, 128, 89], [242, 140, 166], [115, 191, 217]
     ];
 
-    public async toStorage(filePath: string, objectName: string): Promise<void>{
+    public async toStorage(filePath: string, objectName: string): Promise<void> {
         const parsed = await TrajectoryParserFactory.parse(filePath);
         const tempFile = this.tempFileService.generateFilePath({ prefix: 'glb_', extension: '.glb' });
-        try{
+        try {
             const success = nativeExporter.generateGLBToFile(
                 parsed.positions,
                 parsed.types,
@@ -54,7 +54,7 @@ export default class AtomisticExporter implements IAtomisticExporter{
                 tempFile
             );
 
-            if(!success) throw new Error('GLB Generation Failed');
+            if (!success) throw new Error('GLB Generation Failed');
 
             await this.storageService.upload(
                 SYS_BUCKETS.MODELS,
@@ -62,8 +62,8 @@ export default class AtomisticExporter implements IAtomisticExporter{
                 createReadStream(tempFile),
                 { 'Content-Type': 'model/gltf-binary' }
             );
-        }finally{
-            await unlink(tempFile).catch(() => {});
+        } finally {
+            await unlink(tempFile).catch(() => { });
         }
     }
 
@@ -75,9 +75,9 @@ export default class AtomisticExporter implements IAtomisticExporter{
         endValue: number,
         gradientName: string,
         externalValues?: Float32Array
-    ): Promise<void>{
-        const parseOpts = externalValues 
-            ? { includeIds: true } 
+    ): Promise<void> {
+        const parseOpts = externalValues
+            ? { includeIds: true }
             : { properties: [property] };
 
         const parsed = await TrajectoryParserFactory.parse(filePath, parseOpts);
@@ -91,15 +91,15 @@ export default class AtomisticExporter implements IAtomisticExporter{
         const gradientType = gradientMap[gradientName] ?? GradientType.Viridis;
 
         let colors: Float32Array;
-        if(externalValues){
-            if(!parsed.ids) throw new Error('Atom IDs required for external values');
+        if (externalValues) {
+            if (!parsed.ids) throw new Error('Atom IDs required for external values');
             const values = new Float32Array(parsed.metadata.natoms);
-            for(let i = 0; i < parsed.metadata.natoms; i++){
+            for (let i = 0; i < parsed.metadata.natoms; i++) {
                 values[i] = externalValues[parsed.ids[i]];
             }
 
             colors = nativeExporter.applyPropertyColors(values, startValue, endValue, gradientType);
-        }else{
+        } else {
             colors = nativeExporter.applyPropertyColors(parsed.properties![property], startValue, endValue, gradientType);
         }
 
@@ -112,7 +112,7 @@ export default class AtomisticExporter implements IAtomisticExporter{
         );
     }
 
-    public async exportAtomsTypeToGLBBuffer(atomsByType: AtomsGroupedByType, objectName: string): Promise<void>{
+    public async exportAtomsTypeToGLBBuffer(atomsByType: AtomsGroupedByType, objectName: string): Promise<void> {
         const totalAtoms = Object.values(atomsByType).reduce((s, list) => s + list.length, 0);
         const positions = new Float32Array(totalAtoms * 3);
         const colors = new Float32Array(totalAtoms * 3);

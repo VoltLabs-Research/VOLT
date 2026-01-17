@@ -3,5 +3,6 @@ export const SOCKET_TOKENS = {
     SocketEventEmitter: Symbol.for('EventEmitter'),
     SocketRoomManager: Symbol.for('SocketRoomManager'),
     SocketEventRegistry: Symbol.for('SocketEventRegistry'),
-    SocketGateway: Symbol.for('SocketGateway')
+    SocketGateway: Symbol.for('SocketGateway'),
+    SocketEmitter: Symbol.for('SocketEmitter')
 };

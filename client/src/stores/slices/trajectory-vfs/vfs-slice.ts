@@ -111,13 +111,14 @@ export const createTrajectoryVfsSlice: SliceCreator<TrajectoryVfsSlice> = (set, 
             onSuccess: (response) => {
                 set((state: TrajectoryVfsSlice) => {
                     const historyUntilNow = state.history.slice(0, state.historyIndex + 1);
-                    const nextHistory = [...historyUntilNow, { cwd: response.cwd }];
+                    const { cwd, entries, breadcrumbs, selected } = response.data;
+                    const nextHistory = [...historyUntilNow, { cwd }];
 
                     return {
-                        cwd: response.cwd,
-                        entries: response.entries,
-                        breadcrumbs: response.breadcrumbs,
-                        selected: response.selected,
+                        cwd,
+                        entries,
+                        breadcrumbs,
+                        selected,
                         history: nextHistory,
                         historyIndex: nextHistory.length - 1
                     };

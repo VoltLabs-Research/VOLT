@@ -3,5 +3,7 @@ export const TEAM_TOKENS = {
     TeamMemberRepository: Symbol.for('TeamMemberRepository'),
     TeamRepository: Symbol.for('TeamRepository'),
     TeamInvitationRepository: Symbol.for('TeamInvitationRepository'),
-    TeamPresenceService: Symbol.for('TeamPresenceService')
+    TeamPresenceService: Symbol.for('TeamPresenceService'),
+    TeamJobsService: Symbol.for('TeamJobsService'),
+    TeamJobsSocketModule: Symbol.for('TeamJobsSocketModule')
 };

@@ -1,7 +1,7 @@
-export enum ContextSource{
-    TrajectoryDumps = 'trajectory-dumps'
+export enum ContextSource {
+    TrajectoryDumps = 'trajectory_dumps'
 };
 
-export interface ContextNodeData{
+export interface ContextNodeData {
     source: ContextSource;
 };

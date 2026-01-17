@@ -44,6 +44,10 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
                     selectedTeam: nextSelectedTeam,
                     error: null
                 } as Partial<TeamStore>);
+
+                if (nextSelectedTeam) {
+                    socketService.subscribeToTeam(nextSelectedTeam._id);
+                }
             }
         });
     },
@@ -68,6 +72,8 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
         if (typeof window !== 'undefined') {
             localStorage.setItem('selectedTeamId', teamId);
         }
+
+        socketService.subscribeToTeam(teamId);
     },
 
     createTeam: async (data) => {
@@ -76,12 +82,14 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
             rethrow: true,
             loadingKey: 'isLoading',
             successMessage: 'Team created successfully',
-            onSuccess: (createdTeam) =>
+            onSuccess: (createdTeam) => {
                 set((state: TeamStore) => ({
                     teams: [createdTeam, ...state.teams],
                     selectedTeam: createdTeam,
                     error: null
-                }))
+                }));
+                socketService.subscribeToTeam(createdTeam._id);
+            }
         });
         return result as any;
     },
@@ -207,12 +215,13 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
         })),
 
     initializeSocket: (teamId) => {
-        socketService.emit('get_team_presence', { teamId });
+        // We do NOT subscribe here anymore. Subscription is handled by state changes.
+        // socketService.subscribeToTeam(teamId); 
 
         const store = get() as TeamStore;
 
         const offUserOnline = socketService.on(
-            'team_user_online',
+            'user:online',
             (payload: { teamId: string; userId: string }) => {
                 const isSameTeam = payload.teamId === teamId;
                 if (!isSameTeam) return;
@@ -222,7 +231,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
         );
 
         const offUserOffline = socketService.on(
-            'team_user_offline',
+            'user:offline',
             (payload: { teamId: string; userId: string }) => {
                 const isSameTeam = payload.teamId === teamId;
                 if (!isSameTeam) return;
@@ -232,7 +241,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
         );
 
         const offPresenceList = socketService.on(
-            'team_presence_list',
+            'user:list',
             (payload: { teamId: string; users: { _id: string }[] }) => {
                 const isSameTeam = payload.teamId === teamId;
                 if (!isSameTeam) return;
@@ -246,6 +255,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
             offUserOnline();
             offUserOffline();
             offPresenceList();
+            // Do NOT unsubscribe from the team
         };
     }
 });

@@ -39,16 +39,17 @@ const teamApi = {
 
     invitations: {
         async getDetails(token: string): Promise<TeamInvitation> {
-            const response = await invitationClient.request<{ status: string; data: { invitation: TeamInvitation } }>('get', `/details/${token}`);
-            return response.data.data.invitation;
+            const response = await invitationClient.request<{ status: string; data: TeamInvitation }>('get', `/details/${token}`);
+            return response.data.data;
         },
 
         async getPending(): Promise<TeamInvitation[]> {
-            const response = await invitationClient.request<{ status: string; data: { invitations: TeamInvitation[] } }>('get', '/pending');
-            return response.data.data.invitations;
+            const response = await invitationClient.request<{ status: string; data: { data: TeamInvitation[] } }>('get', '/pending');
+            // Backend returns paginated result: { status, data: { data: TeamInvitation[], page, limit, total } }
+            return response.data.data.data;
         },
 
-        async send( email: string, role?: string): Promise<void> {
+        async send(email: string, role?: string): Promise<void> {
             await invitationClient.request('post', `/invite`, { data: { email, role } });
         },
 

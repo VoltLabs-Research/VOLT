@@ -41,8 +41,19 @@ const SimulationCellsListing = () => {
 
                 const res = await simulationCellApi.getAll(team._id, { ...params, search: searchQuery });
 
-                const { data: results, ...pagination } = res.data;
-                const { current, total: totalPages } = res.data.page;
+                // res is now the response body, so correct unpacking depends on what the API returns.
+                // API getAll now returns response.data (the body).
+                // But the controller currently returns { status: 'success', data: [] }.
+                // BaseResponse.paginated returns { status: 'success', data: [...], results: ... }.
+                // Let's assume the controller will eventually return paginated response.
+                // For now, if API returns `response.data` (the body), we access it directly.
+
+                // If API returns `response.data` (body), then `res` IS the body.
+                // The API getAll implementation I wrote returns `response.data`.
+                // So `res` = { status: 'success', data: ..., ... }
+
+                const { data: results, ...pagination } = res;
+
 
                 if (params.append) {
                     setData(prev => [...prev, ...results]);
@@ -51,10 +62,10 @@ const SimulationCellsListing = () => {
                 }
 
                 setListingMeta({
-                    page: Number(current),
-                    limit: 20,
-                    hasMore: Number(current) < Number(totalPages),
-                    total: res.data.results.total
+                    page: pagination.page,
+                    limit: pagination.limit,
+                    hasMore: pagination.page < pagination.totalPages,
+                    total: pagination.total
                 });
 
             } catch (err) {

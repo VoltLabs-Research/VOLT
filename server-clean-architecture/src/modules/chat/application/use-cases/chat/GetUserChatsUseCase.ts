@@ -7,13 +7,13 @@ import { GetUserChatsInputDTO, GetUserChatsOutputDTO } from "../../dtos/chat/Get
 import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
 
 @injectable()
-export default class GetUserChatsUseCase implements IUseCase<GetUserChatsInputDTO, GetUserChatsOutputDTO[], ApplicationError>{
+export class GetUserChatsUseCase implements IUseCase<GetUserChatsInputDTO, GetUserChatsOutputDTO[], ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository,
-    ){}
+    ) { }
 
-    async execute(input: GetUserChatsInputDTO): Promise<Result<GetUserChatsOutputDTO[], ApplicationError>>{
+    async execute(input: GetUserChatsInputDTO): Promise<Result<GetUserChatsOutputDTO[], ApplicationError>> {
         const result = await this.chatRepo.findChatsByUserId(input.userId);
         return Result.ok(result);
     }

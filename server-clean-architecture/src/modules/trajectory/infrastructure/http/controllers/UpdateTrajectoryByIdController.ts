@@ -1,12 +1,12 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import GetTrajectoryByIdUseCase from '../../../application/use-cases/GetTrajectoryByIdUseCase';
+import UpdateTrajectoryByIdUseCase from '../../../application/use-cases/trajectory/UpdateTrajectoryByIdUseCase';
 
 @injectable()
-export default class UpdateTrajectoryByIdController extends BaseController<GetTrajectoryByIdUseCase>{
+export default class UpdateTrajectoryByIdController extends BaseController<UpdateTrajectoryByIdUseCase> {
     constructor(
-        useCase: GetTrajectoryByIdUseCase
-    ){
+        @inject(UpdateTrajectoryByIdUseCase) useCase: UpdateTrajectoryByIdUseCase
+    ) {
         super(useCase);
     }
 };

@@ -8,16 +8,16 @@ import { ToggleMessageReactionInputDTO, ToggleMessageReactionOutputDTO } from ".
 import { ErrorCodes } from "@/src/core/constants/error-codes";
 
 @injectable()
-export default class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReactionInputDTO, ToggleMessageReactionOutputDTO, ApplicationError>{
+export class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReactionInputDTO, ToggleMessageReactionOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository
-    ){}
+    ) { }
 
-    async execute(input: ToggleMessageReactionInputDTO): Promise<Result<ToggleMessageReactionOutputDTO, ApplicationError>>{
+    async execute(input: ToggleMessageReactionInputDTO): Promise<Result<ToggleMessageReactionOutputDTO, ApplicationError>> {
         const { emoji, messageId, userId } = input;
         const message = await this.messageRepo.findById(messageId);
-        if(!message){
+        if (!message) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.MESSAGE_NOT_FOUND,
                 'Message not found'
@@ -29,7 +29,7 @@ export default class ToggleMessageReactionUseCase implements IUseCase<ToggleMess
             reactions: message.props.reactions
         });
 
-        if(!updatedMessage){
+        if (!updatedMessage) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.MESSAGE_NOT_FOUND,
                 'Chat message not found'

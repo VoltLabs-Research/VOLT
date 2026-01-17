@@ -1,6 +1,6 @@
 import pino from 'pino';
 
-const level = (process.env.LOG_LEVEL as pino.LevelWithSilent | undefined) ?? 'info';
+const level = (process.env.LOG_LEVEL as pino.LevelWithSilent | undefined) ?? 'debug';
 const isProd = process.env.NODE_ENV === 'production';
 
 const logger = pino(

@@ -21,4 +21,4 @@ export const NodeDataSchema = new Schema({
     visualizers: VisualizersDataSchema,
     export: ExportDataSchema,
     ifStatement: IfStatementDataSchema
-}, { _id: false });
+}, { _id: false, strict: false });

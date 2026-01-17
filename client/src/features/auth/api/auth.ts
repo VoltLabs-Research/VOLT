@@ -5,17 +5,17 @@ import type { SignInCredentials, AuthResponse, User, PasswordInfo, ChangePasswor
 const client = new VoltClient('/auth');
 
 export default {
-    async getMe(): Promise<User>{
+    async getMe(): Promise<User> {
         const response = await client.request<ApiResponse<User>>('get', '/me');
         return response.data.data;
     },
 
-    async signIn(data: SignInCredentials): Promise<AuthResponse>{
+    async signIn(data: SignInCredentials): Promise<AuthResponse> {
         const response = await client.request('post', '/sign-in', { data });
         return response.data.data;
     },
 
-    async signUp(data: SignUpDetails): Promise<AuthResponse>{
+    async signUp(data: SignUpDetails): Promise<AuthResponse> {
         const response = await client.request('post', '/sign-up', { data });
         return response.data.data;
     },
@@ -25,12 +25,12 @@ export default {
         return response.data.data;
     },
 
-    async getGuestIdentity(seed: string): Promise<User>{
+    async getGuestIdentity(seed: string): Promise<User> {
         const response = await client.request('get', `/guest-identity?seed=${seed}`);
         return response.data.data;
     },
 
-    async updateMe(data: Partial<User> | FormData): Promise<User>{
+    async updateMe(data: Partial<User> | FormData): Promise<User> {
         const isFormData = data instanceof FormData;
         const response = await client.request('patch', '/me', {
             data,
@@ -42,13 +42,13 @@ export default {
     },
 
     password: {
-        async getInfo(): Promise<PasswordInfo>{
+        async getInfo(): Promise<PasswordInfo> {
             const response = await client.request('get', '/password/info');
             return response.data.data;
         },
 
-        async change(data: ChangePasswordPayload): Promise<void>{
-            await client.request('patch', '/password/change', { data });
+        async change(data: ChangePasswordPayload): Promise<void> {
+            await client.request('patch', '/me/update/password/', { data });
         }
     }
 };

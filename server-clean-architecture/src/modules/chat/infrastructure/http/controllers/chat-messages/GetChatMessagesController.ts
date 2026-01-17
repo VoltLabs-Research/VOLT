@@ -1,12 +1,13 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject, delay } from 'tsyringe';
 import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import GetChatMessagesUseCase from '@/src/modules/chat/application/use-cases/chat-message/GetChatMessagesUseCase';
+import { GetChatMessagesUseCase } from '@/src/modules/chat/application/use-cases/chat-message/GetChatMessagesUseCase';
 
 @injectable()
-export default class GetChatMessagesController extends BaseController<GetChatMessagesUseCase>{
+export default class GetChatMessagesController extends BaseController<GetChatMessagesUseCase> {
     constructor(
+        @inject(delay(() => GetChatMessagesUseCase))
         useCase: GetChatMessagesUseCase
-    ){
+    ) {
         super(useCase)
     };
 };

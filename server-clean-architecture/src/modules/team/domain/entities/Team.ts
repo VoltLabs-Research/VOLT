@@ -1,25 +1,25 @@
-export interface TeamProps{
+export interface TeamProps {
     name: string;
     description: string;
-    owner: string;
-    admins: string[];
-    members: string[];
-    invitations: string[];
-    containers: string[];
-    trajectories: string[];
-    chats: string[];
-    plugins: string[];
+    owner: any;
+    admins: any[];
+    members: any[];
+    invitations: any[];
+    containers: any[];
+    trajectories: any[];
+    chats: any[];
+    plugins: any[];
     createdAt: Date;
     updatedAt: Date;
 };
 
-export default class Team{
+export default class Team {
     constructor(
         public readonly id: string,
         public props: TeamProps
-    ){}
+    ) { }
 
-    public isOwner(userId: string): boolean{
+    public isOwner(userId: string): boolean {
         return this.props.owner === userId;
     }
 };

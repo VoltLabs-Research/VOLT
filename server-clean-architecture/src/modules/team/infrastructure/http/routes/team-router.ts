@@ -24,9 +24,8 @@ router.route('/')
     .get(listUserTeamsController.handle)
     .post(createTeamController.handle);
 
-router.use(checkTeamMembership);
-
 router.route('/:teamId')
+    .all(checkTeamMembership)
     .get(getTeamByIdController.handle)
     .patch(updateTeamByIdController.handle)
     .delete(deleteTeamByIdController.handle);

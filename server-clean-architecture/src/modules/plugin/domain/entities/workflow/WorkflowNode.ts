@@ -1,10 +1,10 @@
 import { WorkflowNodeData } from "./WorkflowNodeData";
 
-export enum WorkflowNodeType{
+export enum WorkflowNodeType {
     Modifier = 'modifier',
     Arguments = 'arguments',
     Context = 'context',
-    ForEach = 'foreach',
+    ForEach = 'forEach',  // Changed from 'foreach' to match legacy format
     Entrypoint = 'entrypoint',
     Exposure = 'exposure',
     Schema = 'schema',
@@ -13,7 +13,7 @@ export enum WorkflowNodeType{
     IfStatement = 'if-statement'
 };
 
-export interface WorkflowNode{
+export interface WorkflowNode {
     id: string;
     type: WorkflowNodeType;
     position: {

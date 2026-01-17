@@ -16,47 +16,51 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchProcesses = async() => {
-        setLoading(true);
+    const fetchProcesses = async (isSilent = false) => {
+        if (!isSilent) setLoading(true);
         setError(null);
-        try{
+        try {
             const data = await containerApi.getProcesses(containerId) as any;
-            const mapped = (data?.Processes || []).map((p: string[]) => {
-                // p indices correspond to: 0:PID, 1:COMM, 2:ARGS, 3:NLWP, 4:USER, 5:RSS, 6:PCPU
+            const mapped = data.map((p: string[]) => {
+                // Backend ps_args: '-o pid,comm,nlwp,user,rss,pcpu,args'
+                // p[0]: PID, p[1]: COMM, p[2]: NLWP, p[3]: USER, p[4]: RSS, p[5]: PCPU, p[6+]: ARGS
                 return {
                     PID: p[0],
                     Program: p[1],
-                    Command: p[2],
-                    Threads: p[3],
-                    User: p[4],
-                    MemB: formatMemory(p[5]),
-                    Cpu: p[6]
+                    Threads: p[2],
+                    User: p[3],
+                    MemB: formatMemory(p[4]),
+                    Cpu: p[5],
+                    Command: p.slice(6).join(' ') // Join remaining parts as command
                 };
             });
 
+
             setProcesses(mapped);
-        }catch(err: any){
-            setError('Failed to load processes. Container might be stopped.');
-        }finally{
-            setLoading(false);
+        } catch (err: any) {
+            if (processes.length === 0) {
+                setError('Failed to load processes. Container might be stopped.');
+            }
+        } finally {
+            if (!isSilent) setLoading(false);
         }
     };
 
     const formatMemory = (kbStr: string) => {
         const kb = parseInt(kbStr, 10);
-        if(isNaN(kb)) return kbStr;
-        if(kb > 1024 * 1024) return `${(kb / 1024 / 1024).toFixed(1)}G`;
-        if(kb > 1024) return `${(kb / 1024).toFixed(0)}M`;
+        if (isNaN(kb)) return kbStr;
+        if (kb > 1024 * 1024) return `${(kb / 1024 / 1024).toFixed(1)}G`;
+        if (kb > 1024) return `${(kb / 1024).toFixed(0)}M`;
         return `${kb}K`;
     };
 
     useEffect(() => {
-        fetchProcesses();
-        const interval = setInterval(fetchProcesses, 3000);
+        fetchProcesses(false);
+        const interval = setInterval(() => fetchProcesses(true), 3000);
         return () => clearInterval(interval);
     }, [containerId]);
 
-    if(loading && processes.length === 0){
+    if (loading && processes.length === 0) {
         return (
             <Container className='d-flex column flex-center h-max color-muted-foreground gap-1 p-2 text-center'>
                 Loading processes...
@@ -64,12 +68,12 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
         );
     }
 
-    if(error){
+    if (error) {
         return (
             <Container className="d-flex column flex-center h-max gap-1 p-2 text-center color-muted-foreground">
                 <Activity size={48} />
                 <Paragraph>{error}</Paragraph>
-                <Button variant='ghost' intent='neutral' size='sm' onClick={fetchProcesses}>Retry</Button>
+                <Button variant='ghost' intent='neutral' size='sm' onClick={() => fetchProcesses(false)}>Retry</Button>
             </Container>
         );
     }
@@ -78,7 +82,7 @@ const ContainerProcesses: React.FC<ContainerProcessesProps> = ({ containerId }) 
         <Container className="d-flex h-max column overflow-hidden processes-container">
             <Container className="d-flex content-between items-center processes-header p-1">
                 <Title className='font-size-3'>Running Processes</Title>
-                <Button variant='ghost' intent='neutral' size='sm' leftIcon={<RefreshCw size={14} />} onClick={fetchProcesses}>
+                <Button variant='ghost' intent='neutral' size='sm' leftIcon={<RefreshCw size={14} />} onClick={() => fetchProcesses(false)}>
                     Refresh
                 </Button>
             </Container>

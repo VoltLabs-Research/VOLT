@@ -1,14 +1,14 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
 import { HttpStatus } from '@/src/shared/infrastructure/http/HttpStatus';
 import { DeleteAccountInputDTO } from '../../../application/dtos/DeleteAccountDTO';
 import DeleteAccountUseCase from '../../../application/use-cases/DeleteAccountUseCase';
 
 @injectable()
-export default class DeleteMyAccountController extends BaseController<DeleteAccountUseCase>{
+export default class DeleteMyAccountController extends BaseController<DeleteAccountUseCase> {
     constructor(
-        useCase: DeleteAccountUseCase
-    ){
+        @inject(DeleteAccountUseCase) useCase: DeleteAccountUseCase
+    ) {
         super(useCase, HttpStatus.Deleted);
     }
 };

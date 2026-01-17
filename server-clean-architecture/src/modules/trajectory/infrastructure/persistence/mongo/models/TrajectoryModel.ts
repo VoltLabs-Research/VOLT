@@ -6,17 +6,17 @@ import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/Mongo
 type TrajectoryRelations = 'createdBy' | 'team' | 'analysis';
 type TrajectoryFrameRelations = 'simulationCell';
 
-export interface TrajectoryDocument extends Persistable<TrajectoryProps, TrajectoryRelations>, Document{}
-export interface TrajectoryFrameDocument extends Persistable<TrajectoryFrame, TrajectoryFrameRelations>, Document{}
+export interface TrajectoryDocument extends Persistable<TrajectoryProps, TrajectoryRelations>, Document { }
+export interface TrajectoryFrameDocument extends Persistable<TrajectoryFrame, TrajectoryFrameRelations>, Document { }
 
 const TimestepInfoSchema: Schema<TrajectoryFrameDocument> = new Schema({
     timestep: {
-        type: Number, 
-        required: true 
+        type: Number,
+        required: true
     },
     natoms: {
-        type: Number, 
-        required: true 
+        type: Number,
+        required: true
     },
     simulationCell: {
         type: Schema.Types.ObjectId,
@@ -72,7 +72,7 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
     },
     uploadId: {
         type: String,
-        select: true 
+        select: true
     }
 }, {
     timestamps: true,

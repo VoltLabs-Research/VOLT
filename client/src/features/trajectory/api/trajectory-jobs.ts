@@ -14,7 +14,7 @@ export default {
      */
     async clearHistory(trajectoryId: string): Promise<ClearHistoryResponse> {
         const response = await client.request('patch', `/${trajectoryId}/jobs/clear-history`);
-        return response.data;
+        return response.data.data;
     },
 
     /**
@@ -23,7 +23,7 @@ export default {
      */
     async removeRunningJobs(trajectoryId: string): Promise<RemoveRunningJobsResponse> {
         const response = await client.request('patch', `/${trajectoryId}/jobs/remove-running`);
-        return response.data;
+        return response.data.data;
     },
 
     /**
@@ -32,6 +32,6 @@ export default {
      */
     async retryFailedJobs(trajectoryId: string): Promise<RetryFailedJobsResponse> {
         const response = await client.request('patch', `/${trajectoryId}/jobs/retry-failed`);
-        return response.data;
+        return response.data.data;
     }
 };

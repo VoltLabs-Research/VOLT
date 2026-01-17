@@ -1,23 +1,27 @@
 import IORedis from 'ioredis';
 import { IJobRepository } from '../../domain/ports/IJobRepository';
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
+import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
 
 @injectable()
-export default class RedisJobRepository implements IJobRepository{
+export default class RedisJobRepository implements IJobRepository {
     constructor(
+        @inject(SHARED_TOKENS.RedisClient)
         private readonly redis: IORedis,
-        private readonly redisBlocking: IORedis
-    ){}
 
-    async addToQueue(queueKey: string, jobs: string[]): Promise<void>{
-        if(jobs.length === 0) return;
+        @inject(SHARED_TOKENS.RedisBlockingClient)
+        private readonly redisBlocking: IORedis
+    ) { }
+
+    async addToQueue(queueKey: string, jobs: string[]): Promise<void> {
+        if (jobs.length === 0) return;
 
         await this.redis.lpush(queueKey, ...jobs);
     }
 
     async getFromQueue(
-        queueKey: string, 
-        processingKey: string, 
+        queueKey: string,
+        processingKey: string,
         timeoutSeconds: number
     ): Promise<string | null> {
         const result = await this.redisBlocking.blmove(
@@ -37,7 +41,7 @@ export default class RedisJobRepository implements IJobRepository{
         count: number
     ): Promise<string[]> {
         const jobs: string[] = [];
-        for(let i = 0; i < count; i++){
+        for (let i = 0; i < count; i++) {
             const job = await this.redis.lmove(
                 queueKey,
                 processingKey,
@@ -45,7 +49,7 @@ export default class RedisJobRepository implements IJobRepository{
                 'LEFT'
             );
 
-            if(!job) break;
+            if (!job) break;
             jobs.push(job);
         }
 
@@ -53,36 +57,36 @@ export default class RedisJobRepository implements IJobRepository{
     }
 
     async moveToQueue(
-        queueKey: string, 
-        processingKey: string, 
+        queueKey: string,
+        processingKey: string,
         rawData: string
     ): Promise<void> {
         await this.redis.multi()
             .lpush(queueKey, rawData)
             .lrem(processingKey, 1, rawData)
-            .exec();    
+            .exec();
     }
 
     async removeFromProcessing(
-        processingKey: string, 
+        processingKey: string,
         rawData: string
     ): Promise<void> {
-        await this.redis.lrem(processingKey, 1, rawData);    
+        await this.redis.lrem(processingKey, 1, rawData);
     }
 
-    async getQueueLength(queueKey: string): Promise<number>{
+    async getQueueLength(queueKey: string): Promise<number> {
         return await this.redis.llen(queueKey);
     }
 
-    async getProcessingLength(processingKey: string): Promise<number>{
+    async getProcessingLength(processingKey: string): Promise<number> {
         return await this.redis.llen(processingKey);
     }
 
     async setJobStatus(
-        statusKey: string, 
-        data: any, 
+        statusKey: string,
+        data: any,
         ttlSeconds: number
-    ): Promise<void>{
+    ): Promise<void> {
         await this.redis.set(
             statusKey,
             JSON.stringify(data),
@@ -93,73 +97,78 @@ export default class RedisJobRepository implements IJobRepository{
 
     async getJobStatus(statusKey: string): Promise<any | null> {
         const data = await this.redis.get(statusKey);
-        if(!data) return null;
+        if (!data) return null;
 
-        try{
+        try {
             return JSON.parse(data);
-        }catch{
+        } catch {
             return null;
         }
     }
 
-    async deleteJobStatus(statusKey: string): Promise<void>{
+    async deleteJobStatus(statusKey: string): Promise<void> {
         await this.redis.del(statusKey);
     }
 
-    async incrementRetryCounter(retryKey: string, ttlSeconds: number): Promise<number>{
+    async incrementRetryCounter(retryKey: string, ttlSeconds: number): Promise<number> {
         const count = this.redis.incr(retryKey);
         await this.redis.expire(retryKey, ttlSeconds);
         return count;
     }
 
-    async deleteRetryCounter(retryKey: string): Promise<void>{
+    async deleteRetryCounter(retryKey: string): Promise<void> {
         await this.redis.del(retryKey);
     }
 
-    async addToTeamJobs(teamId: string, jobId: string): Promise<void>{
+    async addToTeamJobs(teamId: string, jobId: string): Promise<void> {
         const teamJobsKey = `team:${teamId}:jobs`;
         await this.redis.sadd(teamJobsKey, jobId);
     }
 
+    async getTeamJobIds(teamId: string): Promise<string[]> {
+        const teamJobsKey = `team:${teamId}:jobs`;
+        return await this.redis.smembers(teamJobsKey);
+    }
+
     async evalScript(
-        script: string, 
-        numKeys: number, 
+        script: string,
+        numKeys: number,
         ...args: (string | number)[]
     ): Promise<any> {
-        return await this.redis.eval(script, numKeys, ...args);    
+        return await this.redis.eval(script, numKeys, ...args);
     }
 
     async getListRange(
-        key: string, 
-        start: number, 
+        key: string,
+        start: number,
         end: number
-    ): Promise<string[]>{
+    ): Promise<string[]> {
         return await this.redis.lrange(key, start, end);
     }
 
-    async exists(key: string): Promise<number>{
+    async exists(key: string): Promise<number> {
         return await this.redis.exists(key);
     }
 
     async setWithExpiry(
-        key: string, 
-        value: string, 
+        key: string,
+        value: string,
         expirySeconds: number
-    ): Promise<void>{
+    ): Promise<void> {
         await this.redis.setex(key, expirySeconds, value);
     }
 
-    async delete(key: string): Promise<void>{
+    async delete(key: string): Promise<void> {
         await this.redis.del(key);
     }
 
-    async get(key: string): Promise<string | null>{
+    async get(key: string): Promise<string | null> {
         return await this.redis.get(key);
     }
 
     async scan(
-        cursor: string, 
-        pattern: string, 
+        cursor: string,
+        pattern: string,
         count: number
     ): Promise<[string, string[]]> {
         const result = await this.redis.scan(
@@ -172,11 +181,11 @@ export default class RedisJobRepository implements IJobRepository{
         return [result[0], result[1]];
     }
 
-    pipeline(){
+    pipeline() {
         return this.redis.pipeline();
     }
 
-    multi(){
+    multi() {
         return this.redis.multi();
     }
 };

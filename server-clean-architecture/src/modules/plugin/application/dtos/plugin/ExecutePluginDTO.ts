@@ -1,4 +1,4 @@
-export interface ExecutePluginInputDTO{
+export interface ExecutePluginInputDTO {
     pluginSlug: string;
     trajectoryId: string;
     userId: string;
@@ -6,4 +6,4 @@ export interface ExecutePluginInputDTO{
     selectedFrameOnly?: boolean;
     config: Record<string, any>;
     timestep?: number;
-};
+}

@@ -1,12 +1,11 @@
 import { ErrorCodes } from "@/src/core/constants/error-codes";
 import { NextFunction, Request, Response } from "express";
-import authContainer from '@/src/modules/auth/infrastructure/di/container';
-import UserRepository from "@/src/modules/auth/infrastructure/persistence/mongo/repositories/UserRepository";
+import { container } from 'tsyringe';
+import { AUTH_TOKENS } from '@/src/modules/auth/infrastructure/di/AuthTokens';
+import { IUserRepository } from '@/src/modules/auth/domain/ports/IUserRepository';
 import jwt from 'jsonwebtoken';
 
-const userRepository = authContainer.resolve(UserRepository);
-
-export interface AuthenticatedRequest extends Request{
+export interface AuthenticatedRequest extends Request {
     user?: any;
     userId?: string;
     sessionId?: string;
@@ -15,16 +14,16 @@ export interface AuthenticatedRequest extends Request{
 
 export const protect = async (
     req: AuthenticatedRequest,
-    res: Response, 
+    res: Response,
     next: NextFunction
 ): Promise<void> => {
     let token: string | undefined;
 
-    if(req.headers.authorization?.startsWith('Bearer')){
+    if (req.headers.authorization?.startsWith('Bearer')) {
         token = req.headers.authorization.split(' ')[1];
     }
 
-    if(!token){
+    if (!token) {
         res.status(401).json({
             status: 'error',
             message: ErrorCodes.AUTHENTICATION_REQUIRED
@@ -36,8 +35,12 @@ export const protect = async (
      * Token and user verification.
      */
     const decoded = jwt.verify(token, process.env.SECRET_KEY!) as any;
+
+    // Resolve repository lazy
+    const userRepository = container.resolve<IUserRepository>(AUTH_TOKENS.UserRepository);
+
     const user = await userRepository.findById(decoded.id);
-    if(!user){
+    if (!user) {
         res.status(401).json({
             status: 'error',
             message: ErrorCodes.USER_NOT_FOUND

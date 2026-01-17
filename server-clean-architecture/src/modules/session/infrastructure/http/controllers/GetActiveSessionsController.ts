@@ -1,12 +1,12 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
 import GetActiveSessionsUseCase from '../../../application/use-cases/GetActiveSessionsUseCase';
 
 @injectable()
-export default class GetActiveSessionsController extends BaseController<GetActiveSessionsUseCase>{
+export default class GetActiveSessionsController extends BaseController<GetActiveSessionsUseCase> {
     constructor(
-        useCase: GetActiveSessionsUseCase
-    ){
+        @inject(GetActiveSessionsUseCase) useCase: GetActiveSessionsUseCase
+    ) {
         super(useCase);
     }
 };

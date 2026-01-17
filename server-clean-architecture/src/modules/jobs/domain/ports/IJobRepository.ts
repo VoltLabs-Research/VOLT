@@ -1,6 +1,6 @@
 import Job from "../entities/Job";
 
-export interface IJobRepository{
+export interface IJobRepository {
     /**
      * Add jobs to the queue.
      */
@@ -77,7 +77,7 @@ export interface IJobRepository{
      * Increment retry counter
      */
     incrementRetryCounter(
-        retryKey: string, 
+        retryKey: string,
         ttlSeconds: number
     ): Promise<number>;
 
@@ -90,16 +90,21 @@ export interface IJobRepository{
      * Add job to team jobs set
      */
     addToTeamJobs(
-        teamId: string, 
+        teamId: string,
         jobId: string
     ): Promise<void>;
+
+    /**
+     * Get all job IDs for a team
+     */
+    getTeamJobIds(teamId: string): Promise<string[]>;
 
     /**
      * Execute Lua script
      */
     evalScript(
-        script: string, 
-        numKeys: number, 
+        script: string,
+        numKeys: number,
         ...args: (string | number)[]
     ): Promise<any>;
 
@@ -107,8 +112,8 @@ export interface IJobRepository{
      * Get all jobs from list
      */
     getListRange(
-        key: string, 
-        start: number, 
+        key: string,
+        start: number,
         end: number
     ): Promise<string[]>;
 
@@ -121,8 +126,8 @@ export interface IJobRepository{
      * Set key with expiry
      */
     setWithExpiry(
-        key: string, 
-        value: string, 
+        key: string,
+        value: string,
         expirySeconds: number
     ): Promise<void>;
 
@@ -141,7 +146,7 @@ export interface IJobRepository{
      */
     scan(
         cursor: string,
-        pattern: string, 
+        pattern: string,
         count: number
     ): Promise<[string, string[]]>;
 

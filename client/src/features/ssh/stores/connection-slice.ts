@@ -83,8 +83,8 @@ export const createSSHConnectionSlice: SliceCreator<SSHConnectionSlice> = (set, 
         await runRequest(set, get, request, {
             errorFallback: ERROR_MESSAGES.FETCH,
             loadingKey: 'loading',
-            onSuccess: (connections: SSHConnection[]) => {
-                set({ connections } as Partial<SSHConnectionSlice>);
+            onSuccess: (response) => {
+                set({ connections: response.data } as Partial<SSHConnectionSlice>);
             }
         });
     };

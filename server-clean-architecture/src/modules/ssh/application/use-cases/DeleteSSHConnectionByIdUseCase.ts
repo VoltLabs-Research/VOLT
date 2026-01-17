@@ -8,16 +8,16 @@ import { DeleteSSHConnectionByIdInputDTO } from '../dtos/DeleteSSHConnectionById
 import { ErrorCodes } from '@/src/core/constants/error-codes';
 
 @injectable()
-export default class DeleteSSHConnectionByIdUseCase implements IUseCase<DeleteSSHConnectionByIdInputDTO, null, ApplicationError>{
+export class DeleteSSHConnectionByIdUseCase implements IUseCase<DeleteSSHConnectionByIdInputDTO, null, ApplicationError> {
     constructor(
         @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
         private sshConnRepository: ISSHConnectionRepository
-    ){}
+    ) { }
 
-    async execute(input: DeleteSSHConnectionByIdInputDTO): Promise<Result<null, ApplicationError>>{
+    async execute(input: DeleteSSHConnectionByIdInputDTO): Promise<Result<null, ApplicationError>> {
         const { sshConnectionId } = input;
         const result = await this.sshConnRepository.deleteById(sshConnectionId);
-        if(!result){
+        if (!result) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.SSH_CONNECTION_DELETE_ERROR,
                 'SSH connection delete error'

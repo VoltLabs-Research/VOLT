@@ -4,7 +4,7 @@ import { ValidationCodes } from '../../../../../../core/constants/validation-cod
 import { UserProps, OAuthProvider, UserRole } from '../../../../domain/entities/User';
 
 export interface UserDocument extends Omit<UserProps, 'id'>, Document {
-    _id: Types.ObjectId; 
+    _id: Types.ObjectId;
 }
 
 const UserSchema: Schema<UserDocument> = new Schema({
@@ -22,7 +22,6 @@ const UserSchema: Schema<UserDocument> = new Schema({
             return !this.oauthProvider;
         },
         minlength: [8, ValidationCodes.USER_PASSWORD_MINLEN],
-        maxlength: [16, ValidationCodes.USER_PASSWORD_MAXLEN],
         select: false
     },
     role: {

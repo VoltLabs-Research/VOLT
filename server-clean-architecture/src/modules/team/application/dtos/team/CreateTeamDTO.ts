@@ -1,9 +1,11 @@
 import { TeamProps } from "../../../domain/entities/Team";
 
-export interface CreateTeamInputDTO{
+export interface CreateTeamInputDTO {
     name: string;
     description: string;
     ownerId: string;
 };
 
-export interface CreateTeamOutputDTO extends TeamProps{}
+export interface CreateTeamOutputDTO extends TeamProps {
+    id: string;
+}

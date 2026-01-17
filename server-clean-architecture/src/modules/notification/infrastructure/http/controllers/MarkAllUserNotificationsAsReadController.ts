@@ -1,12 +1,12 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
 import MarkAllUserNotificationsAsReadUseCase from '../../../application/use-cases/MarkAllUserNotificationsAsReadUseCase';
 
 @injectable()
-export default class MarkAllUserNotificationsAsReadController extends BaseController<MarkAllUserNotificationsAsReadUseCase>{
+export default class MarkAllUserNotificationsAsReadController extends BaseController<MarkAllUserNotificationsAsReadUseCase> {
     constructor(
-        useCase: MarkAllUserNotificationsAsReadUseCase
-    ){
+        @inject(MarkAllUserNotificationsAsReadUseCase) useCase: MarkAllUserNotificationsAsReadUseCase
+    ) {
         super(useCase);
     }
 };

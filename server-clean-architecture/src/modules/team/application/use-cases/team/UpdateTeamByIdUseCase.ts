@@ -8,16 +8,18 @@ import { ErrorCodes } from "@/src/core/constants/error-codes";
 import { UpdateTeamByIdInputDTO, UpdateTeamByIdOutputDTO } from "../../dtos/team/UpdateTeamByIdDTO";
 
 @injectable()
-export default class UpdateTeamByIdUseCase implements IUseCase<UpdateTeamByIdInputDTO, UpdateTeamByIdOutputDTO, ApplicationError>{
+export default class UpdateTeamByIdUseCase implements IUseCase<UpdateTeamByIdInputDTO, UpdateTeamByIdOutputDTO, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamRepository)
         private teamRepository: ITeamRepository
-    ){}
+    ) { }
 
-    async execute(input: UpdateTeamByIdInputDTO): Promise<Result<UpdateTeamByIdOutputDTO, ApplicationError>>{
+    async execute(input: UpdateTeamByIdInputDTO): Promise<Result<UpdateTeamByIdOutputDTO, ApplicationError>> {
         const { name, description, teamId } = input;
-        const team = await this.teamRepository.updateById(teamId, { name, description });
-        if(!team){
+        const team = await this.teamRepository.updateById(teamId, { name, description }, {
+            populate: ['owner']
+        });
+        if (!team) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TEAM_NOT_FOUND,
                 'Team not found'

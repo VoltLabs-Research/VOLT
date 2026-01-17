@@ -185,7 +185,7 @@ export const usePluginStore = create<PluginState>((set, get) => ({
             onSuccess: (apiResponse) => {
                 const incomingPlugins = apiResponse.data;
                 const totalFromApi = apiResponse.results?.total;
-
+                console.log('incomingPlugins', incomingPlugins);
                 const pagination = calculatePaginationState({
                     newData: incomingPlugins,
                     currentData: state.plugins,

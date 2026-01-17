@@ -9,6 +9,7 @@ import { runRequest } from '@/stores/helpers';
 import { extractErrorMessage } from '@/utilities/api/error-extractor';
 import type { SliceCreator } from '@/stores/helpers/create-slice';
 import { useUIStore } from '@/stores/slices/ui';
+import { socketService } from '@/services/websockets/socketio';
 
 const trajectoryPreviewCache = new PreviewCacheService();
 
@@ -117,7 +118,6 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
 
         const fetchTrajectories = () => {
             return trajectoryApi.getAllPaginated({
-                populate: 'analysis,createdBy',
                 page,
                 limit,
                 q: search
@@ -147,7 +147,7 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
     },
 
     getTrajectoryById: async (trajectoryId) => {
-        const fetchTrajectory = () => trajectoryApi.getOne(trajectoryId, 'team,analysis');
+        const fetchTrajectory = () => trajectoryApi.getOne(trajectoryId);
 
         await runRequest(set, get, fetchTrajectory, {
             errorFallback: 'Failed to load trajectory',
@@ -322,6 +322,26 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
             error: null,
             selectedTrajectories: []
         });
+    },
+
+    initializeSocket: (teamId: string) => {
+        const offTrajectoryUpdate = socketService.on(
+            'trajectory_updated',
+            (payload: { trajectoryId: string; updates: any; timestamp: string }) => {
+                const { trajectoryId, updates } = payload;
+                console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', updates);
+                set((state: TrajectoryStore) => {
+                    // Update the trajectory in the list
+                    const updated = patchTrajectoryInStore(state, trajectoryId, updates);
+
+                    return updated;
+                });
+            }
+        );
+
+        return () => {
+            offTrajectoryUpdate();
+        };
     },
 
     reset: () => {

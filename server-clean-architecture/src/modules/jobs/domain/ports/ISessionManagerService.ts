@@ -25,12 +25,11 @@ export interface ISessionManagerService{
 
     /**
      * Execute cleanup script for a session
-     * Returns [shouldClean, remaining, status]
+     * Returns [shouldClean, remaining, status, sessionData]
      */
     executeCleanupScript(
-        sessionId: string,
-        teamId: string
-    ): Promise<[number, number, string]>;
+        sessionId: string
+    ): Promise<[number, number, string, string | null]>;
 
     /**
      * Emit session completed event and perform cleanup
@@ -38,6 +37,7 @@ export interface ISessionManagerService{
     emitSessionCompleted(
         teamId: string,
         sessionId: string,
+        sessionDataRaw: string
     ): Promise<void>;
 
     /**

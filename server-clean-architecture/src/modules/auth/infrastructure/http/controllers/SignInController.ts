@@ -1,4 +1,4 @@
-import { injectable } from 'tsyringe';
+import { injectable, inject } from 'tsyringe';
 import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
 import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
 import { SignInInputDTO } from '../../../application/dtos/SignInDTO';
@@ -7,14 +7,14 @@ import getUserAgent from '@/src/shared/infrastructure/http/utilities/get-user-ag
 import getClientIP from '@/src/shared/infrastructure/http/utilities/get-client-ip';
 
 @injectable()
-export default class SignInController extends BaseController<SignInUseCase>{
+export default class SignInController extends BaseController<SignInUseCase> {
     constructor(
-        useCase: SignInUseCase
-    ){
+        @inject(SignInUseCase) useCase: SignInUseCase
+    ) {
         super(useCase);
     }
 
-    protected getParams(req: AuthenticatedRequest): SignInInputDTO{
+    protected getParams(req: AuthenticatedRequest): SignInInputDTO {
         const { email, password } = req.body;
         const userAgent = getUserAgent(req);
         const ip = getClientIP(req);

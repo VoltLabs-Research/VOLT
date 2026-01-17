@@ -8,22 +8,22 @@ import { ErrorCodes } from '@/src/core/constants/error-codes';
 import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
 
 @injectable()
-export default class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnectionByIdInputDTO, UpdateSSHConnectionByIdOutputDTO, ApplicationError>{
+export class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnectionByIdInputDTO, UpdateSSHConnectionByIdOutputDTO, ApplicationError> {
     constructor(
         @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
         private sshConnRepository: ISSHConnectionRepository
-    ){}
+    ) { }
 
-    async execute(input: UpdateSSHConnectionByIdInputDTO): Promise<Result<UpdateSSHConnectionByIdOutputDTO, ApplicationError>>{
+    async execute(input: UpdateSSHConnectionByIdInputDTO): Promise<Result<UpdateSSHConnectionByIdOutputDTO, ApplicationError>> {
         const { host, name, port, sshConnectionId, username } = input;
-        const result = await this.sshConnRepository.updateById(sshConnectionId, { 
+        const result = await this.sshConnRepository.updateById(sshConnectionId, {
             host,
             name,
             port,
             username
         });
 
-        if(!result){
+        if (!result) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.SSH_CONNECTION_UPDATE_ERROR,
                 'SSH connection update error'

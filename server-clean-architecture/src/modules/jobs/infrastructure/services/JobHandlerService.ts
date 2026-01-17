@@ -10,14 +10,14 @@ import JobCompletedEvent from '../../application/events/JobCompletedEvent';
 import JobFailedEvent from '../../application/events/JobFailedEvent';
 import JobIncrementedEvent from '../../application/events/JobIncrementedEvent';
 
-export interface JobHandlerConfig{
+export interface JobHandlerConfig {
     queueName: string;
     statusKeyPrefix: string;
     ttlSeconds: number;
 };
 
 @injectable()
-export default class JobHandlerService implements IJobHandlerService{
+export default class JobHandlerService implements IJobHandlerService {
     private config!: JobHandlerConfig;
 
     constructor(
@@ -26,29 +26,33 @@ export default class JobHandlerService implements IJobHandlerService{
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
-    ){}
+    ) { }
 
-    initialize(config: JobHandlerConfig): void{
+    initialize(config: JobHandlerConfig): void {
         this.config = config;
     }
 
     async setJobStatus(
-        jobId: string, 
-        status: JobStatus, 
+        jobId: string,
+        status: JobStatus,
         data: any
-    ): Promise<void>{
+    ): Promise<void> {
+        // Expand metadata fields to root level for Redis storage
         const statusData = {
             jobId,
             status,
+            timestamp: new Date().toISOString(),
             queueType: this.config.queueName,
-            ...data
+            ...data,
+            // Explicitly include metadata fields at root level
+            ...(data.metadata || {})
         };
 
         const statusKey = `${this.config.statusKeyPrefix}${jobId}`;
         const teamId = data.teamId;
 
         await this.jobRepository.setJobStatus(statusKey, statusData, this.config.ttlSeconds);
-        if(teamId){
+        if (teamId) {
             await this.jobRepository.addToTeamJobs(teamId, jobId);
         }
 
@@ -57,17 +61,17 @@ export default class JobHandlerService implements IJobHandlerService{
             teamId,
             status,
             queueType: this.config.queueName,
-            metadata: data.metadata
+            metadata: statusData
         });
 
         await this.eventBus.publish(event);
     }
 
-    async getJobStatus(jobId: string): Promise<any | null>{
+    async getJobStatus(jobId: string): Promise<any | null> {
         const statusKey = `${this.config.statusKeyPrefix}${jobId}`;
-        try{
+        try {
             return await this.jobRepository.getJobStatus(statusKey);
-        }catch{
+        } catch {
             return null;
         }
     }
@@ -94,37 +98,47 @@ export default class JobHandlerService implements IJobHandlerService{
     }
 
     async trackJobCompletion(job: Job, status: JobStatus): Promise<void> {
-        if(status === JobStatus.Completed){
+        if (status === JobStatus.Completed) {
             const event = new JobCompletedEvent({
                 jobId: job.props.jobId,
                 teamId: job.props.teamId,
                 queueType: job.props.queueType,
-                metadata: job.props.metadata,
+                metadata: job.props,
                 completedAt: new Date()
             });
             await this.eventBus.publish(event);
-        }else if(status === JobStatus.Failed){
+        } else if (status === JobStatus.Failed) {
             const event = new JobFailedEvent({
                 jobId: job.props.jobId,
                 teamId: job.props.teamId,
                 queueType: job.props.queueType,
                 error: job.props.error || 'Unknown error',
-                metadata: job.props.metadata,
+                metadata: job.props,
                 failedAt: new Date()
             });
             await this.eventBus.publish(event);
         }
     }
 
-    async trackJobIncrement(job: Job, sessionId: string): Promise<void>{
+    async trackJobIncrement(job: Job, sessionId: string): Promise<void> {
         const event = new JobIncrementedEvent({
             jobId: job.props.jobId,
             teamId: job.props.teamId,
             queueType: job.props.queueType,
             sessionId,
-            metadata: job.props.metadata
+            metadata: job.props
         });
 
         await this.eventBus.publish(event);
+    }
+
+    async cancelJob(trajectoryId: string, jobId: string): Promise<void> {
+        // Job queue integration placeholder
+        console.log(`Cancelling job ${jobId} for trajectory ${trajectoryId}`);
+    }
+
+    async retryFailedJobs(trajectoryId: string): Promise<number> {
+        // Retry logic placeholder
+        return 0;
     }
 };

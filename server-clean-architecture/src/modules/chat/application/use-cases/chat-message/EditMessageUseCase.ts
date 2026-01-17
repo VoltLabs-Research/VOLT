@@ -8,23 +8,23 @@ import { EditMessageInputDTO, EditMessageOutputDTO } from "../../dtos/chat-messa
 import { ErrorCodes } from "@/src/core/constants/error-codes";
 
 @injectable()
-export default class EditMessageUseCase implements IUseCase<EditMessageInputDTO, EditMessageOutputDTO, ApplicationError>{
+export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, EditMessageOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository
-    ){}
+    ) { }
 
-    async execute(input: EditMessageInputDTO): Promise<Result<EditMessageOutputDTO, ApplicationError>>{
+    async execute(input: EditMessageInputDTO): Promise<Result<EditMessageOutputDTO, ApplicationError>> {
         const { messageId, userId, content } = input;
         const message = await this.messageRepo.findById(messageId);
-        if(!message){
+        if (!message) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.MESSAGE_NOT_FOUND,
                 'Chat message not found'
             ));
         }
 
-        if(message.isSender(userId)){
+        if (message.isSender(userId)) {
             return Result.fail(ApplicationError.forbidden(
                 ErrorCodes.MESSAGE_NOT_FOUND,
                 'Not owner'
@@ -35,7 +35,7 @@ export default class EditMessageUseCase implements IUseCase<EditMessageInputDTO,
             content
         });
 
-        if(!updatedMessage){
+        if (!updatedMessage) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.MESSAGE_NOT_FOUND,
                 'Chat message not found'

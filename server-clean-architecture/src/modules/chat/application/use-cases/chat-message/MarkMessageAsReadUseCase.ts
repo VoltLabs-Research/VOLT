@@ -7,13 +7,13 @@ import { IChatMessageRepository } from "../../../domain/port/IChatMessageReposit
 import { MarkMessagesAsReadInputDTO } from "../../dtos/chat-message/MarkMessageAsReadDTO";
 
 @injectable()
-export default class MarkMessagesAsReadUseCase implements IUseCase<MarkMessagesAsReadInputDTO, null, ApplicationError>{
+export class MarkMessagesAsReadUseCase implements IUseCase<MarkMessagesAsReadInputDTO, null, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository
-    ){}
+    ) { }
 
-    async execute(input: MarkMessagesAsReadInputDTO): Promise<Result<null, ApplicationError>>{
+    async execute(input: MarkMessagesAsReadInputDTO): Promise<Result<null, ApplicationError>> {
         const { chatId, userId } = input;
         await this.messageRepo.markMessageAsRead(chatId, userId);
         return Result.ok(null);

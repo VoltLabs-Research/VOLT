@@ -5,7 +5,7 @@ import useLogger from '@/hooks/core/use-logger';
 import trajectoryApi from '@/features/trajectory/api/trajectory';
 
 type PendingUpdate = {
-    status: 'queued' | 'processing' | 'rendering' | 'completed' | 'failed';
+    [key: string]: any;
     updatedAt?: string;
 };
 
@@ -27,13 +27,11 @@ const upsertTrajectory = (state: any, trajectory: any) => {
     };
 };
 
-const patchTrajectoryStatus = (state: any, trajectoryId: string, pending: PendingUpdate) => {
+const patchTrajectory = (state: any, trajectoryId: string, updates: any) => {
     const updateData: any = {
         _id: trajectoryId,
-        status: pending.status
+        ...updates
     };
-
-    if(pending.updatedAt) updateData.updatedAt = pending.updatedAt;
 
     const nextTrajectories = [
         { ...(state.trajectories.find((t: any) => t._id === trajectoryId) || {}), ...updateData },
@@ -55,60 +53,47 @@ const useTrajectoryUpdates = () => {
     const logger = useLogger('use-trajectory-updates');
     const inFlightRef = useRef(new Set<string>());
 
-    const fetchAndUpsert = async(trajectoryId: string, pending?: PendingUpdate) => {
+    const fetchAndUpsert = async (trajectoryId: string, pending?: PendingUpdate) => {
         const inFlight = inFlightRef.current;
-        if(inFlight.has(trajectoryId)) return;
+        if (inFlight.has(trajectoryId)) return;
         inFlight.add(trajectoryId);
 
-        try{
+        try {
             const fetched = await trajectoryApi.getOne(trajectoryId, 'team,analysis');
             const trajectoryToInsert = pending
                 ? {
                     ...fetched,
                     status: pending.status,
-                        ...(pending.updatedAt ? { updatedAt: pending.updatedAt } : {})
+                    ...(pending.updatedAt ? { updatedAt: pending.updatedAt } : {})
                 }
                 : fetched;
 
             useTrajectoryStore.setState((state) => upsertTrajectory(state, trajectoryToInsert));
-        }finally{
+        } finally {
             inFlight.delete(trajectoryId);
         }
     };
 
     useEffect(() => {
-        const unsubscribeStatus = socketService.on('trajectory_status_updated', (data: any) => {
-            const { trajectoryId, status, updatedAt } = data;
-            logger.log('Trajectory status update received', { trajectoryId, status, updatedAt });
+        const unsubscribeUpdated = socketService.on('trajectory.updated', (data: any) => {
+            const { trajectoryId, updates, updatedAt } = data;
+            const fullUpdates = { ...updates, updatedAt };
 
             useTrajectoryStore.setState((state) => {
                 const existing = state.trajectories.find((t: any) => t._id === trajectoryId);
-                if(!existing){
-                    fetchAndUpsert(trajectoryId, { status, updatedAt });
+
+                if (!existing) {
+                    // If we don't have it, best to fetch the whole thing to be safe
+                    fetchAndUpsert(trajectoryId, fullUpdates);
                     return state;
                 }
 
-                return patchTrajectoryStatus(state, trajectoryId, { status, updatedAt });
-            });
-        });
-
-        const unsubscribeSession = socketService.on('trajectory_session_completed', (data: any) => {
-            const { trajectoryId, completedAt } = data;
-            logger.log('Trajectory session completed', { trajectoryId, completedAt });
-
-            useTrajectoryStore.setState((state) => {
-                const existing = state.trajectories.find((t: any) => t._id === trajectoryId);
-                if(!existing){
-                    fetchAndUpsert(trajectoryId, { status: 'completed', updatedAt: completedAt });
-                    return state;
-                }
-                return patchTrajectoryStatus(state, trajectoryId, { status: 'completed', updatedAt: completedAt });
+                logger.log('Trajectory update received', { trajectoryId, updates });
+                return patchTrajectory(state, trajectoryId, fullUpdates);
             });
         });
 
         return () => {
-            unsubscribeSession();
-            unsubscribeStatus();
         };
     }, [logger]);
 };

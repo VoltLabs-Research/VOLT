@@ -8,9 +8,9 @@ import { injectable } from "tsyringe";
 @injectable()
 export default class DailyActivityRepository
     extends MongooseBaseRepository<DailyActivity, DailyActivityProps, DailyActivityDocument>
-    implements IDailyActivityRepository{
+    implements IDailyActivityRepository {
 
-    constructor(){
+    constructor() {
         super(DailyActivityModel, dailyActitvityMapper);
     }
 
@@ -19,7 +19,7 @@ export default class DailyActivityRepository
         userId: string,
         date: Date,
         minutes: number
-    ): Promise<void>{
+    ): Promise<void> {
         await this.model.updateOne(
             { team: teamId, user: userId, date },
             {
@@ -30,50 +30,28 @@ export default class DailyActivityRepository
         );
     }
 
-    async findActivityByTeamId(teamId: string, range: number): Promise<DailyActivityProps[]>{
+    async findActivityByTeamId(teamId: string, range: number): Promise<DailyActivityProps[]> {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - range);
         startDate.setHours(0, 0, 0, 0);
-        
+
         const statsQuery = {
             team: teamId,
             date: { $gte: startDate }
         };
-        
-        const activities = await this.model.aggregate([
-            { $match: statsQuery },
-            {
-                $group: {
-                    _id: '$date',
-                    date: { $first: '$date' },
-                    activity: { $push: '$activity' },
-                    minutesOnline: { $sum: '$minutesOnline' }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    date: 1,
-                    minutesOnline: 1,
-                    activity: {
-                        $reduce: {
-                            input: '$activity',
-                            initialValue: [],
-                            in: { $concatArrays: ['$$value', '$$this'] }
-                        }
-                    }
-                }
-            },
-            { $sort: { date: 1 } }
-        ]);
+
+        // Return individual documents per user/date instead of grouping by date only
+        const activities = await this.model.find(statsQuery)
+            .select('date user minutesOnline activity')
+            .sort({ date: 1 });
 
         return activities.map((activity) => dailyActitvityMapper.toDomain(activity).props);
     }
 
     async addDailyActivity(
-        teamId: string, 
-        userId: string, 
-        type: ActivityType, 
+        teamId: string,
+        userId: string,
+        type: ActivityType,
         description: string
     ): Promise<void> {
         const startOfDay = new Date();

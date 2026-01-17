@@ -17,14 +17,14 @@ const router = Router();
 
 router.use(protect);
 
-router.route('/')
+router.route('/:teamId')
     .get(getSSHConnectionByTeamIdController.handle)
     .post(createSSHConnectionController.handle);
 
-router.route('/:sshConnectionId')
+router.route('/:teamId/:sshConnectionId')
     .patch(updateSSHConnectionByIdController.handle)
     .delete(deleteSSHConnectionByIdController.handle);
 
-router.get('/:sshConnectionId/test', testSSHConnectionByIdController.handle);
+router.get('/:teamId/:sshConnectionId/test', testSSHConnectionByIdController.handle);
 
 export default router;

@@ -16,29 +16,29 @@ import { v4 } from "uuid";
 import logger from "@/src/shared/infrastructure/logger";
 
 @injectable()
-export default class PluginStorageService implements IPluginStorageService{
+export default class PluginStorageService implements IPluginStorageService {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository)
         private pluginRepo: IPluginRepository,
 
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ){}
+    ) { }
 
-    async deleteBinary(pluginId: string): Promise<void>{
+    async deleteBinary(pluginId: string): Promise<void> {
         const plugin = await this.pluginRepo.findById(pluginId);
-        if(!plugin){
+        if (!plugin) {
             throw new Error(ErrorCodes.PLUGIN_NOT_FOUND);
         }
 
         const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
         const pathToDelete = entrypointNode?.data.entrypoint?.binaryObjectPath;
-        if(!pathToDelete){
+        if (!pathToDelete) {
             throw new Error('Plugin::DeleteBinary::PathRequired');
         }
 
         await this.storageService.delete(SYS_BUCKETS.PLUGINS, pathToDelete);
-    
+
         plugin.props.workflow.updateEntrypoint({
             binaryObjectPath: undefined,
             binaryFileName: undefined,
@@ -52,7 +52,7 @@ export default class PluginStorageService implements IPluginStorageService{
 
     async uploadBinary(pluginId: string, file: any): Promise<BinaryUploadResult> {
         const plugin = await this.pluginRepo.findById(pluginId);
-        if(!plugin){
+        if (!plugin) {
             throw new Error(ErrorCodes.PLUGIN_NOT_FOUND);
         }
 
@@ -86,7 +86,7 @@ export default class PluginStorageService implements IPluginStorageService{
         };
     }
 
-    async exportPlugin(pluginId: string): Promise<Readable>{
+    async exportPlugin(pluginId: string): Promise<Readable> {
         const plugin = await this.pluginRepo.findById(pluginId);
         if(!plugin){
             throw new Error(ErrorCodes.PLUGIN_NOT_FOUND);
@@ -100,7 +100,7 @@ export default class PluginStorageService implements IPluginStorageService{
             exportedAt: new Date().toISOString()
         };
 
-        const entrypointNode = plugin.props.workflow.props.nodes.find((node)  => node.type === WorkflowNodeType.Entrypoint);
+        const entrypointNode = plugin.props.workflow.props.nodes.find((node) => node.type === WorkflowNodeType.Entrypoint);
         const binaryObjectPath = entrypointNode?.data.entrypoint?.binaryObjectPath;
         const binaryFileName = entrypointNode?.data.entrypoint?.binaryFileName;
 
@@ -111,7 +111,7 @@ export default class PluginStorageService implements IPluginStorageService{
         archive.pipe(outputStream);
         archive.append(JSON.stringify(exportData, null, 2), { name: 'plugin.json' });
 
-        if(binaryObjectPath){
+        if (binaryObjectPath) {
             const binaryStream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, binaryObjectPath);
             archive.append(binaryStream, { name: `binary/${binaryFileName}` });
         }
@@ -119,17 +119,17 @@ export default class PluginStorageService implements IPluginStorageService{
 
         return outputStream;
     }
-    
-    async importPlugin(fileBuffer: Buffer, teamId: string): Promise<PluginImportResult>{
+
+    async importPlugin(fileBuffer: Buffer, teamId: string): Promise<PluginImportResult> {
         const directory = await unzipper.Open.buffer(fileBuffer);
         const pluginJsonFile = directory.files.find((file) => file.path === 'plugin.json');
-        if(!pluginJsonFile){
+        if (!pluginJsonFile) {
             throw new Error('Plugin::Import::InvalidZip');
         }
 
         const pluginJsonBuffer = await pluginJsonFile.buffer();
         const importData = JSON.parse(pluginJsonBuffer.toString('utf-8'));
-        if(!importData.workflow){
+        if (!importData.workflow) {
             throw new Error('Plugin::Import::InvalidFormat');
         }
 
@@ -141,9 +141,11 @@ export default class PluginStorageService implements IPluginStorageService{
             team: teamId
         });
 
+        console.log(newPlugin, importData);
+
         let binaryImported = false;
         const binaryFile = directory.files.find((file) => file.path.startsWith('binary/'));
-        if(binaryFile){
+        if (binaryFile) {
             const binaryBuffer = await binaryFile.buffer();
             const binaryFileName = path.basename(binaryFile.path);
             const binaryObjectPath = `plugin-binaries/${newPlugin.id}/${v4()}-${binaryFileName}`;
@@ -159,8 +161,8 @@ export default class PluginStorageService implements IPluginStorageService{
             );
 
             newPlugin.props.workflow.updateEntrypoint({
-                binaryObjectPath: binaryObjectPath,
-                binaryFileName: binaryFileName
+                binaryObjectPath,
+                binaryFileName
             });
 
             await this.pluginRepo.updateById(newPlugin.id, { workflow: newPlugin.props.workflow });
@@ -168,7 +170,7 @@ export default class PluginStorageService implements IPluginStorageService{
             logger.info(`@plugin-workflow-service: imported binary ${binaryObjectPath}`);
             binaryImported = true;
         }
-        
+
         logger.info(`@plugin-storage-service: plugin imported ${newPlugin.id}`);
         return {
             plugin: newPlugin.props,

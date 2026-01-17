@@ -8,23 +8,23 @@ import { ErrorCodes } from "@/src/core/constants/error-codes";
 import { DeleteMessageInputDTO } from "../../dtos/chat-message/DeleteMessageDTO";
 
 @injectable()
-export default class DeleteMessageUseCase implements IUseCase<DeleteMessageInputDTO, null, ApplicationError>{
+export class DeleteMessageUseCase implements IUseCase<DeleteMessageInputDTO, null, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository
-    ){}
+    ) { }
 
-    async execute(input: DeleteMessageInputDTO): Promise<Result<null, ApplicationError>>{
+    async execute(input: DeleteMessageInputDTO): Promise<Result<null, ApplicationError>> {
         const { messageId, userId } = input;
         const message = await this.messageRepo.findById(messageId);
-        if(!message){
+        if (!message) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.MESSAGE_NOT_FOUND,
                 'Chat message not found'
             ));
         }
 
-        if(!message.isSender(userId)){
+        if (!message.isSender(userId)) {
             return Result.fail(ApplicationError.forbidden(
                 ErrorCodes.MESSAGE_FORBIDDEN,
                 'Not owner'

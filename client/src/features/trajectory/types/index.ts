@@ -2,7 +2,6 @@ export interface GetTrajectoriesParams {
     page?: number;
     limit?: number;
     search?: string;
-    populate?: string;
 }
 
 export interface FsListResponse {

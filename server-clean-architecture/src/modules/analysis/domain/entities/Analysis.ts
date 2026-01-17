@@ -1,4 +1,4 @@
-export interface AnalysisProps{
+export interface AnalysisProps {
     plugin: string;
     clusterId: string;
     config: any;
@@ -9,11 +9,14 @@ export interface AnalysisProps{
     startedAt?: Date;
     finishedAt?: Date;
     team: string;
+    status: string;
+    createdAt?: Date;
+    updatedAt?: Date;
 };
 
-export default class Analysis{
+export default class Analysis {
     constructor(
         public id: string,
         public props: AnalysisProps
-    ){}
+    ) { }
 };

@@ -62,7 +62,7 @@ const useAppInitializer = () => {
     // Initialize when user changes (login/logout)
     useEffect(() => {
         const currentUserId = user?._id ?? null;
-
+        console.log('------------------------', currentUserId, user)
         if (lastInitializedUserRef.current === currentUserId) return;
 
         if (!user) {

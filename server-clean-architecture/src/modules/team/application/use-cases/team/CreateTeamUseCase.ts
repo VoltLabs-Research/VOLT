@@ -5,12 +5,18 @@ import { IUseCase } from "@/src/shared/application/IUseCase";
 import { injectable, inject } from 'tsyringe';
 import { TEAM_TOKENS } from "../../../infrastructure/di/TeamTokens";
 import { CreateTeamInputDTO, CreateTeamOutputDTO } from "../../dtos/team/CreateTeamDTO";
+import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@/src/shared/application/events/IEventBus';
+import TeamCreatedEvent from '../../../domain/events/TeamCreatedEvent';
 
 @injectable()
-export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, CreateTeamOutputDTO, ApplicationError>{
+export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, CreateTeamOutputDTO, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamRepository)
-        private readonly teamRepository: ITeamRepository
+        private readonly teamRepository: ITeamRepository,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ){}
 
     async execute(input: CreateTeamInputDTO): Promise<Result<CreateTeamOutputDTO, ApplicationError>> {
@@ -18,10 +24,17 @@ export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, C
         const team = await this.teamRepository.create({
             name,
             description,
-            owner: ownerId,
-            members: [ownerId]
+            owner: ownerId
         });
 
-        return Result.ok(team.props);
+        await this.eventBus.publish(new TeamCreatedEvent({
+            ownerId,
+            teamId: team.id
+        }));
+
+        return Result.ok({
+            id: team.id,
+            ...team.props
+        });
     }
 }

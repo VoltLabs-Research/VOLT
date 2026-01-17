@@ -7,13 +7,13 @@ import { injectable, inject } from 'tsyringe';
 import { CHAT_TOKENS } from "../../../infrastructure/di/ChatTokens";
 
 @injectable()
-export default class GetOrCreateChatUseCase implements IUseCase<GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO, ApplicationError>{
+export class GetOrCreateChatUseCase implements IUseCase<GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ){}
+    ) { }
 
-    async execute(input: GetOrCreateChatInputDTO): Promise<Result<GetOrCreateChatOutputDTO, ApplicationError>>{
+    async execute(input: GetOrCreateChatInputDTO): Promise<Result<GetOrCreateChatOutputDTO, ApplicationError>> {
         const { userId, targetUserId, teamId } = input;
         const result = await this.chatRepo.findOrCreateChat(userId, targetUserId, teamId);
         return Result.ok(result.props);

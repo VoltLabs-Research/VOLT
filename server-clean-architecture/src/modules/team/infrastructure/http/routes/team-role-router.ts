@@ -16,13 +16,15 @@ const updateTeamRoleByIdController = container.resolve(UpdateTeamRoleByIdControl
 
 const router = Router();
 
-router.use(protect, checkTeamMembership);
+router.use(protect);
 
 router.route('/:teamId')
+    .all(checkTeamMembership)
     .get(listTeamRolesByTeamIdController.handle)
     .post(createTeamRoleController.handle);
 
 router.route('/:teamId/:roleId/')
+    .all(checkTeamMembership)
     .delete(deleteTeamRoleByIdController.handle)
     .get(getTeamRoleByIdController.handle)
     .patch(updateTeamRoleByIdController.handle);

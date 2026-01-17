@@ -8,14 +8,14 @@ import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
 import getNestedValue from '@/src/shared/infrastructure/utilities/get-nested-value';
 
 @injectable()
-export default class ChartExporter implements IChartExporter{
+export default class ChartExporter implements IChartExporter {
     private DEFAULT_WIDTH = 1200;
     private DEFAULT_HEIGHT = 800;
 
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ){}
+    ) { }
 
     /**
      * Extract chart data from data bsaed on x/y axis keys.
@@ -24,15 +24,15 @@ export default class ChartExporter implements IChartExporter{
         data: any,
         xAxisKey: string,
         yAxisKey: string
-    ): ChartDataPoint[]{
-        if(!data) return [];
+    ): ChartDataPoint[] {
+        if (!data) return [];
 
         // If data has the keys as arrays
-        if(data[xAxisKey] && data[yAxisKey]){
+        if (data[xAxisKey] && data[yAxisKey]) {
             const xValues = Array.isArray(data[xAxisKey])
                 ? data[xAxisKey]
                 : [data[xAxisKey]];
-            
+
             const yValues = Array.isArray(data[yAxisKey])
                 ? data[yAxisKey]
                 : [data[yAxisKey]];
@@ -44,7 +44,7 @@ export default class ChartExporter implements IChartExporter{
         }
 
         // If data is an array of objects
-        if(Array.isArray(data)){
+        if (Array.isArray(data)) {
             return data.map((item: any) => ({
                 x: item[xAxisKey],
                 y: item[yAxisKey]
@@ -53,7 +53,7 @@ export default class ChartExporter implements IChartExporter{
 
         const xData = getNestedValue(data, xAxisKey);
         const yData = getNestedValue(data, yAxisKey);
-        if(Array.isArray(xData) && Array.isArray(yData)){
+        if (Array.isArray(xData) && Array.isArray(yData)) {
             return xData.map((x: any, index: number) => ({
                 x,
                 y: yData[index]
@@ -66,8 +66,8 @@ export default class ChartExporter implements IChartExporter{
     /**
      * Map ChartType enum to Chart.js chart type.
      */
-    private getChartJsType(chartType: ChartType): keyof ChartTypeRegistry{
-        switch(chartType){
+    private getChartJsType(chartType: ChartType): keyof ChartTypeRegistry {
+        switch (chartType) {
             case ChartType.Line:
                 return 'line';
             case ChartType.Bar:
@@ -85,7 +85,7 @@ export default class ChartExporter implements IChartExporter{
     /**
      * Generate PNG buffer from chart data.
      */
-    async generatePNG(data: any, options: IChartExportOptions): Promise<Buffer>{
+    async generatePNG(data: any, options: IChartExportOptions): Promise<Buffer> {
         const width = options.width || this.DEFAULT_WIDTH;
         const height = options.height || this.DEFAULT_HEIGHT;
 
@@ -96,7 +96,7 @@ export default class ChartExporter implements IChartExporter{
         });
 
         const chartData = this.extractChartData(data, options.xAxisKey, options.yAxisKey);
-        if(chartData.length === 0){
+        if (chartData.length === 0) {
             throw new Error(`No chart data found for keys: xAxis="${options.xAxisKey}", yAxis="${options.yAxisKey}"`);
         }
 
@@ -113,8 +113,8 @@ export default class ChartExporter implements IChartExporter{
         data: any,
         objectName: string,
         options: IChartExportOptions
-    ): Promise<void>{
-        try{
+    ): Promise<void> {
+        try {
             const pngBuffer = await this.generatePNG(data, options);
             await this.storageService.upload(
                 SYS_BUCKETS.PLUGINS,
@@ -122,7 +122,7 @@ export default class ChartExporter implements IChartExporter{
                 pngBuffer,
                 { 'Content-Type': 'image/png' }
             );
-        }catch(error: any){
+        } catch (error: any) {
             throw error;
         }
     }
@@ -133,7 +133,7 @@ export default class ChartExporter implements IChartExporter{
     private buildChartConfig(
         chartData: ChartDataPoint[],
         options: IChartExportOptions
-    ): ChartConfiguration{
+    ): ChartConfiguration {
         const chartType = this.getChartJsType(options.chartType);
         const isArea = options.chartType === ChartType.Area;
         const isScatter = options.chartType === ChartType.Scatter;
@@ -142,7 +142,7 @@ export default class ChartExporter implements IChartExporter{
         const dataValues = isScatter
             ? chartData.map((data) => ({ x: data.x, y: data.y }))
             : chartData.map((data) => data.y);
-        
+
         const lineColor = options.lineColor || '#3b82f6';
         const fillColor = options.fillColor || 'rgba(59, 130, 246, 0.3)';
         const backgroundColor = options.backgroundColor || '#1a1a2e';
@@ -153,7 +153,6 @@ export default class ChartExporter implements IChartExporter{
                 labels,
                 datasets: [{
                     label: options.title || 'Data',
-                    // TODO: 
                     // @ts-ignore
                     data: dataValues,
                     borderColor: lineColor,
