@@ -37,12 +37,10 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
             analysis: [],
             rasterSceneViews: 0,
             isPublic: true,
-            uploadId: '',
             updatedAt: new Date(),
             createdAt: new Date()
         });
 
-        // processFilesInBackground logic
         this.backgroundProcessor.process(trajectory.id, files, teamId).catch(async err => {
             console.error(`[CreateTrajectoryUseCase] Background processing failed for ${trajectory.id}:`, err);
             await this.trajectoryRepo.updateById(trajectory.id, { status: TrajectoryStatus.Failed }).catch(() => { });

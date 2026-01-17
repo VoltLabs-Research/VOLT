@@ -39,7 +39,6 @@ export interface TrajectoryProps {
     frames: TrajectoryFrame[];
     rasterSceneViews: number;
     stats: TrajectoryStats;
-    uploadId: string;
     processingProgress?: TrajectoryProcessingProgress;
     updatedAt: Date;
     createdAt: Date;

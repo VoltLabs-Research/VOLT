@@ -69,10 +69,6 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
     stats: {
         totalFiles: { type: Number, default: 0 },
         totalSize: { type: Number, default: 0 }
-    },
-    uploadId: {
-        type: String,
-        select: true
     }
 }, {
     timestamps: true,

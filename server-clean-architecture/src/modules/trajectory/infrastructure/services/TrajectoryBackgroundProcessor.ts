@@ -43,64 +43,23 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
         private readonly extractor: IFileExtractorService
     ) { }
 
-    /**
-     * Helper to update trajectory progress and emit event to frontend
-     */
-    private async updateProgress(
-        trajectoryId: string,
-        teamId: string,
-        stage: 'parsing' | 'processing' | 'uploading' | 'rasterizing' | 'completed' | 'failed',
-        current: number,
-        total: number,
-        message?: string
-    ): Promise<void> {
-        const percentage = total > 0 ? Math.round((current / total) * 100) : 0;
-
-        await this.trajectoryRepo.updateById(trajectoryId, {
-            processingProgress: {
-                stage,
-                currentStep: current,
-                totalSteps: total,
-                percentage,
-                message
-            }
-        });
-
-        await this.eventBus.publish(new TrajectoryUpdatedEvent({
-            trajectoryId,
-            teamId,
-            updates: {
-                processingProgress: { stage, currentStep: current, totalSteps: total, percentage, message }
-            },
-            updatedAt: new Date()
-        }));
-    }
-
     public async process(trajectoryId: string, files: any[], teamId: string): Promise<void> {
         const workingDir = this.tempFileService.getDirPath(`trajectory-uploads/${trajectoryId}`);
         await fs.mkdir(workingDir, { recursive: true });
 
         try {
-            // Retrieve trajectory to get name
             const trajectory = await this.trajectoryRepo.findById(trajectoryId);
             if (!trajectory) {
                 throw new Error(`Trajectory not found: ${trajectoryId}`);
             }
 
-            // Emit parsing started
-            await this.updateProgress(trajectoryId, teamId, 'parsing', 0, files.length, 'Parsing trajectory files');
-
             const finalFiles = await this.extractor.extractFiles(files, workingDir);
             const validFrames = await this.parseFrames(trajectoryId, teamId, finalFiles);
 
             if (validFrames.length === 0) {
-                await this.updateProgress(trajectoryId, teamId, 'failed', 0, 0, 'No valid frames found');
                 await this.updateStatus(trajectoryId, teamId, TrajectoryStatus.Failed);
                 return;
             }
-
-            // Emit parsing completed
-            await this.updateProgress(trajectoryId, teamId, 'parsing', validFrames.length, validFrames.length, 'Parsing completed');
 
             // Update Trajectory entity with frames and Processing status
             await this.trajectoryRepo.updateById(trajectoryId, {
@@ -114,9 +73,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
             await this.updateStatus(trajectoryId, teamId, TrajectoryStatus.Processing);
 
-            // Emit processing started
-            await this.updateProgress(trajectoryId, teamId, 'processing', 0, validFrames.length, 'Processing frames');
-
             // Dispatch Jobs to queues - EXACTLY LIKE OLD SERVER
             // Note: These jobs are for internal worker processing only, not exposed to frontend
             await this.dispatchTrajectoryJobs(validFrames, trajectory, teamId);
@@ -124,7 +80,6 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
 
         } catch (error) {
             logger.error(`@trajectory-background-processor: critical error: ${error}`);
-            await this.updateProgress(trajectoryId, teamId, 'failed', 0, 0, 'Processing failed');
             await this.updateStatus(trajectoryId, teamId, TrajectoryStatus.Failed);
         } finally {
             await fs.rm(workingDir, { recursive: true, force: true }).catch(() => { });

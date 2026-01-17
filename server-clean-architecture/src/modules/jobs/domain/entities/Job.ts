@@ -85,13 +85,4 @@ export default class Job{
         this.props.completedAt = new Date();
         this.props.updatedAt = new Date();
     }
-
-    updateProgress(progress: number, message?: string){
-        this.props.progress = progress;
-        if(message){
-            this.props.message = message;
-        }
-
-        this.props.updatedAt = new Date();
-    }
 };
