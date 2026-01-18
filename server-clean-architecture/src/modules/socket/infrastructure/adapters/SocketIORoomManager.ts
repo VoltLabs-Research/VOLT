@@ -1,10 +1,10 @@
 import { Server, Socket } from 'socket.io';
 import { inject, injectable } from 'tsyringe';
-import { ISocketRoomManager, PresenceUser } from '@/src/modules/socket/domain/ports/ISocketRoomManager';
-import { ISocketConnection } from '@/src/modules/socket/domain/ports/ISocketModule';
-import logger from '@/src/shared/infrastructure/logger';
-import { ISocketMapper } from '../../domain/ports/ISocketMapper';
-import { SOCKET_TOKENS } from '../di/SocketTokens';
+import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/ports/ISocketRoomManager';
+import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import logger from '@shared/infrastructure/logger';
+import { ISocketMapper } from '@modules/socket/domain/ports/ISocketMapper';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 /**
  * Handles room management and presence collection.

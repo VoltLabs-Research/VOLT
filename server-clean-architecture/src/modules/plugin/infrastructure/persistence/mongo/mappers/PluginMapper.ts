@@ -1,7 +1,7 @@
-import Plugin, { PluginProps } from "@/src/modules/plugin/domain/entities/Plugin";
-import Workflow from "@/src/modules/plugin/domain/entities/workflow/Workflow";
-import { PluginDocument } from "../models/PluginModel";
-import { BaseMapper } from "@/src/shared/infrastructure/persistence/mongo/MongoBaseMapper";
+import Plugin, { PluginProps } from '@modules/plugin/domain/entities/Plugin';
+import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
+import { PluginDocument } from '@modules/plugin/infrastructure/persistence/mongo/models/PluginModel';
+import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
 
 class PluginMapper extends BaseMapper<Plugin, PluginProps, PluginDocument> {
     constructor() {

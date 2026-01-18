@@ -1,19 +1,19 @@
 import { injectable, inject } from 'tsyringe';
-import { ISocketConnection } from '@/src/modules/socket/domain/ports/ISocketModule';
-import { ISocketEmitter } from '@/src/modules/socket/domain/ports/ISocketEmitter';
-import { ISocketRoomManager } from '@/src/modules/socket/domain/ports/ISocketRoomManager';
-import { ISocketEventRegistry } from '@/src/modules/socket/domain/ports/ISocketEventRegistry';
-import { SOCKET_TOKENS } from '@/src/modules/socket/infrastructure/di/SocketTokens';
-import { CHAT_TOKENS } from '../di/ChatTokens';
-import { IChatRepository } from '../../domain/port/IChatRepository';
-import { SendChatMessageUseCase } from '../../application/use-cases/chat-message/SendChatMessageUseCase';
-import { SendFileMessageUseCase } from '../../application/use-cases/chat-message/SendFileMessageUseCase';
-import { EditMessageUseCase } from '../../application/use-cases/chat-message/EditMessageUseCase';
-import { DeleteMessageUseCase } from '../../application/use-cases/chat-message/DeleteMessageUseCase';
-import { ToggleMessageReactionUseCase } from '../../application/use-cases/chat-message/ToggleMessageReactionUseCase';
-import { MarkMessagesAsReadUseCase } from '../../application/use-cases/chat-message/MarkMessageAsReadUseCase';
-import BaseSocketModule from '@/src/modules/socket/infrastructure/gateway/BaseSocketModule';
-import logger from '@/src/shared/infrastructure/logger';
+import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { ISocketEmitter } from '@modules/socket/domain/ports/ISocketEmitter';
+import { ISocketRoomManager } from '@modules/socket/domain/ports/ISocketRoomManager';
+import { ISocketEventRegistry } from '@modules/socket/domain/ports/ISocketEventRegistry';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { SendChatMessageUseCase } from '@modules/chat/application/use-cases/chat-message/SendChatMessageUseCase';
+import { SendFileMessageUseCase } from '@modules/chat/application/use-cases/chat-message/SendFileMessageUseCase';
+import { EditMessageUseCase } from '@modules/chat/application/use-cases/chat-message/EditMessageUseCase';
+import { DeleteMessageUseCase } from '@modules/chat/application/use-cases/chat-message/DeleteMessageUseCase';
+import { ToggleMessageReactionUseCase } from '@modules/chat/application/use-cases/chat-message/ToggleMessageReactionUseCase';
+import { MarkMessagesAsReadUseCase } from '@modules/chat/application/use-cases/chat-message/MarkMessageAsReadUseCase';
+import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
+import logger from '@shared/infrastructure/logger';
 
 // Event payload types
 interface SendMessagePayload {

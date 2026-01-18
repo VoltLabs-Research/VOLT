@@ -1,12 +1,12 @@
-import { injectable, inject } from "tsyringe";
-import Job from "../../domain/entities/Job";
-import JobSession from "../../domain/entities/JobSession";
-import { ISessionManagerService, SessionManagerConfig } from "../../domain/ports/ISessionManagerService";
-import { IJobRepository } from "../../domain/ports/IJobRepository";
-import { SHARED_TOKENS } from "../../../../shared/infrastructure/di/SharedTokens";
-import { IEventBus } from "../../../../shared/application/events/IEventBus";
-import SessionCompletedEvent from "../../application/events/SessionCompletedEvent";
-import { JOBS_TOKENS } from "../di/JobsTokens";
+import { injectable, inject } from 'tsyringe';
+import Job from '@modules/jobs/domain/entities/Job';
+import JobSession from '@modules/jobs/domain/entities/JobSession';
+import { ISessionManagerService, SessionManagerConfig } from '@modules/jobs/domain/ports/ISessionManagerService';
+import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import SessionCompletedEvent from '@modules/jobs/application/events/SessionCompletedEvent';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 
 @injectable()
 export default class SessionManagerService implements ISessionManagerService {

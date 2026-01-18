@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import { TRAJECTORY_TOKENS } from '../../infrastructure/di/TrajectoryTokens';
-import { ITrajectoryRepository } from '../../domain/port/ITrajectoryRepository';
-import PluginExecutionRequestEvent from '@/src/modules/plugin/domain/events/PluginExecutionRequestEvent';
-import logger from '@/src/shared/infrastructure/logger';
-import { TrajectoryStatus } from '../../domain/entities/Trajectory';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
+import logger from '@shared/infrastructure/logger';
+import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
 
 @injectable()
 export class MarkTrajectoryQueuedHandler implements IEventHandler<PluginExecutionRequestEvent>{

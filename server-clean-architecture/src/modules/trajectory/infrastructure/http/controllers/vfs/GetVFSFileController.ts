@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
 import { Response } from 'express';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import { GetVFSFileUseCase } from '../../../../application/use-cases/vfs/GetVFSFileUseCase';
-import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
-import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
-import { HttpStatus } from '@/src/shared/infrastructure/http/HttpStatus';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { GetVFSFileUseCase } from '@modules/trajectory/application/use-cases/vfs/GetVFSFileUseCase';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import BaseResponse from '@shared/infrastructure/http/BaseResponse';
+import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 
 @injectable()
 export default class GetVFSFileController extends BaseController<GetVFSFileUseCase> {

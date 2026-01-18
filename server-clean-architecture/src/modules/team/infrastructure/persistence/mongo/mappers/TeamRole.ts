@@ -1,6 +1,6 @@
-import TeamRole, { TeamRoleProps } from "@/src/modules/team/domain/entities/TeamRole";
-import { BaseMapper } from "@/src/shared/infrastructure/persistence/mongo/MongoBaseMapper";
-import { TeamRoleDocument } from "../models/TeamRoleModel";
+import TeamRole, { TeamRoleProps } from '@modules/team/domain/entities/TeamRole';
+import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
+import { TeamRoleDocument } from '@modules/team/infrastructure/persistence/mongo/models/TeamRoleModel';
 
 class TeamRoleMapper extends BaseMapper<TeamRole, TeamRoleProps, TeamRoleDocument>{
     constructor(){

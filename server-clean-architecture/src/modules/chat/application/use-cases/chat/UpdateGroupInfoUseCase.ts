@@ -1,12 +1,12 @@
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/ports/Result";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
 import { inject, injectable } from 'tsyringe';
-import { CHAT_TOKENS } from "../../../infrastructure/di/ChatTokens";
-import { IChatRepository } from "../../../domain/port/IChatRepository";
-import { UpdateGroupInfoInputDTO, UpdateGroupInfoOutputDTO } from "../../dtos/chat/UpdateGroupInfoDTO";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
-import { ChatProps } from "../../../domain/entities/Chat";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { UpdateGroupInfoInputDTO, UpdateGroupInfoOutputDTO } from '@modules/chat/application/dtos/chat/UpdateGroupInfoDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { ChatProps } from '@modules/chat/domain/entities/Chat';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export class UpdateGroupInfoUseCase implements IUseCase<UpdateGroupInfoInputDTO, UpdateGroupInfoOutputDTO, ApplicationError> {

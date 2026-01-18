@@ -1,11 +1,11 @@
-import TeamRole, { TeamRoleProps } from "@/src/modules/team/domain/entities/TeamRole";
-import { MongooseBaseRepository } from "@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository";
-import { injectable } from "tsyringe";
-import TeamRoleModel, { TeamRoleDocument } from "../models/TeamRoleModel";
-import { ITeamRoleRepository } from "@/src/modules/team/domain/ports/ITeamRoleRepository";
-import teamRoleMapper from '../mappers/TeamRole';
+import TeamRole, { TeamRoleProps } from '@modules/team/domain/entities/TeamRole';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import { injectable } from 'tsyringe';
+import TeamRoleModel, { TeamRoleDocument } from '@modules/team/infrastructure/persistence/mongo/models/TeamRoleModel';
+import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
+import teamRoleMapper from '@modules/team/infrastructure/persistence/mongo/mappers/TeamRole';
 
-import { Types } from "mongoose";
+import { Types } from 'mongoose';
 
 @injectable()
 export default class TeamRoleRepository

@@ -1,16 +1,16 @@
 import "reflect-metadata";
-import '@/src/core/bootstrap/register-deps';
-import BaseWorker from '@/src/shared/infrastructure/workers/BaseWorker';
-import logger from '@/src/shared/infrastructure/logger';
+import '@core/bootstrap/register-deps';
+import BaseWorker from '@shared/infrastructure/workers/BaseWorker';
+import logger from '@shared/infrastructure/logger';
 import { container } from 'tsyringe';
 import { performance } from 'node:perf_hooks';
-import Job from '@/src/modules/jobs/domain/entities/Job';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
-import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
-import rasterize from '@/src/shared/infrastructure/utils/rasterizer';
+import Job from '@modules/jobs/domain/entities/Job';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { ITempFileService } from '@shared/domain/ports/ITempFileService';
+import rasterize from '@shared/infrastructure/utils/rasterizer';
 import * as fs from 'node:fs/promises';
-import { SYS_BUCKETS } from '@/src/core/config/minio';
+import { SYS_BUCKETS } from '@core/config/minio';
 
 export interface RasterizerJobData {
     jobId: string;

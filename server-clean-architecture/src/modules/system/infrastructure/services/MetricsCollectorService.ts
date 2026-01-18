@@ -27,9 +27,9 @@ import fs from 'fs/promises';
 import http from 'http';
 import https from 'https';
 import { exec } from 'child_process';
-import { redis } from '@/src/core/config/redis';
+import { redis } from '@core/config/redis';
 import { promisify } from 'util';
-import logger from '@/src/shared/infrastructure/logger';
+import logger from '@shared/infrastructure/logger';
 
 const execPromise = promisify(exec);
 
@@ -234,7 +234,7 @@ export default class MetricsCollector {
 
     private async pingMinIO(): Promise<number> {
         try {
-            const { getMinioClient } = await import('@/src/core/config/minio');
+            const { getMinioClient } = await import('@core/config/minio');
             const client = getMinioClient();
             const start = Date.now();
             // List buckets is a lightweight operation to test MinIO connectivity
@@ -630,7 +630,7 @@ export default class MetricsCollector {
      */
     async getClusterAnalysisCounts(): Promise<Record<string, number>> {
         try {
-            const { default: Analysis } = await import('@/src/modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel');
+            const { default: Analysis } = await import('@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel');
             const aggregation = await Analysis.aggregate([
                 { $group: { _id: '$clusterId', count: { $sum: '$completedFrames' } } }
             ]);

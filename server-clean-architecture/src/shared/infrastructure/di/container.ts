@@ -1,8 +1,8 @@
 import { container } from 'tsyringe';
 import { SHARED_TOKENS } from './SharedTokens';
-import MinioStorageService from '../services/MinioStorageService';
-import TempFileService from '../services/TempFileService';
-import FileExtractorService from '../services/FileExtractorService';
+import MinioStorageService from '@shared/infrastructure/services/MinioStorageService';
+import TempFileService from '@shared/infrastructure/services/TempFileService';
+import FileExtractorService from '@shared/infrastructure/services/FileExtractorService';
 
 /**
  * Register as singleton for reuse client connection.

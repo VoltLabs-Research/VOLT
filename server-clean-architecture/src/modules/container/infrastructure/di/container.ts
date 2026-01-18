@@ -1,19 +1,19 @@
 import { container } from 'tsyringe';
-import { ContainerModel } from '../persistence/mongo/models/ContainerModel';
-import { ContainerRepository } from '../persistence/mongo/repositories/ContainerRepository';
-import { DockerContainerService } from '../services/DockerContainerService';
-import { TerminalService } from '../services/TerminalService';
-import { ContainerSocketModule } from '../socket/ContainerSocketModule';
+import { ContainerModel } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
+import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
+import { DockerContainerService } from '@modules/container/infrastructure/services/DockerContainerService';
+import { TerminalService } from '@modules/container/infrastructure/services/TerminalService';
+import { ContainerSocketModule } from '@modules/container/infrastructure/socket/ContainerSocketModule';
 
-import { CreateContainerUseCase } from '../../application/use-cases/CreateContainerUseCase';
-import { UpdateContainerUseCase } from '../../application/use-cases/UpdateContainerUseCase';
-import { DeleteContainerUseCase } from '../../application/use-cases/DeleteContainerUseCase';
-import { ListContainersUseCase } from '../../application/use-cases/ListContainersUseCase';
-import { GetContainerStatsUseCase } from '../../application/use-cases/GetContainerStatsUseCase';
-import { GetContainerFilesUseCase } from '../../application/use-cases/GetContainerFilesUseCase';
-import { ReadContainerFileUseCase } from '../../application/use-cases/ReadContainerFileUseCase';
-import { GetContainerProcessesUseCase } from '../../application/use-cases/GetContainerProcessesUseCase';
-import { GetContainerByIdUseCase } from '../../application/use-cases/GetContainerByIdUseCase';
+import { CreateContainerUseCase } from '@modules/container/application/use-cases/CreateContainerUseCase';
+import { UpdateContainerUseCase } from '@modules/container/application/use-cases/UpdateContainerUseCase';
+import { DeleteContainerUseCase } from '@modules/container/application/use-cases/DeleteContainerUseCase';
+import { ListContainersUseCase } from '@modules/container/application/use-cases/ListContainersUseCase';
+import { GetContainerStatsUseCase } from '@modules/container/application/use-cases/GetContainerStatsUseCase';
+import { GetContainerFilesUseCase } from '@modules/container/application/use-cases/GetContainerFilesUseCase';
+import { ReadContainerFileUseCase } from '@modules/container/application/use-cases/ReadContainerFileUseCase';
+import { GetContainerProcessesUseCase } from '@modules/container/application/use-cases/GetContainerProcessesUseCase';
+import { GetContainerByIdUseCase } from '@modules/container/application/use-cases/GetContainerByIdUseCase';
 
 export const registerContainerDependencies = (): void => {
     container.register('ContainerModel', { useValue: ContainerModel });

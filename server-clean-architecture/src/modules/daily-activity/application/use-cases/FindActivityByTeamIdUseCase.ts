@@ -1,10 +1,10 @@
-import { IDailyActivityRepository } from "../../domain/ports/IDailyActivityRepository";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { FindActivityByTeamIdInputDTO, FindActivityByTeamIdOutputDTO } from "../dto/FindActivityByTeamIdDTO";
-import { DAILY_ACTIVITY_TOKENS } from '../../infrastructure/di/DailyActivityTokens';
-import { injectable, inject } from "tsyringe";
+import { IDailyActivityRepository } from '@modules/daily-activity/domain/ports/IDailyActivityRepository';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { FindActivityByTeamIdInputDTO, FindActivityByTeamIdOutputDTO } from '@modules/daily-activity/application/dto/FindActivityByTeamIdDTO';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
+import { injectable, inject } from 'tsyringe';
 
 @injectable()
 export default class FindActivityByTeamIdUseCase implements IUseCase<FindActivityByTeamIdInputDTO, FindActivityByTeamIdOutputDTO[], ApplicationError>{

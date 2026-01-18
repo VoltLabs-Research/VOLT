@@ -1,6 +1,6 @@
-import { decodeMultiStreamFromFile } from "@/src/shared/infrastructure/utilities/msgpack";
-import mergeChunkedValue from "./merge-chunked-value";
-import getNestedValue from "@/src/shared/infrastructure/utilities/get-nested-value";
+import { decodeMultiStreamFromFile } from '@shared/infrastructure/utilities/msgpack';
+import mergeChunkedValue from './merge-chunked-value';
+import getNestedValue from '@shared/infrastructure/utilities/get-nested-value';
 
 interface PayloadResult{
     data: any;

@@ -1,7 +1,7 @@
 import mongoose, { Model, Document } from 'mongoose';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
-import { PluginProps } from '@/src/modules/plugin/domain/entities/Plugin';
-import { PluginSchema } from '../schemas/PluginSchema';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import { PluginProps } from '@modules/plugin/domain/entities/Plugin';
+import { PluginSchema } from '@modules/plugin/infrastructure/persistence/mongo/schemas/PluginSchema';
 
 type PluginRelations = 'team';
 export interface PluginDocument extends Persistable<PluginProps, PluginRelations>, Document { };

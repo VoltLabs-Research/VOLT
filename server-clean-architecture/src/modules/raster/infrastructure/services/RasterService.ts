@@ -1,11 +1,11 @@
 import { injectable, inject } from 'tsyringe';
-import { IRasterService, RasterMetadata } from '../../domain/ports/IRasterService';
-import { RASTER_TOKENS } from '../di/RasterTokens';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
-import { SYS_BUCKETS } from '@/src/core/config/minio';
-import RasterizerQueue from '../queues/RasterizerQueue';
-import Job, { JobStatus } from '@/src/modules/jobs/domain/entities/Job';
+import { IRasterService, RasterMetadata } from '@modules/raster/domain/ports/IRasterService';
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { SYS_BUCKETS } from '@core/config/minio';
+import RasterizerQueue from '@modules/raster/infrastructure/queues/RasterizerQueue';
+import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { v4 } from 'uuid';
 import path from 'path';
 

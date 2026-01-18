@@ -1,6 +1,6 @@
 import { Schema } from 'mongoose';
-import { ValidationCodes } from '@/src/core/constants/validation-codes';
-import { Exporter, ExportType } from '@/src/modules/plugin/domain/entities/workflow/nodes/ExportNode';
+import { ValidationCodes } from '@core/constants/validation-codes';
+import { Exporter, ExportType } from '@modules/plugin/domain/entities/workflow/nodes/ExportNode';
 
 export const ExportDataSchema = new Schema({
     exporter: {

@@ -1,4 +1,4 @@
-import { SSHConnectionProps } from "../../domain/entities/SSHConnection";
+import { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnection';
 
 export interface UpdateSSHConnectionByIdInputDTO{
     name: string;

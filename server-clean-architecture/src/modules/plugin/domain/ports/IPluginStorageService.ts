@@ -1,5 +1,5 @@
-import { Readable } from "node:stream";
-import { PluginProps } from "../entities/Plugin";
+import { Readable } from 'node:stream';
+import { PluginProps } from '@modules/plugin/domain/entities/Plugin';
 
 export interface BinaryUploadResult{
     objectPath: string;

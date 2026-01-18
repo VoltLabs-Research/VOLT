@@ -1,12 +1,12 @@
 import { inject, singleton } from 'tsyringe';
-import BaseSocketModule from '../gateway/BaseSocketModule';
-import { ISocketConnection } from '../../domain/ports/ISocketModule';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@/src/shared/application/events/IEventBus';
-import { IDomainEvent } from '@/src/shared/application/events/IDomainEvent';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import { SOCKET_TOKENS } from '../di/SocketTokens';
-import logger from '@/src/shared/infrastructure/logger';
+import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
+import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import logger from '@shared/infrastructure/logger';
 
 /**
  * Generic Event Broadcasting Socket Module

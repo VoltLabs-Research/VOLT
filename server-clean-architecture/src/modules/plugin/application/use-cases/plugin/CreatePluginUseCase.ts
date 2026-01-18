@@ -1,11 +1,11 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { CreatePluginInputDTO, CreatePluginOutputDTO } from '../../dtos/plugin/CreatePluginDTO';
-import { IPluginRepository } from '../../../domain/ports/IPluginRepository';
-import { PluginStatus } from '../../../domain/entities/Plugin';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { CreatePluginInputDTO, CreatePluginOutputDTO } from '@modules/plugin/application/dtos/plugin/CreatePluginDTO';
+import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 
-import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 @injectable()
 export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, CreatePluginOutputDTO> {

@@ -1,13 +1,13 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { GetPluginExposureGLBInputDTO } from '../../dtos/exposure/GetPluginExposureGLBDTO';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { GetPluginExposureGLBInputDTO } from '@modules/plugin/application/dtos/exposure/GetPluginExposureGLBDTO';
 
 export interface IPluginListingService {
     getExposureGLB(exposureId: string, timestep: number): Promise<any>;
 }
 
-import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 @injectable()
 export class GetPluginExposureGLBUseCase implements IUseCase<GetPluginExposureGLBInputDTO, any> {

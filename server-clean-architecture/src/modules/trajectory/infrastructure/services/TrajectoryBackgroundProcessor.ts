@@ -1,21 +1,21 @@
 import { injectable, inject } from 'tsyringe';
-import { ITrajectoryBackgroundProcessor, ProcessorContext } from '../../domain/port/ITrajectoryBackgroundProcessor';
-import TrajectoryParserFactory from '../parsers/TrajectoryParserFactory';
-import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@/src/shared/application/events/IEventBus';
-import { TRAJECTORY_TOKENS } from '../di/TrajectoryTokens';
-import { ITrajectoryRepository } from '../../domain/port/ITrajectoryRepository';
-import TrajectoryUpdatedEvent from '../../application/events/TrajectoryUpdatedEvent';
-import { ISimulationCellRepository } from '@/src/modules/simulation-cell/domain/ports/ISimulationCellRepository';
-import { SIMULATION_CELL_TOKENS } from '@/src/modules/simulation-cell/infrastructure/di/SimulationCellTokens';
-import { IJobQueueService } from '@/src/modules/jobs/domain/ports/IJobQueueService';
-import { TrajectoryStatus } from '../../domain/entities/Trajectory';
+import { ITrajectoryBackgroundProcessor, ProcessorContext } from '@modules/trajectory/domain/port/ITrajectoryBackgroundProcessor';
+import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
+import { ITempFileService } from '@shared/domain/ports/ITempFileService';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import TrajectoryUpdatedEvent from '@modules/trajectory/application/events/TrajectoryUpdatedEvent';
+import { ISimulationCellRepository } from '@modules/simulation-cell/domain/ports/ISimulationCellRepository';
+import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
+import { IJobQueueService } from '@modules/jobs/domain/ports/IJobQueueService';
+import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
 import { v4 } from 'uuid';
-import { IFileExtractorService } from '@/src/shared/domain/ports/IFileExtractorService';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
+import { IFileExtractorService } from '@shared/domain/ports/IFileExtractorService';
+import { ErrorCodes } from '@core/constants/error-codes';
 import fs from 'node:fs/promises';
-import logger from '@/src/shared/infrastructure/logger';
+import logger from '@shared/infrastructure/logger';
 import path from 'node:path';
 
 @injectable()

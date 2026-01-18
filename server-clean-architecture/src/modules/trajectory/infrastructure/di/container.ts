@@ -1,18 +1,18 @@
 import { container } from 'tsyringe';
-import { VFSService } from '../services/VFSService';
+import { VFSService } from '@modules/trajectory/infrastructure/services/VFSService';
 import { TRAJECTORY_TOKENS } from './TrajectoryTokens';
-import TrajectoryRepository from '../persistence/mongo/repositories/TrajectoryRepository';
-import TrajectoryProcessingQueue from '../queues/TrajectoryProcessingQueue';
-import CloudUploadQueue from '../queues/CloudUploadQueue';
-import TrajectoryDumpStorageService from '../services/TrajectoryDumpStorageService';
-import TrajectoryBackgroundProcessor from '../services/TrajectoryBackgroundProcessor';
-import { ListVFSDirectoryUseCase } from '../../application/use-cases/vfs/ListVFSDirectoryUseCase';
-import { GetVFSFileUseCase } from '../../application/use-cases/vfs/GetVFSFileUseCase';
-import { UploadVFSFileUseCase } from '../../application/use-cases/vfs/UploadVFSFileUseCase';
-import { DeleteVFSFileUseCase } from '../../application/use-cases/vfs/DeleteVFSFileUseCase';
-import { DownloadVFSArchiveUseCase } from '../../application/use-cases/vfs/DownloadVFSArchiveUseCase';
-import SessionCompletedEventHandler from '../../application/events/SessionCompletedEventHandler';
-import JobStatusChangedEventHandler from '../../application/events/JobStatusChangedEventHandler';
+import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/TrajectoryRepository';
+import TrajectoryProcessingQueue from '@modules/trajectory/infrastructure/queues/TrajectoryProcessingQueue';
+import CloudUploadQueue from '@modules/trajectory/infrastructure/queues/CloudUploadQueue';
+import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/TrajectoryDumpStorageService';
+import TrajectoryBackgroundProcessor from '@modules/trajectory/infrastructure/services/TrajectoryBackgroundProcessor';
+import { ListVFSDirectoryUseCase } from '@modules/trajectory/application/use-cases/vfs/ListVFSDirectoryUseCase';
+import { GetVFSFileUseCase } from '@modules/trajectory/application/use-cases/vfs/GetVFSFileUseCase';
+import { UploadVFSFileUseCase } from '@modules/trajectory/application/use-cases/vfs/UploadVFSFileUseCase';
+import { DeleteVFSFileUseCase } from '@modules/trajectory/application/use-cases/vfs/DeleteVFSFileUseCase';
+import { DownloadVFSArchiveUseCase } from '@modules/trajectory/application/use-cases/vfs/DownloadVFSArchiveUseCase';
+import SessionCompletedEventHandler from '@modules/trajectory/application/events/SessionCompletedEventHandler';
+import JobStatusChangedEventHandler from '@modules/trajectory/application/events/JobStatusChangedEventHandler';
 
 export const registerTrajectoryDependencies = (): void => {
     // VFS Use Dependencies

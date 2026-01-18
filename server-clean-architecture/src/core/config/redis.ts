@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import logger from '../../shared/infrastructure/logger';
+import logger from '@shared/infrastructure/logger';
 
 const getRedisConfig = () => {
     const redisConfig = {

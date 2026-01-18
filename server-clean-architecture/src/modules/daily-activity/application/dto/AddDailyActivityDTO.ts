@@ -1,4 +1,4 @@
-import { ActivityType } from "../../domain/entities/DailyActivity";
+import { ActivityType } from '@modules/daily-activity/domain/entities/DailyActivity';
 
 export interface AddDailyActivityInputDTO{
     teamId: string;

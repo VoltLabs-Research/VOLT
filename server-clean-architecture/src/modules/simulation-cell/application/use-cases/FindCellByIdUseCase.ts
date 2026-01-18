@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { FindCellByIdInputDTO, FindCellByIdOutputDTO } from '../dtos/FindCellByIdDTO';
-import { ISimulationCellRepository } from '../../domain/ports/ISimulationCellRepository';
-import { SIMULATION_CELL_TOKENS } from '../../infrastructure/di/SimulationCellTokens';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { FindCellByIdInputDTO, FindCellByIdOutputDTO } from '@modules/simulation-cell/application/dtos/FindCellByIdDTO';
+import { ISimulationCellRepository } from '@modules/simulation-cell/domain/ports/ISimulationCellRepository';
+import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 
 @injectable()
 export default class FindCellByIdUseCase implements IUseCase<FindCellByIdInputDTO, FindCellByIdOutputDTO, ApplicationError> {

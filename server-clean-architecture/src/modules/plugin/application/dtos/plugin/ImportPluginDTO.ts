@@ -1,4 +1,4 @@
-import { PluginProps } from '../../../domain/entities/Plugin';
+import { PluginProps } from '@modules/plugin/domain/entities/Plugin';
 
 export interface ImportPluginInputDTO {
     file: any;

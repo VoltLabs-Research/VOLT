@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { upload } from '@/src/shared/infrastructure/http/middleware/upload';
-import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
-import { uploadToStorage } from '../middlewares/upload-to-storage';
-import controllers from '../controllers/chat-messages';
-import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
+import { upload } from '@shared/infrastructure/http/middleware/upload';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { uploadToStorage } from '@modules/chat/infrastructure/http/middlewares/upload-to-storage';
+import controllers from '@modules/chat/infrastructure/http/controllers/chat-messages';
+import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
 const router = Router();
 const module: HttpModule = {

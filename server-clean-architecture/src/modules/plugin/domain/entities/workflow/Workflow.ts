@@ -1,6 +1,6 @@
-import { EntrypointNodeData } from "./nodes/EntrypointNode";
-import { WorkflowEdge } from "./WorkflowEdge";
-import { WorkflowNode, WorkflowNodeType } from "./WorkflowNode";
+import { EntrypointNodeData } from './nodes/EntrypointNode';
+import { WorkflowEdge } from './WorkflowEdge';
+import { WorkflowNode, WorkflowNodeType } from './WorkflowNode';
 
 export interface WorkflowViewport{
     x: number;

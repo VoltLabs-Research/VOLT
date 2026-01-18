@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
-import { ISocketConnection } from '@/src/modules/socket/domain/ports/ISocketModule';
-import { ISocketEmitter } from '@/src/modules/socket/domain/ports/ISocketEmitter';
-import { ISocketRoomManager } from '@/src/modules/socket/domain/ports/ISocketRoomManager';
-import { ISocketEventRegistry } from '@/src/modules/socket/domain/ports/ISocketEventRegistry';
-import { SOCKET_TOKENS } from '@/src/modules/socket/infrastructure/di/SocketTokens';
-import BaseSocketModule from '@/src/modules/socket/infrastructure/gateway/BaseSocketModule';
+import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { ISocketEmitter } from '@modules/socket/domain/ports/ISocketEmitter';
+import { ISocketRoomManager } from '@modules/socket/domain/ports/ISocketRoomManager';
+import { ISocketEventRegistry } from '@modules/socket/domain/ports/ISocketEventRegistry';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
 
 interface CursorUpdate{
     trajectoryId: string;

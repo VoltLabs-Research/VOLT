@@ -1,11 +1,11 @@
 import { injectable, inject } from 'tsyringe';
-import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from '@/src/modules/plugin/domain/ports/INodeRegistry';
-import { SYS_BUCKETS } from '@/src/core/config/minio';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
-import pLimit from '@/src/shared/infrastructure/utilities/p-limit';
-import readExposurePayload from '../../../utilities/read-exposure-payload';
-import { WorkflowNodeType, WorkflowNode } from '@/src/modules/plugin/domain/entities/workflow/WorkflowNode';
+import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from '@modules/plugin/domain/ports/INodeRegistry';
+import { SYS_BUCKETS } from '@core/config/minio';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import pLimit from '@shared/infrastructure/utilities/p-limit';
+import readExposurePayload from '@modules/plugin/infrastructure/utilities/read-exposure-payload';
+import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 
 @injectable()
 export default class ExposureHandler implements INodeHandler{

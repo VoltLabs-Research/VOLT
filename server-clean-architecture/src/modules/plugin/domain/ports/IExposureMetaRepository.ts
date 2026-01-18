@@ -1,5 +1,5 @@
-import { IBaseRepository } from "@/src/shared/domain/ports/IBaseRepository";
-import ExposureMeta, { ExposureMetaProps } from "../entities/ExposureMeta";
+import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import ExposureMeta, { ExposureMetaProps } from '@modules/plugin/domain/entities/ExposureMeta';
 
 export interface IExposureMetaRepository extends IBaseRepository<ExposureMeta, ExposureMetaProps>{
 

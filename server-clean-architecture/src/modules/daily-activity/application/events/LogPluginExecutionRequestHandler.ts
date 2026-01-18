@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import { DAILY_ACTIVITY_TOKENS } from '../../infrastructure/di/DailyActivityTokens';
-import { IDailyActivityRepository } from '../../domain/ports/IDailyActivityRepository';
-import { ActivityType } from '../../domain/entities/DailyActivity';
-import PluginExecutionRequestEvent from '@/src/modules/plugin/domain/events/PluginExecutionRequestEvent';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
+import { IDailyActivityRepository } from '@modules/daily-activity/domain/ports/IDailyActivityRepository';
+import { ActivityType } from '@modules/daily-activity/domain/entities/DailyActivity';
+import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
 
 @injectable()
 export default class LogPluginExecutionRequestHandler implements IEventHandler<PluginExecutionRequestEvent>{

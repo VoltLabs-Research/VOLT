@@ -1,5 +1,5 @@
-import { IBaseRepository } from "@/src/shared/domain/ports/IBaseRepository";
-import Analysis, { AnalysisProps } from '../entities/Analysis';
+import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import Analysis, { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 
 export interface IAnalysisRepository extends IBaseRepository<Analysis, AnalysisProps>{
     /**

@@ -1,8 +1,8 @@
-import { injectable, inject, delay } from "tsyringe";
-import { BaseController } from "@/src/shared/infrastructure/http/BaseController";
-import { LeaveGroupUseCase } from "@/src/modules/chat/application/use-cases/chat/LeaveGroupUseCase";
-import { LeaveGroupInputDTO } from "@/src/modules/chat/application/dtos/chat/LeaveGroupDTO";
-import { AuthenticatedRequest } from "@/src/shared/infrastructure/http/middleware/authentication";
+import { injectable, inject, delay } from 'tsyringe';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { LeaveGroupUseCase } from '@modules/chat/application/use-cases/chat/LeaveGroupUseCase';
+import { LeaveGroupInputDTO } from '@modules/chat/application/dtos/chat/LeaveGroupDTO';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
 @injectable()
 export default class LeaveGroupController extends BaseController<LeaveGroupUseCase> {

@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import { IFileExtractorService, ExtractedFile } from '../../domain/ports/IFileExtractorService';
+import { IFileExtractorService, ExtractedFile } from '@shared/domain/ports/IFileExtractorService';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import path from 'node:path';

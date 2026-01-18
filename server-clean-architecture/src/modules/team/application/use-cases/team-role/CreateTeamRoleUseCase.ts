@@ -1,11 +1,11 @@
-import { ITeamRoleRepository } from "../../../domain/ports/ITeamRoleRepository";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO } from "../../dtos/team-role/CreateTeamRoleDTO";
-import { injectable, inject } from "tsyringe";
-import { TEAM_TOKENS } from "../../../infrastructure/di/TeamTokens";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
+import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO } from '@modules/team/application/dtos/team-role/CreateTeamRoleDTO';
+import { injectable, inject } from 'tsyringe';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO, ApplicationError>{

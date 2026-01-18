@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import { ANALYSIS_TOKENS } from '../../infrastructure/di/AnalysisTokens';
-import { IAnalysisRepository } from '../../domain/port/IAnalysisRepository';
-import TeamDeletedEvent from '@/src/modules/team/domain/events/TeamDeletedEvent';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
 
 @injectable()
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent>{

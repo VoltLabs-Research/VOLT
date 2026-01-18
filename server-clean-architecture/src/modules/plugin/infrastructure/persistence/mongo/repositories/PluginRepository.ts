@@ -1,12 +1,12 @@
-import { IPluginRepository } from "@/src/modules/plugin/domain/ports/IPluginRepository";
-import Plugin, { PluginProps } from "@/src/modules/plugin/domain/entities/Plugin";
-import PluginModel, { PluginDocument } from "../models/PluginModel";
-import pluginMapper from '../mappers/PluginMapper';
-import { MongooseBaseRepository } from "@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository";
+import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import Plugin, { PluginProps } from '@modules/plugin/domain/entities/Plugin';
+import PluginModel, { PluginDocument } from '@modules/plugin/infrastructure/persistence/mongo/models/PluginModel';
+import pluginMapper from '@modules/plugin/infrastructure/persistence/mongo/mappers/PluginMapper';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import { injectable, inject } from 'tsyringe';
-import { IEventBus } from "@/src/shared/application/events/IEventBus";
-import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
-import PluginDeletedEvent from "../../../../domain/events/PluginDeletedEvent";
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import PluginDeletedEvent from '@modules/plugin/domain/events/PluginDeletedEvent';
 
 @injectable()
 export default class PluginRepository

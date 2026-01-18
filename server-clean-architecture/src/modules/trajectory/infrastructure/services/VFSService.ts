@@ -1,5 +1,5 @@
 import { injectable, inject } from 'tsyringe';
-import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
 
 @injectable()
 export class VFSService {

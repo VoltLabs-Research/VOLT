@@ -1,11 +1,11 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { GetContainerStatsOutputDTO } from '../dtos/ContainerDTOs';
-import { IContainerRepository } from '../../domain/ports/IContainerRepository';
-import { IContainerService } from '../../domain/ports/IContainerService';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@/src/shared/domain/constants/ErrorCodes';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { GetContainerStatsOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
+import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
+import { IContainerService } from '@modules/container/domain/ports/IContainerService';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
 
 @injectable()
 export class GetContainerStatsUseCase implements IUseCase<{ id: string }, GetContainerStatsOutputDTO> {

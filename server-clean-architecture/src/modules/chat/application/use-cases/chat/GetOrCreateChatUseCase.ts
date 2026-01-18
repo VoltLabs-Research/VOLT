@@ -1,10 +1,10 @@
-import { IChatRepository } from "../../../domain/port/IChatRepository";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO } from "../../dtos/chat/GetOrCreateChatDTO";
+import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO } from '@modules/chat/application/dtos/chat/GetOrCreateChatDTO';
 import { injectable, inject } from 'tsyringe';
-import { CHAT_TOKENS } from "../../../infrastructure/di/ChatTokens";
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 
 @injectable()
 export class GetOrCreateChatUseCase implements IUseCase<GetOrCreateChatInputDTO, GetOrCreateChatOutputDTO, ApplicationError> {

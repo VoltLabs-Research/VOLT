@@ -1,4 +1,4 @@
-import { ChatMessageMetadata, ChatMessageProps, ChatMessageType } from "../../../domain/entities/ChatMessage";
+import { ChatMessageMetadata, ChatMessageProps, ChatMessageType } from '@modules/chat/domain/entities/ChatMessage';
 
 export interface SendChatMessageInputDTO{
     userId: string;

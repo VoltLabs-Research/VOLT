@@ -2,11 +2,11 @@ import { injectable, inject } from 'tsyringe';
 import crypto from 'node:crypto';
 import sharp from 'sharp';
 import Identicon from 'identicon.js';
-import logger from '@/src/shared/infrastructure/logger';
-import { IAvatarService, AvatarResult } from '../../domain/ports/IAvatarService';
-import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { SYS_BUCKETS } from '@/src/core/config/minio';
+import logger from '@shared/infrastructure/logger';
+import { IAvatarService, AvatarResult } from '@modules/auth/domain/ports/IAvatarService';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { SYS_BUCKETS } from '@core/config/minio';
 
 @injectable()
 export default class AvatarService implements IAvatarService {

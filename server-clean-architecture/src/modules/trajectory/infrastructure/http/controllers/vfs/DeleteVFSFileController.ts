@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import { DeleteVFSFileUseCase } from '../../../../application/use-cases/vfs/DeleteVFSFileUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { DeleteVFSFileUseCase } from '@modules/trajectory/application/use-cases/vfs/DeleteVFSFileUseCase';
 
 @injectable()
 export default class DeleteVFSFileController extends BaseController<DeleteVFSFileUseCase> {

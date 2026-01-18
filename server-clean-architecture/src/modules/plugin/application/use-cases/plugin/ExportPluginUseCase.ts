@@ -1,13 +1,13 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { ExportPluginInputDTO, ExportPluginOutputDTO } from '../../dtos/plugin/ExportPluginDTO';
-import { IPluginRepository } from '../../../domain/ports/IPluginRepository';
-import { IPluginStorageService } from '../../../domain/ports/IPluginStorageService';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { ExportPluginInputDTO, ExportPluginOutputDTO } from '@modules/plugin/application/dtos/plugin/ExportPluginDTO';
+import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import { IPluginStorageService } from '@modules/plugin/domain/ports/IPluginStorageService';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 
-import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 @injectable()
 export class ExportPluginUseCase implements IUseCase<ExportPluginInputDTO, ExportPluginOutputDTO, ApplicationError> {

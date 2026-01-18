@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
-import { canRead, canCreate, canUpdate } from '@/src/shared/infrastructure/http/middleware/authorization';
-import { Resource } from '@/src/core/constants/resources';
-import controllers from '../controllers';
-import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { canRead, canCreate, canUpdate } from '@shared/infrastructure/http/middleware/authorization';
+import { Resource } from '@core/constants/resources';
+import controllers from '@modules/container/infrastructure/http/controllers';
+import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
 const router = Router();
 const module: HttpModule = {

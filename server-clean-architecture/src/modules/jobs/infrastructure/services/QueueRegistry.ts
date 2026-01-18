@@ -1,6 +1,6 @@
 import { singleton } from 'tsyringe';
-import { IQueueRegistry, QueueInfo } from '../../domain/ports/IQueueRegistry';
-import logger from '@/src/shared/infrastructure/logger';
+import { IQueueRegistry, QueueInfo } from '@modules/jobs/domain/ports/IQueueRegistry';
+import logger from '@shared/infrastructure/logger';
 
 @singleton()
 export default class QueueRegistry implements IQueueRegistry {

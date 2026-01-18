@@ -1,11 +1,11 @@
-import { Result } from '@/src/shared/domain/ports/Result';
-import { IUseCase } from '@/src/shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '../../infrastructure/di/SSHConnectionTokens';
-import { ISSHConnectionRepository } from '../../domain/ports/ISSHConnectionRepository';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { DeleteSSHConnectionByIdInputDTO } from '../dtos/DeleteSSHConnectionByIdDTO';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
+import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { ISSHConnectionRepository } from '@modules/ssh/domain/ports/ISSHConnectionRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { DeleteSSHConnectionByIdInputDTO } from '@modules/ssh/application/dtos/DeleteSSHConnectionByIdDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export class DeleteSSHConnectionByIdUseCase implements IUseCase<DeleteSSHConnectionByIdInputDTO, null, ApplicationError> {

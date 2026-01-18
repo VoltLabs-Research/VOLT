@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
-import { GetRasterMetadataUseCase } from '../../../application/use-cases/GetRasterMetadataUseCase';
+import { GetRasterMetadataUseCase } from '@modules/raster/application/use-cases/GetRasterMetadataUseCase';
 
 @injectable()
 export class GetRasterMetadataController {

@@ -1,4 +1,4 @@
-import { TeamRoleProps } from "../../../domain/entities/TeamRole";
+import { TeamRoleProps } from '@modules/team/domain/entities/TeamRole';
 
 export interface UpdateTeamRoleByIdInputDTO{
     roleId: string;

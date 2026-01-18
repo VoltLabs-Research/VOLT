@@ -1,28 +1,28 @@
 import { container } from 'tsyringe';
-import { PluginListingService } from '../services/PluginListingService';
-import { WorkflowValidatorService } from '../services/WorkflowValidatorService';
-import { NodeRegistryService } from '../services/NodeRegistryService';
+import { PluginListingService } from '@modules/plugin/infrastructure/services/PluginListingService';
+import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/WorkflowValidatorService';
+import { NodeRegistryService } from '@modules/plugin/infrastructure/services/NodeRegistryService';
 import { PLUGIN_TOKENS } from './PluginTokens';
-import PluginRepository from '../persistence/mongo/repositories/PluginRepository';
-import ListingRowRepository from '../persistence/mongo/repositories/ListingRowRepository';
-import ExposureMetaRepository from '../persistence/mongo/repositories/ExposureMetaRepository';
-import PluginWorkflowEngine from '../services/PluginWorkflowEngine';
-import NodeRegistry from '../services/nodes/NodeRegistry';
+import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/PluginRepository';
+import ListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/ListingRowRepository';
+import ExposureMetaRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/ExposureMetaRepository';
+import PluginWorkflowEngine from '@modules/plugin/infrastructure/services/PluginWorkflowEngine';
+import NodeRegistry from '@modules/plugin/infrastructure/services/nodes/NodeRegistry';
 
-import PluginStorageService from '../services/PluginStorageService';
+import PluginStorageService from '@modules/plugin/infrastructure/services/PluginStorageService';
 
-import { CreatePluginUseCase } from '../../application/use-cases/plugin/CreatePluginUseCase';
-import { GetPluginByIdUseCase } from '../../application/use-cases/plugin/GetPluginByIdUseCase';
-import { UpdatePluginByIdUseCase } from '../../application/use-cases/plugin/UpdatePluginByIdUseCase';
-import { DeletePluginByIdUseCase } from '../../application/use-cases/plugin/DeletePluginByIdUseCase';
-import { ListPluginsUseCase } from '../../application/use-cases/plugin/ListPluginsUseCase';
-import { ExecutePluginUseCase } from '../../application/use-cases/plugin/ExecutePluginUseCase';
-import { ValidateWorkflowUseCase } from '../../application/use-cases/plugin/ValidateWorkflowUseCase';
-import { GetNodeSchemasUseCase } from '../../application/use-cases/plugin/GetNodeSchemasUseCase';
-import { ImportPluginUseCase } from '../../application/use-cases/plugin/ImportPluginUseCase';
-import { ExportPluginUseCase } from '../../application/use-cases/plugin/ExportPluginUseCase';
-import { DeleteBinaryUseCase } from '../../application/use-cases/plugin/DeleteBinaryUseCase';
-import { UploadBinaryUseCase } from '../../application/use-cases/plugin/UploadBinaryUseCase';
+import { CreatePluginUseCase } from '@modules/plugin/application/use-cases/plugin/CreatePluginUseCase';
+import { GetPluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/GetPluginByIdUseCase';
+import { UpdatePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/UpdatePluginByIdUseCase';
+import { DeletePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/DeletePluginByIdUseCase';
+import { ListPluginsUseCase } from '@modules/plugin/application/use-cases/plugin/ListPluginsUseCase';
+import { ExecutePluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExecutePluginUseCase';
+import { ValidateWorkflowUseCase } from '@modules/plugin/application/use-cases/plugin/ValidateWorkflowUseCase';
+import { GetNodeSchemasUseCase } from '@modules/plugin/application/use-cases/plugin/GetNodeSchemasUseCase';
+import { ImportPluginUseCase } from '@modules/plugin/application/use-cases/plugin/ImportPluginUseCase';
+import { ExportPluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExportPluginUseCase';
+import { DeleteBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DeleteBinaryUseCase';
+import { UploadBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/UploadBinaryUseCase';
 
 export const registerPluginDependencies = (): void => {
     // Services

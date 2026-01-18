@@ -1,13 +1,13 @@
-import { Result } from '@/src/shared/domain/ports/Result';
-import { IUseCase } from '@/src/shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '../../infrastructure/di/SSHConnectionTokens';
-import { ISSHConnectionRepository } from '../../domain/ports/ISSHConnectionRepository';
-import { ISSHConnectionService } from '../../domain/ports/ISSHConnectionService';
-import { ListSSHFilesInputDTO } from '../dtos/ListSSHFilesInputDTO';
-import { ListSSHFilesOutputDTO, SSHFileEntryDTO } from '../dtos/ListSSHFilesOutputDTO';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
+import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { ISSHConnectionRepository } from '@modules/ssh/domain/ports/ISSHConnectionRepository';
+import { ISSHConnectionService } from '@modules/ssh/domain/ports/ISSHConnectionService';
+import { ListSSHFilesInputDTO } from '@modules/ssh/application/dtos/ListSSHFilesInputDTO';
+import { ListSSHFilesOutputDTO, SSHFileEntryDTO } from '@modules/ssh/application/dtos/ListSSHFilesOutputDTO';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export default class ListSSHFilesUseCase implements IUseCase<ListSSHFilesInputDTO, ListSSHFilesOutputDTO, ApplicationError>{

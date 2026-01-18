@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
-import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import { CreateTeamInputDTO } from '@/src/modules/team/application/dtos/team/CreateTeamDTO';
-import { HttpStatus } from '@/src/shared/infrastructure/http/HttpStatus';
-import CreateTeamUseCase from '@/src/modules/team/application/use-cases/team/CreateTeamUseCase';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { CreateTeamInputDTO } from '@modules/team/application/dtos/team/CreateTeamDTO';
+import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
+import CreateTeamUseCase from '@modules/team/application/use-cases/team/CreateTeamUseCase';
 
 @injectable()
 export default class CreateTeamController extends BaseController<CreateTeamUseCase> {

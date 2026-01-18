@@ -1,10 +1,10 @@
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/ports/Result";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
 import { inject, injectable } from 'tsyringe';
-import { TEAM_TOKENS } from "@/src/modules/team/infrastructure/di/TeamTokens";
-import { ITeamRepository } from "@/src/modules/team/domain/ports/ITeamRepository";
-import { GetTeamMembersInputDTO, GetTeamMembersOutputDTO } from "../../dtos/chat/GetTeamMembersDTO";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
+import { GetTeamMembersInputDTO, GetTeamMembersOutputDTO } from '@modules/chat/application/dtos/chat/GetTeamMembersDTO';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export default class GetTeamMembersUseCase implements IUseCase<GetTeamMembersInputDTO, GetTeamMembersOutputDTO, ApplicationError>{

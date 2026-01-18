@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
-import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
-import controllers from '../controllers/team-member';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import controllers from '@modules/team/infrastructure/http/controllers/team-member';
 
 const router = Router();
 const module: HttpModule = {

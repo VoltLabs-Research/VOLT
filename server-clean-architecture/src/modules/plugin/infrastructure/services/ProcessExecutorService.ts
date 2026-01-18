@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
 import { spawn } from 'node:child_process';
-import { IProcessExecutorService, ExecutionResult } from '../../domain/ports/IProcessExecutorService';
-import logger from '@/src/shared/infrastructure/logger';
+import { IProcessExecutorService, ExecutionResult } from '@modules/plugin/domain/ports/IProcessExecutorService';
+import logger from '@shared/infrastructure/logger';
 import fs from 'node:fs/promises';
 
 @injectable()

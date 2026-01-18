@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import FindCellsByTeamIdUseCase from '../../../application/use-cases/FindCellsByTeamIdUseCase';
-import { SIMULATION_CELL_TOKENS } from '../../di/SimulationCellTokens';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import FindCellsByTeamIdUseCase from '@modules/simulation-cell/application/use-cases/FindCellsByTeamIdUseCase';
+import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 
 @injectable()
 export default class FindCellsByTeamIdController extends BaseController<FindCellsByTeamIdUseCase> {

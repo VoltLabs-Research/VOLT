@@ -1,7 +1,7 @@
 import { Socket } from 'socket.io';
-import { ISocketConnection } from '../../domain/ports/ISocketModule';
+import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
 import { injectable } from 'tsyringe';
-import { ISocketMapper } from '../../domain/ports/ISocketMapper';
+import { ISocketMapper } from '@modules/socket/domain/ports/ISocketMapper';
 
 @injectable()
 export default class SocketMapper implements ISocketMapper {

@@ -1,5 +1,5 @@
-import { IBaseRepository } from "@/src/shared/domain/ports/IBaseRepository";
-import DailyActivity, { ActivityType, DailyActivityProps } from "../entities/DailyActivity";
+import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import DailyActivity, { ActivityType, DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
 
 export interface IDailyActivityRepository extends IBaseRepository<DailyActivity, DailyActivityProps>{
     /**

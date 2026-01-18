@@ -1,14 +1,14 @@
-import { IEventHandler } from "@/src/shared/application/events/IEventHandler";
-import SessionCompletedEvent from "@/src/modules/jobs/application/events/SessionCompletedEvent";
-import { injectable, inject } from "tsyringe";
-import { TRAJECTORY_TOKENS } from "../../infrastructure/di/TrajectoryTokens";
-import { ITrajectoryRepository } from "../../domain/port/ITrajectoryRepository";
-import { TrajectoryStatus } from "../../domain/entities/Trajectory";
-import { RASTER_TOKENS } from "@/src/modules/raster/infrastructure/di/RasterTokens";
-import { IRasterService } from "@/src/modules/raster/domain/ports/IRasterService";
-import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
-import { IEventBus } from "@/src/shared/application/events/IEventBus";
-import TrajectoryUpdatedEvent from "./TrajectoryUpdatedEvent";
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import SessionCompletedEvent from '@modules/jobs/application/events/SessionCompletedEvent';
+import { injectable, inject } from 'tsyringe';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
+import { IRasterService } from '@modules/raster/domain/ports/IRasterService';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import TrajectoryUpdatedEvent from './TrajectoryUpdatedEvent';
 
 @injectable()
 export default class SessionCompletedEventHandler implements IEventHandler<SessionCompletedEvent> {

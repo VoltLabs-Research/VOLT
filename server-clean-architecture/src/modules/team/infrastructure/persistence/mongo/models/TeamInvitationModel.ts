@@ -1,7 +1,7 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { ValidationCodes } from '@/src/core/constants/validation-codes';
-import { TeamInvitationProps, TeamInvitationStatus } from '@/src/modules/team/domain/entities/TeamInvitation';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
+import { ValidationCodes } from '@core/constants/validation-codes';
+import { TeamInvitationProps, TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 type TeamInvitationRelations = 'team' | 'invitedBy' | 'invitedUser' | 'role';
 

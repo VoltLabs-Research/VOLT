@@ -1,4 +1,4 @@
-import { WorkflowNodeData } from "./WorkflowNodeData";
+import { WorkflowNodeData } from './WorkflowNodeData';
 
 export enum WorkflowNodeType {
     Modifier = 'modifier',

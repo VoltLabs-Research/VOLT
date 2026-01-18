@@ -1,4 +1,4 @@
-import { SimulationCellProps } from "../../domain/entities/SimulationCell";
+import { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
 
 export interface FindCellByIdInputDTO {
     id: string;

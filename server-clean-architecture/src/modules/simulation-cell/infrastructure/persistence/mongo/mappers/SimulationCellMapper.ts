@@ -1,6 +1,6 @@
-import { IMapper } from "@/src/shared/infrastructure/persistence/IMapper";
-import SimulationCell, { SimulationCellProps } from "../../../../domain/entities/SimulationCell";
-import { SimulationCellDocument } from "../models/SimulationCellModel";
+import { IMapper } from '@shared/infrastructure/persistence/IMapper';
+import SimulationCell, { SimulationCellProps } from '@modules/simulation-cell/domain/entities/SimulationCell';
+import { SimulationCellDocument } from '@modules/simulation-cell/infrastructure/persistence/mongo/models/SimulationCellModel';
 
 class SimulationCellMapper implements IMapper<SimulationCell, SimulationCellProps, SimulationCellDocument> {
     toDomain(document: SimulationCellDocument): SimulationCell {

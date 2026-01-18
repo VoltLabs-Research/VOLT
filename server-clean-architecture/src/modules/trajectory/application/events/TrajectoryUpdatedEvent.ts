@@ -1,5 +1,5 @@
-import { IDomainEvent } from "@/src/shared/application/events/IDomainEvent";
-import { TrajectoryStatus, TrajectoryProcessingProgress, TrajectoryStats, TrajectoryFrame } from "../../domain/entities/Trajectory";
+import { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import { TrajectoryStatus, TrajectoryProcessingProgress, TrajectoryStats, TrajectoryFrame } from '@modules/trajectory/domain/entities/Trajectory';
 
 export interface TrajectoryUpdatedEventData {
     trajectoryId: string;

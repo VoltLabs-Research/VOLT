@@ -1,4 +1,4 @@
-import { ChatProps } from "../../../domain/entities/Chat";
+import { ChatProps } from '@modules/chat/domain/entities/Chat';
 
 export interface AddUsersToGroupInputDTO{
     requesterId: string;

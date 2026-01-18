@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { DockerNetwork } from './DockerNetworkModel';
 import { DockerVolume } from './DockerVolumeModel';
-import { ValidationCodes } from '@/src/shared/domain/constants/ValidationCodes';
+import { ValidationCodes } from '@shared/domain/constants/ValidationCodes';
 
 export interface IContainer extends Document {
     name: string;

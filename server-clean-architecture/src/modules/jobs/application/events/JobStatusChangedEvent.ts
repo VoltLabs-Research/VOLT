@@ -1,6 +1,6 @@
-import { JobStatus } from "../../domain/entities/Job";
-import { IDomainEvent } from "../../../../shared/application/events/IDomainEvent";
-import { v4 } from "uuid";
+import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import { v4 } from 'uuid';
 
 export interface JobStatusChangedEventData{
     jobId: string;

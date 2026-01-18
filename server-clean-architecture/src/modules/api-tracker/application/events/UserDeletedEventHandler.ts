@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import { IApiTrackerRepository } from '../../domain/ports/IApiTrackerRepository';
-import logger from '@/src/shared/infrastructure/logger';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { IApiTrackerRepository } from '@modules/api-tracker/domain/ports/IApiTrackerRepository';
+import logger from '@shared/infrastructure/logger';
 
 interface UserDeletedEvent {
     userId: string;

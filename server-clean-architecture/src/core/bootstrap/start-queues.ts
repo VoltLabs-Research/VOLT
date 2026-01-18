@@ -1,6 +1,6 @@
-import { IJobQueueService } from '@/src/modules/jobs/domain/ports/IJobQueueService';
-import { RASTER_TOKENS } from '@/src/modules/raster/infrastructure/di/RasterTokens';
-import { TRAJECTORY_TOKENS } from '@/src/modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { IJobQueueService } from '@modules/jobs/domain/ports/IJobQueueService';
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { container } from 'tsyringe';
 
 /**

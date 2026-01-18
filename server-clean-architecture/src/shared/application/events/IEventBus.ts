@@ -1,5 +1,5 @@
-import { IDomainEvent } from "./IDomainEvent";
-import { IEventHandler } from "./IEventHandler";
+import { IDomainEvent } from './IDomainEvent';
+import { IEventHandler } from './IEventHandler';
 
 export interface IEventBus{
     publish(event: IDomainEvent): Promise<void>;

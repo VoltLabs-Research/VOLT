@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { DeleteContainerUseCase } from '../../../application/use-cases/DeleteContainerUseCase';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
+import { DeleteContainerUseCase } from '@modules/container/application/use-cases/DeleteContainerUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
 
 @injectable()
 export default class DeleteContainerController extends BaseController<DeleteContainerUseCase>{

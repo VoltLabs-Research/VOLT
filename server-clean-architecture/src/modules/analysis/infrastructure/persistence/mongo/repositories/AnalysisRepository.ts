@@ -1,12 +1,12 @@
-import { IAnalysisRepository } from "@/src/modules/analysis/domain/port/IAnalysisRepository";
-import Analysis, { AnalysisProps } from "@/src/modules/analysis/domain/entities/Analysis";
-import AnalysisModel, { AnalysisDocument } from "../models/AnalysisModel";
-import analysisMapper from "../mappers/AnalysisMapper";
-import { MongooseBaseRepository } from "@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository";
-import { injectable, inject } from "tsyringe";
-import { IEventBus } from "@/src/shared/application/events/IEventBus";
-import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
-import AnalysisDeletedEvent from "../../../../domain/events/AnalysisDeletedEvent";
+import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import Analysis, { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
+import AnalysisModel, { AnalysisDocument } from '@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
+import analysisMapper from '@modules/analysis/infrastructure/persistence/mongo/mappers/AnalysisMapper';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import { injectable, inject } from 'tsyringe';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
 
 @injectable()
 export default class AnalysisRepository

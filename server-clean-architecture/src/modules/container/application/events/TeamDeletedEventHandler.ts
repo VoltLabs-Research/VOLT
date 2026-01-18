@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import { IContainerRepository } from '../../domain/ports/IContainerRepository';
-import logger from '@/src/shared/infrastructure/logger';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
+import logger from '@shared/infrastructure/logger';
 
 interface TeamDeletedEvent {
     teamId: string;

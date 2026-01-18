@@ -1,6 +1,6 @@
-import DailyActivity, { DailyActivityProps } from "@/src/modules/daily-activity/domain/entities/DailyActivity";
-import { BaseMapper } from "@/src/shared/infrastructure/persistence/mongo/MongoBaseMapper";
-import { DailyActivityDocument } from "../models/DailyActivityModel";
+import DailyActivity, { DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
+import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
+import { DailyActivityDocument } from '@modules/daily-activity/infrastructure/persistence/mongo/models/DailyActivityModel';
 
 class DailyActivityMapper extends BaseMapper<DailyActivity, DailyActivityProps, DailyActivityDocument>{
     constructor(){

@@ -1,6 +1,6 @@
-import { injectable, inject, delay } from "tsyringe";
-import { BaseController } from "@/src/shared/infrastructure/http/BaseController";
-import { UpdateSSHConnectionByIdUseCase } from "../../../application/use-cases/UpdateSSHConnectionByIdUseCase";
+import { injectable, inject, delay } from 'tsyringe';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { UpdateSSHConnectionByIdUseCase } from '@modules/ssh/application/use-cases/UpdateSSHConnectionByIdUseCase';
 
 @injectable()
 export default class UpdateSSHConnectionByIdController extends BaseController<UpdateSSHConnectionByIdUseCase> {

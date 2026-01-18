@@ -1,6 +1,6 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { ActivityType, DailyActivityProps } from '@/src/modules/daily-activity/domain/entities/DailyActivity';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
+import { ActivityType, DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 type DailyActivityRelations = 'team' | 'user';
 export interface DailyActivityDocument extends Persistable<DailyActivityProps, DailyActivityRelations>, Document{}

@@ -1,4 +1,4 @@
-import logger from '../logger';
+import logger from '@shared/infrastructure/logger';
 import mongoose from 'mongoose';
 
 const mongoConnector = async () => {

@@ -1,11 +1,11 @@
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { inject, injectable } from "tsyringe";
-import { CHAT_TOKENS } from "../../../infrastructure/di/ChatTokens";
-import { IChatRepository } from "../../../domain/port/IChatRepository";
-import { SendChatMessageInputDTO, SendChatMessageOutputDTO } from "../../dtos/chat-message/SendChatMessageDTO";
-import { IChatMessageRepository } from "../../../domain/port/IChatMessageRepository";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { inject, injectable } from 'tsyringe';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { SendChatMessageInputDTO, SendChatMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/SendChatMessageDTO';
+import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRepository';
 
 @injectable()
 export class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO, SendChatMessageOutputDTO, ApplicationError> {

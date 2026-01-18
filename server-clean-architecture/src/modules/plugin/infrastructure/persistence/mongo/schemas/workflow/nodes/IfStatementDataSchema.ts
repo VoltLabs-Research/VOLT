@@ -1,5 +1,5 @@
 import { Schema } from 'mongoose';
-import { IfStatementConditionType, IfStatementConditionHandler } from '@/src/modules/plugin/domain/entities/workflow/nodes/IfStatementNode';
+import { IfStatementConditionType, IfStatementConditionHandler } from '@modules/plugin/domain/entities/workflow/nodes/IfStatementNode';
 
 export const ConditionSchema = new Schema({
     type: {

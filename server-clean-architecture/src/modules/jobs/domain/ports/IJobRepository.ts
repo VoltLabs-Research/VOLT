@@ -1,4 +1,4 @@
-import Job from "../entities/Job";
+import Job from '@modules/jobs/domain/entities/Job';
 
 export interface IJobRepository {
     /**

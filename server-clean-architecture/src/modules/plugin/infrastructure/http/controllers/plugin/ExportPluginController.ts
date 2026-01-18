@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import { ExportPluginUseCase } from '../../../../application/use-cases/plugin/ExportPluginUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { ExportPluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExportPluginUseCase';
 
 @injectable()
 export default class ExportPluginController extends BaseController<ExportPluginUseCase> {

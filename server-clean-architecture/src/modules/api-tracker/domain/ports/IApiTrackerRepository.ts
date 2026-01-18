@@ -1,4 +1,4 @@
-import { ApiTrackerEntity } from '../entities/ApiTracker';
+import { ApiTrackerEntity } from '@modules/api-tracker/domain/entities/ApiTracker';
 
 export interface IApiTrackerRepository {
     findByUserId(userId: string, page: number, limit: number): Promise<{ items: ApiTrackerEntity[]; total: number }>;

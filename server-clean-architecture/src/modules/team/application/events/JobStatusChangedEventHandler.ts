@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import JobStatusChangedEvent from '@/src/modules/jobs/application/events/JobStatusChangedEvent';
-import { SOCKET_TOKENS } from '@/src/modules/socket/infrastructure/di/SocketTokens';
-import { ISocketEmitter } from '@/src/modules/socket/domain/ports/ISocketEmitter';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import JobStatusChangedEvent from '@modules/jobs/application/events/JobStatusChangedEvent';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { ISocketEmitter } from '@modules/socket/domain/ports/ISocketEmitter';
 
 @injectable()
 export default class TeamJobStatusChangedEventHandler implements IEventHandler<JobStatusChangedEvent> {

@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import TeamDeletedEvent from '@/src/modules/team/domain/events/TeamDeletedEvent';
-import { PLUGIN_TOKENS } from '../../infrastructure/di/PluginTokens';
-import { IPluginRepository } from '../../domain/ports/IPluginRepository';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
 
 @injectable()
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent>{

@@ -1,10 +1,10 @@
-import { inject, injectable } from "tsyringe";
-import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from "@/src/modules/plugin/domain/ports/INodeRegistry";
-import { TRAJECTORY_TOKENS } from "@/src/modules/trajectory/infrastructure/di/TrajectoryTokens";
-import { ITrajectoryDumpStorageService } from "@/src/modules/trajectory/domain/port/ITrajectoryDumpStorageService";
-import { ITrajectoryRepository } from "@/src/modules/trajectory/domain/port/ITrajectoryRepository";
-import { WorkflowNodeType, WorkflowNode } from "@/src/modules/plugin/domain/entities/workflow/WorkflowNode";
-import { ContextSource } from "@/src/modules/plugin/domain/entities/workflow/nodes/ContextNode";
+import { inject, injectable } from 'tsyringe';
+import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from '@modules/plugin/domain/ports/INodeRegistry';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { ContextSource } from '@modules/plugin/domain/entities/workflow/nodes/ContextNode';
 
 @injectable()
 export default class ContextHandler implements INodeHandler{

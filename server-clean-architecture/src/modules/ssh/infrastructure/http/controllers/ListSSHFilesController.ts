@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import ListSSHFilesUseCase from '../../../application/use-cases/ListSSHFilesUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import ListSSHFilesUseCase from '@modules/ssh/application/use-cases/ListSSHFilesUseCase';
 
 @injectable()
 export default class ListSSHFilesController extends BaseController<ListSSHFilesUseCase>{

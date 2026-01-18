@@ -1,7 +1,7 @@
-import { HydratedDocument } from "mongoose";
-import User, { UserProps } from "../../../../domain/entities/User";
-import { UserDocument } from "../models/UserModel";
-import { BaseMapper } from "@/src/shared/infrastructure/persistence/mongo/MongoBaseMapper";
+import { HydratedDocument } from 'mongoose';
+import User, { UserProps } from '@modules/auth/domain/entities/User';
+import { UserDocument } from '@modules/auth/infrastructure/persistence/mongo/models/UserModel';
+import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
 
 class UserMapper extends BaseMapper<User, UserProps, UserDocument>{
     constructor(){

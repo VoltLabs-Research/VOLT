@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import TeamDeletedEvent from '@/src/modules/team/domain/events/TeamDeletedEvent';
-import { SSH_CONN_TOKENS } from '../../infrastructure/di/SSHConnectionTokens';
-import { ISSHConnectionRepository } from '../../domain/ports/ISSHConnectionRepository';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
+import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { ISSHConnectionRepository } from '@modules/ssh/domain/ports/ISSHConnectionRepository';
 
 @injectable()
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent>{

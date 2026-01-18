@@ -1,4 +1,4 @@
-import { ChatMessageProps } from "../../../domain/entities/ChatMessage";
+import { ChatMessageProps } from '@modules/chat/domain/entities/ChatMessage';
 
 export interface EditMessageInputDTO{
     userId: string;

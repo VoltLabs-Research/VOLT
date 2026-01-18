@@ -1,12 +1,12 @@
-import { IUserRepository } from '../../../../domain/ports/IUserRepository';
-import User, { UserProps } from '../../../../domain/entities/User';
-import UserModel, { UserDocument } from '../models/UserModel';
-import userMapper from '../mappers/UserMapper';
+import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import User, { UserProps } from '@modules/auth/domain/entities/User';
+import UserModel, { UserDocument } from '@modules/auth/infrastructure/persistence/mongo/models/UserModel';
+import userMapper from '@modules/auth/infrastructure/persistence/mongo/mappers/UserMapper';
 import { injectable, inject } from 'tsyringe';
-import { MongooseBaseRepository } from '@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { IEventBus } from '@/src/shared/application/events/IEventBus';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import UserDeletedEvent from '../../../../domain/events/UserDeletedEvent';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
 
 @injectable()
 export default class UserRepository

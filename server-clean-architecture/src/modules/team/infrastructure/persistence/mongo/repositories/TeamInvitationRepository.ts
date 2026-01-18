@@ -1,9 +1,9 @@
-import { ITeamInvitationRepository } from "@/src/modules/team/domain/ports/ITeamInvitationRepository";
-import TeamInvitation, { TeamInvitationProps, TeamInvitationStatus } from '../../../../domain/entities/TeamInvitation';
-import TeamInvitationModel, { TeamInvitationDocument } from "../models/TeamInvitationModel";
-import teamInvitationMapper from "../mappers/TeamInvitationMapper";
-import { MongooseBaseRepository } from "@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository";
-import { injectable } from "tsyringe";
+import { ITeamInvitationRepository } from '@modules/team/domain/ports/ITeamInvitationRepository';
+import TeamInvitation, { TeamInvitationProps, TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
+import TeamInvitationModel, { TeamInvitationDocument } from '@modules/team/infrastructure/persistence/mongo/models/TeamInvitationModel';
+import teamInvitationMapper from '@modules/team/infrastructure/persistence/mongo/mappers/TeamInvitationMapper';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class TeamInvitationRepository

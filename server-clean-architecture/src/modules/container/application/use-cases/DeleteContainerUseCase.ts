@@ -1,11 +1,11 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { DeleteContainerOutputDTO } from '../dtos/ContainerDTOs';
-import { IContainerRepository } from '../../domain/ports/IContainerRepository';
-import { IContainerService } from '../../domain/ports/IContainerService';
-import { ErrorCodes } from '@/src/shared/domain/constants/ErrorCodes';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { DeleteContainerOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
+import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
+import { IContainerService } from '@modules/container/domain/ports/IContainerService';
+import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export class DeleteContainerUseCase implements IUseCase<{ id: string }, DeleteContainerOutputDTO> {
@@ -30,7 +30,7 @@ export class DeleteContainerUseCase implements IUseCase<{ id: string }, DeleteCo
 
         // Remove Network (if owned, see legacy logic)
         if (container.network) {
-            const { DockerNetwork } = await import('../../infrastructure/persistence/mongo/models/DockerNetworkModel');
+            const { DockerNetwork } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerNetworkModel');
             const netDoc = await DockerNetwork.findById(container.network);
             if (netDoc) {
                 await this.containerService.removeNetwork(netDoc.networkId);

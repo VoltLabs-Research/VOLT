@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
-import controllers from '../controllers';
-import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import controllers from '@modules/ssh/infrastructure/http/controllers';
+import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {

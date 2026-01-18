@@ -1,14 +1,14 @@
 import { injectable, inject, singleton } from 'tsyringe';
 import { pipeline } from 'node:stream/promises';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { IPluginBinaryCacheService, BinaryCacheRequest } from '../../domain/ports/IPluginBinaryCacheService';
-import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
-import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
-import logger from '@/src/shared/infrastructure/logger';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IPluginBinaryCacheService, BinaryCacheRequest } from '@modules/plugin/domain/ports/IPluginBinaryCacheService';
+import { ITempFileService } from '@shared/domain/ports/ITempFileService';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import logger from '@shared/infrastructure/logger';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
-import { SYS_BUCKETS } from '@/src/core/config/minio';
+import { SYS_BUCKETS } from '@core/config/minio';
 import { createReadStream, createWriteStream } from 'node:fs';
 
 @singleton()

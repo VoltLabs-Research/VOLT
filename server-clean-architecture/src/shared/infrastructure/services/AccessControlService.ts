@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { IAccessControlService, IAccessControlSubject, IPermissionStrategy } from '@/src/shared/domain/ports/IAccessControlService';
+import { IAccessControlService, IAccessControlSubject, IPermissionStrategy } from '@shared/domain/ports/IAccessControlService';
 import { UserStrategy } from './strategies/UserStrategy';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export class AccessControlService implements IAccessControlService {

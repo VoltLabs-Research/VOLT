@@ -1,13 +1,13 @@
-import { ITeamRepository } from "../../../domain/ports/ITeamRepository";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { IUseCase } from "@/src/shared/application/IUseCase";
+import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from "../../../infrastructure/di/TeamTokens";
-import { CreateTeamInputDTO, CreateTeamOutputDTO } from "../../dtos/team/CreateTeamDTO";
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@/src/shared/application/events/IEventBus';
-import TeamCreatedEvent from '../../../domain/events/TeamCreatedEvent';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { CreateTeamInputDTO, CreateTeamOutputDTO } from '@modules/team/application/dtos/team/CreateTeamDTO';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import TeamCreatedEvent from '@modules/team/domain/events/TeamCreatedEvent';
 
 @injectable()
 export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, CreateTeamOutputDTO, ApplicationError> {

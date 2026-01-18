@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
-import { GetRasterFramePNGUseCase } from '../../../application/use-cases/GetRasterFramePNGUseCase';
+import { GetRasterFramePNGUseCase } from '@modules/raster/application/use-cases/GetRasterFramePNGUseCase';
 
 @injectable()
 export class GetRasterFramePNGController {

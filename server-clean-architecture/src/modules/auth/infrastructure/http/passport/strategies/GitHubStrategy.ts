@@ -1,6 +1,6 @@
-import { OAuthProvider } from "@/src/modules/auth/domain/entities/User";
-import BaseOAuthStrategy from "../BaseOAuthStrategy";
-import OAuthLoginUseCase from "@/src/modules/auth/application/use-cases/OAuthLoginUseCase";
+import { OAuthProvider } from '@modules/auth/domain/entities/User';
+import BaseOAuthStrategy from '@modules/auth/infrastructure/http/passport/BaseOAuthStrategy';
+import OAuthLoginUseCase from '@modules/auth/application/use-cases/OAuthLoginUseCase';
 import { Strategy as GithubStrategy } from 'passport-github2';
 
 export default class GithubStrategyWrapper extends BaseOAuthStrategy{

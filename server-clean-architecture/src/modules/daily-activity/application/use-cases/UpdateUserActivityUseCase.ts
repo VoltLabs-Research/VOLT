@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { DAILY_ACTIVITY_TOKENS } from "../../infrastructure/di/DailyActivityTokens";
-import { IDailyActivityRepository } from "../../domain/ports/IDailyActivityRepository";
-import { UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO } from "../dto/UpdateUserActivityDTO";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
+import { IDailyActivityRepository } from '@modules/daily-activity/domain/ports/IDailyActivityRepository';
+import { UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO } from '@modules/daily-activity/application/dto/UpdateUserActivityDTO';
 
 @injectable()
 export default class UpdateUserActivityUseCase implements IUseCase<UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO, ApplicationError> {

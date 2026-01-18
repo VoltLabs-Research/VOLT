@@ -1,6 +1,6 @@
-import TeamInvitation, { TeamInvitationProps } from "@/src/modules/team/domain/entities/TeamInvitation";
-import { TeamInvitationDocument } from "../models/TeamInvitationModel";
-import { BaseMapper } from "@/src/shared/infrastructure/persistence/mongo/MongoBaseMapper";
+import TeamInvitation, { TeamInvitationProps } from '@modules/team/domain/entities/TeamInvitation';
+import { TeamInvitationDocument } from '@modules/team/infrastructure/persistence/mongo/models/TeamInvitationModel';
+import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
 
 class TeamInvitationMapper extends BaseMapper<TeamInvitation, TeamInvitationProps, TeamInvitationDocument>{
     constructor(){

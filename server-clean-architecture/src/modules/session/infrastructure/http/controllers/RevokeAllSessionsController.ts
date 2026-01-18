@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import { RevokeAllSessionsInputDTO } from '../../../application/dtos/RevokeAllSessionsDTo';
-import RevokeAllSessionsUseCase from '../../../application/use-cases/RevokeAllSessionsUseCase';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { RevokeAllSessionsInputDTO } from '@modules/session/application/dtos/RevokeAllSessionsDTo';
+import RevokeAllSessionsUseCase from '@modules/session/application/use-cases/RevokeAllSessionsUseCase';
 
 @injectable()
 export default class RevokeAllSessionsController extends BaseController<RevokeAllSessionsUseCase> {

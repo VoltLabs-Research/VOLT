@@ -1,5 +1,5 @@
 import jwt, { Secret } from 'jsonwebtoken';
-import { ITokenService, TokenPayload } from '../../domain/ports/ITokenService';
+import { ITokenService, TokenPayload } from '@modules/auth/domain/ports/ITokenService';
 import { injectable } from 'tsyringe';
 
 @injectable()

@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
-import { upload } from '@/src/shared/infrastructure/http/middleware/upload';
-import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
-import controllers from '../controllers/trajectory';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { upload } from '@shared/infrastructure/http/middleware/upload';
+import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import controllers from '@modules/trajectory/infrastructure/http/controllers/trajectory';
 
 const router = Router();
 const module: HttpModule = {

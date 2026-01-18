@@ -1,11 +1,11 @@
 import 'reflect-metadata';
-import '@/src/core/bootstrap/register-deps';
-import BaseWorker from '@/src/shared/infrastructure/workers/BaseWorker';
-import { ITrajectoryDumpStorageService } from '../../domain/port/ITrajectoryDumpStorageService';
+import '@core/bootstrap/register-deps';
+import BaseWorker from '@shared/infrastructure/workers/BaseWorker';
+import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
 import { container } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from '../di/TrajectoryTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import fs from 'node:fs/promises';
-import Job from '@/src/modules/jobs/domain/entities/Job';
+import Job from '@modules/jobs/domain/entities/Job';
 
 class CloudUploadWorker extends BaseWorker<Job> {
     private dumpStorage!: ITrajectoryDumpStorageService;

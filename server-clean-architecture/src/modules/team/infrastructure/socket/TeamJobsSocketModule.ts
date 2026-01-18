@@ -1,10 +1,10 @@
 import { inject, singleton } from 'tsyringe';
-import BaseSocketModule from '@/src/modules/socket/infrastructure/gateway/BaseSocketModule';
-import { ISocketConnection } from '@/src/modules/socket/domain/ports/ISocketModule';
-import { SOCKET_TOKENS } from '@/src/modules/socket/infrastructure/di/SocketTokens';
-import { TEAM_TOKENS } from '../di/TeamTokens';
+import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
+import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamJobsService from './TeamJobsService';
-import logger from '@/src/shared/infrastructure/logger';
+import logger from '@shared/infrastructure/logger';
 
 @singleton()
 export default class TeamJobsSocketModule extends BaseSocketModule {

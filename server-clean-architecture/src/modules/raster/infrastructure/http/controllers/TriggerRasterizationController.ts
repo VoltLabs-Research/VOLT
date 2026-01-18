@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
-import { TriggerRasterizationUseCase } from '../../../application/use-cases/TriggerRasterizationUseCase';
+import { TriggerRasterizationUseCase } from '@modules/raster/application/use-cases/TriggerRasterizationUseCase';
 
 @injectable()
 export class TriggerRasterizationController {

@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import { UpdatePluginByIdUseCase } from '../../../../application/use-cases/plugin/UpdatePluginByIdUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { UpdatePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/UpdatePluginByIdUseCase';
 
 @injectable()
 export default class UpdatePluginByIdController extends BaseController<UpdatePluginByIdUseCase> {

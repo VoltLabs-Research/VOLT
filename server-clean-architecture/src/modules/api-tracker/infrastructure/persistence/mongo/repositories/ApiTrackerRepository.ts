@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
 import { Model } from 'mongoose';
-import { IApiTrackerRepository } from '@/src/modules/api-tracker/domain/ports/IApiTrackerRepository';
-import { ApiTrackerEntity } from '@/src/modules/api-tracker/domain/entities/ApiTracker';
-import { IApiTrackerDocument } from '../models/ApiTrackerModel';
+import { IApiTrackerRepository } from '@modules/api-tracker/domain/ports/IApiTrackerRepository';
+import { ApiTrackerEntity } from '@modules/api-tracker/domain/entities/ApiTracker';
+import { IApiTrackerDocument } from '@modules/api-tracker/infrastructure/persistence/mongo/models/ApiTrackerModel';
 
 @injectable()
 export class ApiTrackerRepository implements IApiTrackerRepository {

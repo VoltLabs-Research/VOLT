@@ -1,4 +1,4 @@
-import { ExportMaterial } from "./ExportMaterial";
+import { ExportMaterial } from './ExportMaterial';
 
 interface NativeMaterial extends ExportMaterial{
     doubleSided: boolean;

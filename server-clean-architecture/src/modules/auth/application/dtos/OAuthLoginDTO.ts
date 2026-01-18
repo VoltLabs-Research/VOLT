@@ -1,4 +1,4 @@
-import { OAuthProvider, UserProps } from "../../domain/entities/User";
+import { OAuthProvider, UserProps } from '@modules/auth/domain/entities/User';
 
 export interface OAuthLoginInputDTO{
     email: string;

@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { GetRBACConfigUseCase } from '@/src/modules/system/application/use-cases/GetRBACConfigUseCase';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
+import { GetRBACConfigUseCase } from '@modules/system/application/use-cases/GetRBACConfigUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
 
 @injectable()
 export default class GetRBACConfigController extends BaseController<GetRBACConfigUseCase>{

@@ -1,11 +1,11 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { UpdateContainerInputDTO, UpdateContainerOutputDTO } from '../dtos/ContainerDTOs';
-import { IContainerRepository } from '../../domain/ports/IContainerRepository';
-import { IContainerService } from '../../domain/ports/IContainerService';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@/src/shared/domain/constants/ErrorCodes';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { UpdateContainerInputDTO, UpdateContainerOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
+import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
+import { IContainerService } from '@modules/container/domain/ports/IContainerService';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
 
 @injectable()
 export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO, UpdateContainerOutputDTO> {
@@ -101,7 +101,7 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
             // We assume network name standard or fetch via ID? 
             // Ideally we fetch the Network Doc.
             // For now, use standard name construction as fallback or query.
-            const { DockerNetwork } = await import('../../infrastructure/persistence/mongo/models/DockerNetworkModel');
+            const { DockerNetwork } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerNetworkModel');
             const netDoc = await DockerNetwork.findById(container.network);
             if (netDoc) {
                 await this.containerService.connectNetwork(netDoc.networkId, newContainerInfo.Id);

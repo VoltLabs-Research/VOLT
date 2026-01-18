@@ -1,11 +1,11 @@
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { ChartConfiguration, ChartTypeRegistry } from 'chart.js';
-import { ChartDataPoint, ChartType, IChartExporter, IChartExportOptions } from '../../../domain/port/exporters/ChartExporter';
-import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
-import { SYS_BUCKETS } from '@/src/core/config/minio';
+import { ChartDataPoint, ChartType, IChartExporter, IChartExportOptions } from '@modules/trajectory/domain/port/exporters/ChartExporter';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { SYS_BUCKETS } from '@core/config/minio';
 import { inject, injectable } from 'tsyringe';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import getNestedValue from '@/src/shared/infrastructure/utilities/get-nested-value';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import getNestedValue from '@shared/infrastructure/utilities/get-nested-value';
 
 @injectable()
 export default class ChartExporter implements IChartExporter {

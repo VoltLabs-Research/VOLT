@@ -1,6 +1,6 @@
 import LammpsDumpParser from './LammpsDumpParser';
 import LammpsDataParser from './LammpsDataParser';
-import { ParseResult, FrameMetadata, ParseOptions } from '../../domain/port/ParserTypes';
+import { ParseResult, FrameMetadata, ParseOptions } from '@modules/trajectory/domain/port/ParserTypes';
 import { createReadStream } from 'fs';
 import { createInterface } from 'readline';
 

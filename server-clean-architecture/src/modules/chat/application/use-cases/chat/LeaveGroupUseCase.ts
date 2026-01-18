@@ -1,11 +1,11 @@
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/ports/Result";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
 import { inject, injectable } from 'tsyringe';
-import { CHAT_TOKENS } from "../../../infrastructure/di/ChatTokens";
-import { IChatRepository } from "../../../domain/port/IChatRepository";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { LeaveGroupInputDTO } from "../../dtos/chat/LeaveGroupDTO";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { LeaveGroupInputDTO } from '@modules/chat/application/dtos/chat/LeaveGroupDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export class LeaveGroupUseCase implements IUseCase<LeaveGroupInputDTO, null, ApplicationError> {

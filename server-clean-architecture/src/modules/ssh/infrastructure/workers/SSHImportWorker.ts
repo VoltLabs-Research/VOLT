@@ -1,15 +1,15 @@
 import "reflect-metadata";
-import '@/src/core/bootstrap/register-deps';
-import logger from '@/src/shared/infrastructure/logger';
-import { SSH_CONN_TOKENS } from '@/src/modules/ssh/infrastructure/di/SSHConnectionTokens';
-import { ISSHConnectionService } from '@/src/modules/ssh/domain/ports/ISSHConnectionService';
+import '@core/bootstrap/register-deps';
+import logger from '@shared/infrastructure/logger';
+import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { ISSHConnectionService } from '@modules/ssh/domain/ports/ISSHConnectionService';
 import { container } from 'tsyringe';
-import { ISSHConnectionRepository } from '../../domain/ports/ISSHConnectionRepository';
-import Job from '@/src/modules/jobs/domain/entities/Job';
-import BaseWorker from '@/src/shared/infrastructure/workers/BaseWorker';
+import { ISSHConnectionRepository } from '@modules/ssh/domain/ports/ISSHConnectionRepository';
+import Job from '@modules/jobs/domain/entities/Job';
+import BaseWorker from '@shared/infrastructure/workers/BaseWorker';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 export default class SSHImportWorker extends BaseWorker<Job> {
     private sshService!: ISSHConnectionService;

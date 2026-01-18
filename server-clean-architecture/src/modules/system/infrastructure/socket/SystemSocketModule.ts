@@ -1,9 +1,9 @@
 import { inject, singleton } from 'tsyringe';
-import BaseSocketModule from '@/src/modules/socket/infrastructure/gateway/BaseSocketModule';
-import { ISocketConnection } from '@/src/modules/socket/domain/ports/ISocketModule';
-import { SOCKET_TOKENS } from '@/src/modules/socket/infrastructure/di/SocketTokens';
-import logger from '@/src/shared/infrastructure/logger';
-import MetricsCollectorService from '../services/MetricsCollectorService';
+import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
+import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import logger from '@shared/infrastructure/logger';
+import MetricsCollectorService from '@modules/system/infrastructure/services/MetricsCollectorService';
 
 @singleton()
 export default class SystemSocketModule extends BaseSocketModule {

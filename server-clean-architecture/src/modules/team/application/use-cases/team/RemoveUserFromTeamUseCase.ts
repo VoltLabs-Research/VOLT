@@ -1,14 +1,14 @@
-import { ITeamRepository } from "../../../domain/ports/ITeamRepository";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { IUseCase } from "@/src/shared/application/IUseCase";
+import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from "../../../infrastructure/di/TeamTokens";
-import { RemoveUserFromTeamInputDTO } from "../../dtos/team/RemoveUserFromTeamDTO";
-import { AUTH_TOKENS } from "@/src/modules/auth/infrastructure/di/AuthTokens";
-import { IUserRepository } from "@/src/modules/auth/domain/ports/IUserRepository";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
-import { ITeamMemberRepository } from "../../../domain/ports/ITeamMemberRepository";
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { RemoveUserFromTeamInputDTO } from '@modules/team/application/dtos/team/RemoveUserFromTeamDTO';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
 
 // TODO: REFACTOR 
 @injectable()

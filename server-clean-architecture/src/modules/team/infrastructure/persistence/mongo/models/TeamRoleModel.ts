@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
-import { TeamRoleProps } from '@/src/modules/team/domain/entities/TeamRole';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
+import { TeamRoleProps } from '@modules/team/domain/entities/TeamRole';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 type TeamRoleRelations = 'team';
 

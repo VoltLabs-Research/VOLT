@@ -1,13 +1,13 @@
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { inject, injectable } from 'tsyringe';
-import { CHAT_TOKENS } from "../../../infrastructure/di/ChatTokens";
-import { TEAM_TOKENS } from "@/src/modules/team/infrastructure/di/TeamTokens";
-import { IChatRepository } from "../../../domain/port/IChatRepository";
-import { ITeamRepository } from "@/src/modules/team/domain/ports/ITeamRepository";
-import { CreateGroupChatInputDTO, CreateGroupChatOutputDTO } from "../../dtos/chat/CreateGroupChatDTO";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
+import { CreateGroupChatInputDTO, CreateGroupChatOutputDTO } from '@modules/chat/application/dtos/chat/CreateGroupChatDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO, CreateGroupChatOutputDTO, ApplicationError> {

@@ -1,12 +1,12 @@
-import { ISSHConnectionService, SSHFileEntry, DownloadProgress } from '../../domain/ports/ISSHConnectionService';
-import SSHConnection from '../../domain/entities/SSHConnection';
+import { ISSHConnectionService, SSHFileEntry, DownloadProgress } from '@modules/ssh/domain/ports/ISSHConnectionService';
+import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
 import { Client, SFTPWrapper } from 'ssh2';
 import { createWriteStream } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { pipeline } from 'node:stream/promises';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import logger from '@/src/shared/infrastructure/logger';
+import logger from '@shared/infrastructure/logger';
 
 interface CachedConnection {
     client: Client;

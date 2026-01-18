@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { IfStatementConditionType, IfStatementConditionHandler } from '@/src/modules/plugin/domain/entities/workflow/nodes/IfStatementNode';
-import { WorkflowNodeType, WorkflowNode } from '@/src/modules/plugin/domain/entities/workflow/WorkflowNode';
-import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@/src/modules/plugin/domain/ports/INodeRegistry';
-import { PLUGIN_TOKENS } from '../../../di/PluginTokens';
+import { IfStatementConditionType, IfStatementConditionHandler } from '@modules/plugin/domain/entities/workflow/nodes/IfStatementNode';
+import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@modules/plugin/domain/ports/INodeRegistry';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 @injectable()
 export default class IfStatementHandler implements INodeHandler{

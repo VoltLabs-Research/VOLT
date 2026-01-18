@@ -1,11 +1,11 @@
-import { ITrajectoryRepository } from "../../../domain/port/ITrajectoryRepository";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { IUseCase } from "@/src/shared/application/IUseCase";
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { TRAJECTORY_TOKENS } from "../../../infrastructure/di/TrajectoryTokens";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
-import { UpdateTrajectoryByIdInputDTO, UpdateTrajectoryByIdOutputDTO } from "../../dtos/trajectory/UpdateTrajectoryByIdDTO";
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { UpdateTrajectoryByIdInputDTO, UpdateTrajectoryByIdOutputDTO } from '@modules/trajectory/application/dtos/trajectory/UpdateTrajectoryByIdDTO';
 
 @injectable()
 export default class UpdateTrajectoryByIdUseCase implements IUseCase<UpdateTrajectoryByIdInputDTO, UpdateTrajectoryByIdOutputDTO, ApplicationError>{

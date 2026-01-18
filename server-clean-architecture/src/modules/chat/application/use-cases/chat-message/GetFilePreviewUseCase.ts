@@ -1,14 +1,14 @@
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { inject, injectable } from "tsyringe";
-import { GetFilePreviewInputDTO, GetFilePreviewOutputDTO } from "../../dtos/chat-message/GetFilePreviewDTO";
-import { IChatMessageRepository } from "../../../domain/port/IChatMessageRepository";
-import { IStorageService } from "@/src/shared/domain/ports/IStorageService";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
-import { SYS_BUCKETS } from "@/src/core/config/minio";
-import { CHAT_TOKENS } from "../../../infrastructure/di/ChatTokens";
-import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { inject, injectable } from 'tsyringe';
+import { GetFilePreviewInputDTO, GetFilePreviewOutputDTO } from '@modules/chat/application/dtos/chat-message/GetFilePreviewDTO';
+import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRepository';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { SYS_BUCKETS } from '@core/config/minio';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
 @injectable()
 export class GetFilePreviewUseCase implements IUseCase<GetFilePreviewInputDTO, GetFilePreviewOutputDTO, ApplicationError> {

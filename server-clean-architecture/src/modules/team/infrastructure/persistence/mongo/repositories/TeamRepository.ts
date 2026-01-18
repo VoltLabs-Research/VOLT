@@ -1,13 +1,13 @@
-import { ITeamRepository } from "@/src/modules/team/domain/ports/ITeamRepository";
-import Team, { TeamProps } from '../../../../domain/entities/Team';
-import TeamModel, { TeamDocument } from '../models/TeamModel';
-import TeamMemberModel from "../models/TeamMemberModel";
-import teamMapper from "../mappers/TeamMapper";
-import { injectable, inject } from "tsyringe";
-import { MongooseBaseRepository } from "@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository";
-import { IEventBus } from "@/src/shared/application/events/IEventBus";
-import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
-import TeamDeletedEvent from "../../../../domain/events/TeamDeletedEvent";
+import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
+import Team, { TeamProps } from '@modules/team/domain/entities/Team';
+import TeamModel, { TeamDocument } from '@modules/team/infrastructure/persistence/mongo/models/TeamModel';
+import TeamMemberModel from '@modules/team/infrastructure/persistence/mongo/models/TeamMemberModel';
+import teamMapper from '@modules/team/infrastructure/persistence/mongo/mappers/TeamMapper';
+import { injectable, inject } from 'tsyringe';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
 
 @injectable()
 export default class TeamRepository

@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { UploadVFSFileInputDTO, UploadVFSFileOutputDTO } from '../../dtos/vfs/VFSDTOs';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { UploadVFSFileInputDTO, UploadVFSFileOutputDTO } from '@modules/trajectory/application/dtos/vfs/VFSDTOs';
 
 export interface IVFSService {
     uploadFile(trajectoryId: string, path: string, buffer: Buffer): Promise<string>;

@@ -1,10 +1,10 @@
 import { Response, NextFunction } from 'express';
 import { container } from 'tsyringe';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
-import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
-import HasAccessUseCase from '../../../application/use-cases/team/HasAccessUseCase';
-import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
-import logger from '@/src/shared/infrastructure/logger';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import HasAccessUseCase from '@modules/team/application/use-cases/team/HasAccessUseCase';
+import BaseResponse from '@shared/infrastructure/http/BaseResponse';
+import logger from '@shared/infrastructure/logger';
 
 export const checkTeamMembership = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const teamId = req.params.teamId;

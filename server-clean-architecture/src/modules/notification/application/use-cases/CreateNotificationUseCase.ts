@@ -1,10 +1,10 @@
-import { INotificationRepository } from "../../domain/port/INotificationRepository";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { IUseCase } from "@/src/shared/application/IUseCase";
+import { INotificationRepository } from '@modules/notification/domain/port/INotificationRepository';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { NOTIFICATION_TOKENS } from "../../infrastructure/di/NotificationTokens";
-import { CreateNotificationInputDTO, CreateNotificationOutputDTO } from "../dtos/CreateNotificationDTO";
+import { NOTIFICATION_TOKENS } from '@modules/notification/infrastructure/di/NotificationTokens';
+import { CreateNotificationInputDTO, CreateNotificationOutputDTO } from '@modules/notification/application/dtos/CreateNotificationDTO';
 
 @injectable()
 export default class CreateNotificationUseCase implements IUseCase<CreateNotificationInputDTO, CreateNotificationOutputDTO, ApplicationError> {

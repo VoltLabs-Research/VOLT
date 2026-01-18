@@ -1,7 +1,7 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { ChatProps } from '@/src/modules/chat/domain/entities/Chat';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
-import { ValidationCodes } from '@/src/core/constants/validation-codes';
+import { ChatProps } from '@modules/chat/domain/entities/Chat';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import { ValidationCodes } from '@core/constants/validation-codes';
 
 type ChatRelations = 'participants' | 'team' | 'messages' | 'admins' | 'createdBy' | 'lastMessage';
 export interface ChatDocument extends Persistable<ChatProps, ChatRelations>, Document{}

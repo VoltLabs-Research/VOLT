@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import GetTrajectoriesByTeamIdUseCase from '@/src/modules/trajectory/application/use-cases/trajectory/GetTrajectoriesByTeamIdUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import GetTrajectoriesByTeamIdUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoriesByTeamIdUseCase';
 
 @injectable()
 export default class GetTrajectoriesByTeamIdController extends BaseController<GetTrajectoriesByTeamIdUseCase> {

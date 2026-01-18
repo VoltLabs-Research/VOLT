@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { GetRasterMetadataOutputDTO } from '../dtos/RasterDTOs';
-import { IRasterService } from '../../domain/ports/IRasterService';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { GetRasterMetadataOutputDTO } from '@modules/raster/application/dtos/RasterDTOs';
+import { IRasterService } from '@modules/raster/domain/ports/IRasterService';
 
-import { RASTER_TOKENS } from '../../infrastructure/di/RasterTokens';
+import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 
 @injectable()
 export class GetRasterMetadataUseCase implements IUseCase<string, GetRasterMetadataOutputDTO> {

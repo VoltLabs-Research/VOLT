@@ -1,7 +1,7 @@
-import { injectable } from "tsyringe";
-import { IWorkflowValidator, ValidationResult } from "../../../domain/ports/INodeRegistry";
-import { WorkflowNodeType, WorkflowNode } from "../../../domain/entities/workflow/WorkflowNode";
-import Workflow from "../../../domain/entities/workflow/Workflow";
+import { injectable } from 'tsyringe';
+import { IWorkflowValidator, ValidationResult } from '@modules/plugin/domain/ports/INodeRegistry';
+import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
 
 @injectable()
 export default class WorkflowValidator implements IWorkflowValidator{

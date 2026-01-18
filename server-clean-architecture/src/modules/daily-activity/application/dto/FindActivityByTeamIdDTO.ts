@@ -1,4 +1,4 @@
-import { DailyActivityProps } from "../../domain/entities/DailyActivity";
+import { DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
 
 export interface FindActivityByTeamIdInputDTO{
     teamId: string;

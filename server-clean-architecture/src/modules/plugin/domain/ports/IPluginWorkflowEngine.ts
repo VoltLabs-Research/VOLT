@@ -1,5 +1,5 @@
-import Plugin from "../entities/Plugin";
-import { Exporter } from "../entities/workflow/nodes/ExportNode";
+import Plugin from '@modules/plugin/domain/entities/Plugin';
+import { Exporter } from '@modules/plugin/domain/entities/workflow/nodes/ExportNode';
 
 /**
  * Configuration options for the workflow execution context.

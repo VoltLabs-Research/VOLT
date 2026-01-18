@@ -1,13 +1,13 @@
 import { injectable, inject } from 'tsyringe';
-import { WorkflowNodeType, WorkflowNode } from '@/src/modules/plugin/domain/entities/workflow/WorkflowNode';
-import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@/src/modules/plugin/domain/ports/INodeRegistry';
-import { PLUGIN_TOKENS } from '../../../di/PluginTokens';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { IPluginBinaryCacheService } from '@/src/modules/plugin/domain/ports/IPluginBinaryCacheService';
-import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
-import { IProcessExecutorService } from '@/src/modules/plugin/domain/ports/IProcessExecutorService';
+import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@modules/plugin/domain/ports/INodeRegistry';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IPluginBinaryCacheService } from '@modules/plugin/domain/ports/IPluginBinaryCacheService';
+import { ITempFileService } from '@shared/domain/ports/ITempFileService';
+import { IProcessExecutorService } from '@modules/plugin/domain/ports/IProcessExecutorService';
 import path from 'node:path';
-import logger from '@/src/shared/infrastructure/logger';
+import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class EntrypointHandler implements INodeHandler{

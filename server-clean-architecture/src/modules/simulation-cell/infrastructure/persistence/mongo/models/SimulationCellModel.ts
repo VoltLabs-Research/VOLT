@@ -1,6 +1,6 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { SimulationCellProps, SimulationCellDims, SimulationCellGeometry } from '@/src/modules/simulation-cell/domain/entities/SimulationCell';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
+import { SimulationCellProps, SimulationCellDims, SimulationCellGeometry } from '@modules/simulation-cell/domain/entities/SimulationCell';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 type SimulationCellRelations = 'team' | 'trajectory';
 

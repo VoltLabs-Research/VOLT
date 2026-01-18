@@ -1,6 +1,6 @@
-import ExposureMeta, { ExposureMetaProps } from "@/src/modules/plugin/domain/entities/ExposureMeta";
-import { ExposureMetaDocument } from "../models/ExposureMetaModel";
-import { BaseMapper } from "@/src/shared/infrastructure/persistence/mongo/MongoBaseMapper";
+import ExposureMeta, { ExposureMetaProps } from '@modules/plugin/domain/entities/ExposureMeta';
+import { ExposureMetaDocument } from '@modules/plugin/infrastructure/persistence/mongo/models/ExposureMetaModel';
+import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
 
 class ExposureMetaMapper extends BaseMapper<ExposureMeta, ExposureMetaProps, ExposureMetaDocument>{
     constructor(){

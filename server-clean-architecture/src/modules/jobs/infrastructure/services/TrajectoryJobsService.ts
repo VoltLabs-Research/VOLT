@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { JOBS_TOKENS } from '../di/JobsTokens';
-import { IJobRepository } from '../../domain/ports/IJobRepository';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
 
 interface BaseJob {
     jobId: string;

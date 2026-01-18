@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { Response, NextFunction } from 'express';
-import { ListApiTrackerUseCase } from '@/src/modules/api-tracker/application/use-cases/ListApiTrackerUseCase';
-import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { ListApiTrackerUseCase } from '@modules/api-tracker/application/use-cases/ListApiTrackerUseCase';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
 @injectable()
 export class ListApiTrackerController {

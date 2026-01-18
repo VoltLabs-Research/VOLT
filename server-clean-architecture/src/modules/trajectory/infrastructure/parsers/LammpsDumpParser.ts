@@ -1,6 +1,6 @@
 import path from 'path';
-import nativeStats from '../native/NativeStats';
-import { ParseResult, FrameMetadata, ParseOptions } from '../../domain/port/ParserTypes';
+import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
+import { ParseResult, FrameMetadata, ParseOptions } from '@modules/trajectory/domain/port/ParserTypes';
 
 interface NativeDumpResult {
     positions: Float32Array;

@@ -1,13 +1,13 @@
 import { createReadStream } from 'node:fs';
 import { unlink } from 'node:fs/promises';
-import { SYS_BUCKETS } from '@/src/core/config/minio';
-import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
+import { SYS_BUCKETS } from '@core/config/minio';
+import { ITempFileService } from '@shared/domain/ports/ITempFileService';
 import { inject, injectable } from 'tsyringe';
-import { SHARED_TOKENS } from '../../../../../shared/infrastructure/di/SharedTokens';
-import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
-import nativeExporter from '../../native/NativeExporter';
-import TrajectoryParserFactory from '../../parsers/TrajectoryParserFactory';
-import { GradientType, AtomsGroupedByType, IAtomisticExporter } from '../../../domain/port/exporters/AtomisticExporter';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import nativeExporter from '@modules/trajectory/infrastructure/native/NativeExporter';
+import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
+import { GradientType, AtomsGroupedByType, IAtomisticExporter } from '@modules/trajectory/domain/port/exporters/AtomisticExporter';
 
 @injectable()
 export default class AtomisticExporter implements IAtomisticExporter {

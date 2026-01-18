@@ -1,4 +1,4 @@
-import { ExportMaterial } from "./ExportMaterial";
+import { ExportMaterial } from './ExportMaterial';
 
 export interface ProcessedDislocationGeometry {
     positions: Float32Array;

@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import UpdateAccountUseCase from '../../../application/use-cases/UpdateAccountUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import UpdateAccountUseCase from '@modules/auth/application/use-cases/UpdateAccountUseCase';
 
 @injectable()
 export default class UpdateMyAccountController extends BaseController<UpdateAccountUseCase> {

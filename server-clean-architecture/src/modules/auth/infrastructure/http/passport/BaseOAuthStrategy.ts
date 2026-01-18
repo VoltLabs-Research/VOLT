@@ -1,7 +1,7 @@
-import OAuthLoginUseCase from "../../../application/use-cases/OAuthLoginUseCase";
-import { OAuthProvider } from "../../../domain/entities/User";
-import { AuthenticatedRequest } from "@/src/shared/infrastructure/http/middleware/authentication";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
+import OAuthLoginUseCase from '@modules/auth/application/use-cases/OAuthLoginUseCase';
+import { OAuthProvider } from '@modules/auth/domain/entities/User';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 export interface OAuthMappedProfile{
     email: string;

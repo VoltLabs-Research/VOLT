@@ -1,12 +1,12 @@
-import { ITeamRoleRepository } from "../../../domain/ports/ITeamRoleRepository";
-import { ITeamMemberRepository } from "../../../domain/ports/ITeamMemberRepository";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { injectable, inject } from "tsyringe";
-import { TEAM_TOKENS } from "../../../infrastructure/di/TeamTokens";
-import { DeleteTeamRoleByIdInputDTO, DeleteTeamRoleByIdOutputDTO } from "../../dtos/team-role/DeleteTeamRoleByIdDTO";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
+import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
+import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { injectable, inject } from 'tsyringe';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { DeleteTeamRoleByIdInputDTO, DeleteTeamRoleByIdOutputDTO } from '@modules/team/application/dtos/team-role/DeleteTeamRoleByIdDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRoleByIdInputDTO, DeleteTeamRoleByIdOutputDTO, ApplicationError>{

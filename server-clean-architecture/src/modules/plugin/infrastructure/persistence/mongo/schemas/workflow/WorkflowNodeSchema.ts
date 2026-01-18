@@ -1,7 +1,7 @@
-import { ValidationCodes } from "@/src/core/constants/validation-codes";
-import { WorkflowNodeType } from "@/src/modules/plugin/domain/entities/workflow/WorkflowNode";
-import { PositionSchema } from "./PositionSchema";
-import { NodeDataSchema } from "./NodeDataSchema";
+import { ValidationCodes } from '@core/constants/validation-codes';
+import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { PositionSchema } from './PositionSchema';
+import { NodeDataSchema } from './NodeDataSchema';
 import { Schema } from 'mongoose';
 
 export const WorkflowNodeSchema = new Schema({

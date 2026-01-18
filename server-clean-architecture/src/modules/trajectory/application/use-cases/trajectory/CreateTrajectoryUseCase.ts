@@ -1,12 +1,12 @@
 import { injectable, inject } from 'tsyringe';
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { TRAJECTORY_TOKENS } from "../../../infrastructure/di/TrajectoryTokens";
-import { CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO } from "../../dtos/trajectory/CreateTrajectoryDTO";
-import { ITrajectoryRepository } from "../../../domain/port/ITrajectoryRepository";
-import { ITrajectoryBackgroundProcessor } from "../../../domain/port/ITrajectoryBackgroundProcessor";
-import { TrajectoryStatus } from "../../../domain/entities/Trajectory";
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO } from '@modules/trajectory/application/dtos/trajectory/CreateTrajectoryDTO';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import { ITrajectoryBackgroundProcessor } from '@modules/trajectory/domain/port/ITrajectoryBackgroundProcessor';
+import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
 
 @injectable()
 export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO, ApplicationError> {

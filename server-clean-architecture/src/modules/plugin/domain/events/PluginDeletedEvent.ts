@@ -1,6 +1,6 @@
-import { IDomainEvent } from '@/src/shared/application/events/IDomainEvent';
+import { IDomainEvent } from '@shared/application/events/IDomainEvent';
 import { v4 } from 'uuid';
-import Workflow from '../entities/workflow/Workflow';
+import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
 
 export interface PluginDeletedEventPayload {
     pluginId: string;

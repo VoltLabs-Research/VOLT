@@ -1,13 +1,13 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { GetNodeSchemasOutputDTO } from '../../dtos/plugin/GetNodeSchemasDTO';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { GetNodeSchemasOutputDTO } from '@modules/plugin/application/dtos/plugin/GetNodeSchemasDTO';
 
 export interface INodeRegistryService {
     getAllSchemas(): Record<string, any>;
 }
 
-import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 @injectable()
 export class GetNodeSchemasUseCase implements IUseCase<void, GetNodeSchemasOutputDTO> {

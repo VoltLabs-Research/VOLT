@@ -1,9 +1,9 @@
 import { injectable } from 'tsyringe';
-import { ITempFileService, TempFileOptions, DeleteOptions } from '../../domain/ports/ITempFileService';
+import { ITempFileService, TempFileOptions, DeleteOptions } from '@shared/domain/ports/ITempFileService';
 import { v4 } from 'uuid';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import logger from '../logger';
+import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class TempFileService implements ITempFileService{

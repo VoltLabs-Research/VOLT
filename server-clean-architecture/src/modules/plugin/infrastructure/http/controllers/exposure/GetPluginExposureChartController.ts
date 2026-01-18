@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import { GetPluginExposureChartUseCase } from '../../../../application/use-cases/exposure/GetPluginExposureChartUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { GetPluginExposureChartUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureChartUseCase';
 
 @injectable()
 export default class GetPluginExposureChartController extends BaseController<GetPluginExposureChartUseCase> {

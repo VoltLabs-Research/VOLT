@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { PaginatedResult } from '../../domain/ports/IBaseRepository';
+import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
 
 export default class BaseResponse{
     /**

@@ -1,5 +1,5 @@
-import { IBaseRepository } from "@/src/shared/domain/ports/IBaseRepository";
-import ChatMessage, { ChatMessageProps } from "../entities/ChatMessage";
+import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import ChatMessage, { ChatMessageProps } from '@modules/chat/domain/entities/ChatMessage';
 
 export interface IChatMessageRepository extends IBaseRepository<ChatMessage, ChatMessageProps>{
     /**

@@ -1,10 +1,10 @@
 import { container } from 'tsyringe';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@/src/shared/application/events/IEventBus';
-import { MarkTrajectoryQueuedHandler } from '../../application/events/MarkTrajectoryQueuedHandler';
-import TeamDeletedEventHandler from '../../application/events/TeamDeletedEventHandler';
-import SessionCompletedEventHandler from '../../application/events/SessionCompletedEventHandler';
-import JobStatusChangedEventHandler from '../../application/events/JobStatusChangedEventHandler';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { MarkTrajectoryQueuedHandler } from '@modules/trajectory/application/events/MarkTrajectoryQueuedHandler';
+import TeamDeletedEventHandler from '@modules/trajectory/application/events/TeamDeletedEventHandler';
+import SessionCompletedEventHandler from '@modules/trajectory/application/events/SessionCompletedEventHandler';
+import JobStatusChangedEventHandler from '@modules/trajectory/application/events/JobStatusChangedEventHandler';
 
 export const registerTrajectorySubscribers = async (): Promise<void> => {
     const eventBus = container.resolve<IEventBus>(SHARED_TOKENS.EventBus);

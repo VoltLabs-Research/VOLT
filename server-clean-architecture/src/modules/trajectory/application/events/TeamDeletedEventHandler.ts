@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import { TRAJECTORY_TOKENS } from '../../infrastructure/di/TrajectoryTokens';
-import { ITrajectoryRepository } from '../../domain/port/ITrajectoryRepository';
-import TeamDeletedEvent from '@/src/modules/team/domain/events/TeamDeletedEvent';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
 
 @injectable()
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent>{

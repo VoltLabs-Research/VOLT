@@ -1,6 +1,6 @@
 import { container } from 'tsyringe';
-import { RasterService } from '../services/RasterService';
-import RasterizerQueue from '../queues/RasterizerQueue';
+import { RasterService } from '@modules/raster/infrastructure/services/RasterService';
+import RasterizerQueue from '@modules/raster/infrastructure/queues/RasterizerQueue';
 import { RASTER_TOKENS } from './RasterTokens';
 
 export const registerRasterDependencies = (): void => {

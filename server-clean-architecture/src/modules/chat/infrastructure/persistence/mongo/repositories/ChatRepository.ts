@@ -1,12 +1,12 @@
-import { IChatRepository } from "@/src/modules/chat/domain/port/IChatRepository";
-import Chat, { ChatProps } from "@/src/modules/chat/domain/entities/Chat";
-import { MongooseBaseRepository } from "@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository";
-import ChatModel, { ChatDocument } from "../models/ChatModel";
-import chatMapper from "../mappers/ChatMapper";
-import { injectable, inject } from "tsyringe";
-import { IEventBus } from "@/src/shared/application/events/IEventBus";
-import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
-import ChatDeletedEvent from "../../../../domain/events/ChatDeletedEvent";
+import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import Chat, { ChatProps } from '@modules/chat/domain/entities/Chat';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import ChatModel, { ChatDocument } from '@modules/chat/infrastructure/persistence/mongo/models/ChatModel';
+import chatMapper from '@modules/chat/infrastructure/persistence/mongo/mappers/ChatMapper';
+import { injectable, inject } from 'tsyringe';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import ChatDeletedEvent from '@modules/chat/domain/events/ChatDeletedEvent';
 
 @injectable()
 export default class ChatRepository

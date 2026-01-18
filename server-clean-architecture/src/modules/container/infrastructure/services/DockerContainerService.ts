@@ -1,9 +1,9 @@
 import Docker, { Container } from 'dockerode';
 import { injectable } from 'tsyringe';
-import { IContainerService, ContainerStats } from '../../domain/ports/IContainerService';
-import logger from '@/src/shared/infrastructure/logger';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@/src/shared/domain/constants/ErrorCodes';
+import { IContainerService, ContainerStats } from '@modules/container/domain/ports/IContainerService';
+import logger from '@shared/infrastructure/logger';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
 
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
 

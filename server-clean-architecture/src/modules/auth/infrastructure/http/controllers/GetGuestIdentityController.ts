@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import GetGuestIdentityUseCase from '../../../application/use-cases/GetGuestIdentityUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import GetGuestIdentityUseCase from '@modules/auth/application/use-cases/GetGuestIdentityUseCase';
 
 @injectable()
 export default class GetGuestIdentityController extends BaseController<GetGuestIdentityUseCase> {

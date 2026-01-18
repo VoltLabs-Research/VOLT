@@ -1,14 +1,14 @@
-import { registerTeamSubscribers } from '@/src/modules/team/infrastructure/events/subscribers';
-import { registerChatSubscribers } from '@/src/modules/chat/infrastructure/events/subscribers';
-import { registerTrajectorySubscribers } from '@/src/modules/trajectory/infrastructure/events/subscribers';
-import { registerAnalysisSubscribers } from '@/src/modules/analysis/infrastructure/events/subscribers';
-import { registerSSHSubscribers } from '@/src/modules/ssh/infrastructure/events/subscribers';
-import { registerPluginSubscribers } from '@/src/modules/plugin/infrastructure/events/subscribers';
-import { registerNotificationSubscribers } from '@/src/modules/notification/infrastructure/events/subscribers';
-import { registerDailyActivitySubscribers } from '@/src/modules/daily-activity/infrastructure/events/subscribers';
-import { registerApiTrackerSubscribers } from '@/src/modules/api-tracker/infrastructure/events/subscribers';
-import { registerContainerSubscribers } from '@/src/modules/container/infrastructure/events/subscribers';
-import logger from '@/src/shared/infrastructure/logger';
+import { registerTeamSubscribers } from '@modules/team/infrastructure/events/subscribers';
+import { registerChatSubscribers } from '@modules/chat/infrastructure/events/subscribers';
+import { registerTrajectorySubscribers } from '@modules/trajectory/infrastructure/events/subscribers';
+import { registerAnalysisSubscribers } from '@modules/analysis/infrastructure/events/subscribers';
+import { registerSSHSubscribers } from '@modules/ssh/infrastructure/events/subscribers';
+import { registerPluginSubscribers } from '@modules/plugin/infrastructure/events/subscribers';
+import { registerNotificationSubscribers } from '@modules/notification/infrastructure/events/subscribers';
+import { registerDailyActivitySubscribers } from '@modules/daily-activity/infrastructure/events/subscribers';
+import { registerApiTrackerSubscribers } from '@modules/api-tracker/infrastructure/events/subscribers';
+import { registerContainerSubscribers } from '@modules/container/infrastructure/events/subscribers';
+import logger from '@shared/infrastructure/logger';
 
 /**
  * Central registration point for all event subscribers across modules.

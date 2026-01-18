@@ -1,5 +1,5 @@
-import { IBaseRepository } from "@/src/shared/domain/ports/IBaseRepository";
-import ListingRow, { ListingRowProps } from "../entities/ListingRow";
+import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import ListingRow, { ListingRowProps } from '@modules/plugin/domain/entities/ListingRow';
 
 export interface IListingRowRepository extends IBaseRepository<ListingRow, ListingRowProps>{
 

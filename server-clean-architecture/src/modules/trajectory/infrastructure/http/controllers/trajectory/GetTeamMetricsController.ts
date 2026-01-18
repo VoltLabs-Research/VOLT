@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { injectable } from 'tsyringe';
-import TrajectoryModel from '../../../persistence/mongo/models/TrajectoryModel';
-import PluginModel from '@/src/modules/plugin/infrastructure/persistence/mongo/models/PluginModel';
-import AnalysisModel from '@/src/modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
+import TrajectoryModel from '@modules/trajectory/infrastructure/persistence/mongo/models/TrajectoryModel';
+import PluginModel from '@modules/plugin/infrastructure/persistence/mongo/models/PluginModel';
+import AnalysisModel from '@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
 
 @injectable()
 export default class GetTeamMetricsController {

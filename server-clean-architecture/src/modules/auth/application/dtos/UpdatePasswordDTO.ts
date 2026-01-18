@@ -1,4 +1,4 @@
-import { UserProps } from "../../domain/entities/User";
+import { UserProps } from '@modules/auth/domain/entities/User';
 
 export interface UpdatePasswordInputDTO{
     userId: string;

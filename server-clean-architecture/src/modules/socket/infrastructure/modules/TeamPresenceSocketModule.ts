@@ -1,11 +1,11 @@
 import { inject, singleton } from 'tsyringe';
-import BaseSocketModule from '../gateway/BaseSocketModule';
-import { ISocketConnection } from '../../domain/ports/ISocketModule';
-import { SOCKET_TOKENS } from '../di/SocketTokens';
-import logger from '@/src/shared/infrastructure/logger';
+import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
+import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import logger from '@shared/infrastructure/logger';
 import { container } from 'tsyringe';
-import { DAILY_ACTIVITY_TOKENS } from '@/src/modules/daily-activity/infrastructure/di/DailyActivityTokens';
-import UpdateUserActivityUseCase from '@/src/modules/daily-activity/application/use-cases/UpdateUserActivityUseCase';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
+import UpdateUserActivityUseCase from '@modules/daily-activity/application/use-cases/UpdateUserActivityUseCase';
 
 interface TeamSession {
     teamId: string;

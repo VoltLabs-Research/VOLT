@@ -1,6 +1,6 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { AnalysisProps } from '@/src/modules/analysis/domain/entities/Analysis';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
+import { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 type AnalysisRelations = 'trajectory' | 'createdBy' | 'team';
 

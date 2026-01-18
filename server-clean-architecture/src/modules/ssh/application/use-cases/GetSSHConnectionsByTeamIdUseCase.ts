@@ -1,10 +1,10 @@
-import { Result } from '@/src/shared/domain/ports/Result';
-import { IUseCase } from '@/src/shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '../../infrastructure/di/SSHConnectionTokens';
-import { ISSHConnectionRepository } from '../../domain/ports/ISSHConnectionRepository';
-import { GetSSHConnectionsByTeamIdInputDTO, GetSSHConnectionsByTeamIdOutputDTO } from '../dtos/GetSSHConnectionsByTeamId';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
+import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { ISSHConnectionRepository } from '@modules/ssh/domain/ports/ISSHConnectionRepository';
+import { GetSSHConnectionsByTeamIdInputDTO, GetSSHConnectionsByTeamIdOutputDTO } from '@modules/ssh/application/dtos/GetSSHConnectionsByTeamId';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export class GetSSHConnectionsByTeamIdUseCase implements IUseCase<GetSSHConnectionsByTeamIdInputDTO, GetSSHConnectionsByTeamIdOutputDTO, ApplicationError> {

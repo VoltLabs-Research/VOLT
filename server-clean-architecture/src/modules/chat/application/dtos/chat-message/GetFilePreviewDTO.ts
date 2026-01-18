@@ -1,4 +1,4 @@
-import { ChatMessageMetadata } from "../../../domain/entities/ChatMessage";
+import { ChatMessageMetadata } from '@modules/chat/domain/entities/ChatMessage';
 
 export interface GetFilePreviewInputDTO{
     messageId: string;

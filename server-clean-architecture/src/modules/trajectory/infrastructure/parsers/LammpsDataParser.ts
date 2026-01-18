@@ -1,5 +1,5 @@
 import path from 'path';
-import { ParseResult, FrameMetadata, ParseOptions } from '../../domain/port/ParserTypes';
+import { ParseResult, FrameMetadata, ParseOptions } from '@modules/trajectory/domain/port/ParserTypes';
 import * as fs from 'fs';
 
 interface NativeDataResult {

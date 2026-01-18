@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import TeamDeletedEvent from '@/src/modules/team/domain/events/TeamDeletedEvent';
-import { DAILY_ACTIVITY_TOKENS } from '../../infrastructure/di/DailyActivityTokens';
-import { IDailyActivityRepository } from '../../domain/ports/IDailyActivityRepository';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
+import { IDailyActivityRepository } from '@modules/daily-activity/domain/ports/IDailyActivityRepository';
 
 @injectable()
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent>{

@@ -1,5 +1,5 @@
-import { IBaseRepository } from "@/src/shared/domain/ports/IBaseRepository";
-import Notification, { NotificationProps } from '../entities/Notification';
+import { IBaseRepository } from '@shared/domain/ports/IBaseRepository';
+import Notification, { NotificationProps } from '@modules/notification/domain/entities/Notification';
 
 export interface INotificationRepository extends IBaseRepository<Notification, NotificationProps>{
     /**

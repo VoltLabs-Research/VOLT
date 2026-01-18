@@ -1,13 +1,13 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { DeletePluginByIdInputDTO } from '../../dtos/plugin/DeletePluginByIdDTO';
-import { IPluginRepository } from '../../../domain/ports/IPluginRepository';
-import { IEventBus } from '@/src/shared/application/events/IEventBus';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { DeletePluginByIdInputDTO } from '@modules/plugin/application/dtos/plugin/DeletePluginByIdDTO';
+import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 @injectable()
 export class DeletePluginByIdUseCase implements IUseCase<DeletePluginByIdInputDTO, null, ApplicationError> {

@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import { DeleteBinaryUseCase } from '../../../../application/use-cases/plugin/DeleteBinaryUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { DeleteBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DeleteBinaryUseCase';
 
 @injectable()
 export default class DeleteBinaryController extends BaseController<DeleteBinaryUseCase> {

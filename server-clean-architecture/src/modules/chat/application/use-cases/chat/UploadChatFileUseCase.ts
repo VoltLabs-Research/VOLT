@@ -1,11 +1,11 @@
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/ports/Result";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
 import { inject, injectable } from 'tsyringe';
-import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
-import { IStorageService } from "@/src/shared/domain/ports/IStorageService";
-import { UploadChatFileInputDTO, UploadChatFileOutputDTO } from "../../dtos/chat/UploadChatFileDTO";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { SYS_BUCKETS } from "@/src/core/config/minio";
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { UploadChatFileInputDTO, UploadChatFileOutputDTO } from '@modules/chat/application/dtos/chat/UploadChatFileDTO';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { SYS_BUCKETS } from '@core/config/minio';
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
 

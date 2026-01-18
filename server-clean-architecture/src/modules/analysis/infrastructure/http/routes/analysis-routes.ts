@@ -1,10 +1,10 @@
-import { Router } from "express";
-import { container } from "tsyringe";
-import { protect } from "@/src/shared/infrastructure/http/middleware/authentication";
-import DeleteAnalysisByIdController from "../controllers/DeleteAnalysisByIdController";
-import GetAnalysesByTeamIdController from "../controllers/GetAnalysesByTeamIdController";
-import GetAnalysisByIdController from "../controllers/GetAnalysisByIdController";
-import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
+import { Router } from 'express';
+import { container } from 'tsyringe';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import DeleteAnalysisByIdController from '@modules/analysis/infrastructure/http/controllers/DeleteAnalysisByIdController';
+import GetAnalysesByTeamIdController from '@modules/analysis/infrastructure/http/controllers/GetAnalysesByTeamIdController';
+import GetAnalysisByIdController from '@modules/analysis/infrastructure/http/controllers/GetAnalysisByIdController';
+import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
 const deleteAnalysisByIdController = container.resolve(DeleteAnalysisByIdController);
 const getAnalysesByTeamIdController = container.resolve(GetAnalysesByTeamIdController);

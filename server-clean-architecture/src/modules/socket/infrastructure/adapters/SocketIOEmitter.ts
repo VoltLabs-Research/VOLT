@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { injectable } from 'tsyringe';
-import { ISocketEmitter } from '../../domain/ports/ISocketEmitter';
-import logger from '@/src/shared/infrastructure/logger';
+import { ISocketEmitter } from '@modules/socket/domain/ports/ISocketEmitter';
+import logger from '@shared/infrastructure/logger';
 
 /**
  * Handles all event emission through the Socket.IO server.

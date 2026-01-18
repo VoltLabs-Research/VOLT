@@ -1,5 +1,5 @@
-import { IDomainEvent } from "@/src/shared/application/events/IDomainEvent";
-import { v4 } from "uuid";
+import { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import { v4 } from 'uuid';
 
 export interface JobsAddedEventData {
     sessionId: string;

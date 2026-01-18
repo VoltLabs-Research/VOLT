@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { GetContainerByIdUseCase } from '../../../application/use-cases/GetContainerByIdUseCase';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
+import { GetContainerByIdUseCase } from '@modules/container/application/use-cases/GetContainerByIdUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
 
 @injectable()
 export default class GetContainerByIdController extends BaseController<GetContainerByIdUseCase> {

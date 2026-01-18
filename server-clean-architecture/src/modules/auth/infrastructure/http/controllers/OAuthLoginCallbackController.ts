@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { injectable } from 'tsyringe';
-import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
 @injectable()
 export default class OAuthLoginCallbackController{

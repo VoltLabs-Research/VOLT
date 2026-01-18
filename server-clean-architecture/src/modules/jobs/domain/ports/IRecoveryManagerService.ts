@@ -1,5 +1,5 @@
-import { JobDeserializer, RecoveryManagerConfig } from "../../infrastructure/services/RecoveryManagerService";
-import Job from "../entities/Job";
+import { JobDeserializer, RecoveryManagerConfig } from '@modules/jobs/infrastructure/services/RecoveryManagerService';
+import Job from '@modules/jobs/domain/entities/Job';
 
 export interface IRecoveryManagerService{
     initialize(

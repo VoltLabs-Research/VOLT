@@ -1,10 +1,10 @@
 import { Redis } from 'ioredis';
-import { IEventBus } from '../../application/events/IEventBus';
-import { IDomainEvent } from '../../application/events/IDomainEvent';
-import { IEventHandler } from '../../application/events/IEventHandler';
-import { createRedisClient } from '@/src/core/config/redis';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { createRedisClient } from '@core/config/redis';
 import { singleton } from 'tsyringe';
-import logger from '../logger';
+import logger from '@shared/infrastructure/logger';
 
 @singleton()
 export default class RedisEvent implements IEventBus{

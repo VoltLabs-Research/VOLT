@@ -1,7 +1,7 @@
 import { Schema } from 'mongoose';
-import { ValidationCodes } from '@/src/core/constants/validation-codes';
+import { ValidationCodes } from '@core/constants/validation-codes';
 import { WorkflowSchema } from './workflow/WorkflowSchema';
-import { PluginStatus } from '@/src/modules/plugin/domain/entities/Plugin';
+import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 
 export const PluginSchema = new Schema({
     team: {

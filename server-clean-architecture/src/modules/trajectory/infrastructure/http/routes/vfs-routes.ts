@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { container } from 'tsyringe';
 import multer from 'multer';
-import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
 
-import ListVFSDirectoryController from '../controllers/vfs/ListVFSDirectoryController';
-import GetVFSFileController from '../controllers/vfs/GetVFSFileController';
-import UploadVFSFileController from '../controllers/vfs/UploadVFSFileController';
-import DeleteVFSFileController from '../controllers/vfs/DeleteVFSFileController';
-import DownloadVFSArchiveController from '../controllers/vfs/DownloadVFSArchiveController';
+import ListVFSDirectoryController from '@modules/trajectory/infrastructure/http/controllers/vfs/ListVFSDirectoryController';
+import GetVFSFileController from '@modules/trajectory/infrastructure/http/controllers/vfs/GetVFSFileController';
+import UploadVFSFileController from '@modules/trajectory/infrastructure/http/controllers/vfs/UploadVFSFileController';
+import DeleteVFSFileController from '@modules/trajectory/infrastructure/http/controllers/vfs/DeleteVFSFileController';
+import DownloadVFSArchiveController from '@modules/trajectory/infrastructure/http/controllers/vfs/DownloadVFSArchiveController';
 
 const listVFSDirectoryController = container.resolve(ListVFSDirectoryController);
 const getVFSFileController = container.resolve(GetVFSFileController);

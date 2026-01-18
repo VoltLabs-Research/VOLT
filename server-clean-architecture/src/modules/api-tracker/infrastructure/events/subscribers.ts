@@ -1,9 +1,9 @@
 import { container } from 'tsyringe';
-import { IEventBus } from '@/src/shared/application/events/IEventBus';
-import { UserDeletedEventHandler } from '../../application/events/UserDeletedEventHandler';
-import logger from '@/src/shared/infrastructure/logger';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { UserDeletedEventHandler } from '@modules/api-tracker/application/events/UserDeletedEventHandler';
+import logger from '@shared/infrastructure/logger';
 
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
 export const registerApiTrackerSubscribers = async (): Promise<void> => {
     logger.info('@api-tracker: Registering event subscribers...');

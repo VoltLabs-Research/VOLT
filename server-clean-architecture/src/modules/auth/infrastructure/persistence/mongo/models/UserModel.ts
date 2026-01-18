@@ -1,7 +1,7 @@
 import mongoose, { Schema, Model, Document, Types } from 'mongoose';
 import validator from 'validator';
-import { ValidationCodes } from '../../../../../../core/constants/validation-codes';
-import { UserProps, OAuthProvider, UserRole } from '../../../../domain/entities/User';
+import { ValidationCodes } from '@core/constants/validation-codes';
+import { UserProps, OAuthProvider, UserRole } from '@modules/auth/domain/entities/User';
 
 export interface UserDocument extends Omit<UserProps, 'id'>, Document {
     _id: Types.ObjectId;

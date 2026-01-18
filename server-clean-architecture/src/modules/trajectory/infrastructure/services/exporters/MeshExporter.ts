@@ -1,9 +1,9 @@
-import { IStorageService } from "@/src/shared/domain/ports/IStorageService";
-import { SYS_BUCKETS } from "@/src/core/config/minio";
-import { injectable, inject } from "tsyringe";
-import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
-import { DefectMeshExportOptions, ProcessedMesh, Mesh, IMeshExporter } from "../../../domain/port/exporters/MeshExporter";
-import nativeExporter from "../../native/NativeExporter";
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { SYS_BUCKETS } from '@core/config/minio';
+import { injectable, inject } from 'tsyringe';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { DefectMeshExportOptions, ProcessedMesh, Mesh, IMeshExporter } from '@modules/trajectory/domain/port/exporters/MeshExporter';
+import nativeExporter from '@modules/trajectory/infrastructure/native/NativeExporter';
 
 @injectable()
 export default class MeshExporter implements IMeshExporter{

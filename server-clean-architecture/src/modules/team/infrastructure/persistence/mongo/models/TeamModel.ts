@@ -1,7 +1,7 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { ValidationCodes } from '@/src/core/constants/validation-codes';
-import { TeamProps } from '@/src/modules/team/domain/entities/Team';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
+import { ValidationCodes } from '@core/constants/validation-codes';
+import { TeamProps } from '@modules/team/domain/entities/Team';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 type TeamRelations = 'owner' | 'admins' | 'members' | 'invitations' | 'containers' | 'trajectories' | 'chats' | 'plugins';
 

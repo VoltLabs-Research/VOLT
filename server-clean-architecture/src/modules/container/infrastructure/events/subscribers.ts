@@ -1,9 +1,9 @@
 import { container } from 'tsyringe';
-import { IEventBus } from '@/src/shared/application/events/IEventBus';
-import { TeamDeletedEventHandler } from '../../application/events/TeamDeletedEventHandler';
-import logger from '@/src/shared/infrastructure/logger';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { TeamDeletedEventHandler } from '@modules/container/application/events/TeamDeletedEventHandler';
+import logger from '@shared/infrastructure/logger';
 
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
 export const registerContainerSubscribers = async (): Promise<void> => {
     logger.info('@container: Registering event subscribers...');

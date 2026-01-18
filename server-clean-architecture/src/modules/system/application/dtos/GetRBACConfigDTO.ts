@@ -1,3 +1,3 @@
-import { RBACConfig } from '../../domain/value-objects/RBACConfig';
+import { RBACConfig } from '@modules/system/domain/value-objects/RBACConfig';
 
 export type GetRBACConfigOutputDTO = RBACConfig;

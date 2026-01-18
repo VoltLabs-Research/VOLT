@@ -1,5 +1,5 @@
 import { Schema } from 'mongoose';
-import { ValidationCodes } from '@/src/core/constants/validation-codes';
+import { ValidationCodes } from '@core/constants/validation-codes';
 
 export const ModifierDataSchema = new Schema({
     name: {

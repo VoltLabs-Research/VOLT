@@ -1,6 +1,6 @@
 import { Schema } from 'mongoose';
-import { ValidationCodes } from '@/src/core/constants/validation-codes';
-import { ArgumentType } from '@/src/modules/plugin/domain/entities/workflow/nodes/ArgumentNode';
+import { ValidationCodes } from '@core/constants/validation-codes';
+import { ArgumentType } from '@modules/plugin/domain/entities/workflow/nodes/ArgumentNode';
 
 export const ArgumentOptionSchema = new Schema({
     key: {

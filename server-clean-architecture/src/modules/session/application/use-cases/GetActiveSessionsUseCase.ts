@@ -1,9 +1,9 @@
-import { ISessionRepository } from "../../domain/ports/ISessionRepository";
-import { Result } from "../../../../shared/domain/ports/Result";
-import ApplicationError from "../../../../shared/application/errors/ApplicationErrors";
-import { IUseCase } from "../../../../shared/application/IUseCase";
-import { GetActiveSessionsInputDTO, GetActiveSessionsOutputDTO } from "../dtos/GetActiveSessionsDTO";
-import { SESSION_TOKENS } from "../../infrastructure/di/SessionTokens";
+import { ISessionRepository } from '@modules/session/domain/ports/ISessionRepository';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { GetActiveSessionsInputDTO, GetActiveSessionsOutputDTO } from '@modules/session/application/dtos/GetActiveSessionsDTO';
+import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
 import { injectable, inject } from 'tsyringe';
 
 @injectable()

@@ -1,11 +1,11 @@
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { inject, injectable } from "tsyringe";
-import { CHAT_TOKENS } from "../../../infrastructure/di/ChatTokens";
-import { IChatMessageRepository } from "../../../domain/port/IChatMessageRepository";
-import { EditMessageInputDTO, EditMessageOutputDTO } from "../../dtos/chat-message/EditMessageDTO";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { inject, injectable } from 'tsyringe';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRepository';
+import { EditMessageInputDTO, EditMessageOutputDTO } from '@modules/chat/application/dtos/chat-message/EditMessageDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, EditMessageOutputDTO, ApplicationError> {

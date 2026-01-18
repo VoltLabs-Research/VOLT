@@ -1,17 +1,17 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
-import { TEAM_TOKENS } from '../../../infrastructure/di/TeamTokens';
-import { AUTH_TOKENS } from '@/src/modules/auth/infrastructure/di/AuthTokens';
-import { ITeamInvitationRepository } from '../../../domain/ports/ITeamInvitationRepository';
-import { ITeamRepository } from '../../../domain/ports/ITeamRepository';
-import { IUserRepository } from '@/src/modules/auth/domain/ports/IUserRepository';
-import { SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO } from '../../dtos/team-invitation/SendTeamInvitationDTO';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { ITeamInvitationRepository } from '@modules/team/domain/ports/ITeamInvitationRepository';
+import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
+import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import { SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO } from '@modules/team/application/dtos/team-invitation/SendTeamInvitationDTO';
 import crypto from 'crypto';
-import { TeamInvitationStatus } from '../../../domain/entities/TeamInvitation';
-import { ITeamRoleRepository } from '../../../domain/ports/ITeamRoleRepository';
+import { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
+import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
 
 @injectable()
 export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO, ApplicationError> {

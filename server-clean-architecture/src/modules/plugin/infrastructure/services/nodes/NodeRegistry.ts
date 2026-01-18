@@ -1,7 +1,7 @@
 import { singleton } from 'tsyringe';
-import { INodeRegistry, INodeHandler, ExecutionContext, NodeOutputSchema } from '../../../domain/ports/INodeRegistry';
-import { WorkflowNodeType, WorkflowNode } from '../../../domain/entities/workflow/WorkflowNode';
-import logger from '@/src/shared/infrastructure/logger';
+import { INodeRegistry, INodeHandler, ExecutionContext, NodeOutputSchema } from '@modules/plugin/domain/ports/INodeRegistry';
+import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import logger from '@shared/infrastructure/logger';
 
 @singleton()
 export default class NodeRegistry implements INodeRegistry{

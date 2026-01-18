@@ -1,6 +1,6 @@
 import { Schema } from 'mongoose';
-import { ValidationCodes } from '@/src/core/constants/validation-codes';
-import { ContextSource } from '@/src/modules/plugin/domain/entities/workflow/nodes/ContextNode';
+import { ValidationCodes } from '@core/constants/validation-codes';
+import { ContextSource } from '@modules/plugin/domain/entities/workflow/nodes/ContextNode';
 
 export const ContextDataSchema = new Schema({
     source: {

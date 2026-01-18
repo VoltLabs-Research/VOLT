@@ -1,6 +1,6 @@
-import { injectable, inject, delay } from "tsyringe";
-import { BaseController } from "@/src/shared/infrastructure/http/BaseController";
-import { GetUserChatsUseCase } from "@/src/modules/chat/application/use-cases/chat/GetUserChatsUseCase";
+import { injectable, inject, delay } from 'tsyringe';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { GetUserChatsUseCase } from '@modules/chat/application/use-cases/chat/GetUserChatsUseCase';
 
 @injectable()
 export default class GetUserChatsController extends BaseController<GetUserChatsUseCase> {

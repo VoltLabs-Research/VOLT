@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { Resource } from '@/src/core/constants/resources';
-import { Action, getPermission } from '@/src/core/constants/permissions';
-import { accessControlService } from '@/src/shared/infrastructure/services/AccessControlService';
-import { IAccessControlSubject } from '@/src/shared/domain/ports/IAccessControlService';
+import { Resource } from '@core/constants/resources';
+import { Action, getPermission } from '@core/constants/permissions';
+import { accessControlService } from '@shared/infrastructure/services/AccessControlService';
+import { IAccessControlSubject } from '@shared/domain/ports/IAccessControlService';
 
 /**
  * Authorization middleware factory.

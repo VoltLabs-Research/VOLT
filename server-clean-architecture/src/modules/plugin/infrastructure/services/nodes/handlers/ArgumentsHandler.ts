@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from '@/src/modules/plugin/domain/ports/INodeRegistry';
-import { ITrajectoryDumpStorageService } from '@/src/modules/trajectory/domain/port/ITrajectoryDumpStorageService';
-import { TRAJECTORY_TOKENS } from '@/src/modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { WorkflowNode, WorkflowNodeType } from '@/src/modules/plugin/domain/entities/workflow/WorkflowNode';
+import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from '@modules/plugin/domain/ports/INodeRegistry';
+import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { WorkflowNode, WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 
 @injectable()
 export default class ArgumentsHandler implements INodeHandler{

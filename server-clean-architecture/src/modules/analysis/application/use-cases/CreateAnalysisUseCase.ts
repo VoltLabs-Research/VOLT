@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { CreateAnalysisInputDTO, CreateAnalysisOutputDTO } from '../dtos/CreateAnalysisDTO';
-import { IAnalysisRepository } from '../../domain/port/IAnalysisRepository';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { CreateAnalysisInputDTO, CreateAnalysisOutputDTO } from '@modules/analysis/application/dtos/CreateAnalysisDTO';
+import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 
 @injectable()
 export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, CreateAnalysisOutputDTO> {

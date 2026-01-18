@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { IPasswordHasher } from '../../domain/ports/IPasswordHasher';
+import { IPasswordHasher } from '@modules/auth/domain/ports/IPasswordHasher';
 import { injectable } from 'tsyringe';
 
 @injectable()

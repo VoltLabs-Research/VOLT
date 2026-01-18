@@ -1,14 +1,14 @@
 import { injectable, inject } from 'tsyringe';
-import Job, { JobStatus } from '../../domain/entities/Job';
-import { IJobHandlerService } from '../../domain/ports/IJobHandlerService';
-import { IJobRepository } from '../../domain/ports/IJobRepository';
-import { SHARED_TOKENS } from '../../../../shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '../../../../shared/application/events/IEventBus';
-import { JOBS_TOKENS } from '../di/JobsTokens';
-import JobStatusChangedEvent from '../../application/events/JobStatusChangedEvent';
-import JobCompletedEvent from '../../application/events/JobCompletedEvent';
-import JobFailedEvent from '../../application/events/JobFailedEvent';
-import JobIncrementedEvent from '../../application/events/JobIncrementedEvent';
+import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { IJobHandlerService } from '@modules/jobs/domain/ports/IJobHandlerService';
+import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import JobStatusChangedEvent from '@modules/jobs/application/events/JobStatusChangedEvent';
+import JobCompletedEvent from '@modules/jobs/application/events/JobCompletedEvent';
+import JobFailedEvent from '@modules/jobs/application/events/JobFailedEvent';
+import JobIncrementedEvent from '@modules/jobs/application/events/JobIncrementedEvent';
 
 export interface JobHandlerConfig {
     queueName: string;

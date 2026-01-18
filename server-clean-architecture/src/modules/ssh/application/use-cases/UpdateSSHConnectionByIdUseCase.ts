@@ -1,11 +1,11 @@
-import { Result } from '@/src/shared/domain/ports/Result';
-import { IUseCase } from '@/src/shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { IUseCase } from '@shared/application/IUseCase';
 import { injectable, inject } from 'tsyringe';
-import { SSH_CONN_TOKENS } from '../../infrastructure/di/SSHConnectionTokens';
-import { ISSHConnectionRepository } from '../../domain/ports/ISSHConnectionRepository';
-import { UpdateSSHConnectionByIdInputDTO, UpdateSSHConnectionByIdOutputDTO } from '../dtos/UpdateSSHConnectionByIdDTO';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
+import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTokens';
+import { ISSHConnectionRepository } from '@modules/ssh/domain/ports/ISSHConnectionRepository';
+import { UpdateSSHConnectionByIdInputDTO, UpdateSSHConnectionByIdOutputDTO } from '@modules/ssh/application/dtos/UpdateSSHConnectionByIdDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnectionByIdInputDTO, UpdateSSHConnectionByIdOutputDTO, ApplicationError> {

@@ -1,9 +1,9 @@
 import { injectable } from 'tsyringe';
-import { MongooseBaseRepository } from '@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository';
-import { IChatMessageRepository } from '@/src/modules/chat/domain/port/IChatMessageRepository';
-import ChatMessage, { ChatMessageProps } from '@/src/modules/chat/domain/entities/ChatMessage';
-import ChatMessageModel, { ChatMessageDocument } from '../models/ChatMessageModel';
-import chatMessageMapper from '../mappers/ChatMessageMapper';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRepository';
+import ChatMessage, { ChatMessageProps } from '@modules/chat/domain/entities/ChatMessage';
+import ChatMessageModel, { ChatMessageDocument } from '@modules/chat/infrastructure/persistence/mongo/models/ChatMessageModel';
+import chatMessageMapper from '@modules/chat/infrastructure/persistence/mongo/mappers/ChatMessageMapper';
 
 @injectable()
 export default class ChatMessageRepository

@@ -1,8 +1,8 @@
 import { Response } from 'express';
-import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
-import { UseCaseInput, UseCaseInstance } from '@/src/shared/application/IUseCase';
-import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
-import { HttpStatus } from '@/src/shared/infrastructure/http/HttpStatus';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { UseCaseInput, UseCaseInstance } from '@shared/application/IUseCase';
+import BaseResponse from '@shared/infrastructure/http/BaseResponse';
+import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 
 export abstract class BaseController<TUseCase extends UseCaseInstance> {
     constructor(

@@ -1,12 +1,12 @@
-import { ITrajectoryRepository } from "@/src/modules/trajectory/domain/port/ITrajectoryRepository";
-import Trajectory, { TrajectoryProps } from "@/src/modules/trajectory/domain/entities/Trajectory";
-import TrajectoryModel, { TrajectoryDocument } from "../models/TrajectoryModel";
-import trajectoryMapper from '../mappers/TrajectoryMapper';
-import { MongooseBaseRepository } from "@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository";
-import { injectable, inject } from "tsyringe";
-import { IEventBus } from "@/src/shared/application/events/IEventBus";
-import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
-import TrajectoryDeletedEvent from "../../../../domain/events/TrajectoryDeletedEvent";
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import Trajectory, { TrajectoryProps } from '@modules/trajectory/domain/entities/Trajectory';
+import TrajectoryModel, { TrajectoryDocument } from '@modules/trajectory/infrastructure/persistence/mongo/models/TrajectoryModel';
+import trajectoryMapper from '@modules/trajectory/infrastructure/persistence/mongo/mappers/TrajectoryMapper';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import { injectable, inject } from 'tsyringe';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/TrajectoryDeletedEvent';
 
 @injectable()
 export default class TrajectoryRepository

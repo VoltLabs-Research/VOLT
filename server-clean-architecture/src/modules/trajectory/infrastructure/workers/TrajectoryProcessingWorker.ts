@@ -1,13 +1,13 @@
 import "reflect-metadata";
-import '@/src/core/bootstrap/register-deps';
-import BaseWorker from '@/src/shared/infrastructure/workers/BaseWorker';
-import logger from '@/src/shared/infrastructure/logger';
-import TrajectoryDumpStorageService from '../services/TrajectoryDumpStorageService';
-import AtomisticExporter from '../services/exporters/AtomisticExporter';
+import '@core/bootstrap/register-deps';
+import BaseWorker from '@shared/infrastructure/workers/BaseWorker';
+import logger from '@shared/infrastructure/logger';
+import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/TrajectoryDumpStorageService';
+import AtomisticExporter from '@modules/trajectory/infrastructure/services/exporters/AtomisticExporter';
 import { container } from 'tsyringe';
 import { performance } from 'node:perf_hooks';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
-import Job from '@/src/modules/jobs/domain/entities/Job';
+import { ErrorCodes } from '@core/constants/error-codes';
+import Job from '@modules/jobs/domain/entities/Job';
 
 export interface TrajectoryProcessingJobMetadata {
     trajectoryId: string;

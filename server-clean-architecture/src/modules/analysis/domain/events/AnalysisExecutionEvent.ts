@@ -1,4 +1,4 @@
-import { IDomainEvent } from "@/src/shared/application/events/IDomainEvent";
+import { IDomainEvent } from '@shared/application/events/IDomainEvent';
 
 export default class AnalysisRequestedEvent implements IDomainEvent {
     readonly name = 'analysis.requested';

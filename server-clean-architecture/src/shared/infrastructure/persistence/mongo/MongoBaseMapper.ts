@@ -1,5 +1,5 @@
-import { HydratedDocument } from "mongoose";
-import { IMapper } from "../IMapper";
+import { HydratedDocument } from 'mongoose';
+import { IMapper } from '@shared/infrastructure/persistence/IMapper';
 
 export abstract class BaseMapper<TDomain, TProps, TDocument>
     implements IMapper<TDomain, TProps, TDocument> {

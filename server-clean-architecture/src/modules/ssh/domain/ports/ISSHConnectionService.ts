@@ -1,4 +1,4 @@
-import SSHConnection from "../entities/SSHConnection";
+import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
 
 export interface SSHFileEntry{
     name: string;

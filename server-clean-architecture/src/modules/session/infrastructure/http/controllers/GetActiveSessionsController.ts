@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import GetActiveSessionsUseCase from '../../../application/use-cases/GetActiveSessionsUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import GetActiveSessionsUseCase from '@modules/session/application/use-cases/GetActiveSessionsUseCase';
 
 @injectable()
 export default class GetActiveSessionsController extends BaseController<GetActiveSessionsUseCase> {

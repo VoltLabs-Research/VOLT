@@ -1,6 +1,6 @@
-import { injectable, inject, delay } from "tsyringe";
-import { BaseController } from "@/src/shared/infrastructure/http/BaseController";
-import { UpdateGroupInfoUseCase } from "@/src/modules/chat/application/use-cases/chat/UpdateGroupInfoUseCase";
+import { injectable, inject, delay } from 'tsyringe';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { UpdateGroupInfoUseCase } from '@modules/chat/application/use-cases/chat/UpdateGroupInfoUseCase';
 
 @injectable()
 export default class UpdateGroupInfoController extends BaseController<UpdateGroupInfoUseCase> {

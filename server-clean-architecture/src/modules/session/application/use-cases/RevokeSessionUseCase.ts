@@ -1,10 +1,10 @@
-import { ISessionRepository } from "../../domain/ports/ISessionRepository";
-import { Result } from "../../../../shared/domain/ports/Result";
-import ApplicationError from "../../../../shared/application/errors/ApplicationErrors";
-import { IUseCase } from "../../../../shared/application/IUseCase";
-import { ErrorCodes } from "../../../../core/constants/error-codes";
-import { RevokeSessionInputDTO } from "../dtos/RevokeSessionDTO";
-import { SESSION_TOKENS } from "../../infrastructure/di/SessionTokens";
+import { ISessionRepository } from '@modules/session/domain/ports/ISessionRepository';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { RevokeSessionInputDTO } from '@modules/session/application/dtos/RevokeSessionDTO';
+import { SESSION_TOKENS } from '@modules/session/infrastructure/di/SessionTokens';
 import { injectable, inject } from 'tsyringe';
 
 @injectable()

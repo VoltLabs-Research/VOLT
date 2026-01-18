@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import FindActivityByTeamIdUseCase from '../../../application/use-cases/FindActivityByTeamIdUseCase';
-import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
-import { FindActivityByTeamIdInputDTO } from '../../../application/dto/FindActivityByTeamIdDTO';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import FindActivityByTeamIdUseCase from '@modules/daily-activity/application/use-cases/FindActivityByTeamIdUseCase';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { FindActivityByTeamIdInputDTO } from '@modules/daily-activity/application/dto/FindActivityByTeamIdDTO';
 
 @injectable()
 export default class FindActivityByTeamIdController extends BaseController<FindActivityByTeamIdUseCase> {

@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { ITeamPresenceService } from '../../domain/ports/ITeamPresenceService';
-import { IDailyActivityRepository } from '@/src/modules/daily-activity/domain/ports/IDailyActivityRepository';
-import { DAILY_ACTIVITY_TOKENS } from '@/src/modules/daily-activity/infrastructure/di/DailyActivityTokens';
-import logger from '@/src/shared/infrastructure/logger';
+import { ITeamPresenceService } from '@modules/team/domain/ports/ITeamPresenceService';
+import { IDailyActivityRepository } from '@modules/daily-activity/domain/ports/IDailyActivityRepository';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
+import logger from '@shared/infrastructure/logger';
 
 interface ConnectionInfo {
     userId: string;

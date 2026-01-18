@@ -1,9 +1,9 @@
-import { IDailyActivityRepository } from "@/src/modules/daily-activity/domain/ports/IDailyActivityRepository";
-import DailyActivity, { ActivityType, DailyActivityProps } from "@/src/modules/daily-activity/domain/entities/DailyActivity";
-import { MongooseBaseRepository } from "@/src/shared/infrastructure/persistence/mongo/MongooseBaseRepository";
-import DailyActivityModel, { DailyActivityDocument } from "../models/DailyActivityModel";
-import dailyActitvityMapper from '../mappers/DailyActivityMapper';
-import { injectable } from "tsyringe";
+import { IDailyActivityRepository } from '@modules/daily-activity/domain/ports/IDailyActivityRepository';
+import DailyActivity, { ActivityType, DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
+import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
+import DailyActivityModel, { DailyActivityDocument } from '@modules/daily-activity/infrastructure/persistence/mongo/models/DailyActivityModel';
+import dailyActitvityMapper from '@modules/daily-activity/infrastructure/persistence/mongo/mappers/DailyActivityMapper';
+import { injectable } from 'tsyringe';
 
 @injectable()
 export default class DailyActivityRepository

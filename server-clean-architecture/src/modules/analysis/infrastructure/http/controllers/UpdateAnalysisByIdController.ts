@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
-import { UpdateAnalysisByIdUseCase } from '../../../application/use-cases/UpdateAnalysisByIdUseCase';
+import { UpdateAnalysisByIdUseCase } from '@modules/analysis/application/use-cases/UpdateAnalysisByIdUseCase';
 
 @injectable()
 export class UpdateAnalysisByIdController {

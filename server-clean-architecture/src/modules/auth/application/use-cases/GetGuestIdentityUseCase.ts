@@ -1,12 +1,12 @@
-import { IUseCase } from "../../../../shared/application/IUseCase";
-import { Result } from "../../../../shared/domain/ports/Result";
-import ApplicationError from "../../../../shared/application/errors/ApplicationErrors";
-import { ErrorCodes } from "../../../../core/constants/error-codes";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 import { injectable, inject } from 'tsyringe';
-import { GetGuestIdentityInputDTO, GetGuestIdentityOutputDTO } from "../dtos/GetGuestIdentityDTO";
-import { IAvatarService } from "../../domain/ports/IAvatarService";
+import { GetGuestIdentityInputDTO, GetGuestIdentityOutputDTO } from '@modules/auth/application/dtos/GetGuestIdentityDTO';
+import { IAvatarService } from '@modules/auth/domain/ports/IAvatarService';
 import crypto from 'node:crypto';
-import { AUTH_TOKENS } from "../../infrastructure/di/AuthTokens";
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 
 @injectable()
 export default class GetGuestIdentityUseCase implements IUseCase<GetGuestIdentityInputDTO, GetGuestIdentityOutputDTO, ApplicationError>{

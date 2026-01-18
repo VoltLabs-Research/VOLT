@@ -1,6 +1,6 @@
-import { injectable, inject } from "tsyringe";
-import { BaseController } from "@/src/shared/infrastructure/http/BaseController";
-import ListTeamMembersByTeamIdUseCase from "@/src/modules/team/application/use-cases/team-member/ListTeamMembersByTeamIdUseCase";
+import { injectable, inject } from 'tsyringe';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import ListTeamMembersByTeamIdUseCase from '@modules/team/application/use-cases/team-member/ListTeamMembersByTeamIdUseCase';
 
 @injectable()
 export default class ListTeamMembersByTeamIdController extends BaseController<ListTeamMembersByTeamIdUseCase> {

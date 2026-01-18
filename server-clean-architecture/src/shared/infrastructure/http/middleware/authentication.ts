@@ -1,8 +1,8 @@
-import { ErrorCodes } from "@/src/core/constants/error-codes";
-import { NextFunction, Request, Response } from "express";
+import { ErrorCodes } from '@core/constants/error-codes';
+import { NextFunction, Request, Response } from 'express';
 import { container } from 'tsyringe';
-import { AUTH_TOKENS } from '@/src/modules/auth/infrastructure/di/AuthTokens';
-import { IUserRepository } from '@/src/modules/auth/domain/ports/IUserRepository';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
 import jwt from 'jsonwebtoken';
 
 export interface AuthenticatedRequest extends Request {

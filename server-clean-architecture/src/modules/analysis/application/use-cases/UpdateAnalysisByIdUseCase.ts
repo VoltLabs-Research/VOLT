@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { UpdateAnalysisInputDTO, UpdateAnalysisOutputDTO } from '../dtos/UpdateAnalysisDTO';
-import { IAnalysisRepository } from '../../domain/port/IAnalysisRepository';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { UpdateAnalysisInputDTO, UpdateAnalysisOutputDTO } from '@modules/analysis/application/dtos/UpdateAnalysisDTO';
+import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export class UpdateAnalysisByIdUseCase implements IUseCase<UpdateAnalysisInputDTO, UpdateAnalysisOutputDTO> {

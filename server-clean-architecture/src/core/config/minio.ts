@@ -1,5 +1,5 @@
 import { Client } from 'minio';
-import logger from '../../shared/infrastructure/logger';
+import logger from '@shared/infrastructure/logger';
 
 let minioClient: Client | null = null;
 

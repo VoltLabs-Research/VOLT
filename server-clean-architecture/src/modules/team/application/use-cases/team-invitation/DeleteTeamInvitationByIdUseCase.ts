@@ -1,11 +1,11 @@
-import { Result } from '@/src/shared/domain/ports/Result';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
+import { Result } from '@shared/domain/ports/Result';
+import { IUseCase } from '@shared/application/IUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '../../../infrastructure/di/TeamTokens';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
-import { ITeamInvitationRepository } from '../../../domain/ports/ITeamInvitationRepository';
-import { DeleteTeamInvitationByIdInputDTO } from '../../dtos/team-invitation/DeleteTeamInvitationByIdDTO';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { ITeamInvitationRepository } from '@modules/team/domain/ports/ITeamInvitationRepository';
+import { DeleteTeamInvitationByIdInputDTO } from '@modules/team/application/dtos/team-invitation/DeleteTeamInvitationByIdDTO';
 
 @injectable()
 export default class DeleteTeamInvitationByIdUseCase implements IUseCase<DeleteTeamInvitationByIdInputDTO, null, ApplicationError>{

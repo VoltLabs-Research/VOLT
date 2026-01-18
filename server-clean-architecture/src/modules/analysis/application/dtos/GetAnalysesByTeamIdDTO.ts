@@ -1,5 +1,5 @@
-import { PaginatedResult } from "@/src/shared/domain/ports/IBaseRepository";
-import { AnalysisProps } from "../../domain/entities/Analysis";
+import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 
 export interface GetAnalysesByTeamIdInputDTO{
     teamId: string;

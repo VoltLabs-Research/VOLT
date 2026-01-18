@@ -1,12 +1,12 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import { TRAJECTORY_TOKENS } from '@/src/modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { ITrajectoryRepository } from '@/src/modules/trajectory/domain/port/ITrajectoryRepository';
-import JobStatusChangedEvent from '@/src/modules/jobs/application/events/JobStatusChangedEvent';
-import { JobStatus } from '@/src/modules/jobs/domain/entities/Job';
-import { TrajectoryStatus } from '@/src/modules/trajectory/domain/entities/Trajectory';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { IEventBus } from '@/src/shared/application/events/IEventBus';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import JobStatusChangedEvent from '@modules/jobs/application/events/JobStatusChangedEvent';
+import { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
 import TrajectoryUpdatedEvent from './TrajectoryUpdatedEvent';
 
 @injectable()

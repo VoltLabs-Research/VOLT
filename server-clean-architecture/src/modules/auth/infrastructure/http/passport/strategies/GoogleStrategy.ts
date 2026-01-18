@@ -1,7 +1,7 @@
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import BaseOAuthStrategy from '../BaseOAuthStrategy';
-import OAuthLoginUseCase from '@/src/modules/auth/application/use-cases/OAuthLoginUseCase';
-import { OAuthProvider } from '@/src/modules/auth/domain/entities/User';
+import BaseOAuthStrategy from '@modules/auth/infrastructure/http/passport/BaseOAuthStrategy';
+import OAuthLoginUseCase from '@modules/auth/application/use-cases/OAuthLoginUseCase';
+import { OAuthProvider } from '@modules/auth/domain/entities/User';
 
 export default class GoogleStrategyWrapper extends BaseOAuthStrategy{
     constructor(oauthLoginUseCase: OAuthLoginUseCase){

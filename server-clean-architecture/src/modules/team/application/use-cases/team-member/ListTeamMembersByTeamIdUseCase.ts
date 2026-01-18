@@ -1,16 +1,16 @@
-import { Result } from "@/src/shared/domain/ports/Result";
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
+import { Result } from '@shared/domain/ports/Result';
+import { IUseCase } from '@shared/application/IUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from "../../../infrastructure/di/TeamTokens";
-import { ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, TeamMemberStatsProps } from "../../dtos/team-member/ListTeamMembersByTeamIdDTO";
-import { ITeamMemberRepository } from "../../../domain/ports/ITeamMemberRepository";
-import { ITrajectoryRepository } from "@/src/modules/trajectory/domain/port/ITrajectoryRepository";
-import { IAnalysisRepository } from "@/src/modules/analysis/domain/port/IAnalysisRepository";
-import { IDailyActivityRepository } from "@/src/modules/daily-activity/domain/ports/IDailyActivityRepository";
-import { TRAJECTORY_TOKENS } from "@/src/modules/trajectory/infrastructure/di/TrajectoryTokens";
-import { ANALYSIS_TOKENS } from "@/src/modules/analysis/infrastructure/di/AnalysisTokens";
-import { DAILY_ACTIVITY_TOKENS } from "@/src/modules/daily-activity/infrastructure/di/DailyActivityTokens";
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, TeamMemberStatsProps } from '@modules/team/application/dtos/team-member/ListTeamMembersByTeamIdDTO';
+import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { IDailyActivityRepository } from '@modules/daily-activity/domain/ports/IDailyActivityRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 
 @injectable()
 export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeamMembersByTeamIdInputDTO, ListTeamMembersByTeamIdOutputDTO, ApplicationError> {

@@ -1,4 +1,4 @@
-import { TeamInvitationProps } from '../../../domain/entities/TeamInvitation';
+import { TeamInvitationProps } from '@modules/team/domain/entities/TeamInvitation';
 
 export interface SendTeamInvitationInputDTO {
     teamId: string;

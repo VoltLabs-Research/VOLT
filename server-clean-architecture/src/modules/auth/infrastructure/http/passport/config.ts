@@ -1,5 +1,5 @@
 import { container } from 'tsyringe';
-import OAuthLoginUseCase from '../../../application/use-cases/OAuthLoginUseCase';
+import OAuthLoginUseCase from '@modules/auth/application/use-cases/OAuthLoginUseCase';
 import GithubStrategyWrapper from './strategies/GitHubStrategy';
 import GoogleStrategyWrapper from './strategies/GoogleStrategy';
 import MicrosoftStrategyWrapper from './strategies/MicrosoftStrategy';

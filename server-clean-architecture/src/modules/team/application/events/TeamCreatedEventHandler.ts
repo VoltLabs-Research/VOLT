@@ -1,12 +1,12 @@
-import { IEventHandler } from "@/src/shared/application/events/IEventHandler";
+import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { injectable, inject } from 'tsyringe';
-import TeamCreatedEvent from '../../domain/events/TeamCreatedEvent';
-import CreateTeamRoleUseCase from '../use-cases/team-role/CreateTeamRoleUseCase';
-import { SystemRoles } from '@/src/core/constants/system-roles';
-import { TEAM_TOKENS } from '../../infrastructure/di/TeamTokens';
-import { ITeamRepository } from '../../domain/ports/ITeamRepository';
-import { ITeamRoleRepository } from '../../domain/ports/ITeamRoleRepository';
-import CreateTeamMemberUseCase from '../use-cases/team-member/CreateTeamMemberUseCase';
+import TeamCreatedEvent from '@modules/team/domain/events/TeamCreatedEvent';
+import CreateTeamRoleUseCase from '@modules/team/application/use-cases/team-role/CreateTeamRoleUseCase';
+import { SystemRoles } from '@core/constants/system-roles';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
+import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
+import CreateTeamMemberUseCase from '@modules/team/application/use-cases/team-member/CreateTeamMemberUseCase';
 
 @injectable()
 export default class TeamCreatedEventHandler implements IEventHandler<TeamCreatedEvent>{

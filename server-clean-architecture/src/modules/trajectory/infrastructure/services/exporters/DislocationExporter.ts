@@ -1,11 +1,11 @@
-import nativeExporter from '../../native/NativeExporter';
-import computeBoundsFromPoints from '../../utilities/compute-bounds-from-points';
-import { SYS_BUCKETS } from '@/src/core/config/minio';
-import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
+import nativeExporter from '@modules/trajectory/infrastructure/native/NativeExporter';
+import computeBoundsFromPoints from '@modules/trajectory/infrastructure/utilities/compute-bounds-from-points';
+import { SYS_BUCKETS } from '@core/config/minio';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
 import { injectable, inject } from 'tsyringe';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { IDislocationExporter, DislocationExportOptions, ProcessedDislocationGeometry } from '../../../domain/port/exporters/DislocationExporter';
-import calculateDislocationType from '../../utilities/calculate-dislocation-type';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IDislocationExporter, DislocationExportOptions, ProcessedDislocationGeometry } from '@modules/trajectory/domain/port/exporters/DislocationExporter';
+import calculateDislocationType from '@modules/trajectory/infrastructure/utilities/calculate-dislocation-type';
 
 @injectable()
 export default class DislocationExporter implements IDislocationExporter {

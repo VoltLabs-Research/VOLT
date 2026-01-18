@@ -1,7 +1,7 @@
 import mongoose, { Model, Document } from 'mongoose';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
-import { ExposureMetaProps } from '@/src/modules/plugin/domain/entities/ExposureMeta';
-import { ExposureMetaSchema } from '../schemas/ExposureSchema';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import { ExposureMetaProps } from '@modules/plugin/domain/entities/ExposureMeta';
+import { ExposureMetaSchema } from '@modules/plugin/infrastructure/persistence/mongo/schemas/ExposureSchema';
 
 type ExposureMetaRelations = 'plugin' | 'trajectory' | 'analysis';
 export interface ExposureMetaDocument extends Persistable<ExposureMetaProps, ExposureMetaRelations>, Document { };

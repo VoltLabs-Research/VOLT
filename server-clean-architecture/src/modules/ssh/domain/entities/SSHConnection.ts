@@ -1,4 +1,4 @@
-import { encrypt, decrypt } from '@/src/shared/infrastructure/utilities/crypto';
+import { encrypt, decrypt } from '@shared/infrastructure/utilities/crypto';
 
 export interface SSHConnectionProps{
     name: string;

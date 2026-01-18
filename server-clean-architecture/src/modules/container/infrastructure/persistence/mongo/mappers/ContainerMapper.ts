@@ -1,6 +1,6 @@
-import { IMapper } from '@/src/shared/infrastructure/persistence/IMapper';
-import { Container, IContainerProps } from '../../../../domain/entities/Container';
-import { IContainer as IContainerDoc } from '../models/ContainerModel';
+import { IMapper } from '@shared/infrastructure/persistence/IMapper';
+import { Container, IContainerProps } from '@modules/container/domain/entities/Container';
+import { IContainer as IContainerDoc } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
 
 export class ContainerMapper implements IMapper<Container, IContainerProps, IContainerDoc> {
     toDomain(raw: IContainerDoc): Container {

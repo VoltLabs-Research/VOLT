@@ -1,13 +1,13 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO } from '../../dtos/listing-row/GetPluginListingDocumentsDTO';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO } from '@modules/plugin/application/dtos/listing-row/GetPluginListingDocumentsDTO';
 
 export interface IPluginListingService {
     getListingDocuments(pluginSlug: string, listingSlug: string, options: any): Promise<any>;
 }
 
-import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 @injectable()
 export class GetPluginListingDocumentsUseCase implements IUseCase<GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO> {

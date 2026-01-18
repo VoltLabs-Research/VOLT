@@ -1,14 +1,14 @@
 import { injectable, inject } from 'tsyringe';
-import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@/src/modules/plugin/domain/ports/INodeRegistry';
-import { PLUGIN_TOKENS } from '../../../di/PluginTokens';
-import { TRAJECTORY_TOKENS } from '@/src/modules/trajectory/infrastructure/di/TrajectoryTokens';
-import { WorkflowNodeType, WorkflowNode } from '@/src/modules/plugin/domain/entities/workflow/WorkflowNode';
-import { Exporter, ExportType } from '@/src/modules/plugin/domain/entities/workflow/nodes/ExportNode';
-import { IAtomisticExporter } from '@/src/modules/trajectory/domain/port/exporters/AtomisticExporter';
-import { IChartExporter } from '@/src/modules/trajectory/domain/port/exporters/ChartExporter';
-import { IDislocationExporter } from '@/src/modules/trajectory/domain/port/exporters/DislocationExporter';
-import { IMeshExporter } from '@/src/modules/trajectory/domain/port/exporters/MeshExporter';
-import slugify from '@/src/shared/infrastructure/utilities/slugify';
+import { INodeHandler, ExecutionContext, NodeOutputSchema, T, INodeRegistry } from '@modules/plugin/domain/ports/INodeRegistry';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { Exporter, ExportType } from '@modules/plugin/domain/entities/workflow/nodes/ExportNode';
+import { IAtomisticExporter } from '@modules/trajectory/domain/port/exporters/AtomisticExporter';
+import { IChartExporter } from '@modules/trajectory/domain/port/exporters/ChartExporter';
+import { IDislocationExporter } from '@modules/trajectory/domain/port/exporters/DislocationExporter';
+import { IMeshExporter } from '@modules/trajectory/domain/port/exporters/MeshExporter';
+import slugify from '@shared/infrastructure/utilities/slugify';
 
 @injectable()
 export default class ExportHandler implements INodeHandler{

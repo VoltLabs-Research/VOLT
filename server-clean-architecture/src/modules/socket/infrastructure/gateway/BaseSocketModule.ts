@@ -1,9 +1,9 @@
 import { inject } from 'tsyringe';
-import { ISocketModule, ISocketConnection } from '@/src/modules/socket/domain/ports/ISocketModule';
-import { ISocketEmitter } from '@/src/modules/socket/domain/ports/ISocketEmitter';
-import { ISocketRoomManager, PresenceUser } from '@/src/modules/socket/domain/ports/ISocketRoomManager';
-import { ISocketEventRegistry, SocketEventHandler } from '@/src/modules/socket/domain/ports/ISocketEventRegistry';
-import { SOCKET_TOKENS } from '../di/SocketTokens';
+import { ISocketModule, ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { ISocketEmitter } from '@modules/socket/domain/ports/ISocketEmitter';
+import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/ports/ISocketRoomManager';
+import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/ports/ISocketEventRegistry';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 /**
  * Each module can hook into the lifecycle and register its own handlers.

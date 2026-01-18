@@ -1,8 +1,8 @@
-import { injectable, inject, delay } from "tsyringe";
-import { BaseController } from "@/src/shared/infrastructure/http/BaseController";
-import { CreateGroupChatUseCase } from "@/src/modules/chat/application/use-cases/chat/CreateGroupChatUseCase";
-import { CreateGroupChatInputDTO } from "@/src/modules/chat/application/dtos/chat/CreateGroupChatDTO";
-import { AuthenticatedRequest } from "@/src/shared/infrastructure/http/middleware/authentication";
+import { injectable, inject, delay } from 'tsyringe';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { CreateGroupChatUseCase } from '@modules/chat/application/use-cases/chat/CreateGroupChatUseCase';
+import { CreateGroupChatInputDTO } from '@modules/chat/application/dtos/chat/CreateGroupChatDTO';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 
 @injectable()
 export default class CreateGroupChatController extends BaseController<CreateGroupChatUseCase> {

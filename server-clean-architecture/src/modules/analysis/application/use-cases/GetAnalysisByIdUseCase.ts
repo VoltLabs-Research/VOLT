@@ -1,12 +1,12 @@
-import { Result } from "@/src/shared/domain/ports/Result";
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
+import { Result } from '@shared/domain/ports/Result';
+import { IUseCase } from '@shared/application/IUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { injectable, inject } from 'tsyringe';
-import { ANALYSIS_TOKENS } from "../../infrastructure/di/AnalysisTokens";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
-import { IAnalysisRepository } from "../../domain/port/IAnalysisRepository";
-import { DeleteAnalysisByIdInputDTO } from "../dtos/DeleteAnalysisByIdDTO";
-import { GetAnalysisByIdInputDTO, GetAnalysisByIdOutputDTO } from "../dtos/GetAnalysisByIdDTO";
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { DeleteAnalysisByIdInputDTO } from '@modules/analysis/application/dtos/DeleteAnalysisByIdDTO';
+import { GetAnalysisByIdInputDTO, GetAnalysisByIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysisByIdDTO';
 
 @injectable()
 export default class GetAnalysisByIdUseCase implements IUseCase<GetAnalysisByIdInputDTO, GetAnalysisByIdOutputDTO, ApplicationError>{

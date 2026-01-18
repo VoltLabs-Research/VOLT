@@ -1,12 +1,12 @@
 import { container } from 'tsyringe';
 import { JOBS_TOKENS } from './JobsTokens';
-import RedisJobRepository from '../persistence/RedisJobRepository';
-import WorkerPoolService from '../services/WorkerPoolService';
-import SessionManagerService from '../services/SessionManagerService';
-import RecoveryManagerService from '../services/RecoveryManagerService';
-import JobHandlerService from '../services/JobHandlerService';
-import TrajectoryJobsService from '../services/TrajectoryJobsService';
-import QueueRegistry from '../services/QueueRegistry';
+import RedisJobRepository from '@modules/jobs/infrastructure/persistence/RedisJobRepository';
+import WorkerPoolService from '@modules/jobs/infrastructure/services/WorkerPoolService';
+import SessionManagerService from '@modules/jobs/infrastructure/services/SessionManagerService';
+import RecoveryManagerService from '@modules/jobs/infrastructure/services/RecoveryManagerService';
+import JobHandlerService from '@modules/jobs/infrastructure/services/JobHandlerService';
+import TrajectoryJobsService from '@modules/jobs/infrastructure/services/TrajectoryJobsService';
+import QueueRegistry from '@modules/jobs/infrastructure/services/QueueRegistry';
 
 const DEFAULT_QUEUE_CONSTANTS = {
     MIN_WORKERS: 1,

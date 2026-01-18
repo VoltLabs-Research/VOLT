@@ -1,5 +1,5 @@
-import { WorkflowNodeType, WorkflowNode } from "../entities/workflow/WorkflowNode";
-import Workflow from "../entities/workflow/Workflow";
+import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
 
 export type SchemaPropertyType = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'any';
 

@@ -1,12 +1,12 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { IPluginRepository } from '../../../domain/ports/IPluginRepository';
-import { DeleteBinaryInputDTO } from '../../dtos/plugin/DeleteBinaryDTO';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import { DeleteBinaryInputDTO } from '@modules/plugin/application/dtos/plugin/DeleteBinaryDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
-import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 @injectable()
 export class DeleteBinaryUseCase implements IUseCase<DeleteBinaryInputDTO, null, ApplicationError> {

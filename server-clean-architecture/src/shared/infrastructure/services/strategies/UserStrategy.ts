@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
-import { IPermissionStrategy, IAccessControlSubject } from '@/src/shared/domain/ports/IAccessControlService';
-import TeamModel from '@/src/modules/team/infrastructure/persistence/mongo/models/TeamModel';
-import TeamMemberModel from '@/src/modules/team/infrastructure/persistence/mongo/models/TeamMemberModel';
+import { IPermissionStrategy, IAccessControlSubject } from '@shared/domain/ports/IAccessControlService';
+import TeamModel from '@modules/team/infrastructure/persistence/mongo/models/TeamModel';
+import TeamMemberModel from '@modules/team/infrastructure/persistence/mongo/models/TeamMemberModel';
 
 @injectable()
 export class UserStrategy implements IPermissionStrategy {

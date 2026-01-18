@@ -1,7 +1,7 @@
 import IORedis from 'ioredis';
-import { IJobRepository } from '../../domain/ports/IJobRepository';
+import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
 import { injectable, inject } from 'tsyringe';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
 @injectable()
 export default class RedisJobRepository implements IJobRepository {

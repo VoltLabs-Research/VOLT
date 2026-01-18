@@ -1,11 +1,11 @@
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { inject, injectable } from "tsyringe";
-import { CHAT_TOKENS } from "../../../infrastructure/di/ChatTokens";
-import { IChatRepository } from "../../../domain/port/IChatRepository";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
-import { RemoveUsersFromGroupInputDTO, RemoveUsersFromGroupOutputDTO } from "../../dtos/chat/RemoveUsersFromGroupDTO";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { inject, injectable } from 'tsyringe';
+import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
+import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { RemoveUsersFromGroupInputDTO, RemoveUsersFromGroupOutputDTO } from '@modules/chat/application/dtos/chat/RemoveUsersFromGroupDTO';
 
 @injectable()
 export class RemoveUsersFromGroupUseCase implements IUseCase<RemoveUsersFromGroupInputDTO, RemoveUsersFromGroupOutputDTO, ApplicationError> {

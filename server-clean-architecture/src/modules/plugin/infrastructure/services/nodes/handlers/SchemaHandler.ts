@@ -1,6 +1,6 @@
 import { injectable } from 'tsyringe';
-import { INodeHandler, NodeOutputSchema, T } from '@/src/modules/plugin/domain/ports/INodeRegistry';
-import { WorkflowNodeType, WorkflowNode } from '@/src/modules/plugin/domain/entities/workflow/WorkflowNode';
+import { INodeHandler, NodeOutputSchema, T } from '@modules/plugin/domain/ports/INodeRegistry';
+import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 
 @injectable()
 export default class SchemaHandler implements INodeHandler{

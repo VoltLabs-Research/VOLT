@@ -1,6 +1,6 @@
-import ListingRow, { ListingRowProps } from "@/src/modules/plugin/domain/entities/ListingRow";
-import { ListingRowDocument } from "../models/ListingRowModel";
-import { BaseMapper } from "@/src/shared/infrastructure/persistence/mongo/MongoBaseMapper";
+import ListingRow, { ListingRowProps } from '@modules/plugin/domain/entities/ListingRow';
+import { ListingRowDocument } from '@modules/plugin/infrastructure/persistence/mongo/models/ListingRowModel';
+import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
 
 class ListingRowMapper extends BaseMapper<ListingRow, ListingRowProps, ListingRowDocument>{
     constructor(){

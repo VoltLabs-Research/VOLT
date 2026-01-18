@@ -1,10 +1,10 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
-import { SignUpInputDTO } from '../../../application/dtos/SignUpDTO';
-import SignUpUseCase from '../../../application/use-cases/SignUpUseCase';
-import getUserAgent from '@/src/shared/infrastructure/http/utilities/get-user-agent';
-import getClientIP from '@/src/shared/infrastructure/http/utilities/get-client-ip';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { SignUpInputDTO } from '@modules/auth/application/dtos/SignUpDTO';
+import SignUpUseCase from '@modules/auth/application/use-cases/SignUpUseCase';
+import getUserAgent from '@shared/infrastructure/http/utilities/get-user-agent';
+import getClientIP from '@shared/infrastructure/http/utilities/get-client-ip';
 
 @injectable()
 export default class SignUpController extends BaseController<SignUpUseCase> {

@@ -1,7 +1,7 @@
 import mongoose, { Schema, Model, Document, Types } from 'mongoose';
-import { ValidationCodes } from '../../../../../../core/constants/validation-codes';
-import { SessionActivityType, SessionProps } from '../../../../domain/entities/Session';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
+import { ValidationCodes } from '@core/constants/validation-codes';
+import { SessionActivityType, SessionProps } from '@modules/session/domain/entities/Session';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 type SimulationCellRelations = 'user';
 

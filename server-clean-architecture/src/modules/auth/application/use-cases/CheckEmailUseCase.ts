@@ -1,10 +1,10 @@
-import { IUseCase } from '../../../../shared/application/IUseCase';
-import { Result } from '../../../../shared/domain/ports/Result';
-import { CheckEmailInputDTO, CheckEmailOutputDTO } from '../dtos/CheckEmailDTO';
-import { IUserRepository } from '../../domain/ports/IUserRepository';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { CheckEmailInputDTO, CheckEmailOutputDTO } from '@modules/auth/application/dtos/CheckEmailDTO';
+import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
 import { injectable, inject } from 'tsyringe';
-import ApplicationError from '../../../../shared/application/errors/ApplicationErrors';
-import { AUTH_TOKENS } from '../../infrastructure/di/AuthTokens';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 
 @injectable()
 export default class CheckEmailUseCase implements IUseCase<CheckEmailInputDTO, CheckEmailOutputDTO, ApplicationError>{

@@ -1,7 +1,7 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { DeleteVFSFileOutputDTO } from '../../dtos/vfs/VFSDTOs';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { DeleteVFSFileOutputDTO } from '@modules/trajectory/application/dtos/vfs/VFSDTOs';
 
 export interface IVFSService {
     deleteFile(trajectoryId: string, path: string): Promise<void>;

@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
 import { Socket } from 'socket.io';
-import { ITerminalService } from '../../domain/ports/ITerminalService';
-import { IContainerRepository } from '../../domain/ports/IContainerRepository';
-import { IContainerService } from '../../domain/ports/IContainerService';
-import logger from '@/src/shared/infrastructure/logger';
+import { ITerminalService } from '@modules/container/domain/ports/ITerminalService';
+import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
+import { IContainerService } from '@modules/container/domain/ports/IContainerService';
+import logger from '@shared/infrastructure/logger';
 
 interface TerminalSession {
     stream: any;

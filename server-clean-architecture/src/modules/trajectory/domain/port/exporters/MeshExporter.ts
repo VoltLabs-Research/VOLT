@@ -1,4 +1,4 @@
-import { ExportMaterial } from "./ExportMaterial";
+import { ExportMaterial } from './ExportMaterial';
 
 export interface ProcessedMesh{
     positions: Float32Array;

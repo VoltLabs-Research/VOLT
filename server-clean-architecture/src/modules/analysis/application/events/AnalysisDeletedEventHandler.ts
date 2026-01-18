@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@/src/shared/application/events/IEventHandler';
-import AnalysisDeletedEvent from '../../domain/events/AnalysisDeletedEvent';
-import { PLUGIN_TOKENS } from '@/src/modules/plugin/infrastructure/di/PluginTokens';
-import { IExposureMetaRepository } from '@/src/modules/plugin/domain/ports/IExposureMetaRepository';
-import { IListingRowRepository } from '@/src/modules/plugin/domain/ports/IListingRowRepository';
+import { IEventHandler } from '@shared/application/events/IEventHandler';
+import AnalysisDeletedEvent from '@modules/analysis/domain/events/AnalysisDeletedEvent';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { IExposureMetaRepository } from '@modules/plugin/domain/ports/IExposureMetaRepository';
+import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
 
 @injectable()
 export default class AnalysisDeletedEventHandler implements IEventHandler<AnalysisDeletedEvent>{

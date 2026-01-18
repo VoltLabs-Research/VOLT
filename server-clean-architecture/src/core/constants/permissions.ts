@@ -1,4 +1,4 @@
-import { Resource } from "./resources";
+import { Resource } from './resources';
 
 export type RBACResource = 
     | Resource.TEAM 

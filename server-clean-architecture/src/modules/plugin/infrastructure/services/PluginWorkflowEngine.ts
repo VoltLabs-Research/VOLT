@@ -1,11 +1,11 @@
-import { IPluginWorkflowEngine, ExposureResult, ExecutionPlanResult, WorkflowExecutionRequest } from "../../domain/ports/IPluginWorkflowEngine";
-import Workflow from "../../domain/entities/workflow/Workflow";
-import { WorkflowNodeType } from "../../domain/entities/workflow/WorkflowNode";
-import { injectable, inject } from "tsyringe";
-import { PLUGIN_TOKENS } from "../di/PluginTokens";
-import { ExecutionContext, INodeRegistry } from "../../domain/ports/INodeRegistry";
+import { IPluginWorkflowEngine, ExposureResult, ExecutionPlanResult, WorkflowExecutionRequest } from '@modules/plugin/domain/ports/IPluginWorkflowEngine';
+import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
+import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
+import { injectable, inject } from 'tsyringe';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { ExecutionContext, INodeRegistry } from '@modules/plugin/domain/ports/INodeRegistry';
 import fs from 'node:fs/promises';
-import logger from "@/src/shared/infrastructure/logger";
+import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class PluginWorkflowEngine implements IPluginWorkflowEngine{

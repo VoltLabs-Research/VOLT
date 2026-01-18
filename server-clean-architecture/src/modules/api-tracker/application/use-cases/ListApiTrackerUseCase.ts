@@ -1,8 +1,8 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { IApiTrackerRepository } from '../../domain/ports/IApiTrackerRepository';
-import { ListApiTrackerInputDTO, ListApiTrackerOutputDTO } from '../dtos/ListApiTrackerDTO';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { IApiTrackerRepository } from '@modules/api-tracker/domain/ports/IApiTrackerRepository';
+import { ListApiTrackerInputDTO, ListApiTrackerOutputDTO } from '@modules/api-tracker/application/dtos/ListApiTrackerDTO';
 
 @injectable()
 export class ListApiTrackerUseCase implements IUseCase<ListApiTrackerInputDTO, ListApiTrackerOutputDTO> {

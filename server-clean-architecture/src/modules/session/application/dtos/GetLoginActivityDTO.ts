@@ -1,4 +1,4 @@
-import Session, { SessionProps } from "../../domain/entities/Session";
+import Session, { SessionProps } from '@modules/session/domain/entities/Session';
 
 export interface GetLoginActivityInputDTO{
     userId: string;

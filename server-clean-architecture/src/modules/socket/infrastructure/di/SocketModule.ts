@@ -1,15 +1,15 @@
 import { container } from 'tsyringe';
 import { SOCKET_TOKENS } from './SocketTokens';
-import SocketIOEmitter from '../adapters/SocketIOEmitter';
-import SocketIORoomManager from '../adapters/SocketIORoomManager';
-import SocketIOEventRegistry from '../adapters/SocketIOEventRegistry';
-import SocketMapper from '../mappers/SocketMapper';
-import SocketGateway from '../gateway/SocketGateway';
-import EventBroadcastSocketModule from '../modules/EventBroadcastSocketModule';
-import TeamPresenceSocketModule from '../modules/TeamPresenceSocketModule';
-import TeamJobsSocketModule from '@/src/modules/team/infrastructure/socket/TeamJobsSocketModule';
-import SystemSocketModule from '@/src/modules/system/infrastructure/socket/SystemSocketModule';
-import ChatSocketModule from '@/src/modules/chat/infrastructure/socket/ChatSocketModule';
+import SocketIOEmitter from '@modules/socket/infrastructure/adapters/SocketIOEmitter';
+import SocketIORoomManager from '@modules/socket/infrastructure/adapters/SocketIORoomManager';
+import SocketIOEventRegistry from '@modules/socket/infrastructure/adapters/SocketIOEventRegistry';
+import SocketMapper from '@modules/socket/infrastructure/mappers/SocketMapper';
+import SocketGateway from '@modules/socket/infrastructure/gateway/SocketGateway';
+import EventBroadcastSocketModule from '@modules/socket/infrastructure/modules/EventBroadcastSocketModule';
+import TeamPresenceSocketModule from '@modules/socket/infrastructure/modules/TeamPresenceSocketModule';
+import TeamJobsSocketModule from '@modules/team/infrastructure/socket/TeamJobsSocketModule';
+import SystemSocketModule from '@modules/system/infrastructure/socket/SystemSocketModule';
+import ChatSocketModule from '@modules/chat/infrastructure/socket/ChatSocketModule';
 
 /**
  * Register socket module dependencies.

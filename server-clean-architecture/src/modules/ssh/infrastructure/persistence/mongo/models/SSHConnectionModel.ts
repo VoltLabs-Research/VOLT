@@ -1,7 +1,7 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { ValidationCodes } from '@/src/core/constants/validation-codes';
-import { SSHConnectionProps } from '@/src/modules/ssh/domain/entities/SSHConnection';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
+import { ValidationCodes } from '@core/constants/validation-codes';
+import { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnection';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 type SSHConnectionRelations = 'team' | 'user';
 

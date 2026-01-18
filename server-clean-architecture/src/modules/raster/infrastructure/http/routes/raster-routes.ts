@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { container } from 'tsyringe';
-import { TriggerRasterizationController } from '../controllers/TriggerRasterizationController';
-import { GetRasterMetadataController } from '../controllers/GetRasterMetadataController';
-import { GetRasterFramePNGController } from '../controllers/GetRasterFramePNGController';
-import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
-import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
+import { TriggerRasterizationController } from '@modules/raster/infrastructure/http/controllers/TriggerRasterizationController';
+import { GetRasterMetadataController } from '@modules/raster/infrastructure/http/controllers/GetRasterMetadataController';
+import { GetRasterFramePNGController } from '@modules/raster/infrastructure/http/controllers/GetRasterFramePNGController';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {

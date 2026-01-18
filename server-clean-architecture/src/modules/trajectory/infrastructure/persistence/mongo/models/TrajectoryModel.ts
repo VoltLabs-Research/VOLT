@@ -1,7 +1,7 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
-import { ValidationCodes } from '@/src/core/constants/validation-codes';
-import { TrajectoryProps, TrajectoryFrame, TrajectoryStatus } from '../../../../domain/entities/Trajectory';
-import { Persistable } from '@/src/shared/infrastructure/persistence/mongo/MongoUtils';
+import { ValidationCodes } from '@core/constants/validation-codes';
+import { TrajectoryProps, TrajectoryFrame, TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
+import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
 type TrajectoryRelations = 'createdBy' | 'team' | 'analysis';
 type TrajectoryFrameRelations = 'simulationCell';

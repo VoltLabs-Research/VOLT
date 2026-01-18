@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { container } from 'tsyringe';
-import { ListApiTrackerController } from '../controllers/ListApiTrackerController';
-import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
-import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
+import { ListApiTrackerController } from '@modules/api-tracker/infrastructure/http/controllers/ListApiTrackerController';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
 const router = Router();
 const module: HttpModule = {

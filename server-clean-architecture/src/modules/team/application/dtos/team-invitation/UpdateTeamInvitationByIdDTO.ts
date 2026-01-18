@@ -1,4 +1,4 @@
-import { TeamInvitationProps, TeamInvitationStatus } from "../../../domain/entities/TeamInvitation";
+import { TeamInvitationProps, TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
 
 export interface UpdateTeamInvitationByIdInputDTO{
     invitationId: string;

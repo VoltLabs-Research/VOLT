@@ -1,9 +1,9 @@
 import { Socket } from 'socket.io';
 import { inject, injectable } from 'tsyringe';
-import { ISocketEventRegistry, SocketEventHandler } from '../../domain/ports/ISocketEventRegistry';
-import { ISocketConnection } from '../../domain/ports/ISocketModule';
-import { ISocketMapper } from '../../domain/ports/ISocketMapper';
-import { SOCKET_TOKENS } from '../di/SocketTokens';
+import { ISocketEventRegistry, SocketEventHandler } from '@modules/socket/domain/ports/ISocketEventRegistry';
+import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { ISocketMapper } from '@modules/socket/domain/ports/ISocketMapper';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 
 /**
  * Handles event registration and provides connection abstraction.

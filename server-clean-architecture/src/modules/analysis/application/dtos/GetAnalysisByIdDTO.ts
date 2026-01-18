@@ -1,4 +1,4 @@
-import { AnalysisProps } from "../../domain/entities/Analysis";
+import { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 
 export interface GetAnalysisByIdInputDTO{
     analysisId: string;

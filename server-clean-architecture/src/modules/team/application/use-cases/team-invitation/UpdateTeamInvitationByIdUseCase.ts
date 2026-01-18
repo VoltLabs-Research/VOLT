@@ -1,11 +1,11 @@
-import { Result } from '@/src/shared/domain/ports/Result';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
+import { Result } from '@shared/domain/ports/Result';
+import { IUseCase } from '@shared/application/IUseCase';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { injectable, inject } from 'tsyringe';
-import { TEAM_TOKENS } from '../../../infrastructure/di/TeamTokens';
-import { ITeamInvitationRepository } from '../../../domain/ports/ITeamInvitationRepository';
-import { UpdateTeamInvitationByIdInputDTO, UpdateTeamInvitationByIdOutputDTO } from '../../dtos/team-invitation/UpdateTeamInvitationByIdDTO';
-import { ErrorCodes } from '@/src/core/constants/error-codes';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ITeamInvitationRepository } from '@modules/team/domain/ports/ITeamInvitationRepository';
+import { UpdateTeamInvitationByIdInputDTO, UpdateTeamInvitationByIdOutputDTO } from '@modules/team/application/dtos/team-invitation/UpdateTeamInvitationByIdDTO';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export default class UpdateTeamInvitationByIdUseCase implements IUseCase<UpdateTeamInvitationByIdInputDTO, UpdateTeamInvitationByIdOutputDTO, ApplicationError>{

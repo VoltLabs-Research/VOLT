@@ -1,5 +1,5 @@
-import { JobHandlerConfig } from "../../infrastructure/services/JobHandlerService";
-import Job, { JobStatus } from "../entities/Job";
+import { JobHandlerConfig } from '@modules/jobs/infrastructure/services/JobHandlerService';
+import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
 
 export interface JobInfo<T extends Job> {
     job: T;

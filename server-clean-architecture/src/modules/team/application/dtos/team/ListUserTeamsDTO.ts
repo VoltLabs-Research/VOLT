@@ -1,4 +1,4 @@
-import { TeamProps } from "../../../domain/entities/Team";
+import { TeamProps } from '@modules/team/domain/entities/Team';
 
 export interface ListUserTeamsInputDTO{
     userId: string;

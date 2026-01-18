@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
-import GetLoginActivityUseCase from '../../../application/use-cases/GetLoginActivityUseCase';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import GetLoginActivityUseCase from '@modules/session/application/use-cases/GetLoginActivityUseCase';
 
 @injectable()
 export default class GetMyLoginActivityController extends BaseController<GetLoginActivityUseCase> {

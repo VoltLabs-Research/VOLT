@@ -1,9 +1,9 @@
 import { injectable, inject } from 'tsyringe';
-import Job, { JobStatus } from '../../domain/entities/Job';
-import { IRecoveryManagerService } from '../../domain/ports/IRecoveryManagerService';
-import { IJobRepository } from '../../domain/ports/IJobRepository';
+import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
+import { IRecoveryManagerService } from '@modules/jobs/domain/ports/IRecoveryManagerService';
+import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
 import { setImmediate } from 'node:timers/promises';
-import { JOBS_TOKENS } from '../di/JobsTokens';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 
 export interface RecoveryManagerConfig{
     queueKey: string;

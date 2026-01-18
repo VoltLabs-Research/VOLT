@@ -1,12 +1,12 @@
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { Result } from "@/src/shared/domain/ports/Result";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
-import { UpdateAccountInputDTO, UpdateAccountOutputDTO } from "../dtos/UpdateAccountDTO";
-import { IUserRepository } from "../../domain/ports/IUserRepository";
-import { injectable, inject } from "tsyringe";
-import { AUTH_TOKENS } from "../../infrastructure/di/AuthTokens";
-import { UserProps } from "../../domain/entities/User";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { UpdateAccountInputDTO, UpdateAccountOutputDTO } from '@modules/auth/application/dtos/UpdateAccountDTO';
+import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import { injectable, inject } from 'tsyringe';
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import { UserProps } from '@modules/auth/domain/entities/User';
 
 @injectable()
 export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInputDTO, UpdateAccountOutputDTO, ApplicationError>{

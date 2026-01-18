@@ -1,20 +1,20 @@
-import { Result } from "@/src/shared/domain/ports/Result";
-import { IUseCase } from "@/src/shared/application/IUseCase";
-import { PLUGIN_TOKENS } from "../../../infrastructure/di/PluginTokens";
+import { Result } from '@shared/domain/ports/Result';
+import { IUseCase } from '@shared/application/IUseCase';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { injectable, inject } from 'tsyringe';
-import { ExecutePluginInputDTO } from "../../dtos/plugin/ExecutePluginDTO";
-import { IPluginRepository } from "../../../domain/ports/IPluginRepository";
-import { PluginStatus } from "../../../domain/entities/Plugin";
-import { ErrorCodes } from "@/src/core/constants/error-codes";
-import { IPluginWorkflowEngine } from "../../../domain/ports/IPluginWorkflowEngine";
-import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
-import { IEventBus } from "@/src/shared/application/events/IEventBus";
-import { ANALYSIS_TOKENS } from "@/src/modules/analysis/infrastructure/di/AnalysisTokens";
-import { IAnalysisRepository } from "@/src/modules/analysis/domain/port/IAnalysisRepository";
-import { TRAJECTORY_TOKENS } from "@/src/modules/trajectory/infrastructure/di/TrajectoryTokens";
-import { ITrajectoryRepository } from "@/src/modules/trajectory/domain/port/ITrajectoryRepository";
-import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import PluginExecutionRequestEvent from "../../../domain/events/PluginExecutionRequestEvent";
+import { ExecutePluginInputDTO } from '@modules/plugin/application/dtos/plugin/ExecutePluginDTO';
+import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
+import { ErrorCodes } from '@core/constants/error-codes';
+import { IPluginWorkflowEngine } from '@modules/plugin/domain/ports/IPluginWorkflowEngine';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
 
 @injectable()
 export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, null, ApplicationError> {

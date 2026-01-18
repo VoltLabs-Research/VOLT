@@ -1,7 +1,7 @@
 import { injectable } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import { GetRBACConfigOutputDTO } from '../dtos/GetRBACConfigDTO';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import { GetRBACConfigOutputDTO } from '@modules/system/application/dtos/GetRBACConfigDTO';
 
 // Import constants (these should be in core/constants)
 const RESOURCE_LABELS: Record<string, string> = {

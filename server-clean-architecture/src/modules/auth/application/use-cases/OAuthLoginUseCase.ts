@@ -1,14 +1,14 @@
-import { IUseCase } from "../../../../shared/application/IUseCase";
-import { Result } from "../../../../shared/domain/ports/Result";
-import ApplicationError from "../../../../shared/application/errors/ApplicationErrors";
-import { OAuthLoginInputDTO, OAuthLoginOutputDTO } from "../dtos/OAuthLoginDTO";
-import { IUserRepository } from "../../domain/ports/IUserRepository";
-import { ITokenService } from "../../domain/ports/ITokenService";
-import { SessionActivityType } from "@/src/modules/session/domain/entities/Session";
-import { ISessionRepository } from "../../../session/domain/ports/ISessionRepository";
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { OAuthLoginInputDTO, OAuthLoginOutputDTO } from '@modules/auth/application/dtos/OAuthLoginDTO';
+import { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
+import { ITokenService } from '@modules/auth/domain/ports/ITokenService';
+import { SessionActivityType } from '@modules/session/domain/entities/Session';
+import { ISessionRepository } from '@modules/session/domain/ports/ISessionRepository';
 import { injectable, inject } from 'tsyringe';
-import { AUTH_TOKENS } from "../../infrastructure/di/AuthTokens";
-import generateRandomName from "@/src/shared/infrastructure/utilities/generate-random-name";
+import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
+import generateRandomName from '@shared/infrastructure/utilities/generate-random-name';
 
 @injectable()
 export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, OAuthLoginOutputDTO, ApplicationError>{

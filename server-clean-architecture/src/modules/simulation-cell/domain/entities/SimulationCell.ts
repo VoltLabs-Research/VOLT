@@ -14,7 +14,7 @@ export interface SimulationCellGeometry {
     };
 };
 
-import { TrajectoryProps } from '@/src/modules/trajectory/domain/entities/Trajectory';
+import { TrajectoryProps } from '@modules/trajectory/domain/entities/Trajectory';
 export interface SimulationCellProps {
     boundingBox: SimulationCellDims;
     geometry: SimulationCellGeometry;

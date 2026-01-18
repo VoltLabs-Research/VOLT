@@ -1,14 +1,14 @@
 import util from 'node:util';
 import { Worker } from 'node:worker_threads';
 import { injectable } from 'tsyringe';
-import { WorkerPoolItem } from '../../domain/entities/WorkerStatus';
+import { WorkerPoolItem } from '@modules/jobs/domain/entities/WorkerStatus';
 import {
     IWorkerPoolService,
     WorkerPoolConfig,
     WorkerMessageHandler,
     WorkerErrorHandler,
     WorkerExitHandler
-} from '../../domain/ports/IWorkerPool';
+} from '@modules/jobs/domain/ports/IWorkerPool';
 
 @injectable()
 export default class WorkerPoolService implements IWorkerPoolService {

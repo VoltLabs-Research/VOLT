@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import multer from 'multer';
-import controllers from '../controllers/plugin';
-import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
+import controllers from '@modules/plugin/infrastructure/http/controllers/plugin';
+import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
 const router = Router();
 const module: HttpModule = {

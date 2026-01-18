@@ -1,6 +1,6 @@
-import Chat, { ChatProps } from "@/src/modules/chat/domain/entities/Chat";
-import { BaseMapper } from "@/src/shared/infrastructure/persistence/mongo/MongoBaseMapper";
-import { ChatDocument } from "../models/ChatModel";
+import Chat, { ChatProps } from '@modules/chat/domain/entities/Chat';
+import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMapper';
+import { ChatDocument } from '@modules/chat/infrastructure/persistence/mongo/models/ChatModel';
 
 class ChatMapper extends BaseMapper<Chat, ChatProps, ChatDocument>{
     constructor(){

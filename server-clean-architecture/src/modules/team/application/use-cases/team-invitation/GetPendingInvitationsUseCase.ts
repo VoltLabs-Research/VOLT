@@ -1,11 +1,11 @@
 import { injectable, inject } from 'tsyringe';
-import { IUseCase } from '@/src/shared/application/IUseCase';
-import { Result } from '@/src/shared/domain/ports/Result';
-import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { TEAM_TOKENS } from '../../../infrastructure/di/TeamTokens';
-import { ITeamInvitationRepository } from '../../../domain/ports/ITeamInvitationRepository';
-import { GetPendingInvitationsInputDTO, GetPendingInvitationsOutputDTO } from '../../dtos/team-invitation/GetPendingInvitationsDTO';
-import { TeamInvitationStatus } from '../../../domain/entities/TeamInvitation';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ITeamInvitationRepository } from '@modules/team/domain/ports/ITeamInvitationRepository';
+import { GetPendingInvitationsInputDTO, GetPendingInvitationsOutputDTO } from '@modules/team/application/dtos/team-invitation/GetPendingInvitationsDTO';
+import { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
 
 @injectable()
 export default class GetPendingInvitationsUseCase implements IUseCase<GetPendingInvitationsInputDTO, GetPendingInvitationsOutputDTO, ApplicationError> {

@@ -1,19 +1,19 @@
 import { inject } from 'tsyringe';
-import { WorkerPoolItem } from '../../domain/entities/WorkerStatus';
-import { IJobQueueService, QueueOptions } from '../../domain/ports/IJobQueueService';
-import { IJobRepository } from '../../domain/ports/IJobRepository';
-import { IWorkerPoolService, WorkerPoolConfig } from '../../domain/ports/IWorkerPool';
-import { ISessionManagerService } from '../../domain/ports/ISessionManagerService';
-import { IRecoveryManagerService } from '../../domain/ports/IRecoveryManagerService';
-import { IJobHandlerService, JobInfo } from '../../domain/ports/IJobHandlerService';
-import { IEventBus } from '../../../../shared/application/events/IEventBus';
-import { IQueueRegistry } from '../../domain/ports/IQueueRegistry';
-import { JOBS_TOKENS } from '../di/JobsTokens';
-import Job, { JobStatus } from '../../domain/entities/Job';
-import JobsAddedEvent from '../../application/events/JobsAddedEvent';
-import JobProgressEvent from '../../application/events/JobProgressEvent';
+import { WorkerPoolItem } from '@modules/jobs/domain/entities/WorkerStatus';
+import { IJobQueueService, QueueOptions } from '@modules/jobs/domain/ports/IJobQueueService';
+import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
+import { IWorkerPoolService, WorkerPoolConfig } from '@modules/jobs/domain/ports/IWorkerPool';
+import { ISessionManagerService } from '@modules/jobs/domain/ports/ISessionManagerService';
+import { IRecoveryManagerService } from '@modules/jobs/domain/ports/IRecoveryManagerService';
+import { IJobHandlerService, JobInfo } from '@modules/jobs/domain/ports/IJobHandlerService';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { IQueueRegistry } from '@modules/jobs/domain/ports/IQueueRegistry';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
+import JobsAddedEvent from '@modules/jobs/application/events/JobsAddedEvent';
+import JobProgressEvent from '@modules/jobs/application/events/JobProgressEvent';
 import os from 'node:os';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 
 interface QueueConstants {
     MIN_WORKERS: number;

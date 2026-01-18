@@ -12,12 +12,25 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "paths": {
-      "@/*": ["./*"]
+      "@core/*": [
+        "src/core/*"
+      ],
+      "@modules/*": [
+        "src/modules/*"
+      ],
+      "@shared/*": [
+        "src/shared/*"
+      ],
+      "@/*": [
+        "./*"
+      ]
     }
   },
   "include": [
-      "**/*.ts", 
-      "**/*.d.ts" 
+    "**/*.ts",
+    "**/*.d.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -1,5 +1,5 @@
-import { PaginatedResult } from "@/src/shared/domain/ports/IBaseRepository";
-import { PluginProps } from "../../../domain/entities/Plugin";
+import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { PluginProps } from '@modules/plugin/domain/entities/Plugin';
 
 export interface ListPluginsInputDTO {
     teamId: string;

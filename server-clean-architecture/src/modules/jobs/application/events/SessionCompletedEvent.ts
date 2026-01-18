@@ -1,5 +1,5 @@
-import { IDomainEvent } from "../../../../shared/application/events/IDomainEvent";
-import { v4 } from "uuid";
+import { IDomainEvent } from '@shared/application/events/IDomainEvent';
+import { v4 } from 'uuid';
 
 export interface SessionCompletedEventData{
     sessionId: string;

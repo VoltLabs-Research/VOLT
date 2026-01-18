@@ -1,12 +1,12 @@
 import { injectable, inject } from 'tsyringe';
-import { ISocketConnection } from '@/src/modules/socket/domain/ports/ISocketModule';
-import { ISocketEmitter } from '@/src/modules/socket/domain/ports/ISocketEmitter';
-import { ISocketRoomManager, PresenceUser } from '@/src/modules/socket/domain/ports/ISocketRoomManager';
-import { ISocketEventRegistry } from '@/src/modules/socket/domain/ports/ISocketEventRegistry';
-import { SOCKET_TOKENS } from '@/src/modules/socket/infrastructure/di/SocketTokens';
-import { TEAM_TOKENS } from '../di/TeamTokens';
-import { ITeamPresenceService } from '../../domain/ports/ITeamPresenceService';
-import BaseSocketModule from '@/src/modules/socket/infrastructure/gateway/BaseSocketModule';
+import { ISocketConnection } from '@modules/socket/domain/ports/ISocketModule';
+import { ISocketEmitter } from '@modules/socket/domain/ports/ISocketEmitter';
+import { ISocketRoomManager, PresenceUser } from '@modules/socket/domain/ports/ISocketRoomManager';
+import { ISocketEventRegistry } from '@modules/socket/domain/ports/ISocketEventRegistry';
+import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ITeamPresenceService } from '@modules/team/domain/ports/ITeamPresenceService';
+import BaseSocketModule from '@modules/socket/infrastructure/gateway/BaseSocketModule';
 
 @injectable()
 export default class TeamPresenceSocketModule extends BaseSocketModule {
