@@ -12,7 +12,7 @@ export default class GetTeamRoleByIdUseCase implements IUseCase<GetTeamRoleByIdI
     constructor(
         @inject(TEAM_TOKENS.TeamRoleRepository)
         private readonly teamRoleRepository: ITeamRoleRepository
-    ) { }
+    ){}
 
     async execute(input: GetTeamRoleByIdInputDTO): Promise<Result<GetTeamRoleByIdOutputDTO, ApplicationError>> {
         const teamRole = await this.teamRoleRepository.findById(input.roleId);

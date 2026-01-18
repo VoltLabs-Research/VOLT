@@ -18,5 +18,5 @@ export default class Analysis {
     constructor(
         public id: string,
         public props: AnalysisProps
-    ) { }
+    ){}
 };

@@ -46,7 +46,7 @@ export class RecoveryManager<T extends BaseJob> {
         private readonly redis: IORedis,
         private readonly config: RecoveryManagerConfig,
         private readonly deserializeJob: JobDeserializer<T>
-    ) { }
+    ){}
 
     private logInfo(message: string): void {
         logger.info(`${this.config.logPrefix} ${message}`);

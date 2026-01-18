@@ -12,7 +12,7 @@ export class GetContainerStatsUseCase implements IUseCase<{ id: string }, GetCon
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
         @inject('IContainerService') private containerService: IContainerService
-    ) { }
+    ){}
 
     async execute(input: { id: string }): Promise<Result<GetContainerStatsOutputDTO>> {
         const container = await this.repository.findById(input.id);

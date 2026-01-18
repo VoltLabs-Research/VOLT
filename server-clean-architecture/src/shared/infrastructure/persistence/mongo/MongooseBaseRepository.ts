@@ -6,7 +6,7 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
     constructor(
         protected readonly model: Model<TDocument>,
         protected readonly mapper: IMapper<TDomain, TProps, TDocument>
-    ) { }
+    ){}
 
     async findById(id: string, options?: Pick<FindOptions<TProps>, 'populate' | 'select'>): Promise<TDomain | null> {
         let query = this.model.findById(id);

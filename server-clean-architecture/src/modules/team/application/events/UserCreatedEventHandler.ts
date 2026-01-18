@@ -11,7 +11,7 @@ export default class UserCreatedEventHandler implements IEventHandler<UserCreate
         private readonly createTeamUseCase: CreateTeamUseCase,
         @inject(delay(() => CreateNotificationUseCase))
         private readonly createNotificationUseCase: CreateNotificationUseCase
-    ) { }
+    ){}
 
     async handle(event: UserCreatedEvent): Promise<void> {
         const { id, firstName, lastName } = event.payload;

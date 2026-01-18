@@ -11,7 +11,7 @@ export interface IVFSService {
 export class UploadVFSFileUseCase implements IUseCase<UploadVFSFileInputDTO, UploadVFSFileOutputDTO> {
     constructor(
         @inject('IVFSService') private vfsService: IVFSService
-    ) { }
+    ){}
 
     async execute(input: UploadVFSFileInputDTO): Promise<Result<UploadVFSFileOutputDTO>> {
         const path = await this.vfsService.uploadFile(

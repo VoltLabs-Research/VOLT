@@ -28,7 +28,7 @@ export default class ResourceManager {
         private state: ExtendedSceneState,
         private scene: Scene,
         private invalidate: () => void
-    ) { }
+    ){}
 
     cleanup(): void {
         this.cleanupModels();

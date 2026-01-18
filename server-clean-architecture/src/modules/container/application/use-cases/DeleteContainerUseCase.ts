@@ -12,7 +12,7 @@ export class DeleteContainerUseCase implements IUseCase<{ id: string }, DeleteCo
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
         @inject('IContainerService') private containerService: IContainerService
-    ) { }
+    ){}
 
     async execute(input: { id: string }): Promise<Result<DeleteContainerOutputDTO>> {
         const container = await this.repository.findById(input.id);

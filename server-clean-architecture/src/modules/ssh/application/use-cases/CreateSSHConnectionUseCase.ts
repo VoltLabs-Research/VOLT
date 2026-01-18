@@ -13,7 +13,7 @@ export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionI
     constructor(
         @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
         private sshConnectionRepo: ISSHConnectionRepository
-    ) { }
+    ){}
 
     async execute(input: CreateSSHConnectionInputDTO): Promise<Result<CreateSSHConnectionOutputDTO, ApplicationError>> {
         // TODO: ID

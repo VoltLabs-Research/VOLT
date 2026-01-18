@@ -11,7 +11,7 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
     constructor(
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private analysisRepo: IAnalysisRepository
-    ) { }
+    ){}
 
     async execute(input: GetAnalysesByTeamIdInputDTO): Promise<Result<GetAnalysesByTeamIdOutputDTO, ApplicationError>> {
         const { teamId } = input;

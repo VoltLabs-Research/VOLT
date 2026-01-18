@@ -13,7 +13,7 @@ export class ImportPluginUseCase implements IUseCase<ImportPluginInputDTO, Impor
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
         @inject(PLUGIN_TOKENS.PluginStorageService) private storageService: IPluginStorageService
-    ) { }
+    ){}
 
     async execute(input: ImportPluginInputDTO): Promise<Result<ImportPluginOutputDTO>> {
         const data = await this.storageService.importPlugin(

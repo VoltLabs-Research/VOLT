@@ -11,7 +11,7 @@ export default class UpdateUserActivityUseCase implements IUseCase<UpdateUserAct
     constructor(
         @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository)
         private readonly repository: IDailyActivityRepository
-    ) { }
+    ){}
 
     async execute(input: UpdateUserActivityInputDTO): Promise<Result<UpdateUserActivityOutputDTO, ApplicationError>> {
         const { teamId, userId, durationInMinutes } = input;

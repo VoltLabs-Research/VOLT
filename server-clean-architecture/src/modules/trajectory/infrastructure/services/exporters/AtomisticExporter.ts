@@ -17,7 +17,7 @@ export default class AtomisticExporter implements IAtomisticExporter {
 
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ) { }
+    ){}
 
     private readonly STRUCTURE_COLORS: Record<string, number[]> = {
         'FCC': [102, 255, 102],

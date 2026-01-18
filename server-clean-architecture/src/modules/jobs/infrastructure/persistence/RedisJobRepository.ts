@@ -11,7 +11,7 @@ export default class RedisJobRepository implements IJobRepository {
 
         @inject(SHARED_TOKENS.RedisBlockingClient)
         private readonly redisBlocking: IORedis
-    ) { }
+    ){}
 
     async addToQueue(queueKey: string, jobs: string[]): Promise<void> {
         if (jobs.length === 0) return;

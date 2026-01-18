@@ -44,7 +44,7 @@ export class WorkerPool {
         private readonly onError: WorkerErrorHandler,
         private readonly onExit: WorkerExitHandler,
         private readonly getBacklogCount: () => Promise<number>
-    ) { }
+    ){}
 
     private logInfo(message: string): void {
         logger.info(`${this.config.logPrefix} ${message}`);

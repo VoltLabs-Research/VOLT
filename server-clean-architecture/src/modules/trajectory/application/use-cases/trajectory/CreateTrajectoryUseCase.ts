@@ -16,7 +16,7 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
 
         @inject(TRAJECTORY_TOKENS.TrajectoryBackgroundProcessor)
         private readonly backgroundProcessor: ITrajectoryBackgroundProcessor
-    ) { }
+    ){}
 
     async execute(input: CreateTrajectoryInputDTO): Promise<Result<CreateTrajectoryOutputDTO, ApplicationError>> {
         const { name, teamId, userId, files } = input;

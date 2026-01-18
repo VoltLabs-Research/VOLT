@@ -15,7 +15,7 @@ export class TestSSHConnectionsByIdUseCase implements IUseCase<TestSSHConnection
         private sshConnRepository: ISSHConnectionRepository,
         @inject(SSH_CONN_TOKENS.SSHConnectionService)
         private sshConnService: ISSHConnectionService
-    ) { }
+    ){}
 
     async execute(input: TestSSHConnectionByIdInputDTO): Promise<Result<TestSSHConnectionByIdOutputDTO, ApplicationError>> {
         const { sshConnectionId } = input;

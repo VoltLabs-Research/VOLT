@@ -7,7 +7,7 @@ export default class JwtTokenService implements ITokenService {
     private readonly secret: Secret = process.env.SECRET_KEY || 'default_secret';
     private readonly expiresIn: string = process.env.JWT_EXPIRE || '7d';
 
-    constructor() { }
+    constructor(){}
 
     public sign(id: string): string {
         return jwt.sign({ id }, this.secret, { expiresIn: this.expiresIn } as jwt.SignOptions);

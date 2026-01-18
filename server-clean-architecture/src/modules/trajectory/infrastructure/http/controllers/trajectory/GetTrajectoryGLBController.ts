@@ -9,7 +9,7 @@ export default class GetTrajectoryGLBController {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
-    ) { }
+    ){}
 
     public handle = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {

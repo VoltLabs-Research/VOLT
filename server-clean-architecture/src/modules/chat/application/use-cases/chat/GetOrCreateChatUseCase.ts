@@ -11,7 +11,7 @@ export class GetOrCreateChatUseCase implements IUseCase<GetOrCreateChatInputDTO,
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ) { }
+    ){}
 
     async execute(input: GetOrCreateChatInputDTO): Promise<Result<GetOrCreateChatOutputDTO, ApplicationError>> {
         const { userId, targetUserId, teamId } = input;

@@ -13,7 +13,7 @@ export class UploadBinaryUseCase implements IUseCase<UploadBinaryInputDTO, null,
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
         @inject(PLUGIN_TOKENS.PluginStorageService) private storageService: IPluginStorageService
-    ) { }
+    ){}
 
     async execute(input: UploadBinaryInputDTO): Promise<Result<null, ApplicationError>> {
         await this.storageService.uploadBinary(

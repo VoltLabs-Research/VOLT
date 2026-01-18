@@ -6,7 +6,7 @@ import { UpdateAnalysisByIdUseCase } from '@modules/analysis/application/use-cas
 export class UpdateAnalysisByIdController {
     constructor(
         @inject(UpdateAnalysisByIdUseCase) private useCase: UpdateAnalysisByIdUseCase
-    ) { }
+    ){}
 
     async handle(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {

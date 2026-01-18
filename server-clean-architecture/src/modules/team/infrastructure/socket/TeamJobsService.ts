@@ -28,7 +28,7 @@ export default class TeamJobsService {
 
         @inject(JOBS_TOKENS.QueueRegistry)
         private readonly queueRegistry: IQueueRegistry
-    ) { }
+    ){}
 
     async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
         try {

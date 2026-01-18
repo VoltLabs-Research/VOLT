@@ -16,7 +16,7 @@ interface DeleteVFSFileInputDTO {
 export class DeleteVFSFileUseCase implements IUseCase<DeleteVFSFileInputDTO, DeleteVFSFileOutputDTO> {
     constructor(
         @inject('IVFSService') private vfsService: IVFSService
-    ) { }
+    ){}
 
     async execute(input: DeleteVFSFileInputDTO): Promise<Result<DeleteVFSFileOutputDTO>> {
         await this.vfsService.deleteFile(input.trajectoryId, input.path);

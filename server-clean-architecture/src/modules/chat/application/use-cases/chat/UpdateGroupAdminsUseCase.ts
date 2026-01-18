@@ -12,7 +12,7 @@ export class UpdateGroupAdminsUseCase implements IUseCase<UpdateGroupAdminsInput
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ) { }
+    ){}
 
     async execute(input: UpdateGroupAdminsInputDTO): Promise<Result<UpdateGroupAdminsOutputDTO, ApplicationError>> {
         const { action, chatId, requesterId, targetUserIds } = input;

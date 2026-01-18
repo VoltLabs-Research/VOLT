@@ -8,7 +8,7 @@ import { ListApiTrackerInputDTO, ListApiTrackerOutputDTO } from '@modules/api-tr
 export class ListApiTrackerUseCase implements IUseCase<ListApiTrackerInputDTO, ListApiTrackerOutputDTO> {
     constructor(
         @inject('IApiTrackerRepository') private repository: IApiTrackerRepository
-    ) { }
+    ){}
 
     async execute(input: ListApiTrackerInputDTO): Promise<Result<ListApiTrackerOutputDTO>> {
         const page = input.page || 1;

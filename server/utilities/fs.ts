@@ -128,7 +128,7 @@ export const copyFile = async (source: string, destination: string): Promise<voi
         // Clean up partial file if it exists
         try {
             await rm(destination);
-        } catch (cleanupError) { }
+        } catch (cleanupError){}
 
         throw err;
     }

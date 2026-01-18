@@ -9,7 +9,7 @@ export default class TeamJobStatusChangedEventHandler implements IEventHandler<J
     constructor(
         @inject(SOCKET_TOKENS.SocketEmitter)
         private readonly socketEmitter: ISocketEmitter
-    ) { }
+    ){}
 
     async handle(event: JobStatusChangedEvent): Promise<void> {
         const { teamId, jobId, status, queueType, metadata } = event.data;

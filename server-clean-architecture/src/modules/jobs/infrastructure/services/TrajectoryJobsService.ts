@@ -48,7 +48,7 @@ export default class TrajectoryJobsService {
     constructor(
         @inject(JOBS_TOKENS.JobRepository)
         private readonly jobRepository: IJobRepository
-    ) { }
+    ){}
 
     async getGroupedJobsForTeam(teamId: string): Promise<TrajectoryJobGroup[]> {
         if (!teamId) return [];

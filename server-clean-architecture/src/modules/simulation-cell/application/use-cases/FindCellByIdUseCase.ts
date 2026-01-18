@@ -11,7 +11,7 @@ export default class FindCellByIdUseCase implements IUseCase<FindCellByIdInputDT
     constructor(
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
         private readonly repository: ISimulationCellRepository
-    ) { }
+    ){}
 
     async execute(input: FindCellByIdInputDTO): Promise<Result<FindCellByIdOutputDTO, ApplicationError>> {
         const cell = await this.repository.findById(input.id, { populate: 'trajectory' });

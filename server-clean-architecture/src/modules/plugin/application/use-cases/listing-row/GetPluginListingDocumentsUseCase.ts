@@ -13,7 +13,7 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 export class GetPluginListingDocumentsUseCase implements IUseCase<GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginListingService) private listingService: IPluginListingService
-    ) { }
+    ){}
 
     async execute(input: GetPluginListingDocumentsInputDTO): Promise<Result<GetPluginListingDocumentsOutputDTO>> {
         const result = await this.listingService.getListingDocuments(

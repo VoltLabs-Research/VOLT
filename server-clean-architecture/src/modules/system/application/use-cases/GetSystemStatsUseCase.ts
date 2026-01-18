@@ -8,7 +8,7 @@ import { GetSystemStatsOutputDTO } from '@modules/system/application/dtos/GetSys
 export class GetSystemStatsUseCase implements IUseCase<void, GetSystemStatsOutputDTO> {
     constructor(
         @inject('IMetricsService') private metricsService: IMetricsService
-    ) { }
+    ){}
 
     async execute(): Promise<Result<GetSystemStatsOutputDTO>> {
         let stats = await this.metricsService.getLatestFromRedis();

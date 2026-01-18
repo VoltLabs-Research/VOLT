@@ -12,7 +12,7 @@ export class GetContainerProcessesUseCase implements IUseCase<{ id: string }, Ge
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
         @inject('IContainerService') private containerService: IContainerService
-    ) { }
+    ){}
 
     async execute(input: { id: string }): Promise<Result<GetContainerProcessesOutputDTO>> {
         const container = await this.repository.findById(input.id);

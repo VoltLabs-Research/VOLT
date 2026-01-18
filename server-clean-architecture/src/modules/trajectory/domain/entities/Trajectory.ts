@@ -48,7 +48,7 @@ export default class Trajectory {
     constructor(
         public id: string,
         public props: TrajectoryProps
-    ) { }
+    ){}
 
     updateStatus(status: TrajectoryStatus | string): void {
         this.props.status = status as TrajectoryStatus;

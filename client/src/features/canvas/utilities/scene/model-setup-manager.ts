@@ -38,7 +38,7 @@ export default class ModelSetupManager {
         private transformManager: TransformationManager,
         private setModelBounds: (bounds: any) => void,
         private invalidate: () => void,
-    ) { }
+    ){}
 
     updateParams(newParams: UseGlbSceneParams): void {
         this.params = newParams;

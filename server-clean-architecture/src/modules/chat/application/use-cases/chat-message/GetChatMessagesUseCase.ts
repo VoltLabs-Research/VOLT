@@ -12,7 +12,7 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository
-    ) { }
+    ){}
 
     async execute(input: GetChatMessagesInputDTO): Promise<Result<GetChatMessagesOutputDTO, ApplicationError>> {
         // TODO: verify chat access

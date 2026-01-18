@@ -23,7 +23,7 @@ export default class PluginStorageService implements IPluginStorageService {
 
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ) { }
+    ){}
 
     async deleteBinary(pluginId: string): Promise<void> {
         const plugin = await this.pluginRepo.findById(pluginId);

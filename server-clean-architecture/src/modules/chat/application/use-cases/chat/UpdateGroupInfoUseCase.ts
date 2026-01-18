@@ -13,7 +13,7 @@ export class UpdateGroupInfoUseCase implements IUseCase<UpdateGroupInfoInputDTO,
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ) { }
+    ){}
 
     async execute(input: UpdateGroupInfoInputDTO): Promise<Result<UpdateGroupInfoOutputDTO, ApplicationError>> {
         const { userId, chatId, groupName, groupDescription } = input;

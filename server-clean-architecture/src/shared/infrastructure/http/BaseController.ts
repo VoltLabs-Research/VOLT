@@ -8,7 +8,7 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
     constructor(
         protected useCase: TUseCase,
         private readonly statusCode: HttpStatus = HttpStatus.OK
-    ) { }
+    ){}
 
     /**
      * This method must be implemented by each controller to map

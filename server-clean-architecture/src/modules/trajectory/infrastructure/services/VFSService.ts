@@ -5,7 +5,7 @@ import { IStorageService } from '@shared/domain/ports/IStorageService';
 export class VFSService {
     constructor(
         @inject('IStorageService') private storage: IStorageService
-    ) { }
+    ){}
 
     async listDirectory(trajectoryId: string, path: string = ''): Promise<any[]> {
         const basePath = `trajectories/${trajectoryId}/vfs/${path}`;

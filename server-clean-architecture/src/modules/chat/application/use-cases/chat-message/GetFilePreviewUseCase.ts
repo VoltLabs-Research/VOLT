@@ -17,7 +17,7 @@ export class GetFilePreviewUseCase implements IUseCase<GetFilePreviewInputDTO, G
         private messageRepo: IChatMessageRepository,
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ) { }
+    ){}
 
     async execute(input: GetFilePreviewInputDTO): Promise<Result<GetFilePreviewOutputDTO, ApplicationError>> {
         const { messageId } = input;

@@ -34,7 +34,7 @@ class SocketGateway {
         ],
         private pingTimeout = 60_000,
         private pingInterval = 25_000
-    ) { }
+    ){}
 
     /**
      * Register a feature module(before initialize()).

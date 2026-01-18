@@ -21,7 +21,7 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
-    ) { }
+    ){}
 
     async handle(event: SessionCompletedEvent): Promise<void> {
         const { queueType, metadata } = event.data;

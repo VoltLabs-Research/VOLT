@@ -12,7 +12,7 @@ export default class GetPendingInvitationsUseCase implements IUseCase<GetPending
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository)
         private readonly invitationRepository: ITeamInvitationRepository
-    ) { }
+    ){}
 
     async execute(input: GetPendingInvitationsInputDTO): Promise<Result<GetPendingInvitationsOutputDTO, ApplicationError>> {
         const { teamId } = input;

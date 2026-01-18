@@ -12,7 +12,7 @@ export class DeleteSSHConnectionByIdUseCase implements IUseCase<DeleteSSHConnect
     constructor(
         @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
         private sshConnRepository: ISSHConnectionRepository
-    ) { }
+    ){}
 
     async execute(input: DeleteSSHConnectionByIdInputDTO): Promise<Result<null, ApplicationError>> {
         const { sshConnectionId } = input;

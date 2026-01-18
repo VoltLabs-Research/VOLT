@@ -8,7 +8,7 @@ import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/aut
 export class CreateAnalysisController {
     constructor(
         @inject(CreateAnalysisUseCase) private useCase: CreateAnalysisUseCase
-    ) { }
+    ){}
 
     async handle(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
         try {

@@ -6,7 +6,7 @@ import { GetRasterFramePNGUseCase } from '@modules/raster/application/use-cases/
 export class GetRasterFramePNGController {
     constructor(
         @inject(GetRasterFramePNGUseCase) private useCase: GetRasterFramePNGUseCase
-    ) { }
+    ){}
 
     async handle(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {

@@ -12,7 +12,7 @@ export class LeaveGroupUseCase implements IUseCase<LeaveGroupInputDTO, null, App
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ) { }
+    ){}
 
     async execute(input: LeaveGroupInputDTO): Promise<Result<null, ApplicationError>> {
         const { chatId, participantId } = input;

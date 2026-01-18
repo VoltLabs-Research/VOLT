@@ -13,7 +13,7 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 export class GetNodeSchemasUseCase implements IUseCase<void, GetNodeSchemasOutputDTO> {
     constructor(
         @inject(PLUGIN_TOKENS.NodeRegistry) private nodeRegistry: INodeRegistryService
-    ) { }
+    ){}
 
     async execute(): Promise<Result<GetNodeSchemasOutputDTO>> {
         const schemas = this.nodeRegistry.getAllSchemas();

@@ -6,7 +6,7 @@ import { TriggerRasterizationUseCase } from '@modules/raster/application/use-cas
 export class TriggerRasterizationController {
     constructor(
         @inject(TriggerRasterizationUseCase) private useCase: TriggerRasterizationUseCase
-    ) { }
+    ){}
 
     async handle(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {

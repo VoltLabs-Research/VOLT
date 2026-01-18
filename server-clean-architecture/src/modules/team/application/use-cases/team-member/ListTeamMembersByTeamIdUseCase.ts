@@ -26,7 +26,7 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
 
         @inject(DAILY_ACTIVITY_TOKENS.DailyActivityRepository)
         private readonly dailyActivityRepository: IDailyActivityRepository
-    ) { }
+    ){}
 
     async execute(input: ListTeamMembersByTeamIdInputDTO): Promise<Result<ListTeamMembersByTeamIdOutputDTO, ApplicationError>> {
         const { teamId } = input;

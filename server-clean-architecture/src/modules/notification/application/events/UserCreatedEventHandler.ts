@@ -8,7 +8,7 @@ export default class UserCreatedEventHandler implements IEventHandler<UserCreate
     constructor(
         @inject(delay(() => CreateNotificationUseCase))
         private readonly createNotificationUseCase: CreateNotificationUseCase
-    ) { }
+    ){}
 
     async handle(event: UserCreatedEvent): Promise<void> {
         const { id, firstName } = event.payload;

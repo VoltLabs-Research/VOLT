@@ -22,5 +22,5 @@ export default class Plugin {
     constructor(
         public id: string,
         public props: PluginProps
-    ) { }
+    ){}
 };

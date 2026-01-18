@@ -17,7 +17,7 @@ export class RasterService implements IRasterService {
 
         @inject(SHARED_TOKENS.StorageService)
         private readonly storageService: IStorageService
-    ) { }
+    ){}
 
     async triggerRasterization(trajectoryId: string, teamId: string, config?: any): Promise<boolean> {
         const prefix = `trajectory-${trajectoryId}/`;

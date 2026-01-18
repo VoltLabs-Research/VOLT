@@ -12,7 +12,7 @@ export class SendFileMessageUseCase implements IUseCase<SendFileMessageInputDTO,
     constructor(
         @inject(CHAT_TOKENS.SendChatMessageUseCase)
         private sendChatMessage: SendChatMessageUseCase
-    ) { }
+    ){}
 
     async execute(input: SendFileMessageInputDTO): Promise<Result<SendFileMessageOutputDTO, ApplicationError>> {
         const { fileData, userId, chatId } = input;

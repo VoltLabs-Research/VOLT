@@ -11,7 +11,7 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepo: ITrajectoryRepository
-    ) { }
+    ){}
 
     async execute(input: GetTrajectoriesByTeamIdInputDTO): Promise<Result<GetTrajectoriesByTeamIdOutputDTO, ApplicationError>> {
         const { teamId } = input;

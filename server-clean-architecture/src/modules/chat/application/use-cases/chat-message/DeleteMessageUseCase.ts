@@ -12,7 +12,7 @@ export class DeleteMessageUseCase implements IUseCase<DeleteMessageInputDTO, nul
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository
-    ) { }
+    ){}
 
     async execute(input: DeleteMessageInputDTO): Promise<Result<null, ApplicationError>> {
         const { messageId, userId } = input;

@@ -12,7 +12,7 @@ export class AddUsersToGroupUseCase implements IUseCase<AddUsersToGroupInputDTO,
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ) { }
+    ){}
 
     async execute(input: AddUsersToGroupInputDTO): Promise<Result<AddUsersToGroupOutputDTO, ApplicationError>> {
         const { requesterId, chatId, userIdsToAdd } = input;

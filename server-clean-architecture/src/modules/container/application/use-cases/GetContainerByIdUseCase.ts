@@ -10,7 +10,7 @@ import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
 export class GetContainerByIdUseCase implements IUseCase<{ id: string }, GetContainerByIdOutputDTO> {
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository
-    ) { }
+    ){}
 
     async execute(input: { id: string }): Promise<Result<GetContainerByIdOutputDTO>> {
         const container = await this.repository.findById(input.id);

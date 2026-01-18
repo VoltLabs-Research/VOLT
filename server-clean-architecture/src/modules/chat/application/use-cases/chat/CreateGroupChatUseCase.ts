@@ -16,7 +16,7 @@ export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO,
         private chatRepo: IChatRepository,
         @inject(TEAM_TOKENS.TeamRepository)
         private teamRepo: ITeamRepository
-    ) { }
+    ){}
 
     async execute(input: CreateGroupChatInputDTO): Promise<Result<CreateGroupChatOutputDTO, ApplicationError>> {
         const { teamId, participantIds, groupName, ownerId, groupDescription } = input;

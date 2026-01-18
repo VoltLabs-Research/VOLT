@@ -11,7 +11,7 @@ export interface IVFSService {
 export class GetVFSFileUseCase implements IUseCase<GetVFSFileInputDTO, Buffer> {
     constructor(
         @inject('IVFSService') private vfsService: IVFSService
-    ) { }
+    ){}
 
     async execute(input: GetVFSFileInputDTO): Promise<Result<Buffer>> {
         const fileBuffer = await this.vfsService.getFile(input.trajectoryId, input.path);

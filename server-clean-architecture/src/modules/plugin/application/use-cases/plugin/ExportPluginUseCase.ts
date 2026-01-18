@@ -14,7 +14,7 @@ export class ExportPluginUseCase implements IUseCase<ExportPluginInputDTO, Expor
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
         @inject(PLUGIN_TOKENS.PluginStorageService) private storageService: IPluginStorageService
-    ) { }
+    ){}
 
     async execute(input: ExportPluginInputDTO): Promise<Result<ExportPluginOutputDTO, ApplicationError>> {
         const plugin = await this.pluginRepository.findById(input.pluginId);

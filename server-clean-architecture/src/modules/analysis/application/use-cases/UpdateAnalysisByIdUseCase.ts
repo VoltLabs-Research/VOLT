@@ -10,7 +10,7 @@ import { ErrorCodes } from '@core/constants/error-codes';
 export class UpdateAnalysisByIdUseCase implements IUseCase<UpdateAnalysisInputDTO, UpdateAnalysisOutputDTO> {
     constructor(
         @inject('IAnalysisRepository') private analysisRepository: IAnalysisRepository
-    ) { }
+    ){}
 
     async execute(input: UpdateAnalysisInputDTO): Promise<Result<UpdateAnalysisOutputDTO>> {
         const analysis = await this.analysisRepository.updateById(input.id, {

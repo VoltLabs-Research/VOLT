@@ -14,7 +14,7 @@ interface TeamDeletedEvent {
 export class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository
-    ) { }
+    ){}
 
     async handle(event: TeamDeletedEvent): Promise<void> {
         logger.info(`@container: Handling team:deleted event for team ${event.teamId}`);

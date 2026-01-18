@@ -21,7 +21,7 @@ export default class AvatarService implements IAvatarService {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ) { }
+    ){}
 
     generateIdenticon(seed: string): AvatarResult {
         const hash = crypto.createHash('md5').update(seed).digest('hex');

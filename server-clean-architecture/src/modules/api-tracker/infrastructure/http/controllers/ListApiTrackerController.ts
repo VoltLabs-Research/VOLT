@@ -7,7 +7,7 @@ import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/aut
 export class ListApiTrackerController {
     constructor(
         @inject(ListApiTrackerUseCase) private useCase: ListApiTrackerUseCase
-    ) { }
+    ){}
 
     async handle(req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> {
         try {

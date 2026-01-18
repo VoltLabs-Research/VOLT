@@ -12,7 +12,7 @@ export default class DislocationExporter implements IDislocationExporter {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ) { }
+    ){}
 
     private readonly TYPE_COLORS: Record<string, [number, number, number, number]> = {
         'Other': [0.95, 0.1, 0.1, 1.0],

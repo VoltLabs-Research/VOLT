@@ -17,7 +17,7 @@ export default class Team {
     constructor(
         public readonly id: string,
         public props: TeamProps
-    ) { }
+    ){}
 
     public isOwner(userId: string): boolean {
         return this.props.owner === userId;

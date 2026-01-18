@@ -14,7 +14,7 @@ interface UserDeletedEvent {
 export class UserDeletedEventHandler implements IEventHandler<UserDeletedEvent> {
     constructor(
         @inject('IApiTrackerRepository') private repository: IApiTrackerRepository
-    ) { }
+    ){}
 
     async handle(event: UserDeletedEvent): Promise<void> {
         logger.info(`@api-tracker: Handling user:deleted event for user ${event.userId}`);

@@ -27,7 +27,7 @@ import { ANIMATION_CONSTANTS } from '@/features/canvas/utilities/simulation-box'
 export default class TransformationManager {
     constructor(
         private state: ExtendedSceneState
-    ) { }
+    ){}
 
     rotate(dx: number, dy: number, dz: number): void {
         if (!this.state.selected) return;

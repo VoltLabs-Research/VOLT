@@ -11,7 +11,7 @@ export default class ListTeamRolesByTeamIdUseCase implements IUseCase<ListTeamRo
     constructor(
         @inject(TEAM_TOKENS.TeamRoleRepository)
         private readonly teamRoleRepository: ITeamRoleRepository
-    ) { }
+    ){}
 
     async execute(input: ListTeamRolesByTeamIdInputDTO): Promise<Result<ListTeamRolesByTeamIdOutputDTO, ApplicationError>> {
         const { teamId, page, limit } = input;

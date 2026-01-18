@@ -11,7 +11,7 @@ export class GetSSHConnectionsByTeamIdUseCase implements IUseCase<GetSSHConnecti
     constructor(
         @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
         private sshConnRepository: ISSHConnectionRepository
-    ) { }
+    ){}
 
     async execute(input: GetSSHConnectionsByTeamIdInputDTO): Promise<Result<GetSSHConnectionsByTeamIdOutputDTO, ApplicationError>> {
         const { teamId } = input;

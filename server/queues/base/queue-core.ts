@@ -168,7 +168,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 if (job.trajectoryId === trajectoryId) {
                     return true;
                 }
-            } catch (e) { }
+            } catch (e){}
         }
         return false;
     }
@@ -181,7 +181,7 @@ export abstract class BaseProcessingQueue<T extends BaseJob> extends EventEmitte
                 if (job.trajectoryId === trajectoryId) {
                     return true;
                 }
-            } catch (e) { }
+            } catch (e){}
         }
         return false;
     }

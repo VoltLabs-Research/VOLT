@@ -11,7 +11,7 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, CreatePluginOutputDTO> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository
-    ) { }
+    ){}
 
     async execute(input: CreatePluginInputDTO): Promise<Result<CreatePluginOutputDTO>> {
         const plugin = await this.pluginRepository.create({

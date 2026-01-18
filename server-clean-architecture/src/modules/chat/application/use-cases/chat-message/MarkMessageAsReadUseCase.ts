@@ -11,7 +11,7 @@ export class MarkMessagesAsReadUseCase implements IUseCase<MarkMessagesAsReadInp
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository
-    ) { }
+    ){}
 
     async execute(input: MarkMessagesAsReadInputDTO): Promise<Result<null, ApplicationError>> {
         const { chatId, userId } = input;

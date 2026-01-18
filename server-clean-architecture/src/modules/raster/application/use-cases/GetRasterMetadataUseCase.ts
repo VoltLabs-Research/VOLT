@@ -10,7 +10,7 @@ import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 export class GetRasterMetadataUseCase implements IUseCase<string, GetRasterMetadataOutputDTO> {
     constructor(
         @inject(RASTER_TOKENS.RasterService) private rasterService: IRasterService
-    ) { }
+    ){}
 
     async execute(trajectoryId: string): Promise<Result<GetRasterMetadataOutputDTO>> {
         const metadata = await this.rasterService.getRasterMetadata(trajectoryId);

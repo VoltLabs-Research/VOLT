@@ -33,7 +33,7 @@ export default class CLIExec {
     private static readonly MAX_ETXTBSY_RETRIES = 1;
     private static readonly ETXTBSY_RETRY_DELAY_MS = 500;
 
-    constructor() { }
+    constructor(){}
 
     run(execPath: string, args: string[]): Promise<CLIResult> {
         return this.runWithRetry(execPath, args, 0);

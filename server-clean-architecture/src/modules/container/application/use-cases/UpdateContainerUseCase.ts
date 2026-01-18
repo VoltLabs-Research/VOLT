@@ -12,7 +12,7 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
         @inject('IContainerService') private containerService: IContainerService
-    ) { }
+    ){}
 
     async execute(input: UpdateContainerInputDTO): Promise<Result<UpdateContainerOutputDTO>> {
         const { id, action, env, ports } = input;

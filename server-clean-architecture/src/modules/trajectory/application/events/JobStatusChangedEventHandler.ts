@@ -16,7 +16,7 @@ export default class JobStatusChangedEventHandler implements IEventHandler<JobSt
         private readonly trajectoryRepo: ITrajectoryRepository,
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
-    ) { }
+    ){}
 
     async handle(event: JobStatusChangedEvent): Promise<void> {
         const { status, metadata, teamId } = event.data;

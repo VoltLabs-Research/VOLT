@@ -38,7 +38,7 @@ export default class ModelLoader {
         private logger: any,
         private onLoadingStateChange: (state: any) => void,
         private setModel: (model: Object3D) => void
-    ) { }
+    ){}
 
 
 

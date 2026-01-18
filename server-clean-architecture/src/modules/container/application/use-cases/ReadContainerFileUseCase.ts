@@ -11,7 +11,7 @@ export class ReadContainerFileUseCase implements IUseCase<{ id: string; path: st
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
         @inject('IContainerService') private containerService: IContainerService
-    ) { }
+    ){}
 
     async execute(input: { id: string; path: string }): Promise<Result<{ content: string }>> {
         const container = await this.repository.findById(input.id);

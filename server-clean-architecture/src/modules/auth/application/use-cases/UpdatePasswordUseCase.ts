@@ -22,7 +22,7 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
         private readonly tokenService: ITokenService,
         @inject(AUTH_TOKENS.SessionRepository)
         private readonly sessionRepository: ISessionRepository
-    ) { }
+    ){}
 
     async execute(input: UpdatePasswordInputDTO): Promise<Result<UpdatePasswordOutputDTO, ApplicationError>> {
         const user = await this.useRepository.findByIdWithPassword(input.userId);

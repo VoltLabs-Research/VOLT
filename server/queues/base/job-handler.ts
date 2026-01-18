@@ -46,7 +46,7 @@ export class JobHandler<T extends BaseJob> {
     constructor(
         private readonly redis: IORedis,
         private readonly config: JobHandlerConfig
-    ) { }
+    ){}
 
     private logInfo(message: string): void {
         logger.info(`${this.config.logPrefix} ${message}`);

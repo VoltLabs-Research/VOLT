@@ -12,7 +12,7 @@ export class RemoveUsersFromGroupUseCase implements IUseCase<RemoveUsersFromGrou
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ) { }
+    ){}
 
     async execute(input: RemoveUsersFromGroupInputDTO): Promise<Result<RemoveUsersFromGroupOutputDTO, ApplicationError>> {
         const { requesterId, chatId, userIdsToRemove } = input;

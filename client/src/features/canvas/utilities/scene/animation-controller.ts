@@ -36,7 +36,7 @@ export default class AnimationController {
         private scene: Scene,
         private camera: Camera,
         private invalidate: () => void
-    ) { }
+    ){}
 
     update(): void {
         if (!this.state.model) return;

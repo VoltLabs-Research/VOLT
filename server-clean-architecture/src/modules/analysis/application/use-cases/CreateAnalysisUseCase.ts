@@ -8,7 +8,7 @@ import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepo
 export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, CreateAnalysisOutputDTO> {
     constructor(
         @inject('IAnalysisRepository') private analysisRepository: IAnalysisRepository
-    ) { }
+    ){}
 
     async execute(input: CreateAnalysisInputDTO): Promise<Result<CreateAnalysisOutputDTO>> {
         const analysis = await this.analysisRepository.create({

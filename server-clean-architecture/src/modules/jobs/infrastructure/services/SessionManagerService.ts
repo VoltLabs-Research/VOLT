@@ -19,7 +19,7 @@ export default class SessionManagerService implements ISessionManagerService {
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
-    ) { }
+    ){}
 
     initialize(config: SessionManagerConfig): void {
         this.config = config;

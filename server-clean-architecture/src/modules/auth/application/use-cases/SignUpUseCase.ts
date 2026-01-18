@@ -32,7 +32,7 @@ export default class SignUpUseCase implements IUseCase<SignUpInputDTO, SignUpOut
         private readonly eventBus: IEventBus,
         @inject(AUTH_TOKENS.AvatarService)
         private readonly avatarService: IAvatarService
-    ) { }
+    ){}
 
     async execute(input: SignUpInputDTO): Promise<Result<SignUpOutputDTO, ApplicationError>> {
         /**

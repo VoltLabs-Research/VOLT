@@ -15,7 +15,7 @@ export default class ChartExporter implements IChartExporter {
     constructor(
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ) { }
+    ){}
 
     /**
      * Extract chart data from data bsaed on x/y axis keys.

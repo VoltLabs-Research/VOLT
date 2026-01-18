@@ -10,7 +10,7 @@ import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 export class GetRasterFramePNGUseCase implements IUseCase<GetRasterFramePNGInputDTO, Buffer> {
     constructor(
         @inject(RASTER_TOKENS.RasterService) private rasterService: IRasterService
-    ) { }
+    ){}
 
     async execute(input: GetRasterFramePNGInputDTO): Promise<Result<Buffer>> {
         const pngBuffer = await this.rasterService.getRasterFramePNG(

@@ -7,7 +7,7 @@ export abstract class BaseMapper<TDomain, TProps, TDocument>
     constructor(
         private readonly entityClass: any,
         private readonly relationKeys: (keyof TProps)[] = []
-    ) { }
+    ){}
 
     toDomain(doc: HydratedDocument<TDocument>): TDomain {
         const rawProps = doc.toObject({ flattenMaps: true });

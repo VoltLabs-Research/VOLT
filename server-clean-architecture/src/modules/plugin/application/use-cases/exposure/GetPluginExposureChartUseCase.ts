@@ -13,7 +13,7 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 export class GetPluginExposureChartUseCase implements IUseCase<GetPluginExposureChartInputDTO, any> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginListingService) private listingService: IPluginListingService
-    ) { }
+    ){}
 
     async execute(input: GetPluginExposureChartInputDTO): Promise<Result<any>> {
         const stream = await this.listingService.getExposureChart(input.exposureId, input.timestep);

@@ -29,5 +29,5 @@ export default class SimulationCell {
     constructor(
         public id: string,
         public props: SimulationCellProps
-    ) { }
+    ){}
 };

@@ -40,7 +40,7 @@ export class SessionManager<T extends BaseJob> {
     constructor(
         private readonly redis: IORedis,
         private readonly config: SessionManagerConfig
-    ) { }
+    ){}
 
     private logInfo(message: string): void {
         logger.info(`${this.config.logPrefix} ${message}`);

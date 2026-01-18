@@ -22,7 +22,7 @@ export class TerminalService implements ITerminalService {
     constructor(
         @inject('IContainerService') private containerService: IContainerService,
         @inject('IContainerRepository') private repository: IContainerRepository
-    ) { }
+    ){}
 
     handleConnection(socket: Socket): void {
         socket.on('container:terminal:attach', async (data: { containerId: string }) => {

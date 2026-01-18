@@ -33,7 +33,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, nul
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private trajectoryRepo: ITrajectoryRepository
-    ) { }
+    ){}
 
     async execute(input: ExecutePluginInputDTO): Promise<Result<null, ApplicationError>> {
         const [trajectory, plugin] = await Promise.all([

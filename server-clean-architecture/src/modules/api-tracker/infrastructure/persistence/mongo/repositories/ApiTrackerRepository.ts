@@ -8,7 +8,7 @@ import { IApiTrackerDocument } from '@modules/api-tracker/infrastructure/persist
 export class ApiTrackerRepository implements IApiTrackerRepository {
     constructor(
         @inject('ApiTrackerModel') private model: Model<IApiTrackerDocument>
-    ) { }
+    ){}
 
     async findByUserId(userId: string, page: number, limit: number): Promise<{ items: ApiTrackerEntity[]; total: number }> {
         const skip = (page - 1) * limit;

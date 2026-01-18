@@ -11,7 +11,7 @@ export default class FindCellsByTeamIdUseCase implements IUseCase<FindCellsByTea
     constructor(
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
         private readonly repository: ISimulationCellRepository
-    ) { }
+    ){}
 
     async execute(input: FindCellsByTeamIdInputDTO): Promise<Result<FindCellsByTeamIdOutputDTO, ApplicationError>> {
         const { teamId, page = 1, limit = 10 } = input;

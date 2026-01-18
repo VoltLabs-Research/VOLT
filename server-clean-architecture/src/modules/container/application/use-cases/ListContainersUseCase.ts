@@ -8,7 +8,7 @@ import { IContainerRepository } from '@modules/container/domain/ports/IContainer
 export class ListContainersUseCase implements IUseCase<{ teamId: string, userId: string }, ListContainersOutputDTO> {
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository
-    ) { }
+    ){}
 
     async execute(input: { teamId: string, userId: string }): Promise<Result<ListContainersOutputDTO>> {
         const result = await this.repository.findAll({

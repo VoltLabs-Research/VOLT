@@ -13,7 +13,7 @@ export default class GetNotificationsByUserIdUseCase
     constructor(
         @inject(NOTIFICATION_TOKENS.NotificationRepository)
         private notificationRepo: INotificationRepository
-    ) { }
+    ){}
 
     async execute(input: GetNotificationsByUserIdInputDTO): Promise<Result<GetNotificationsByUserIdOutputDTO, ApplicationError>> {
         const { userId } = input;

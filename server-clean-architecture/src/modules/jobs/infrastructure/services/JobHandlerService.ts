@@ -26,7 +26,7 @@ export default class JobHandlerService implements IJobHandlerService {
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
-    ) { }
+    ){}
 
     initialize(config: JobHandlerConfig): void {
         this.config = config;

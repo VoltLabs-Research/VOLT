@@ -47,7 +47,7 @@ export default class ChatSocketManager {
         private registered = false,
         private unsubscribers: Array<() => void> = [],
         private refCount = 0
-    ) { }
+    ){}
 
     static getInstance(): ChatSocketManager {
         if (!ChatSocketManager.instance) {

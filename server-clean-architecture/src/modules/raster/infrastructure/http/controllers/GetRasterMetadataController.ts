@@ -6,7 +6,7 @@ import { GetRasterMetadataUseCase } from '@modules/raster/application/use-cases/
 export class GetRasterMetadataController {
     constructor(
         @inject(GetRasterMetadataUseCase) private useCase: GetRasterMetadataUseCase
-    ) { }
+    ){}
 
     async handle(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {

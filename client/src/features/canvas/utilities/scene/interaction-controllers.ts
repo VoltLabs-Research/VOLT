@@ -41,7 +41,7 @@ export default class InteractionController {
         private detachKeyboard?: () => void,
         private onSelect?: () => void,
         private orbitControlsRef?: any
-    ) { }
+    ){}
 
     setCamera(camera: Camera): void {
         this.camera = camera;

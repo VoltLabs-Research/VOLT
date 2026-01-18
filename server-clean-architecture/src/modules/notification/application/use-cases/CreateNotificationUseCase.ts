@@ -11,7 +11,7 @@ export default class CreateNotificationUseCase implements IUseCase<CreateNotific
     constructor(
         @inject(NOTIFICATION_TOKENS.NotificationRepository)
         private readonly notificationRepository: INotificationRepository
-    ) { }
+    ){}
 
     async execute(input: CreateNotificationInputDTO): Promise<Result<CreateNotificationOutputDTO, ApplicationError>> {
         const { recipient, title, content, link } = input;

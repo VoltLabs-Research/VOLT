@@ -12,7 +12,7 @@ export class UpdateSSHConnectionByIdUseCase implements IUseCase<UpdateSSHConnect
     constructor(
         @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
         private sshConnRepository: ISSHConnectionRepository
-    ) { }
+    ){}
 
     async execute(input: UpdateSSHConnectionByIdInputDTO): Promise<Result<UpdateSSHConnectionByIdOutputDTO, ApplicationError>> {
         const { host, name, port, sshConnectionId, username } = input;

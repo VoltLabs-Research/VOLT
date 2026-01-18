@@ -11,7 +11,7 @@ export interface IVFSService {
 export class DownloadVFSArchiveUseCase implements IUseCase<string, DownloadVFSArchiveOutputDTO> {
     constructor(
         @inject('IVFSService') private vfsService: IVFSService
-    ) { }
+    ){}
 
     async execute(trajectoryId: string): Promise<Result<DownloadVFSArchiveOutputDTO>> {
         const stream = await this.vfsService.downloadArchive(trajectoryId);

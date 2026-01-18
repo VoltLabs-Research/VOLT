@@ -7,7 +7,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 export class PluginListingService {
     constructor(
         @inject(SHARED_TOKENS.StorageService) private storage: IStorageService
-    ) { }
+    ){}
 
     async getExposureGLB(exposureId: string, timestep: number): Promise<any> {
         const path = `exposures/${exposureId}/glb/${timestep}.glb`;

@@ -12,7 +12,7 @@ export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, EditMes
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository
-    ) { }
+    ){}
 
     async execute(input: EditMessageInputDTO): Promise<Result<EditMessageOutputDTO, ApplicationError>> {
         const { messageId, userId, content } = input;

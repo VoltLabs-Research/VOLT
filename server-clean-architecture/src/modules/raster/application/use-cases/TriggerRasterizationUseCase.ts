@@ -10,7 +10,7 @@ import { RASTER_TOKENS } from '@modules/raster/infrastructure/di/RasterTokens';
 export class TriggerRasterizationUseCase implements IUseCase<TriggerRasterizationInputDTO, TriggerRasterizationOutputDTO> {
     constructor(
         @inject(RASTER_TOKENS.RasterService) private rasterService: IRasterService
-    ) { }
+    ){}
 
     async execute(input: TriggerRasterizationInputDTO): Promise<Result<TriggerRasterizationOutputDTO>> {
         const triggered = await this.rasterService.triggerRasterization(input.trajectoryId, input.config);

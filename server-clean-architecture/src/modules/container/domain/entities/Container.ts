@@ -35,5 +35,5 @@ export class Container implements IContainerProps {
         public createdAt?: Date,
         public updatedAt?: Date,
         public _id?: string
-    ) { }
+    ){}
 }

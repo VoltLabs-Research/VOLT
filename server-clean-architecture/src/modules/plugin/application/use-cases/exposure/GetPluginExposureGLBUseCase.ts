@@ -13,7 +13,7 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 export class GetPluginExposureGLBUseCase implements IUseCase<GetPluginExposureGLBInputDTO, any> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginListingService) private listingService: IPluginListingService
-    ) { }
+    ){}
 
     async execute(input: GetPluginExposureGLBInputDTO): Promise<Result<any>> {
         const stream = await this.listingService.getExposureGLB(input.exposureId, input.timestep);

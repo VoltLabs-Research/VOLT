@@ -14,7 +14,7 @@ export class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO,
         private messageRepo: IChatMessageRepository,
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ) { }
+    ){}
 
     async execute(input: SendChatMessageInputDTO): Promise<Result<SendChatMessageOutputDTO, ApplicationError>> {
         const { userId, chatId, content, messageType, metadata } = input;

@@ -13,7 +13,7 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 export class ValidateWorkflowUseCase implements IUseCase<ValidateWorkflowInputDTO, ValidateWorkflowOutputDTO> {
     constructor(
         @inject(PLUGIN_TOKENS.WorkflowValidatorService) private validatorService: IWorkflowValidatorService
-    ) { }
+    ){}
 
     async execute(input: ValidateWorkflowInputDTO): Promise<Result<ValidateWorkflowOutputDTO>> {
         const validation = this.validatorService.validate(input.workflow);

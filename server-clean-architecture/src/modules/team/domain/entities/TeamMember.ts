@@ -11,5 +11,5 @@ export default class TeamMember {
     constructor(
         public id: string,
         public props: TeamMemberProps
-    ) { }
+    ){}
 };

@@ -30,7 +30,7 @@ export default class SelectionManager {
         private state: ExtendedSceneState,
         private scene: Scene,
         private invalidate: () => void
-    ) { }
+    ){}
 
     createSelectionGroup(hover = false): Group {
         const group = new Group();

@@ -12,7 +12,7 @@ export default class GetTrajectoryByIdUseCase implements IUseCase<GetTrajectoryB
     constructor(
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
         private readonly trajectoryRepo: ITrajectoryRepository
-    ) { }
+    ){}
 
     async execute(input: GetTrajectoryByIdInputDTO): Promise<Result<GetTrajectoryByIdOutputDTO, ApplicationError>> {
         const { trajectoryId } = input;

@@ -11,7 +11,7 @@ export class GetUserChatsUseCase implements IUseCase<GetUserChatsInputDTO, GetUs
     constructor(
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository,
-    ) { }
+    ){}
 
     async execute(input: GetUserChatsInputDTO): Promise<Result<GetUserChatsOutputDTO[], ApplicationError>> {
         const result = await this.chatRepo.findChatsByUserId(input.userId);

@@ -8,7 +8,7 @@ export class ContainerSocketModule implements ISocketModule {
 
     constructor(
         @inject('ITerminalService') private terminalService: ITerminalService
-    ) { }
+    ){}
 
     async onInit(): Promise<void> {
         // No init logic needed yet

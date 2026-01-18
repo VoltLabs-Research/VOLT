@@ -12,7 +12,7 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 export class DeleteBinaryUseCase implements IUseCase<DeleteBinaryInputDTO, null, ApplicationError> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
-    ) { }
+    ){}
 
     async execute(input: DeleteBinaryInputDTO): Promise<Result<null, ApplicationError>> {
         const plugin = await this.pluginRepository.deleteById(input.pluginId);
