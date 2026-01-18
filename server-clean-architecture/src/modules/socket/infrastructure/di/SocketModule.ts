@@ -9,6 +9,7 @@ import EventBroadcastSocketModule from '../modules/EventBroadcastSocketModule';
 import TeamPresenceSocketModule from '../modules/TeamPresenceSocketModule';
 import TeamJobsSocketModule from '@/src/modules/team/infrastructure/socket/TeamJobsSocketModule';
 import SystemSocketModule from '@/src/modules/system/infrastructure/socket/SystemSocketModule';
+import ChatSocketModule from '@/src/modules/chat/infrastructure/socket/ChatSocketModule';
 
 /**
  * Register socket module dependencies.
@@ -26,4 +27,5 @@ export const registerSocketModule = (): void => {
     container.registerSingleton('SocketModule', TeamPresenceSocketModule);
     container.registerSingleton('SocketModule', TeamJobsSocketModule);
     container.registerSingleton('SocketModule', SystemSocketModule);
+    container.registerSingleton('SocketModule', ChatSocketModule);
 };
