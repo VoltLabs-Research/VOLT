@@ -4,7 +4,7 @@ import { createReadStream, createWriteStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
-import { getMinioClient, getMinioConfig } from '@/src/core/minio';
+import { getMinioClient, getMinioConfig } from '@/src/core/config/minio';
 import { IStorageService, UploadSource, FileMetadata } from '@/src/shared/domain/ports/IStorageService';
 import logger from '@/src/shared/infrastructure/logger';
 

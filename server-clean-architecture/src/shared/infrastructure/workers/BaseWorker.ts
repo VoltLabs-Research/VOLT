@@ -1,7 +1,7 @@
 import { parentPort } from 'node:worker_threads';
 import logger from '@/src/shared/infrastructure/logger';
 import mongoConnector from '../utilities/mongo-connector';
-import '@/src/core/env';
+import '@/src/core/config/env';
 
 export default abstract class BaseWorker<TJob> {
     constructor() {

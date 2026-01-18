@@ -5,7 +5,7 @@ import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
 import { IStorageService } from "@/src/shared/domain/ports/IStorageService";
 import { GetChatFileInputDTO, GetChatFileOutputDTO } from "../../dtos/chat/GetChatFileDTO";
 import ApplicationError from "@/src/shared/application/errors/ApplicationErrors";
-import { SYS_BUCKETS } from "@/src/core/minio";
+import { SYS_BUCKETS } from "@/src/core/config/minio";
 
 @injectable()
 export default class GetChatFileUseCase implements IUseCase<GetChatFileInputDTO, GetChatFileOutputDTO, ApplicationError>{

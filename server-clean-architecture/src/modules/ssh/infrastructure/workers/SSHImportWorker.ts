@@ -16,7 +16,6 @@ export default class SSHImportWorker extends BaseWorker<Job> {
     private sshRepository!: ISSHConnectionRepository;
 
     protected async setup(): Promise<void> {
-        registerDependencies();
         await this.connectDB();
         this.sshService = container.resolve(SSH_CONN_TOKENS.SSHConnectionService);
         this.sshRepository = container.resolve(SSH_CONN_TOKENS.SSHConnectionRepository);

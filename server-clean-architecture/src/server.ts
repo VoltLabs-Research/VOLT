@@ -1,9 +1,9 @@
 import 'reflect-metadata';
-import './core/env';
+import './core/config/env';
 import './core/bootstrap/register-deps';
 
-import { initializeRedis, redis } from './core/redis';
-import { initializeMinio } from './core/minio';
+import { initializeRedis, redis } from './core/config/redis';
+import { initializeMinio } from './core/config/minio';
 import { registerAllSubscribers } from './core/events/registerAllSubscribers';
 import { container } from 'tsyringe';
 import logger from './shared/infrastructure/logger';
@@ -11,7 +11,7 @@ import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import SocketGateway from './modules/socket/infrastructure/gateway/SocketGateway';
 import mountHttpRoutes from './core/bootstrap/mount-http-routes';
 import startQueues from './core/bootstrap/start-queues';
-import app from './core/express';
+import app from './core/config/express';
 import http from 'http';
 import os from 'node:os';
 

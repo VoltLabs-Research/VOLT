@@ -6,7 +6,7 @@ import logger from '@/src/shared/infrastructure/logger';
 import { IAvatarService, AvatarResult } from '../../domain/ports/IAvatarService';
 import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
 import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { SYS_BUCKETS } from '@/src/core/minio';
+import { SYS_BUCKETS } from '@/src/core/config/minio';
 
 @injectable()
 export default class AvatarService implements IAvatarService {

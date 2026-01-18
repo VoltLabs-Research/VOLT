@@ -1,10 +1,12 @@
 import { injectable, inject } from 'tsyringe';
 import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
 
+import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
+
 @injectable()
 export class PluginListingService {
     constructor(
-        @inject('IStorageService') private storage: IStorageService
+        @inject(SHARED_TOKENS.StorageService) private storage: IStorageService
     ) { }
 
     async getExposureGLB(exposureId: string, timestep: number): Promise<any> {

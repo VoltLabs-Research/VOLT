@@ -2,7 +2,7 @@ import { injectable, inject } from 'tsyringe';
 import { Request, Response, NextFunction } from 'express';
 import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
 import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
-import { SYS_BUCKETS } from '@/src/core/minio';
+import { SYS_BUCKETS } from '@/src/core/config/minio';
 import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
 
 @injectable()

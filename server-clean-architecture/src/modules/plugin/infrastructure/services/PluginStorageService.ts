@@ -8,7 +8,7 @@ import { ErrorCodes } from "@/src/core/constants/error-codes";
 import { WorkflowNodeType } from "@/src/modules/plugin/domain/entities/workflow/WorkflowNode";
 import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
 import { IStorageService } from "@/src/shared/domain/ports/IStorageService";
-import { SYS_BUCKETS } from "@/src/core/minio";
+import { SYS_BUCKETS } from "@/src/core/config/minio";
 import { PLUGIN_TOKENS } from "../di/PluginTokens";
 import { IPluginRepository } from "@/src/modules/plugin/domain/ports/IPluginRepository";
 import path from 'node:path';

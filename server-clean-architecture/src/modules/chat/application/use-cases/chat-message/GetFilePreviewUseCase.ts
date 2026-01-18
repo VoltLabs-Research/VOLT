@@ -6,7 +6,7 @@ import { GetFilePreviewInputDTO, GetFilePreviewOutputDTO } from "../../dtos/chat
 import { IChatMessageRepository } from "../../../domain/port/IChatMessageRepository";
 import { IStorageService } from "@/src/shared/domain/ports/IStorageService";
 import { ErrorCodes } from "@/src/core/constants/error-codes";
-import { SYS_BUCKETS } from "@/src/core/minio";
+import { SYS_BUCKETS } from "@/src/core/config/minio";
 import { CHAT_TOKENS } from "../../../infrastructure/di/ChatTokens";
 import { SHARED_TOKENS } from "@/src/shared/infrastructure/di/SharedTokens";
 

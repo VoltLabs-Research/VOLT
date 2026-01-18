@@ -6,7 +6,7 @@ import { ErrorCodes } from '@/src/core/constants/error-codes';
 import { v4 } from 'uuid';
 import path from 'node:path';
 import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
-import { SYS_BUCKETS } from '@/src/core/minio';
+import { SYS_BUCKETS } from '@/src/core/config/minio';
 
 const storageService = container.resolve<IStorageService>(SHARED_TOKENS.StorageService);
 

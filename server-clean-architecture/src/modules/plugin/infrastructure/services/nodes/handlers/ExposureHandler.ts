@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from '@/src/modules/plugin/domain/ports/INodeRegistry';
-import { SYS_BUCKETS } from '@/src/core/minio';
+import { SYS_BUCKETS } from '@/src/core/config/minio';
 import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
 import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
 import pLimit from '@/src/shared/infrastructure/utilities/p-limit';

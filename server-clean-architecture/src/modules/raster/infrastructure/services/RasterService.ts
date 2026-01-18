@@ -3,7 +3,7 @@ import { IRasterService, RasterMetadata } from '../../domain/ports/IRasterServic
 import { RASTER_TOKENS } from '../di/RasterTokens';
 import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
 import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
-import { SYS_BUCKETS } from '@/src/core/minio';
+import { SYS_BUCKETS } from '@/src/core/config/minio';
 import RasterizerQueue from '../queues/RasterizerQueue';
 import Job, { JobStatus } from '@/src/modules/jobs/domain/entities/Job';
 import { v4 } from 'uuid';

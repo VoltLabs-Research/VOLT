@@ -8,7 +8,7 @@ import logger from '@/src/shared/infrastructure/logger';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
-import { SYS_BUCKETS } from '@/src/core/minio';
+import { SYS_BUCKETS } from '@/src/core/config/minio';
 import { createReadStream, createWriteStream } from 'node:fs';
 
 @singleton()

@@ -10,7 +10,7 @@ import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
 import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
 import rasterize from '@/src/shared/infrastructure/utils/rasterizer';
 import * as fs from 'node:fs/promises';
-import { SYS_BUCKETS } from '@/src/core/minio';
+import { SYS_BUCKETS } from '@/src/core/config/minio';
 
 export interface RasterizerJobData {
     jobId: string;

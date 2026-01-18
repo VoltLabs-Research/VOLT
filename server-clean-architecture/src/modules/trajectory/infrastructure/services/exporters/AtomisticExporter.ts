@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { unlink } from 'node:fs/promises';
-import { SYS_BUCKETS } from '@/src/core/minio';
+import { SYS_BUCKETS } from '@/src/core/config/minio';
 import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
 import { inject, injectable } from 'tsyringe';
 import { SHARED_TOKENS } from '../../../../../shared/infrastructure/di/SharedTokens';

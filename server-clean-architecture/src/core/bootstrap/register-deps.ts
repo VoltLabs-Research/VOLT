@@ -20,7 +20,7 @@ import { registerSSHDependencies } from '@/src/modules/ssh/infrastructure/di/con
 import { registerSocketModule } from '@/src/modules/socket/infrastructure/di/SocketModule';
 import { registerSimulationCellDependencies } from '@/src/modules/simulation-cell/infrastructure/di/container';
 import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-import { createRedisClient } from '@/src/core/redis';
+import { createRedisClient } from '@/src/core/config/redis';
 import { container } from 'tsyringe';
 
 /**

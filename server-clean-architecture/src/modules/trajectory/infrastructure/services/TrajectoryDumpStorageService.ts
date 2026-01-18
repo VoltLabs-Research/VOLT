@@ -4,7 +4,7 @@ import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
 import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
 import { pipeline } from 'node:stream/promises';
 import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
-import { SYS_BUCKETS } from '@/src/core/minio';
+import { SYS_BUCKETS } from '@/src/core/config/minio';
 import { Readable } from 'node:stream';
 import { createReadStream, createWriteStream } from 'node:fs';
 import logger from '@/src/shared/infrastructure/logger';

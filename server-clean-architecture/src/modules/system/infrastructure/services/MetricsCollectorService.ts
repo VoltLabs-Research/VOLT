@@ -27,7 +27,7 @@ import fs from 'fs/promises';
 import http from 'http';
 import https from 'https';
 import { exec } from 'child_process';
-import { redis } from '@/src/core/redis';
+import { redis } from '@/src/core/config/redis';
 import { promisify } from 'util';
 import logger from '@/src/shared/infrastructure/logger';
 
@@ -234,7 +234,7 @@ export default class MetricsCollector {
 
     private async pingMinIO(): Promise<number> {
         try {
-            const { getMinioClient } = await import('@/src/core/minio');
+            const { getMinioClient } = await import('@/src/core/config/minio');
             const client = getMinioClient();
             const start = Date.now();
             // List buckets is a lightweight operation to test MinIO connectivity

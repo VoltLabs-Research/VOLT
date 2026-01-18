@@ -2,7 +2,7 @@ import http from 'http';
 import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
-import { createRedisClient } from '@/src/core/redis';
+import { createRedisClient } from '@/src/core/config/redis';
 import { inject, injectable } from 'tsyringe';
 import { ISocketEmitter } from '../../domain/ports/ISocketEmitter';
 import { ISocketRoomManager } from '../../domain/ports/ISocketRoomManager';

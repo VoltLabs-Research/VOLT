@@ -2,7 +2,7 @@ import { ChartJSNodeCanvas } from 'chartjs-node-canvas';
 import type { ChartConfiguration, ChartTypeRegistry } from 'chart.js';
 import { ChartDataPoint, ChartType, IChartExporter, IChartExportOptions } from '../../../domain/port/exporters/ChartExporter';
 import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
-import { SYS_BUCKETS } from '@/src/core/minio';
+import { SYS_BUCKETS } from '@/src/core/config/minio';
 import { inject, injectable } from 'tsyringe';
 import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
 import getNestedValue from '@/src/shared/infrastructure/utilities/get-nested-value';

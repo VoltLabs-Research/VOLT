@@ -1,6 +1,6 @@
 import nativeExporter from '../../native/NativeExporter';
 import computeBoundsFromPoints from '../../utilities/compute-bounds-from-points';
-import { SYS_BUCKETS } from '@/src/core/minio';
+import { SYS_BUCKETS } from '@/src/core/config/minio';
 import { IStorageService } from '@/src/shared/domain/ports/IStorageService';
 import { injectable, inject } from 'tsyringe';
 import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';

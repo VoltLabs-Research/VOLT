@@ -4,7 +4,7 @@ import bodyParser from 'body-parser';
 import compression from 'compression';
 import cors from 'cors';
 import './env';
-import logger from '../shared/infrastructure/logger';
+import logger from '../../shared/infrastructure/logger';
 
 const app = express();
 
