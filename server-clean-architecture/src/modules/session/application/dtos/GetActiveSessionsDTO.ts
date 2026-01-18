@@ -1,8 +1,8 @@
-import Session from "../../domain/entities/Session";
+import Session, { SessionProps } from "../../domain/entities/Session";
 
 export interface GetActiveSessionsInputDTO{
     userId: string;
 };
 
 // TODO: SessionProp[]
-export interface GetActiveSessionsOutputDTO extends Session{}
+export interface GetActiveSessionsOutputDTO extends SessionProps{}

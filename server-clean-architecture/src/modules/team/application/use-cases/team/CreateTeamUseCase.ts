@@ -33,7 +33,7 @@ export default class CreateTeamUseCase implements IUseCase<CreateTeamInputDTO, C
         }));
 
         return Result.ok({
-            id: team.id,
+            _id: team.id,
             ...team.props
         });
     }

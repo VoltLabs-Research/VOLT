@@ -1,30 +1,22 @@
 import { Router } from 'express';
 import { container } from 'tsyringe';
 import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
-import CreateSSHConnectionController from '../controllers/CreateSSHConnectionController';
-import DeleteSSHConnectionByIdController from '../controllers/DeleteSSHConnectionByIdController';
-import TestSSHConnectionByIdController from '../controllers/TestSSHConnectionByIdController';
-import UpdateSSHConnectionByIdController from '../controllers/UpdateSSHConnectionByIdController';
-import GetSSHConnectionsByTeamIdController from '../controllers/GetSSHConnectionsByTeamIdController';
-
-const createSSHConnectionController = container.resolve(CreateSSHConnectionController);
-const deleteSSHConnectionByIdController = container.resolve(DeleteSSHConnectionByIdController);
-const getSSHConnectionByTeamIdController = container.resolve(GetSSHConnectionsByTeamIdController);
-const updateSSHConnectionByIdController = container.resolve(UpdateSSHConnectionByIdController);
-const testSSHConnectionByIdController = container.resolve(TestSSHConnectionByIdController);
+import controllers from '../controllers';
 
 const router = Router();
 
 router.use(protect);
 
 router.route('/:teamId')
-    .get(getSSHConnectionByTeamIdController.handle)
-    .post(createSSHConnectionController.handle);
+    .get(controllers.listByTeamId.handle)
+    .post(controllers.create.handle);
 
 router.route('/:teamId/:sshConnectionId')
-    .patch(updateSSHConnectionByIdController.handle)
-    .delete(deleteSSHConnectionByIdController.handle);
+    .patch(controllers.updateById.handle)
+    .delete(controllers.deleteById.handle);
 
-router.get('/:teamId/:sshConnectionId/test', testSSHConnectionByIdController.handle);
+router.get('/:teamId/:sshConnectionId/files', controllers.listFiles.handle);
+
+router.get('/:teamId/:sshConnectionId/test', controllers.testById.handle);
 
 export default router;

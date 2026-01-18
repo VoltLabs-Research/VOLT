@@ -1,17 +1,12 @@
 import { Router } from 'express';
-import { container } from 'tsyringe';
 import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
-import GetNotificationsByUserIdController from '../controllers/GetNotificationsByUserIdController';
-import MarkAllUserNotificationsAsReadController from '../controllers/MarkAllUserNotificationsAsReadController';
-
-const getNotificationsByUserIdController = container.resolve(GetNotificationsByUserIdController);
-const markAllUserNotificationsAsReadController = container.resolve(MarkAllUserNotificationsAsReadController);
+import controllers from '../controllers';
 
 const router = Router();
 
 router.use(protect);
 
-router.get('/', getNotificationsByUserIdController.handle);
-router.patch('/read-all', markAllUserNotificationsAsReadController.handle);
+router.get('/', controllers.getByUserId.handle);
+router.patch('/read-all', controllers.readAll.handle);
 
 export default router;

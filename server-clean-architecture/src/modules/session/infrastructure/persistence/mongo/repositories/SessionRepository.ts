@@ -14,20 +14,19 @@ export default class SessionRepository
         super(SessionModel, sessionMapper);
     }
 
-    async findActiveByUserId(userId: string): Promise<Session[]> {
+    async findActiveByUserId(userId: string): Promise<SessionProps[]> {
         const docs = await SessionModel
             .find({ user: userId, isActive: true })
             .sort({ lastActivity: -1 });
-
-        return docs.map(sessionMapper.toDomain);
+        return docs.map((doc) => this.mapper.toDomain(doc).props);
     }
 
-    async findLoginActivity(userId: string, limit: number): Promise<Session[]> {
+    async findLoginActivity(userId: string, limit: number): Promise<SessionProps[]> {
         const docs = await SessionModel
             .find({ user: userId })
             .sort({ createdAt: -1 })
             .limit(limit);
-        return docs.map(sessionMapper.toDomain);
+        return docs.map((doc) => this.mapper.toDomain(doc).props);
     }
 
     async deactivateByToken(token: string): Promise<void> {

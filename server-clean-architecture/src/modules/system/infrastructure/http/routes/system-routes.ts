@@ -1,16 +1,12 @@
 import { Router } from 'express';
-import { container } from 'tsyringe';
-import { GetSystemStatsController } from '../controllers/GetSystemStatsController';
-import { GetRBACConfigController } from '../controllers/GetRBACConfigController';
 import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
+import controllers from '../controllers';
 
 const router = Router();
 
-const getSystemStatsController = container.resolve(GetSystemStatsController);
-const getRBACConfigController = container.resolve(GetRBACConfigController);
+router.use(protect);
 
-router.get('/stats', protect, (req, res, next) => getSystemStatsController.handle(req, res, next));
-router.get('/rbac', protect, (req, res, next) => getRBACConfigController.handle(req, res, next)); // Aliased for frontend
-router.get('/rbac-config', protect, (req, res, next) => getRBACConfigController.handle(req, res, next));
+router.get('/stats', controllers.getSystemStats.handle);
+router.get('/rbac', controllers.getRbacConfig.handle)
 
 export default router;

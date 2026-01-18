@@ -16,10 +16,13 @@ export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionI
     ) { }
 
     async execute(input: CreateSSHConnectionInputDTO): Promise<Result<CreateSSHConnectionOutputDTO, ApplicationError>> {
-        const connectionId = v4();
-        const sshConnection = SSHConnection.create(connectionId, input);
-        await this.sshConnectionRepo.create(sshConnection.props);
+        // TODO: ID
+        const sshConnection = SSHConnection.create('', input);
+        const result = await this.sshConnectionRepo.create(sshConnection.props);
 
-        return Result.ok(sshConnection.props);
+        return Result.ok({
+            _id: result.id,
+            ...sshConnection.props
+        });
     }
 }

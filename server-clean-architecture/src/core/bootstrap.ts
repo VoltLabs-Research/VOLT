@@ -31,7 +31,6 @@ import { ChatMessageHttpModule } from '@/src/modules/chat/infrastructure/http/Ch
 import { NotificationHttpModule } from '@/src/modules/notification/infrastructure/http/NotificationHttpModule';
 import { SshConnectionHttpModule } from '@/src/modules/ssh/infrastructure/http/SshConnectionHttpModule';
 import { ContainerHttpModule } from '@/src/modules/container/infrastructure/http/ContainerHttpModule';
-import { SshFileExplorerHttpModule } from '@/src/modules/ssh/infrastructure/http/SshFileExplorerHttpModule';
 import { TrajectoryHttpModule } from '@/src/modules/trajectory/infrastructure/http/TrajectoryHttpModule';
 import { TrajectoryVfsHttpModule } from '@/src/modules/trajectory/infrastructure/http/TrajectoryVfsHttpModule';
 import { AnalysisHttpModule } from '@/src/modules/analysis/infrastructure/http/AnalysisHttpModule';
@@ -62,8 +61,7 @@ const HTTP_MODULES: HttpModule[] = [
     SimulationCellHttpModule,
     DailyActivityHttpModule,
     ApiTrackerHttpModule,
-    SystemHttpModule,
-    SshFileExplorerHttpModule
+    SystemHttpModule
 ];
 
 /**

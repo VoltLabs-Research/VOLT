@@ -1,28 +1,13 @@
 import { injectable, inject } from 'tsyringe';
-import { Request, Response, NextFunction } from 'express';
 import { GetContainerProcessesUseCase } from '../../../application/use-cases/GetContainerProcessesUseCase';
+import { BaseController } from '@/src/shared/infrastructure/http/BaseController';
 
 @injectable()
-export class GetContainerProcessesController {
+export default class GetContainerProcessesController extends BaseController<GetContainerProcessesUseCase>{
     constructor(
-        @inject(GetContainerProcessesUseCase) private useCase: GetContainerProcessesUseCase
-    ) { }
-
-    async handle(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const id = String(req.params.id);
-            const result = await this.useCase.execute({ id });
-
-            if (result.success) {
-                res.status(200).json({
-                    status: 'success',
-                    data: result.value
-                });
-            } else {
-                next(result.error);
-            }
-        } catch (error) {
-            next(error);
-        }
+        @inject(GetContainerProcessesUseCase)
+        protected useCase: GetContainerProcessesUseCase
+    ){
+        super(useCase);
     }
-}
+};  

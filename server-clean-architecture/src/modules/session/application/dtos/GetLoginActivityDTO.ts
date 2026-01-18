@@ -1,4 +1,4 @@
-import Session from "../../domain/entities/Session";
+import Session, { SessionProps } from "../../domain/entities/Session";
 
 export interface GetLoginActivityInputDTO{
     userId: string;
@@ -6,6 +6,6 @@ export interface GetLoginActivityInputDTO{
 };
 
 export interface GetLoginActivityOutputDTO{
-    activites: Session[],
+    activites: SessionProps[],
     total: number;
 };

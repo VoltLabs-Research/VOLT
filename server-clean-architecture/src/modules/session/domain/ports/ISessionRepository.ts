@@ -10,7 +10,7 @@ export interface ISessionRepository extends IBaseRepository<Session, SessionProp
     /**
      * Find all active sessions for a user.
      */
-    findActiveByUserId(userId: string): Promise<Session[]>;
+    findActiveByUserId(userId: string): Promise<SessionProps[]>;
 
     /**
      * Find login activity history for a user.
@@ -18,7 +18,7 @@ export interface ISessionRepository extends IBaseRepository<Session, SessionProp
     findLoginActivity(
         userId: string,
         limit: number
-    ): Promise<Session[]>;
+    ): Promise<SessionProps[]>;
 
     /**
      * Deactivate session by token.

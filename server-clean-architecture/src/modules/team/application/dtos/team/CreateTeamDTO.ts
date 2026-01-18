@@ -7,5 +7,5 @@ export interface CreateTeamInputDTO {
 };
 
 export interface CreateTeamOutputDTO extends TeamProps {
-    id: string;
+    _id: string;
 }
