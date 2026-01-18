@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import '@/src/core/bootstrap/register-deps';
 import BaseWorker from '@/src/shared/infrastructure/workers/BaseWorker';
 import logger from '@/src/shared/infrastructure/logger';
 import { container } from 'tsyringe';
@@ -10,7 +11,6 @@ import { ITempFileService } from '@/src/shared/domain/ports/ITempFileService';
 import rasterize from '@/src/shared/infrastructure/utils/rasterizer';
 import * as fs from 'node:fs/promises';
 import { SYS_BUCKETS } from '@/src/core/minio';
-import { registerDependencies } from '@/src/core/di';
 
 export interface RasterizerJobData {
     jobId: string;
@@ -19,14 +19,8 @@ export interface RasterizerJobData {
     analysisId?: string;
     model?: string;
     opts: {
-        inputPath: string; // This might be a temp path or a key? 
-        // Logic porting update: Legacy worker received inputPath. 
-        // But for queue, we pass metadata. The worker should download the GLB.
-        // So opts might need to contain the key or we reconstruct it.
-        // Legacy 'rasterizeGLBs' utility downloaded to temp and passed temp path to job.
-        // Better design for worker: Pass the Storage Key, Worker downloads it.
+        inputPath: string;
         storageKey?: string;
-
         width?: number;
         height?: number;
         fov?: number;
@@ -42,7 +36,6 @@ export default class HeadlessRasterizerWorker extends BaseWorker<Job> {
     private tempFileService!: ITempFileService;
 
     protected async setup(): Promise<void> {
-        registerDependencies();
         await this.connectDB();
         this.storageService = container.resolve(SHARED_TOKENS.StorageService);
         this.tempFileService = container.resolve(SHARED_TOKENS.TempFileService);

@@ -7,10 +7,12 @@ export interface IWorkflowValidatorService {
     validate(workflow: any): { isValid: boolean; errors?: string[]; modifier?: any };
 }
 
+import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+
 @injectable()
 export class ValidateWorkflowUseCase implements IUseCase<ValidateWorkflowInputDTO, ValidateWorkflowOutputDTO> {
     constructor(
-        @inject('IWorkflowValidatorService') private validatorService: IWorkflowValidatorService
+        @inject(PLUGIN_TOKENS.WorkflowValidatorService) private validatorService: IWorkflowValidatorService
     ) { }
 
     async execute(input: ValidateWorkflowInputDTO): Promise<Result<ValidateWorkflowOutputDTO>> {

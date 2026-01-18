@@ -3,7 +3,7 @@ import type { IWorkflow, PluginStatus } from '@/types/plugin';
 import type { GetPluginsResponse, IPluginRecord, GetPluginResponse, ExecutePluginResponse } from '@/features/plugins/types';
 import VoltClient from '@/api';
 
-const client = new VoltClient('/plugins', { useRBAC: true });
+const client = new VoltClient('/plugin', { useRBAC: true });
 
 const pluginApi = {
     async getPlugins(params?: {

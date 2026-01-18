@@ -1,12 +1,7 @@
-import { container } from 'tsyringe';
-import RedisEventBus from '@/src/shared/infrastructure/events/RedisEventBus';
-import { createRedisClient } from '@/src/core/redis';
-import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
-
-// Module Registration Functions
 import MinioStorageService from '@/src/shared/infrastructure/services/MinioStorageService';
 import TempFileService from '@/src/shared/infrastructure/services/TempFileService';
 import FileExtractorService from '@/src/shared/infrastructure/services/FileExtractorService';
+import RedisEventBus from '@/src/shared/infrastructure/events/RedisEventBus';
 import { registerAuthDependencies } from '@/src/modules/auth/infrastructure/di/container';
 import { registerTeamDependencies } from '@/src/modules/team/infrastructure/di/container';
 import { registerContainerDependencies } from '@/src/modules/container/infrastructure/di/container';
@@ -24,39 +19,38 @@ import { registerJobsDependencies } from '@/src/modules/jobs/infrastructure/di/c
 import { registerSSHDependencies } from '@/src/modules/ssh/infrastructure/di/container';
 import { registerSocketModule } from '@/src/modules/socket/infrastructure/di/SocketModule';
 import { registerSimulationCellDependencies } from '@/src/modules/simulation-cell/infrastructure/di/container';
+import { SHARED_TOKENS } from '@/src/shared/infrastructure/di/SharedTokens';
+import { createRedisClient } from '@/src/core/redis';
+import { container } from 'tsyringe';
 
-export const registerDependencies = () => {
-    // Shared Services
-    container.registerSingleton(SHARED_TOKENS.EventBus, RedisEventBus);
-    container.registerSingleton('IEventBus', RedisEventBus);
-    container.registerSingleton(SHARED_TOKENS.StorageService, MinioStorageService);
-    container.registerSingleton('IStorageService', MinioStorageService);
-    container.registerSingleton(SHARED_TOKENS.TempFileService, TempFileService);
-    container.registerSingleton(SHARED_TOKENS.FileExtractorService, FileExtractorService);
+/**
+ * Register all dependencies in the DI container.
+ */
+container.registerSingleton(SHARED_TOKENS.EventBus, RedisEventBus);
+container.registerSingleton(SHARED_TOKENS.StorageService, MinioStorageService);
+container.registerSingleton(SHARED_TOKENS.TempFileService, TempFileService);
+container.registerSingleton(SHARED_TOKENS.FileExtractorService, FileExtractorService);
 
-    // Module Dependencies
-    registerAuthDependencies();
-    registerTeamDependencies();
-    registerContainerDependencies();
-    registerPluginDependencies();
-    registerTrajectoryDependencies();
-    registerSessionDependencies();
-    registerApiTrackerDependencies();
-    registerRasterDependencies();
-    registerSystemDependencies();
-    registerNotificationDependencies();
-    registerAnalysisDependencies();
-    registerChatDependencies();
-    registerDailyActivityDependencies();
-    registerJobsDependencies();
-    registerSSHDependencies();
-    registerSocketModule();
-    registerSimulationCellDependencies();
+registerAuthDependencies();
+registerTeamDependencies();
+registerContainerDependencies();
+registerPluginDependencies();
+registerTrajectoryDependencies();
+registerSessionDependencies();
+registerApiTrackerDependencies();
+registerRasterDependencies();
+registerSystemDependencies();
+registerNotificationDependencies();
+registerAnalysisDependencies();
+registerChatDependencies();
+registerDailyActivityDependencies();
+registerJobsDependencies();
+registerSSHDependencies();
+registerSocketModule();
+registerSimulationCellDependencies();
 
-    // Redis Clients
-    const redisClient = createRedisClient();
-    const redisBlockingClient = createRedisClient();
+const redisClient = createRedisClient();
+const redisBlockingClient = createRedisClient();
 
-    container.registerInstance(SHARED_TOKENS.RedisClient, redisClient);
-    container.registerInstance(SHARED_TOKENS.RedisBlockingClient, redisBlockingClient);
-};
+container.registerInstance(SHARED_TOKENS.RedisClient, redisClient);
+container.registerInstance(SHARED_TOKENS.RedisBlockingClient, redisBlockingClient);

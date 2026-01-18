@@ -2,8 +2,14 @@ import { Router } from 'express';
 import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
 import multer from 'multer';
 import controllers from '../controllers/plugin';
+import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
 
 const router = Router();
+const module: HttpModule = {
+    basePath: '/api/plugin/:teamId',
+    router
+};
+
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 200 * 1024 * 1024 }
@@ -11,23 +17,25 @@ const upload = multer({
 
 router.use(protect);
 
-router.get('/:teamId/schemas', controllers.getNodeSchemas.handle);
-router.post('/:teamId/validate-workflow', controllers.validateWorkflow.handle);
+router.get('/schemas', controllers.getNodeSchemas.handle);
+router.post('/validate-workflow', controllers.validateWorkflow.handle);
 
-router.get('/:teamId', controllers.listPlugins.handle);
-router.post('/:teamId', controllers.create.handle);
+router.get('/:pluginId/export', controllers.exportPlugin.handle);
+router.post('/import', upload.single('file'), controllers.importPlugin.handle);
 
-router.post('/:teamId/:pluginId/binary', upload.single('file'), controllers.uploadBinary.handle);
-router.delete('/:teamId/:pluginId/binary', controllers.deleteBinary.handle);
+router.route('/')
+    .get(controllers.listPlugins.handle)
+    .post(controllers.create.handle);
 
-router.get('/:teamId/:pluginId/export', controllers.exportPlugin.handle);
-router.post('/:teamId/import', upload.single('file'), controllers.importPlugin.handle);
+router.route('/:pluginId/binary')
+    .post(upload.single('file'), controllers.uploadBinary.handle)
+    .delete(controllers.deleteBinary.handle);
 
-router.route('/:teamId/:pluginId')
+router.route('/:pluginId')
     .get(controllers.getPluginById.handle)
     .patch(controllers.updatePluginById.handle)
     .delete(controllers.deleteById.handle);
 
-router.post('/:teamId/:pluginSlug/execute', controllers.executePlugin.handle);
+router.post('/:pluginSlug/execute', controllers.executePlugin.handle);
 
-export default router;
+export default module;

@@ -1,16 +1,19 @@
 import 'reflect-metadata';
 import './core/env';
+import './core/bootstrap/register-deps';
+
 import { initializeRedis, redis } from './core/redis';
 import { initializeMinio } from './core/minio';
 import { registerAllSubscribers } from './core/events/registerAllSubscribers';
-// bootstrap import moved to dynamic import inside startServer to ensure DI order
-import { registerDependencies } from './core/di';
-import http from 'http';
+import { container } from 'tsyringe';
 import logger from './shared/infrastructure/logger';
 import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
-import os from 'node:os';
-import { container } from 'tsyringe';
 import SocketGateway from './modules/socket/infrastructure/gateway/SocketGateway';
+import mountHttpRoutes from './core/bootstrap/mount-http-routes';
+import startQueues from './core/bootstrap/start-queues';
+import app from './core/express';
+import http from 'http';
+import os from 'node:os';
 
 const SERVER_PORT = process.env.SERVER_PORT || 8000;
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
@@ -30,14 +33,8 @@ process.on('uncaughtException', (error: Error) => {
 });
 
 const startServer = async () => {
-    registerDependencies();
-
-    // Dynamically import bootstrap after dependencies are registered
-    const { mountAllRoutes, startJobQueues } = await import('./core/bootstrap');
-
-    const { default: app } = await import('./core/express');
     const server = http.createServer(app);
-    app.use(mountAllRoutes());
+    app.use(mountHttpRoutes());
 
     server.setTimeout(SERVER_TIMEOUT);
     server.requestTimeout = SERVER_TIMEOUT;
@@ -50,7 +47,6 @@ const startServer = async () => {
 
     server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
         const clusterId = process.env.CLUSTER_ID || os.hostname();
-
         await Promise.all([
             initializeRedis(),
             mongoConnector(),
@@ -71,7 +67,7 @@ const startServer = async () => {
         }
         await socketGateway.initialize(server);
 
-        await startJobQueues();
+        await startQueues();
 
         logger.info(`@server: running at http://${SERVER_HOST}:${SERVER_PORT}/`);
 

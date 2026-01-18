@@ -13,6 +13,7 @@ import UpdatePasswordController from '../controllers/UpdatePasswordController';
 import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
 import passport from 'passport';
 import { OAuthProvider } from '../../../domain/entities/User';
+import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
 
 const checkEmailController = container.resolve(CheckEmailController);
 const deleteMyAccountController = container.resolve(DeleteMyAccountController);
@@ -25,6 +26,10 @@ const updateMyAccountController = container.resolve(UpdateMyAccountController);
 const updatePasswordController = container.resolve(UpdatePasswordController);
 
 const router = Router();
+const module: HttpModule = {
+    basePath: '/api/auth',
+    router
+};
 
 router.post('/sign-in', signInController.handle);
 router.post('/sign-up', signUpController.handle);
@@ -62,4 +67,4 @@ router.route('/me')
     .patch(avatarUpload.single('avatar'), updateMyAccountController.handle)
     .delete(deleteMyAccountController.handle);
 
-export default router;
+export default module;

@@ -26,7 +26,7 @@ import type { User } from '@/types/models';
 import type { GetChatMessagesResponse, GetTeamMembersResponse, GetChatsResponse, SendMessageResponse } from '@/features/chat/types';
 
 const chatsClient = new VoltClient('/chats', { useRBAC: false });
-const messagesClient = new VoltClient('/chat-messages', { useRBAC: false });
+const messagesClient = new VoltClient('/chat/messages', { useRBAC: false });
 
 export const chatApi = {
     // Get all chats for the current user's teams
@@ -37,14 +37,7 @@ export const chatApi = {
 
     // Get team members for chat initialization
     getTeamMembers: async (teamId: string): Promise<User[]> => {
-        // Use the team-member API to get members. We need to construct the URL manually 
-        // to avoid circular dependencies if we imported the full teamMemberApi logic.
-        // Actually, we can just hit /api/team-member with teamId query.
-        // But team-member API returns complex object { members, admins, owner }.
-        // We need to return User key from those members.
-
-        // Since we are inside chatApi, let's use a new client instance pointed to /team-member to avoid confusion
-        const tmClient = new VoltClient('/team-member', { useRBAC: false });
+        const tmClient = new VoltClient('/team/members', { useRBAC: false });
         const response = await tmClient.request<any>('get', '/', { query: { teamId } });
 
         // Response data is { members: [], admins: [], owner: {} }

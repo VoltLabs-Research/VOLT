@@ -4,12 +4,17 @@ import { protect } from "@/src/shared/infrastructure/http/middleware/authenticat
 import DeleteAnalysisByIdController from "../controllers/DeleteAnalysisByIdController";
 import GetAnalysesByTeamIdController from "../controllers/GetAnalysesByTeamIdController";
 import GetAnalysisByIdController from "../controllers/GetAnalysisByIdController";
+import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
 
 const deleteAnalysisByIdController = container.resolve(DeleteAnalysisByIdController);
 const getAnalysesByTeamIdController = container.resolve(GetAnalysesByTeamIdController);
 const getAnalysisByIdController = container.resolve(GetAnalysisByIdController);
 
 const router = Router();
+const module: HttpModule = {
+    basePath: '/api/analysis',
+    router
+};
 
 router.use(protect);
 
@@ -19,4 +24,4 @@ router.route('/:teamId/:analysisId')
     .get(getAnalysisByIdController.handle)
     .delete(deleteAnalysisByIdController.handle);
 
-export default router;
+export default module;

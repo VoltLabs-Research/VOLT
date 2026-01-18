@@ -7,17 +7,19 @@ import { IPluginStorageService } from '../../../domain/ports/IPluginStorageServi
 import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@/src/core/constants/error-codes';
 
+import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+
 @injectable()
 export class ExportPluginUseCase implements IUseCase<ExportPluginInputDTO, ExportPluginOutputDTO, ApplicationError> {
     constructor(
-        @inject('IPluginRepository') private pluginRepository: IPluginRepository,
-        @inject('IPluginStorageService') private storageService: IPluginStorageService
-    ){}
+        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
+        @inject(PLUGIN_TOKENS.PluginStorageService) private storageService: IPluginStorageService
+    ) { }
 
-    async execute(input: ExportPluginInputDTO): Promise<Result<ExportPluginOutputDTO, ApplicationError>>{
+    async execute(input: ExportPluginInputDTO): Promise<Result<ExportPluginOutputDTO, ApplicationError>> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
 
-        if(!plugin){
+        if (!plugin) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'

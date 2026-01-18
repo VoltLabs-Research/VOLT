@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import '@/src/core/bootstrap/register-deps';
 import BaseWorker from '@/src/shared/infrastructure/workers/BaseWorker';
 import logger from '@/src/shared/infrastructure/logger';
 import TrajectoryDumpStorageService from '../services/TrajectoryDumpStorageService';
@@ -7,7 +8,6 @@ import { container } from 'tsyringe';
 import { performance } from 'node:perf_hooks';
 import { ErrorCodes } from '@/src/core/constants/error-codes';
 import Job from '@/src/modules/jobs/domain/entities/Job';
-import { registerDependencies } from '@/src/core/di';
 
 export interface TrajectoryProcessingJobMetadata {
     trajectoryId: string;
@@ -19,7 +19,6 @@ export default class TrajectoryProcessingWorker extends BaseWorker<Job> {
     private atomisticExporter!: AtomisticExporter;
 
     protected async setup(): Promise<void> {
-        registerDependencies();
         await this.connectDB();
         this.dumpStorage = container.resolve(TrajectoryDumpStorageService);
         this.atomisticExporter = container.resolve(AtomisticExporter);

@@ -6,15 +6,17 @@ import { DeleteBinaryInputDTO } from '../../dtos/plugin/DeleteBinaryDTO';
 import { ErrorCodes } from '@/src/core/constants/error-codes';
 import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
 
+import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+
 @injectable()
 export class DeleteBinaryUseCase implements IUseCase<DeleteBinaryInputDTO, null, ApplicationError> {
     constructor(
-        @inject('IPluginRepository') private pluginRepository: IPluginRepository,
-    ){}
+        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
+    ) { }
 
     async execute(input: DeleteBinaryInputDTO): Promise<Result<null, ApplicationError>> {
         const plugin = await this.pluginRepository.deleteById(input.pluginId);
-        if(!plugin){
+        if (!plugin) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'

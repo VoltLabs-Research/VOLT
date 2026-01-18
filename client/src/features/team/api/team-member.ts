@@ -1,6 +1,6 @@
 import VoltClient, { getTeamId } from '@/api';
 
-const client = new VoltClient('/team-member', { useRBAC: false });
+const client = new VoltClient('/team/members', { useRBAC: false });
 
 export default {
     async update(memberId: string, data: any): Promise<any> {

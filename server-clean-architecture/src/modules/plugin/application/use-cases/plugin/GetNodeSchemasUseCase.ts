@@ -7,10 +7,12 @@ export interface INodeRegistryService {
     getAllSchemas(): Record<string, any>;
 }
 
+import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+
 @injectable()
 export class GetNodeSchemasUseCase implements IUseCase<void, GetNodeSchemasOutputDTO> {
     constructor(
-        @inject('INodeRegistryService') private nodeRegistry: INodeRegistryService
+        @inject(PLUGIN_TOKENS.NodeRegistry) private nodeRegistry: INodeRegistryService
     ) { }
 
     async execute(): Promise<Result<GetNodeSchemasOutputDTO>> {

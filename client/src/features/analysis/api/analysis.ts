@@ -2,7 +2,7 @@ import VoltClient from '@/api';
 import type { AnalysisConfig } from '@/features/analysis/api/types';
 import type { PaginatedResponse } from '@/types/api';
 
-const client = new VoltClient('/analyses', { useRBAC: true });
+const client = new VoltClient('/analysis', { useRBAC: true });
 
 export interface RetryFailedFramesResponse {
     message: string;

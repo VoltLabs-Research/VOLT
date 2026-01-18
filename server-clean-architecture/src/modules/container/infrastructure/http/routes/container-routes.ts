@@ -3,44 +3,49 @@ import { protect } from '@/src/shared/infrastructure/http/middleware/authenticat
 import { canRead, canCreate, canUpdate } from '@/src/shared/infrastructure/http/middleware/authorization';
 import { Resource } from '@/src/core/constants/resources';
 import controllers from '../controllers';
+import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
 
 const router = Router();
+const module: HttpModule = {
+    basePath: '/api/container/:teamId',
+    router
+};
 
 router.use(protect);
 
-router.route('/:teamId')
+router.route('/')
     .get(canRead(Resource.CONTAINER), controllers.listByTeamId.handle)
     .post(canCreate(Resource.CONTAINER), controllers.create.handle);
 
-router.route('/:teamId/:containerId')
+router.route('/:containerId')
     .get(canRead(Resource.CONTAINER), controllers.getById.handle)
     .patch(canUpdate(Resource.CONTAINER), controllers.create.handle)
     .delete(canRead(Resource.CONTAINER), controllers.deleteById.handle);
 
 
 router.get(
-    '/:teamId/:containerId/stats', 
+    '/:containerId/stats', 
     canRead(Resource.CONTAINER),
     controllers.getStatsById.handle
 );
 
 router.get(
-    '/:teamId/:containerId/files', 
+    '/:containerId/files', 
     canRead(Resource.CONTAINER), 
     controllers.getFilesById.handle
 );
 
 router.get(
-    '/:teamId/:containerId/files/read', 
+    '/:containerId/files/read', 
     canRead(Resource.CONTAINER), 
     controllers.readFileById.handle
 );
 
 router.get(
-    '/:teamId/:containerId/processes', 
+    '/:containerId/processes', 
     canRead(Resource.CONTAINER), 
     controllers.getProcessesById.handle
 );
 
-export default router;
+export default module;
 

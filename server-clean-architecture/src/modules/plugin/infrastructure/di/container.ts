@@ -26,14 +26,13 @@ import { UploadBinaryUseCase } from '../../application/use-cases/plugin/UploadBi
 
 export const registerPluginDependencies = (): void => {
     // Services
-    container.registerSingleton('IPluginListingService', PluginListingService);
-    container.registerSingleton('IWorkflowValidatorService', WorkflowValidatorService);
-    container.registerSingleton('INodeRegistryService', NodeRegistryService);
-    container.registerSingleton('IPluginStorageService', PluginStorageService);
+    container.registerSingleton(PLUGIN_TOKENS.PluginListingService, PluginListingService);
+    container.registerSingleton(PLUGIN_TOKENS.WorkflowValidatorService, WorkflowValidatorService);
+    container.registerSingleton(PLUGIN_TOKENS.NodeRegistry, NodeRegistryService);
+    container.registerSingleton(PLUGIN_TOKENS.PluginStorageService, PluginStorageService);
 
     // Repositories - register with both Symbol and string tokens
     container.registerSingleton(PLUGIN_TOKENS.PluginRepository, PluginRepository);
-    container.registerSingleton('IPluginRepository', PluginRepository);
     container.registerSingleton(PLUGIN_TOKENS.ListingRowRepository, ListingRowRepository);
     container.registerSingleton(PLUGIN_TOKENS.ExposureMetaRepository, ExposureMetaRepository);
 

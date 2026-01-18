@@ -7,10 +7,12 @@ import { PluginStatus } from '../../../domain/entities/Plugin';
 import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@/src/core/constants/error-codes';
 
+import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+
 @injectable()
 export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDTO, UpdatePluginByIdOutputDTO> {
     constructor(
-        @inject('IPluginRepository') private pluginRepository: IPluginRepository
+        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository
     ) { }
 
     async execute(input: UpdatePluginByIdInputDTO): Promise<Result<UpdatePluginByIdOutputDTO>> {
@@ -19,7 +21,7 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
             status: input.status as PluginStatus
         });
 
-        if(!plugin){
+        if (!plugin) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'

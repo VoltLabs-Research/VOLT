@@ -1,9 +1,14 @@
 import { Router } from 'express';
 import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
 import { upload } from '@/src/shared/infrastructure/http/middleware/upload';
+import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
 import controllers from '../controllers/trajectory';
 
 const router = Router();
+const module: HttpModule = {
+    basePath: '/api/trajectory/:teamId',
+    router
+};
 
 router.use(protect);
 
@@ -20,4 +25,4 @@ router.route('/:trajectoryId')
     .patch(controllers.updateById.handle)
     .delete(controllers.deleteById.handle);
 
-export default router;
+export default module;

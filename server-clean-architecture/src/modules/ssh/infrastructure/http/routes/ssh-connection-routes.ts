@@ -1,9 +1,13 @@
 import { Router } from 'express';
-import { container } from 'tsyringe';
 import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
 import controllers from '../controllers';
+import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
 
-const router = Router();
+const router = Router({ mergeParams: true });
+const module: HttpModule = {
+    basePath: '/api/ssh/connections/:teamId',
+    router
+};
 
 router.use(protect);
 
@@ -19,4 +23,4 @@ router.get('/:teamId/:sshConnectionId/files', controllers.listFiles.handle);
 
 router.get('/:teamId/:sshConnectionId/test', controllers.testById.handle);
 
-export default router;
+export default module;

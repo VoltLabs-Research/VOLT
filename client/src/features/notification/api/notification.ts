@@ -3,7 +3,7 @@ import type { ApiResponse } from '@/types/api';
 import type { Notification } from '@/types/models';
 import type { GetNotificationsParams } from '@/features/notification/types';
 
-const client = new VoltClient('/notifications');
+const client = new VoltClient('/notification');
 
 export default {
     async getAll(params?: GetNotificationsParams): Promise<Notification[]>{

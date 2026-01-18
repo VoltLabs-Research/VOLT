@@ -2,7 +2,7 @@ import type { TeamRole, TeamRolePayload } from '@/types/models';
 import type { ApiResponse } from '@/types/api';
 import VoltClient, { getTeamId } from '@/api';
 
-const client = new VoltClient('/team-roles', { useRBAC: false });
+const client = new VoltClient('/team/roles', { useRBAC: false });
 
 const teamRoleApi = {
     async getAll(): Promise<TeamRole[]> {

@@ -10,7 +10,7 @@ import type {
     GetContainerProcesses
 } from '@/features/container/types';
 
-const client = new VoltClient('/containers', { useRBAC: true });
+const client = new VoltClient('/container', { useRBAC: true });
 
 const containerApi = {
     async getAll(params?: GetContainersParams): Promise<{ data: Container[], total: number }> {

@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import '@/src/core/bootstrap/register-deps';
 import logger from '@/src/shared/infrastructure/logger';
 import { SSH_CONN_TOKENS } from '@/src/modules/ssh/infrastructure/di/SSHConnectionTokens';
 import { ISSHConnectionService } from '@/src/modules/ssh/domain/ports/ISSHConnectionService';
@@ -9,7 +10,6 @@ import BaseWorker from '@/src/shared/infrastructure/workers/BaseWorker';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { ErrorCodes } from '@/src/core/constants/error-codes';
-import { registerDependencies } from '@/src/core/di';
 
 export default class SSHImportWorker extends BaseWorker<Job> {
     private sshService!: ISSHConnectionService;

@@ -1,6 +1,6 @@
 import VoltClient from '@/api';
 
-const resource = 'simulation-cells';
+const resource = 'simulation-cell';
 // @ts-ignore
 const client = new VoltClient(`/${resource}`, { useRBAC: true });
 

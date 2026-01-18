@@ -1,12 +1,17 @@
 import { Router } from 'express';
 import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
 import controllers from '../controllers';
+import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
 
 const router = Router();
+const module: HttpModule = {
+    basePath: '/api/system',
+    router
+};
 
 router.use(protect);
 
 router.get('/stats', controllers.getSystemStats.handle);
 router.get('/rbac', controllers.getRbacConfig.handle)
 
-export default router;
+export default module;

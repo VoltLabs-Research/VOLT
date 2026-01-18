@@ -7,10 +7,12 @@ export interface IPluginListingService {
     getExposureChart(exposureId: string, timestep: number): Promise<any>;
 }
 
+import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+
 @injectable()
 export class GetPluginExposureChartUseCase implements IUseCase<GetPluginExposureChartInputDTO, any> {
     constructor(
-        @inject('IPluginListingService') private listingService: IPluginListingService
+        @inject(PLUGIN_TOKENS.PluginListingService) private listingService: IPluginListingService
     ) { }
 
     async execute(input: GetPluginExposureChartInputDTO): Promise<Result<any>> {

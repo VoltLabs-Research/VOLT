@@ -4,10 +4,12 @@ import { Result } from '@/src/shared/domain/ports/Result';
 import { ListPluginsInputDTO, ListPluginsOutputDTO } from '../../dtos/plugin/ListPluginsDTO';
 import { IPluginRepository } from '../../../domain/ports/IPluginRepository';
 
+import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+
 @injectable()
 export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPluginsOutputDTO> {
     constructor(
-        @inject('IPluginRepository') private pluginRepository: IPluginRepository
+        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository
     ) { }
 
     async execute(input: ListPluginsInputDTO): Promise<Result<ListPluginsOutputDTO>> {

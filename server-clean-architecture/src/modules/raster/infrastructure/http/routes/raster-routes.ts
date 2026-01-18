@@ -4,8 +4,13 @@ import { TriggerRasterizationController } from '../controllers/TriggerRasterizat
 import { GetRasterMetadataController } from '../controllers/GetRasterMetadataController';
 import { GetRasterFramePNGController } from '../controllers/GetRasterFramePNGController';
 import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
 
-const router = Router();
+const router = Router({ mergeParams: true });
+const module: HttpModule = {
+    basePath: '/api/raster',
+    router
+};
 
 const triggerController = container.resolve(TriggerRasterizationController);
 const metadataController = container.resolve(GetRasterMetadataController);
@@ -15,4 +20,4 @@ router.post('/:trajectoryId/trigger', protect, (req, res, next) => triggerContro
 router.get('/:trajectoryId/metadata', protect, (req, res, next) => metadataController.handle(req, res, next));
 router.get('/:trajectoryId/frame/:timestep', protect, (req, res, next) => frameController.handle(req, res, next));
 
-export default router;
+export default module;

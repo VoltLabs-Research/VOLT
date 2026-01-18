@@ -25,7 +25,7 @@ import type { ApiResponse } from '@/types/api';
 import type { GetTrajectoriesParams, FsListResponse, TrajectoryInfo } from '@/features/trajectory/types';
 import VoltClient from '@/api';
 
-const client = new VoltClient('/trajectories', { useRBAC: true });
+const client = new VoltClient('/trajectory', { useRBAC: true });
 const vfsClient = new VoltClient('/trajectory-vfs', { useRBAC: true });
 const vfsOpsClient = new VoltClient('/trajectory-vfs', { useRBAC: false });
 const particleFilterClient = new VoltClient('/particle-filter', { useRBAC: true });

@@ -1,6 +1,6 @@
 import { Team } from '@/models/index';
 import RuntimeError from '@/utilities/runtime/runtime-error';
-import { ErrorCodes } from '@shared/constants/error-codes';
+import { ErrorCodes } from '@/src/shared/constants/error-codes';
 import { ITeam } from '@/types/models/team';
 
 export const checkTeamMembership = async (teamId: string, userId: string): Promise<ITeam> => {

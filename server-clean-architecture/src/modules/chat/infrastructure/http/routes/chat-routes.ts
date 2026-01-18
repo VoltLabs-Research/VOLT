@@ -1,9 +1,13 @@
 import { Router } from 'express';
-import { container } from 'tsyringe';
 import controllers from '../controllers/chat';
 import { protect } from '@/src/shared/infrastructure/http/middleware/authentication';
+import { HttpModule } from '@/src/shared/infrastructure/http/HttpModule';
 
 const router = Router();
+const module: HttpModule = {
+    basePath: '/api/chats',
+    router
+};
 
 router.use(protect);
 
@@ -16,4 +20,4 @@ router.patch('/:chatId/groups/info', controllers.updateGroupInfo.handle);
 router.patch('/:chatId/groups/admins', controllers.updateGroupAdmins.handle);
 router.patch('/:chatId/groups/leave', controllers.leaveGroup.handle);
 
-export default router;
+export default module;

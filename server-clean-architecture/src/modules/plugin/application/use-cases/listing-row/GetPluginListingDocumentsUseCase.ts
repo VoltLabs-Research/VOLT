@@ -7,10 +7,12 @@ export interface IPluginListingService {
     getListingDocuments(pluginSlug: string, listingSlug: string, options: any): Promise<any>;
 }
 
+import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+
 @injectable()
 export class GetPluginListingDocumentsUseCase implements IUseCase<GetPluginListingDocumentsInputDTO, GetPluginListingDocumentsOutputDTO> {
     constructor(
-        @inject('IPluginListingService') private listingService: IPluginListingService
+        @inject(PLUGIN_TOKENS.PluginListingService) private listingService: IPluginListingService
     ) { }
 
     async execute(input: GetPluginListingDocumentsInputDTO): Promise<Result<GetPluginListingDocumentsOutputDTO>> {

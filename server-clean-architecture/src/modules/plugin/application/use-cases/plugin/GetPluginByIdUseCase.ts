@@ -6,15 +6,17 @@ import { IPluginRepository } from '../../../domain/ports/IPluginRepository';
 import ApplicationError from '@/src/shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@/src/core/constants/error-codes';
 
+import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+
 @injectable()
 export class GetPluginByIdUseCase implements IUseCase<GetPluginByIdInputDTO, GetPluginByIdOutputDTO, ApplicationError> {
     constructor(
-        @inject('IPluginRepository') private pluginRepository: IPluginRepository
+        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository
     ) { }
 
     async execute(input: GetPluginByIdInputDTO): Promise<Result<GetPluginByIdOutputDTO, ApplicationError>> {
         const plugin = await this.pluginRepository.findById(input.pluginId);
-        if(!plugin){
+        if (!plugin) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
                 'Plugin not found'

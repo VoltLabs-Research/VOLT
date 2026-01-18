@@ -4,12 +4,14 @@ import { ErrorCodes } from '@/src/core/constants/error-codes';
 import { AuthenticatedRequest } from '@/src/shared/infrastructure/http/middleware/authentication';
 import HasAccessUseCase from '../../../application/use-cases/team/HasAccessUseCase';
 import BaseResponse from '@/src/shared/infrastructure/http/BaseResponse';
+import logger from '@/src/shared/infrastructure/logger';
 
 export const checkTeamMembership = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const teamId = req.params.teamId;
     const userId = req.userId!;
 
-    console.log('checkTeamMemberShip: teamId:', teamId, 'userId:', userId)
+    logger.debug(`check-team-membership: teamId=${teamId} & userId=${userId}`);
+
     if (!userId || !teamId) {
         return res.status(400).json({ status: 'error' });
     }

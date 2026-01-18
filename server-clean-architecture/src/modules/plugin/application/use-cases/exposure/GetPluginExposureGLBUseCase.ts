@@ -7,10 +7,12 @@ export interface IPluginListingService {
     getExposureGLB(exposureId: string, timestep: number): Promise<any>;
 }
 
+import { PLUGIN_TOKENS } from '../../../infrastructure/di/PluginTokens';
+
 @injectable()
 export class GetPluginExposureGLBUseCase implements IUseCase<GetPluginExposureGLBInputDTO, any> {
     constructor(
-        @inject('IPluginListingService') private listingService: IPluginListingService
+        @inject(PLUGIN_TOKENS.PluginListingService) private listingService: IPluginListingService
     ) { }
 
     async execute(input: GetPluginExposureGLBInputDTO): Promise<Result<any>> {
