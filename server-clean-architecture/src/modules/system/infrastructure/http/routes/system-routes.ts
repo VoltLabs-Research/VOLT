@@ -3,7 +3,7 @@ import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import controllers from '@modules/system/infrastructure/http/controllers';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/system',
     router

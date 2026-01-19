@@ -4,7 +4,7 @@ import multer from 'multer';
 import controllers from '@modules/plugin/infrastructure/http/controllers/plugin';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/plugin/:teamId',
     router

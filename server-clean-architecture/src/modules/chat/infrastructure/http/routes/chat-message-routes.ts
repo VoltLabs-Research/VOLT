@@ -5,7 +5,7 @@ import { uploadToStorage } from '@modules/chat/infrastructure/http/middlewares/u
 import controllers from '@modules/chat/infrastructure/http/controllers/chat-messages';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/chat-messages',
     router

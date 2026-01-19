@@ -4,7 +4,7 @@ import { ListApiTrackerController } from '@modules/api-tracker/infrastructure/ht
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/api-tracker',
     router

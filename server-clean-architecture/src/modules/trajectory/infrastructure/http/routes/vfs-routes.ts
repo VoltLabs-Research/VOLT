@@ -15,7 +15,7 @@ const uploadVFSFileController = container.resolve(UploadVFSFileController);
 const deleteVFSFileController = container.resolve(DeleteVFSFileController);
 const downloadVFSArchiveController = container.resolve(DownloadVFSArchiveController);
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(protect);

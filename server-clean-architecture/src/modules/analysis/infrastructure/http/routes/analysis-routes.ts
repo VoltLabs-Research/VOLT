@@ -10,7 +10,7 @@ const deleteAnalysisByIdController = container.resolve(DeleteAnalysisByIdControl
 const getAnalysesByTeamIdController = container.resolve(GetAnalysesByTeamIdController);
 const getAnalysisByIdController = container.resolve(GetAnalysisByIdController);
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/analysis',
     router

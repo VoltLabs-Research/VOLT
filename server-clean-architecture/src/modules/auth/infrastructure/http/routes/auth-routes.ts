@@ -25,7 +25,7 @@ const signUpController = container.resolve(SignUpController);
 const updateMyAccountController = container.resolve(UpdateMyAccountController);
 const updatePasswordController = container.resolve(UpdatePasswordController);
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/auth',
     router

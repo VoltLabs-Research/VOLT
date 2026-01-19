@@ -5,7 +5,7 @@ import { Resource } from '@core/constants/resources';
 import controllers from '@modules/container/infrastructure/http/controllers';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/container/:teamId',
     router

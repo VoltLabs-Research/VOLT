@@ -4,7 +4,7 @@ import { upload } from '@shared/infrastructure/http/middleware/upload';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 import controllers from '@modules/trajectory/infrastructure/http/controllers/trajectory';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/trajectory/:teamId',
     router

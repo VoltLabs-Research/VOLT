@@ -3,7 +3,7 @@ import controllers from '@modules/chat/infrastructure/http/controllers/chat';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/chats',
     router
