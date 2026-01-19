@@ -21,5 +21,6 @@ router.route('/:teamId')
     .delete(controllers.deleteById.handle);
 
 router.post('/:teamId/members/remove', controllers.removeUserFromTeam.handle);
+router.post('/:teamId/leave', controllers.leave.handle);
 
 export default module;

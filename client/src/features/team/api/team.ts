@@ -5,7 +5,9 @@ import type { CreateTeamPayload } from '@/features/team/types';
 import VoltClient from '@/api';
 
 const client = new VoltClient('/team');
-const invitationClient = new VoltClient('/team/invititations', { useRBAC: true });
+const invitationClient = new VoltClient('/team/invitations', { useRBAC: true });
+// TODO: pending fix
+const tempNoRbacClient = new VoltClient('/team/invitations', { useRBAC: false });
 
 const teamApi = {
     async getAll(): Promise<Team[]> {
@@ -38,14 +40,13 @@ const teamApi = {
     },
 
     invitations: {
-        async getDetails(token: string): Promise<TeamInvitation> {
-            const response = await invitationClient.request<{ status: string; data: TeamInvitation }>('get', `/details/${token}`);
+        async getDetails(invitationId: string): Promise<TeamInvitation> {
+            const response = await tempNoRbacClient.request<{ status: string; data: TeamInvitation }>('get', `/${invitationId}`);
             return response.data.data;
         },
 
         async getPending(): Promise<TeamInvitation[]> {
             const response = await invitationClient.request<{ status: string; data: { data: TeamInvitation[] } }>('get', '/pending');
-            // Backend returns paginated result: { status, data: { data: TeamInvitation[], page, limit, total } }
             return response.data.data.data;
         },
 
@@ -54,15 +55,15 @@ const teamApi = {
         },
 
         async cancel(invitationId: string): Promise<void> {
-            await invitationClient.request('delete', `/cancel/${invitationId}`);
+            await invitationClient.request('delete', `/${invitationId}`);
         },
 
-        async accept(token: string): Promise<void> {
-            await invitationClient.request('post', `/accept/${token}`);
+        async accept(invitationId: string): Promise<void> {
+            await tempNoRbacClient.request('post', `/${invitationId}/accept`);
         },
 
-        async reject(token: string): Promise<void> {
-            await invitationClient.request('post', `/reject/${token}`);
+        async reject(invitationId: string): Promise<void> {
+            await tempNoRbacClient.request('post', `/${invitationId}/reject`);
         }
     }
 };

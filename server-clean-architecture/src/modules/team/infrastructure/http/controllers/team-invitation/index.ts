@@ -3,6 +3,8 @@ import DeleteTeamInvitationByIdController from './DeleteTeamInvitationByIdContro
 import GetTeamInvitationByIdController from './GetTeamInvitationByIdController';
 import GetPendingInvitationsController from './GetPendingInvitationsController';
 import UpdateTeamInvitationByIdController from './UpdateTeamInvitationByIdController';
+import AcceptTeamInvitationController from './AcceptTeamInvitationController';
+import RejectTeamInvitationController from './RejectTeamInvitationController';
 import { container } from 'tsyringe';
 
 export default {
@@ -10,5 +12,7 @@ export default {
     deleteById: container.resolve(DeleteTeamInvitationByIdController),
     getById: container.resolve(GetTeamInvitationByIdController),
     listPendingByTeamId: container.resolve(GetPendingInvitationsController),
-    updateById: container.resolve(UpdateTeamInvitationByIdController)
+    updateById: container.resolve(UpdateTeamInvitationByIdController),
+    accept: container.resolve(AcceptTeamInvitationController),
+    reject: container.resolve(RejectTeamInvitationController)
 };

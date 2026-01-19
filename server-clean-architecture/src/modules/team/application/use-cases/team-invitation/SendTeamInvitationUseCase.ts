@@ -12,6 +12,10 @@ import { SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO } from '@module
 import crypto from 'crypto';
 import { TeamInvitationStatus } from '@modules/team/domain/entities/TeamInvitation';
 import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import InvitationSentEvent from '@modules/team/domain/events/InvitationSentEvent';
+import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
 
 @injectable()
 export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvitationInputDTO, SendTeamInvitationOutputDTO, ApplicationError> {
@@ -26,11 +30,17 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
         private readonly userRepository: IUserRepository,
 
         @inject(TEAM_TOKENS.TeamRoleRepository)
-        private readonly teamRoleRepository: ITeamRoleRepository
-    ){}
+        private readonly teamRoleRepository: ITeamRoleRepository,
+
+        @inject(TEAM_TOKENS.TeamMemberRepository)
+        private readonly teamMemberRepository: ITeamMemberRepository,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
+    ) { }
 
     async execute(input: SendTeamInvitationInputDTO): Promise<Result<SendTeamInvitationOutputDTO, ApplicationError>> {
-        const { teamId, invitedByUserId, email, roleId } = input;
+        const { teamId, userId, email, roleId } = input;
 
         const team = await this.teamRepository.findById(teamId);
         if (!team) {
@@ -41,14 +51,19 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
         }
 
         const user = await this.userRepository.findByEmail(email.toLowerCase());
-        if(!user){
+        if (!user) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.USER_NOT_FOUND,
                 'User not found'
             ));
         }
-        
-        if (user && team.props.members.includes(user.id)) {
+
+        const isMember = await this.teamMemberRepository.findOne({
+            team: teamId,
+            user: user.id
+        });
+
+        if (isMember) {
             return Result.fail(ApplicationError.badRequest(
                 ErrorCodes.TEAM_INVITATION_USER_ALREADY_MEMBER,
                 'User is already a member of this team'
@@ -68,8 +83,10 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
             ));
         }
 
-        const role = await this.teamRoleRepository.findById(roleId);
-        if(!role){
+        const role = roleId
+            ? await this.teamRoleRepository.findById(roleId)
+            : await this.teamRoleRepository.findOne({ name: 'Member', team: teamId });
+        if (!role) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TEAM_ROLE_NOT_FOUND,
                 'Team role not found'
@@ -81,7 +98,7 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
 
         const invitation = await this.invitationRepository.create({
             team: teamId,
-            invitedBy: invitedByUserId,
+            invitedBy: userId,
             invitedUser: user.id,
             email: email.toLowerCase(),
             token,
@@ -90,6 +107,12 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
             acceptedAt: new Date(),
             status: TeamInvitationStatus.Pending
         });
+
+        await this.eventBus.publish(new InvitationSentEvent({
+            invitationId: invitation.id,
+            teamName: team.props.name,
+            invitedUserId: user.id
+        }));
 
         return Result.ok(invitation.props);
     }

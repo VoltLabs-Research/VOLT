@@ -174,6 +174,7 @@ export const ErrorCodes = {
     TEAM_INVITATION_EMAIL_ROLE_REQUIRED: 'TeamInvitation::EmailRoleRequired',
     TEAM_INVITATION_INVALID_EMAIL: 'TeamInvitation::InvalidEmail',
     TEAM_INVITATION_OWNER_ONLY: 'TeamInvitation::OwnerOnly',
+    TEAM_INVITATION_INVALID_USER: 'TeamInvitation::InvalidUser',
 
     PLUGIN_WORKFLOW_REQUIRED: 'Plugin::Workflow::Required',
     PLUGIN_NOT_VALID_CANNOT_PUBLISH: 'Plugin::NotValid::CannotPublish',

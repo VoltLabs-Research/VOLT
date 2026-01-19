@@ -2,9 +2,9 @@ import { TeamInvitationProps } from '@modules/team/domain/entities/TeamInvitatio
 
 export interface SendTeamInvitationInputDTO {
     teamId: string;
-    invitedByUserId: string;
+    userId: string;
     email: string;
-    roleId: string;
+    roleId?: string;
 }
 
 export interface SendTeamInvitationOutputDTO extends TeamInvitationProps {}
