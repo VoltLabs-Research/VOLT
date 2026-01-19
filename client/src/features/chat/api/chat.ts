@@ -26,7 +26,7 @@ import type { User } from '@/types/models';
 import type { GetChatMessagesResponse, GetTeamMembersResponse, GetChatsResponse, SendMessageResponse } from '@/features/chat/types';
 
 const chatsClient = new VoltClient('/chats', { useRBAC: false });
-const messagesClient = new VoltClient('/chat/messages', { useRBAC: false });
+const messagesClient = new VoltClient('/chat-messages', { useRBAC: false });
 
 export const chatApi = {
     // Get all chats for the current user's teams
@@ -37,13 +37,11 @@ export const chatApi = {
 
     // Get team members for chat initialization
     getTeamMembers: async (teamId: string): Promise<User[]> => {
-        const tmClient = new VoltClient('/team/members', { useRBAC: false });
-        const response = await tmClient.request<any>('get', '/', { query: { teamId } });
-
-        // Response data is { members: [], admins: [], owner: {} }
-        const { members } = response.data.data;
-        // Map to User objects
-        return members.map((m: any) => m.user);
+        // TODO: Use teamApi
+        const tmClient = new VoltClient('/team/members', { useRBAC: true });
+        const response = await tmClient.request<any>('get', '/');
+        const users = response.data.data.data.map((member) => member.user);
+        return users;
     },
 
     // Get or create a chat between two users
@@ -57,7 +55,7 @@ export const chatApi = {
         const response = await messagesClient.request<GetChatMessagesResponse>('get', `/${chatId}/messages`, {
             query: { page, limit }
         });
-        return response.data.data;
+        return response.data.data.data;
     },
 
     // Send a message to a chat

@@ -1,5 +1,5 @@
-export interface ChatProps{
-    participants: string[];
+export interface ChatProps {
+    participants: any[];
     team: string;
     messages: string;
     lastMessage: string;
@@ -18,13 +18,13 @@ export interface ChatProps{
     createdBy: string;
 };
 
-export default class Chat{
+export default class Chat {
     constructor(
         public id: string,
         public props: ChatProps
-    ){}
+    ) { }
 
-    public isAdmin(userId: string): boolean{
+    public isAdmin(userId: string): boolean {
         return this.props.admins.includes(userId);
     }
 };

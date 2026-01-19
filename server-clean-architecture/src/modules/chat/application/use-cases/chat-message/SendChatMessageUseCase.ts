@@ -14,7 +14,7 @@ export class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO,
         private messageRepo: IChatMessageRepository,
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository
-    ){}
+    ) { }
 
     async execute(input: SendChatMessageInputDTO): Promise<Result<SendChatMessageOutputDTO, ApplicationError>> {
         const { userId, chatId, content, messageType, metadata } = input;
@@ -31,6 +31,23 @@ export class SendChatMessageUseCase implements IUseCase<SendChatMessageInputDTO,
         });
 
         await this.chatRepo.updateLastMessage(chatId, message.id);
-        return Result.ok(message.props);
+
+        // Ensure we return the populated message so frontend can attribute it correctly immediately
+        // We need to cast to any/doc to call populate because it might be the Domain Entity depending on repo implementation
+        // But checking the repo, create returns the Domain Entity. The Domain Entity does not have .populate().
+        // We should probably rely on the Mapper or re-fetch.
+        // Actually, MongooseBaseRepository.create calls mapper.toDomain.
+        // The best way here without breaking abstraction too much is to maybe just return the input userId as the sender object 
+        // OR simpler: just re-fetch properly or use a repo method that creates and populates.
+
+        // Let's see if we can just patch the props we return, 
+        // OR (better) add a populate option to create, 
+        // OR (easiest/safest now) findById with populate.
+
+        const populatedMessage = await this.messageRepo.findById(message.id, { populate: 'sender' });
+
+        if (!populatedMessage) return Result.ok(message.props); // Fallback
+
+        return Result.ok(populatedMessage.props);
     }
 };

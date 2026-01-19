@@ -6,6 +6,7 @@ import MarkMessagesAsReadController from './MarkMessagesAsReadController';
 import SendChatMessageController from './SendChatMessageController';
 import SendFileMessageController from './SendFileMessageController';
 import ToggleMessageReactionController from './ToggleMessageReactionController';
+import UploadFileController from './UploadFileController';
 import { container } from 'tsyringe';
 
 export default {
@@ -16,5 +17,6 @@ export default {
     markMessagesAsRead: container.resolve(MarkMessagesAsReadController),
     sendChatMessage: container.resolve(SendChatMessageController),
     sendFileMessage: container.resolve(SendFileMessageController),
-    toggleMessageReaction: container.resolve(ToggleMessageReactionController)
+    toggleMessageReaction: container.resolve(ToggleMessageReactionController),
+    uploadFile: container.resolve(UploadFileController)
 };

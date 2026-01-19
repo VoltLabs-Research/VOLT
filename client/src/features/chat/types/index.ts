@@ -1,4 +1,4 @@
-import type { User } from '@/features/auth/api/types';
+import type { User } from '@/types/models';
 import type { Chat, Message } from '@/types/chat';
 
 export interface GetChatsResponse {
@@ -8,7 +8,13 @@ export interface GetChatsResponse {
 
 export interface GetChatMessagesResponse {
     status: string;
-    data: Message[];
+    data: {
+        data: Message[];
+        total: number;
+        page: number;
+        totalPages: number;
+        limit: number;
+    };
 };
 
 export interface GetTeamMembersResponse {

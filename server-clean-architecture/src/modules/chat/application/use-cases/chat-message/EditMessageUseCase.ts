@@ -12,7 +12,7 @@ export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, EditMes
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository
-    ){}
+    ) { }
 
     async execute(input: EditMessageInputDTO): Promise<Result<EditMessageOutputDTO, ApplicationError>> {
         const { messageId, userId, content } = input;
@@ -24,16 +24,16 @@ export class EditMessageUseCase implements IUseCase<EditMessageInputDTO, EditMes
             ));
         }
 
-        if (message.isSender(userId)) {
+        if (!message.isSender(userId)) {
             return Result.fail(ApplicationError.forbidden(
-                ErrorCodes.MESSAGE_NOT_FOUND,
+                ErrorCodes.MESSAGE_FORBIDDEN,
                 'Not owner'
             ));
         }
 
         const updatedMessage = await this.messageRepo.updateById(messageId, {
             content
-        });
+        }, { populate: 'sender' });
 
         if (!updatedMessage) {
             return Result.fail(ApplicationError.notFound(

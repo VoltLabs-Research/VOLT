@@ -41,6 +41,13 @@ const MessageItem: React.FC<MessageItemProps> = ({
     const showAvatar = isGroupChat && !isOwn;
     const sender = msg.sender;
 
+    const [isEditing, setIsEditing] = React.useState(false);
+
+    const handleSaveEdit = (content: string) => {
+        onEdit(msg._id, content);
+        setIsEditing(false);
+    };
+
     return (
         <div className={`d-flex chat-message ${isOwn ? 'sent' : 'received'} ${isDeleted ? 'deleted' : ''} ${showAvatar ? 'with-avatar' : ''} p-relative`}>
             {showAvatar && (
@@ -66,17 +73,22 @@ const MessageItem: React.FC<MessageItemProps> = ({
                     ) : isFile ? (
                         <FileMessage currentChatId={currentChatId} msg={msg} />
                     ) : (
-                        <TextMessage msg={msg} onSave={(content) => onEdit(msg._id, content)} />
+                        <TextMessage
+                            msg={msg}
+                            isEditing={isEditing}
+                            onCancel={() => setIsEditing(false)}
+                            onSave={handleSaveEdit}
+                        />
                     )}
 
-                    {!isDeleted && (
+                    {!isDeleted && !isEditing && (
                         <>
                             <MessageControls
                                 isOwn={isOwn}
                                 onOpenReactions={() => onToggleReactions(msg._id)}
                                 onOpenOptions={() => onToggleOptions(msg._id)}
                                 isOptionsOpen={isOptionsOpen}
-                                onEdit={() => onEdit(msg._id, msg.content)}
+                                onEdit={() => setIsEditing(true)}
                                 onDelete={() => onDelete(msg._id)}
                             />
                             {isReactionsOpen && (

@@ -34,4 +34,11 @@ router.post(
 
 router.get('/files/:filename', controllers.getFilePreview.handle);
 
+router.post(
+    '/:chatId/upload',
+    upload.single('file'),
+    uploadToStorage,
+    controllers.uploadFile.handle
+);
+
 export default module;

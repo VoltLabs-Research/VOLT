@@ -1,67 +1,82 @@
 import { useState } from 'react';
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import type { Message } from '@/types/chat';
-import Paragraph from '@/components/primitives/Paragraph';
-import Container from '@/components/primitives/Container';
 import Button from '@/components/primitives/Button';
-import Tooltip from '@/components/atoms/common/Tooltip';
 import '@/features/chat/components/atoms/TextMessage/TextMessage.css';
 
 type TextMessageProps = {
     msg: Message;
+    isEditing: boolean;
+    onCancel: () => void;
     onSave: (content: string) => void;
 };
 
-const TextMessage = ({ msg, onSave }: TextMessageProps) => {
-    const [isEditing, setIsEditing] = useState(false);
+const TextMessage = ({ msg, isEditing, onCancel, onSave }: TextMessageProps) => {
     const [draft, setDraft] = useState(msg.content);
 
     if (!isEditing) {
-        return <Paragraph className='chat-message-text font-size-2-5 color-primary'>{msg.content}</Paragraph>;
+        return <p className='chat-message-text font-size-2-5 color-primary m-0'>{msg.content}</p>;
     }
 
     const handleEditSave = () => {
         if (draft.trim()) {
             onSave(draft);
         }
-
-        setIsEditing(false);
     };
 
     const handleEditCancel = () => {
-        setIsEditing(false);
+        onCancel();
         setDraft(msg.content);
     };
 
-    return (
-        <Container className='d-flex column gap-05'>
-            <textarea value={draft} onChange={(e) => setDraft(e.target.value)} className='chat-message-edit-input w-max color-primary p-05' autoFocus />
-            <Container className='d-flex gap-05 content-end'>
-                <Tooltip content="Save" placement="top">
-                    <Button
-                        variant='solid'
-                        intent='success'
-                        iconOnly
-                        size='sm'
-                        onClick={handleEditSave}
-                    >
-                        <IoCheckmarkOutline />
-                    </Button>
-                </Tooltip>
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleEditSave();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            handleEditCancel();
+        }
+    };
 
-                <Tooltip content="Cancel" placement="top">
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        iconOnly
-                        size='sm'
-                        onClick={handleEditCancel}
-                    >
-                        <IoCloseOutline />
-                    </Button>
-                </Tooltip>
-            </Container>
-        </Container>
+    return (
+        <div className='p-relative w-max'>
+            <textarea
+                value={draft}
+                onChange={(e) => {
+                    setDraft(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = e.target.scrollHeight + 'px';
+                }}
+                onKeyDown={handleKeyDown}
+                className='chat-message-edit-input w-max color-primary'
+                autoFocus
+                rows={1}
+            />
+            <div className='chat-message-edit-actions d-flex gap-025'>
+                <Button
+                    variant='ghost'
+                    intent='success'
+                    iconOnly
+                    size='sm'
+                    onClick={handleEditSave}
+                >
+                    <IoCheckmarkOutline size={14} />
+                </Button>
+                <Button
+                    variant='ghost'
+                    intent='danger'
+                    iconOnly
+                    size='sm'
+                    onClick={handleEditCancel}
+                >
+                    <IoCloseOutline size={14} />
+                </Button>
+            </div>
+            <div className='font-size-1 color-secondary mt-05' style={{ opacity: 0.7 }}>
+                press <span className='font-weight-6'>enter</span> to save • <span className='font-weight-6'>esc</span> to cancel
+            </div>
+        </div>
     );
 };
 

@@ -75,6 +75,7 @@ const ChatSidebar: React.FC = () => {
                 <div className='chat-team-members-container y-auto'>
                     <Title className='font-size-1 chat-team-members-title font-weight-6 color-secondary'>Team Members</Title>
                     {teamMembers
+                        .filter((member) => member._id !== user?._id)
                         .filter((member, index, self) =>
                             self.findIndex(m => m._id === member._id) === index
                         )
@@ -141,7 +142,7 @@ const ChatSidebar: React.FC = () => {
                                         </Title>
                                         {chat.lastMessageAt && (
                                             <span className='chat-conversation-time font-weight-5 color-muted'>
-                                                {formatDistanceToNow(chat.lastMessageAt, { addSufix: true })}
+                                                {formatDistanceToNow(chat.lastMessageAt, { addSuffix: true })}
                                             </span>
                                         )}
                                     </div>

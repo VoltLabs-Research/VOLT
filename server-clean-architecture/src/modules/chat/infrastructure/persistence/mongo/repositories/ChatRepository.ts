@@ -25,27 +25,25 @@ export default class ChatRepository
         targetUserId: string,
         teamId: string
     ): Promise<Chat> {
-        const chat = await this.model.findOneAndUpdate(
-            {
-                participants: { $all: [userId, targetUserId] },
+        let chat = await this.model.findOne({
+            participants: { $all: [userId, targetUserId] },
+            team: teamId,
+            isGroup: false
+        });
+
+        if (!chat) {
+            chat = await this.model.create({
+                participants: [userId, targetUserId],
                 team: teamId,
-                isGroup: false
-            },
-            {
-                $setOnInsert: {
-                    participants: [userId, targetUserId],
-                    team: teamId,
-                    isActive: true,
-                    isGroup: false
-                }
-            },
-            {
-                upsert: true,
-                new: true,
-                setDefaultsOnInsert: true,
-                runValidators: true
-            }
-        );
+                isActive: true,
+                isGroup: false,
+                createdAt: new Date(),
+                updatedAt: new Date()
+            });
+        }
+
+        // Ensure we return it populated
+        await chat.populate('participants');
 
         return this.mapper.toDomain(chat);
     }
@@ -56,6 +54,7 @@ export default class ChatRepository
             isActive: true
         })
             .populate('lastMessage')
+            .populate('participants')
             .sort({ lastMessageAt: -1 });
 
         return chats.map((chat) => this.mapper.toDomain(chat).props)

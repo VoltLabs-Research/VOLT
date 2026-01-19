@@ -22,6 +22,7 @@ export default class ChatMessageRepository
 
     async findByChatId(chatId: string, limit: number = 50, offset: number = 0): Promise<ChatMessage[]> {
         const docs = await this.model.find({ chat: chatId })
+            .populate('sender')
             .sort({ createdAt: -1 })
             .skip(offset)
             .limit(limit);

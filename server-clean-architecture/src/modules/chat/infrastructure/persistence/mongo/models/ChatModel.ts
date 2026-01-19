@@ -4,7 +4,7 @@ import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils
 import { ValidationCodes } from '@core/constants/validation-codes';
 
 type ChatRelations = 'participants' | 'team' | 'messages' | 'admins' | 'createdBy' | 'lastMessage';
-export interface ChatDocument extends Persistable<ChatProps, ChatRelations>, Document{}
+export interface ChatDocument extends Persistable<ChatProps, ChatRelations>, Document { }
 
 const ChatSchema: Schema<ChatDocument> = new Schema({
     participants: [{
@@ -20,13 +20,13 @@ const ChatSchema: Schema<ChatDocument> = new Schema({
     },
     messages: [{
         type: Schema.Types.ObjectId,
-        ref: 'Message',
+        ref: 'ChatMessage', // Corrected from 'Message'
         cascade: 'delete',
         inverse: { path: 'chat', behavior: 'set' }
     }],
     lastMessage: {
         type: Schema.Types.ObjectId,
-        ref: 'Message'
+        ref: 'ChatMessage' // Corrected from 'Message'
     },
     lastMessageAt: {
         type: Date
@@ -59,14 +59,14 @@ const ChatSchema: Schema<ChatDocument> = new Schema({
     createdBy: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: function() { return this.isGroup; }
+        required: function () { return this.isGroup; }
     }
 }, {
     timestamps: true
 });
 
 ChatSchema.index(
-    { participants: 1, team: 1 }, 
+    { participants: 1, team: 1 },
     { unique: false }
 );
 

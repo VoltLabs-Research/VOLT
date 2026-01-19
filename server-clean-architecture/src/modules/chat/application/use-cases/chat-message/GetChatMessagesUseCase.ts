@@ -12,12 +12,17 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository
-    ){}
+    ) { }
 
     async execute(input: GetChatMessagesInputDTO): Promise<Result<GetChatMessagesOutputDTO, ApplicationError>> {
         // TODO: verify chat access
         const { chatId } = input;
-        const messages = await this.messageRepo.findAll({ filter: { chat: chatId }, limit: 100, page: 1 });
+        const messages = await this.messageRepo.findAll({
+            filter: { chat: chatId },
+            limit: 100,
+            page: 1,
+            populate: 'sender'
+        });
         return Result.ok({
             ...messages,
             data: messages.data.map(m => m.props)
