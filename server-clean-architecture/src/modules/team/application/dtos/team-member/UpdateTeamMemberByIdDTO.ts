@@ -1,8 +1,8 @@
 import { TeamMemberProps } from '@modules/team/domain/entities/TeamMember';
 
-export interface UpdateTeamMemberByIdInputDTO{
+export interface UpdateTeamMemberByIdInputDTO {
     teamMemberId: string;
-    roleId?: string;
+    role?: string;
 };
 
-export interface UpdateTeamMemberByIdOutputDTO extends TeamMemberProps{}
+export interface UpdateTeamMemberByIdOutputDTO extends TeamMemberProps { }

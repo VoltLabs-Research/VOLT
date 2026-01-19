@@ -166,9 +166,9 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
 
     reset: () => set(initialState as TeamStore),
 
-    fetchMembers: async (teamId) => {
-        // Skip if already fetched for this team
-        if (fetchedMembersForTeam === teamId) return;
+    fetchMembers: async (teamId, force = false) => {
+        // Skip if already fetched for this team, unless forced
+        if (!force && fetchedMembersForTeam === teamId) return;
 
         await runRequest(set, get, () => teamMember.getAll(), {
             errorFallback: 'Failed to fetch members',

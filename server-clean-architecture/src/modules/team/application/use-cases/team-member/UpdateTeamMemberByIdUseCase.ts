@@ -8,16 +8,16 @@ import { UpdateTeamMemberByIdInputDTO, UpdateTeamMemberByIdOutputDTO } from '@mo
 import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
 
 @injectable()
-export default class UpdateTeamMemberByIdUseCase implements IUseCase<UpdateTeamMemberByIdInputDTO, UpdateTeamMemberByIdOutputDTO, ApplicationError>{
+export default class UpdateTeamMemberByIdUseCase implements IUseCase<UpdateTeamMemberByIdInputDTO, UpdateTeamMemberByIdOutputDTO, ApplicationError> {
     constructor(
         @inject(TEAM_TOKENS.TeamMemberRepository)
         private teamMemberRepository: ITeamMemberRepository
-    ){}
+    ) { }
 
-    async execute(input: UpdateTeamMemberByIdInputDTO): Promise<Result<UpdateTeamMemberByIdOutputDTO, ApplicationError>>{
-        const { teamMemberId, roleId } = input;
-        const teamMember = await this.teamMemberRepository.updateById(teamMemberId, { role: roleId });
-        if(!teamMember){
+    async execute(input: UpdateTeamMemberByIdInputDTO): Promise<Result<UpdateTeamMemberByIdOutputDTO, ApplicationError>> {
+        const { teamMemberId, role } = input;
+        const teamMember = await this.teamMemberRepository.updateById(teamMemberId, { role });
+        if (!teamMember) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TEAM_MEMBER_NOT_FOUND,
                 'Team member not found'

@@ -66,7 +66,7 @@ const MyTeam: React.FC = () => {
             await assignRole(selectedTeam._id, memberId, roleId);
             showSuccess('Role updated successfully');
             // Refresh members data
-            fetchMembers(selectedTeam._id);
+            fetchMembers(selectedTeam._id, true);
         } catch (err: any) {
             showError(err?.message || 'Failed to update role');
         }
@@ -103,10 +103,10 @@ const MyTeam: React.FC = () => {
     const memberRoleMap = useMemo(() => {
         const map = new Map<string, { memberId: string; roleId: string; roleName: string; isSystem: boolean }>();
         membersWithRoles.forEach(m => {
-            const userId = typeof m.user === 'object' ? m.user._id : m.user;
-            map.set(userId, {
+            // Key by MemberId (not UserId) to match the lookup in tableData
+            map.set(m._id, {
                 memberId: m._id,
-                roleId: m.role?._id || '',
+                roleId: m.role?._id || (typeof m.role === 'string' ? m.role : ''), // Handle populated vs string
                 roleName: m.role?.name || 'Member',
                 isSystem: m.role?.isSystem || false
             });
@@ -195,7 +195,7 @@ const MyTeam: React.FC = () => {
                     return (
                         <Select
                             options={roleOptions}
-                            value={member.role._id || null}
+                            value={member.currentRoleId || member.role?._id || (typeof member.role === 'string' ? member.role : null)}
                             onChange={(roleId) => handleRoleChange(member._id, roleId)}
                             placeholder="Select role..."
                             className="role-select-compact"
@@ -272,7 +272,7 @@ const MyTeam: React.FC = () => {
                     label: 'Remove from Team',
                     icon: IoPersonRemoveOutline,
                     onClick: async () => {
-                        const isConfirmed = await confirm(`Are you sure you want to remove ${member.firstName}?`);
+                        const isConfirmed = await confirm(`Are you sure you want to remove ${member.user.firstName}?`);
                         if (isConfirmed) {
                             await removeMember(selectedTeam._id, member.user._id);
                         }

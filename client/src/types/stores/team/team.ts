@@ -39,7 +39,7 @@ export interface TeamActions {
     reset: () => void;
 
     // Member Actions
-    fetchMembers: (teamId: string) => Promise<void>;
+    fetchMembers: (teamId: string, force?: boolean) => Promise<void>;
     removeMember: (teamId: string, userId: string) => Promise<void>;
 
     // Presence
