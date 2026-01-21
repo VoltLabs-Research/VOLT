@@ -1,12 +1,11 @@
 import { IDomainEvent } from '@shared/application/events/IDomainEvent';
-import { TrajectoryStatus, TrajectoryProcessingProgress, TrajectoryStats, TrajectoryFrame } from '@modules/trajectory/domain/entities/Trajectory';
+import { TrajectoryStatus, TrajectoryStats, TrajectoryFrame } from '@modules/trajectory/domain/entities/Trajectory';
 
 export interface TrajectoryUpdatedEventData {
     trajectoryId: string;
     teamId: string;
     updates: {
         status?: TrajectoryStatus;
-        processingProgress?: TrajectoryProcessingProgress;
         stats?: Partial<TrajectoryStats>;
         frames?: TrajectoryFrame[];
     };

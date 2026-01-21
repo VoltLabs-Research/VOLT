@@ -3,7 +3,7 @@ import { ValidationCodes } from '@core/constants/validation-codes';
 import { TrajectoryProps, TrajectoryFrame, TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-type TrajectoryRelations = 'createdBy' | 'team' | 'analysis';
+type TrajectoryRelations = 'createdBy' | 'team';
 type TrajectoryFrameRelations = 'simulationCell';
 
 export interface TrajectoryDocument extends Persistable<TrajectoryProps, TrajectoryRelations>, Document { }
@@ -54,13 +54,6 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
         type: Boolean,
         default: true
     },
-    analysis: [{
-        type: Schema.Types.ObjectId,
-        ref: 'Analysis',
-        cascade: 'delete',
-        inverse: { path: 'trajectory', behavior: 'set' },
-        default: []
-    }],
     frames: [TimestepInfoSchema],
     rasterSceneViews: {
         type: Number,

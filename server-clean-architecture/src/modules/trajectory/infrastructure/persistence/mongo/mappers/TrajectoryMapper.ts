@@ -5,8 +5,7 @@ import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMa
 class TrajectoryMapper extends BaseMapper<Trajectory, TrajectoryProps, TrajectoryDocument>{
     constructor(){
         super(Trajectory, [
-            'analysis',
-            'createdAt',
+            'createdBy',
             'team'
         ]);
     }
