@@ -3,7 +3,7 @@ import { ChatProps } from '@modules/chat/domain/entities/Chat';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { ValidationCodes } from '@core/constants/validation-codes';
 
-type ChatRelations = 'participants' | 'team' | 'messages' | 'admins' | 'createdBy' | 'lastMessage';
+type ChatRelations = 'participants' | 'team' | 'admins' | 'createdBy' | 'lastMessage';
 export interface ChatDocument extends Persistable<ChatProps, ChatRelations>, Document { }
 
 const ChatSchema: Schema<ChatDocument> = new Schema({
@@ -15,18 +15,11 @@ const ChatSchema: Schema<ChatDocument> = new Schema({
     team: {
         type: Schema.Types.ObjectId,
         ref: 'Team',
-        required: [true, ValidationCodes.CHAT_TEAM_REQUIRED],
-        inverse: { path: 'chats', behavior: 'addToSet' }
+        required: [true, ValidationCodes.CHAT_TEAM_REQUIRED]
     },
-    messages: [{
-        type: Schema.Types.ObjectId,
-        ref: 'ChatMessage', // Corrected from 'Message'
-        cascade: 'delete',
-        inverse: { path: 'chat', behavior: 'set' }
-    }],
     lastMessage: {
         type: Schema.Types.ObjectId,
-        ref: 'ChatMessage' // Corrected from 'Message'
+        ref: 'ChatMessage' 
     },
     lastMessageAt: {
         type: Date
@@ -42,7 +35,6 @@ const ChatSchema: Schema<ChatDocument> = new Schema({
     },
     groupName: {
         type: String,
-        // required: function() { return this.isGroup; }
     },
     groupDescription: {
         type: String,

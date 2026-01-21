@@ -1,7 +1,6 @@
 export interface ChatProps {
     participants: any[];
     team: string;
-    messages: string;
     lastMessage: string;
     lastMessageAt: Date;
     isActive: boolean;
