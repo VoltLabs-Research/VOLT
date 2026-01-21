@@ -32,13 +32,14 @@ export default class TeamMemberLeaveEventHandler implements IEventHandler<TeamMe
         await this.teamRepository.removeUserFromTeam(memberId, teamId);
         await this.teamMemberRepository.deleteById(memberId);
 
+        const membersCount = await this.teamMemberRepository.count({ team: teamId });
         const team = await this.teamRepository.findById(teamId);
         if(!team){
             throw new Error(ErrorCodes.TEAM_NOT_FOUND);       
         }
 
         // If the team contains no members, we remove it.
-        if(team.emptyMembers()){
+        if(membersCount === 0){
             await this.teamRepository.deleteById(team.id);
             await this.eventBus.publish(new TeamDeletedEvent({ teamId }));
             return;

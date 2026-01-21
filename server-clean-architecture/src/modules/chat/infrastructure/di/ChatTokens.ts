@@ -8,7 +8,6 @@ export const CHAT_TOKENS = {
     ToggleMessageReactionUseCase: Symbol.for('ToggleMessageReactionUseCase'),
     MarkMessagesAsReadUseCase: Symbol.for('MarkMessagesAsReadUseCase'),
     ChatSocketModule: Symbol.for('ChatSocketModule'),
-    GetTeamMembersUseCase: Symbol.for('GetTeamMembersUseCase'),
     UploadChatFileUseCase: Symbol.for('UploadChatFileUseCase'),
     GetChatFileUseCase: Symbol.for('GetChatFileUseCase')
 };

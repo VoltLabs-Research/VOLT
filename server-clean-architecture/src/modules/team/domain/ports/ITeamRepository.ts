@@ -30,9 +30,4 @@ export interface ITeamRepository extends IBaseRepository<Team, TeamProps>{
      * Get all teams for the specified user.
      */
     findUserTeams(userId: string): Promise<TeamProps[]>;
-
-    /**
-     * Get team members with populated user data.
-     */
-    getTeamMembersWithUserData(teamId: string): Promise<TeamMemberInfo[]>;
 };

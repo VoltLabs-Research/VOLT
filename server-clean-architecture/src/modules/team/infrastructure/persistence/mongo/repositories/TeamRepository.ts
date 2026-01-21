@@ -89,36 +89,4 @@ export default class TeamRepository
 
         return !!result;
     }
-
-    async getTeamMembersWithUserData(teamId: string): Promise<any[]> {
-        const team = await this.model.findById(teamId)
-            .populate('owner', 'firstName lastName email avatar')
-            .populate({
-                path: 'members',
-                populate: {
-                    path: 'user',
-                    select: 'firstName lastName email avatar'
-                }
-            });
-
-        if (!team) {
-            return [];
-        }
-
-        const members: any[] = [];
-
-        if (team.owner) {
-            members.push(team.owner);
-        }
-
-        if (team.members && Array.isArray(team.members)) {
-            // team.members are now TeamMember documents (populated with user)
-            const userMembers = team.members
-                .map((m: any) => m.user)
-                .filter((u: any) => !!u);
-            members.push(...userMembers);
-        }
-
-        return members;
-    }
 }
