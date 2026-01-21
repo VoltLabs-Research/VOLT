@@ -26,7 +26,7 @@ export default class JobHandlerService implements IJobHandlerService {
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
-    ){}
+    ) { }
 
     initialize(config: JobHandlerConfig): void {
         this.config = config;
@@ -38,14 +38,17 @@ export default class JobHandlerService implements IJobHandlerService {
         data: any
     ): Promise<void> {
         // Expand metadata fields to root level for Redis storage
+        // IMPORTANT: Spread data FIRST, then override with explicit values
+        // to prevent stale data.status from overwriting the new status
         const statusData = {
+            ...data,
+            // Explicitly include metadata fields at root level
+            ...(data.metadata || {}),
+            // These must come LAST to override any conflicting values from data
             jobId,
             status,
             timestamp: new Date().toISOString(),
-            queueType: this.config.queueName,
-            ...data,
-            // Explicitly include metadata fields at root level
-            ...(data.metadata || {})
+            queueType: this.config.queueName
         };
 
         const statusKey = `${this.config.statusKeyPrefix}${jobId}`;

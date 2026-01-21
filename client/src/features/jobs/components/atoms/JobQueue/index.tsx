@@ -21,6 +21,21 @@ const statusConfig = {
     unknown: { icon: <FaExclamationTriangle /> }
 };
 
+// Map queueType to human-readable names
+const queueTypeNames: Record<string, string> = {
+    'trajectory_processing': 'Processing',
+    'cloud-upload': 'Cloud Upload',
+    'rasterizer': 'Rasterizer',
+    'analysis': 'Analysis'
+};
+
+const getJobDisplayName = (job: Job): string => {
+    if (job.name) return job.name;
+    if (job.queueType && queueTypeNames[job.queueType]) return queueTypeNames[job.queueType];
+    if (job.queueType) return job.queueType;
+    return 'Job';
+};
+
 const formatDuration = (ms: number) => {
     if (ms < 1000) return `${ms}ms`;
     if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
@@ -63,7 +78,7 @@ const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => 
             <Container className='d-flex column gap-025 flex-1'>
                 <Container className='d-flex items-center content-between gap-05'>
                     <Title className='font-size-1 job-name font-weight-6 color-primary'>
-                        {job.name || 'Job'}
+                        {getJobDisplayName(job)}
                     </Title>
                     <span className={`job-status-badge ${job.status}`}>
                         {job.status}

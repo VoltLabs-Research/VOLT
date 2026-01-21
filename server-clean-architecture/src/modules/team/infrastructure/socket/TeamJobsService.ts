@@ -28,7 +28,7 @@ export default class TeamJobsService {
 
         @inject(JOBS_TOKENS.QueueRegistry)
         private readonly queueRegistry: IQueueRegistry
-    ){}
+    ) { }
 
     async getTeamJobs(teamId: string): Promise<TrajectoryJobGroup[]> {
         try {
@@ -60,6 +60,9 @@ export default class TeamJobsService {
             );
 
             const validJobs = jobStatuses.filter(job => job !== null && job !== undefined);
+
+
+
             const grouped = this.groupJobsByTrajectory(validJobs);
 
             return grouped;
@@ -74,7 +77,7 @@ export default class TeamJobsService {
 
         // Group by trajectoryId
         for (const job of jobs) {
-            const trajectoryId = job.trajectoryId || 'unknown';
+            const trajectoryId = job.trajectoryId || job.metadata?.trajectoryId || 'unknown';
             if (!trajectoryMap.has(trajectoryId)) {
                 trajectoryMap.set(trajectoryId, []);
             }
@@ -117,9 +120,9 @@ export default class TeamJobsService {
 
             groups.push({
                 trajectoryId,
-                trajectoryName: trajectoryJobs[0]?.message || `Trajectory ${trajectoryId.slice(-6)}`,
+                trajectoryName: trajectoryJobs[0]?.message || trajectoryJobs[0]?.metadata?.trajectoryName || `Trajectory ${trajectoryId.slice(-6)}`,
                 frameGroups,
-                latestTimestamp: trajectoryJobs[0]?.timestamp || new Date().toISOString(),
+                latestTimestamp: trajectoryJobs[0]?.timestamp || trajectoryJobs[0]?.createdAt || new Date().toISOString(),
                 overallStatus,
                 completedCount,
                 totalCount: allJobs.length

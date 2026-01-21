@@ -172,9 +172,9 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
             const jobData = job.props ? job.props : job;
 
             // Merge metadata with all job fields to preserve everything
+            // Merge metadata with all job fields to preserve everything
             const metadata = {
-                ...(jobData.metadata || {}),
-                ...jobData  // Include all fields for socket emission
+                ...(jobData.metadata || {})
             };
 
             const newJobProps = {
@@ -247,11 +247,6 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
 
             case 'completed':
                 await this.jobHandler.setJobStatus(job.props.jobId, JobStatus.Completed, updateData);
-                await this.jobRepository.setWithExpiry(
-                    statusKey,
-                    JSON.stringify(updateData),
-                    this.constants.TTL_SECONDS
-                );
                 await this.jobRepository.deleteRetryCounter(retryCountKey);
                 await this.sessionManager.checkAndCleanupSession(job);
 
@@ -270,7 +265,7 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
                 if (shouldCleanupSession) {
                     await this.jobRepository.setWithExpiry(
                         statusKey,
-                        JSON.stringify(updateData),
+                        JSON.stringify({ ...updateData, status: JobStatus.Failed }),
                         this.constants.TTL_SECONDS
                     );
 
