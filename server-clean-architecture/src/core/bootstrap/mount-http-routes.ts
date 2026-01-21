@@ -12,6 +12,8 @@ import NotificationHttpModule from '@modules/notification/infrastructure/http/ro
 import SshConnectionHttpModule from '@modules/ssh/infrastructure/http/routes/ssh-connection-routes';
 import ContainerHttpModule from '@modules/container/infrastructure/http/routes/container-routes';
 import TrajectoryHttpModule from '@modules/trajectory/infrastructure/http/routes/trajectory-routes';
+import ColorCodingHttpModule from '@modules/trajectory/infrastructure/http/routes/color-coding-routes';
+import ParticleFilterHttpModule from '@modules/trajectory/infrastructure/http/routes/particle-filter-routes';
 import AnalysisHttpModule from '@modules/analysis/infrastructure/http/routes/analysis-routes';
 import PluginHttpModule from '@modules/plugin/infrastructure/http/routes/plugin-routes';
 import PluginListingHttpModule from '@modules/plugin/infrastructure/http/routes/listing-routes';
@@ -44,7 +46,9 @@ const HTTP_MODULES: HttpModule[] = [
     SimulationCellHttpModule,
     DailyActivityHttpModule,
     ApiTrackerHttpModule,
-    SystemHttpModule
+    SystemHttpModule,
+    ColorCodingHttpModule,
+    ParticleFilterHttpModule
 ];
 
 /**
@@ -52,8 +56,8 @@ const HTTP_MODULES: HttpModule[] = [
  */
 const mountHttpRoutes = (): Router => {
     const router = Router();
-    
-    for(const module of HTTP_MODULES){
+
+    for (const module of HTTP_MODULES) {
         module.router.param('teamId', checkTeamMembership);
         router.use(module.basePath, module.router);
     }

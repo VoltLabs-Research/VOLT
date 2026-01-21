@@ -1,12 +1,13 @@
 import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
+import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
 import Team, { TeamProps } from '@modules/team/domain/entities/Team';
 import TeamModel, { TeamDocument } from '@modules/team/infrastructure/persistence/mongo/models/TeamModel';
-import TeamMemberModel from '@modules/team/infrastructure/persistence/mongo/models/TeamMemberModel';
 import teamMapper from '@modules/team/infrastructure/persistence/mongo/mappers/TeamMapper';
 import { injectable, inject } from 'tsyringe';
 import { MongooseBaseRepository } from '@shared/infrastructure/persistence/mongo/MongooseBaseRepository';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
 
 @injectable()
@@ -16,7 +17,10 @@ export default class TeamRepository
 
     constructor(
         @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        private readonly eventBus: IEventBus,
+
+        @inject(TEAM_TOKENS.TeamMemberRepository)
+        private readonly teamMemberRepository: ITeamMemberRepository
     ) {
         super(TeamModel, teamMapper);
     }
@@ -34,11 +38,11 @@ export default class TeamRepository
     }
 
     async removeUserFromAllTeams(userId: string): Promise<void> {
-        // Find all team memberships for the user
-        const memberships = await TeamMemberModel.find({ user: userId });
+        // Find all team memberships for the user using repository
+        const memberships = await this.teamMemberRepository.findByUserId(userId);
 
-        // Remove TeamMember records
-        await TeamMemberModel.deleteMany({ user: userId });
+        // Remove TeamMember records using repository
+        await this.teamMemberRepository.deleteByUserId(userId);
 
         // Remove user from admins arrays (if they are stored as User IDs there)
         await this.model.updateMany(
@@ -49,8 +53,8 @@ export default class TeamRepository
         // For the members array in Team, they are TeamMember IDs, so we need to pull the specific member IDs
         for (const membership of memberships) {
             await this.model.updateOne(
-                { _id: membership.team },
-                { $pull: { members: membership._id } }
+                { _id: membership.props.team },
+                { $pull: { members: membership.id } }
             );
         }
     }
@@ -65,8 +69,7 @@ export default class TeamRepository
 
     async findUserTeams(userId: string): Promise<TeamProps[]> {
         // User belongs to a team if they are the owner OR they have a TeamMember record
-        const memberships = await TeamMemberModel.find({ user: userId }).select('team');
-        const teamIdsFromMembership = memberships.map(m => m.team);
+        const teamIdsFromMembership = await this.teamMemberRepository.getTeamIdsByUserId(userId);
 
         const docs = await this.model.find({
             $or: [

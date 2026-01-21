@@ -17,7 +17,7 @@ export default class AtomisticExporter implements IAtomisticExporter {
 
         @inject(SHARED_TOKENS.StorageService)
         private storageService: IStorageService
-    ){}
+    ) { }
 
     private readonly STRUCTURE_COLORS: Record<string, number[]> = {
         'FCC': [102, 255, 102],
@@ -100,7 +100,15 @@ export default class AtomisticExporter implements IAtomisticExporter {
 
             colors = nativeExporter.applyPropertyColors(values, startValue, endValue, gradientType);
         } else {
-            colors = nativeExporter.applyPropertyColors(parsed.properties![property], startValue, endValue, gradientType);
+            if (property === 'type' && parsed.types) {
+                const typeValues = new Float32Array(parsed.types);
+                colors = nativeExporter.applyPropertyColors(typeValues, startValue, endValue, gradientType);
+            } else {
+                if (!parsed.properties || !parsed.properties[property]) {
+                    throw new Error(`Property '${property}' not found in trajectory dump`);
+                }
+                colors = nativeExporter.applyPropertyColors(parsed.properties[property], startValue, endValue, gradientType);
+            }
         }
 
         const buffer = nativeExporter.generatePointCloudGLB(parsed.positions, colors, parsed.min, parsed.max);

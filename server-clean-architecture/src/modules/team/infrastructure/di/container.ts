@@ -9,8 +9,9 @@ import TeamJobsSocketModule from '@modules/team/infrastructure/socket/TeamJobsSo
 // import TeamPresenceService from '@modules/team/infrastructure/presence/TeamPresenceService';
 
 export const registerTeamDependencies = () => {
-    container.registerSingleton(TEAM_TOKENS.TeamRepository, TeamRepository);
+    // Register TeamMemberRepository FIRST - TeamRepository depends on it
     container.registerSingleton(TEAM_TOKENS.TeamMemberRepository, TeamMemberRepository);
+    container.registerSingleton(TEAM_TOKENS.TeamRepository, TeamRepository);
     container.registerSingleton(TEAM_TOKENS.TeamRoleRepository, TeamRoleRepository);
     container.registerSingleton(TEAM_TOKENS.TeamInvitationRepository, TeamInvitationRepository);
     container.registerSingleton(TEAM_TOKENS.TeamJobsService, TeamJobsService);

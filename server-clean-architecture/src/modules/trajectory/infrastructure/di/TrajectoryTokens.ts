@@ -8,4 +8,7 @@ export const TRAJECTORY_TOKENS = {
     TrajectoryProcessingQueue: Symbol.for('TrajectoryProcessingQueue'),
     TrajectoryBackgroundProcessor: Symbol.for('TrajectoryBackgroundProcessor'),
     CloudUploadQueue: Symbol.for('CloudUploadQueue'),
+    AtomPropertiesService: Symbol.for('AtomPropertiesService'),
+    ColorCodingService: Symbol.for('ColorCodingService'),
+    ParticleFilterService: Symbol.for('ParticleFilterService'),
 };
