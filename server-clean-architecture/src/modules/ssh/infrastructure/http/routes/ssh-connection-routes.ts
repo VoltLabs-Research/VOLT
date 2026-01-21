@@ -11,16 +11,16 @@ const module: HttpModule = {
 
 router.use(protect);
 
-router.route('/:teamId')
+router.route('/')
     .get(controllers.listByTeamId.handle)
     .post(controllers.create.handle);
 
-router.route('/:teamId/:sshConnectionId')
+router.route('/:sshConnectionId')
     .patch(controllers.updateById.handle)
     .delete(controllers.deleteById.handle);
 
-router.get('/:teamId/:sshConnectionId/files', controllers.listFiles.handle);
+router.get('/:sshConnectionId/files', controllers.listFiles.handle);
 
-router.get('/:teamId/:sshConnectionId/test', controllers.testById.handle);
+router.get('/:sshConnectionId/test', controllers.testById.handle);
 
 export default module;

@@ -1,7 +1,7 @@
 import { Schema } from 'mongoose';
 
 export const ExposureMetaSchema = new Schema({
-        plugin: {
+    plugin: {
         type: Schema.Types.ObjectId,
         ref: 'Plugin',
         required: true,
