@@ -6,6 +6,7 @@ import UserDeletedEventHandler from '@modules/team/application/events/UserDelete
 import UserCreatedEventHandler from '@modules/team/application/events/UserCreatedEventHandler';
 import TeamCreatedEventHandler from '@modules/team/application/events/TeamCreatedEventHandler';
 import JobStatusChangedEventHandler from '@modules/team/application/events/JobStatusChangedEventHandler';
+import TeamMemberLeaveEventHandler from '@modules/team/application/events/TeamMemberLeaveEventHandler';
 
 export const registerTeamSubscribers = async (): Promise<void> => {
     const eventBus = container.resolve<IEventBus>(SHARED_TOKENS.EventBus);
@@ -14,7 +15,9 @@ export const registerTeamSubscribers = async (): Promise<void> => {
     const userDeletedHandler = container.resolve(UserDeletedEventHandler);
     const userCreatedHandler = container.resolve(UserCreatedEventHandler);
     const teamCreatedHandler = container.resolve(TeamCreatedEventHandler);
+    const memberLeaveHandler = container.resolve(TeamMemberLeaveEventHandler);
 
+    await eventBus.subscribe('team.member.leave', memberLeaveHandler);
     await eventBus.subscribe('team.deleted', teamDeletedHandler);
     await eventBus.subscribe('team.created', teamCreatedHandler);
     await eventBus.subscribe('user.deleted', userDeletedHandler);

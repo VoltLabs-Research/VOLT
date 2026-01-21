@@ -28,7 +28,7 @@ export default class UserCreatedEventHandler implements IEventHandler<UserCreate
                 recipient: id,
                 title: 'Your personal team is ready',
                 content: `We've automatically created a team for you called "${team.name}". All your new trajectories can be added here.`,
-                link: `/teams/${team.id}`
+                link: `/teams/${team._id}`
             });
         }
     }

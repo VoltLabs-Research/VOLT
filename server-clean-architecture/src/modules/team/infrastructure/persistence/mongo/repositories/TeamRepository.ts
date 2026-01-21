@@ -55,31 +55,12 @@ export default class TeamRepository
         }
     }
 
-    async hasAccess(userId: string, teamId: string): Promise<boolean> {
-        // Check if user is owner
-        const isOwner = await this.model.exists({ _id: teamId, owner: userId });
-        if (isOwner) return true;
-
-        // Check if user is in admins (assuming admins are User IDs)
-        const isAdmin = await this.model.exists({ _id: teamId, admins: userId });
-        if (isAdmin) return true;
-
-        // Check if user is a TeamMember
-        const isMember = await TeamMemberModel.exists({ team: teamId, user: userId });
-        return isMember !== null;
-    }
-
-    async removeUserFromTeam(userId: string, teamId: string): Promise<void> {
-        const membership = await TeamMemberModel.findOne({ user: userId, team: teamId });
-        if (membership) {
-            await TeamMemberModel.deleteOne({ _id: membership._id });
-            await this.model.findByIdAndUpdate(teamId, {
-                $pull: {
-                    members: membership._id,
-                    admins: userId
-                }
-            });
-        }
+    async removeUserFromTeam(memberId: string, teamId: string): Promise<void> {
+        await this.model.findByIdAndUpdate(teamId, {
+            $pull: {
+                members: memberId
+            }
+        });
     }
 
     async findUserTeams(userId: string): Promise<TeamProps[]> {

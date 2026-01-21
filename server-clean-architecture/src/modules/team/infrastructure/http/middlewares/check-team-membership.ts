@@ -2,8 +2,7 @@ import { Response, NextFunction } from 'express';
 import { container } from 'tsyringe';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import HasAccessUseCase from '@modules/team/application/use-cases/team/HasAccessUseCase';
-import BaseResponse from '@shared/infrastructure/http/BaseResponse';
+import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/TeamMemberRepository';
 import logger from '@shared/infrastructure/logger';
 
 export const checkTeamMembership = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
@@ -16,20 +15,15 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
         return res.status(400).json({ status: 'error' });
     }
 
-    const useCase = container.resolve(HasAccessUseCase);
-    const teamIdStr = String(teamId);
-    const result = await useCase.execute({ userId, teamId: teamIdStr });
-    if (!result.success) {
-        BaseResponse.error(res, result.error.message, result.error.statusCode);
-        return;
+    const repository = container.resolve(TeamMemberRepository);
+    const member = await repository.findOne({ user: userId, team: teamId });
+
+    if(!member){
+        return res.status(403).json({
+            status: 'error',
+            message: ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN
+        });
     }
 
-    if (result.value) {
-        return next();
-    }
-
-    return res.status(403).json({
-        status: 'error',
-        message: ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN
-    });
+    next();
 };
