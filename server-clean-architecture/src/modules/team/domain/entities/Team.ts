@@ -19,10 +19,6 @@ export default class Team {
         public props: TeamProps
     ){}
 
-    public isOwner(userId: string): boolean {
-        return this.props.owner === userId;
-    }
-
     public emptyMembers(): boolean{
         return this.props.members.length === 0;
     }
