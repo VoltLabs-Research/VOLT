@@ -10,6 +10,7 @@ import TeamPresenceSocketModule from '@modules/socket/infrastructure/modules/Tea
 import TeamJobsSocketModule from '@modules/team/infrastructure/socket/TeamJobsSocketModule';
 import SystemSocketModule from '@modules/system/infrastructure/socket/SystemSocketModule';
 import ChatSocketModule from '@modules/chat/infrastructure/socket/ChatSocketModule';
+import NotificationSocketModule from '@modules/notification/infrastructure/socket/NotificationSocketModule';
 
 /**
  * Register socket module dependencies.
@@ -28,4 +29,5 @@ export const registerSocketModule = (): void => {
     container.registerSingleton('SocketModule', TeamJobsSocketModule);
     container.registerSingleton('SocketModule', SystemSocketModule);
     container.registerSingleton('SocketModule', ChatSocketModule);
+    container.registerSingleton('SocketModule', NotificationSocketModule);
 };

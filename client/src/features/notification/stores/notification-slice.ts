@@ -34,7 +34,7 @@ export const createNotificationSlice: SliceCreator<NotificationSlice> = (set, ge
         const state = get() as NotificationSlice;
         // Skip if already have notifications
         if (state.notifications.length > 0) return;
-        
+
         await runRequest(set, get, () => notificationsApi.getAll(), {
             loadingKey: 'loading',
             errorFallback: 'Failed to load notifications',
@@ -97,6 +97,11 @@ export const createNotificationSlice: SliceCreator<NotificationSlice> = (set, ge
 
     addNotification: (notification: Notification) => {
         set((state: NotificationSlice) => {
+            // Prevent duplicates
+            if (state.notifications.some(n => n._id === notification._id)) {
+                return state;
+            }
+
             const shouldIncrementUnread = !notification.read;
             const unreadCount = state.unreadCount + (shouldIncrementUnread ? 1 : 0);
 
