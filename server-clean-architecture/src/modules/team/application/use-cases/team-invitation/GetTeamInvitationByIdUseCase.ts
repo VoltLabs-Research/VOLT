@@ -12,7 +12,7 @@ export default class GetTeamInvitationByIdUseCase implements IUseCase<GetTeamInv
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository)
         private invitationRepository: ITeamInvitationRepository
-    ) { }
+    ){}
 
     async execute(input: GetTeamInvitationByIdInputDTO): Promise<Result<GetTeamInvitationByIdOutputDTO, ApplicationError>> {
         const { invitationId } = input;

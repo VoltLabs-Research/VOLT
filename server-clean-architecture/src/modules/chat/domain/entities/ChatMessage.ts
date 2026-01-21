@@ -38,7 +38,7 @@ export default class ChatMessage {
     constructor(
         public id: string,
         public props: ChatMessageProps
-    ) { }
+    ){}
 
     public isSender(userId: string): boolean {
         const senderId = typeof this.props.sender === 'string'

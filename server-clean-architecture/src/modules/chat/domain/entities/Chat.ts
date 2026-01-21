@@ -21,7 +21,7 @@ export default class Chat {
     constructor(
         public id: string,
         public props: ChatProps
-    ) { }
+    ){}
 
     public isAdmin(userId: string): boolean {
         return this.props.admins.includes(userId);

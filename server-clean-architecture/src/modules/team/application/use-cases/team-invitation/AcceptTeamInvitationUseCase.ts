@@ -34,7 +34,7 @@ export default class AcceptTeamInvitationUseCase implements IUseCase<AcceptTeamI
 
         @inject(SHARED_TOKENS.EventBus)
         private readonly eventBus: IEventBus
-    ) { }
+    ){}
 
     async execute(input: AcceptTeamInvitationInputDTO): Promise<Result<AcceptTeamInvitationOutputDTO, ApplicationError>> {
         const { invitationId, userId } = input;

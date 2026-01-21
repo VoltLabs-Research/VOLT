@@ -21,7 +21,7 @@ export default class RejectTeamInvitationUseCase implements IUseCase<RejectTeamI
     constructor(
         @inject(TEAM_TOKENS.TeamInvitationRepository)
         private readonly invitationRepository: ITeamInvitationRepository
-    ) { }
+    ){}
 
     async execute(input: RejectTeamInvitationInputDTO): Promise<Result<RejectTeamInvitationOutputDTO, ApplicationError>> {
         const { invitationId, userId } = input;

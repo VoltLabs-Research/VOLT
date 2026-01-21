@@ -12,7 +12,7 @@ export class ToggleMessageReactionUseCase implements IUseCase<ToggleMessageReact
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
         private messageRepo: IChatMessageRepository
-    ) { }
+    ){}
 
     async execute(input: ToggleMessageReactionInputDTO): Promise<Result<ToggleMessageReactionOutputDTO, ApplicationError>> {
         const { emoji, messageId, userId } = input;

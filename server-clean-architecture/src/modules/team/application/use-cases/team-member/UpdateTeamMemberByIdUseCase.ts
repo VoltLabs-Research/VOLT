@@ -12,7 +12,7 @@ export default class UpdateTeamMemberByIdUseCase implements IUseCase<UpdateTeamM
     constructor(
         @inject(TEAM_TOKENS.TeamMemberRepository)
         private teamMemberRepository: ITeamMemberRepository
-    ) { }
+    ){}
 
     async execute(input: UpdateTeamMemberByIdInputDTO): Promise<Result<UpdateTeamMemberByIdOutputDTO, ApplicationError>> {
         const { teamMemberId, role } = input;
