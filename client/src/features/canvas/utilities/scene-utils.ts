@@ -61,5 +61,5 @@ export const computeGlbUrl = (
         return url;
     }
 
-    return `/trajectories/${teamId}/${trajectoryId}/${currentTimestep}/${analysisId}`;
+    return `/trajectory/${teamId}/${trajectoryId}/${currentTimestep}/${analysisId}`;
 };

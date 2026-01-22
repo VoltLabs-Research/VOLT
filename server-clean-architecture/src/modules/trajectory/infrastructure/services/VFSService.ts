@@ -8,7 +8,7 @@ export class VFSService {
     ){}
 
     async listDirectory(trajectoryId: string, path: string = ''): Promise<any[]> {
-        const basePath = `trajectories/${trajectoryId}/vfs/${path}`;
+        const basePath = `trajectory/${trajectoryId}/vfs/${path}`;
         const files: any[] = [];
 
 
@@ -28,18 +28,18 @@ export class VFSService {
     }
 
     async getFile(trajectoryId: string, path: string): Promise<Buffer> {
-        const filePath = `trajectories/${trajectoryId}/vfs/${path}`;
+        const filePath = `trajectory/${trajectoryId}/vfs/${path}`;
         return await this.storage.getBuffer('trajectories', filePath);
     }
 
     async uploadFile(trajectoryId: string, path: string, buffer: Buffer): Promise<string> {
-        const filePath = `trajectories/${trajectoryId}/vfs/${path}`;
+        const filePath = `trajectory/${trajectoryId}/vfs/${path}`;
         await this.storage.upload('trajectories', filePath, buffer);
         return filePath;
     }
 
     async deleteFile(trajectoryId: string, path: string): Promise<void> {
-        const filePath = `trajectories/${trajectoryId}/vfs/${path}`;
+        const filePath = `trajectory/${trajectoryId}/vfs/${path}`;
         await this.storage.delete('trajectories', filePath);
     }
 

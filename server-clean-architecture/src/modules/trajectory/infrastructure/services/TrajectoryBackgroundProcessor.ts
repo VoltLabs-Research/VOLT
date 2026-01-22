@@ -146,9 +146,12 @@ export default class TrajectoryBackgroundProcessor implements ITrajectoryBackgro
     ): Promise<any | null>{
         try{
             const result = await TrajectoryParserFactory.parse(file.path);
-            if(!result?.metadata) return null;
+            if (!result?.metadata) return null;
 
-            const { simulationCell, ...metadata } = result.metadata;
+            const headerMetadata = await TrajectoryParserFactory.parseMetadata(file.path);
+            const { simulationCell } = headerMetadata;
+
+            const { simulationCell: _, ...metadata } = result.metadata;
 
             const simulationCellId = await this.createSimulationCell(
                 trajectoryId,
