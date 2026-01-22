@@ -78,7 +78,7 @@ export default class HeadlessRasterizerWorker extends BaseWorker<Job> {
                 az,
                 el,
                 distScale,
-                up
+                up: up ?? 'z'
             });
 
             if (!success) throw new Error(`Native rasterization failed`);
