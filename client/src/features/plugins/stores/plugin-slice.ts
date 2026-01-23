@@ -183,8 +183,9 @@ export const usePluginStore = create<PluginState>((set, get) => ({
             loadingKey,
             errorFallback: 'Failed to load plugins',
             onSuccess: (apiResponse) => {
+                console.log('API RESPONSE:', apiResponse)
                 const incomingPlugins = apiResponse.data;
-                const totalFromApi = apiResponse.results?.total;
+                const totalFromApi = apiResponse.total;
                 console.log('incomingPlugins', incomingPlugins);
                 const pagination = calculatePaginationState({
                     newData: incomingPlugins,
