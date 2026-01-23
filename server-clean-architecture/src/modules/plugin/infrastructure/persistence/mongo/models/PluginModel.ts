@@ -7,9 +7,7 @@ type PluginRelations = 'team';
 export interface PluginDocument extends Persistable<PluginProps, PluginRelations>, Document { };
 
 PluginSchema.index({
-    slug: 'text',
-    'modifier.name': 'text',
-    'modifier.description': 'text'
+    slug: 'text'
 });
 
 const PluginModel: Model<PluginDocument> = mongoose.model<PluginDocument>('Plugin', PluginSchema);

@@ -1,8 +1,7 @@
 import { BinaryUploadResult, IPluginStorageService, PluginImportResult } from '@modules/plugin/domain/ports/IPluginStorageService';
+import { UpdatePluginByIdUseCase } from '@modules/plugin/application/use-cases/plugin/UpdatePluginByIdUseCase';
 import { injectable, inject } from 'tsyringe';
 import { PassThrough, Readable } from 'node:stream';
-import archiver from 'archiver';
-import unzipper from 'unzipper';
 import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
@@ -11,9 +10,11 @@ import { IStorageService } from '@shared/domain/ports/IStorageService';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
-import path from 'node:path';
 import { v4 } from 'uuid';
+import path from 'node:path';
 import logger from '@shared/infrastructure/logger';
+import archiver from 'archiver';
+import unzipper from 'unzipper';
 
 @injectable()
 export default class PluginStorageService implements IPluginStorageService {
@@ -22,7 +23,10 @@ export default class PluginStorageService implements IPluginStorageService {
         private pluginRepo: IPluginRepository,
 
         @inject(SHARED_TOKENS.StorageService)
-        private storageService: IStorageService
+        private storageService: IStorageService,
+
+        @inject(UpdatePluginByIdUseCase)
+        private updateByIdUseCase: UpdatePluginByIdUseCase
     ){}
 
     async deleteBinary(pluginId: string): Promise<void> {
@@ -45,7 +49,7 @@ export default class PluginStorageService implements IPluginStorageService {
             binary: undefined
         });
 
-        await this.pluginRepo.updateById(pluginId, { workflow: plugin.props.workflow.props });
+        await this.updateByIdUseCase.execute({ pluginId, workflow: plugin.props.workflow.props });
 
         logger.info(`@plugin-storage-service: binary deleted: ${pathToDelete}`);
     }
@@ -76,7 +80,7 @@ export default class PluginStorageService implements IPluginStorageService {
             binaryFileName: file.originalName
         });
 
-        await this.pluginRepo.updateById(pluginId, { workflow: plugin.props.workflow.props });
+        await this.updateByIdUseCase.execute({ pluginId, workflow: plugin.props.workflow.props });
 
         logger.info(`@plugin-storage-service: binary uploaded: ${objectPath} (${file.size} bytes)`);
         return {
@@ -163,8 +167,7 @@ export default class PluginStorageService implements IPluginStorageService {
                 binaryFileName
             });
 
-            // TODO: This is correct. Fix TS error.
-            await this.pluginRepo.updateById(newPlugin.id, { workflow: newPlugin.props.workflow.props });
+            await this.updateByIdUseCase.execute({ pluginId: newPlugin.id, workflow: newPlugin.props.workflow.props });
 
             logger.info(`@plugin-workflow-service: imported binary ${binaryObjectPath}`);
             binaryImported = true;

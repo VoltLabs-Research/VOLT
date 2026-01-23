@@ -1,9 +1,10 @@
-import { PluginProps } from '@modules/plugin/domain/entities/Plugin';
+import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/Plugin';
+import { WorkflowProps } from '@modules/plugin/domain/entities/workflow/Workflow';
 
 export interface UpdatePluginByIdInputDTO {
     pluginId: string;
-    workflow?: any;
-    status?: string;
+    workflow?: WorkflowProps;
+    status?: PluginStatus;
 }
 
 export interface UpdatePluginByIdOutputDTO extends PluginProps{}
