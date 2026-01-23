@@ -45,7 +45,7 @@ export default class PluginStorageService implements IPluginStorageService {
             binary: undefined
         });
 
-        await this.pluginRepo.updateById(pluginId, { workflow: plugin.props.workflow });
+        await this.pluginRepo.updateById(pluginId, { workflow: plugin.props.workflow.props });
 
         logger.info(`@plugin-storage-service: binary deleted: ${pathToDelete}`);
     }
@@ -76,7 +76,7 @@ export default class PluginStorageService implements IPluginStorageService {
             binaryFileName: file.originalName
         });
 
-        await this.pluginRepo.updateById(pluginId, { workflow: plugin.props.workflow });
+        await this.pluginRepo.updateById(pluginId, { workflow: plugin.props.workflow.props });
 
         logger.info(`@plugin-storage-service: binary uploaded: ${objectPath} (${file.size} bytes)`);
         return {
@@ -141,8 +141,6 @@ export default class PluginStorageService implements IPluginStorageService {
             team: teamId
         });
 
-        console.log(newPlugin, importData);
-
         let binaryImported = false;
         const binaryFile = directory.files.find((file) => file.path.startsWith('binary/'));
         if (binaryFile) {
@@ -165,7 +163,8 @@ export default class PluginStorageService implements IPluginStorageService {
                 binaryFileName
             });
 
-            await this.pluginRepo.updateById(newPlugin.id, { workflow: newPlugin.props.workflow });
+            // TODO: This is correct. Fix TS error.
+            await this.pluginRepo.updateById(newPlugin.id, { workflow: newPlugin.props.workflow.props });
 
             logger.info(`@plugin-workflow-service: imported binary ${binaryObjectPath}`);
             binaryImported = true;

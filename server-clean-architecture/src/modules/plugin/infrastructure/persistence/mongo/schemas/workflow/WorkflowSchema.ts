@@ -5,11 +5,11 @@ import { ViewportSchema } from './ViewportSchema';
 
 export const WorkflowSchema = new Schema({
     nodes: {
-        type: [Schema.Types.Mixed],
+        type: [WorkflowNodeSchema],
         default: []
     },
     edges: {
-        type: [Schema.Types.Mixed],
+        type: [WorkflowEdgeSchema],
         default: []
     },
     viewport: {

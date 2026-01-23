@@ -25,8 +25,6 @@ export class ContainerMapper implements IMapper<Container, IContainerProps, ICon
     }
 
     toPersistence(domain: Container | IContainerProps): any {
-        // If it's the class, access properties. If interface, same.
-        // But mapped properties should be clean.
         return {
             name: domain.name,
             image: domain.image,
