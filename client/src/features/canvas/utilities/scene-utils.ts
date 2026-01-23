@@ -43,7 +43,7 @@ export const computeGlbUrl = (
     if (activeScene?.source === 'plugin') {
         const { analysisId: sceneAnalysisId, exposureId } = activeScene;
         if (!sceneAnalysisId || !exposureId) return null;
-        return `/plugins/${teamId}/glb/${trajectoryId}/${sceneAnalysisId}/${exposureId}/${currentTimestep}`;
+        return `/plugin/${teamId}/exposure/glb/${trajectoryId}/${sceneAnalysisId}/${exposureId}/${currentTimestep}`;
     }
 
     if (activeScene?.source === 'color-coding') {

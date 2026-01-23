@@ -5,13 +5,13 @@ import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/plugin',
+    basePath: '/api/plugin/:teamId',
     router
 };
 
 router.use(protect);
 
-router.get('/:pluginId/exposure/glb', controllers.getPluginExposureGLB.handle);
+router.get('/exposure/glb/:trajectoryId/:analysisId/:exposureId/:timestep', controllers.getPluginExposureGLB.handle);
 router.get('/:pluginId/exposure/chart', controllers.getPluginExposureChart.handle);
 
 export default module;

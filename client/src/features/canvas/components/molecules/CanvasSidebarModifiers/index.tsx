@@ -145,9 +145,7 @@ const CanvasSidebarModifiers = () => {
     }));
   }, [modifiers]);
 
-  // Lista final (memo estable)
   const allModifiers = useMemo<ModifierOption[]>(() => {
-    // si quieres que los plugins aparezcan arriba, mantenemos este orden
     return [...pluginOptions, ...staticOptions];
   }, [pluginOptions, staticOptions]);
 

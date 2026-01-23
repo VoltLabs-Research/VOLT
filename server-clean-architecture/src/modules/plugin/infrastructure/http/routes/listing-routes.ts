@@ -5,7 +5,7 @@ import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/plugin',
+    basePath: '/api/plugin/:teamId',
     router
 };
 

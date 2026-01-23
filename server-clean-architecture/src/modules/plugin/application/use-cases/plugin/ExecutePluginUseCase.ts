@@ -51,7 +51,6 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, nul
                 status: PluginStatus.Published
             })
         ]);
-
         if (!plugin) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,

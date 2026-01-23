@@ -147,6 +147,7 @@ export default class PluginStorageService implements IPluginStorageService {
 
         let binaryImported = false;
         const binaryFile = directory.files.find((file) => file.path.startsWith('binary/'));
+        console.log('BINARY FILE============', binaryFile)
         if (binaryFile) {
             const binaryBuffer = await binaryFile.buffer();
             const binaryFileName = path.basename(binaryFile.path);
@@ -166,7 +167,7 @@ export default class PluginStorageService implements IPluginStorageService {
                 binaryObjectPath,
                 binaryFileName
             });
-
+            
             await this.updateByIdUseCase.execute({ pluginId: newPlugin.id, workflow: newPlugin.props.workflow.props });
 
             logger.info(`@plugin-workflow-service: imported binary ${binaryObjectPath}`);

@@ -38,11 +38,20 @@ export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPlu
                 // Get the visualization config for the exposure from the visualizers node.
                 const visualizersNode = plugin.props.workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Visualizers);
                 const exportNode = plugin.props.workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Export);
+
+                // Extract exposure data and remove the MongoDB _id and id to avoid overwriting node.id
+                const exposureData = exposureNode.data.exposure || {};
+                const { _id: _, id: __, ...cleanedExposureData } = exposureData as any;
+
+                // Also clean visualizers data in case it contains _id or id
+                const visualizersData = visualizersNode?.data.visualizers || {};
+                const { _id: _v, id: __v, ...cleanedVisualizersData } = visualizersData as any;
+
                 doc.exposures.push({
                     _id: exposureNode.id,
                     exportData: exportNode?.data.export,
-                    ...exposureNode.data.exposure,
-                    ...visualizersNode?.data.visualizers,
+                    ...cleanedExposureData,
+                    ...cleanedVisualizersData,
                 })
             }
 

@@ -46,6 +46,7 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
             const { isValid, errors } = this.workflowValidator.validate(input.workflow);
             update.validated = isValid;
             update.validationErrors = errors;
+            update.workflow = input.workflow;
         }
 
         // If the user is trying publish this plugin and there are
@@ -57,7 +58,6 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
             ));
         }
 
-    
         await this.pluginRepository.updateById(input.pluginId, update);
 
         return Result.ok(plugin.props);
