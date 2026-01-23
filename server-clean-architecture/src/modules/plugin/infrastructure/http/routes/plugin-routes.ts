@@ -36,6 +36,6 @@ router.route('/:pluginId')
     .patch(controllers.updatePluginById.handle)
     .delete(controllers.deleteById.handle);
 
-router.post('/:pluginSlug/execute', controllers.executePlugin.handle);
+router.post('/:pluginSlug/trajectory/:trajectoryId/execute', controllers.executePlugin.handle);
 
 export default module;

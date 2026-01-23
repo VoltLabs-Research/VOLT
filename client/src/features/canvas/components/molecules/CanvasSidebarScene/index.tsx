@@ -9,7 +9,9 @@ import { usePluginStore, type RenderableExposure, type ResolvedModifier } from '
 import { useAnalysisConfigStore } from '@/features/analysis/stores';
 
 import type { Analysis, Trajectory } from '@/types/models';
+import type { IPluginRecord } from '@/features/plugins/types';
 
+import analysisApi from '@/features/analysis/api/analysis';
 import '@/features/canvas/components/molecules/CanvasSidebarScene/CanvasSidebarScene.css';
 import { computeDifferingConfigFields, DEFAULT_ENTRY } from '@/features/canvas/components/molecules/CanvasSidebarScene/utils';
 
@@ -63,6 +65,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [bootstrapLoading, setBootstrapLoading] = useState(true);
+  const [analyses, setAnalyses] = useState<Analysis[]>([]);
 
   const [exposureEntries, setExposureEntries] = useState<Map<string, ExposureEntry>>(new Map());
   const exposureEntriesRef = useRef(exposureEntries);
@@ -98,6 +101,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     setHeaderPopoverStates(new Map());
     setExposureEntries(new Map());
     setBootstrapLoading(true);
+    setAnalyses([]);
   }, [trajectoryId]);
 
   useEffect(() => {
@@ -107,19 +111,51 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
       setBootstrapLoading(true);
 
       try {
-        const analyses = trajectory?.analysis ?? [];
-        if (analyses.length === 0) {
+        if (!trajectoryId) {
           if (!cancelled) setBootstrapLoading(false);
           return;
         }
 
-        const neededSlugs = Array.from(new Set(analyses.map(a => a.plugin)));
+        const response = await analysisApi.getByTrajectoryId(trajectoryId, { limit: 100 });
+        const fetchedRaw = response.data || [];
+        
+        if (cancelled) return;
 
-        await usePluginStore.getState().fetchPlugins({ page: 1, limit: 200, force: true });
+        const pluginsToRegister: IPluginRecord[] = [];
+        const normalizedAnalyses: Analysis[] = [];
 
-        await Promise.all(
-          neededSlugs.map((slug) => usePluginStore.getState().fetchPlugin(slug))
-        );
+        fetchedRaw.forEach((item: any) => {
+          // Flatten nested props if present (backend domain object serialization)
+          const props = item.props ? item.props : item;
+          const id = item.id || item._id;
+
+          let pluginSlug = '';
+          
+          if (props.plugin && typeof props.plugin === 'object') {
+            // Plugin is fully populated, add to registry
+            pluginsToRegister.push(props.plugin);
+            pluginSlug = props.plugin.slug;
+          } else if (typeof props.plugin === 'string') {
+            // Plugin is just a slug or ID
+            pluginSlug = props.plugin;
+          }
+
+          normalizedAnalyses.push({
+            ...props,
+            _id: id,
+            plugin: pluginSlug
+          });
+        });
+
+        // Register plugins directly to store to avoid fetching them again
+        usePluginStore.getState().registerPlugins(pluginsToRegister);
+        
+        setAnalyses(normalizedAnalyses);
+
+        if (normalizedAnalyses.length === 0) {
+          setBootstrapLoading(false);
+          return;
+        }
       } catch (e) {
         console.error('[CanvasSidebarScene] bootstrap failed', e);
       } finally {
@@ -129,12 +165,12 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
 
     bootstrap();
     return () => { cancelled = true; };
-  }, [trajectoryId, trajectory?.analysis]);
+  }, [trajectoryId]);
 
   const differingConfigByAnalysis = useMemo(() => {
-    if (!trajectory?.analysis) return new Map<string, [string, any][]>();
-    return computeDifferingConfigFields(trajectory.analysis);
-  }, [trajectory?.analysis]);
+    if (analyses.length === 0) return new Map<string, [string, any][]>();
+    return computeDifferingConfigFields(analyses);
+  }, [analyses]);
 
   const loadExposuresForAnalysis = useCallback(async (analysisId: string, pluginSlug: string) => {
     if (!trajectoryId) return;
@@ -165,23 +201,23 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
   }, [analysisConfigId]);
 
   useEffect(() => {
-    if (!analysisConfigId || !trajectory?.analysis) return;
-    const a = trajectory.analysis.find(x => x._id === analysisConfigId);
+    if (!analysisConfigId || analyses.length === 0) return;
+    const a = analyses.find(x => x._id === analysisConfigId);
     if (!a) return;
     loadExposuresForAnalysis(a._id, a.plugin);
-  }, [analysisConfigId, trajectory?.analysis, loadExposuresForAnalysis]);
+  }, [analysisConfigId, analyses, loadExposuresForAnalysis]);
 
   useEffect(() => {
-    if (!trajectory?.analysis) return;
+    if (analyses.length === 0) return;
     expandedSections.forEach((analysisId) => {
-      const a = trajectory.analysis.find(x => x._id === analysisId);
+      const a = analyses.find(x => x._id === analysisId);
       if (!a) return;
       const entry = getEntryLatest(analysisId);
       if (entry.state === 'idle' || entry.state === 'error') {
         loadExposuresForAnalysis(analysisId, a.plugin);
       }
     });
-  }, [expandedSections, trajectory?.analysis, getEntryLatest, loadExposuresForAnalysis]);
+  }, [expandedSections, analyses, getEntryLatest, loadExposuresForAnalysis]);
 
   // Logic to auto-select exposure when analysis config changes
   useEffect(() => {
@@ -244,10 +280,9 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     setActiveScene(scene);
   }, [updateAnalysisConfig, setActiveScene]);
 
-  const totalAnalyses = trajectory?.analysis?.length || 0;
+  const totalAnalyses = analyses.length || 0;
 
   const allAnalysisSections = useMemo((): AnalysisSectionData[] => {
-    const analyses = trajectory?.analysis ?? [];
     if (analyses.length === 0) return [];
 
     const modifiers = getModifiers();
@@ -278,7 +313,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
     });
 
     return sections.sort((a, b) => (a.isCurrentAnalysis ? -1 : b.isCurrentAnalysis ? 1 : 0));
-  }, [trajectory?.analysis, getModifiers, exposureEntries, analysisConfigId]);
+  }, [analyses, getModifiers, exposureEntries, analysisConfigId]);
 
   const filteredSections = useMemo(() => {
     if (!searchQuery.trim()) return allAnalysisSections;
@@ -345,7 +380,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
             differingFields={differingConfigByAnalysis.get(section.analysis._id) || []}
             headerPopoverCallbacks={headerPopoverCallbacks}
             headerPopoverStates={headerPopoverStates}
-            setTooltip={setTooltip}
             onSelectScene={onSelectScene}
             onAddScene={addScene}
             onRemoveScene={removeScene}

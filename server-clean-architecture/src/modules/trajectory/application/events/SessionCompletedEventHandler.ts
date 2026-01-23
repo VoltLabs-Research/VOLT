@@ -87,6 +87,25 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
                 },
                 updatedAt: new Date()
             }));
+        } else if (queueType === 'analysis_processing') {
+            const { trajectoryId } = metadata || {};
+            if (!trajectoryId) {
+                console.error('[SessionCompletedEventHandler] Missing trajectoryId in analysis metadata');
+                return;
+            }
+
+            console.log(`[SessionCompletedEventHandler] Analysis processing completed for ${trajectoryId}. Marking as completed.`);
+
+            await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Completed });
+
+            await this.eventBus.publish(new TrajectoryUpdatedEvent({
+                trajectoryId,
+                teamId: event.data.teamId,
+                updates: {
+                    status: TrajectoryStatus.Completed
+                },
+                updatedAt: new Date()
+            }));
         } else {
             console.log(`[SessionCompletedEventHandler] Ignoring session completion for queueType: ${queueType}`);
         }

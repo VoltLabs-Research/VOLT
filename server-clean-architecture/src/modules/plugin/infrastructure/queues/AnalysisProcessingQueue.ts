@@ -1,0 +1,59 @@
+import { injectable, inject } from 'tsyringe';
+import { IJobRepository } from '@modules/jobs/domain/ports/IJobRepository';
+import { IWorkerPoolService } from '@modules/jobs/domain/ports/IWorkerPool';
+import { ISessionManagerService } from '@modules/jobs/domain/ports/ISessionManagerService';
+import { IRecoveryManagerService } from '@modules/jobs/domain/ports/IRecoveryManagerService';
+import { IJobHandlerService } from '@modules/jobs/domain/ports/IJobHandlerService';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { IQueueRegistry } from '@modules/jobs/domain/ports/IQueueRegistry';
+import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
+import path from 'path';
+
+@injectable()
+export default class AnalysisProcessingQueue extends BaseProcessingQueue {
+    constructor(
+        @inject(JOBS_TOKENS.JobRepository)
+        jobRepository: IJobRepository,
+
+        @inject(JOBS_TOKENS.WorkerPoolService)
+        workerPoolService: IWorkerPoolService,
+
+        @inject(JOBS_TOKENS.SessionManagerService)
+        sessionManager: ISessionManagerService,
+
+        @inject(JOBS_TOKENS.RecoveryManagerService)
+        recoveryManager: IRecoveryManagerService,
+
+        @inject(JOBS_TOKENS.JobHandlerService)
+        jobHandler: IJobHandlerService,
+
+        @inject(JOBS_TOKENS.QueueConstants)
+        constants: any,
+
+        @inject(SHARED_TOKENS.EventBus)
+        eventBus: IEventBus,
+
+        @inject(JOBS_TOKENS.QueueRegistry)
+        queueRegistry: IQueueRegistry
+    ) {
+        const workerPath = path.join(__dirname, '../workers/AnalysisWorker.ts');
+        console.log(`[AnalysisProcessingQueue] Initializing with worker path: ${workerPath}`);
+        super(
+            {
+                queueName: 'analysis_processing',
+                workerPath: workerPath,
+                maxConcurrentJobs: Number(process.env.ANALYSIS_QUEUE_MAX_CONCURRENT_JOBS) || 4
+            },
+            jobRepository,
+            workerPoolService,
+            sessionManager,
+            recoveryManager,
+            jobHandler,
+            constants,
+            eventBus,
+            queueRegistry
+        );
+    }
+}

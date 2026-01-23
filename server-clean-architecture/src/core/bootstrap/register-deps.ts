@@ -5,7 +5,7 @@ import RedisEventBus from '@shared/infrastructure/events/RedisEventBus';
 import { registerAuthDependencies } from '@modules/auth/infrastructure/di/container';
 import { registerTeamDependencies } from '@modules/team/infrastructure/di/container';
 import { registerContainerDependencies } from '@modules/container/infrastructure/di/container';
-import { registerPluginDependencies } from '@modules/plugin/infrastructure/di/container';
+import { registerPluginDependencies, initializeNodeHandlers } from '@modules/plugin/infrastructure/di/container';
 import { registerTrajectoryDependencies } from '@modules/trajectory/infrastructure/di/container';
 import { registerSessionDependencies } from '@modules/session/infrastructure/di/container';
 import { registerApiTrackerDependencies } from '@modules/api-tracker/infrastructure/di/container';
@@ -54,3 +54,5 @@ const redisBlockingClient = createRedisClient();
 
 container.registerInstance(SHARED_TOKENS.RedisClient, redisClient);
 container.registerInstance(SHARED_TOKENS.RedisBlockingClient, redisBlockingClient);
+
+initializeNodeHandlers();

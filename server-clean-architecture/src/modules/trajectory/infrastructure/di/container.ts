@@ -49,8 +49,8 @@ export const registerTrajectoryDependencies = (): void => {
     // Exporters
     container.registerSingleton(TRAJECTORY_TOKENS.AtomisticExporter, AtomisticExporter);
     container.registerSingleton(TRAJECTORY_TOKENS.DislocationExporter, DislocationExporter);
-    // container.registerSingleton(TRAJECTORY_TOKENS.MeshExporter, MeshExporter);
-    // container.registerSingleton(TRAJECTORY_TOKENS.ChartExporter, ChartExporter);
+    container.registerSingleton(TRAJECTORY_TOKENS.MeshExporter, MeshExporter);
+    container.registerSingleton(TRAJECTORY_TOKENS.ChartExporter, ChartExporter);
 
     // Color-coding and Particle-filter services
     container.registerSingleton(TRAJECTORY_TOKENS.AtomPropertiesService, AtomPropertiesService);

@@ -17,6 +17,11 @@ export default {
         return response.data.data;
     },
 
+    async getByTrajectoryId(trajectoryId: string, params?: { page?: number; limit?: number }): Promise<PaginatedResponse<AnalysisConfig>> {
+        const response = await client.request('get', `/trajectory/${trajectoryId}`, { query: params });
+        return response.data.data;
+    },
+
     async delete(id: string): Promise<void> {
         await client.request('delete', `/${id}`);
     },

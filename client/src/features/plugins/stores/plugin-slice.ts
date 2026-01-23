@@ -78,6 +78,7 @@ export interface PluginState {
     ) => Promise<RenderableExposure[]>;
 
     fetchPlugin: (slug: string) => Promise<void>;
+    registerPlugins: (plugins: IPluginRecord[]) => void;
     resetPlugins: () => void;
 }
 
@@ -185,7 +186,7 @@ export const usePluginStore = create<PluginState>((set, get) => ({
             onSuccess: (apiResponse) => {
                 console.log('API RESPONSE:', apiResponse)
                 const incomingPlugins = apiResponse.data;
-                const totalFromApi = apiResponse.total;
+                const totalFromApi = apiResponse.results?.total || 0;
                 console.log('incomingPlugins', incomingPlugins);
                 const pagination = calculatePaginationState({
                     newData: incomingPlugins,
@@ -255,6 +256,31 @@ export const usePluginStore = create<PluginState>((set, get) => ({
         }
     },
 
+    registerPlugins(incomingPlugins: IPluginRecord[]) {
+        const state = get();
+        const nextPluginsBySlug = { ...state.pluginsBySlug };
+        
+        let changed = false;
+        for (const plugin of incomingPlugins) {
+            if (!nextPluginsBySlug[plugin.slug] || nextPluginsBySlug[plugin.slug]._id !== plugin._id) {
+                nextPluginsBySlug[plugin.slug] = plugin;
+                changed = true;
+            }
+        }
+
+        if (!changed) return;
+
+        // Re-calculate modifiers based on all available plugins
+        // We use Object.values because incomingPlugins might be a subset
+        const allPlugins = Object.values(nextPluginsBySlug);
+        const nextModifiers = resolveModifiersFromPlugins(allPlugins);
+
+        set({
+            pluginsBySlug: nextPluginsBySlug,
+            modifiers: nextModifiers
+        });
+    },
+
     getModifiers() {
         return get().modifiers;
     },
@@ -281,7 +307,9 @@ export const usePluginStore = create<PluginState>((set, get) => ({
             return [];
         }
 
-        await get().fetchPlugins({ force: true });
+        if (!get().pluginsBySlug[resolvedPluginSlug]) {
+             await get().fetchPlugin(resolvedPluginSlug);
+        }
 
         const plugin = get().pluginsBySlug[resolvedPluginSlug];
         if (!plugin?.exposures) {
@@ -316,7 +344,9 @@ export const usePluginStore = create<PluginState>((set, get) => ({
             return [];
         }
 
-        await get().fetchPlugins({ force: true });
+        if (!get().pluginsBySlug[resolvedPluginSlug]) {
+             await get().fetchPlugin(resolvedPluginSlug);
+        }
 
         const plugin = get().pluginsBySlug[resolvedPluginSlug];
         if (!plugin?.exposures) {

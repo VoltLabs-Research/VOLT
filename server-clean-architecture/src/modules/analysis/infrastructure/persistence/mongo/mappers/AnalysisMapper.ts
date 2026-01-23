@@ -6,7 +6,8 @@ class AnalysisMapper extends BaseMapper<Analysis, AnalysisProps, AnalysisDocumen
     constructor(){
         super(Analysis, [
             'createdBy',
-            'trajectory'
+            'trajectory',
+            'plugin'
         ]);
     }
 };

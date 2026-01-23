@@ -8,9 +8,9 @@ export interface AnalysisDocument extends Persistable<AnalysisProps, AnalysisRel
 
 const AnalysisSchema: Schema<AnalysisDocument> = new Schema({
     plugin: {
-        type: String,
-        required: true,
-        lowercase: true
+        type: Schema.Types.ObjectId,
+        ref: 'Plugin',
+        required: true
     },
     clusterId: {
         type: String,

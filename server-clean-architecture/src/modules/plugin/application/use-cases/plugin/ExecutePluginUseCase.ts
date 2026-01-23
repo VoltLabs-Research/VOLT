@@ -15,6 +15,8 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
+import { IAnalysisJobFactory } from '@modules/plugin/domain/ports/IAnalysisJobFactory';
+import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
 
 @injectable()
 export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, null, ApplicationError> {
@@ -32,7 +34,13 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, nul
         private analysisRepo: IAnalysisRepository,
 
         @inject(TRAJECTORY_TOKENS.TrajectoryRepository)
-        private trajectoryRepo: ITrajectoryRepository
+        private trajectoryRepo: ITrajectoryRepository,
+
+        @inject(PLUGIN_TOKENS.AnalysisJobFactory)
+        private jobFactory: IAnalysisJobFactory,
+
+        @inject(PLUGIN_TOKENS.AnalysisProcessingQueue)
+        private analysisQueue: BaseProcessingQueue
     ){}
 
     async execute(input: ExecutePluginInputDTO): Promise<Result<null, ApplicationError>> {
@@ -77,6 +85,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, nul
         const analysis = await this.analysisRepo.create({
             plugin: plugin.id,
             config: input.config,
+            team: input.teamId,
             trajectory: input.trajectoryId,
             createdBy: input.userId,
             startedAt: new Date()
@@ -100,6 +109,25 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, nul
                 'No items after ForEach node evaluation'
             ));
         }
+
+        // Create jobs from the ForEach items
+        const jobs = this.jobFactory.create({
+            analysisId: analysis.id,
+            teamId: input.teamId,
+            trajectoryId: input.trajectoryId,
+            trajectoryName: trajectory.props.name,
+            plugin,
+            items: planResult.items,
+            config: input.config
+        });
+
+        // Update analysis with total frames count
+        await this.analysisRepo.updateById(analysis.id, {
+            totalFrames: jobs.length
+        });
+
+        // Add jobs to the analysis queue for processing
+        await this.analysisQueue.addJobs(jobs);
 
         return Result.ok(null);
     }
