@@ -1,6 +1,7 @@
 import { container } from 'tsyringe';
 import { PluginListingService } from '@modules/plugin/infrastructure/services/PluginListingService';
 import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/WorkflowValidatorService';
+import { ListingRowPrecomputationService } from '@modules/plugin/infrastructure/services/ListingRowPrecomputationService';
 import { PLUGIN_TOKENS } from './PluginTokens';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/PluginRepository';
 import ListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/ListingRowRepository';
@@ -45,6 +46,7 @@ export const registerPluginDependencies = (): void => {
     // Services
     container.registerSingleton(PLUGIN_TOKENS.PluginListingService, PluginListingService);
     container.registerSingleton(PLUGIN_TOKENS.WorkflowValidatorService, WorkflowValidatorService);
+    container.registerSingleton(PLUGIN_TOKENS.ListingRowPrecomputationService, ListingRowPrecomputationService);
     container.registerSingleton(PLUGIN_TOKENS.PluginStorageService, PluginStorageService);
     container.registerSingleton(PLUGIN_TOKENS.PluginBinaryCacheService, PluginBinaryCacheService);
     container.registerSingleton(PLUGIN_TOKENS.ProcessExecutorService, ProcessExecutorService);

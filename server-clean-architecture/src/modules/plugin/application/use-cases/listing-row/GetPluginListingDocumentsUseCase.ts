@@ -19,7 +19,13 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<GetPluginListi
         const result = await this.listingService.getListingDocuments(
             input.pluginSlug,
             input.listingSlug,
-            { page: input.page || 1, limit: input.limit || 50 }
+            {
+                teamId: input.teamId,
+                trajectoryId: input.trajectoryId,
+                limit: input.limit || 50,
+                sortAsc: input.sortAsc || false,
+                afterCursor: input.afterCursor
+            }
         );
 
         return Result.ok(result);

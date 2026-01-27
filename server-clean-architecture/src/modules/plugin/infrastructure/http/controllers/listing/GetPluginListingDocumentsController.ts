@@ -9,4 +9,4 @@ export default class GetPluginListingDocumentsController extends BaseController<
     ) {
         super(useCase);
     }
-}
+};

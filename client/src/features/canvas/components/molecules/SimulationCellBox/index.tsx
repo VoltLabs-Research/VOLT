@@ -113,7 +113,7 @@ const SimulationCellBox = React.forwardRef<THREE.Mesh, SimulationCellBoxProps>((
 
             {/* El wireframe del box */}
             <lineSegments geometry={geometry}>
-                <lineBasicMaterial color="white" opacity={0.3} transparent />
+                <lineBasicMaterial color="white" opacity={0.1} transparent />
             </lineSegments>
 
             {/* El modelo GLB hereda las transformaciones del group padre */}

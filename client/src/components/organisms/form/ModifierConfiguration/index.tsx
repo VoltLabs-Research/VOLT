@@ -215,7 +215,7 @@ const ModifierConfiguration = ({
     }
 
     return (
-        <EditorWidget className={`modifier-configuration d-flex column ${className}`} draggable={false}>
+        <EditorWidget className={`modifier-configuration d-flex column p-1 ${className}`} draggable={false}>
             <Container className='d-flex content-between items-center'>
                 <Title className='font-weight-5-5'>{displayTitle}</Title>
                 {icon}

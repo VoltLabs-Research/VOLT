@@ -12,6 +12,8 @@ import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepositor
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 import { initializeNodeHandlers } from '@modules/plugin/infrastructure/di/container';
+import { ListingRowPrecomputationService } from '@modules/plugin/infrastructure/services/ListingRowPrecomputationService';
+import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 
 export interface AnalysisJobMetadata {
     trajectoryId: string;
@@ -34,6 +36,7 @@ export default class AnalysisWorker extends BaseWorker<Job> {
     private workflowEngine!: IPluginWorkflowEngine;
     private pluginRepository!: IPluginRepository;
     private analysisRepository!: IAnalysisRepository;
+    private precomputationService!: ListingRowPrecomputationService;
 
     protected async setup(): Promise<void> {
         await this.connectDB();
@@ -45,6 +48,7 @@ export default class AnalysisWorker extends BaseWorker<Job> {
         this.workflowEngine = container.resolve<IPluginWorkflowEngine>(PLUGIN_TOKENS.PluginWorkflowEngine);
         this.pluginRepository = container.resolve<IPluginRepository>(PLUGIN_TOKENS.PluginRepository);
         this.analysisRepository = container.resolve<IAnalysisRepository>(ANALYSIS_TOKENS.AnalysisRepository);
+        this.precomputationService = container.resolve<ListingRowPrecomputationService>(PLUGIN_TOKENS.ListingRowPrecomputationService);
     }
 
     protected async perform(job: Job): Promise<void> {
@@ -97,6 +101,9 @@ export default class AnalysisWorker extends BaseWorker<Job> {
 
             // Update progress
             await this.updateProgress(analysisId, totalItems);
+
+            // Precompute listing rows after workflow execution
+            await this.handleListingPrecomputation(job, metadata, plugin, timestep);
 
             const totalTime = (performance.now() - start).toFixed(2);
             logger.info(`@analysis-worker #${process.pid}] job ${jobId} success | duration: ${totalTime}ms`);
@@ -163,6 +170,76 @@ export default class AnalysisWorker extends BaseWorker<Job> {
         } catch (error: any) {
             logger.warn(`@analysis-worker #${process.pid}] Failed to update progress: ${error.message}`);
         }
+    }
+
+    private async handleListingPrecomputation(job: Job, metadata: AnalysisJobMetadata, plugin: any, timestep: number): Promise<void> {
+        try {
+            const teamId = job.props.teamId;
+            if (!teamId) {
+                logger.warn(`@analysis-worker #${process.pid}] Missing teamId in job, skipping listing row precomputation`);
+                return;
+            }
+
+            const listingSlugs = this.extractListingSlugs(plugin);
+            if (listingSlugs.length > 0) {
+                logger.info(`@analysis-worker #${process.pid}] Precomputing ${listingSlugs.length} listing rows`);
+                
+                await Promise.all(
+                    listingSlugs.map((listingSlug) =>
+                        this.precomputationService.precomputeListingRowsForTimesteps({
+                            pluginId: plugin.id,
+                            teamId,
+                            trajectoryId: metadata.trajectoryId,
+                            analysisId: metadata.analysisId,
+                            listingSlug,
+                            timesteps: [timestep]
+                        })
+                    )
+                );
+            }
+        } catch (error: any) {
+            logger.warn(`@analysis-worker #${process.pid}] Precompute listing rows failed: ${error?.message || error}`);
+        }
+    }
+
+    private extractListingSlugs(plugin: any): string[] {
+        const workflow = plugin?.props?.workflow;
+        if (!workflow?.props?.nodes) return [];
+
+        const result = new Set<string>();
+        const exposures = workflow.props.nodes.filter((n: any) => n.type === WorkflowNodeType.Exposure);
+
+        for (const exp of exposures) {
+            const listingSlug = exp?.data?.exposure?.name;
+            if (!listingSlug) continue;
+
+            // Find descendant visualizer node
+            const edges = workflow.props.edges || [];
+            const visited = new Set<string>();
+            const queue = [exp.id];
+
+            while (queue.length > 0) {
+                const id = queue.shift()!;
+                if (visited.has(id)) continue;
+                visited.add(id);
+
+                const node = workflow.props.nodes.find((n: any) => n.id === id);
+                if (node?.type === WorkflowNodeType.Visualizers) {
+                    const listing = node?.data?.visualizers?.listing;
+                    if (listing && typeof listing === 'object' && Object.keys(listing).length > 0) {
+                        result.add(listingSlug);
+                        break;
+                    }
+                }
+
+                const outEdges = edges.filter((e: any) => e.source === id);
+                for (const edge of outEdges) {
+                    queue.push(edge.target);
+                }
+            }
+        }
+
+        return Array.from(result);
     }
 }
 

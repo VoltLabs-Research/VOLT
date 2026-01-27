@@ -1,31 +1,153 @@
 import { injectable, inject } from 'tsyringe';
-import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
+import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
+import ListingRow from '@modules/plugin/domain/entities/ListingRow';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+interface ListingOptions {
+    teamId?: string;
+    trajectoryId?: string;
+    limit?: number;
+    sortAsc?: boolean;
+    afterCursor?: string;
+}
+
+const RESERVED_KEYS = new Set([
+    '_id',
+    'timestep',
+    'analysisId',
+    'trajectoryId',
+    'exposureId',
+    'trajectoryName'
+]);
 
 @injectable()
 export class PluginListingService {
     constructor(
-        @inject(SHARED_TOKENS.StorageService) private storage: IStorageService
-    ){}
+        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
+        @inject(PLUGIN_TOKENS.ListingRowRepository) private listingRowRepository: IListingRowRepository
+    ) {}
 
-    async getExposureGLB(exposureId: string, timestep: number): Promise<any> {
-        const path = `exposures/${exposureId}/glb/${timestep}.glb`;
-        return this.storage.getStream('plugins', path);
-    }
+    async getListingDocuments(pluginSlug: string, listingSlug: string, options: ListingOptions): Promise<any> {
+        const limit = Math.min(200, Math.max(1, options.limit || 50));
+        const sortAsc = options.sortAsc || false;
 
-    async getExposureChart(exposureId: string, timestep: number): Promise<any> {
-        const path = `exposures/${exposureId}/chart/${timestep}.json`;
-        return this.storage.getStream('plugins', path);
-    }
+        // Parse cursor
+        let afterTimestep: number | null = null;
+        let afterId: string | null = null;
 
-    async getListingDocuments(pluginSlug: string, listingSlug: string, options: any): Promise<any> {
-        // Query database for listing documents with pagination
+        if (options.afterCursor?.includes(':')) {
+            const [timestep, id] = options.afterCursor.split(':');
+            afterTimestep = Number(timestep);
+            afterId = id;
+        }
+
+        // Find plugin by slug
+        const plugin = await this.pluginRepository.findOne({ slug: pluginSlug });
+        if (!plugin) {
+            throw new Error('Plugin::NotFound');
+        }
+
+        // Build base query
+        const baseQuery: any = {
+            plugin: plugin.id,
+            listingSlug,
+            team: options.teamId
+        };
+
+        if (options.trajectoryId) {
+            baseQuery.trajectory = options.trajectoryId;
+        } else if (!options.teamId) {
+            throw new Error('Team::IdRequired');
+        }
+
+        // Add cursor-based pagination
+        if (afterTimestep != null && afterId) {
+            baseQuery.$or = sortAsc
+                ? [
+                    { timestep: { $gt: afterTimestep } },
+                    { timestep: afterTimestep, _id: { $gt: afterId } }
+                ]
+                : [
+                    { timestep: { $lt: afterTimestep } },
+                    { timestep: afterTimestep, _id: { $lt: afterId } }
+                ];
+        }
+
+        // Query database
+        const result = await this.listingRowRepository.findAll({
+            filter: baseQuery,
+            limit: limit + 1,
+            page: 1,
+            sort: { 
+                timestep: sortAsc ? 1 : -1, 
+                _id: sortAsc ? 1 : -1 
+            }
+        });
+
+        const docs = result.data;
+        const hasMore = docs.length > limit;
+        const slice = hasMore ? docs.slice(0, limit) : docs;
+
+        // Transform to raw rows
+        const rawRows = slice.map((doc: ListingRow) => ({
+            _id: doc.id,
+            timestep: doc.props.timestep,
+            analysisId: doc.props.analysis,
+            trajectoryId: doc.props.trajectory,
+            exposureId: doc.props.exposureId,
+            trajectoryName: doc.props.trajectoryName,
+            ...(doc.props.row || {})
+        }));
+
+        // Reorder fields to have reserved keys first
+        const rows = rawRows.map((r: any) => {
+            const fixed: Record<string, any> = {
+                _id: r._id,
+                timestep: r.timestep,
+                analysisId: r.analysisId,
+                trajectoryId: r.trajectoryId,
+                exposureId: r.exposureId,
+                trajectoryName: r.trajectoryName
+            };
+
+            const rest = { ...r };
+            for (const k of Object.keys(fixed)) delete rest[k];
+
+            return { ...fixed, ...rest };
+        });
+
+        // Extract column metadata
+        const seen = new Set<string>();
+        const ordered: string[] = [];
+        const nonNull = new Set<string>();
+
+        for (const r of rows) {
+            for (const [k, v] of Object.entries(r)) {
+                if (RESERVED_KEYS.has(k)) continue;
+                if (v === null || v === undefined) continue;
+                nonNull.add(k);
+                if (!seen.has(k)) {
+                    seen.add(k);
+                    ordered.push(k);
+                }
+            }
+        }
+
+        const columns = ordered
+            .filter((k) => nonNull.has(k))
+            .map((k) => ({ path: k, label: k }));
+
+        const nextCursor = hasMore && slice.length > 0
+            ? `${slice[slice.length - 1].props.timestep}:${slice[slice.length - 1].id}`
+            : null;
+
         return {
-            documents: [],
-            total: 0,
-            page: options.page || 1,
-            limit: options.limit || 50
+            meta: { pluginSlug, listingSlug, columns },
+            rows,
+            limit,
+            hasMore,
+            nextCursor
         };
     }
 }

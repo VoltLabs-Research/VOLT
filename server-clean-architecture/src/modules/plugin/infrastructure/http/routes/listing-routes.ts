@@ -11,6 +11,7 @@ const module: HttpModule = {
 
 router.use(protect);
 
-router.get('/:pluginId/listing-documents', controllers.getPluginListingDocuments.handle);
+router.get('/listing/:pluginSlug/:listingSlug', controllers.getPluginListingDocuments.handle);
+router.get('/listing/:pluginSlug/:listingSlug/:trajectoryId', controllers.getPluginListingDocuments.handle);
 
 export default module;
