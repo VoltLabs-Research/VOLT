@@ -193,7 +193,7 @@ export default function AuthPage() {
               <div className="brand-icon d-flex flex-center p-05">
                 <LayoutGrid size={24} color="white" />
               </div>
-              <span>Volterra</span>
+              <span>Volt</span>
             </div>
 
             <div className="d-flex column gap-1-5 hero-text-container mb-3">

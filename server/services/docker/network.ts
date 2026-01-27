@@ -8,7 +8,7 @@ class NetworkService {
      * Creates a Docker network and records it in the database.
      */
     async createNetwork(containerName: string) {
-        const networkName = `volterra-${containerName.replace(/\s+/g, '-').toLowerCase()}-net`;
+        const networkName = `Volt-${containerName.replace(/\s+/g, '-').toLowerCase()}-net`;
 
         try {
             const network = await docker.createNetwork({
@@ -73,7 +73,7 @@ class NetworkService {
      * Gets the internal IP of a container on the specific network.
      */
     getContainerIp(containerInfo: any, containerName: string) {
-        const networkName = `volterra-${containerName.replace(/\s+/g, '-').toLowerCase()}-net`;
+        const networkName = `Volt-${containerName.replace(/\s+/g, '-').toLowerCase()}-net`;
         return containerInfo.NetworkSettings?.Networks?.[networkName]?.IPAddress || null;
     }
 }

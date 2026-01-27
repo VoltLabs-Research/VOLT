@@ -1,5 +1,5 @@
 {
-    "name": "volterra-native",
+    "name": "Volt-native",
     "version": "1.0.0",
     "main": "build/Release/stats_parser.node",
     "scripts": {

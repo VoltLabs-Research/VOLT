@@ -14,7 +14,7 @@ const getEncryptionKey = (): Buffer => {
     if(!keyString){
         throw new Error('SSH_ENCRYPTION_KEY environment variable is required');
     }
-    return crypto.scryptSync(keyString, 'volterra-ssh', KEY_LENGTH);
+    return crypto.scryptSync(keyString, 'Volt-ssh', KEY_LENGTH);
 };
 
 /**

@@ -304,9 +304,9 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 			}
 		};
 
-		window.addEventListener('volterra:camera-command', handleCameraCommand as EventListener);
+		window.addEventListener('Volt:camera-command', handleCameraCommand as EventListener);
 		return () => {
-			window.removeEventListener('volterra:camera-command', handleCameraCommand as EventListener);
+			window.removeEventListener('Volt:camera-command', handleCameraCommand as EventListener);
 		};
 	}, []);
 

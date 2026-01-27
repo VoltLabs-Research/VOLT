@@ -4,7 +4,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-FORMATTER_DIR="$PROJECT_ROOT/volterra-formatter"
+FORMATTER_DIR="$PROJECT_ROOT/Volt-formatter"
 
 
 MODE=""
@@ -12,7 +12,7 @@ if [ "$1" == "--check" ]; then
     MODE="--check"
     echo "voltera-code-formatter: checking formatting..."
 else
-    echo "volterra-code-formatter: Formatting code..."
+    echo "Volt-code-formatter: Formatting code..."
 fi
 
 FILES=$(find "$PROJECT_ROOT/server" "$PROJECT_ROOT/client/src" "$PROJECT_ROOT/desktop" \
@@ -25,4 +25,4 @@ FILES=$(find "$PROJECT_ROOT/server" "$PROJECT_ROOT/client/src" "$PROJECT_ROOT/de
 cd "$FORMATTER_DIR" && npx tsx src/index.ts $MODE $FILES
 
 echo ""
-echo "volterra-code-formatter: ok!"
+echo "Volt-code-formatter: ok!"

@@ -1,7 +1,7 @@
 {
-  "name": "volterra-formatter",
+  "name": "Volt-formatter",
   "version": "1.0.0",
-  "description": "Custom code formatter for Volterra project style",
+  "description": "Custom code formatter for Volt project style",
   "type": "module",
   "scripts": {
     "build": "tsc",

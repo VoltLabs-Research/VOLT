@@ -90,7 +90,7 @@
     "validator": "^13.15.26",
     "yaml": "^2.8.1"
   },
-  "name": "volterra-server",
+  "name": "Volt-server",
   "version": "1.0.0",
   "description": "",
   "keywords": [],

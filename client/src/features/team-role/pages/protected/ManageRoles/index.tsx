@@ -135,7 +135,7 @@ const ManageRoles: React.FC = () => {
             title: 'Created',
             sortable: true,
             render: (value: string) => (
-                <span className="color-secondary font-size-2">{formatDistanceToNow(value)}</span>
+                <span className="color-secondary font-size-2">{formatDistanceToNow(value, { addSuffix: true })}</span>
             ),
             skeleton: { variant: 'text', width: 100 }
         }

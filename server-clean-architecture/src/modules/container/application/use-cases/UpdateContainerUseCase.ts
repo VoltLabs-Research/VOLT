@@ -48,7 +48,7 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
 
         // Configuration Update (Requires Recreation)
         // 1. Commit current state
-        const tempImageName = `volterra-temp-${container.name.replace(/\s+/g, '-').toLowerCase()}:${Date.now()}`;
+        const tempImageName = `Volt-temp-${container.name.replace(/\s+/g, '-').toLowerCase()}:${Date.now()}`;
         const [repo, tag] = tempImageName.split(':');
         await this.containerService.commitContainer(container.containerId, repo, tag);
 
@@ -70,7 +70,7 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
         }
 
         // Reuse volume
-        const volumeName = `volterra-${container.name.replace(/\s+/g, '-').toLowerCase()}-data`;
+        const volumeName = `Volt-${container.name.replace(/\s+/g, '-').toLowerCase()}-data`;
 
         const HostConfig: any = {
             PortBindings,

@@ -7,11 +7,11 @@ let dockerManager: DockerManager | null = null;
 const createWindow = async() => {
     dockerManager = new DockerManager();
 
-    console.log('[Volterra] Starting Docker services...');
+    console.log('[Volt] Starting Docker services...');
     const dockerStarted = await dockerManager.start();
 
     if(!dockerStarted){
-        console.error('[Volterra] Failed to start Docker services');
+        console.error('[Volt] Failed to start Docker services');
         app.quit();
         return;
     }
@@ -19,12 +19,12 @@ const createWindow = async() => {
     const servicesReady = await dockerManager.waitForServices();
 
     if(!servicesReady){
-        console.error('[Volterra] Services did not start properly');
+        console.error('[Volt] Services did not start properly');
         app.quit();
         return;
     }
 
-    console.log('[Volterra] Waiting for client container...');
+    console.log('[Volt] Waiting for client container...');
 
     const viteUrl = 'http://localhost:5173';
     const maxRetries = 30;
@@ -35,7 +35,7 @@ const createWindow = async() => {
             const response = await fetch(viteUrl);
             if(response.ok){
                 viteReady = true;
-                console.log('[Volterra] Vite dev server is ready');
+                console.log('[Volt] Vite dev server is ready');
                 break;
             }
         }catch(error){
@@ -45,7 +45,7 @@ const createWindow = async() => {
     }
 
     if(!viteReady){
-        console.error('[Volterra] Vite dev server failed to start');
+        console.error('[Volt] Vite dev server failed to start');
         app.quit();
         return;
     }
@@ -54,7 +54,7 @@ const createWindow = async() => {
     mainWindow = new BrowserWindow({
         width: 1700,
         height: 940,
-        title: 'Volterra',
+        title: 'Volt',
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true

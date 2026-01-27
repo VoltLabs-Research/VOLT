@@ -6,7 +6,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import * as crypto from 'node:crypto';
 
-const CACHE_DIR = process.env.BINARY_CACHE_DIR || '/var/cache/volterra/binaries';
+const CACHE_DIR = process.env.BINARY_CACHE_DIR || '/var/cache/Volt/binaries';
 
 class BinaryCache{
     private initialized = false;

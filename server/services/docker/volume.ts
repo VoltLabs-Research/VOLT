@@ -8,7 +8,7 @@ class VolumeService {
      * Creates or retrieves the volume name for a container.
      */
     getVolumeName(containerName: string) {
-        return `volterra-${containerName.replace(/\s+/g, '-').toLowerCase()}-data`;
+        return `Volt-${containerName.replace(/\s+/g, '-').toLowerCase()}-data`;
     }
 
     /**

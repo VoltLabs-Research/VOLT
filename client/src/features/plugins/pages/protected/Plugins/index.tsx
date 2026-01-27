@@ -215,7 +215,7 @@ const PluginsListing = () => {
             title: 'Created',
             sortable: true,
             key: 'createdAt',
-            render: (value) => formatDistanceToNow(value),
+            render: (value) => formatDistanceToNow(value, { addSuffix: true }),
             skeleton: { variant: 'text', width: 100 }
         }
     ], [handleRowClick]);

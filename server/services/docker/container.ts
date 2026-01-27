@@ -106,7 +106,7 @@ class ContainerService {
         }
 
         // Commit current container to temporary image to preserve filesystem changes
-        const tempImageName = `volterra-temp-${currentDoc.name.replace(/\s+/g, '-').toLowerCase()}:${Date.now()}`;
+        const tempImageName = `Volt-temp-${currentDoc.name.replace(/\s+/g, '-').toLowerCase()}:${Date.now()}`;
         try {
             const oldContainer = this.getContainer(currentDoc.containerId);
             await oldContainer.commit({

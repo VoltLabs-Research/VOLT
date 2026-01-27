@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright (c) 2025, Volt Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -59,7 +59,7 @@ const run = async (args: string[]): Promise<void> => {
 
     const patterns = args.filter((arg) => !arg.startsWith('-'));
     if(patterns.length === 0){
-        console.log('Usage: volterra-format [options] <files...>\n');
+        console.log('Usage: Volt-format [options] <files...>\n');
         console.log('Options:');
         console.log('  --check     Check formatting without modifying files');
         console.log('  --dry-run   Show formatted output without writing');

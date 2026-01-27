@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-const APP_NAME = 'Volterra';
+const APP_NAME = 'Volt';
 
 export function usePageTitle(title: string): void {
     useEffect(() => {

@@ -1,5 +1,5 @@
 /**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, Volt Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files(the "Software"), to deal
@@ -48,7 +48,7 @@ export default class DockerManager{
         const __dirname = dirname(__filename);
         this.projectRoot = join(__dirname, '..', '..');
         this.composePath = join(this.projectRoot, 'docker-compose.yml');
-        this.projectName = 'volterra-desktop';
+        this.projectName = 'Volt-desktop';
     }
 
     async checkDocker(): Promise<boolean>{

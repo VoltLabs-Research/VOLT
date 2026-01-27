@@ -201,7 +201,7 @@ export class DockerContainerService implements IContainerService {
     }
 
     async createNetwork(name: string): Promise<{ id: string; name: string }> {
-        const networkName = `volterra-${name.replace(/\s+/g, '-').toLowerCase()}-net`;
+        const networkName = `Volt-${name.replace(/\s+/g, '-').toLowerCase()}-net`;
         try {
             const network = await this.docker.createNetwork({
                 Name: networkName,
@@ -239,7 +239,7 @@ export class DockerContainerService implements IContainerService {
     }
 
     async createVolume(name: string): Promise<{ id: string; name: string }> {
-        const volumeName = `volterra-${name.replace(/\s+/g, '-').toLowerCase()}-data`;
+        const volumeName = `Volt-${name.replace(/\s+/g, '-').toLowerCase()}-data`;
         try {
             const volume = await this.docker.createVolume({
                 Name: volumeName,

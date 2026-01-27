@@ -1,5 +1,5 @@
 /**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, Volt Authors. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files(the "Software"), to deal
@@ -131,7 +131,7 @@ const useKeyboardShortcuts = () => {
 
             'reset-camera': () => {
                 // Dispatch custom event for Scene3D to handle
-                window.dispatchEvent(new CustomEvent('volterra:camera-command', {
+                window.dispatchEvent(new CustomEvent('Volt:camera-command', {
                     detail: { command: 'reset-camera' }
                 }));
             },

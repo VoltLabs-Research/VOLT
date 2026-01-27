@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright (c) 2025, Volt Authors. All rights reserved.
  *
  * Worker entry point.
  * This file handles the initialization of processing queues without starting the web server.

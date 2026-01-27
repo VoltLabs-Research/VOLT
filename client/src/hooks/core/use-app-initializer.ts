@@ -1,5 +1,5 @@
 /**
- * Copyright(c) 2025, The Volterra Authors. All rights reserved.
+ * Copyright(c) 2025, Volt Authors. All rights reserved.
  */
 
 import { useEffect, useRef } from 'react';
