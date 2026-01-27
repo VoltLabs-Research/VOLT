@@ -38,10 +38,13 @@ const PerAtomViewer = () => {
     const fetchPage = useCallback(async (params: any) => {
         const { page: nextPage, force } = params;
 
-        if (!trajectoryId || !analysisId || !exposureId) {
-            setError('Missing required parameters.');
+        if (!trajectoryId) {
+            setError('Missing trajectory ID.');
             return;
         }
+
+        const effectiveAnalysisId = analysisId === 'default' ? undefined : analysisId;
+        const effectiveExposureId = exposureId === 'default' ? undefined : exposureId;
 
         setError(null);
         if (nextPage === 1 || force) {
@@ -53,8 +56,8 @@ const PerAtomViewer = () => {
         try {
             const result = await trajectoryApi.getAtoms(
                 trajectoryId,
-                analysisId,
-                { timestep, exposureId, page: nextPage, pageSize }
+                effectiveAnalysisId,
+                { timestep, exposureId: effectiveExposureId, page: nextPage, pageSize }
             );
 
             if (!result) {

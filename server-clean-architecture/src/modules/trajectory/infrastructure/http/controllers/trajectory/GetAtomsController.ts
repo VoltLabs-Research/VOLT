@@ -52,7 +52,9 @@ export default class GetAtomsController {
             let perAtomData: Map<number, any> | null = null;
             let perAtomProperties: string[] = [];
 
-            if (exposureId && analysisId) {
+            const isDefaultAnalysis = !analysisId || analysisId === 'default';
+
+            if (!isDefaultAnalysis && exposureId) {
                 try {
                     const config = await this.atomProps.getExposureAtomConfig(analysisId, exposureId);
                     perAtomProperties = config.perAtomProperties;

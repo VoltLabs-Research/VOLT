@@ -253,7 +253,7 @@ const PluginExposureTable = ({
 
         if (item?.trajectoryId && item?.analysisId && item?.exposureId && item?.timestep !== undefined) {
             options.push([
-                'View Atoms',
+                'Inspect Atoms',
                 RiEyeLine,
                 () => navigate(
                     `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms/${item.exposureId}?timestep=${item.timestep}`

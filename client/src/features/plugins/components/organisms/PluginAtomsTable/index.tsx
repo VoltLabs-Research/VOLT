@@ -73,7 +73,6 @@ const PluginAtomsTable = ({
                     ...prev,
                     page: pageNum,
                     hasMore: response.hasMore,
-                    // Assuming response doesn't provide total, or if it does:
                     total: response.total
                 }));
             } else {

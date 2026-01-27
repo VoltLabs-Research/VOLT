@@ -139,8 +139,8 @@ const trajectoryApi = {
 
     async getAtoms(
         trajectoryId: string,
-        analysisId: string,
-        params: { timestep: number; exposureId: string; page?: number; pageSize?: number }
+        analysisId: string | undefined,
+        params: { timestep: number; exposureId?: string; page?: number; pageSize?: number }
     ): Promise<{
         data: any[];
         properties: string[];
@@ -149,7 +149,12 @@ const trajectoryApi = {
         total: number;
         hasMore: boolean;
     } | null> {
-        const response = await client.request<any>('get', `/${trajectoryId}/analysis/${analysisId}`, {
+        const effectiveAnalysisId = analysisId || 'default';
+        const path = effectiveAnalysisId === 'default'
+            ? `/${trajectoryId}/atoms`
+            : `/${trajectoryId}/atoms/${effectiveAnalysisId}`;
+
+        const response = await client.request<any>('get', path, {
             query: {
                 timestep: params.timestep,
                 exposureId: params.exposureId,

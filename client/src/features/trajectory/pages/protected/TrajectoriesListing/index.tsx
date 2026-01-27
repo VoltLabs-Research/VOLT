@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { usePageTitle } from '@/hooks/core/use-page-title'
 import { formatSize } from '@/features/canvas/utilities/scene-utils'
-import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri'
+import { RiDeleteBin6Line, RiEyeLine, RiTableLine } from 'react-icons/ri'
 import DocumentListing, { type ColumnConfig, formatNumber, StatusBadge } from '@/components/organisms/common/DocumentListing'
 import { useTrajectoryStore } from '@/features/trajectory/stores'
 import { useTeamStore } from '@/features/team/stores'
@@ -41,11 +41,15 @@ const TrajectoriesListing = () => {
             if (await confirm(`Delete trajectory "${item.name}"? This action cannot be undone.`)) {
                 await deleteTrajectoryById(item._id)
             }
+        } else if (action === 'viewAtoms') {
+            const firstTimestep = item?.frames?.[0]?.timestep ?? 0;
+            navigate(`/dashboard/trajectory/${item._id}/analysis/default/atoms/default?timestep=${firstTimestep}`);
         }
-    }, [deleteTrajectoryById, confirm]);
+    }, [deleteTrajectoryById, confirm, navigate]);
 
     const getMenuOptions = useCallback((item: any) => ([
-        ['View', RiEyeLine, () => handleMenuAction('view', item)],
+        ['View Scene', RiEyeLine, () => handleMenuAction('view', item)],
+        ['Inspect Atoms', RiTableLine, () => handleMenuAction('viewAtoms', item)],
         ['Delete', RiDeleteBin6Line, () => handleMenuAction('delete', item)]
     ]), [handleMenuAction]);
 
