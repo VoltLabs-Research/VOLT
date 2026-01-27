@@ -37,14 +37,13 @@ const PluginAtomsTable = ({
 }: PluginAtomsTableProps) => {
     const currentTimestep = useEditorStore((state) => state.currentTimestep);
 
-
     const [rows, setRows] = useState<any[]>([]);
     const [properties, setProperties] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [listingMeta, setListingMeta] = useState<ListingMeta>({
         page: 1,
-        limit: 50000,
+        limit: 100,
         hasMore: false
     });
     const [error, setError] = useState<string | null>(null);
@@ -64,7 +63,7 @@ const PluginAtomsTable = ({
                 timestep: currentTimestep,
                 exposureId,
                 page: pageNum,
-                pageSize: 50000
+                pageSize: 100
             });
 
             if (response) {
@@ -95,7 +94,7 @@ const PluginAtomsTable = ({
         isFetchingMore,
         listingMeta,
         fetchData: fetchAtoms,
-        initialFetchParams: { page: 1, limit: 50000 },
+        initialFetchParams: { page: 1, limit: 100 },
         dependencies: [trajectoryId, analysisId, exposureId, currentTimestep]
     });
 

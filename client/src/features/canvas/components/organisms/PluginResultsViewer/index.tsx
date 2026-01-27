@@ -35,6 +35,7 @@ import Loader from '@/components/atoms/common/Loader';
 import { useToast } from '@/hooks/ui/use-toast';
 import '@/features/canvas/components/organisms/PluginResultsViewer/PluginResultsViewer.css';
 import PluginExposureTable from '@/features/plugins/components/organisms/PluginExposureTable';
+import PluginAtomsTable from '@/features/plugins/components/organisms/PluginAtomsTable';
 
 interface PluginResultsViewerProps {
     pluginSlug: string;

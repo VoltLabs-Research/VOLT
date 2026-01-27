@@ -18,6 +18,7 @@ router.route('/')
 
 router.get('/metrics', controllers.getMetrics.handle);
 router.get('/:trajectoryId/preview', controllers.getPreview.handle);
+router.get('/:trajectoryId/analysis/:analysisId', controllers.getAtoms.handle);
 router.get('/:trajectoryId/:timestep/:analysisId', controllers.getGLB.handle);
 
 router.route('/:trajectoryId')

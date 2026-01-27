@@ -19,7 +19,7 @@ const module: HttpModule = {
 
 router.use(protect);
 
-router.get('/:teamId/', canRead(Resource.SIMULATION_CELL), findCellsByTeamIdController.handle);
-router.get('/:teamId/:id', canRead(Resource.SIMULATION_CELL), findCellByIdController.handle);
+router.get('/', canRead(Resource.SIMULATION_CELL), findCellsByTeamIdController.handle);
+router.get('/:id', canRead(Resource.SIMULATION_CELL), findCellByIdController.handle);
 
 export default module;

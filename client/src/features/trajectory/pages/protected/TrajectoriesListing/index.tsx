@@ -81,12 +81,6 @@ const TrajectoriesListing = () => {
             skeleton: { variant: 'text', width: 70 }
         },
         {
-            title: 'Analysis',
-            key: 'analysis',
-            render: (arr) => formatNumber(arr?.length ?? 0),
-            skeleton: { variant: 'text', width: 50 }
-        },
-        {
             title: 'Created At',
             key: 'createdAt',
             render: (v) => formatDistanceToNow(v, { addSuffix: true }),

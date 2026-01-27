@@ -15,7 +15,15 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
 
     async execute(input: GetAnalysesByTeamIdInputDTO): Promise<Result<GetAnalysesByTeamIdOutputDTO, ApplicationError>> {
         const { teamId } = input;
-        const results = await this.analysisRepo.findAll({ filter: { team: teamId }, limit: 100, page: 1 });
+        const results = await this.analysisRepo.findAll({ 
+            filter: { team: teamId }, 
+            populate: {
+                path: 'trajectory',
+                select: 'name'
+            },
+            limit: 100, 
+            page: 1 
+        });
         return Result.ok({
             ...results,
             data: results.data.map(a => a.props)

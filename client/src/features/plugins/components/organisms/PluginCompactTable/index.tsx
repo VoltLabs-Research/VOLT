@@ -92,16 +92,26 @@ const PluginCompactTable = ({
         }
     }, [columns, data, onDataReady]);
 
-    const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    const lastScrollOffset = useRef(0);
+
+    const handleScroll = useCallback((eventOrProps: any) => {
         if (!hasMore || isLoading || isFetchingMore || !onLoadMore) return;
 
-        const target = event.target as HTMLElement;
-        const scrollOffset = target.scrollTop;
-        const scrollHeight = data.length * rowHeight;
+        let scrollOffset = 0;
+        if (typeof eventOrProps.scrollOffset === 'number') {
+            scrollOffset = eventOrProps.scrollOffset;
+        } else if (eventOrProps.target && typeof eventOrProps.target.scrollTop === 'number') {
+            scrollOffset = eventOrProps.target.scrollTop;
+        }
 
-        if (scrollOffset + height >= scrollHeight - 200) {
+        const totalHeight = data.length * rowHeight;
+        const scrollThreshold = totalHeight - height - 200;
+
+        if (scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold) {
             onLoadMore();
         }
+
+        lastScrollOffset.current = scrollOffset;
     }, [data.length, hasMore, isLoading, isFetchingMore, onLoadMore, rowHeight, height]);
 
     if (isLoading && data.length === 0) {
@@ -146,9 +156,9 @@ const PluginCompactTable = ({
                 <div
                     className="plugin-compact-table-list-container"
                     style={{ flex: 1, minHeight: 0 }}
-                    onScroll={handleScroll}
                 >
                     <List
+                        onScroll={handleScroll}
                         rowCount={data.length}
                         rowHeight={rowHeight}
                         rowComponent={VirtualizedRow}
@@ -156,9 +166,7 @@ const PluginCompactTable = ({
                             data,
                             columns,
                         }}
-                        height={Math.max(0, height)}
-                        width={totalWidth}
-                        style={{ overflowX: 'visible', overflowY: 'visible' }}
+                        style={{ height: Math.max(0, height), width: totalWidth, overflowX: 'hidden' }}
                     />
                 </div>
             </div>
