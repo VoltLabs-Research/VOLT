@@ -1,0 +1,54 @@
+.oauth-callback-container {
+    min-height: 100vh;
+    background-color: #09090b;
+    /* zinc-950 */
+}
+
+.oauth-background-blob {
+    border-radius: 9999px;
+    filter: blur(120px);
+    opacity: 0.5;
+}
+
+.blob-blue {
+    top: -20%;
+    left: -10%;
+    height: 50%;
+    background-color: rgba(59, 130, 246, 0.1);
+    /* blue-500/10 */
+}
+
+.blob-purple {
+    top: 20%;
+    right: -10%;
+    width: 40%;
+    height: 40%;
+    background-color: rgba(168, 85, 247, 0.1);
+    /* purple-500/10 */
+}
+
+.oauth-card {
+    z-index: 10;
+    max-width: 28rem;
+    /* max-w-md */
+    background-color: rgba(24, 24, 27, 0.5);
+    /* zinc-900/50 */
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(39, 39, 42, 0.5);
+    /* zinc-800/50 */
+    border-radius: 1rem;
+    /* rounded-2xl */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.oauth-title {
+    /* text-2xl */
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.oauth-description {
+    color: #a1a1aa;
+    /* zinc-400 */
+}

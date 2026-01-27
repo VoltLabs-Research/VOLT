@@ -1,0 +1,91 @@
+/**
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files(the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+import React, { useCallback } from 'react';
+import { useParams } from 'react-router';
+import { motion, AnimatePresence } from 'framer-motion';
+import PlayControls from '@/modules/canvas/presentation/components/molecules/PlayControls';
+import TimestepSlider from '@/modules/canvas/presentation/components/molecules/TimestepSlider';
+import SpeedControl from '@/modules/canvas/presentation/components/molecules/SpeedControl';
+import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
+import Container from '@/shared/presentation/components/primitives/Container';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import '@/modules/canvas/presentation/components/organisms/TimestepControls/TimestepControls.css';
+
+const TimestepControls: React.FC = () => {
+    const { teamId, trajectoryId } = useParams<{ teamId: string; trajectoryId: string }>();
+    const timestepData = useEditorStore((state) => state.timestepData);
+    const currentTimestep = useEditorStore((state) => state.currentTimestep);
+    const isPlaying = useEditorStore((state) => state.isPlaying);
+    const playSpeed = useEditorStore((state) => state.playSpeed);
+    const togglePlay = useEditorStore((state) => state.togglePlay);
+    const setPlaySpeed = useEditorStore((state) => state.setPlaySpeed);
+    const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
+    const isModelLoading = useEditorStore((state) => state.isModelLoading);
+
+    const handleTogglePlay = useCallback(() => {
+        togglePlay({ teamId, trajectoryId });
+    }, [togglePlay, teamId, trajectoryId]);
+
+    if (currentTimestep === undefined) return null;
+
+    return (
+        <EditorWidget className='editor-timestep-controls row items-center content-between p-absolute' draggable={false}>
+            <PlayControls
+                isPlaying={isPlaying}
+                onPlayPause={handleTogglePlay}
+            />
+
+            <Container className='timestep-slider-wrapper p-relative flex-1'>
+                <TimestepSlider
+                    currentTimestep={currentTimestep}
+                    maxTimestep={timestepData.maxTimestep}
+                    availableTimesteps={timestepData.timesteps}
+                    onTimestepChange={setCurrentTimestep}
+                    disabled={false}
+                />
+
+                {/* Frame loading indicator */}
+                <AnimatePresence>
+                    {isModelLoading && (
+                        <motion.div
+                            className="frame-loading-indicator p-absolute overflow-hidden"
+                            initial={{ opacity: 0, scaleX: 0 }}
+                            animate={{ opacity: 1, scaleX: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <div className="frame-loading-bar p-absolute inset-0" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </Container>
+
+            <SpeedControl
+                playSpeed={playSpeed}
+                onSpeedChange={setPlaySpeed}
+            />
+        </EditorWidget>
+    );
+};
+
+export default TimestepControls;

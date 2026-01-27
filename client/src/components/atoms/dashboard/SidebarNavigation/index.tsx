@@ -110,7 +110,6 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
         ['Plugins', GoWorkflow, '/dashboard/plugins/list'],
         ['Messages', CiChat1, '/dashboard/messages'],
         ['Clusters', HiOutlineServer, '/dashboard/clusters'],
-        ['File Explorer', BsFiles, '/dashboard/file-explorer'],
         ['Import', MdImportExport, '/dashboard/ssh-connections'],
         ['My Team', IoPeopleOutline, '/dashboard/my-team'],
         ['Manage Roles', IoKeyOutline, '/dashboard/manage-roles']

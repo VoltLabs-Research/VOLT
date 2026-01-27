@@ -1,0 +1,7 @@
+.labeled-input-label {
+}
+
+.form-field-loading{
+    opacity: .85;
+    pointer-events: none;
+}

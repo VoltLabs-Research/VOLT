@@ -1,0 +1,18 @@
+.plugin-builder-palette-list-container {
+    overflow: scroll;
+    /* TODO: */
+    height: 64vh;
+}
+
+.plugin-sidebar-back-btn {
+    background: var(--gray-100);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-sm);
+    color: var(--gray-700);
+    transition: all 0.2s ease;
+}
+
+.plugin-sidebar-back-btn:hover {
+    background: var(--gray-200);
+    border-color: var(--gray-400);
+}

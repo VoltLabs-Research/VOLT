@@ -1,0 +1,351 @@
+.button {
+    /* Base Properties */
+    display: inline-flex;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    outline: none;
+    text-decoration: none;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* --- Sizes --- */
+.button.size-sm {
+    height: 2rem;
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    gap: 0.5rem;
+}
+
+.button.size-md {
+    height: 2.5rem;
+    padding: 0 1rem;
+    font-size: 0.95rem;
+    gap: 0.75rem;
+}
+
+.button.size-lg {
+    height: 3rem;
+    padding: 0 1.5rem;
+    font-size: 1rem;
+    gap: 0.75rem;
+}
+
+.button.size-xl {
+    height: 3.5rem;
+    padding: 0 2rem;
+    font-size: 1.125rem;
+    gap: 1rem;
+}
+
+/* --- Shapes --- */
+.button.shape-rounded {
+    border-radius: var(--radius-md);
+}
+
+.button.shape-pill {
+    border-radius: var(--radius-full);
+}
+
+.button.shape-square {
+    border-radius: var(--radius-xs);
+}
+
+.button.shape-circle {
+    padding: 0;
+    border-radius: 50%;
+}
+
+.button.size-sm.shape-circle {
+    width: 2rem;
+}
+
+.button.size-md.shape-circle {
+    width: 2.5rem;
+}
+
+.button.size-lg.shape-circle {
+    width: 3rem;
+}
+
+/* --- Block --- */
+.button.block {
+    width: 100%;
+    display: flex;
+}
+
+/* --- Alignment --- */
+.button.align-start {
+    justify-content: flex-start;
+}
+
+.button.align-end {
+    justify-content: flex-end;
+}
+
+/* --- Loading --- */
+.button.is-loading {
+    color: transparent !important;
+    pointer-events: none;
+    position: relative;
+}
+
+.button-loader {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: currentColor;
+}
+
+/* Loader color for each intent */
+.button.is-loading.intent-neutral .button-loader,
+.button.is-loading.intent-white .button-loader {
+    color: #ffffff;
+}
+
+.button.is-loading.intent-brand .button-loader {
+    color: #000000;
+}
+
+.button.is-loading.intent-danger .button-loader {
+    color: #ffffff;
+}
+
+.button.is-loading.intent-success .button-loader {
+    color: #ffffff;
+}
+
+/* --- Variants & Intents --- */
+
+/* Intent: Neutral (Default) - Theme aware */
+.button.intent-neutral.variant-solid {
+    background-color: var(--color-surface-2, #27272a);
+    color: var(--color-text-primary, #ffffff);
+    border-color: var(--color-border, #3f3f46);
+}
+
+.button.intent-neutral.variant-solid:hover:not(:disabled) {
+    background-color: var(--color-surface-3, #3f3f46);
+    border-color: var(--color-border, #52525b);
+}
+
+.button.intent-neutral.variant-soft {
+    background-color: var(--color-surface-2, rgba(255, 255, 255, 0.1));
+    color: var(--color-text-primary, #ffffff);
+    border-color: var(--color-border-soft, rgba(255, 255, 255, 0.1));
+}
+
+.button.intent-neutral.variant-soft:hover:not(:disabled) {
+    background-color: var(--color-surface-3, rgba(255, 255, 255, 0.15));
+}
+
+.button.intent-neutral.variant-outline {
+    background-color: transparent;
+    border-color: var(--color-border, rgba(255, 255, 255, 0.2));
+    color: var(--color-text-primary, #ffffff);
+}
+
+.button.intent-neutral.variant-outline:hover:not(:disabled) {
+    background-color: var(--color-surface-2, rgba(255, 255, 255, 0.1));
+    border-color: var(--color-border, rgba(255, 255, 255, 0.3));
+}
+
+.button.intent-neutral.variant-ghost {
+    background-color: transparent;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.button.intent-neutral.variant-ghost:hover:not(:disabled) {
+    background-color: var(--color-surface-2, rgba(255, 255, 255, 0.1));
+    color: var(--color-text-primary, #ffffff);
+}
+
+/* Intent: Brand (Accent Blue) */
+.button.intent-brand.variant-solid {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #ffffff;
+}
+
+.button.intent-brand.variant-solid:hover:not(:disabled) {
+    background-color: #e5e5e5;
+}
+
+.button.intent-brand.variant-soft {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: var(--accent-blue, #3b82f6);
+    border-color: transparent;
+}
+
+.button.intent-brand.variant-soft:hover:not(:disabled) {
+    background-color: rgba(59, 130, 246, 0.25);
+}
+
+.button.intent-brand.variant-outline {
+    background-color: transparent;
+    border-color: var(--accent-blue, #3b82f6);
+    color: var(--accent-blue, #3b82f6);
+}
+
+.button.intent-brand.variant-outline:hover:not(:disabled) {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.button.intent-brand.variant-ghost {
+    background-color: transparent;
+    color: var(--accent-blue, #3b82f6);
+}
+
+.button.intent-brand.variant-ghost:hover:not(:disabled) {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Intent: Danger (Red) */
+.button.intent-danger.variant-solid {
+    background-color: var(--accent-red, #ef4444);
+    color: white;
+    border-color: var(--accent-red, #ef4444);
+}
+
+.button.intent-danger.variant-solid:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.button.intent-danger.variant-soft {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: var(--accent-red, #ef4444);
+    border-color: transparent;
+}
+
+.button.intent-danger.variant-soft:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.25);
+}
+
+.button.intent-danger.variant-outline {
+    background-color: transparent;
+    border-color: var(--accent-red, #ef4444);
+    color: var(--accent-red, #ef4444);
+}
+
+.button.intent-danger.variant-outline:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+.button.intent-danger.variant-ghost {
+    background-color: transparent;
+    color: var(--accent-red, #ef4444);
+}
+
+.button.intent-danger.variant-ghost:hover:not(:disabled) {
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Intent: White (For Dark Backgrounds) */
+.button.intent-white.variant-solid {
+    background-color: white;
+    color: black;
+    border-color: white;
+}
+
+.button.intent-white.variant-solid:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.9);
+}
+
+.button.intent-white.variant-outline {
+    background-color: transparent;
+    border-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.button.intent-white.variant-outline:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.button.intent-white.variant-ghost {
+    background-color: transparent;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.button.intent-white.variant-ghost:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* Intent: Success (Green) */
+.button.intent-success.variant-solid {
+    background-color: var(--accent-green, #22c55e);
+    color: white;
+    border-color: var(--accent-green, #22c55e);
+}
+
+.button.intent-success.variant-solid:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+
+.button.intent-success.variant-soft {
+    background-color: rgba(34, 197, 94, 0.15);
+    color: var(--accent-green, #22c55e);
+    border-color: transparent;
+}
+
+.button.intent-success.variant-soft:hover:not(:disabled) {
+    background-color: rgba(34, 197, 94, 0.25);
+}
+
+.button.intent-success.variant-outline {
+    background-color: transparent;
+    border-color: var(--accent-green, #22c55e);
+    color: var(--accent-green, #22c55e);
+}
+
+.button.intent-success.variant-outline:hover:not(:disabled) {
+    background-color: rgba(34, 197, 94, 0.1);
+}
+
+.button.intent-success.variant-ghost {
+    background-color: transparent;
+    color: var(--accent-green, #22c55e);
+}
+
+.button.intent-success.variant-ghost:hover:not(:disabled) {
+    background-color: rgba(34, 197, 94, 0.1);
+}
+
+/* --- Icon Only --- */
+.button.icon-only {
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.button.icon-only.size-sm {
+    width: 2rem;
+    height: 2rem;
+}
+
+.button.icon-only.size-md {
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.button.icon-only.size-lg {
+    width: 3rem;
+    height: 3rem;
+}
+
+.button.icon-only.size-xl {
+    width: 3.5rem;
+    height: 3.5rem;
+}
+
+/* Size XL Circle */
+.button.size-xl.shape-circle {
+    width: 3.5rem;
+}

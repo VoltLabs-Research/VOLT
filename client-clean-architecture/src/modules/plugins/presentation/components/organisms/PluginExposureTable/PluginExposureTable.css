@@ -1,0 +1,104 @@
+.plugin-exposure-table-compact {
+    display: flex;
+    flex-direction: column;
+}
+
+.plugin-exposure-table-scroll {
+    flex: 1;
+    overflow-x: auto;
+}
+
+.plugin-exposure-simple-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+}
+
+.plugin-exposure-simple-table th {
+    padding: 0.25rem 0.5rem;
+    text-align: left;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--color-text-tertiary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+}
+
+.plugin-exposure-simple-table td {
+    padding: 0.1875rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    white-space: nowrap;
+}
+
+.plugin-exposure-simple-table tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.plugin-exposure-loading,
+.plugin-exposure-error,
+.plugin-exposure-empty {
+    padding: 1rem;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+}
+
+.plugin-exposure-load-more {
+    padding: 0.375rem 0.75rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    margin: 0.5rem auto;
+    display: block;
+    transition: all 0.15s ease;
+    font-size: 0.6875rem;
+}
+
+.plugin-exposure-load-more:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-primary);
+}
+
+.plugin-exposure-load-more:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.plugin-compact-table-header {
+    display: flex;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.01);
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.plugin-compact-table-header-cell {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.plugin-compact-table-row {
+    display: flex;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    box-sizing: border-box;
+}
+
+.plugin-compact-table-row:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.plugin-compact-table-cell {
+    padding: 0.1875rem 0.5rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}

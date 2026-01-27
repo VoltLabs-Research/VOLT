@@ -1,0 +1,53 @@
+.window-icons-container{
+    gap: 8px;
+}
+
+.window-icons-container.with-background{
+    position: absolute;
+    top: .8rem;
+    left: .8rem;
+    background-color: rgba(255, 255, 255, .5);
+    padding: .5rem 1rem;
+    border-radius: var(--radius-full);
+}
+
+.window-icon-circle {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow:
+        inset 0 0.5px 0 rgba(255, 255, 255, 0.7),
+        inset 0 1px 2px rgba(0, 0, 0, 0.18);
+    flex: 0 0 auto;
+}
+
+.window-icon-circle.close{
+    background-color: #FF6159;
+    border-color: #E34E49;
+}
+
+.window-icon-circle.minimize{
+    background-color: #FFBD2E;
+    border-color: #D9A129;
+}
+
+.window-icon-circle.expand{
+    background-color: #28C940;
+    border-color: #1EAC32;
+}
+
+.window-icon-circle:focus-visible{
+    outline: 2px solid rgba(0, 0, 0, .25);
+    outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark){
+    .window-icon-circle{
+        border-color: rgba(255, 255, 255, 0.20);
+        box-shadow:
+            inset 0 0.5px 0 rgba(255, 255, 255, 0.55),
+            inset 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+}

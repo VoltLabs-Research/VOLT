@@ -1,0 +1,45 @@
+.integrations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    margin-bottom: 2rem;
+}
+
+.integration-item {
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.integration-item.connected {
+    border-color: var(--accent-green);
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.integration-item:hover {
+    border-color: var(--color-border);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.integration-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--color-surface-2);
+    border-radius: var(--radius-md);
+}
+
+.integration-help h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.integration-help p {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+    .integrations-grid {
+        grid-template-columns: 1fr;
+    }
+}

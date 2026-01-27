@@ -1,0 +1,35 @@
+.code-editor-label {
+    margin: 0;
+}
+
+.code-editor-description {
+    font-size: 0.7rem;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.code-editor-container {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border-soft);
+    transition: border-color 0.2s ease;
+}
+
+.code-editor-wrapper:focus-within .code-editor-container {
+    border-color: var(--accent-blue);
+}
+
+.code-editor-wrapper.has-error .code-editor-container {
+    border-color: var(--status-error);
+}
+
+.code-editor-error {
+    font-size: 0.7rem;
+    color: var(--status-error);
+    margin: 0;
+}
+
+/* Monaco background only - don't override syntax colors */
+.code-editor-container .monaco-editor,
+.code-editor-container .code-editor-container .monaco-editor .margin {
+    background-color: var(--color-surface-2) !important;
+}

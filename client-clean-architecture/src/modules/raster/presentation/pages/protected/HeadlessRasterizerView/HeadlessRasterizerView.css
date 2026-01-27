@@ -1,0 +1,756 @@
+.type-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.connected-user-container {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-surface-3);
+  border: 2px solid var(--color-border);
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Progress Indicator Styles */
+
+.raster-view-container {
+  padding: .5rem 2rem;
+  background-color: var(--color-bg);
+}
+
+.raster-view-container .dislocation-result-data-container {
+  font-size: .9rem;
+  gap: 0;
+  color: var(--color-text-primary);
+}
+
+.raster-view-container .dislocation-result-item {
+  gap: 0;
+  background: var(--glass-bg);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.raster-view-container .dislocation-result-item-title {
+  font-size: .9rem;
+  color: var(--color-text-primary);
+}
+
+.dislocation-results-summary-container {
+  border-top: 1px solid var(--color-border);
+  height: 2rem;
+  /* TODO: ADD IN DESKTOP */
+}
+
+.raster-view-container .dislocation-results-container {
+  top: unset;
+  left: unset;
+  background: var(--glass-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-elevated, 0 6px 18px rgba(0, 0, 0, .08));
+  right: unset;
+  bottom: 0;
+  height: clamp(260px, 32vh, 420px);
+}
+
+.raster-view-container .dislocation-results-summary-container {
+  background-color: var(--glass-bg);
+}
+
+.raster-scene-header-container .search-container {
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-2);
+}
+
+/* Botón Sign in */
+.btn-signin {
+  background: radial-gradient(120% 160% at 50% 0%, var(--color-surface-2) 0%, var(--color-surface-1) 60%);
+  border: 1px solid var(--color-border);
+  border-radius: 9999px;
+  padding: .55rem 1rem;
+  font-weight: 700;
+  letter-spacing: .1px;
+  transition: transform .16s ease, box-shadow .25s ease, border-color .25s ease, background .25s ease;
+  box-shadow: var(--shadow-elevated);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.btn-signin svg {
+  flex: 0 0 auto;
+  opacity: .95;
+}
+
+.btn-signin .btn-signin-glow {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background:
+    radial-gradient(60% 80% at 30% 0%, rgba(99, 102, 241, .35), transparent 60%),
+    radial-gradient(80% 80% at 100% 100%, rgba(99, 102, 241, .15), transparent 50%);
+  opacity: .6;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(10px);
+  transition: opacity .25s ease, filter .25s ease;
+}
+
+.btn-signin>* {
+  position: relative;
+  z-index: 1;
+}
+
+.btn-signin::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 120%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(99, 102, 241, .18), transparent);
+  transform: skewX(-20deg);
+  transition: left .6s ease;
+  pointer-events: none;
+}
+
+.btn-signin:hover::after {
+  left: 120%;
+}
+
+.btn-signin:hover {
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-elevated);
+}
+
+.btn-signin:hover .btn-signin-glow {
+  opacity: .9;
+  filter: blur(14px);
+}
+
+.btn-signin:active {
+  transform: translateY(1px) scale(.99);
+}
+
+/* Botón View in 3D */
+.btn-3d {
+  background: radial-gradient(130% 180% at 50% 0%, #062a2f 0%, #071c1e 65%);
+  color: #d2faff;
+  border: 1px solid #0e3c44;
+  border-radius: 9999px;
+  padding: .55rem 1rem;
+  font-weight: 800;
+  letter-spacing: .12px;
+  transition: transform .16s ease, box-shadow .25s ease, border-color .25s ease, background .25s ease, color .25s ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+}
+
+.btn-3d svg {
+  flex: 0 0 auto;
+  opacity: .98;
+}
+
+.btn-3d .btn-3d-glow {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background:
+    radial-gradient(70% 90% at 30% 0%, rgba(34, 211, 238, .35), transparent 60%),
+    radial-gradient(80% 80% at 100% 100%, rgba(6, 182, 212, .2), transparent 50%);
+  opacity: .65;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(10px);
+  transition: opacity .25s ease, filter .25s ease;
+}
+
+.btn-3d::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 120%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(34, 211, 238, .22), transparent);
+  transform: skewX(-20deg);
+  transition: left .6s ease;
+  pointer-events: none;
+}
+
+.btn-3d:hover {
+  border-color: #0f4e57;
+  box-shadow:
+    0 0 0 2px rgba(34, 211, 238, 0.28),
+    0 10px 30px rgba(34, 211, 238, 0.28),
+    0 8px 20px rgba(0, 0, 0, .45);
+  color: #e6fdff;
+}
+
+.btn-3d:active {
+  transform: translateY(1px) scale(.99);
+}
+
+@media (max-width: 560px) {
+  .raster-scene-header-nav-container {
+    padding-right: .5rem;
+  }
+
+  .btn-signin,
+  .btn-3d {
+    padding: .5rem .9rem;
+    font-weight: 700;
+  }
+}
+
+/* ====== Header y layout ====== */
+.raster-scene-header-container {
+  height: 80px;
+}
+
+.raster-scene-header-container>div:first-child,
+.raster-scene-header-container>div:last-child {
+  width: 20%;
+}
+
+.raster-scene-header-container>div:nth-child(2) {
+  width: 60%;
+}
+
+.raster-scene-header-left-container {
+}
+
+.raster-scene-header-go-back-icon-container {
+  font-size: 1.3rem;
+  width: 70px;
+  transition: .2s;
+}
+
+.raster-scene-header-go-back-icon-container:hover {
+  opacity: .8;
+}
+
+.raster-scenes-container {
+  border-radius: 1rem;
+}
+
+.raster-scenes-top-container {
+  height: calc(100% - 80px - 170px - 66px);
+}
+
+.raster-scene-container {
+  border: 1px solid var(--color-border-soft);
+  border-radius: 1rem;
+}
+
+/* Unify raster scene height via CSS variable for easy responsive control */
+.raster-scenes-container {
+  --raster-scene-height: clamp(360px, 52vh, 520px);
+}
+
+.raster-scene {
+  height: var(--raster-scene-height);
+}
+
+/* Barras internas */
+.raster-scene-topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: .75rem;
+  padding: .5rem .75rem;
+}
+
+.raster-scene-topbar-center {
+  grid-column: 2;
+  justify-self: center;
+  min-width: 200px;
+  max-width: 520px;
+}
+
+.raster-analysis-selection-container .rh-select-value {
+  font-size: .9rem;
+  font-weight: 500;
+}
+
+.raster-analysis-selection-container .rh-select-trigger {
+  padding: .6rem 1.25rem;
+}
+
+.raster-scene-main {
+  padding: .25rem .5rem;
+}
+
+.raster-scene-bottombar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: .75rem;
+  padding: .5rem .75rem .75rem;
+}
+
+.raster-view-trajectory-playback-container {
+  grid-column: 2;
+  justify-self: center;
+  border-radius: 5rem;
+  padding: .3rem .75rem;
+  gap: .5rem;
+}
+
+.raster-view-trajectory-play-icon {
+  line-height: 1;
+}
+
+/* Thumbnails */
+.raster-thumbnails {
+  height: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.raster-thumbnail-container {
+  border: 1px solid var(--color-border-soft);
+  border-radius: 1rem;
+  width: 280px;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.raster-thumbnail-container.active {
+  border: 1px solid var(--accent-blue);
+  box-shadow: var(--shadow-elevated);
+  z-index: 2;
+}
+
+.raster-analysis-scene {
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+}
+
+.raster-thumbnail {
+  width: 280px;
+  border-radius: 0.75rem;
+  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.raster-thumbnail-container:not(.active) .raster-thumbnail {
+  filter: grayscale(40%) brightness(0.8);
+}
+
+.raster-thumbnail-container:hover {
+  opacity: .9;
+}
+
+.raster-thumbnail-timestep-container {
+  top: .5rem;
+  right: .5rem;
+  background-color: var(--color-surface-2);
+  padding: .5rem 1rem;
+  border-radius: 5rem;
+}
+
+.raster-thumbnail-timestep {
+  font-size: .8rem;
+}
+
+/* Rail */
+.raster-rail-container {
+  right: .5rem;
+  bottom: 0;
+  background: transparent;
+  border-radius: 1rem;
+  padding: .5rem;
+  max-height: 75%;
+  overflow-x: hidden;
+  z-index: 1;
+}
+
+/* Varios */
+
+.raster-frames-container {
+  overflow-x: scroll;
+}
+
+/* ====== RESPONSIVE ====== */
+.raster-view-container {
+  padding: .5rem 1rem;
+}
+
+@media (max-width: 1024px) {
+  .raster-scenes-top-container {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .raster-scene-container {
+    height: auto;
+    min-height: 70vh;
+  }
+
+  .raster-analyses-container img,
+  .raster-analyses-container .raster-analysis-scene {
+    width: 160px;
+    height: auto;
+    flex-shrink: 0;
+  }
+
+  .raster-view-container .dislocation-results-container {
+    width: calc(100% - 1rem);
+    margin: 0 .5rem;
+  }
+
+  /* Slightly reduce scene height on tablets */
+
+  .raster-scenes-container {
+    --raster-scene-height: clamp(300px, 46vh, 460px);
+  }
+}
+
+@media (max-width: 600px) {
+
+  .raster-scene-topbar-center {
+    min-width: unset;
+    max-width: 100%;
+    flex: 1;
+  }
+
+  .raster-view-container .dislocation-results-container {
+    width: calc(100% - 1rem);
+    margin: 0 .5rem;
+    height: clamp(220px, 30vh, 360px);
+  }
+}
+
+/* ====== SKELETON OVERLAYS ====== */
+.raster-skel {
+  z-index: 3;
+  pointer-events: none;
+}
+
+.raster-skel-select {
+  top: .75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  max-width: 520px;
+  min-width: 200px;
+  padding: 0 .75rem;
+}
+
+.raster-skel-frame {
+  bottom: .9rem;
+  left: .9rem;
+}
+
+.raster-skel-playback {
+  bottom: .75rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.raster-skel-rail {
+  bottom: 1rem;
+  right: 1rem;
+  max-height: 75%;
+  overflow-x: hidden;
+}
+
+@media (max-width: 1024px) {
+  .raster-skel-select {
+    width: 60%;
+  }
+
+  .raster-skel-rail {
+    top: auto;
+    bottom: .5rem;
+    transform: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .raster-skel-select {
+    width: 88%;
+  }
+
+  .raster-skel-rail {
+    right: .5rem;
+    gap: .4rem;
+  }
+}
+
+/* ====== METRICS BOTTOM BAR ====== */
+.raster-metrics-bar {
+  height: 40px;
+  border-top: 1px solid var(--color-border);
+}
+
+.raster-metrics-title svg {
+  opacity: .95;
+}
+
+.raster-metrics-list {
+  margin-left: .25rem;
+}
+
+.raster-metric-item {
+  padding: .55rem 1.5rem;
+  border-right: 1px solid var(--color-border);
+  background-color: transparent;
+  font-size: .9rem;
+}
+
+/* --- MODIFIER RESULT: estilo base + capa aurora --- */
+.raster-metric-item.modifier-result {
+  background-color: var(--color-surface-1);
+  /* color base (se sobreescribe por Motion) */
+  cursor: pointer;
+  transition: .2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.raster-metric-item.modifier-result:hover {
+  opacity: .96;
+}
+
+/* active state for toggle option to be theme-aware */
+.raster-metric-item.modifier-result.active {
+  background-color: var(--color-surface-2);
+  box-shadow: var(--shadow-elevated);
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+}
+
+/* Capa aurora respirando (el span interno animado) */
+.raster-metric-item.modifier-result .metric-aurora {
+  position: absolute;
+  inset: -40%;
+  border-radius: 9999px;
+  background:
+    radial-gradient(80% 90% at 20% 25%, rgba(99, 102, 241, .10), transparent 60%),
+    radial-gradient(90% 80% at 80% 75%, rgba(34, 211, 238, .08), transparent 55%);
+  filter: blur(18px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Asegura que el contenido quede arriba de la aurora */
+.raster-metric-item>* {
+  position: relative;
+  z-index: 1;
+}
+
+.raster-metric-icon {
+  opacity: .95;
+}
+
+.raster-metric-label {
+  opacity: .9;
+}
+
+.raster-metric-value {
+  font-weight: 800;
+  margin-left: .15rem;
+}
+
+@media (max-width: 768px) {
+  .raster-view-container {
+    overflow: scroll;
+    height: unset;
+    padding: 0;
+  }
+
+  .raster-metrics-bar {
+    padding: .55rem .6rem;
+  }
+
+}
+
+.preloading-container {
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  background: var(--glass-bg);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--color-border-soft);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.preloading-anim {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-border);
+  border-top: 2px solid var(--color-text-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 768px) {
+  .raster-thumbnails {
+    gap: .5rem;
+    overflow-y: unset;
+    height: auto;
+    padding: 1rem;
+  }
+
+  .raster-thumbnail-container {
+    width: 180px;
+    height: 100px;
+  }
+
+  .raster-thumbnail {
+    width: 180px;
+  }
+
+  .raster-thumbnail-timestep-container {
+    padding: .25rem .6rem;
+  }
+
+  .raster-thumbnail-timestep {
+    font-size: .7rem;
+  }
+
+  .raster-rail-container {
+    right: -1rem;
+  }
+
+  /* Smaller scene height on small phones */
+  .raster-scenes-container {
+    --raster-scene-height: clamp(220px, 40vh, 340px);
+  }
+
+  .raster-analysis-scene {
+    border: unset;
+  }
+
+  .raster-scene-header-container>div {
+    width: unset !important;
+  }
+
+  .raster-scene-header-container {
+    padding: 1rem 1rem 0;
+  }
+
+  .raster-view-container .dislocation-results-container {
+    max-width: 300px;
+    height: 80%;
+    z-index: 999999999;
+  }
+
+  .raster-scenes-top-container {
+    padding: 0 1rem;
+  }
+
+  .preloading-container {
+    top: .8rem;
+    right: unset;
+    left: 1.5rem;
+    z-index: 999999;
+    font-size: 0.5rem;
+  }
+
+  .type-legend-item {
+    font-size: .4rem;
+  }
+
+  .dislocation-summary-value,
+  .dislocation-summary-label {
+    font-size: .5rem;
+  }
+
+  .type-legend-color {
+    width: 8px;
+    height: 8px;
+  }
+
+  .raster-view-container .dislocation-result-item-title,
+  .dislocation-result-data {
+    font-size: .7rem;
+  }
+
+  .raster-scene-header-title {
+    font-size: .9rem;
+  }
+
+  .raster-scene-header-last-edited {
+    font-size: .85rem;
+  }
+
+  .dislocation-results-header-title {
+    font-size: .9rem;
+  }
+
+  .raster-scene-header-team-container {
+    gap: .3rem;
+  }
+
+  .raster-scene-header-go-back-icon-container {
+    width: unset;
+    padding: 0;
+  }
+
+  .raster-metric-label {
+    font-size: .8rem;
+  }
+
+  .raster-metric-icon {
+    font-size: .8rem;
+  }
+
+  .raster-metric-value {
+    font-size: .8rem;
+  }
+
+  .raster-metrics-list {
+    overflow-x: scroll;
+    flex-wrap: unset !important;
+  }
+
+  .raster-scene-header-left-container {
+    gap: 1.5rem;
+    padding: 0;
+    /* TODO: SET THIS IN DESKTOP TOO */
+    align-items: center;
+  }
+
+  .raster-metrics-bar {
+    padding: 0;
+  }
+
+  .raster-scene {
+    height: unset;
+  }
+
+  .raster-metric-value {
+    width: max-content;
+  }
+
+  .raster-metric-item.modifier-result {
+    min-width: max-content;
+  }
+
+  .raster-scene-header-search-container .dashboard-search-container {
+    display: none;
+  }
+
+  .raster-scene-header-views-container {
+    display: none;
+  }
+
+  .btn-signin {
+    display: none;
+  }
+
+  .raster-scene-header-users-container {
+    display: none;
+  }
+}
+

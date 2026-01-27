@@ -1,0 +1,41 @@
+.trajectories-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    padding: 0.5rem 0 0 0;
+    align-content: start;
+}
+
+.trajectories-container > *{
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-reduced-motion: reduce){
+    .trajectories-container *{
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+
+/* Mobile-first: single column when space is tight */
+@media (max-width: 768px) {
+    .trajectories-container{
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        overflow-y: auto;
+        padding-bottom: 0.5rem;
+    }
+}
+
+/* Medium screens: two columns */
+@media (min-width: 769px) and (max-width: 1199px){
+    .trajectories-container{
+        grid-template-columns: repeat(2, minmax(280px, 1fr));
+    }
+}

@@ -1,0 +1,88 @@
+/* Theme-aware progress colors using theme.css variables */
+:root {
+    --progress-color: var(--accent-purple);
+    --progress-track: var(--hover-bg);
+}
+
+.download-loader-container {
+    top: 1rem;
+    right: 1rem;
+}
+
+.raster-scene-topbar-right {
+    margin-left: auto;
+}
+
+/* Ensure topbar is an anchor for absolute children */
+.raster-scene-topbar {
+    /* Grid layout maintained in generic CSS or keep here if specific */
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: .75rem;
+}
+
+/* Mobile: pin the download icon to the very top-right */
+@media (max-width: 768px) {
+    .raster-scene-topbar-right {
+        position: absolute;
+        top: .7rem;
+        right: .5rem;
+        margin-left: 0;
+        z-index: 20;
+    }
+}
+
+.raster-scene-download-menu {
+    top: 40px;
+    right: 0;
+    background: var(--glass-bg, rgba(0, 0, 0, 0.5));
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--color-border-soft, rgba(255, 255, 255, 0.12));
+    border-radius: var(--radius-md);
+    padding: 6px;
+    z-index: 50;
+    min-width: 220px;
+
+}
+
+.raster-scene-download-menu button {
+
+    padding: 8px 12px;
+    width: 100%;
+    background: transparent;
+    color: var(--color-text-primary, #fff);
+    border: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+
+.raster-scene-download-menu button[disabled] {
+    cursor: not-allowed;
+    opacity: .6;
+}
+
+.raster-scene-download-menu button:hover {
+    background: var(--color-surface-2, rgba(255, 255, 255, .06));
+}
+
+/* Circular progress ring around the download icon */
+
+/* SVG based progress (seamless) */
+
+.download-progress-svg circle {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+}
+
+@keyframes progress-pop-in {
+    from {
+        transform: scale(.6);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

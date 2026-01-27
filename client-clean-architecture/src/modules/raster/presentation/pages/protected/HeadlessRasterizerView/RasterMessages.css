@@ -1,0 +1,18 @@
+/* Empty State Messages for Raster View */
+
+.raster-empty-state-overlay {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background-color: var(--color-overlay);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+}
+
+@media (max-width: 768px) {
+    .raster-empty-state-overlay {
+        padding: 1.5rem;
+    }
+}

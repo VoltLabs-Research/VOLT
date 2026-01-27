@@ -1,0 +1,92 @@
+* {
+    margin: 0;
+    padding: 0;
+    outline: none;
+    border: none;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+    width: 100%;
+    background-color: var(--color-bg);
+}
+
+#root {
+    width: 100%;
+    height: 100vh;
+    background-color: transparent;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    color: var(--color-text-primary);
+}
+
+::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    border-radius: 0.5rem;
+    background-color: var(--color-scrollbar);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-scrollbar);
+}
+
+i {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:hover {
+    -webkit-box-shadow: 0 0 0 1000px var(--color-autofill-bg) inset !important;
+    box-shadow: 0 0 0 1000px var(--color-autofill-bg) inset !important;
+    -webkit-text-fill-color: var(--color-autofill-text) !important;
+}
+
+.MuiSkeleton-root {
+    background-color: color-mix(in srgb, var(--color-text-muted) 11%, transparent) !important;
+}
+
+.primary-surface {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow-glass);
+}
+
+.glass-bg {
+    background: var(--glass-bg);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+}
+
+.react-flow__panel {
+    display: none;
+}

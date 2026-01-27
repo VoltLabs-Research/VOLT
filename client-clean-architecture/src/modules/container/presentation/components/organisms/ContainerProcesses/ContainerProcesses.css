@@ -1,0 +1,88 @@
+.processes-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.processes-header {
+    border-bottom: 1px solid var(--border);
+    background: var(--background-secondary);
+}
+
+.processes-header h3 {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--foreground);
+}
+
+.refresh-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--foreground);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-xs);
+    transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+    background: var(--hover);
+}
+
+.processes-table {
+    border-collapse: collapse;
+}
+
+.processes-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background: var(--background-secondary);
+    border-bottom: 1px solid var(--border);
+    color: var(--muted-foreground);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    position: sticky;
+    top: 0;
+    white-space: nowrap;
+}
+
+.processes-table td {
+    padding: 0.625rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--foreground);
+    font-size: 0.8125rem;
+}
+
+.processes-table tr:last-child td {
+    border-bottom: none;
+}
+
+.processes-table tr:hover {
+    background: var(--hover);
+}
+
+.program-cell {
+    color: #10b981;
+    /* Green for program name */
+}
+
+.command-cell {
+    max-width: 250px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.monospace {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.retry-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-xs);
+}

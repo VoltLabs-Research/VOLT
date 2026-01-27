@@ -1,0 +1,135 @@
+.labeled-input {
+    width: 160px;
+    height: 2rem;
+    padding: 0 1rem;
+    background-color: var(--input-bg);
+    color: var(--input-fg);
+    border-radius: var(--radius-sm);
+}
+
+.labeled-input.rh-select {
+    padding: 0;
+}
+
+.labeled-input:focus {
+    outline: 2px solid var(--input-focus-ring);
+    outline-offset: 2px;
+}
+
+.labeled-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.input-wrapper .labeled-input {
+    width: 100%;
+}
+
+.input--has-expression {
+    border-color: var(--accent-blue) !important;
+    background: linear-gradient(135deg, var(--status-info-bg) 0%, var(--input-bg) 100%) !important;
+}
+
+.expression-badge {
+    top: 50%;
+    right: 0.5rem;
+    transform: translateY(-50%);
+    padding: 0.15rem 0.4rem;
+    background: var(--accent-blue);
+    color: var(--color-bg);
+    font-size: 0.6rem;
+    border-radius: var(--radius-xs);
+    font-family: 'JetBrains Mono', monospace;
+    pointer-events: none;
+}
+
+/* Dropdown Styles */
+.expression-dropdown {
+    min-width: 320px;
+    max-width: 450px;
+    max-height: 350px;
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-elevated);
+}
+
+.expression-dropdown-header {
+    padding: 0.5rem 0.75rem;
+    background: var(--color-surface-2);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.expression-dropdown-title {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.expression-dropdown-hint {
+    font-size: 0.65rem;
+}
+
+.expression-group {
+    margin-bottom: 0.5rem;
+}
+
+.expression-group:last-child {
+    margin-bottom: 0;
+}
+
+.expression-group-header {
+    padding: 0.35rem 0.5rem;
+    background: var(--color-surface-2);
+    border-radius: var(--radius-xs);
+    margin-bottom: 0.25rem;
+}
+
+.expression-group-icon {
+    opacity: 0.7;
+}
+
+.expression-group-name {
+}
+
+.expression-group-type {
+    font-size: 0.65rem;
+    background: var(--color-surface-3);
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-xs);
+}
+
+.expression-item {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-xs);
+    transition: background 0.1s ease;
+}
+
+.expression-item:hover,
+.expression-item--selected {
+    background: var(--color-surface-2);
+}
+
+.expression-item--selected {
+    background: var(--status-info-bg);
+    outline: 1px solid var(--accent-blue);
+}
+
+.expression-item-path {
+    font-size: 0.8rem;
+    color: var(--accent-blue);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.expression-item-type {
+    font-size: 0.65rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: var(--radius-xs);
+    text-transform: lowercase;
+}
+
+.expression-item-description {
+    display: block;
+    font-size: 0.7rem;
+    margin-top: 0.2rem;
+}

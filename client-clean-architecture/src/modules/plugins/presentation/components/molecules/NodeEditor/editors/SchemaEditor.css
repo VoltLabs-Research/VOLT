@@ -1,0 +1,51 @@
+.schema-editor-description {
+    color: var(--gray-500);
+    margin: 0;
+}
+
+.schema-editor-btn {
+    padding: 0.4rem 0.65rem;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-xs);
+    font-size: 0.7rem;
+    color: var(--gray-700);
+    transition: all 0.15s ease;
+}
+
+.schema-editor-btn:hover:not(:disabled) {
+    background: var(--gray-200);
+}
+
+.schema-editor-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.schema-templates {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+}
+
+.schema-template-item {
+    padding: 0.35rem 0.6rem;
+    background: var(--primary-50);
+    border: 1px solid var(--primary-200);
+    border-radius: var(--radius-xs);
+    font-size: 0.7rem;
+    color: var(--primary-700);
+    transition: all 0.15s ease;
+}
+
+.schema-template-item:hover {
+    background: var(--primary-100);
+}
+
+.schema-editor-status {
+    padding: 0.5rem 0.75rem;
+    background: var(--green-50);
+    border: 1px solid var(--green-200);
+    border-radius: var(--radius-sm);
+    color: var(--green-600);
+}

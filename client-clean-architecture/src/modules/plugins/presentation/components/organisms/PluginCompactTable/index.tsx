@@ -1,0 +1,174 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { ListChildComponentProps, } from 'react-window';
+import '@/modules/plugins/presentation/components/organisms/PluginExposureTable/PluginExposureTable.css';
+
+export interface ColumnConfig {
+    key: string;
+    title: string;
+    width?: number;
+    render?: (value: any, row: any) => React.ReactNode;
+}
+
+interface RowProps {
+    data: any[];
+    columns: ColumnConfig[];
+}
+
+const TableRow = ({ index, style, data: rows, columns }: { index: number; style: React.CSSProperties; data: any[]; columns: ColumnConfig[] }) => {
+    const row = rows[index];
+    if (!row) return null;
+
+    return (
+        <div style={style} className="plugin-compact-table-row">
+            {columns.map((col) => (
+                <div
+                    key={col.key}
+                    className="plugin-compact-table-cell overflow-hidden font-size-1 color-secondary"
+                    style={{
+                        width: col.width ? `${col.width}px` : 'auto',
+                        flex: col.width ? '0 0 auto' : '1'
+                    }}
+                >
+                    {col.render ? col.render(row[col.key], row) : row[col.key]}
+                </div>
+            ))}
+        </div>
+    );
+};
+
+const VirtualizedRow = (props: ListChildComponentProps) => {
+    const { index, style, data } = props;
+    // data contains { data_: any[], columns: ColumnConfig[] }
+    const { data: rows, columns } = data as any;
+    
+    return <TableRow index={index} style={style} data={rows} columns={columns} />;
+};
+
+interface PluginCompactTableProps {
+    columns: ColumnConfig[];
+    data: any[];
+    hasMore?: boolean;
+    isLoading?: boolean;
+    isFetchingMore?: boolean;
+    onLoadMore?: () => void;
+    error?: string | null;
+    rowHeight?: number;
+    onDataReady?: (columns: ColumnConfig[], data: any[]) => void;
+}
+
+const PluginCompactTable = ({
+    columns,
+    data,
+    hasMore,
+    isLoading,
+    isFetchingMore,
+    onLoadMore,
+    error,
+    rowHeight = 28,
+    onDataReady,
+}: PluginCompactTableProps) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [height, setHeight] = useState(400);
+
+    // Calculate total width of all columns
+    const totalWidth = columns.reduce((sum, col) => sum + (col.width || 150), 0);
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                setHeight(entry.contentRect.height - 32);
+            }
+        });
+        observer.observe(containerRef.current);
+        return () => observer.disconnect();
+    }, []);
+
+    // Notify parent when data is ready for export
+    useEffect(() => {
+        if (onDataReady && columns.length > 0 && data.length > 0) {
+            onDataReady(columns, data);
+        }
+    }, [columns, data, onDataReady]);
+
+    const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+        if (!hasMore || isLoading || isFetchingMore || !onLoadMore) return;
+
+        const target = event.target as HTMLElement;
+        const scrollOffset = target.scrollTop;
+        const scrollHeight = data.length * rowHeight;
+
+        if (scrollOffset + height >= scrollHeight - 200) {
+            onLoadMore();
+        }
+    }, [data.length, hasMore, isLoading, isFetchingMore, onLoadMore, rowHeight, height]);
+
+    if(isLoading && data.length === 0) {
+        return <div className="plugin-exposure-loading">Loading...</div>;
+    }
+
+    if (error) {
+        return <div className="plugin-exposure-error">{error}</div>;
+    }
+
+    if (data.length === 0) {
+        return <div className="plugin-exposure-empty">No data available</div>;
+    }
+
+    return (
+        <div
+            className="plugin-exposure-table-compact w-max h-max overflow-hidden"
+            ref={containerRef}
+            style={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                overflowX: 'auto',
+                overflowY: 'auto'
+            }}
+        >
+            <div style={{ minWidth: `${totalWidth}px`, display: 'flex', flexDirection: 'column', flex: 1 }}>
+                <div className="plugin-compact-table-header p-sticky">
+                    {columns.map((col) => (
+                        <div
+                            key={col.key}
+                            className="plugin-compact-table-header-cell overflow-hidden font-weight-5"
+                            style={{
+                                width: col.width ? `${col.width}px` : 'auto',
+                                flex: col.width ? '0 0 auto' : '1'
+                            }}
+                        >
+                            {col.title}
+                        </div>
+                    ))}
+                </div>
+                <div
+                    className="plugin-compact-table-list-container"
+                    style={{ flex: 1, minHeight: 0 }}
+                    onScroll={handleScroll}
+                >
+                    <FixedSizeList
+                        height={Math.max(0, height)}
+                        itemCount={data.length}
+                        itemSize={rowHeight}
+                        width={totalWidth}
+                        itemData={{
+                            data,
+                            columns
+                        }}
+                        style={{ overflowX: 'visible', overflowY: 'visible' }}
+                    >
+                        {VirtualizedRow}
+                    </FixedSizeList>
+                </div>
+            </div>
+            {isFetchingMore && (
+                <div className="plugin-exposure-loading" style={{ padding: '0.25rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    Loading more...
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default PluginCompactTable;

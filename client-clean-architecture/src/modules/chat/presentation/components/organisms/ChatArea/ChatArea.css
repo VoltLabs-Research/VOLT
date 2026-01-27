@@ -1,0 +1,38 @@
+/* ChatArea Component Styles */
+.chat-messages-container {
+    background: var(--color-bg);
+    backdrop-filter: blur(10px);
+}
+
+.chat-box-container {
+
+    background: var(--color-surface-1);
+    backdrop-filter: blur(15px);
+    border-right: 1px solid var(--color-border-soft);
+    z-index: 1;
+}
+
+/* Dark Mode */
+:root,
+.theme-dark {
+    .chat-box-container {
+        background: rgba(0, 0, 0, 0.3);
+    }
+}
+
+/* Light Mode */
+:root[data-theme='light'] {
+    .chat-box-container {
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(15px);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+
+    .chat-box-container {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border-soft);
+    }
+}

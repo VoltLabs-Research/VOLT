@@ -1,0 +1,19 @@
+.editor-sidebar-item-header-container {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--color-border-soft);
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.editor-sidebar-item-header-container:hover {
+  border-color: var(--color-border);
+}
+
+.editor-sidebar-item-arrow {
+  transition: color 0.2s ease;
+  transform: rotate(-90deg);
+}
+
+.editor-sidebar-item-header-container:hover .editor-sidebar-item-arrow {
+  color: var(--color-text-primary);
+}

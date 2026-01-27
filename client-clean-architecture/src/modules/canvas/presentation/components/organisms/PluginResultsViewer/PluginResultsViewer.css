@@ -1,0 +1,85 @@
+.plugin-results-viewer-container {
+    width: 450px;
+    max-height: 320px;
+    background-color: var(--glass-bg);
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 2000;
+    border-radius: var(--radius-sm);
+    backdrop-filter: blur(16px) saturate(180%);
+}
+
+.plugin-results-header {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.plugin-results-header .font-size-3 {
+    font-size: 0.8125rem !important;
+    font-weight: 500;
+}
+
+.plugin-results-close {
+    padding: 0.125rem;
+    border-radius: var(--radius-xs);
+    transition: background-color 0.15s ease;
+    color: var(--color-text-tertiary);
+}
+
+.plugin-results-close:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-primary);
+}
+
+.plugin-results-tabs-container {
+    overflow-x: auto;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.plugin-results-tabs-container::-webkit-scrollbar {
+    height: 2px;
+}
+
+.plugin-results-tabs-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 1px;
+}
+
+.plugin-results-tab {
+    min-width: auto;
+    max-width: 140px;
+    padding: 0.375rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    color: var(--color-text-tertiary);
+    transition: all 0.15s ease;
+}
+
+.plugin-results-tab:hover {
+    color: var(--color-text-secondary);
+}
+
+.plugin-results-tab.active {
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-text-muted);
+}
+
+.plugin-results-tab-name {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+
+.plugin-results-content {
+    overflow-x: auto;
+    padding: .3rem;
+    flex: 1;
+    max-height: 220px;
+}
+
+.plugin-results-empty {
+}

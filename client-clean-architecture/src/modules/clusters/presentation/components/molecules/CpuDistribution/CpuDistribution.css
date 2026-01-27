@@ -1,0 +1,27 @@
+/* CPU Distribution - Apple UI Design */
+
+.cpu-chart svg {
+  width: 100%;
+  height: 100%;
+}
+
+.cpu-mode-hint svg {
+  width: 12px;
+  height: 12px;
+  opacity: 0.6;
+  color: var(--color-text-muted);
+}
+
+.cpu-loading {
+}
+
+.cpu-core-bar {
+  background: var(--color-border-soft);
+  border-radius: var(--radius-xs);
+}
+
+.cpu-core-bar-fill {
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-teal));
+  border-radius: var(--radius-xs);
+  transition: width 0.3s ease;
+}

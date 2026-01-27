@@ -1,0 +1,14 @@
+/* SettingsLayout.css */
+/* Shared settings layout styles */
+
+.settings-main {
+}
+
+.settings-content-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.settings-layout-container {
+    overflow: scroll;
+}

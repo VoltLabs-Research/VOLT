@@ -1,0 +1,59 @@
+/**
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files(the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+import { useState } from 'react';
+import { Outlet } from 'react-router-dom';
+import { useTeamStore } from '@/modules/team/presentation/stores';
+import TeamCreator from '@/modules/team/presentation/components/organisms/TeamCreator';
+import Container from '@/shared/presentation/components/primitives/Container';
+import DashboardSidebar from '@/modules/dashboard/presentation/components/organisms/Sidebar';
+import DashboardHeader from '@/modules/dashboard/presentation/components/molecules/DashboardHeader';
+import '@/modules/dashboard/presentation/components/organisms/DashboardLayout/DashboardLayout.css';
+
+const DashboardLayout = () => {
+    const teams = useTeamStore((state) => state.teams);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+
+    return (
+        <main className='dashboard-main d-flex vh-max'>
+            <TeamCreator isRequired={teams.length === 0} />
+
+            {/* Sidebar Overlay for Mobile */}
+            <div
+                className={`sidebar-overlay ${sidebarOpen ? 'is-open' : ''} p-fixed inset-0`}
+                onClick={() => setSidebarOpen(false)}
+            />
+
+            <DashboardSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+
+            <Container className='dashboard-content-wrapper vh-max overflow-hidden'>
+                <DashboardHeader setSidebarOpen={setSidebarOpen} />
+
+                <Container className='dashboard-content-main overflow-hidden'>
+                    <Outlet />
+                </Container>
+            </Container>
+        </main>
+    );
+};
+
+export default DashboardLayout;

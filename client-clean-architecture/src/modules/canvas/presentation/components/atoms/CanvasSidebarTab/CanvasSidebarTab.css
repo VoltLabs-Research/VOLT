@@ -1,0 +1,18 @@
+.editor-sidebar-option-container.selected {
+    background-color: var(--color-surface-3);
+}
+
+.editor-sidebar-option-container:not(.selected):hover {
+    background-color: var(--hover-bg);
+}
+
+.editor-sidebar-option-container {
+    border-radius: var(--radius-full);
+    width: 48%;
+    transition: .1s;
+    height: 45px;
+}
+
+.editor-sidebar-option-title {
+    font-size: 1.05rem;
+}

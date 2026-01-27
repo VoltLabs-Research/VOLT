@@ -1,0 +1,394 @@
+/** Margin **/
+.mt-1 {
+    margin-top: 1rem;
+}
+
+.mt-05{
+    margin-top: 0.5rem;
+}
+
+.mt-3 {
+    margin-top: 3rem;
+}
+
+.mb-1-5 {
+    margin-bottom: 1.5rem;
+}
+
+.mb-3 {
+    margin-bottom: 3rem;
+}
+
+/** Padding */
+.p-05 {
+    padding: 0.5rem;
+}
+
+.p-1 {
+    padding: 1rem;
+}
+
+.p-1-5 {
+    padding: 1.5rem;
+}
+
+.p-2 {
+    padding: 2rem;
+}
+
+.p-fixed {
+    position: fixed;
+}
+
+/** Position **/
+.p-relative {
+    position: relative;
+}
+
+.p-sticky {
+    position: sticky;
+}
+
+.p-absolute {
+    position: absolute;
+}
+
+.p-fixed {
+    position: fixed;
+}
+
+/** Gap **/
+.gap-01 {
+    gap: .1rem;
+}
+
+.gap-02 {
+    gap: .2rem;
+}
+
+.gap-025 {
+    gap: 0.25rem;
+}
+
+.gap-035 {
+    gap: 0.35rem;
+}
+
+.gap-1 {
+    gap: 1rem;
+}
+
+.gap-05 {
+    gap: 0.5rem;
+}
+
+.gap-075 {
+    gap: 0.75rem;
+}
+
+.gap-1-5 {
+    gap: 1.5rem;
+}
+
+.gap-2 {
+    gap: 2rem;
+}
+
+.gap-3 {
+    gap: 3rem;
+}
+
+/** Container **/
+.max-h-500{
+    max-height: 500px;
+}
+
+.w-max {
+    width: 100%;
+}
+
+.w-50 {
+    width: 50%;
+}
+
+.h-max {
+    height: 100%;
+}
+
+.wh-max {
+    width: 100vw;
+}
+
+.vh-max {
+    height: 100vh;
+}
+
+.y-scroll {
+    overflow-y: scroll;
+}
+
+.y-auto {
+    overflow-y: auto;
+}
+
+.overflow-auto {
+    overflow: auto;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+}
+
+/** Inset-related **/
+.inset-0 {
+    inset: 0;
+}
+
+.top-1{
+    top: 1rem;
+}
+
+.left-1{
+    left: 1rem;
+}
+
+.bottom-1{
+    bottom: 1rem;
+}
+
+.right-1{
+    right: 1rem;
+}
+
+/** Z-index **/
+.z-20{
+    z-index: 20;
+}
+
+/** Flexbox **/
+.d-flex {
+    display: flex;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.items-start{
+    align-items: start;
+}
+
+.items-center,
+.flex-center {
+    align-items: center;
+}
+
+.content-center,
+.flex-center {
+    justify-content: center;
+}
+
+.content-between {
+    justify-content: space-between;
+}
+
+.content-end {
+    justify-content: flex-end;
+}
+
+.row-reverse {
+    flex-direction: row-reverse;
+}
+
+.row {
+    flex-direction: row;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.a-self-end {
+    align-self: flex-end;
+}
+
+.f-shrink-0 {
+    flex-shrink: 0;
+}
+
+.d-flex.column {
+    flex-direction: column;
+}
+
+/** Display **/
+.d-none {
+    display: none;
+}
+
+.d-block {
+    display: block;
+}
+
+/** Text **/
+.text-center {
+    text-align: center;
+}
+
+/** TODO: Use tokens for this: md, lg, sm... **/
+.font-size-05{
+    font-size: .7rem;
+}
+
+.font-size-1 {
+    font-size: 0.75rem;
+}
+
+.font-size-2 {
+    font-size: 0.875rem;
+}
+
+.font-size-2-5 {
+    font-size: 0.95rem;
+}
+
+.font-size-3 {
+    font-size: 1rem;
+}
+
+.font-size-4 {
+    font-size: 1.25rem;
+}
+
+.font-size-5 {
+    font-size: 1.5rem;
+}
+
+.font-size-5-5 {
+    font-size: 1.8rem;
+}
+
+.font-size-6 {
+    font-size: 2rem;
+}
+
+.font-weight-4 {
+    font-weight: 400;
+}
+
+.font-weight-5 {
+    font-weight: 500;
+}
+
+.font-weight-5-5 {
+    font-weight: 550;
+}
+
+.font-weight-6 {
+    font-weight: 600;
+}
+
+.color-muted-foreground {
+    color: var(--muted-foreground);
+}
+
+.color-primary {
+    color: var(--color-text-primary);
+}
+
+.color-secondary {
+    color: var(--color-text-secondary);
+}
+
+.color-muted {
+    color: var(--color-text-muted);
+}
+
+.line-height-5 {
+    line-height: 1.5;
+}
+
+/** Border **/
+.b-soft{
+    border: 1px solid var(--color-border-soft);
+}
+
+.b-radius-08{
+    border-radius: 0.8rem;
+}
+
+/** Other **/
+.u-select-none {
+    user-select: none;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/** Mobile **/
+@media (max-width: 768px) {
+
+    /** Padding **/
+    .sm\:p-1-5 {
+        padding: 1.5rem;
+    }
+
+    .sm\:p-1 {
+        padding: 1rem;
+    }
+
+    /** Container **/
+    .sm\:w-max {
+        width: 100%;
+    }
+
+    /** Flexbox **/
+    .sm\:column {
+        flex-direction: column;
+    }
+
+    .sm\:text-center{
+        text-align: center;
+    }
+
+    .sm\:item-start {
+        align-items: flex-start;
+    }
+
+    .sm\:gap-05 {
+        gap: 0.5rem;
+    }
+
+    .sm\:gap-1 {
+        gap: 1rem;
+    }
+
+    .sm\:gap-0 {
+        gap: 0;
+    }
+
+    .sm\:a-self-end {
+        align-self: flex-end;
+    }
+
+    .sm\:font-size-4 {
+        font-size: 1.25rem;
+    }
+
+    .sm\:font-size-2 {
+        font-size: 0.875rem;
+    }
+
+    /** Display **/
+    .sm\:d-block {
+        display: block;
+    }
+
+    .sm\:d-none {
+        display: none;
+    }
+
+    .sm\:d-flex {
+        display: flex;
+    }
+}

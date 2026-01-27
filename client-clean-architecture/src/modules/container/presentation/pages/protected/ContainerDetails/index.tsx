@@ -1,0 +1,567 @@
+import React, { useEffect, useState } from 'react';
+import { usePageTitle } from '@/shared/presentation/hooks/core/use-page-title';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+    ArrowLeft,
+    Play,
+    Square,
+    Trash2,
+    Settings,
+    Terminal,
+    Folder,
+    Activity,
+    ExternalLink,
+    Box,
+    Layers,
+    RefreshCw
+} from 'lucide-react';
+import useToast from '@/shared/presentation/hooks/ui/use-toast';
+import useConfirm from '@/shared/presentation/hooks/ui/use-confirm';
+import ContainerTerminal from '@/modules/container/presentation/components/organisms/ContainerTerminal';
+import ContainerFileExplorer from '@/modules/container/presentation/components/organisms/ContainerFileExplorer';
+import ContainerProcesses from '@/modules/container/presentation/components/organisms/ContainerProcesses';
+import { getContainerUseCases } from '@/modules/container/application/registry';
+import Title from '@/shared/presentation/components/primitives/Title';
+import Paragraph from '@/shared/presentation/components/primitives/Paragraph';
+import Button from '@/shared/presentation/components/primitives/Button';
+import '@/modules/container/presentation/pages/protected/ContainerDetails/ContainerDetails.css';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { IoAdd, IoTrash } from 'react-icons/io5';
+
+const ContainerDetails: React.FC = () => {
+    usePageTitle('Container Details');
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+    const { showSuccess, showError } = useToast();
+    const { confirm } = useConfirm();
+    const {
+        getContainerUseCase,
+        getContainerStatsUseCase,
+        deleteContainerUseCase,
+        controlContainerUseCase,
+        updateContainerUseCase,
+        restartContainerUseCase
+    } = getContainerUseCases();
+
+    const [container, setContainer] = useState<any>(null);
+    const [statsHistory, setStatsHistory] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'overview' | 'processes' | 'logs' | 'storage'>('overview');
+    const [actionLoading, setActionLoading] = useState(false);
+    const [editingEnv, setEditingEnv] = useState(false);
+    const [editingPorts, setEditingPorts] = useState(false);
+    const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>([]);
+    const [ports, setPorts] = useState<{ private: number; public: number }[]>([]);
+
+    useEffect(() => {
+        fetchContainer();
+    }, [id]);
+
+    useEffect(() => {
+        if (container && container.status === 'running') {
+            const interval = setInterval(() => fetchStats(container._id), 2000);
+            return () => clearInterval(interval);
+        }
+    }, [container]);
+
+    const fetchContainer = async () => {
+        try {
+            const found = await getContainerUseCase.execute(id!);
+            if (found) {
+                setContainer(found);
+                setEnvVars(found.env || []);
+                setPorts(found.ports || []);
+            } else {
+                showError('Container not found');
+                navigate('/dashboard/containers');
+            }
+        } catch (error) {
+            showError('Failed to fetch container details');
+            navigate('/dashboard/containers');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchStats = async (containerId: string) => {
+        try {
+            const newStats = await getContainerStatsUseCase.execute(containerId);
+
+            let cpuPercent = 0;
+            const cpuDelta = newStats.cpu_stats.cpu_usage.total_usage - newStats.precpu_stats.cpu_usage.total_usage;
+            const systemDelta = newStats.cpu_stats.system_cpu_usage - newStats.precpu_stats.system_cpu_usage;
+            const onlineCpus = newStats.cpu_stats.online_cpus || newStats.cpu_stats.cpu_usage.percpu_usage?.length || 1;
+
+            if (systemDelta > 0 && cpuDelta > 0) {
+                cpuPercent = (cpuDelta / systemDelta) * onlineCpus * 100;
+            }
+
+            const memoryUsage = newStats.memory_stats.usage / 1024 / 1024;
+
+            setStatsHistory(prev => {
+                const updated = [...prev, {
+                    time: new Date().toLocaleTimeString(),
+                    cpu: isNaN(cpuPercent) ? 0 : cpuPercent,
+                    memory: memoryUsage
+                }];
+                return updated.slice(-30);
+            });
+
+        } catch (error) {
+            console.error('Failed to fetch stats', error);
+        }
+    };
+
+    const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete') => {
+        if (!container) return;
+        setActionLoading(true);
+        try {
+            if (action === 'delete') {
+                const isConfirmed = await confirm('Are you sure you want to delete this container?');
+                if (!isConfirmed) {
+                    setActionLoading(false);
+                    return;
+                }
+                await deleteContainerUseCase.execute(container._id);
+                showSuccess('Container deleted');
+                navigate('/dashboard/containers');
+                return;
+            }
+
+            if (action === 'restart') {
+                await restartContainerUseCase.execute(container._id);
+            } else {
+                await controlContainerUseCase.execute(container._id, action);
+            }
+
+            showSuccess(`Container ${action}ed successfully`);
+            fetchContainer();
+        } catch (error: any) {
+            showError(error.response?.data?.message || `Failed to ${action} container`);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleSaveEnv = async () => {
+        if (!container) return;
+        try {
+            await updateContainerUseCase.execute(container._id, { env: envVars });
+            showSuccess('Environment variables updated');
+            setEditingEnv(false);
+            fetchContainer();
+        } catch (error: any) {
+            showError(error.response?.data?.message || 'Failed to update environment variables');
+        }
+    };
+
+    const handleSavePorts = async () => {
+        if (!container) return;
+        try {
+            await updateContainerUseCase.execute(container._id, { ports });
+            showSuccess('Port bindings updated - container will be recreated');
+            setEditingPorts(false);
+            fetchContainer();
+        } catch (error: any) {
+            showError(error.response?.data?.message || 'Failed to update ports');
+        }
+    };
+
+
+    if (loading) return <div className="loading-spinner">Loading...</div>;
+    if (!container) return null;
+
+    return (
+        <div className="details-page-layout d-flex overflow-hidden">
+            <div className="details-sidebar d-flex column f-shrink-0">
+                <div className="sidebar-header-details d-flex column gap-1 items-start p-1-5">
+                    <Button variant='ghost' intent='neutral' size='sm' leftIcon={<ArrowLeft size={16} />} onClick={() => navigate('/dashboard/containers')}>Back</Button>
+                    <div className="d-flex items-center gap-1 container-identity">
+                        <div className="d-flex items-center content-center container-icon-large">
+                            <Box size={24} />
+                        </div>
+                        <div className="identity-text d-flex column gap-05">
+                            <Title className="font-size-4 font-weight-6">{container.name}</Title>
+                            <span className={`d-flex items-center gap-035 status-badge ${container.status} font-size-1 font-weight-5 font-weight-6`}>{container.status}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <nav className="sidebar-nav d-flex column gap-1 flex-1 y-auto">
+                    <Button
+                        variant={activeTab === 'overview' ? 'soft' : 'ghost'}
+                        intent={activeTab === 'overview' ? 'brand' : 'neutral'}
+                        size='md'
+                        block
+                        align='start'
+                        leftIcon={<Layers size={18} />}
+                        onClick={() => setActiveTab('overview')}
+                    >Overview</Button>
+                    <Button
+                        variant={activeTab === 'processes' ? 'soft' : 'ghost'}
+                        intent={activeTab === 'processes' ? 'brand' : 'neutral'}
+                        size='md'
+                        block
+                        align='start'
+                        leftIcon={<Activity size={18} />}
+                        onClick={() => setActiveTab('processes')}
+                    >Processes</Button>
+                    <Button
+                        variant={activeTab === 'logs' ? 'soft' : 'ghost'}
+                        intent={activeTab === 'logs' ? 'brand' : 'neutral'}
+                        size='md'
+                        block
+                        align='start'
+                        leftIcon={<Terminal size={18} />}
+                        onClick={() => setActiveTab('logs')}
+                    >Terminal & Logs</Button>
+                    <Button
+                        variant={activeTab === 'storage' ? 'soft' : 'ghost'}
+                        intent={activeTab === 'storage' ? 'brand' : 'neutral'}
+                        size='md'
+                        block
+                        align='start'
+                        leftIcon={<Folder size={18} />}
+                        onClick={() => setActiveTab('storage')}
+                    >Files & Storage</Button>
+                </nav>
+
+                <div className="sidebar-actions d-flex column gap-075 p-1-5">
+                    {container.status !== 'running' ? (
+                        <Button variant='solid' intent='success' block leftIcon={<Play size={16} />} onClick={() => handleAction('start')} disabled={actionLoading}>Start Container</Button>
+                    ) : (
+                        <>
+                            <Button variant='outline' intent='neutral' block leftIcon={<RefreshCw size={16} />} onClick={() => handleAction('restart')} disabled={actionLoading}>Restart</Button>
+                            <Button variant='soft' intent='danger' block leftIcon={<Square size={16} />} onClick={() => handleAction('stop')} disabled={actionLoading}>Stop</Button>
+                        </>
+                    )}
+                    {container.ports?.[0] && (
+                        <a href={`http://localhost:${container.ports[0].public}`} target="_blank" rel="noopener noreferrer" className="d-flex items-center content-center gap-05 visit-btn font-size-2 font-weight-6">
+                            Visit App <ExternalLink size={14} />
+                        </a>
+                    )}
+                </div>
+            </div>
+
+            <div className="details-content-area y-auto flex-1">
+                {activeTab === 'overview' && (
+                    <div className="content-pane d-flex column gap-2 h-max">
+                        <div className="d-flex content-between pane-header">
+                            <Title className="font-size-4 font-weight-6">Overview</Title>
+                            <div className="d-flex gap-075 meta-tags">
+                                <span className="d-flex items-center gap-05 tag monospace font-size-1 font-weight-5 color-muted-foreground">ID: {container.containerId.substring(0, 12)}</span>
+                                <span className="d-flex items-center gap-05 tag font-size-1 font-weight-5 color-muted-foreground">Image: {container.image}</span>
+                                <span className="d-flex items-center gap-05 tag font-size-1 font-weight-5 color-muted-foreground">Created: {new Date(container.createdAt).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+
+                        <div className="stats-grid gap-2">
+                            <div className="stat-card p-1-5">
+                                <div className="d-flex content-between items-center card-header-row mb-1-5">
+                                    <Title className="font-size-3 font-weight-6">CPU Usage</Title>
+                                    <span className="limit-badge font-size-1 font-weight-6">Limit: {container.cpus || 1} vCPU</span>
+                                </div>
+                                <div className="chart-wrapper">
+                                    <ResponsiveContainer width="100%" height={250}>
+                                        <AreaChart data={statsHistory}>
+                                            <defs>
+                                                <linearGradient id="colorCpu" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#0070f3" stopOpacity={0.4} />
+                                                    <stop offset="95%" stopColor="#0070f3" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.5} />
+                                            <XAxis
+                                                dataKey="time"
+                                                stroke="var(--muted-foreground)"
+                                                fontSize={11}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                minTickGap={30}
+                                                dy={10}
+                                            />
+                                            <YAxis
+                                                stroke="var(--muted-foreground)"
+                                                fontSize={11}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tickFormatter={(value) => `${value.toFixed(1)}%`}
+                                                domain={[0, 'auto']}
+                                                dx={-10}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: 'var(--card)',
+                                                    borderColor: 'var(--border)',
+                                                    borderRadius: '12px',
+                                                    color: 'var(--foreground)',
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                                }}
+                                                itemStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
+                                                formatter={(value: number | undefined) => [`${(value ?? 0).toFixed(2)}%`, 'CPU Usage']}
+                                                labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '0.5rem', fontSize: '0.8rem' }}
+                                                cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="cpu"
+                                                stroke="#0070f3"
+                                                strokeWidth={3}
+                                                fillOpacity={1}
+                                                fill="url(#colorCpu)"
+                                                isAnimationActive={true}
+                                                animationDuration={1000}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                            <div className="stat-card p-1-5">
+                                <div className="d-flex content-between items-center card-header-row mb-1-5">
+                                    <Title className="font-size-3 font-weight-6">Memory Usage</Title>
+                                    <span className="limit-badge font-size-1 font-weight-6">Limit: {container.memory || 512} MB</span>
+                                </div>
+                                <div className="chart-wrapper">
+                                    <ResponsiveContainer width="100%" height={250}>
+                                        <AreaChart data={statsHistory}>
+                                            <defs>
+                                                <linearGradient id="colorMem" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                                                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.5} />
+                                            <XAxis
+                                                dataKey="time"
+                                                stroke="var(--muted-foreground)"
+                                                fontSize={11}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                minTickGap={30}
+                                                dy={10}
+                                            />
+                                            <YAxis
+                                                stroke="var(--muted-foreground)"
+                                                fontSize={11}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tickFormatter={(value) => `${Math.round(value)} MB`}
+                                                dx={-10}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: 'var(--card)',
+                                                    borderColor: 'var(--border)',
+                                                    borderRadius: '12px',
+                                                    color: 'var(--foreground)',
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                                }}
+                                                itemStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
+                                                formatter={(value: number | undefined) => [`${(value ?? 0).toFixed(2)} MB`, 'Memory Usage']}
+                                                labelStyle={{ color: 'var(--muted-foreground)', marginBottom: '0.5rem', fontSize: '0.8rem' }}
+                                                cursor={{ stroke: 'var(--border)', strokeWidth: 1 }}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="memory"
+                                                stroke="#8b5cf6"
+                                                strokeWidth={3}
+                                                fillOpacity={1}
+                                                fill="url(#colorMem)"
+                                                isAnimationActive={true}
+                                                animationDuration={1000}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="config-grid gap-2">
+                            <div className="config-card p-1-5">
+                                <div className="d-flex content-between items-center mb-1">
+                                    <Title className="font-size-3 font-weight-6">Environment Variables</Title>
+                                    <div className="d-flex gap-05">
+                                        {editingEnv ? (
+                                            <>
+                                                <Button variant='solid' intent='brand' size='sm' onClick={handleSaveEnv}>Save</Button>
+                                                <Button variant='ghost' intent='neutral' size='sm' onClick={() => { setEditingEnv(false); setEnvVars(container.env || []); }}>Cancel</Button>
+                                            </>
+                                        ) : (
+                                            <button className="icon-btn-edit color-muted-foreground cursor-pointer" onClick={() => setEditingEnv(true)}>
+                                                <Settings size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="env-list d-flex column gap-075">
+                                    {editingEnv ? (
+                                        <>
+                                            {envVars.map((e, i) => (
+                                                <div key={i} className="d-flex items-center gap-075 row-inputs">
+                                                    <input
+                                                        placeholder="Key"
+                                                        value={e.key}
+                                                        className="config-input font-size-2"
+                                                        onChange={(ev) => {
+                                                            const newEnv = [...envVars];
+                                                            newEnv[i].key = ev.target.value;
+                                                            setEnvVars(newEnv);
+                                                        }}
+                                                    />
+                                                    <input
+                                                        placeholder="Value"
+                                                        value={e.value}
+                                                        className="config-input font-size-2"
+                                                        onChange={(ev) => {
+                                                            const newEnv = [...envVars];
+                                                            newEnv[i].value = ev.target.value;
+                                                            setEnvVars(newEnv);
+                                                        }}
+                                                    />
+                                                    <button className="icon-btn-delete cursor-pointer" onClick={() => setEnvVars(envVars.filter((_, idx) => idx !== i))}>
+                                                        <IoTrash size={18} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <button className="add-row-btn gap-05 w-max font-size-2 font-weight-5 color-muted-foreground cursor-pointer" onClick={() => setEnvVars([...envVars, { key: '', value: '' }])}>
+                                                <IoAdd size={16} /> Add Variable
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {container.env && container.env.length > 0 ? (
+                                                container.env.map((e: any, i: number) => (
+                                                    <div key={i} className="d-flex content-between env-row">
+                                                        <span className="env-key font-weight-6">{e.key}</span>
+                                                        <span className="env-val color-muted-foreground">{e.value}</span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <Paragraph className="color-muted font-size-2">No environment variables</Paragraph>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="config-card p-1-5">
+                                <div className="d-flex content-between items-center mb-1">
+                                    <Title className="font-size-3 font-weight-6">Port Bindings</Title>
+                                    <div className="d-flex gap-05">
+                                        {editingPorts ? (
+                                            <>
+                                                <Button variant='solid' intent='brand' size='sm' onClick={handleSavePorts}>Save</Button>
+                                                <Button variant='ghost' intent='neutral' size='sm' onClick={() => { setEditingPorts(false); setPorts(container.ports || []); }}>Cancel</Button>
+                                            </>
+                                        ) : (
+                                            <button className="icon-btn-edit color-muted-foreground cursor-pointer" onClick={() => setEditingPorts(true)}>
+                                                <Settings size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="port-list d-flex column gap-075">
+                                    {editingPorts ? (
+                                        <>
+                                            {ports.map((p, i) => (
+                                                <div key={i} className="d-flex items-center gap-075 row-inputs">
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Container Port"
+                                                        value={p.private}
+                                                        className="config-input font-size-2"
+                                                        onChange={(ev) => {
+                                                            const newPorts = [...ports];
+                                                            newPorts[i].private = parseInt(ev.target.value) || 0;
+                                                            setPorts(newPorts);
+                                                        }}
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Host Port"
+                                                        value={p.public}
+                                                        className="config-input font-size-2"
+                                                        onChange={(ev) => {
+                                                            const newPorts = [...ports];
+                                                            newPorts[i].public = parseInt(ev.target.value) || 0;
+                                                            setPorts(newPorts);
+                                                        }}
+                                                    />
+                                                    <button className="icon-btn-delete cursor-pointer" onClick={() => setPorts(ports.filter((_, idx) => idx !== i))}>
+                                                        <IoTrash size={18} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <button className="add-row-btn gap-05 w-max font-size-2 font-weight-5 color-muted-foreground cursor-pointer" onClick={() => setPorts([...ports, { private: 0, public: 0 }])}>
+                                                <IoAdd size={16} /> Add Port
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {container.ports && container.ports.length > 0 ? (
+                                                container.ports.map((p: any, i: number) => (
+                                                    <div key={i} className="d-flex content-between port-row">
+                                                        <span className="port-private font-weight-6">{p.private}/tcp</span>
+                                                        <span className="arrow color-muted-foreground">→</span>
+                                                        <span className="port-public">localhost:{p.public}</span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <Paragraph className="color-muted font-size-2">No ports exposed</Paragraph>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'processes' && (
+                    <div className="content-pane full-height h-max">
+                        {container.status === 'running' ? (
+                            <ContainerProcesses containerId={container._id} />
+                        ) : (
+                            <div className="placeholder-state d-flex column items-center content-center gap-1-5 h-max color-muted-foreground">
+                                <Activity size={48} />
+                                <Paragraph className="color-muted">Container must be running to view processes</Paragraph>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'logs' && (
+                    <div className="content-pane full-height h-max">
+                        {container.status === 'running' ? (
+                            <ContainerTerminal
+                                container={container}
+                                onClose={() => { }}
+                                embedded={true}
+                            />
+                        ) : (
+                            <div className="placeholder-state d-flex column items-center content-center gap-1-5 h-max color-muted-foreground">
+                                <Terminal size={48} />
+                                <Paragraph className="color-muted">Container must be running to view logs</Paragraph>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeTab === 'storage' && (
+                    <div className="content-pane full-height h-max">
+                        {container.status === 'running' ? (
+                            <ContainerFileExplorer containerId={container._id} />
+                        ) : (
+                            <div className="placeholder-state d-flex column items-center content-center gap-1-5 h-max color-muted-foreground">
+                                <Folder size={48} />
+                                <Paragraph className="color-muted">Container must be running to browse files</Paragraph>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default ContainerDetails;

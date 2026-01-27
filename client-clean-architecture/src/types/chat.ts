@@ -1,0 +1,99 @@
+/**
+ * Copyright(c) 2025, The Volterra Authors. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files(the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+import type { User } from '@/types/models';
+
+export interface Chat {
+    _id: string;
+    participants: User[];
+    team: {
+        _id: string;
+        name: string;
+    };
+    lastMessage?: Message;
+    lastMessageAt?: string;
+    isActive: boolean;
+    isGroup: boolean;
+    groupName?: string;
+    groupDescription?: string;
+    groupAvatar?: string;
+    admins: User[];
+    createdBy?: User;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export type Reaction = {
+    emoji: string;
+    users: Array<string | { _id: string; userName?: string }>;
+};
+
+export interface Message {
+    _id: string;
+    chat: string;
+    sender: User;
+    content: string;
+    messageType: 'text' | 'file' | 'system';
+    isRead: boolean;
+    readBy: User[];
+    metadata?: {
+        fileName?: string;
+        fileSize?: number;
+        fileType?: string;
+        fileUrl?: string;
+        filePath?: string;
+    };
+    editedAt?: string | null;
+    deleted?: boolean;
+    deletedAt?: string | null;
+    deletedBy?: User | string | null;
+    reactions?: { emoji: string; users: (User | string)[] }[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface ChatMessage {
+    message: Message;
+    chatId: string;
+}
+
+export interface TypingUser {
+    chatId: string;
+    userId: string;
+    userName: string;
+    isTyping: boolean;
+}
+
+export interface MessagesRead {
+    chatId: string;
+    readBy: string;
+    readAt: string;
+}
+
+export type Participant = {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+};
+
+export type Presence = 'online' | 'offline' | 'connecting';

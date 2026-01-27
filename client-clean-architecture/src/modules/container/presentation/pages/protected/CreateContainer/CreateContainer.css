@@ -1,0 +1,342 @@
+.create-container-page {
+    background: var(--color-bg);
+}
+
+/* Header */
+.create-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-bg);
+}
+
+/* Sidebar Steps */
+.steps-sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--color-border-soft);
+}
+
+.step-item {
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+    opacity: 0.5;
+}
+
+.step-item.active {
+    opacity: 1;
+    background: var(--color-surface-2);
+}
+
+.step-number {
+    width: 28px;
+    height: 28px;
+    background: var(--color-border);
+    border-radius: 50%;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.step-item.active .step-number {
+    background: var(--accent-blue);
+    color: white;
+}
+
+.step-label span {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.step-label small {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.step-line {
+    width: 2px;
+    height: 20px;
+    background: var(--color-border-soft);
+    margin-left: 21px;
+}
+
+.step-line.active {
+    background: var(--accent-blue);
+}
+
+/* Content Area */
+.step-content {
+    padding: 2rem 3rem;
+    max-width: 900px;
+}
+
+.fade-in {
+    animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Templates Grid - Step 1 */
+.templates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    margin-top: 1.5rem;
+}
+
+.template-card {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.template-card:hover {
+    border-color: var(--accent-blue);
+}
+
+.template-card.selected {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px var(--accent-blue);
+}
+
+.template-icon {
+    width: 56px;
+    height: 56px;
+    background: var(--color-surface-2);
+    border-radius: 12px;
+}
+
+.template-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
+.selected-check {
+    top: 8px;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    background: var(--accent-blue);
+    color: white;
+    border-radius: 50%;
+}
+
+/* Step 2: Configuration Form */
+.config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+}
+
+.config-section {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 10px;
+    padding: 1.25rem;
+}
+
+.config-section.full-width {
+    grid-column: 1 / -1;
+}
+
+.config-section-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.config-section-header h3 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.field-row {
+    display: flex;
+    margin-bottom: 1rem;
+}
+
+.field-row:last-child {
+    margin-bottom: 0;
+}
+
+.field {
+    flex: 1;
+}
+
+.config-section.select button {
+    background-color: var(--color-bg);
+}
+
+.field label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    margin-bottom: 0.4rem;
+}
+
+.field-input {
+    height: 40px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 6px;
+    padding: 0 0.75rem;
+    font-size: 0.9rem;
+}
+
+.field-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+/* Resource Sliders */
+.resource-row {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.resource-row:last-child {
+    margin-bottom: 0;
+}
+
+.resource-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.resource-label {
+    display: flex;
+    align-items: center;
+}
+
+.resource-value {
+    background: var(--accent-blue);
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.resource-limits {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+}
+
+/* Port/Env Rows */
+.mapping-row {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 0.5rem;
+}
+
+.mapping-row:last-child {
+    margin-bottom: 0;
+}
+
+.mapping-input {
+    flex: 1;
+}
+
+.mapping-input label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.empty-state {
+    background: var(--color-surface-2);
+    border: 1px dashed var(--color-border-soft);
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
+
+/* Step Actions */
+.step-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+/* Review Step */
+.review-card {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 10px;
+    margin-top: 1.5rem;
+}
+
+.review-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.review-item:last-child {
+    border-bottom: none;
+}
+
+.review-item .label {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+.review-item .value {
+    font-weight: 500;
+    font-size: .9rem;
+    color: var(--color-text-primary);
+}
+
+/* Modal */
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+}
+
+.custom-image-modal {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 12px;
+    max-width: 420px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.modal-body {
+    padding: 1.25rem;
+}
+
+.modal-body p {
+    margin-bottom: 1rem;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--color-border-soft);
+    background: var(--color-surface-2);
+}

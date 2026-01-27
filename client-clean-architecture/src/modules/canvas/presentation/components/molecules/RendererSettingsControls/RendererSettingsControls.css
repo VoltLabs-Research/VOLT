@@ -1,0 +1,27 @@
+/* Section styling - Apple style */
+
+/* Grid layouts - Apple style */
+
+/* Select styling */
+.renderer-controls-compact-selects .rh-select {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Reset button styling - Apple style */
+
+.renderer-reset-btn:hover {
+  background: var(--accent-indigo);
+  color: white;
+  border-color: var(--accent-indigo);
+}
+
+.renderer-reset-btn:active {
+  transform: scale(0.98);
+}
+
+.renderer-reset-btn svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}

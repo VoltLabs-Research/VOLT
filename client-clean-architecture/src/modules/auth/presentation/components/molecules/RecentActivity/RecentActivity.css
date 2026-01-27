@@ -1,0 +1,217 @@
+/* Recent Activity Component Styles */
+.recent-activity-container {
+    background: var(--card-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-elevated);
+    transition: all 0.3s ease;
+}
+
+.recent-activity-container:hover {
+    box-shadow: var(--shadow-glass);
+    transform: translateY(-2px);
+}
+
+.recent-activity-header {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.recent-activity-title {
+    margin: 0;
+    margin: 0;
+}
+
+.recent-activity-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    color: var(--accent-blue);
+}
+
+.recent-activity-stat-value {
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.recent-activity-stat-label {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.recent-activity-list {
+    max-height: 400px;
+}
+
+.recent-activity-item {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.recent-activity-item:hover {
+    background: var(--color-surface-3);
+    border-color: var(--color-border);
+}
+
+.recent-activity-method-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    min-width: 3rem;
+}
+
+.recent-activity-method-badge.get {
+    background: var(--accent-green);
+    color: white;
+}
+
+.recent-activity-method-badge.post {
+    background: var(--accent-blue);
+    color: white;
+}
+
+.recent-activity-method-badge.put {
+    background: var(--accent-yellow);
+    color: white;
+}
+
+.recent-activity-method-badge.patch {
+    background: var(--accent-orange);
+    color: white;
+}
+
+.recent-activity-method-badge.delete {
+    background: var(--accent-red);
+    color: white;
+}
+
+.recent-activity-url {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    word-break: break-all;
+}
+
+.recent-activity-item-meta {
+}
+
+.recent-activity-status-code {
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-xs);
+}
+
+.recent-activity-status-code.success {
+    background: rgba(34, 197, 94, 0.1);
+    color: var(--accent-green);
+}
+
+.recent-activity-status-code.client-error {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--accent-yellow);
+}
+
+.recent-activity-status-code.server-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--accent-red);
+}
+
+.recent-activity-time {
+}
+
+.recent-activity-item-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.recent-activity-item:hover .recent-activity-item-actions {
+    opacity: 1;
+}
+
+.recent-activity-action-button {
+    border: none;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xs);
+    transition: all 0.2s ease;
+    transition: all 0.2s ease;
+}
+
+.recent-activity-action-button:hover {
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-strong);
+}
+
+.recent-activity-empty {
+    padding: 3rem 1rem;
+}
+
+.recent-activity-empty-icon {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.recent-activity-empty-title {
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
+}
+
+.recent-activity-empty-description {
+}
+
+.recent-activity-skeleton {
+
+    background: var(--color-surface-2);
+    border-radius: var(--radius-md);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.recent-activity-skeleton-method {
+    width: 3rem;
+    height: 1.5rem;
+    background: var(--color-surface-3);
+    border-radius: var(--radius-xs);
+}
+
+.recent-activity-skeleton-content {
+
+}
+
+.recent-activity-skeleton-line {
+    height: 1rem;
+    background: var(--color-surface-3);
+    border-radius: var(--radius-xs);
+}
+
+.recent-activity-skeleton-line.short {
+    width: 60%;
+}
+
+.recent-activity-skeleton-line.medium {
+    width: 80%;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .recent-activity-container {
+        padding: 1rem;
+    }
+
+    .recent-activity-stats {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .recent-activity-item-meta {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .recent-activity-item-actions {
+        opacity: 1;
+        width: 100%;
+        justify-content: flex-end;
+    }
+}

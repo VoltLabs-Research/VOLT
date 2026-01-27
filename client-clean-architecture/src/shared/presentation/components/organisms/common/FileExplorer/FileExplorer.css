@@ -1,0 +1,99 @@
+.file-explorer-wrapper {
+    border-radius: .5rem;
+}
+
+.file-explorer-left-top-container {
+    min-width: 220px;
+    width: 20%;
+}
+
+.file-explorer-header-icon-container.is-disabled {
+    opacity: .4;
+}
+
+.file-explorer-left-bottom-nav-icon-container:hover {
+    opacity: .8;
+}
+
+.file-explorer-left-bottom-nav-title {
+    font-size: .95rem;
+}
+
+.file-explorer-right-container {
+    width: 80%;
+}
+
+.file-explorer-right-container:not(:has(.file-explorer-left-top-container)){
+    width: 100%;
+}
+
+.file-explorer-nav-title {
+    font-size: .9rem;
+}
+
+.file-explorer-nav-item-title {
+    font-size: .8rem;
+}
+
+.file-explorer-nav-item {
+    padding: .4rem .6rem;
+    border-radius: .35rem;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.file-explorer-nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    opacity: 0.9;
+}
+
+.file-explorer-nav-item.active {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.file-explorer-list-headrow {
+    display: grid;
+    grid-template-columns: 6fr 2fr 2fr 2fr;
+    gap: 8px;
+    padding: 8px 10px;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+}
+
+.file-explorer-list-row {
+    display: grid;
+    grid-template-columns: 6fr 2fr 2fr 2fr;
+    gap: 8px;
+    padding: 8px 10px;
+    cursor: default;
+}
+
+.file-explorer-list-body {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.file-explorer-list-headrow .file-explorer-list-column {
+    text-transform: capitalize;
+}
+
+.file-explorer-list-body .file-explorer-list-row:hover {
+    cursor: pointer;
+    opacity: .8;
+}
+
+.file-explorer-breadcrumbs-container {
+    width: -webkit-fill-available;
+    border-radius: .5rem;
+    height: 2rem;
+    padding-left: .8rem;
+}
+
+.search-breadcrumb-name {
+    font-size: .85rem;
+}
+
+.search-breadcrumb-container:not(:last-child)::after {
+    content: " / ";
+    margin: 0 .4rem;
+    font-size: .7rem;
+}

@@ -1,0 +1,12 @@
+.sidebar-nav-option-container{
+    padding: .8rem;
+    gap: .8rem;
+}
+
+.sidebar-nav-option-icon-container{
+    font-size: 1.1rem;
+}
+
+.sidebar-nav-option-name {
+    font-weight: 450;
+}

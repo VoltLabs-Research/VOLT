@@ -1,0 +1,47 @@
+.editor-top-centered-options-container .editor-sidebar-scene-option-icon-container {
+    background-color: transparent;
+    transition: .1s;
+}
+
+.editor-top-centered-options-container .editor-sidebar-scene-option-icon-container:hover {
+    background-color: var(--color-surface-2);
+}
+
+.editor-top-centered-options-container {
+    top: 2rem;
+    left: 50%;
+    transform: translate(-50%, 0) !important;
+    height: 55px;
+    margin: 0 auto;
+    width: auto;
+    padding: .5rem;
+    z-index: 100;
+}
+
+.editor-scene-zoom-selector-wrapper {
+    z-index: 100;
+}
+
+@media screen and (max-width: 768px) {
+    .editor-top-centered-options-container {
+        width: auto;
+        gap: .1rem;
+        top: 1rem;
+        z-index: 20;
+    }
+
+    .editor-top-centered-options-container .editor-sidebar-scene-option-icon-container {
+        font-size: .8rem;
+    }
+
+    .editor-top-centered-options-container {
+        position: absolute;
+        width: fit-content;
+        left: 50%;
+        transform: translateX(-50%) !important;
+    }
+
+    .editor-scene-zoom-selector-wrapper {
+        width: 100px;
+    }
+}
