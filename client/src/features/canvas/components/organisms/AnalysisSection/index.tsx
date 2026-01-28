@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md';
 
@@ -65,8 +65,33 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
         .map(([key, value]) => `${labelMap.get(key) || key}: ${formatConfigValue(value)}`)
         .join(', ');
 
+    const handleExposureSelect = useCallback((scene: any) => {
+        onSelectScene(scene, section.analysis);
+    }, [onSelectScene, section.analysis]);
+
+    const handleExposureAdd = useCallback((scene: any) => {
+        onAddScene(scene);
+        updateAnalysisConfig(section.analysis);
+    }, [onAddScene, updateAnalysisConfig, section.analysis]);
+
     const entry = section.entry;
     const isLoaded = entry.state === 'loaded';
+
+    const activeStates = useMemo(() => {
+        const map = new Map<string, boolean>();
+        if (entry.state === 'loaded') {
+            entry.exposures.forEach((exposure: any) => {
+                const key = `${exposure.analysisId}-${exposure.exposureId}`;
+                map.set(key, isSceneActive({
+                    sceneType: exposure.exposureId,
+                    source: 'plugin',
+                    analysisId: exposure.analysisId,
+                    exposureId: exposure.exposureId
+                }));
+            });
+        }
+        return map;
+    }, [entry.state, entry.exposures, isSceneActive]);
 
     return (
         <Container className='analysis-section overflow-hidden'>
@@ -181,20 +206,10 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                             exposure={exposure}
                             analysisId={section.analysis._id}
                             index={index}
-                            onSelect={(scene) => {
-                                onSelectScene(scene, section.analysis);
-                            }}
-                            onAdd={(scene) => {
-                                onAddScene(scene);
-                                updateAnalysisConfig(section.analysis);
-                            }}
+                            onSelect={handleExposureSelect}
+                            onAdd={handleExposureAdd}
                             onRemove={onRemoveScene}
-                            isActive={isSceneActive({
-                                sceneType: exposure.exposureId,
-                                source: 'plugin',
-                                analysisId: exposure.analysisId,
-                                exposureId: exposure.exposureId
-                            })}
+                            isActive={activeStates.get(`${exposure.analysisId}-${exposure.exposureId}`) ?? false}
                         />
                     ))}
                 </Container>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TbObjectScan, TbSettings } from 'react-icons/tb';
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
@@ -27,16 +27,19 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
 }) => {
     const openExposureSettings = useUIStore((s) => s.openExposureSettings);
 
-    const sceneObject = {
+    const sceneObject = useMemo(() => ({
         sceneType: exposure.exposureId,
         source: 'plugin' as const,
         analysisId: exposure.analysisId,
         exposureId: exposure.exposureId
-    };
+    }), [exposure.exposureId, exposure.analysisId]);
 
-    const Icon = () => (
-        exposure.icon ? <DynamicIcon iconName={exposure.icon} /> : <TbObjectScan />
-    );
+    const Icon = useMemo(() => {
+        const IconComponent = () => (
+            exposure.icon ? <DynamicIcon iconName={exposure.icon} /> : <TbObjectScan />
+        );
+        return IconComponent;
+    }, [exposure.icon]);
 
     return (
         <Popover
@@ -76,4 +79,4 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
     );
 };
 
-export default ExposureOption;
+export default React.memo(ExposureOption);
