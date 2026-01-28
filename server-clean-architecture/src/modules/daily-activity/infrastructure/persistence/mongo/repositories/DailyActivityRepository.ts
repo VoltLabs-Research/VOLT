@@ -55,7 +55,7 @@ export default class DailyActivityRepository
         description: string
     ): Promise<void> {
         const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0);
+        startOfDay.setHours(0, 0, 0, 0);
         await this.model.updateOne(
             { team: teamId, user: userId, date: startOfDay },
             {
@@ -65,8 +65,10 @@ export default class DailyActivityRepository
                         description,
                         createdAt: new Date()
                     }
-                }
-            }
+                },
+                $setOnInsert: { minutesOnline: 0 }
+            },
+            { upsert: true }
         );
     }
 };

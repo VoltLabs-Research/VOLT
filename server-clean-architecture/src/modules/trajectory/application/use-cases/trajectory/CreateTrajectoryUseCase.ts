@@ -7,6 +7,9 @@ import { CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO } from '@modules/tr
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
 import { ITrajectoryBackgroundProcessor } from '@modules/trajectory/domain/port/ITrajectoryBackgroundProcessor';
 import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/TrajectoryCreatedEvent';
 
 @injectable()
 export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO, ApplicationError> {
@@ -15,7 +18,10 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
         private readonly trajectoryRepo: ITrajectoryRepository,
 
         @inject(TRAJECTORY_TOKENS.TrajectoryBackgroundProcessor)
-        private readonly backgroundProcessor: ITrajectoryBackgroundProcessor
+        private readonly backgroundProcessor: ITrajectoryBackgroundProcessor,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ){}
 
     async execute(input: CreateTrajectoryInputDTO): Promise<Result<CreateTrajectoryOutputDTO, ApplicationError>> {
@@ -39,6 +45,13 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
             console.error(`[CreateTrajectoryUseCase] Background processing failed for ${trajectory.id}:`, err);
             await this.trajectoryRepo.updateById(trajectory.id, { status: TrajectoryStatus.Failed }).catch(() => { });
         });
+
+        await this.eventBus.publish(new TrajectoryCreatedEvent({
+            trajectoryId: trajectory.id,
+            trajectoryName: name,
+            teamId,
+            userId
+        }));
 
         return Result.ok(trajectory.props);
     }
