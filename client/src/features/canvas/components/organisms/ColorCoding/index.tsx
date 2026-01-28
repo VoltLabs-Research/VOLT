@@ -8,12 +8,13 @@ import { useState, useEffect } from 'react';
 import Title from '@/components/primitives/Title';
 import Container from '@/components/primitives/Container';
 import { useUIStore } from '@/stores/slices/ui';
+import GradientPreview from '@/features/canvas/components/atoms/GradientPreview';
 import '@/features/canvas/components/organisms/ColorCoding/ColorCoding.css';
 
 const COLOR_GRADIENTS = [
     'Viridis',
-    'Blue-White-Red',
-    'Cyclic-Rainbow',
+    'Plasma',
+    'BlueRed',
     'Grayscale'
 ];
 
@@ -134,6 +135,12 @@ const ColorCoding = () => {
                     fieldValue={gradient}
                     onFieldChange={(_, v) => setGradient(v)}
                     options={COLOR_GRADIENTS.map((color) => ({ value: color, title: color }))}
+                />
+
+                <GradientPreview
+                    gradient={gradient}
+                    startValue={startValue}
+                    endValue={endValue}
                 />
 
                 <FormField
