@@ -455,7 +455,7 @@ export default class AtomPropertiesService implements IAtomPropertiesService {
         const analysis = await this.analysisRepository.findById(analysisId);
         if (!analysis) throw new RuntimeError(ErrorCodes.ANALYSIS_NOT_FOUND, 404);
 
-        const plugin = await this.pluginRepository.findOne({ slug: analysis.props.plugin });
+        const plugin = await this.pluginRepository.findOne({ _id: analysis.props.plugin });
         if (!plugin) throw new RuntimeError(ErrorCodes.PLUGIN_NOT_FOUND, 404);
 
         return { analysis, plugin };

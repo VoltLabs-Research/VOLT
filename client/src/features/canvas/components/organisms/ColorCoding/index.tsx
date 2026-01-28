@@ -2,6 +2,7 @@ import usePropertySelector from '@/features/trajectory/hooks/use-property-select
 import EditorWidget from '@/features/canvas/components/organisms/EditorWidget';
 import Button from '@/components/primitives/Button';
 import FormField from '@/components/molecules/form/FormField';
+import Loader from '@/components/atoms/common/Loader';
 import rasterApi from '@/features/raster/api/raster';
 import { useState, useEffect } from 'react';
 import Title from '@/components/primitives/Title';
@@ -34,11 +35,13 @@ const ColorCoding = () => {
     const [gradient, setGradient] = useState('Viridis');
     const [automaticRange, setAutomaticRange] = useState(false);
     const [symmetricRange, setSymmetricRange] = useState(false);
+    const [isFetchingStats, setIsFetchingStats] = useState(false);
+    const [isApplying, setIsApplying] = useState(false);
 
-    const [isStatsLoading, setIsStatsLoading] = useState(false);
     const addToast = useUIStore((state) => state.addToast);
 
     const applyColorCoding = async () => {
+        setIsApplying(true);
         try {
             await rasterApi.colorCoding.apply(trajectory!._id, analysisConfig?._id, currentTimestep!, {
                 property, startValue, endValue, gradient, exposureId: exposureId || undefined
@@ -56,6 +59,8 @@ const ColorCoding = () => {
         } catch (error) {
             console.error(error);
             addToast('Failed to apply color coding', 'error');
+        } finally {
+            setIsApplying(false);
         }
     };
 
@@ -65,10 +70,9 @@ const ColorCoding = () => {
         const selectedOption = propertyOptions.find(opt => opt.value === property);
         const type = selectedOption?.exposureId ? 'modifier' : 'base';
 
-        // For modifier type, we need analysisId
         if (type === 'modifier' && !analysisConfig?._id) return;
 
-        setIsStatsLoading(true);
+        setIsFetchingStats(true);
         try {
             const stats = await rasterApi.colorCoding.getStats(trajectory._id, analysisConfig?._id, {
                 timestep: currentTimestep,
@@ -77,20 +81,13 @@ const ColorCoding = () => {
                 exposureId: selectedOption?.exposureId || undefined
             });
             const { min, max } = stats;
-
-            if (symmetricRange) {
-                const limit = Math.max(Math.abs(min), Math.abs(max));
-                setStartValue(-limit);
-                setEndValue(limit);
-            } else {
-                setStartValue(min);
-                setEndValue(max);
-            }
+            setStartValue(min);
+            setEndValue(max);
         } catch (e) {
             console.error(e);
             addToast('Failed to fetch property statistics', 'error');
         } finally {
-            setIsStatsLoading(false);
+            setIsFetchingStats(false);
         }
     };
 
@@ -98,20 +95,26 @@ const ColorCoding = () => {
         if (automaticRange) {
             fetchStats();
         }
-    }, [automaticRange, currentTimestep, property, exposureId, symmetricRange]);
+    }, [automaticRange, currentTimestep, property, exposureId]);
 
     useEffect(() => {
-        if (symmetricRange && !automaticRange) {
-            const limit = Math.max(Math.abs(startValue), Math.abs(endValue));
-            setStartValue(-limit);
-            setEndValue(limit);
+        if (!symmetricRange) return;
+
+        if (endValue === 0 && !automaticRange) {
+            setAutomaticRange(true);
+            return;
         }
-    }, [symmetricRange]);
+
+        const limit = Math.max(Math.abs(startValue), Math.abs(endValue));
+        setStartValue(-limit);
+        setEndValue(limit);
+    }, [symmetricRange, endValue]);
 
     return (
         <EditorWidget className='color-coding-container p-1 overflow-hidden d-flex column gap-1' draggable={false}>
             <Container className='d-flex content-between items-center'>
                 <Title className='font-weight-5-5'>Color Coding</Title>
+                {isFetchingStats && <Loader scale={0.5} isFixed={false} />}
             </Container>
 
             <Container className='d-flex column gap-1'>
@@ -167,12 +170,12 @@ const ColorCoding = () => {
 
             <Container className='color-coding-footer-container'>
                 <Button
-                    isLoading={isLoading}
+                    isLoading={isApplying}
                     variant='solid'
                     intent='brand'
                     block
                     onClick={applyColorCoding}
-                    disabled={isLoading}
+                    disabled={isLoading || isFetchingStats || isApplying}
                 >
                     Apply
                 </Button>
