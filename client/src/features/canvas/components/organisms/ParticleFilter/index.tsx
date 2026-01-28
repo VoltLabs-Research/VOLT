@@ -47,7 +47,16 @@ const ParticleFilter = () => {
     const [action, setAction] = useState<FilterAction>('delete');
     const [isLoadingPreview, setIsLoadingPreview] = useState(false);
     const [isApplying, setIsApplying] = useState(false);
-    const [previewResult, setPreviewResult] = useState<{ matchCount: number; totalCount: number } | null>(null);
+    const [previewResult, setPreviewResult] = useState<{
+        matchCount: number;
+        totalCount: number;
+        filterParams: {
+            property: string;
+            operator: FilterOperator;
+            value: number;
+            exposureId?: string;
+        };
+    } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const handlePropertyChange = useCallback((value: string) => {
@@ -83,7 +92,11 @@ const ParticleFilter = () => {
                 value,
                 exposureId: exposureId || undefined
             });
-            setPreviewResult({ matchCount: result.matchCount, totalCount: result.totalAtoms });
+            setPreviewResult({
+                matchCount: result.matchCount,
+                totalCount: result.totalAtoms,
+                filterParams: { property, operator, value, exposureId: exposureId || undefined }
+            });
         } catch (err: any) {
             setError(err.message || 'Preview failed');
         } finally {
@@ -101,27 +114,29 @@ const ParticleFilter = () => {
         setError(null);
 
         try {
+            const { filterParams } = previewResult;
             const result = await trajectoryApi.particleFilter.applyAction({
                 trajectoryId: trajectory._id,
                 analysisId: analysisConfig?._id,
                 timestep: currentTimestep,
-                property,
-                operator,
-                value,
+                property: filterParams.property,
+                operator: filterParams.operator,
+                value: filterParams.value,
                 action,
-                exposureId: exposureId || undefined
+                exposureId: filterParams.exposureId
             });
 
             setActiveScene({
-                analysisId: analysisConfig?._id,
+                sceneType: 'particle-filter',
                 source: 'particle-filter',
+                analysisId: analysisConfig?._id,
                 fileId: result.fileId,
                 atomsResult: result.atomsResult,
-                property,
-                operator,
-                value,
+                property: filterParams.property,
+                operator: filterParams.operator,
+                value: filterParams.value,
                 action,
-                exposureId: exposureId || undefined
+                exposureId: filterParams.exposureId
             } as any);
 
             setPreviewResult(null);
@@ -130,7 +145,7 @@ const ParticleFilter = () => {
         } finally {
             setIsApplying(false);
         }
-    }, [trajectory, analysisConfig, currentTimestep, property, operator, value, action, exposureId, previewResult, setActiveScene]);
+    }, [trajectory, analysisConfig, currentTimestep, action, previewResult, setActiveScene]);
 
     const handleCancelPreview = () => {
         setPreviewResult(null);
@@ -150,7 +165,7 @@ const ParticleFilter = () => {
     // Show action panel when preview result exists
     if (previewResult) {
         return (
-            <EditorWidget className='particle-filter-action-panel overflow-hidden d-flex column gap-1' draggable={false}>
+            <EditorWidget className='particle-filter-action-panel p-1 overflow-hidden d-flex column gap-1' draggable={false}>
                 <Container className='d-flex content-between items-center'>
                     <Title className='font-weight-5-5'>{formatNumber(previewResult.matchCount)} Particles Selected</Title>
                 </Container>
@@ -205,7 +220,7 @@ const ParticleFilter = () => {
 
     // Main Filter Panel
     return (
-        <EditorWidget className='particle-filter-container overflow-hidden d-flex column gap-1' draggable={false}>
+        <EditorWidget className='particle-filter-container p-1 overflow-hidden d-flex column gap-1' draggable={false}>
             <Container className='d-flex content-between items-center'>
                 <Title className='font-weight-5-5'>Particle Filter</Title>
             </Container>

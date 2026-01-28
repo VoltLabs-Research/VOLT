@@ -5,7 +5,7 @@ import controllers from '@modules/trajectory/infrastructure/http/controllers/par
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
-    basePath: '/api/particle-filter',
+    basePath: '/api/particle-filter/:teamId',
     router
 };
 

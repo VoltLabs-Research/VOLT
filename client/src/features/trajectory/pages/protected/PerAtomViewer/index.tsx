@@ -122,7 +122,7 @@ const PerAtomViewer = () => {
                 title: 'Type',
                 skeleton: { variant: 'text', width: 60 },
                 render: (v: number) => (
-                    <span className='d-flex items-center gap-0-5'>
+                    <span className='d-flex items-center gap-05'>
                         <span
                             style={{
                                 width: 12,

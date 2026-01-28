@@ -1,7 +1,6 @@
 .color-coding-container {
     bottom: 2rem;
     right: 2rem;
-    /* display: flex handled by EditorWidget */
 }
 
 .color-coding-footer-container .button {

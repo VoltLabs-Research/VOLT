@@ -55,8 +55,9 @@ export const computeGlbUrl = (
 
     if (activeScene?.source === 'particle-filter') {
         const { property, operator, value, analysisId: sceneAnalysisId, exposureId, action } = activeScene;
-        if (!sceneAnalysisId || !property || !operator || value === undefined) return null;
-        let url = `/particle-filter/${teamId}/${trajectoryId}/${sceneAnalysisId}?property=${encodeURIComponent(property)}&operator=${encodeURIComponent(operator)}&value=${value}&timestep=${currentTimestep}&action=${action || 'delete'}`;
+        if (!property || !operator || value === undefined) return null;
+        const effectiveAnalysisId = sceneAnalysisId || 'no-analysis';
+        let url = `/particle-filter/${teamId}/${trajectoryId}/${effectiveAnalysisId}?property=${encodeURIComponent(property)}&operator=${encodeURIComponent(operator)}&value=${value}&timestep=${currentTimestep}&action=${action || 'delete'}`;
         if (exposureId) url += `&exposureId=${exposureId}`;
         return url;
     }
