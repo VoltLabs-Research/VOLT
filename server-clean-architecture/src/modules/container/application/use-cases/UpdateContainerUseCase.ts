@@ -33,11 +33,6 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
                 await this.containerService.startContainer(container.containerId);
             }
 
-            const stats = await this.containerService.createContainer({ /* fake */ }).catch(() => null); // Should leverage inspect method in service
-            // Re-inspect to get status? 
-            // We need 'inspect' in IContainerService to be proper.
-            // For now, assume success and update DB status if needed, or query stats which might fail if stopped.
-
             // Just update DB status
             const status = action === 'start' || action === 'restart' ? 'running' : 'exited';
             container.status = status;

@@ -315,15 +315,15 @@ export default function AuthPage() {
                   exit={{ opacity: 0, x: 20 }}
                   className="space-y-4"
                 >
-                  <div className="user-badge p-1">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <CheckCircle2 size={20} color="#22c55e" />
-                      <div className="d-flex column">
+                  <div className="user-badge p-1 d-flex content-between items-center">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
+                      <CheckCircle2 size={20} color="#22c55e" style={{ flexShrink: 0 }} />
+                      <div className="d-flex column" style={{ minWidth: 0 }}>
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-zinc-500)' }}>Signing up as</span>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{email}</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</span>
                       </div>
                     </div>
-                    <Button variant="ghost" intent="white" size="sm" onClick={() => setStep("email")}>Change</Button>
+                    <Button variant="ghost" intent="white" size="sm" onClick={() => setStep("email")} style={{ flexShrink: 0 }}>Change</Button>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4 form-sign-up">
@@ -367,16 +367,16 @@ export default function AuthPage() {
                   className="space-y-4"
                 >
                   <div className="d-flex content-between items-center user-badge p-1">
-                    <div className="d-flex items-center gap-075">
-                      <div style={{ background: 'var(--color-zinc-800)', borderRadius: '50%', padding: '4px' }}>
+                    <div className="d-flex items-center gap-075" style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ background: 'var(--color-zinc-800)', borderRadius: '50%', padding: '4px', flexShrink: 0 }}>
                         <CheckCircle2 size={16} color="#22c55e" />
                       </div>
-                      <div className="d-flex column">
+                      <div className="d-flex column" style={{ minWidth: 0 }}>
                         <span style={{ fontSize: '0.75rem', color: 'var(--color-zinc-500)' }}>Logging in as</span>
-                        <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{email}</span>
+                        <span style={{ fontSize: '0.9rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</span>
                       </div>
                     </div>
-                    <Button variant="ghost" intent="white" size="sm" onClick={() => setStep("email")}>Change</Button>
+                    <Button variant="ghost" intent="white" size="sm" onClick={() => setStep("email")} style={{ flexShrink: 0 }}>Change</Button>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4">
