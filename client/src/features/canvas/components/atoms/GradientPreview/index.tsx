@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import Container from '@/components/primitives/Container';
+import useToast from '@/hooks/ui/use-toast';
 import '@/features/canvas/components/atoms/GradientPreview/GradientPreview.css';
 
 const GRADIENT_CSS: Record<string, string> = {
@@ -15,23 +16,56 @@ interface GradientPreviewProps {
     endValue: number;
 }
 
+const formatValue = (value: number): string => {
+    const absValue = Math.abs(value);
+    let result: string;
+    if (absValue >= 1e15) result = value.toExponential(3);
+    else if (absValue >= 1e6) result = value.toExponential(3);
+    else if (absValue < 0.001 && absValue !== 0) result = value.toExponential(3);
+    else result = value.toPrecision(6).replace(/\.?0+$/, '');
+    return result.replace('e+', 'e');
+};
+
 const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProps) => {
     const [tooltipValue, setTooltipValue] = useState<string | null>(null);
     const [tooltipX, setTooltipX] = useState(0);
     const barRef = useRef<HTMLDivElement>(null);
+    const { showInfo } = useToast();
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!barRef.current) return;
+    const calculateValue = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!barRef.current) return null;
         const rect = barRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const ratio = Math.max(0, Math.min(1, x / rect.width));
         const value = startValue + ratio * (endValue - startValue);
-        setTooltipValue(value.toFixed(3));
-        setTooltipX(x);
+        return { value: formatValue(value), x };
+    };
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const result = calculateValue(e);
+        if (!result) return;
+        setTooltipValue(result.value);
+        setTooltipX(result.x);
     };
 
     const handleMouseLeave = () => {
         setTooltipValue(null);
+    };
+
+    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        const result = calculateValue(e);
+        if (!result) return;
+        
+        const textArea = document.createElement('textarea');
+        textArea.value = result.value;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        showInfo(`Value ${result.value} copied to clipboard`);
     };
 
     const gradientStyle = GRADIENT_CSS[gradient] || GRADIENT_CSS.Viridis;
@@ -44,6 +78,7 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
                 style={{ background: gradientStyle }}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
+                onClick={handleClick}
             >
                 {tooltipValue !== null && (
                     <Container
@@ -55,8 +90,8 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
                 )}
             </Container>
             <Container className='gradient-preview-labels'>
-                <span>{startValue.toFixed(2)}</span>
-                <span>{endValue.toFixed(2)}</span>
+                <span>{formatValue(startValue)}</span>
+                <span>{formatValue(endValue)}</span>
             </Container>
         </Container>
     );

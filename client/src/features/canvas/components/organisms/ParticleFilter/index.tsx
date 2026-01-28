@@ -73,6 +73,7 @@ const ParticleFilter = () => {
 
         // For modifier properties, we need analysisId
         const selectedOption = propertyOptions.find(opt => opt.value === property);
+        console.log(selectedOption);
         if (selectedOption?.exposureId && !analysisConfig?._id) {
             setError('Analysis required for modifier properties');
             return;

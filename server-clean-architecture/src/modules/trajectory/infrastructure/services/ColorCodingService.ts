@@ -12,6 +12,7 @@ import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
+import { formatValueForPath } from '@shared/infrastructure/utils/formatValue';
 
 @injectable()
 export default class ColorCodingService implements IColorCodingService {
@@ -132,9 +133,10 @@ export default class ColorCodingService implements IColorCodingService {
         exposureId?: string
     ): Promise<string> {
         const analysisSegment = analysisId || 'no-analysis';
+        const formattedStart = formatValueForPath(startValue);
+        const formattedEnd = formatValueForPath(endValue);
         const objectName =
-            `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${startValue}-${endValue}/${gradient}.glb`;
-
+            `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb`;
         if (await this.storageService.exists(SYS_BUCKETS.MODELS, objectName)) {
             return objectName;
         }
@@ -182,8 +184,10 @@ export default class ColorCodingService implements IColorCodingService {
         exposureId?: string
     ): Promise<Readable> {
         const analysisSegment = analysisId || 'no-analysis';
+        const formattedStart = formatValueForPath(startValue);
+        const formattedEnd = formatValueForPath(endValue);
         const objectName =
-            `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${startValue}-${endValue}/${gradient}.glb`;
+            `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb`;
 
         if (!await this.storageService.exists(SYS_BUCKETS.MODELS, objectName)) {
             throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);

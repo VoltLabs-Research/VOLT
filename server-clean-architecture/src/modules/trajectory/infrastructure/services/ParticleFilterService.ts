@@ -11,6 +11,7 @@ import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import nativeExporter from '@modules/trajectory/infrastructure/native/NativeExporter';
+import { formatValueForPath } from '@shared/infrastructure/utils/formatValue';
 
 const HIGHLIGHT_COLOR = [1.0, 0.2, 0.6];
 const DEFAULT_COLOR = [0.8, 0.8, 0.8];
@@ -96,7 +97,8 @@ export default class ParticleFilterService implements IParticleFilterService {
         const parsed = await TrajectoryParserFactory.parse(dumpPath);
         const exposurePart = exposureId ? String(exposureId) : 'dump';
         const analysisSegment = analysisId || 'no-analysis';
-        const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${expression.property}-${expression.operator}-${expression.value}-${action}.glb`;
+        const formattedValue = formatValueForPath(Number(expression.value));
+        const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${expression.property}-${expression.operator}-${formattedValue}-${action}.glb`;
 
         let buffer: Buffer;
         let atomsResult: number;
@@ -109,9 +111,9 @@ export default class ParticleFilterService implements IParticleFilterService {
 
             const filtered = this.atomProps.filterByMask(parsed.positions, parsed.types, inverseMask);
 
-            if (filtered.count === 0) {
-                throw new RuntimeError(ErrorCodes.PARTICLE_FILTER_ALL_DELETED, 400);
-            }
+            //if (filtered.count === 0) {
+            //    throw new RuntimeError(ErrorCodes.PARTICLE_FILTER_ALL_DELETED, 400);
+            //}
 
             buffer = nativeExporter.generateGLB(
                 filtered.positions,
@@ -139,8 +141,9 @@ export default class ParticleFilterService implements IParticleFilterService {
                 parsed.max
             );
             atomsResult = filterResult.matchCount;
-        }
+        }  
 
+        console.log('UPLOAD TO STORAGE SERVER:', objectName)
         await this.storageService.upload(SYS_BUCKETS.MODELS, objectName, buffer, { 'Content-Type': 'model/gltf-binary' });
 
         return {
@@ -161,10 +164,12 @@ export default class ParticleFilterService implements IParticleFilterService {
         exposureId?: string
     ): Promise<Readable> {
         const exposurePart = exposureId ? String(exposureId) : 'dump';
-        const actionPart = action ? `-${action}` : '-delete';
+        const actionPart = action || 'delete';
         const analysisSegment = analysisId || 'no-analysis';
-        const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${value}${actionPart}.glb`;
+        const formattedValue = typeof value === 'number' ? formatValueForPath(value) : String(value);
+        const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${formattedValue}-${actionPart}.glb`;
 
+        console.log('OBJECT NAME:', objectName);
         if (!await this.storageService.exists(SYS_BUCKETS.MODELS, objectName)) {
             throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
         }
