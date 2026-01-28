@@ -1,4 +1,3 @@
-import { createReadStream } from 'node:fs';
 import { unlink } from 'node:fs/promises';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { ITempFileService } from '@shared/domain/ports/ITempFileService';
@@ -56,10 +55,11 @@ export default class AtomisticExporter implements IAtomisticExporter {
 
             if (!success) throw new Error('GLB Generation Failed');
 
+            // Pass file path instead of stream to ensure upload waits for completion
             await this.storageService.upload(
                 SYS_BUCKETS.MODELS,
                 objectName,
-                createReadStream(tempFile),
+                tempFile,
                 { 'Content-Type': 'model/gltf-binary' }
             );
         } finally {

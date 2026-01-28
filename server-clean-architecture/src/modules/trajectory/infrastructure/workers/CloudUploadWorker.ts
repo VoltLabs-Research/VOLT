@@ -4,7 +4,6 @@ import BaseWorker from '@shared/infrastructure/workers/BaseWorker';
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
 import { container } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
-import fs from 'node:fs/promises';
 import Job from '@modules/jobs/domain/entities/Job';
 
 class CloudUploadWorker extends BaseWorker<Job> {
@@ -37,10 +36,7 @@ class CloudUploadWorker extends BaseWorker<Job> {
             });
             throw error;
         } finally {
-            // Clean up the local cached file after upload
-            setTimeout(async () => {
-                await fs.rm(localPath).catch(() => { });
-            }, 5000);
+            // Keep the file in cache - do not delete after upload
         }
     }
 }

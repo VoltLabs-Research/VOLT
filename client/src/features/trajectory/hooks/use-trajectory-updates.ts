@@ -59,7 +59,7 @@ const useTrajectoryUpdates = () => {
         inFlight.add(trajectoryId);
 
         try {
-            const fetched = await trajectoryApi.getOne(trajectoryId, 'team,analysis');
+            const fetched = await trajectoryApi.getOne(trajectoryId);
             const trajectoryToInsert = pending
                 ? {
                     ...fetched,
@@ -88,12 +88,20 @@ const useTrajectoryUpdates = () => {
                     return state;
                 }
 
+                // When status changes to 'completed', fetch the full trajectory to get all frames/data
+                if (updates.status === 'completed' && existing.status !== 'completed') {
+                    logger.log('Trajectory completed, fetching full data', { trajectoryId });
+                    fetchAndUpsert(trajectoryId, fullUpdates);
+                    return state;
+                }
+
                 logger.log('Trajectory update received', { trajectoryId, updates });
                 return patchTrajectory(state, trajectoryId, fullUpdates);
             });
         });
 
         return () => {
+            unsubscribeUpdated();
         };
     }, [logger]);
 };
