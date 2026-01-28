@@ -241,9 +241,17 @@ const SimulationCard: React.FC<SimulationCardProps> = memo(({
                                 }}
                                 transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                             >
-                                <span className='avatar-initials font-size-1 font-weight-6 color-secondary'>
-                                    {trajectory.createdBy ? getInitialsFromUser(trajectory.createdBy) : '?'}
-                                </span>
+                                {typeof trajectory.createdBy === 'object' && trajectory.createdBy?.avatar ? (
+                                    <img 
+                                        src={trajectory.createdBy.avatar} 
+                                        alt={getUserDisplayName(trajectory.createdBy)}
+                                        className='w-max h-max simulation-user-avatar-img'
+                                    />
+                                ) : (
+                                    <span className='avatar-initials font-size-1 font-weight-6 color-secondary'>
+                                        {trajectory.createdBy ? getInitialsFromUser(trajectory.createdBy) : '?'}
+                                    </span>
+                                )}
                             </motion.div>
                             <motion.div
                                 className='d-flex column content-center simulation-user-info overflow-hidden'

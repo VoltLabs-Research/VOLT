@@ -121,8 +121,9 @@
     border: 1px solid var(--color-border);
 }
 
-.avatar-image {
+.simulation-user-avatar-img {
     object-fit: cover;
+    border-radius: 50%;
 }
 
 .avatar-initials {}

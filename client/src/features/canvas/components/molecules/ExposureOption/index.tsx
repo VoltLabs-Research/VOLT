@@ -55,7 +55,7 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
                     isLoading={false}
                     option={{
                         Icon,
-                        title: exposure.name || exposure.exposureId,
+                        title: exposure.name,
                         modifierId: exposure.modifierId || ''
                     }}
                 />

@@ -31,11 +31,15 @@ interface TimestepViewerProps {
     updateThrottle?: number;
     /** Spacing between models when multiple are displayed */
     spacing?: number;
+    /** Force default scene only (Frame Atoms), ignore store scenes */
+    forceDefaultScene?: boolean;
 }
 
 export interface TimestepViewerRef {
     loadModel: () => void;
 }
+
+const DEFAULT_SCENE = { sceneType: 'trajectory', source: 'default' };
 
 const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     trajectoryId,
@@ -49,7 +53,8 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     enableSlice = true,
     enableInstancing = true,
     updateThrottle = 16,
-    spacing = 0.5
+    spacing = 0.5,
+    forceDefaultScene = false
 }, ref) => {
     // Get activeScenes from store
     const storeActiveScenes = useEditorStore((state) => state.activeScenes);
@@ -74,8 +79,11 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
 
     // Filter out chart scenes (they're handled by CanvasWidgets, not as 3D models)
     const scenesToRender = useMemo(() => {
+        if (forceDefaultScene) {
+            return [DEFAULT_SCENE];
+        }
         return storeActiveScenes.filter(scene => !isChartScene(scene));
-    }, [storeActiveScenes, isChartScene]);
+    }, [storeActiveScenes, isChartScene, forceDefaultScene]);
 
     // Track the Y-dimensions of loaded models to position them correctly
     const [modelHeights, setModelHeights] = React.useState<Record<number, number>>({});

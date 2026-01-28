@@ -101,11 +101,9 @@ const DashboardPage: React.FC = memo(() => {
                                     </Container>
 
                                     <Container className='badge-container scene-preview-natoms-badge primary-surface p-absolute' style={{ pointerEvents: 'auto' }}>
-                                        {trajectory?.natoms && (
-                                            <Paragraph className='font-size-2 font-weight-5'>
-                                                {formatNumber((trajectory.frames || []).find((f: any) => f.timestep === currentTimestep)?.natoms ?? 0)} atoms
-                                            </Paragraph>
-                                        )}
+                                        <Paragraph className='font-size-2 font-weight-5'>
+                                            {formatNumber((trajectory.frames || []).find((f: any) => f.timestep === currentTimestep)?.natoms ?? 0)} atoms
+                                        </Paragraph>
                                     </Container>
 
                                     <Container className='badge-container scene-preview-navigate-icon primary-surface p-absolute font-size-5 d-flex flex-center ' style={{ pointerEvents: 'auto' }}>
@@ -128,6 +126,7 @@ const DashboardPage: React.FC = memo(() => {
                                 <TimestepViewer
                                     trajectoryId={trajectory?._id || ''}
                                     currentTimestep={currentTimestep}
+                                    forceDefaultScene
                                 />
                             )}
                         </Scene3D>

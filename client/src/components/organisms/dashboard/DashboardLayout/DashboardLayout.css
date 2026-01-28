@@ -35,10 +35,8 @@
 }
 
 .sidebar-brand-title {
-    font-size: 1.125rem;
-    letter-spacing: -0.01em;
+    font-size: 1rem;
     text-transform: uppercase;
-    margin: 0;
 }
 
 /* Navigation */

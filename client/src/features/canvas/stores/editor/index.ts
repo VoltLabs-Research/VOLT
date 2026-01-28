@@ -65,7 +65,10 @@ export const useEditorStore = create<EditorStore>()(
                 performanceSettings: state.performanceSettings,
                 renderConfig: state.renderConfig,
                 rendererSettings: state.rendererSettings,
-                configuration: state.configuration,
+                configuration: {
+                    ...state.configuration,
+                    slicePlaneConfig: undefined
+                },
                 environment: state.environment,
                 effects: state.effects,
             }),

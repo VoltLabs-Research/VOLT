@@ -337,16 +337,18 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory, tra
     );
   }, [activeScenes]);
 
+  const { showSuccess, showInfo } = useToast();
+
   const onSelectScene = useCallback((scene: any, analysis?: any) => {
     // Mark that user manually selected an exposure for this analysis
     if (scene?.source === 'plugin' && scene?.analysisId) {
       manualSelectionRef.current = scene.analysisId;
     }
     setActiveScene(scene);
-    if (analysis) updateAnalysisConfig(analysis);
-  }, [updateAnalysisConfig, setActiveScene]);
-
-  const { showSuccess } = useToast();
+    if (analysis) {
+      updateAnalysisConfig(analysis);
+    }
+  }, [updateAnalysisConfig, setActiveScene, showInfo]);
 
   const onDeleteAnalysis = useCallback(async (analysisId: string) => {
     await analysisApi.delete(analysisId);
