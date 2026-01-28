@@ -190,10 +190,6 @@ export default function AuthPage() {
 
           <div className="d-flex column content-between h-max hero-content-wrapper p-relative h-max">
             <div className="d-flex items-center gap-075 hero-brand font-size-5">
-              <div className="brand-icon d-flex flex-center p-05">
-                <LayoutGrid size={24} color="white" />
-              </div>
-              <span>Volt</span>
             </div>
 
             <div className="d-flex column gap-1-5 hero-text-container mb-3">

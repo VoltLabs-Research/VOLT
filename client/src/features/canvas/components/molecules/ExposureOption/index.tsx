@@ -14,6 +14,7 @@ interface ExposureOptionProps {
     onAdd: (scene: any) => void;
     onRemove: (scene: any) => void;
     isActive: boolean;
+    isSelected?: boolean;
 }
 
 const ExposureOption: React.FC<ExposureOptionProps> = ({
@@ -23,7 +24,8 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
     onSelect,
     onAdd,
     onRemove,
-    isActive
+    isActive,
+    isSelected = false
 }) => {
     const openExposureSettings = useUIStore((s) => s.openExposureSettings);
 
@@ -49,6 +51,7 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
                 <CanvasSidebarOption
                     onSelect={() => onSelect(sceneObject)}
                     activeOption={isActive}
+                    isSelected={isSelected}
                     isLoading={false}
                     option={{
                         Icon,

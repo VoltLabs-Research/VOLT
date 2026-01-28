@@ -14,6 +14,7 @@ import { EffectComposer, SSAO } from '@react-three/postprocessing';
 import TrajectoryLighting from '@/features/canvas/components/atoms/TrajectoryLighting';
 import DefectLighting from '@/features/canvas/components/atoms/DefectLighting';
 import CanvasGrid from '@/features/canvas/components/atoms/CanvasGrid';
+import SlicePlaneHelper from '@/features/canvas/components/atoms/SlicePlaneHelper';
 import DynamicEffects from '@/features/canvas/components/molecules/DynamicEffects';
 import DynamicEnvironment from '@/features/canvas/components/molecules/DynamicEnvironment';
 import DynamicLights from '@/features/canvas/components/molecules/DynamicLights';
@@ -426,6 +427,8 @@ const Scene3D = forwardRef<Scene3DRef, Scene3DProps>(({
 				/>
 
 				{showCanvasGrid && <CanvasGrid />}
+
+				<SlicePlaneHelper />
 
 				<Bvh firstHitOnly>
 					{children}

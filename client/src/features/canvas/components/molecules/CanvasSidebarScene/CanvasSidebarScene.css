@@ -85,8 +85,7 @@
 }
 
 .analysis-search-input-wrapper {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-sm);
     padding: 0.5rem 0.75rem;
     transition: border-color 0.15s ease, background-color 0.15s ease;
@@ -94,7 +93,6 @@
 
 .analysis-search-input-wrapper:focus-within {
     border-color: var(--accent-blue);
-    background: rgba(255, 255, 255, 0.08);
 }
 
 .analysis-search-icon {

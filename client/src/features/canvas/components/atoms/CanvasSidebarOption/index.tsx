@@ -9,6 +9,7 @@ import '@/features/canvas/components/atoms/CanvasSidebarOption/CanvasSidebarOpti
 interface CanvasSidebarOptionProps {
     onSelect: (option: any) => void;
     activeOption: boolean;
+    isSelected?: boolean;
     option: {
         Icon: IconType;
         title: string;
@@ -26,6 +27,7 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps & React.HTMLAttribu
     option,
     onSelect,
     activeOption,
+    isSelected = false,
     isLoading,
     secondaryAction,
     className,
@@ -36,7 +38,7 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps & React.HTMLAttribu
         <>
             <div
                 {...rest}
-                className={`d-flex content-between items-center editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''} cursor-pointer ${className || ''}`}
+                className={`d-flex content-between items-center editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''} ${isSelected ? 'selected' : ''} cursor-pointer ${className || ''}`}
                 onClick={() => onSelect(option)}
             >
                 <div className='d-flex items-center gap-1 editor-sidebar-scene-option-left-container'>

@@ -35,3 +35,7 @@
     border-radius: var(--radius-md);
     will-change: transform;
 }
+
+.editor-sidebar-scene-option-container.selected {
+    background: rgb(22 22 22);
+}

@@ -20,77 +20,98 @@
  * SOFTWARE.
  */
 
+import React, { useCallback } from 'react';
 import EditorWidget from '@/features/canvas/components/organisms/EditorWidget';
 import { useEditorStore } from '@/features/canvas/stores/editor';
 import Container from '@/components/primitives/Container';
-import '@/features/canvas/components/organisms/SlicePlane/SlicePlane.css';
 import Title from '@/components/primitives/Title';
-import FormField from '@/components/molecules/form/FormField';
+import Slider from '@/components/atoms/form/Slider';
+import type { SliceAxis } from '@/types/stores/editor/configuration';
+import '@/features/canvas/components/organisms/SlicePlane/SlicePlane.css';
 
-const SlicePlane = () => {
-    const slicePlaneConfig = useEditorStore((state) => state.configuration.slicePlaneConfig);
-    const setSlicePlaneConfig = useEditorStore((state) => state.configuration.setSlicePlaneConfig);
+const AXES: SliceAxis[] = ['x', 'y', 'z'];
 
-    const handleNormalChange = (axis: 'x' | 'y' | 'z', value: string) => {
-        const v = Number.isNaN(parseFloat(value)) ? 0 : parseFloat(value);
-        setSlicePlaneConfig({ normal: { [axis]: v } as any });
-    };
+const SlicePlane: React.FC = () => {
+    const slicePlaneConfig = useEditorStore((s) => s.configuration.slicePlaneConfig);
+    const toggleSliceAxis = useEditorStore((s) => s.configuration.toggleSliceAxis);
+    const setSlicePosition = useEditorStore((s) => s.configuration.setSlicePosition);
+    const setSliceAngle = useEditorStore((s) => s.configuration.setSliceAngle);
+
+    const handleAxisClick = useCallback((axis: SliceAxis) => {
+        toggleSliceAxis(axis);
+    }, [toggleSliceAxis]);
+
+    const handlePositionChange = useCallback((axis: SliceAxis, value: number) => {
+        setSlicePosition(axis, value);
+    }, [setSlicePosition]);
+
+    const handleAngleChange = useCallback((axis: SliceAxis, value: number) => {
+        setSliceAngle(axis, value);
+    }, [setSliceAngle]);
+
+    const isAxisActive = useCallback((axis: SliceAxis) => {
+        return slicePlaneConfig.activeAxes.includes(axis);
+    }, [slicePlaneConfig.activeAxes]);
 
     return (
-        <EditorWidget className='slice-plane-container d-flex column overflow-hidden' draggable={false}>
-            <Container className='d-flex content-between items-center'>
-                <Title className='font-weight-5-5'>Slice Modifier</Title>
+        <EditorWidget className='slice-plane-container p-1 d-flex column gap-1 overflow-hidden' draggable={false}>
+            <Title className='font-weight-5-5'>Slice Plane</Title>
+
+            <Container className='slice-plane-axis-buttons'>
+                {AXES.map((axis) => (
+                    <button
+                        key={axis}
+                        className={`slice-plane-axis-btn ${isAxisActive(axis) ? 'active' : ''}`}
+                        onClick={() => handleAxisClick(axis)}
+                    >
+                        {axis.toUpperCase()}
+                    </button>
+                ))}
             </Container>
 
-            <Container className='d-flex column gap-1'>
-                <Container className='d-flex content-between items-center gap-05'>
-                    <span className='slice-plane-normals-title'>Normals</span>
-                    <Container className='d-flex gap-05'>
-                        {(['x', 'y', 'z'] as const).map((axis, index) => (
-                            <Container className='d-flex gap-05 content-between' key={index}>
-                                <Container className='d-flex items-center gap-1 slice-plane-normal-input-container'>
-                                    <span className='slice-plane-normal-input-label'>{axis}</span>
-                                    <input
-                                        value={slicePlaneConfig.normal[axis]}
-                                        onChange={(e) => handleNormalChange(axis, e.target.value)}
-                                        className='slice-plane-normal-input'
-                                        step={0.01}
-                                        type='number'
-                                    />
-                                </Container>
-                            </Container>
-                        ))}
+            {slicePlaneConfig.activeAxes.map((axis) => (
+                <Container key={axis} className='slice-plane-axis-config d-flex column gap-025'>
+                    <Container className='d-flex content-between items-center'>
+                        <span className='slice-plane-axis-label'>{axis.toUpperCase()} Axis</span>
                     </Container>
-                </Container>
+                    
+                    <Container className='d-flex content-between items-center'>
+                        <span className='slice-plane-slider-label'>Position</span>
+                        <Container className='d-flex items-center gap-05'>
+                            <Slider
+                                min={-10}
+                                max={10}
+                                step={0.01}
+                                value={slicePlaneConfig.positions[axis]}
+                                onChange={(value) => handlePositionChange(axis, value)}
+                            />
+                            <span className='slice-plane-slider-value'>{slicePlaneConfig.positions[axis].toFixed(2)}</span>
+                        </Container>
+                    </Container>
 
-                <Container className='d-flex column gap-1'>
-                    {[
-                        ['Slab Width', slicePlaneConfig.slabWidth, 'slabWidth', 0.01],
-                        ['Distance', slicePlaneConfig.distance, 'distance', 0.1]
-                    ].map(([inputTitle, value, keyName, step], index) => (
-                        <Container className='d-flex gap-05 content-between' key={index}>
-                            <span>{inputTitle}</span>
-                            <Container className='d-flex items-center gap-1 slice-plane-normal-input-container'>
-                                <input
-                                    value={value as number}
-                                    onChange={(e) => setSlicePlaneConfig({ [keyName as 'slabWidth' | 'distance']: e.currentTarget.valueAsNumber })}
-                                    className='slice-plane-normal-input-extended'
-                                    step={step as number}
-                                    type='number'
+                    {axis !== 'x' && (
+                        <Container className='d-flex content-between items-center'>
+                            <span className='slice-plane-slider-label'>Angle</span>
+                            <Container className='d-flex items-center gap-05'>
+                                <Slider
+                                    min={-90}
+                                    max={90}
+                                    step={1}
+                                    value={slicePlaneConfig.angles[axis]}
+                                    onChange={(value) => handleAngleChange(axis, value)}
                                 />
+                                <span className='slice-plane-slider-value'>{slicePlaneConfig.angles[axis].toFixed(0)}°</span>
                             </Container>
                         </Container>
-                    ))}
-                    <Container className='d-flex content-between items-center'>
-                        <span>Reverse Orientation</span>
-                        <FormField
-                            fieldKey="reverseOrientation"
-                            fieldType='checkbox'
-                            fieldValue={slicePlaneConfig.reverseOrientation}
-                            onFieldChange={(_, v) => setSlicePlaneConfig({ reverseOrientation: v })} />
-                    </Container>
+                    )}
                 </Container>
-            </Container>
+            ))}
+
+            {slicePlaneConfig.activeAxes.length === 0 && (
+                <span className='slice-plane-hint color-tertiary font-size-1'>
+                    Select an axis to add a clipping plane
+                </span>
+            )}
         </EditorWidget>
     );
 };

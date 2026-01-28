@@ -456,6 +456,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory, tra
             onAddScene={addScene}
             onRemoveScene={removeScene}
             isSceneActive={isSceneInActiveScenes}
+            activeScene={activeScene}
             updateAnalysisConfig={updateAnalysisConfig}
             onDelete={onDeleteAnalysis}
             isInProgress={isAnalysisInProgress(section.analysis._id)}

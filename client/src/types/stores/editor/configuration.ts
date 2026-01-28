@@ -1,8 +1,10 @@
+export type SliceAxis = 'x' | 'y' | 'z';
+
 export interface SlicePlaneConfig {
-    normal: { x: number; y: number; z: number };
-    distance: number;
-    slabWidth: number;
-    reverseOrientation: boolean;
+    activeAxes: SliceAxis[];
+    positions: Record<SliceAxis, number>;
+    angles: Record<SliceAxis, number>;
+    showHelper: boolean;
 }
 
 export interface ConfigurationState {
@@ -10,13 +12,14 @@ export interface ConfigurationState {
     activeSidebarTab: string;
     activeSidebarOption: string;
     activeModifier: string;
-    slicingOrigin: { x: number; y: number; z: number };
 }
 
 export interface ConfigurationActions {
     setSlicePlaneConfig: (config: Partial<SlicePlaneConfig>) => void;
     resetSlicePlaneConfig: () => void;
-    setSlicingOrigin: (origin: { x: number; y: number; z: number }) => void;
+    toggleSliceAxis: (axis: SliceAxis) => void;
+    setSlicePosition: (axis: SliceAxis, position: number) => void;
+    setSliceAngle: (axis: SliceAxis, angle: number) => void;
     setActiveSidebarTag: (tag: string) => void;
     setActiveModifier: (modifier: string) => void;
     setActiveSidebarOption: (option: string) => void;

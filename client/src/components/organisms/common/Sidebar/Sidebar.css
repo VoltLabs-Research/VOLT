@@ -76,9 +76,13 @@
     border-bottom: 1px solid #212121;
 }
 
+/*
+TODO: I noticed that it looks more attractive without the border. 
+TODO: However, I'll keep this as a comment instead of deleting it, as it may be better to use a lighter color.
+
 .editor-sidebar-top-container>div:not(:last-child) {
     border-bottom: 1px solid #212121;
-}
+}*/
 
 .editor-sidebar-toggle-btn {
     z-index: 5;

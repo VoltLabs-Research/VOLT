@@ -29,6 +29,7 @@ interface AnalysisSectionProps {
     onAddScene: (scene: any) => void;
     onRemoveScene: (scene: any) => void;
     isSceneActive: (scene: any) => boolean;
+    activeScene: any;
     updateAnalysisConfig: (analysis: any) => void;
     onDelete: (analysisId: string) => void;
     isInProgress?: boolean;
@@ -45,6 +46,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     onAddScene,
     onRemoveScene,
     isSceneActive,
+    activeScene,
     updateAnalysisConfig,
     onDelete,
     isInProgress = false
@@ -92,6 +94,12 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
         }
         return map;
     }, [entry.state, entry.exposures, isSceneActive]);
+
+    const isExposureSelected = useCallback((exposure: any) => {
+        if (!activeScene || activeScene.source !== 'plugin') return false;
+        return activeScene.analysisId === exposure.analysisId && 
+               activeScene.exposureId === exposure.exposureId;
+    }, [activeScene]);
 
     return (
         <Container className='analysis-section overflow-hidden'>
@@ -210,6 +218,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                             onAdd={handleExposureAdd}
                             onRemove={onRemoveScene}
                             isActive={activeStates.get(`${exposure.analysisId}-${exposure.exposureId}`) ?? false}
+                            isSelected={isExposureSelected(exposure)}
                         />
                     ))}
                 </Container>

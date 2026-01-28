@@ -1,15 +1,15 @@
 import type { StateCreator } from 'zustand';
-import type { SlicePlaneConfig, ConfigurationStore, ConfigurationState } from '@/types/stores/editor/configuration';
+import type { SlicePlaneConfig, ConfigurationStore, ConfigurationState, SliceAxis } from '@/types/stores/editor/configuration';
 
 export interface ConfigurationSlice {
     configuration: ConfigurationStore;
 }
 
 const DEFAULT_SLICE_PLANE_CONFIG: SlicePlaneConfig = {
-    normal: { x: 0, y: 0, z: 0 },
-    distance: 0,
-    slabWidth: 0,
-    reverseOrientation: false,
+    activeAxes: [],
+    positions: { x: 5, y: 5, z: 5 },
+    angles: { x: 0, y: 0, z: 0 },
+    showHelper: true,
 };
 
 const initialState: ConfigurationState = {
@@ -17,35 +17,66 @@ const initialState: ConfigurationState = {
     activeSidebarTab: 'Scene',
     activeSidebarOption: '',
     activeModifier: '',
-    slicingOrigin: { x: 0, y: 0, z: 0 },
 };
 
 export const createConfigurationSlice: StateCreator<any, [], [], ConfigurationSlice> = (set, get) => ({
     configuration: {
         ...initialState,
 
-        setSlicePlaneConfig: (config) => {
+        setSlicePlaneConfig: (config: Partial<SlicePlaneConfig>) => {
             const current = get().configuration.slicePlaneConfig;
-            // Handle merging logic locally
-            const mergedNormal = { ...current.normal, ...(config.normal || {}) };
-            const next = {
-                normal: mergedNormal,
-                distance: typeof config.distance === 'number' ? config.distance : current.distance,
-                slabWidth: typeof config.slabWidth === 'number' ? config.slabWidth : current.slabWidth,
-                reverseOrientation: typeof config.reverseOrientation === 'boolean' ? config.reverseOrientation : current.reverseOrientation,
-            };
-            set((s) => ({ configuration: { ...s.configuration, slicePlaneConfig: next } }));
+            const next = { ...current, ...config };
+            set((s: any) => ({ configuration: { ...s.configuration, slicePlaneConfig: next } }));
         },
 
-        setSlicingOrigin: (origin) => set((s) => ({ configuration: { ...s.configuration, slicingOrigin: origin } })),
-        setActiveSidebarOption: (option) => set((s) => ({ configuration: { ...s.configuration, activeSidebarOption: option } })),
-        setActiveSidebarTag: (tag) => set((s) => ({ configuration: { ...s.configuration, activeSidebarTab: tag } })),
-        setActiveModifier: (modifier) => set((s) => ({ configuration: { ...s.configuration, activeModifier: modifier } })),
+        toggleSliceAxis: (axis: SliceAxis) => {
+            const current = get().configuration.slicePlaneConfig.activeAxes as SliceAxis[];
+            const isActive = current.includes(axis);
+            const next = isActive 
+                ? current.filter((a: SliceAxis) => a !== axis)
+                : [...current, axis];
+            set((s: any) => ({
+                configuration: {
+                    ...s.configuration,
+                    slicePlaneConfig: { ...s.configuration.slicePlaneConfig, activeAxes: next }
+                }
+            }));
+        },
 
-        resetSlicePlaneConfig: () => set((s) => ({
+        setSlicePosition: (axis: SliceAxis, position: number) => {
+            const current = get().configuration.slicePlaneConfig.positions;
+            set((s: any) => ({
+                configuration: {
+                    ...s.configuration,
+                    slicePlaneConfig: { 
+                        ...s.configuration.slicePlaneConfig, 
+                        positions: { ...current, [axis]: position }
+                    }
+                }
+            }));
+        },
+
+        setSliceAngle: (axis: SliceAxis, angle: number) => {
+            const current = get().configuration.slicePlaneConfig.angles;
+            set((s: any) => ({
+                configuration: {
+                    ...s.configuration,
+                    slicePlaneConfig: { 
+                        ...s.configuration.slicePlaneConfig, 
+                        angles: { ...current, [axis]: angle }
+                    }
+                }
+            }));
+        },
+
+        setActiveSidebarOption: (option: string) => set((s: any) => ({ configuration: { ...s.configuration, activeSidebarOption: option } })),
+        setActiveSidebarTag: (tag: string) => set((s: any) => ({ configuration: { ...s.configuration, activeSidebarTab: tag } })),
+        setActiveModifier: (modifier: string) => set((s: any) => ({ configuration: { ...s.configuration, activeModifier: modifier } })),
+
+        resetSlicePlaneConfig: () => set((s: any) => ({
             configuration: { ...s.configuration, slicePlaneConfig: DEFAULT_SLICE_PLANE_CONFIG }
         })),
 
-        reset: () => set((s) => ({ configuration: { ...s.configuration, ...initialState } }))
+        reset: () => set((s: any) => ({ configuration: { ...s.configuration, ...initialState } }))
     }
 });

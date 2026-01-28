@@ -23,53 +23,48 @@
 import { useMemo } from 'react';
 import { Plane, Vector3 } from 'three';
 import { useEditorStore } from '@/features/canvas/stores/editor';
+import type { SliceAxis } from '@/types/stores/editor/configuration';
 
-const EPS = 1e-6;
+const AXIS_NORMALS: Record<SliceAxis, Vector3> = {
+    x: new Vector3(1, 0, 0),
+    y: new Vector3(0, 1, 0),
+    z: new Vector3(0, 0, 1),
+};
 
-const useSlicingPlanes = (
-    enableSlice: boolean,
-): Plane[] => {
-    const origin = useEditorStore((s) => s.configuration.slicingOrigin);
+const useSlicingPlanes = (enableSlice: boolean): Plane[] => {
     const slicePlaneConfig = useEditorStore((s) => s.configuration.slicePlaneConfig);
 
     return useMemo(() => {
         if (!enableSlice) return [];
 
-        const n = new Vector3(
-            Number(slicePlaneConfig.normal.x) || 0,
-            Number(slicePlaneConfig.normal.y) || 0,
-            Number(slicePlaneConfig.normal.z) || 0
-        );
+        const { activeAxes, positions, angles } = slicePlaneConfig;
 
-        if (n.lengthSq() < EPS) return [];
+        if (activeAxes.length === 0) return [];
 
-        n.normalize();
+        const planes: Plane[] = [];
 
-        const p0 = new Vector3(origin.x || 0, origin.y || 0, origin.z || 0);
-        const d = Number(slicePlaneConfig.distance) || 0;
-        const w = Math.max(0, Number(slicePlaneConfig.slabWidth) || 0);
+        for (const axis of activeAxes) {
+            const baseNormal = AXIS_NORMALS[axis].clone().negate();
+            const position = positions[axis];
+            const angle = angles[axis] * (Math.PI / 180);
 
-        if (w > EPS) {
-            const upper = d + w * 0.5;
-            const lower = d - w * 0.5;
-
-            const c1 = n.dot(p0) - upper;
-            const c2 = n.dot(p0) + lower;
-
-            return [
-                new Plane(n.clone(), c1),
-                new Plane(n.clone().negate(), c2),
-            ];
-        } else {
-            if (!slicePlaneConfig.reverseOrientation) {
-                const c = n.dot(p0) - d;
-                return [new Plane(n, c)];
+            // Rotate the normal around a perpendicular axis
+            let rotationAxis: Vector3;
+            if (axis === 'x') {
+                rotationAxis = new Vector3(0, 0, 1);
+            } else if (axis === 'y') {
+                rotationAxis = new Vector3(1, 0, 0);
             } else {
-                const c = n.dot(p0) + d;
-                return [new Plane(n.clone().negate(), c)];
+                rotationAxis = new Vector3(1, 0, 0);
             }
+
+            const normal = baseNormal.applyAxisAngle(rotationAxis, angle);
+
+            planes.push(new Plane(normal, position));
         }
-    }, [enableSlice, slicePlaneConfig, origin]);
+
+        return planes;
+    }, [enableSlice, slicePlaneConfig]);
 };
 
 export default useSlicingPlanes;
