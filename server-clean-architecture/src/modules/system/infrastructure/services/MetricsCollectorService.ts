@@ -63,7 +63,7 @@ export default class MetricsCollector {
 
     constructor(
         metricsKey: string = 'metrics-history',
-        ttl: number = 24 * 60 * 60
+        ttl: number = 5 * 60
     ) {
         this.clusterId = process.env.CLUSTER_ID || os.hostname();
         this.redisMetricsKey = `${this.clusterId}/${metricsKey}`;
@@ -568,6 +568,31 @@ export default class MetricsCollector {
             const startTime = Date.now() - (hours * 60 * 60 * 1000);
 
             // Get all metrics since startTime
+            const metricsData = await redis.zrangebyscore(
+                this.redisMetricsKey,
+                startTime,
+                '+inf'
+            );
+
+            return metricsData.map((data: string) => JSON.parse(data));
+        } catch (error: any) {
+            logger.error(`Error reading from Redis: ${error}`);
+            return [];
+        }
+    }
+
+    /**
+     * Get metrics from Redis for the last N minutes
+     */
+    async getMetricsFromRedisMinutes(minutes: number = 5): Promise<any[]> {
+        try {
+            if (!redis) {
+                logger.warn('Redis not available');
+                return [];
+            }
+
+            const startTime = Date.now() - (minutes * 60 * 1000);
+
             const metricsData = await redis.zrangebyscore(
                 this.redisMetricsKey,
                 startTime,

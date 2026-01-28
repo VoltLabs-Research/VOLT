@@ -53,8 +53,9 @@ export const useServerMetrics = () => {
     useEffect(() => {
         if (!isConnected || isHistoryLoaded) return;
 
-        logger.log('requesting historical data...');
-        socketService.emit('metrics:history', 15).catch((error) => {
+        // History is now sent automatically on connection, but we can request more if needed
+        logger.log('requesting historical data (last 5 minutes)...');
+        socketService.emit('metrics:history', 5).catch((error) => {
             logger.log('error requesting history:', error);
         });
     }, [isConnected, isHistoryLoaded]);

@@ -9,6 +9,7 @@ import MetricsCollectorService from '@modules/system/infrastructure/services/Met
 export default class SystemSocketModule extends BaseSocketModule {
     public readonly name = 'SystemSocketModule';
     private metricsInterval: NodeJS.Timeout | null = null;
+    private cleanupCounter: number = 0;
 
     constructor(
         @inject('IMetricsService')
@@ -32,18 +33,21 @@ export default class SystemSocketModule extends BaseSocketModule {
 
         const loop = async () => {
             try {
-                // logger.debug('[SystemSocketModule] Loop start');
                 // Collect local metrics and save to Redis
                 await this.metricsService.collect();
-                // logger.debug('[SystemSocketModule] Collected local metrics');
+
+                // Clean old metrics every 30 seconds (30 iterations)
+                this.cleanupCounter++;
+                if (this.cleanupCounter >= 30) {
+                    this.cleanupCounter = 0;
+                    await this.metricsService.cleanOldMetrics();
+                }
 
                 // Get aggregated metrics for ALL clusters
                 const allMetrics = await this.metricsService.getAllClustersMetrics();
-                // logger.debug(`[SystemSocketModule] Got ${allMetrics.length} cluster metrics`);
 
                 // Broadcast globally to valid connections
                 this.broadcast('metrics:all', allMetrics);
-                // logger.debug(`[SystemSocketModule] Broadcasted metrics:all (${allMetrics.length} items)`);
             } catch (error) {
                 logger.error(`[SystemSocketModule] Error in metrics loop: ${error}`);
             }
@@ -56,12 +60,11 @@ export default class SystemSocketModule extends BaseSocketModule {
         loop();
     }
 
-    onConnection(connection: ISocketConnection): void {
-        // Handle request for historical data
-        this.on(connection.id, 'metrics:history', async (conn, hours: number = 24) => {
+    async onConnection(connection: ISocketConnection): Promise<void> {
+        this.on(connection.id, 'metrics:history', async (conn, minutes: number = 5) => {
             try {
-                logger.info(`[SystemSocketModule] Client ${conn.id} requested history for ${hours}h`);
-                const history = await this.metricsService.getMetricsFromRedis(hours);
+                logger.info(`[SystemSocketModule] Client ${conn.id} requested history for ${minutes} minutes`);
+                const history = await this.metricsService.getMetricsFromRedisMinutes(minutes);
                 this.emitToSocket(conn.id, 'metrics:history', history);
             } catch (error) {
                 logger.error(`[SystemSocketModule] Error fetching history: ${error}`);
