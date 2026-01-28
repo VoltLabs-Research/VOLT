@@ -15,6 +15,7 @@ interface ExposureOptionProps {
     onRemove: (scene: any) => void;
     isActive: boolean;
     isSelected?: boolean;
+    isInProgress?: boolean;
 }
 
 const ExposureOption: React.FC<ExposureOptionProps> = ({
@@ -25,7 +26,8 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
     onAdd,
     onRemove,
     isActive,
-    isSelected = false
+    isSelected = false,
+    isInProgress = false
 }) => {
     const openExposureSettings = useUIStore((s) => s.openExposureSettings);
 
@@ -49,7 +51,16 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
             triggerAction="contextmenu"
             trigger={
                 <CanvasSidebarOption
-                    onSelect={() => onSelect(sceneObject)}
+                    onSelect={() => {
+                        if (isInProgress) return;
+                        onSelect(sceneObject);
+                    }}
+                    onContextMenu={(e: React.MouseEvent) => {
+                        if (isInProgress) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    }}
                     activeOption={isActive}
                     isSelected={isSelected}
                     isLoading={false}
@@ -58,6 +69,7 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
                         title: exposure.name,
                         modifierId: exposure.modifierId || ''
                     }}
+                    className={isInProgress ? 'cursor-progress' : ''}
                 />
             }
         >

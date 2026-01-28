@@ -329,7 +329,6 @@ export const createTrajectorySlice: SliceCreator<TrajectoryStore> = (set, get) =
             'trajectory_updated',
             (payload: { trajectoryId: string; updates: any; timestamp: string }) => {
                 const { trajectoryId, updates } = payload;
-                console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', updates);
                 set((state: TrajectoryStore) => {
                     // Update the trajectory in the list
                     const updated = patchTrajectoryInStore(state, trajectoryId, updates);

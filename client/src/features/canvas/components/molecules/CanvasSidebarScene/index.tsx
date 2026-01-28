@@ -101,6 +101,7 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory, tra
   const trajectoryId = propTrajectoryId || trajectory?._id;
 
   const { isAnalysisInProgress } = useAnalysisStatus({ trajectoryId, enabled: !!trajectoryId });
+  const { showSuccess, showInfo } = useToast();
 
   useEffect(() => {
     setExpandedSections(new Set());
@@ -330,8 +331,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory, tra
       (s as any).exposureId === (scene as any).exposureId
     );
   }, [activeScenes]);
-
-  const { showSuccess, showInfo } = useToast();
 
   const onSelectScene = useCallback((scene: any, analysis?: any) => {
     // Mark that user manually selected an exposure for this analysis

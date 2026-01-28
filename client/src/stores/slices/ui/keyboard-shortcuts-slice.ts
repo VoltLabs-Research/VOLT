@@ -83,6 +83,9 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     { id: 'increase-point-size', keys: ['+'], description: 'Increase atom size', category: 'view', action: () => { }, scope: 'canvas' },
     { id: 'decrease-point-size', keys: ['-'], description: 'Decrease atom size', category: 'view', action: () => { }, scope: 'canvas' },
 
+    // Settings
+    { id: 'toggle-opacity-settings', keys: ['ctrl', 'o'], description: 'Toggle opacity settings', category: 'view', action: () => { }, scope: 'canvas' },
+
     // General
     { id: 'show-shortcuts', keys: ['ctrl', 'k'], description: 'Show keyboard shortcuts', category: 'general', action: () => { }, scope: 'global' },
     { id: 'escape', keys: ['escape'], description: 'Close active panel', category: 'general', action: () => { }, scope: 'global' },

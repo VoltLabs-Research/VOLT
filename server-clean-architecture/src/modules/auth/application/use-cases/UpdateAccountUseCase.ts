@@ -37,7 +37,10 @@ export default class UpdateAccountUseCase implements IUseCase<UpdateAccountInput
         }
 
         return Result.ok({
-            user: updatedUser
+            user: {
+                _id: updatedUser.id,
+                ...updatedUser.props
+            }
         });
     }
 }

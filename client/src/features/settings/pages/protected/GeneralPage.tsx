@@ -10,8 +10,7 @@ const GeneralPage: React.FC = () => {
     const user = useAuthStore((state) => state.user);
 
     const [userData, setUserData] = useState({
-        firstName: user?.firstName || '',
-        lastName: user?.lastName || '',
+        fullName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '',
         email: user?.email || ''
     });
     const [isUpdating, setIsUpdating] = useState(false);
@@ -20,8 +19,7 @@ const GeneralPage: React.FC = () => {
     useEffect(() => {
         if (user) {
             setUserData({
-                firstName: user.firstName || '',
-                lastName: user.lastName || '',
+                fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
                 email: user.email || ''
             });
         }
@@ -31,15 +29,23 @@ const GeneralPage: React.FC = () => {
         try {
             setIsUpdating(true);
             setUpdateError(null);
-            await authApi.updateMe({ [field]: value } as any);
+            
+            if (field === 'fullName') {
+                const nameParts = value.trim().split(/\s+/);
+                const firstName = nameParts[0];
+                const lastName = nameParts.length >= 2 ? nameParts.slice(1).join(' ') : '';
+                await authApi.updateMe({ firstName, lastName } as any);
+            } else {
+                await authApi.updateMe({ [field]: value } as any);
+            }
+            
             setUserData(prev => ({ ...prev, [field]: value }));
         } catch (error: any) {
             console.error('Error updating user data:', error);
             setUpdateError(`Failed to update ${field}. Please try again.`);
             if (user) {
                 setUserData({
-                    firstName: user.firstName || '',
-                    lastName: user.lastName || '',
+                    fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
                     email: user.email || ''
                 });
             }

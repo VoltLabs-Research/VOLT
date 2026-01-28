@@ -172,6 +172,30 @@ const useKeyboardShortcuts = () => {
                 // Close other UI elements as needed
                 useUIStore.getState().closeResultsViewer();
             },
+
+            'toggle-opacity-settings': () => {
+                const { activeScene } = useEditorStore.getState();
+                const { exposureSettingsScene, openExposureSettings, closeExposureSettings } = useUIStore.getState();
+
+                if (!activeScene) return;
+
+                const areScenesEqual = (scene1: any, scene2: any): boolean => {
+                    if (!scene1 || !scene2) return false;
+                    if (scene1.source !== scene2.source) return false;
+                    if (scene1.sceneType !== scene2.sceneType) return false;
+                    if (scene1.source === 'plugin') {
+                        return scene1.analysisId === scene2.analysisId && 
+                               scene1.exposureId === scene2.exposureId;
+                    }
+                    return true;
+                };
+
+                if (exposureSettingsScene && areScenesEqual(activeScene, exposureSettingsScene)) {
+                    closeExposureSettings();
+                } else {
+                    openExposureSettings(activeScene);
+                }
+            },
         };
     }, [togglePanel, setShowPanel]);
 

@@ -111,7 +111,14 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                     <Container
                         className={`analysis-section-header d-flex column ${isInProgress ? 'cursor-progress' : 'cursor-pointer'}`}
                         onClick={() => {
+                            if (isInProgress) return;
                             onToggle(section.analysis._id);
+                        }}
+                        onContextMenu={(e) => {
+                            if (isInProgress) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }
                         }}
                         onMouseEnter={(e) => {
                             setTooltipOpen(true);
@@ -127,6 +134,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                                 className='analysis-section-arrow font-size-4'
                                 onClick={(e) => {
                                     e.stopPropagation();
+                                    if (isInProgress) return;
                                     onToggle(section.analysis._id);
                                 }}
                             >
@@ -219,6 +227,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                             onRemove={onRemoveScene}
                             isActive={activeStates.get(`${exposure.analysisId}-${exposure.exposureId}`) ?? false}
                             isSelected={isExposureSelected(exposure)}
+                            isInProgress={isInProgress}
                         />
                     ))}
                 </Container>

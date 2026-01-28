@@ -190,7 +190,6 @@ const MyTeam: React.FC = () => {
                 if (member.isOwner) {
                     return <span className="badge badge-primary">Owner</span>;
                 }
-                console.log(member.user._id !== currentUser?._id, canManage)
                 if (canManage && member.user._id !== currentUser?._id && roleOptions.length > 0) {
                     return (
                         <Select

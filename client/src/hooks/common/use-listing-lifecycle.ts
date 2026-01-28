@@ -86,8 +86,6 @@ const useListingLifecycle = <T = any>({
     // Load more handler for infinite scroll
     const handleLoadMore = useCallback(async () => {
         if (!listingMeta.hasMore || isFetchingMore) return;
-        console.log('handle more - listingMeta:', listingMeta)
-
         const fetchParams = {
             ...initialFetchParams,
             page: listingMeta.page + 1,
@@ -95,7 +93,6 @@ const useListingLifecycle = <T = any>({
             append: true,
             cursor: listingMeta.nextCursor
         };
-        console.log('[useListingLifecycle] Fetching with params:', fetchParams);
         await fetchData(fetchParams);
     }, [listingMeta, isFetchingMore, fetchData, initialFetchParams]);
 

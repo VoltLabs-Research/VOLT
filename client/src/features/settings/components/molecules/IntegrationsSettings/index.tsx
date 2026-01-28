@@ -41,7 +41,7 @@ const IntegrationsSettings: React.FC = () => {
             <SectionHeader
                 title="Third-party Integrations"
                 description="Connect your account with external services and platforms"
-            />.settings-sidebar
+            />
 
             <Container className="integrations-grid gap-1">
                 {integrations.map((item) => (

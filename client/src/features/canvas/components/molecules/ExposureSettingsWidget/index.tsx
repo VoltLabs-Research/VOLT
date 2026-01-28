@@ -42,7 +42,7 @@ const ExposureSettingsWidget: React.FC = () => {
     return (
         <EditorWidget
             style={{ bottom: '1rem', right: '1rem', top: 'auto', left: 'auto' }}
-            className="exposure-settings-widget"
+            className="exposure-settings-widget p-1"
             draggable={true}
         >
             <div className="d-flex column w-max ">

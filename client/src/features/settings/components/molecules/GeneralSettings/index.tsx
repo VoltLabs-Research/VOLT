@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import FormInput from "@/components/atoms/form/FormInput";
-import RecentActivity from "@/features/auth/components/molecules/RecentActivity";
 import { TbCheck, TbTrash, TbX, TbActivity, TbCamera } from "react-icons/tb";
 import authApi from "@/features/auth/api/auth";
+import { useAuthStore } from "@/features/auth/stores";
 import Section from "@/features/settings/atoms/Section";
 import SectionHeader from "@/features/settings/atoms/SectionHeader";
 import StatusBadge from "@/components/atoms/common/StatusBadge";
@@ -12,10 +12,11 @@ import Button from "@/components/primitives/Button";
 import "@/features/settings/components/molecules/GeneralSettings/GeneralSettings.css";
 import Title from "@/components/primitives/Title";
 import Paragraph from "@/components/primitives/Paragraph";
+import useToast from "@/hooks/ui/use-toast";
 
 interface GeneralSettingsProps {
     user: { firstName?: string; lastName?: string; email?: string; avatar?: string } | null;
-    userData: { firstName: string; lastName: string; email: string };
+    userData: { fullName: string; email: string };
     isUpdating: boolean;
     updateError: string | null;
     onFieldChange: (field: string, value: string) => void;
@@ -31,24 +32,22 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
     onDeleteAccount
 }) => {
     const [formData, setFormData] = useState({
-        firstName: userData.firstName,
-        lastName: userData.lastName,
+        fullName: userData.fullName,
         email: userData.email
     });
 
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const { showSuccess, showError } = useToast();
 
     const { errors, checkField } = useFormValidation({
-        firstName: { required: true, minLength: 4, maxLength: 16, message: "First name must be between 4 and 16 characters" },
-        lastName: { required: true, minLength: 4, maxLength: 16, message: "Last name must be between 4 and 16 characters" },
+        fullName: { required: true, minLength: 4, maxLength: 50, message: "Full name must be between 4 and 50 characters" },
         email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email address" }
     });
 
     useEffect(() => {
         if(user){
             setFormData({
-                firstName: user.firstName || "",
-                lastName: user.lastName || "",
+                fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
                 email: user.email || ""
             });
         }
@@ -69,12 +68,12 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
         if(!file) return;
 
         if(!file.type.startsWith("image/")) {
-            alert("Please upload an image file");
+            showError("Please upload an image file");
             return;
         }
 
         if(file.size > 5 * 1024 * 1024){
-            alert("File size must be less than 5MB");
+            showError("File size must be less than 5MB");
             return;
         }
 
@@ -83,23 +82,30 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
 
         try{
             setIsUploadingAvatar(true);
-            await authApi.updateMe(fd);
-            window.location.reload();
+            const response = await authApi.updateMe(fd);
+            
+            // El backend retorna una estructura anidada: {user: {props: {...}}}
+            // Necesitamos extraer los datos del usuario correctamente
+            const userData = (response as any).user?.props || response;
+            
+            const currentUser = useAuthStore.getState().user;
+            if (currentUser) {
+                const mergedUser = { ...currentUser, ...userData };
+                useAuthStore.setState({ user: mergedUser });
+            }
+            showSuccess("Avatar updated successfully");
         }catch(error){
-            alert("Failed to upload avatar. Please try again.");
+            console.error("Avatar upload error:", error);
+            showError("Failed to upload avatar. Please try again.");
         }finally{
             setIsUploadingAvatar(false);
         }
     };
 
     const fields = [{
-        key: "firstName",
-        label: "First name",
-        value: userData.firstName
-    }, {
-        key: "lastName",
-        label: "Last name",
-        value: userData.lastName
+        key: "fullName",
+        label: "Full name",
+        value: userData.fullName
     }];
 
     return (
@@ -202,11 +208,6 @@ const GeneralSettings: React.FC<GeneralSettingsProps> = ({
                     </div>
                 </div>
             </Section>
-
-            <RecentActivity
-                limit={15}
-                showStats={true}
-                className="account-activity-section" />
 
             <Section className="danger-section d-flex column gap-1-5">
                 <SectionHeader

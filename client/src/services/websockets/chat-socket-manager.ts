@@ -60,11 +60,9 @@ export default class ChatSocketManager {
         this.refCount++;
 
         if (this.registered) {
-            console.log(`[Chat] Socket listeners already registered(refs: ${this.refCount})`);
             return;
         }
 
-        console.log('[Chat] Registering socket listeners');
         this.registered = true;
 
         this.setupConnectionHandler();
@@ -74,7 +72,6 @@ export default class ChatSocketManager {
 
     unregister(): void {
         this.refCount--;
-        console.log(`[Chat] Unregister called(refs remaining: ${this.refCount})`);
 
         if (this.refCount <= 0) {
             this.cleanup();
@@ -84,7 +81,6 @@ export default class ChatSocketManager {
     private setupConnectionHandler(): void {
         const unsubscribe = socketService.onConnectionChange((connected: boolean) => {
             useChatStore.getState().setConnected(connected);
-            console.log(`[Chat] Socket ${connected ? 'connected' : 'disconnected'}`);
         });
 
         this.unsubscribers.push(unsubscribe);
@@ -189,8 +185,6 @@ export default class ChatSocketManager {
     }
 
     private cleanup(): void {
-        console.log('[Chat] Cleaning up socket listeners(last ref)');
-
         this.unsubscribers.forEach((unsubscribe) => {
             try {
                 unsubscribe();
@@ -206,7 +200,6 @@ export default class ChatSocketManager {
 
     private createNewMessageHandler(currentChatIdRef: RefObject<string | null>) {
         return (data: { message: any, chatId: string }): void => {
-            console.log('[Chat] New message received:', data);
 
             if (currentChatIdRef.current === data.chatId) {
                 useChatStore.getState().addMessage(data.message);
@@ -215,11 +208,11 @@ export default class ChatSocketManager {
     }
 
     private handleJoinedChat(data: any): void {
-        console.log('[Chat] Joined chat:', data.chatId);
+        //console.log('[Chat] Joined chat:', data.chatId);
     }
 
     private handleLeftChat(data: any): void {
-        console.log('[Chat] Left chat:', data.chatId);
+        //console.log('[Chat] Left chat:', data.chatId);
     }
 
     private createEventHandlers(currentChatIdRef: RefObject<string | null>) {

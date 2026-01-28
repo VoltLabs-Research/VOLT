@@ -239,7 +239,6 @@ export const resolveDynamicColumns = (rows: any[], columns: ColumnDef[]): { colu
                     const baseValue = getValueByPath(row, basePath) || getValueByPath(row, basePath.split('.').pop()!);
 
                     if (baseValue && typeof baseValue === 'object') {
-                        console.log(`[resolveDynamicColumns] Expanding wildcard for path: ${col.path} on keys: ${Object.keys(baseValue).join(', ')}`);
                         Object.keys(baseValue).forEach(key => {
                             const label = col.label === 'auto' ? key : `${col.label} ${key}`;
                             const fullPath = `${col.path}::${key}`; // internal unique path
