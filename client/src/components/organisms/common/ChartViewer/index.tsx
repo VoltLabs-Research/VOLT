@@ -224,7 +224,6 @@ const ChartViewer: React.FC<ChartViewerProps> = ({
                 />
                 <div>
                     <WindowIcons onClose={() => {
-                        console.log('ChartViewer close button clicked');
                         onClose?.();
                     }} />
                 </div>

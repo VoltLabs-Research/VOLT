@@ -46,18 +46,8 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
         },
 
         _handleJobUpdate: (updatedJob: any) => {
-            console.log('[TeamJobsStore] Received team.job.updated event:', {
-                jobId: updatedJob.jobId,
-                status: updatedJob.status,
-                trajectoryId: updatedJob.trajectoryId,
-                timestep: updatedJob.timestep,
-                queueType: updatedJob.queueType,
-                fullPayload: updatedJob
-            });
-
             const { groups, expiredSessions } = get();
             if (updatedJob.type === 'session_expired') {
-                console.log('[TeamJobsStore] Session expired:', updatedJob.sessionId);
                 const newExpiredSessions = new Set(expiredSessions);
                 newExpiredSessions.add(updatedJob.sessionId);
                 set({ expiredSessions: newExpiredSessions });
@@ -67,13 +57,6 @@ const useTeamJobsStore = create<TeamJobsStore>()((set, get) => {
             const trajId = updatedJob.trajectoryId;
             const timestep = updatedJob.timestep;
             const trajIndex = groups.findIndex(g => g.trajectoryId === trajId);
-
-            console.log('[TeamJobsStore] Processing job update:', {
-                trajectoryId: trajId,
-                timestep,
-                trajectoryFound: trajIndex !== -1,
-                currentGroupCount: groups.length
-            });
 
             if (trajIndex === -1) {
                 const newTrajGroup = {

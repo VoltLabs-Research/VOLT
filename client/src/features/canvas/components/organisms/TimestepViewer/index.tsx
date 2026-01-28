@@ -131,9 +131,6 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
                     y: currentY
                 };
 
-                console.log('[TimestepViewer] Scene Layout', { index, currentY, height, padding });
-
-                console.log(`[TimestepViewer] Scene ${index}`, scene);
                 return (
                     <SingleModelViewer
                         key={`${scene.source}-${scene.sceneType}-${(scene as any).exposureId || ''}-${index}`}

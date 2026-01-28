@@ -58,7 +58,6 @@ export const createAnalysisConfigSlice: SliceCreator<AnalysisConfigStore> = (set
             loadingKey: shouldAppend ? 'isFetchingMore' : 'isListingLoading',
             errorFallback: 'Failed to load analysis configs',
             onSuccess: (apiResponse) => {
-                console.log(apiResponse)
                 const paginationResult = calculatePaginationState({
                     newData: apiResponse.data,
                     currentData: storeSnapshot.analysisConfigs,

@@ -26,6 +26,8 @@ interface FormFieldProps {
     expressionNodeId?: string;
     expressionMultiline?: boolean;
     expressionRows?: number;
+    suggestions?: (string | number)[];
+    onFetchSuggestions?: () => void;
 }
 
 let schemasCache: Record<NodeType, NodeOutputSchema> | null = null;
@@ -48,7 +50,9 @@ const FormField: React.FC<FormFieldProps> = ({
     expressionEnabled = false,
     expressionNodeId,
     expressionMultiline = false,
-    expressionRows = 3
+    expressionRows = 3,
+    suggestions,
+    onFetchSuggestions
 }) => {
     const nodes = usePluginBuilderStore(expressionEnabled ? selectNodes : selectEmpty);
     const edges = usePluginBuilderStore(expressionEnabled ? selectEdges : selectEmpty);
@@ -132,6 +136,8 @@ const FormField: React.FC<FormFieldProps> = ({
                         multiline={expressionMultiline}
                         rows={expressionRows}
                         expressionAutocomplete={expressionAutocomplete}
+                        suggestions={suggestions}
+                        onFetchSuggestions={onFetchSuggestions}
                     />
                 );
         }

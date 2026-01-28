@@ -288,7 +288,6 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             selectionManager.deselect();
         }, [selectionManager]),
         setSimBoxMesh: useCallback((mesh: THREE.Mesh | null) => {
-            console.log('[useGlbScene] setSimBoxMesh', { mesh: !!mesh });
             stateRef.current.simBoxMesh = mesh;
             if (mesh) {
                 // Ensure bounding box is computed

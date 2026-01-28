@@ -90,6 +90,7 @@
 }
 
 .expression-group-name {
+    flex: 1;
 }
 
 .expression-group-type {
@@ -132,4 +133,25 @@
     display: block;
     font-size: 0.7rem;
     margin-top: 0.2rem;
+}
+
+/* Suggestions Dropdown */
+.suggestions-dropdown {
+    min-width: 160px;
+}
+
+.suggestion-item {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--radius-xs);
+    transition: background 0.1s ease;
+}
+
+.suggestion-item:hover,
+.suggestion-item--selected {
+    background: var(--color-surface-2);
+}
+
+.suggestion-item--selected {
+    background: var(--status-info-bg);
 }

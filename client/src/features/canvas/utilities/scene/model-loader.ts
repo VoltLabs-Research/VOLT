@@ -69,7 +69,6 @@ export default class ModelLoader {
                     const pos = geom?.getAttribute('position');
                     if (pos && pos.count > 0) {
                         hasData = true;
-                        console.log('[renderable points]', child.name || '(no-name)', child.uuid, 'points=', pos.count);
                     }
                     return;
                 }
@@ -86,7 +85,6 @@ export default class ModelLoader {
                     if (geom.index) {
                         if (geom.index.count >= 3) {
                             hasData = true;
-                            console.log('[renderable mesh]', child.name || '(no-name)', child.uuid, 'triIndices=', geom.index.count);
                         } else {
                             console.warn('[non-renderable mesh] index empty', child.name || '(no-name)', child.uuid);
                         }
@@ -96,13 +94,11 @@ export default class ModelLoader {
                     // without index: Three uses every 3 vertices as a triangle
                     if (pos.count >= 3) {
                         hasData = true;
-                        console.log('[renderable mesh]', child.name || '(no-name)', child.uuid, 'verts=', pos.count);
                     }
                 }
             });
 
 
-            console.log(hasData)
             if (!hasData) {
                 useUIStore.getState().addToast('No results found to build 3D model', 'warning');
                 if (onEmptyData) onEmptyData();
@@ -112,15 +108,10 @@ export default class ModelLoader {
             newModel.userData.glbUrl = url;
 
             if (this.state.model) {
-                console.log(`[ModelLoader] Syncing transforms from ${this.state.model.uuid} to new model ${newModel.uuid}`);
-                console.log(`[ModelLoader] Old Pos: ${JSON.stringify(this.state.model.position)}, Scale: ${this.state.model.scale.x}`); // Scale is uniform
-
                 newModel.position.copy(this.state.model.position);
                 newModel.rotation.copy(this.state.model.rotation);
                 newModel.scale.copy(this.state.model.scale);
                 newModel.updateMatrixWorld(true);
-
-                console.log(`[ModelLoader] New Pos (Synced): ${JSON.stringify(newModel.position)}, Scale: ${newModel.scale.x}`);
             }
 
             // Seamless swap

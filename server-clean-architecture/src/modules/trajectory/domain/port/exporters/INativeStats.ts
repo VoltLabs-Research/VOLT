@@ -16,4 +16,10 @@ export interface NativeStats {
     computeMagnitudes(
         vectors: any[]
     ): Float32Array | undefined;
+
+    getUniqueValuesForProperty(
+        filePath: string,
+        propIdx: number,
+        maxValues?: number
+    ): number[];
 }

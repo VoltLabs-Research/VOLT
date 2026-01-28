@@ -84,7 +84,7 @@ export default class AtomisticExporter implements IAtomisticExporter {
         const gradientMap: Record<string, GradientType> = {
             'Viridis': GradientType.Viridis,
             'Plasma': GradientType.Plasma,
-            'Blue-Red': GradientType.BlueRed,
+            'BlueRed': GradientType.BlueRed,
             'GrayScale': GradientType.Grayscale
         };
 
@@ -100,15 +100,29 @@ export default class AtomisticExporter implements IAtomisticExporter {
 
             colors = nativeExporter.applyPropertyColors(values, startValue, endValue, gradientType);
         } else {
-            if (property === 'type' && parsed.types) {
-                const typeValues = new Float32Array(parsed.types);
-                colors = nativeExporter.applyPropertyColors(typeValues, startValue, endValue, gradientType);
+            const lowerProp = property.toLowerCase();
+            let values: Float32Array;
+
+            if (lowerProp === 'type' && parsed.types) {
+                values = new Float32Array(parsed.types);
+            } else if (lowerProp === 'x') {
+                values = new Float32Array(parsed.positions.length / 3);
+                for (let i = 0; i < values.length; i++) values[i] = parsed.positions[i * 3];
+            } else if (lowerProp === 'y') {
+                values = new Float32Array(parsed.positions.length / 3);
+                for (let i = 0; i < values.length; i++) values[i] = parsed.positions[i * 3 + 1];
+            } else if (lowerProp === 'z') {
+                values = new Float32Array(parsed.positions.length / 3);
+                for (let i = 0; i < values.length; i++) values[i] = parsed.positions[i * 3 + 2];
             } else {
-                if (!parsed.properties || !parsed.properties[property]) {
+                const propValues = parsed.properties?.[property] || parsed.properties?.[lowerProp];
+                if (!propValues) {
                     throw new Error(`Property '${property}' not found in trajectory dump`);
                 }
-                colors = nativeExporter.applyPropertyColors(parsed.properties[property], startValue, endValue, gradientType);
+                values = propValues;
             }
+
+            colors = nativeExporter.applyPropertyColors(values, startValue, endValue, gradientType);
         }
 
         const buffer = nativeExporter.generatePointCloudGLB(parsed.positions, colors, parsed.min, parsed.max);

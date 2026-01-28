@@ -8,6 +8,15 @@ export interface IParticleFilterService {
         analysisId?: string
     ): Promise<{ dump: string[]; perAtom: Record<string, string[]> }>;
 
+    getUniqueValues(
+        trajectoryId: string,
+        timestep: string | number,
+        property: string,
+        maxValues?: number,
+        analysisId?: string,
+        exposureId?: string
+    ): Promise<number[]>;
+
     preview(
         trajectoryId: string,
         timestep: string | number,

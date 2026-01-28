@@ -11,6 +11,7 @@ import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import nativeExporter from '@modules/trajectory/infrastructure/native/NativeExporter';
+import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
 import { formatValueForPath } from '@shared/infrastructure/utils/formatValue';
 
 const HIGHLIGHT_COLOR = [1.0, 0.2, 0.6];
@@ -50,6 +51,47 @@ export default class ParticleFilterService implements IParticleFilterService {
             dump: dumpHeaders,
             perAtom: modifierProps
         };
+    }
+
+    async getUniqueValues(
+        trajectoryId: string,
+        timestep: string | number,
+        property: string,
+        maxValues: number = 100,
+        analysisId?: string,
+        exposureId?: string
+    ): Promise<number[]> {
+        if (exposureId && analysisId) {
+            const modifierData = await this.atomProps.getModifierAnalysis(
+                String(trajectoryId),
+                String(analysisId),
+                String(exposureId),
+                String(timestep)
+            );
+            const atomsData = (modifierData as any)?.data || modifierData;
+            const uniqueSet = new Set<number>();
+            for (const atom of atomsData) {
+                if (atom[property] !== undefined && uniqueSet.size < maxValues) {
+                    uniqueSet.add(Number(atom[property]));
+                }
+            }
+            return Array.from(uniqueSet).sort((a, b) => a - b);
+        }
+
+        const dumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
+        if (!dumpPath) {
+            throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
+        }
+
+        const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [] });
+        const headers = parsed.metadata.headers || [];
+        const propIdx = headers.indexOf(property);
+
+        if (propIdx === -1) {
+            return [];
+        }
+
+        return nativeStats.getUniqueValuesForProperty(dumpPath, propIdx, maxValues);
     }
 
     async preview(

@@ -37,7 +37,6 @@ export const useChat = () => {
         // Skip if already loaded for this team
         if (chatLoadedForTeam === selectedTeamId) return;
 
-        console.log('[Chat] Loading chats for team:', selectedTeamId);
         chatLoadedForTeam = selectedTeamId;
 
         const load = async () => {
@@ -64,8 +63,6 @@ export const useChat = () => {
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            console.log('[Chat] Component unmounting, cleaning up resources');
-
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
             }
@@ -92,8 +89,6 @@ export const useChat = () => {
         abortControllerRef.current = abortController;
 
         try {
-            console.log('[Chat] Selecting chat:', chat._id);
-
             if (store.currentChat?._id) {
                 store.leaveChat(store.currentChat._id);
             }

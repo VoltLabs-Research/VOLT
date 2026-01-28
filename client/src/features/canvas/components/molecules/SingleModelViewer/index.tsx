@@ -71,8 +71,6 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     const handleEmptyData = React.useCallback(async () => {
         if (sceneConfig.source !== 'plugin' || !sceneConfig.exposureId) return;
 
-        console.log('[SingleModelViewer] Empty data detected, switching exposure...');
-
         try {
             const exposures = await usePluginStore.getState().getRenderableExposures(trajectoryId, analysisId);
 
@@ -81,8 +79,6 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
 
             const nextIndex = (currentIndex + 1) % exposures.length;
             const nextExposure = exposures[nextIndex];
-
-            console.log(`[SingleModelViewer] Switching from ${sceneConfig.exposureId} to ${nextExposure.exposureId}`);
 
             const newScene = {
                 ...sceneConfig,

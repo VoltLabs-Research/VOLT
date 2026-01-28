@@ -34,6 +34,16 @@ const usePropertySelector = () => {
         setExposureId(null);
     }, [analysisConfig?._id]);
 
+    // Select 'type' by default if available
+    useEffect(() => {
+        if (property === '' && properties.base.length > 0) {
+            const typeProperty = properties.base.find(p => p.toLowerCase() === 'type');
+            if (typeProperty) {
+                setProperty(typeProperty);
+            }
+        }
+    }, [properties.base, property]);
+
     const propertyOptions = useMemo<PropertyOption[]>(() => [
         ...properties.base.map((prop) => ({ value: prop, title: prop, exposureId: null })),
         ...Object.entries(properties.modifiers).flatMap(([expId, props]) =>

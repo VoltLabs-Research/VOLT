@@ -4,6 +4,7 @@
 
 import { useState, useCallback } from 'react';
 import trajectoryApi from '@/features/trajectory/api/trajectory';
+import rasterApi from '@/features/raster/api/raster';
 import usePropertySelector from '@/features/trajectory/hooks/use-property-selector';
 import EditorWidget from '@/features/canvas/components/organisms/EditorWidget';
 import Button from '@/components/primitives/Button';
@@ -47,6 +48,7 @@ const ParticleFilter = () => {
     const [action, setAction] = useState<FilterAction>('delete');
     const [isLoadingPreview, setIsLoadingPreview] = useState(false);
     const [isApplying, setIsApplying] = useState(false);
+    const [valueSuggestions, setValueSuggestions] = useState<number[]>([]);
     const [previewResult, setPreviewResult] = useState<{
         matchCount: number;
         totalCount: number;
@@ -63,7 +65,26 @@ const ParticleFilter = () => {
         baseHandlePropertyChange(value);
         setPreviewResult(null);
         setError(null);
+        setValueSuggestions([]);
     }, [baseHandlePropertyChange]);
+
+    const fetchValueSuggestions = useCallback(async () => {
+        if (!property || !trajectory?._id || currentTimestep === undefined) return;
+        
+        try {
+            const values = await rasterApi.particleFilter.getUniqueValues(
+                trajectory._id,
+                currentTimestep,
+                property,
+                analysisConfig?._id,
+                exposureId || undefined,
+                50
+            );
+            setValueSuggestions(values);
+        } catch (err) {
+            console.error('Failed to fetch suggestions:', err);
+        }
+    }, [trajectory, currentTimestep, property, analysisConfig, exposureId]);
 
     const handlePreview = useCallback(async () => {
         if (!property || !trajectory?._id || currentTimestep === undefined) {
@@ -73,7 +94,6 @@ const ParticleFilter = () => {
 
         // For modifier properties, we need analysisId
         const selectedOption = propertyOptions.find(opt => opt.value === property);
-        console.log(selectedOption);
         if (selectedOption?.exposureId && !analysisConfig?._id) {
             setError('Analysis required for modifier properties');
             return;
@@ -251,6 +271,8 @@ const ParticleFilter = () => {
                     onFieldChange={(_, v) => setValue(v)}
                     fieldValue={value}
                     label='Value'
+                    suggestions={valueSuggestions}
+                    onFetchSuggestions={fetchValueSuggestions}
                 />
 
                 {error && (

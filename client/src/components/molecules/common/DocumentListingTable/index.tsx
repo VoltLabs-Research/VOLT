@@ -344,8 +344,6 @@ const DocumentListingTable = ({
     (eventOrProps: any) => {
       if (!useVirtualization) return;
 
-      console.log('[DocumentListingTable] Raw Scroll Event:', eventOrProps);
-
       let scrollOffset = 0;
       if (typeof eventOrProps.scrollOffset === 'number') {
         scrollOffset = eventOrProps.scrollOffset;
@@ -357,18 +355,7 @@ const DocumentListingTable = ({
       const visibleHeight = listHeight;
       const scrollThreshold = totalHeight - visibleHeight - 200;
 
-      console.log('[DocumentListingTable] Scroll Debug:', {
-        scrollOffset,
-        totalHeight,
-        visibleHeight,
-        scrollThreshold,
-        hasMore,
-        isFetchingMore,
-        shouldTrigger: scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold
-      });
-
       if (scrollOffset > lastScrollOffset.current && scrollOffset >= scrollThreshold && hasMore && !isFetchingMore) {
-        console.log('[DocumentListingTable] Triggering onLoadMore');
         onLoadMore?.();
       }
 

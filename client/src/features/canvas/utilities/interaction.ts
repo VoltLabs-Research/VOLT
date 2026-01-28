@@ -45,18 +45,10 @@ export const attachPointerEvents = (params: {
         raycaster.setFromCamera({ x: mouse.x, y: mouse.y }, camera);
 
         if (event.button === 0) {
-            console.log('[Interaction] Ray Check', {
-                rayOrigin: raycaster.ray.origin,
-                rayDirection: raycaster.ray.direction,
-                cameraPos: camera.position,
-                simBoxPos: state.simBoxMesh.position
-            });
             const simHits = raycaster.intersectObject(state.simBoxMesh, false);
-            console.log('[Interaction] PointerDown', { mouse: { x: mouse.x, y: mouse.y }, hits: simHits.length, object: state.simBoxMesh });
 
             if (simHits.length > 0) {
                 if (!state.isSelectedPersistent) {
-                    console.log('[Interaction] Selecting Simulation Box Group');
                     state.isSelectedPersistent = true;
                     // Select the parent Group of the mesh, which is the container for the entire simulation box + GLB
                     state.selected = (state.simBoxMesh.parent as THREE.Group) || state.simBoxMesh;

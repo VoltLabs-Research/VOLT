@@ -17,11 +17,6 @@ const SimulationCellBox = React.forwardRef<THREE.Mesh, SimulationCellBoxProps>((
     children,
     transforms
 }, ref) => {
-    console.log('[SimulationCellBox] Render', {
-        hasBoxBounds: !!boxBounds,
-        boxBounds,
-        transforms
-    });
     const geometry = useMemo(() => {
         if (!boxBounds) return null;
 

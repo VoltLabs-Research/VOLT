@@ -4,6 +4,7 @@ import type { ApiResponse } from '@/types/api';
 
 const client = new VoltClient('/raster', { useRBAC: true });
 const colorCodingClient = new VoltClient('/color-coding', { useRBAC: true });
+const particleFilterClient = new VoltClient('/particle-filter', { useRBAC: true });
 
 const rasterApi = {
     async generateGLB(id: string): Promise<any> {
@@ -76,6 +77,27 @@ const rasterApi = {
                 { query: { timestep } }
             );
             return response.data.data;
+        }
+    },
+
+    particleFilter: {
+        async getUniqueValues(
+            trajectoryId: string,
+            timestep: number,
+            property: string,
+            analysisId?: string,
+            exposureId?: string,
+            maxValues: number = 100
+        ): Promise<number[]> {
+            const path = analysisId
+                ? `/unique-values/${trajectoryId}/${analysisId}`
+                : `/unique-values/${trajectoryId}`;
+            const response = await particleFilterClient.request<{ values: number[] }>(
+                'get',
+                path,
+                { query: { timestep, property, exposureId, maxValues } }
+            );
+            return response.data.values;
         }
     }
 };

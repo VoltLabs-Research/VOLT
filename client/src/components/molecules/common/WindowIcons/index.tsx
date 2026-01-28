@@ -30,7 +30,6 @@ const IconCircle = ({ variant, title, onClick }: IconDef) => {
     };
 
     const handleClick = (e: React.MouseEvent) => {
-        console.log('WindowIcons handleClick called', variant);
         e.stopPropagation();
         e.preventDefault();
         onClick();

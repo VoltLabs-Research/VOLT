@@ -181,12 +181,8 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory, tra
   useEffect(() => {
     if (!trajectoryId) return;
 
-    console.log('[CanvasSidebarScene] Setting up analysis.created listener, trajectoryId:', trajectoryId, 'socket connected:', socketService.isConnected());
-
     const handleAnalysisCreated = (data: any) => {
-      console.log('[CanvasSidebarScene] GOT analysis.created:', data);
       if (data.trajectoryId !== trajectoryId) {
-        console.log('[CanvasSidebarScene] SKIP - wrong trajectory');
         return;
       }
 
@@ -201,7 +197,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory, tra
         updatedAt: data.createdAt
       };
 
-      console.log('[CanvasSidebarScene] ADDING analysis:', newAnalysis._id);
       setAnalyses(prev => {
         if (prev.some(a => a._id === newAnalysis._id)) return prev;
         return [newAnalysis, ...prev];
@@ -210,7 +205,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory, tra
 
     const unsubscribe = socketService.on('analysis.created', handleAnalysisCreated);
     return () => {
-      console.log('[CanvasSidebarScene] CLEANUP analysis.created listener');
       unsubscribe();
     };
   }, [trajectoryId]);

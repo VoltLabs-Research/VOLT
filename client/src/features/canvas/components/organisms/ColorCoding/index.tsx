@@ -15,7 +15,7 @@ const COLOR_GRADIENTS = [
     'Viridis',
     'Plasma',
     'BlueRed',
-    'Grayscale'
+    'GrayScale'
 ];
 
 const ColorCoding = () => {
@@ -34,8 +34,8 @@ const ColorCoding = () => {
     const [startValue, setStartValue] = useState(0);
     const [endValue, setEndValue] = useState(0);
     const [gradient, setGradient] = useState('Viridis');
-    const [automaticRange, setAutomaticRange] = useState(false);
-    const [symmetricRange, setSymmetricRange] = useState(false);
+    const [automaticRange, setAutomaticRange] = useState(true);
+    const [symmetricRange, setSymmetricRange] = useState(true);
     const [isFetchingStats, setIsFetchingStats] = useState(false);
     const [isApplying, setIsApplying] = useState(false);
 

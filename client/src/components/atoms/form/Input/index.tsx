@@ -60,6 +60,9 @@ interface InputProps {
     rows?: number;
     // Expression autocomplete support
     expressionAutocomplete?: ExpressionAutocompleteProps;
+    // Simple suggestions support
+    suggestions?: (string | number)[];
+    onFetchSuggestions?: () => void;
 }
 
 const containsExpression = (value: string): boolean => {
@@ -80,9 +83,13 @@ const Input: React.FC<InputProps> = ({
     required = false,
     multiline = false,
     rows = 3,
-    expressionAutocomplete
+    expressionAutocomplete,
+    suggestions,
+    onFetchSuggestions
 }) => {
     const [showDropdown, setShowDropdown] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [suggestionIndex, setSuggestionIndex] = useState(0);
     const [filter, setFilter] = useState('');
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [cursorPosition, setCursorPosition] = useState(0);
@@ -124,13 +131,29 @@ const Input: React.FC<InputProps> = ({
         return Object.values(groupedExpressions).flat();
     }, [groupedExpressions]);
 
+    const [dropdownPlacement, setDropdownPlacement] = useState<'below' | 'above'>('below');
+
     const updateDropdownPosition = useCallback(() => {
         if (!inputRef.current) return;
         const rect = inputRef.current.getBoundingClientRect();
-        setDropdownPosition({
-            top: rect.bottom + window.scrollY + 4,
-            left: rect.left + window.scrollX
-        });
+        const dropdownHeight = 200;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        
+        const placement = spaceBelow < dropdownHeight && spaceAbove > spaceBelow ? 'above' : 'below';
+        setDropdownPlacement(placement);
+        
+        if (placement === 'below') {
+            setDropdownPosition({
+                top: rect.bottom + window.scrollY + 4,
+                left: rect.left + window.scrollX
+            });
+        } else {
+            setDropdownPosition({
+                top: rect.top + window.scrollY,
+                left: rect.left + window.scrollX
+            });
+        }
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -217,19 +240,38 @@ const Input: React.FC<InputProps> = ({
         }, 0);
     };
 
+    const [isFocused, setIsFocused] = useState(false);
+
     const handleFocus = () => {
+        setIsFocused(true);
         if (isExpressionEnabled) {
             updateDropdownPosition();
+        }
+        if (suggestions && suggestions.length > 0) {
+            setShowSuggestions(true);
+            updateDropdownPosition();
+        } else if (onFetchSuggestions) {
+            onFetchSuggestions();
         }
     };
 
     const handleBlur = () => {
+        setIsFocused(false);
         setTimeout(() => {
             if (!dropdownRef.current?.contains(document.activeElement)) {
                 setShowDropdown(false);
+                setShowSuggestions(false);
             }
         }, 150);
     };
+
+    // Show suggestions when they arrive and input is focused
+    useEffect(() => {
+        if (isFocused && suggestions && suggestions.length > 0) {
+            setShowSuggestions(true);
+            updateDropdownPosition();
+        }
+    }, [suggestions, isFocused, updateDropdownPosition]);
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -268,6 +310,82 @@ const Input: React.FC<InputProps> = ({
     const hasExpression = isExpressionEnabled && containsExpression(String(value));
 
     const inputClassName = `${className} ${hasExpression ? 'input--has-expression' : ''}`.trim();
+
+    const filteredSuggestions = useMemo(() => {
+        if (!suggestions) return [];
+        const strValue = String(value).toLowerCase();
+        if (!strValue) return suggestions;
+        return suggestions.filter(s => String(s).toLowerCase().includes(strValue));
+    }, [suggestions, value]);
+
+    const handleSuggestionKeyDown = (e: React.KeyboardEvent) => {
+        if (!showSuggestions || filteredSuggestions.length === 0) return;
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setSuggestionIndex(prev => Math.min(prev + 1, filteredSuggestions.length - 1));
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                setSuggestionIndex(prev => Math.max(prev - 1, 0));
+                break;
+            case 'Enter':
+            case 'Tab':
+                if (filteredSuggestions[suggestionIndex] !== undefined) {
+                    e.preventDefault();
+                    onChange(filteredSuggestions[suggestionIndex]);
+                    setShowSuggestions(false);
+                }
+                break;
+            case 'Escape':
+                setShowSuggestions(false);
+                break;
+        }
+    };
+
+    const renderSuggestions = () => {
+        if (!showSuggestions || filteredSuggestions.length === 0) return null;
+
+        const dropdownStyle: React.CSSProperties = {
+            position: 'absolute',
+            left: dropdownPosition.left,
+            zIndex: 9999,
+            maxHeight: '200px'
+        };
+
+        if (dropdownPlacement === 'above') {
+            dropdownStyle.top = dropdownPosition.top;
+            dropdownStyle.transform = 'translateY(-100%) translateY(-4px)';
+        } else {
+            dropdownStyle.top = dropdownPosition.top;
+        }
+
+        return createPortal(
+            <Container
+                ref={dropdownRef}
+                className={`d-flex column overflow-hidden expression-dropdown suggestions-dropdown suggestions-dropdown--${dropdownPlacement}`}
+                style={dropdownStyle}
+            >
+                <Container className="y-auto">
+                    {filteredSuggestions.map((suggestion, idx) => (
+                        <Container
+                            key={idx}
+                            className={`suggestion-item cursor-pointer p-05 ${idx === suggestionIndex ? 'suggestion-item--selected' : ''}`}
+                            onClick={() => {
+                                onChange(suggestion);
+                                setShowSuggestions(false);
+                            }}
+                            onMouseEnter={() => setSuggestionIndex(idx)}
+                        >
+                            {String(suggestion)}
+                        </Container>
+                    ))}
+                </Container>
+            </Container>,
+            document.body
+        );
+    };
 
     const renderDropdown = () => {
         if (!showDropdown || !isExpressionEnabled) return null;
@@ -394,6 +512,39 @@ const Input: React.FC<InputProps> = ({
                     </Tooltip>
                 )}
                 {renderDropdown()}
+            </Container>
+        );
+    }
+
+    // Input with suggestions support
+    if (suggestions !== undefined) {
+        return (
+            <Container className="p-relative w-max input-wrapper flex-1">
+                <input
+                    ref={inputRef as React.RefObject<HTMLInputElement>}
+                    type={type}
+                    value={String(value)}
+                    onChange={(e) => {
+                        const newValue = type === 'number' ? parseFloat(e.target.value) || 0 : e.target.value;
+                        onChange(newValue);
+                        if (suggestions.length > 0) {
+                            setShowSuggestions(true);
+                            updateDropdownPosition();
+                        }
+                    }}
+                    onKeyDown={handleSuggestionKeyDown}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                    step={step}
+                    min={min}
+                    max={max}
+                    className={className}
+                    autoFocus={autoFocus}
+                    required={required}
+                />
+                {renderSuggestions()}
             </Container>
         );
     }
