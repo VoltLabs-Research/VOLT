@@ -46,11 +46,13 @@ const TeamInvitationPage: React.FC = () => {
 
         setActionLoading(true);
         try {
+            // TODO: REFACTOR 
+            if(invitation?.team._id){
+                localStorage.setItem('selectedTeamId', invitation?.team?._id)
+            }
             await teamApi.invitations.accept(token);
             setError(null);
-            setTimeout(() => {
-                navigate(`/dashboard?team=${invitation?.team._id}`);
-            }, 2000);
+            window.location.href = '/dashboard';
         } catch (err: any) {
             setError(err?.message || 'An error occurred');
         } finally {
@@ -65,9 +67,7 @@ const TeamInvitationPage: React.FC = () => {
         try {
             await teamApi.invitations.reject(token);
             setError(null);
-            setTimeout(() => {
-                navigate('/dashboard');
-            }, 2000);
+            window.location.href = '/dashboard';
         } catch (err: any) {
             setError(err?.message || 'An error occurred');
         } finally {
@@ -78,7 +78,7 @@ const TeamInvitationPage: React.FC = () => {
     if (loading) {
         return (
             <Container className='auth-page-wrapper w-max vh-max overflow-hidden'>
-                <Container className='form-section p-relative gap-1 vh-max p-1-5'>
+                <Container className='form-section p-relative gap-1 vh-max p-1-5 d-flex items-center'>
                     <Container className='form-container d-flex column gap-1-5 skeleton-details p-relative w-max'>
                         <Skeleton variant='rectangular' width={150} height={30} sx={{ borderRadius: '100px', mx: 'auto' }} />
                         <Skeleton variant='rectangular' width='80%' height={56} sx={{ borderRadius: '12px', mx: 'auto' }} />
@@ -118,6 +118,7 @@ const TeamInvitationPage: React.FC = () => {
     const expiresAt = new Date(invitation.expiresAt);
     const isExpired = new Date() > expiresAt;
 
+    // TODO: this should be a back-end verification.
     if (isExpired) {
         return (
             <Container className='auth-page-wrapper w-max vh-max overflow-hidden'>
@@ -136,14 +137,14 @@ const TeamInvitationPage: React.FC = () => {
 
     return (
         <Container className='auth-page-wrapper w-max vh-max overflow-hidden'>
-            <Container className='form-section p-relative gap-1 vh-max p-1-5'>
+            <Container className='form-section p-relative gap-1 vh-max p-1-5 d-flex items-center'>
                 <Container className='form-container text-center p-relative w-max'>
                     <Container className='form-header'>
-                        <Container className='user-badge d-flex flex-center gap-05 invitation-badge p-1'>
-                            <CheckCircle size={20} color='var(--color-zinc-400)' />
+                        <Container className='d-flex flex-center gap-05 invitation-badge p-1'>
+                            <CheckCircle size={20} />
                             <span className='invitation-badge-text'>You've been invited!</span>
                         </Container>
-                        <Title className='mt-3 font-size-5 font-weight-6'>{invitation.team.name}</Title>
+                        <Title className='mt-1 mb-1-5 font-size-5 font-weight-6'>{invitation.team.name}</Title>
                         <Paragraph className='form-subtitle font-size-3'>
                             You've been invited to join this team
                         </Paragraph>
@@ -153,10 +154,6 @@ const TeamInvitationPage: React.FC = () => {
                     </Container>
 
                     <Container className='d-flex gap-1 flex-center flex-wrap invitation-details'>
-                        <Container className='detail-item text-center'>
-                            <span className='detail-label'>Your Role</span>
-                            <Container className='user-badge role-badge p-1'>{invitation.role}</Container>
-                        </Container>
                         <Container className='detail-item text-center'>
                             <span className='detail-label'>Email</span>
                             <Paragraph className='detail-value font-size-3'>

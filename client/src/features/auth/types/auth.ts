@@ -16,9 +16,11 @@ export interface SignInCredentials {
 }
 
 export interface SignUpDetails {
-    username: string;
     email: string;
+    firstName: string;
+    lastName: string;
     password: string;
+    passwordConfirm: string;
 }
 
 export interface PasswordInfo {

@@ -19,7 +19,7 @@ export interface CreateContainerOutputDTO {
 
 // Update
 export interface UpdateContainerInputDTO {
-    id: string;
+    containerId: string;
     action?: 'start' | 'stop' | 'restart';
     env?: Array<{ key: string; value: string }>;
     ports?: Array<{ private: number; public: number }>;

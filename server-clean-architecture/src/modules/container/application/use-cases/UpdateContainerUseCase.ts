@@ -15,9 +15,9 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
     ){}
 
     async execute(input: UpdateContainerInputDTO): Promise<Result<UpdateContainerOutputDTO>> {
-        const { id, action, env, ports } = input;
+        const { containerId, action, env, ports } = input;
 
-        const container = await this.repository.findById(id);
+        const container = await this.repository.findById(containerId);
         if (!container) {
             throw new ApplicationError(ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found', 404);
         }
@@ -41,7 +41,7 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
             // Just update DB status
             const status = action === 'start' || action === 'restart' ? 'running' : 'exited';
             container.status = status;
-            await this.repository.updateById(id, { status });
+            await this.repository.updateById(containerId, { status });
 
             return Result.ok({ container, status });
         }
@@ -108,7 +108,7 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
             }
         }
 
-        const updated = await this.repository.updateById(id, {
+        const updated = await this.repository.updateById(containerId, {
             containerId: newContainerInfo.Id,
             image: tempImageName, // Update image ref? Or keep original? Legacy updated it.
             env: env || container.env,

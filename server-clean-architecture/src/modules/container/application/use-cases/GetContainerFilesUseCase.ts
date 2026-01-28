@@ -7,14 +7,14 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
 
 @injectable()
-export class GetContainerFilesUseCase implements IUseCase<{ id: string; path?: string }, { files: any[] }> {
+export class GetContainerFilesUseCase implements IUseCase<{ containerId: string; path?: string }, { files: any[] }> {
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
         @inject('IContainerService') private containerService: IContainerService
     ){}
 
-    async execute(input: { id: string; path?: string }): Promise<Result<{ files: any[] }>> {
-        const container = await this.repository.findById(input.id);
+    async execute(input: { containerId: string; path?: string }): Promise<Result<{ files: any[] }>> {
+        const container = await this.repository.findById(input.containerId);
         if (!container) {
             throw new ApplicationError(ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found', 404);
         }

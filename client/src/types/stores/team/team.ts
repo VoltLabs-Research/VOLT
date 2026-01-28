@@ -8,9 +8,10 @@ export interface TeamState {
 
     // Members & Presence
     members: TeamMember[];
-    admins: TeamMember[];
-    owner: TeamMember | null;
     onlineUsers: string[]; // User IDs
+
+    // Permissions
+    canInvite: boolean;
 }
 
 export interface TeamMember {
@@ -47,6 +48,9 @@ export interface TeamActions {
     addOnlineUser: (userId: string) => void;
     removeOnlineUser: (userId: string) => void;
     initializeSocket: (teamId: string) => () => void;
+
+    // Permissions
+    checkCanInvite: (teamId: string) => Promise<void>;
 }
 
 export interface CreateTeamData {

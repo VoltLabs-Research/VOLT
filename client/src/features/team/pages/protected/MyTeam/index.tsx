@@ -22,7 +22,7 @@ import useConfirm from '@/hooks/ui/use-confirm';
 const MyTeam: React.FC = () => {
     usePageTitle('My Team');
     const navigate = useNavigate();
-    const { selectedTeam, members, admins, owner, onlineUsers, fetchMembers, initializeSocket, removeMember, updateTeam, isLoading } = useTeamStore();
+    const { selectedTeam, members, onlineUsers, fetchMembers, initializeSocket, removeMember, updateTeam, isLoading } = useTeamStore();
     const { roles, fetchRoles, assignRole, members: membersWithRoles } = useTeamRoleStore();
     const { user: currentUser } = useAuthStore();
     const { showSuccess, showError } = useToast();
@@ -45,7 +45,7 @@ const MyTeam: React.FC = () => {
 
     const ownerId = selectedTeam?.owner?._id?.toString();
     const currentIsOwner = !!(currentUser && ownerId && ownerId === currentUser._id);
-    const currentIsAdmin = !!(currentUser && admins?.some?.(a => a._id === currentUser._id));
+    const currentIsAdmin = !!(currentUser && members?.some?.((m: any) => m.user._id === currentUser._id && m.role?.name === 'Admin'));
     const canManage = currentIsOwner || currentIsAdmin;
 
     const handleSaveTeamName = useCallback(async (newName: string) => {
@@ -98,7 +98,7 @@ const MyTeam: React.FC = () => {
 
     const isOnline = (userId: string) => onlineUsers.includes(userId);
     const isOwnerCheck = (userId: string) => ownerId === userId;
-    const isAdmin = (userId: string) => admins?.some?.(a => a._id === userId);
+    const isAdmin = (userId: string) => members?.some?.((m: any) => m.user._id === userId && m.role?.name === 'Admin');
 
     const memberRoleMap = useMemo(() => {
         const map = new Map<string, { memberId: string; roleId: string; roleName: string; isSystem: boolean }>();
@@ -147,7 +147,7 @@ const MyTeam: React.FC = () => {
             if (!a.isOnline && b.isOnline) return 1;
             return 0;
         });
-    }, [members, admins, owner, onlineUsers, memberRoleMap]);
+    }, [members, onlineUsers, memberRoleMap]);
 
     const visibleData = useMemo(() => {
         return tableData.slice(0, page * limit);

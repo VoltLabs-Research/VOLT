@@ -8,14 +8,14 @@ import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
-export class DeleteContainerUseCase implements IUseCase<{ id: string }, DeleteContainerOutputDTO> {
+export class DeleteContainerUseCase implements IUseCase<{ containerId: string }, DeleteContainerOutputDTO> {
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
         @inject('IContainerService') private containerService: IContainerService
     ){}
 
-    async execute(input: { id: string }): Promise<Result<DeleteContainerOutputDTO>> {
-        const container = await this.repository.findById(input.id);
+    async execute(input: { containerId: string }): Promise<Result<DeleteContainerOutputDTO>> {
+        const container = await this.repository.findById(input.containerId);
         if (!container) {
             throw new ApplicationError(ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found', 404);
         }
@@ -46,7 +46,7 @@ export class DeleteContainerUseCase implements IUseCase<{ id: string }, DeleteCo
         // but Clean Architecture usually avoids hooks.
         // I will explicitly delete the repository entry.
 
-        await this.repository.deleteById(input.id);
+        await this.repository.deleteById(input.containerId);
 
         return Result.ok({ message: 'Container deleted successfully' });
     }

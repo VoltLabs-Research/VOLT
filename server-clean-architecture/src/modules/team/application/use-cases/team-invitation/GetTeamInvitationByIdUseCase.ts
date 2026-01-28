@@ -16,19 +16,19 @@ export default class GetTeamInvitationByIdUseCase implements IUseCase<GetTeamInv
 
     async execute(input: GetTeamInvitationByIdInputDTO): Promise<Result<GetTeamInvitationByIdOutputDTO, ApplicationError>> {
         const { invitationId } = input;
-        const invitation = await this.invitationRepository.findById(invitationId);
+        const invitation = await this.invitationRepository.findById(invitationId, {
+            populate: {
+                path: 'invitedBy team',
+                select: 'firstName lastName name _id'
+            }
+        });
         if (!invitation) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.TEAM_INVITATION_NOT_FOUND,
                 'Team invitation not found'
             ));
         }
-        const props = { ...invitation.props };
 
-        if (props.role && typeof props.role === 'object' && 'name' in (props.role as any)) {
-            props.role = (props.role as any).name;
-        }
-
-        return Result.ok(props);
+        return Result.ok(invitation.props);
     }
 };

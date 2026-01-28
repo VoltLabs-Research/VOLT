@@ -1,6 +1,7 @@
 import { TokenStorage } from '@/features/auth/utilities/token-storage';
 import { clearErrorHistory } from '@/api/error-notification';
 import type { User } from '@/types/models';
+import type { SignUpDetails } from '@/features/auth/types/auth';
 import authApi from '@/features/auth/api/auth';
 import { runRequest } from '@/stores/helpers';
 import type { SliceCreator } from '@/stores/helpers';
@@ -22,7 +23,7 @@ export interface AuthState {
 export interface AuthActions {
     initializeAuth: () => Promise<{ user: User | null }>;
     signIn: (credentials: { email: string; password: string }) => Promise<{ user: User | null }>;
-    signUp: (details: { name: string; email: string; password: string }) => Promise<{ user: User | null }>;
+    signUp: (details: SignUpDetails) => Promise<{ user: User | null }>;
     signOut: () => void;
     clearError: () => void;
     changePassword: (data: { currentPassword: string; newPassword: string }) => Promise<{}>;

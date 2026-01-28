@@ -22,5 +22,6 @@ router.route('/:teamId')
 
 router.post('/:teamId/members/remove', controllers.removeUserFromTeam.handle);
 router.post('/:teamId/leave', controllers.leave.handle);
+router.get('/:teamId/can-invite', controllers.checkInvitePermission.handle);
 
 export default module;

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect } from 'react';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
 import Tooltip from '@/components/atoms/common/Tooltip';
@@ -33,18 +33,15 @@ const capitalize = (name?: string) => {
 const DashboardHeader = ({ setSidebarOpen }: DashboardHeaderProps) => {
     const { pathname } = useLocation();
     const user = useAuthStore((state) => state.user);
-    const owner = useTeamStore((state) => state.owner);
-    const admins = useTeamStore((state) => state.admins);
+    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const canInvite = useTeamStore((state) => state.canInvite);
+    const checkCanInvite = useTeamStore((state) => state.checkCanInvite);
 
-    const canInvite = useMemo(() => {
-        if (!user || !owner) return false;
-
-        // Check if user is owner
-        if (owner.user._id === user._id) return true;
-
-        // Check if user is admin
-        return admins.some((admin) => admin.user._id === user._id);
-    }, [user, owner, admins]);
+    useEffect(() => {
+        if (selectedTeam?._id) {
+            checkCanInvite(selectedTeam._id);
+        }
+    }, [selectedTeam?._id, checkCanInvite]);
 
     return (
         <header className='dashboard-top-header p-sticky gap-1'>

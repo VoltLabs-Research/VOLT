@@ -1,4 +1,5 @@
 import Logger from '@/services/common/logger';
+import { socketService } from '@/services/websockets/socketio';
 
 export class TokenStorage{
     private static readonly TOKEN_KEY = 'authToken';
@@ -8,6 +9,7 @@ export class TokenStorage{
         try{
             if(typeof window !== 'undefined'){
                 localStorage.setItem(this.TOKEN_KEY, token);
+                socketService.updateAuth({ token });
             }
         }catch(error){
             this.logger.error('Failed to save token:', error);

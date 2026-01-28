@@ -26,7 +26,7 @@ const TeamInvitePanel: React.FC<TeamInvitePanelProps> = ({
     onClose
 }) => {
     const [email, setEmail] = useState('');
-    const [generalAccess, setGeneralAccess] = useState<'Can edit' | 'Can view' | 'Restricted'>('Restricted');
+    const [generalAccess, setGeneralAccess] = useState<'Can edit' | 'Can view' | 'Restricted'>('Can view');
     const [invitations, setInvitations] = useState<TeamInvitation[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingInvitations, setLoadingInvitations] = useState(true);

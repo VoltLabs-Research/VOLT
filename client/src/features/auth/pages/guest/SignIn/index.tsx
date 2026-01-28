@@ -106,8 +106,7 @@ export default function AuthPage() {
   const [step, setStep] = useState("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [fullName, setFullName] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
 
   const { errors, validate, checkField, clearError } = useFormValidation({
@@ -122,17 +121,14 @@ export default function AuthPage() {
       maxLength: 16,
       message: 'Password must be between 8 and 16 characters'
     },
-    firstName: {
+    fullName: {
       required: true,
-      minLength: 4,
-      maxLength: 16,
-      message: 'First name must be between 4 and 16 characters'
-    },
-    lastName: {
-      required: true,
-      minLength: 4,
-      maxLength: 16,
-      message: 'Last name must be between 4 and 16 characters'
+      minLength: 2,
+      maxLength: 32,
+      validate: (value) => {
+        const parts = value?.trim().split(/\s+/) || [];
+        return parts.length >= 2 || 'Please enter your first and last name';
+      }
     },
     passwordConfirm: {
       required: true,
@@ -163,7 +159,10 @@ export default function AuthPage() {
         if (!validate({ email, password }, ['email', 'password'])) return;
         await signIn({ email, password });
       } else if (step === "register") {
-        if (!validate({ email, firstName, lastName, password, passwordConfirm }, ['email', 'firstName', 'lastName', 'password', 'passwordConfirm'])) return;
+        if (!validate({ email, fullName, password, passwordConfirm }, ['email', 'fullName', 'password', 'passwordConfirm'])) return;
+        const nameParts = fullName.trim().split(/\s+/);
+        const firstName = nameParts[0];
+        const lastName = nameParts.length >= 2 ? nameParts.slice(1).join(' ') : '';
         await signUp({ email, firstName, lastName, password, passwordConfirm });
       }
     } catch (error) {
@@ -330,17 +329,10 @@ export default function AuthPage() {
                   <form onSubmit={handleSubmit} className="space-y-4 form-sign-up">
                     <FormInput
                       variant="auth"
-                      value={firstName}
-                      onChange={handleInputChange(setFirstName, 'firstName')}
-                      placeholder="First Name"
-                      error={errors.firstName}
-                    />
-                    <FormInput
-                      variant="auth"
-                      value={lastName}
-                      onChange={handleInputChange(setLastName, 'lastName')}
-                      placeholder="Last Name"
-                      error={errors.lastName}
+                      value={fullName}
+                      onChange={handleInputChange(setFullName, 'fullName')}
+                      placeholder="Full Name"
+                      error={errors.fullName}
                     />
                     <FormInput
                       variant="auth"

@@ -33,6 +33,11 @@ const teamApi = {
         await client.request('post', `/${id}/leave`);
     },
 
+    async canInvite(teamId: string): Promise<boolean> {
+        const response = await client.request<ApiResponse<{ canInvite: boolean }>>('get', `/${teamId}/can-invite`);
+        return response.data.data.canInvite;
+    },
+
     members: {
         async remove(teamId: string, data: { userId?: string; }): Promise<void> {
             await client.request('post', `/${teamId}/members/remove`, { data });

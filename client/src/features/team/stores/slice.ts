@@ -11,9 +11,8 @@ export const initialState: TeamState = {
     isLoading: false,
     error: null,
     members: [],
-    admins: [],
-    owner: null,
-    onlineUsers: []
+    onlineUsers: [],
+    canInvite: false
 };
 
 // Track which team's members have been fetched
@@ -64,9 +63,8 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
         set({
             selectedTeam,
             members: [],
-            admins: [],
-            owner: null,
-            onlineUsers: []
+            onlineUsers: [],
+            canInvite: false
         } as Partial<TeamStore>);
 
         if (typeof window !== 'undefined') {
@@ -106,7 +104,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
                     const currentTeam = state.teams.find(t => t._id === teamId);
                     const mergedTeam = {
                         ...updatedTeam,
-                        owner: updatedTeam.owner || currentTeam?.owner || (state.owner as any)
+                        owner: updatedTeam.owner || currentTeam?.owner
                     };
 
                     const nextTeams = state.teams.map((team) =>
@@ -174,13 +172,9 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
             errorFallback: 'Failed to fetch members',
             rethrow: true,
             loadingKey: 'isLoading',
-            onSuccess: (data) => {
+            onSuccess: (members) => {
                 fetchedMembersForTeam = teamId;
-                set({
-                    members: data.members,
-                    admins: data.admins,
-                    owner: data.owner
-                } as Partial<TeamStore>);
+                set({ members } as Partial<TeamStore>);
             }
         });
     },
@@ -193,8 +187,7 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
             successMessage: 'Member removed successfully',
             onSuccess: () =>
                 set((state: TeamStore) => ({
-                    members: state.members.filter((member) => member._id !== userId),
-                    admins: state.admins.filter((admin) => admin._id !== userId)
+                    members: state.members.filter((member) => member._id !== userId)
                 }))
         });
     },
@@ -255,7 +248,15 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
             offUserOnline();
             offUserOffline();
             offPresenceList();
-            // Do NOT unsubscribe from the team
         };
+    },
+
+    checkCanInvite: async (teamId: string) => {
+        try {
+            const canInvite = await teamApi.canInvite(teamId);
+            set({ canInvite } as Partial<TeamStore>);
+        } catch {
+            set({ canInvite: false } as Partial<TeamStore>);
+        }
     }
 });

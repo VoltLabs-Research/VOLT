@@ -1,16 +1,16 @@
 .invitation-badge-text {
     font-size: 0.9rem;
-    color: var(--color-zinc-400);
+    color: var(--color-text-primary);
 }
 
 .invited-by {
     font-size: 0.9rem;
-    color: var(--color-zinc-500);
+    color: var(--color-text-secondary);
     margin-top: 0.5rem;
 }
 
 .invited-by strong {
-    color: var(--color-zinc-400);
+    color: var(--color-text-primary);
 }
 
 .invitation-details {
@@ -24,12 +24,12 @@
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: var(--color-zinc-600);
+    color: var(--color-text-muted);
 }
 
 .detail-value {
     margin-top: 0.5rem;
-    color: var(--color-zinc-400);
+    color: var(--color-text-primary);
 }
 
 .role-badge {
@@ -44,7 +44,7 @@
 
 .error-badge {
     margin-top: 1.5rem;
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
+    background: var(--status-error-bg);
+    border-color: var(--status-error-border);
+    color: var(--status-error);
 }

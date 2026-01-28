@@ -8,14 +8,14 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
 
 @injectable()
-export class GetContainerStatsUseCase implements IUseCase<{ id: string }, GetContainerStatsOutputDTO> {
+export class GetContainerStatsUseCase implements IUseCase<{ containerId: string }, GetContainerStatsOutputDTO> {
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
         @inject('IContainerService') private containerService: IContainerService
     ){}
 
-    async execute(input: { id: string }): Promise<Result<GetContainerStatsOutputDTO>> {
-        const container = await this.repository.findById(input.id);
+    async execute(input: { containerId: string }): Promise<Result<GetContainerStatsOutputDTO>> {
+        const container = await this.repository.findById(input.containerId);
         if (!container) {
             throw new ApplicationError(ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found', 404);
         }
