@@ -223,7 +223,7 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             mat.uniforms.pointScale.value = baseScale * normScale * pointSizeMultiplier;
             invalidate();
         }
-    }, [pointSizeMultiplier, params.boxBounds, params.normalizationScale, invalidate, loadingState.isLoading]);
+    }, [model, pointSizeMultiplier, params.boxBounds, params.normalizationScale, invalidate]);
 
     // Apply opacity from scene settings
     useEffect(() => {
