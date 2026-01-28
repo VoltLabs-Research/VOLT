@@ -51,10 +51,35 @@ const withPaddingDomain = (values: number[]) => {
     return { min: min - pad, max: max + pad };
 };
 
+const parseWeekLabel = (label: string): Date => {
+    // Handle ISO week format "YYYY-WXX"
+    const weekMatch = label.match(/^(\d{4})-W(\d{2})$/);
+    if (weekMatch) {
+        const year = parseInt(weekMatch[1], 10);
+        const week = parseInt(weekMatch[2], 10);
+        // Get first day of the year and add weeks
+        const jan1 = new Date(Date.UTC(year, 0, 1));
+        const dayOfWeek = jan1.getUTCDay();
+        const daysToAdd = (week - 1) * 7 - dayOfWeek + 1;
+        jan1.setUTCDate(jan1.getUTCDate() + daysToAdd);
+        return jan1;
+    }
+    // Fallback to regular date parsing
+    const d = new Date(`${label}T00:00:00Z`);
+    return isNaN(d.getTime()) ? new Date() : d;
+};
+
+const toWeekLabel = (d: Date): string => {
+    const year = d.getUTCFullYear();
+    const jan1 = new Date(Date.UTC(year, 0, 1));
+    const days = Math.floor((d.getTime() - jan1.getTime()) / 86400000);
+    const week = Math.ceil((days + jan1.getUTCDay() + 1) / 7);
+    return `${year}-W${String(week).padStart(2, '0')}`;
+};
+
 const padSeries = (baseLabels: string[], series: number[], desired = 12) => {
     const last = baseLabels[baseLabels.length - 1];
-    const end = last ? new Date(`${last}T00:00:00Z`) : new Date();
-    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    const end = last ? parseWeekLabel(last) : new Date();
 
     const map = new Map<string, number>();
     for (let i = 0; i < baseLabels.length; i++) {
@@ -66,7 +91,7 @@ const padSeries = (baseLabels: string[], series: number[], desired = 12) => {
         const d = new Date(end);
         d.setUTCDate(d.getUTCDate() - i * 7);
         d.setUTCHours(0, 0, 0, 0);
-        labels.push(iso(d));
+        labels.push(toWeekLabel(d));
     }
     const full = labels.map((k) => map.get(k) ?? 0);
     return { labels, series: full };
