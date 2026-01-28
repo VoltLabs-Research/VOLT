@@ -47,8 +47,8 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
             try {
                 const response = await pluginApi.getPlugins({ limit: 1000 });
                 const exposures = response.data
-                    .filter(p => p.listingsWithExposures)
-                    .map(p => p.listingsWithExposures!);
+                    .filter((p: any) => p.listingExposures)
+                    .map((p: any) => p.listingExposures!);
                 setExposures(exposures);
             } catch (error) {
                 console.error('Failed to fetch exposures:', error);
@@ -215,7 +215,7 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
                         exposures.map((plugin) => (
                             <div key={plugin.pluginSlug} className="sidebar-nested-section">
                                 <button
-                                    className={`sidebar-sub-item sidebar-nested-header ${pathname.includes(`/plugins/${plugin.pluginSlug}/listing/`) ? 'is-selected' : ''}`}
+                                    className={`sidebar-sub-item sidebar-nested-header ${pathname.includes(`/plugins/${plugin.pluginSlug}/listing/`) ? 'is-selected' : ''} gap-075 font-weight-4 color-secondary cursor-pointer`}
                                     onClick={() => {
                                         setExpandedPlugins(prev => {
                                             const next = new Set(prev);
@@ -229,7 +229,7 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
                                     }}
                                     title={plugin.pluginName}
                                 >
-                                    <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                    <span>
                                         {plugin.pluginName}
                                     </span>
                                     <IoChevronDown
@@ -241,10 +241,10 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
                                     <div className="sidebar-nested-items">
                                         {plugin.exposures.map((exposure) => (
                                             <button
-                                                key={exposure.slug}
-                                                className={`sidebar-nested-item ${pathname.includes(`/plugins/${plugin.pluginSlug}/listing/${encodeURIComponent(exposure.slug)}`) ? 'is-selected' : ''}`}
+                                                key={exposure.name}
+                                                className={`sidebar-nested-item ${pathname.includes(`/plugins/${plugin.pluginSlug}/listing/${encodeURIComponent(exposure.name)}`) ? 'is-selected' : ''} gap-075 font-weight-4 color-secondary cursor-pointer`}
                                                 onClick={() => {
-                                                    navigate(`/dashboard/plugins/${plugin.pluginSlug}/listing/${encodeURIComponent(exposure.slug)}`);
+                                                    navigate(`/dashboard/plugins/${plugin.pluginSlug}/listing/${encodeURIComponent(exposure.name)}`);
                                                     setSidebarOpen(false);
                                                 }}
                                                 title={exposure.name}

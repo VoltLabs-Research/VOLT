@@ -8,6 +8,7 @@ import { registerNotificationSubscribers } from '@modules/notification/infrastru
 import { registerDailyActivitySubscribers } from '@modules/daily-activity/infrastructure/events/subscribers';
 import { registerApiTrackerSubscribers } from '@modules/api-tracker/infrastructure/events/subscribers';
 import { registerContainerSubscribers } from '@modules/container/infrastructure/events/subscribers';
+import { registerSimulationCellSubscribers } from '@modules/simulation-cell/infrastructure/events/subscribers';
 import logger from '@shared/infrastructure/logger';
 
 /**
@@ -26,7 +27,8 @@ export const registerAllSubscribers = async (): Promise<void> => {
         registerSSHSubscribers(),
         registerPluginSubscribers(),
         registerDailyActivitySubscribers(),
-        registerContainerSubscribers()
+        registerContainerSubscribers(),
+        registerSimulationCellSubscribers()
     ]);
 
     logger.info('@event-bus: All event subscribers registered successfully');

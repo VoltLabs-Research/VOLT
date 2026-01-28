@@ -32,10 +32,10 @@ const particleFilterClient = new VoltClient('/particle-filter', { useRBAC: true 
 
 const trajectoryApi = {
     async getAll(params: GetTrajectoriesParams): Promise<Trajectory[]> {
-        const response = await client.request<ApiResponse<Trajectory[]>>('get', '/', {
+        const response = await client.request<ApiResponse<{ data: Trajectory[] }>>('get', '/', {
             query: params
         });
-        return response.data.data;
+        return response.data.data.data;
     },
 
     async getOne(id: string): Promise<Trajectory> {

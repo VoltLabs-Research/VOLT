@@ -21,7 +21,6 @@ export interface IExposureComputed {
 
 export interface IListingExposure {
     name: string;
-    slug: string;
     hasPerAtomProperties: boolean;
 };
 

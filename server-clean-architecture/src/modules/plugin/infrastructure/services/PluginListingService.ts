@@ -74,7 +74,7 @@ export class PluginListingService {
                 ];
         }
 
-        // Query database
+        // Query database with trajectory populate for name fallback
         const result = await this.listingRowRepository.findAll({
             filter: baseQuery,
             limit: limit + 1,
@@ -82,7 +82,8 @@ export class PluginListingService {
             sort: { 
                 timestep: sortAsc ? 1 : -1, 
                 _id: sortAsc ? 1 : -1 
-            }
+            },
+            populate: 'trajectory'
         });
 
         const docs = result.data;
@@ -90,15 +91,18 @@ export class PluginListingService {
         const slice = hasMore ? docs.slice(0, limit) : docs;
 
         // Transform to raw rows
-        const rawRows = slice.map((doc: ListingRow) => ({
-            _id: doc.id,
-            timestep: doc.props.timestep,
-            analysisId: doc.props.analysis,
-            trajectoryId: doc.props.trajectory,
-            exposureId: doc.props.exposureId,
-            trajectoryName: doc.props.trajectoryName,
-            ...(doc.props.row || {})
-        }));
+        const rawRows = slice.map((doc: ListingRow) => {
+            const trajectory = doc.props.trajectory as any;
+            return {
+                _id: doc.id,
+                timestep: doc.props.timestep,
+                analysisId: doc.props.analysis,
+                trajectoryId: trajectory?._id ?? trajectory,
+                exposureId: doc.props.exposureId,
+                trajectoryName: trajectory?.name ?? '',
+                ...(doc.props.row || {})
+            };
+        });
 
         // Reorder fields to have reserved keys first
         const rows = rawRows.map((r: any) => {

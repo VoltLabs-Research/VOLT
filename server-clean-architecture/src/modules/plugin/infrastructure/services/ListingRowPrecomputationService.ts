@@ -12,6 +12,7 @@ interface PrecomputeParams {
     pluginId: string;
     teamId: string;
     trajectoryId: string;
+    trajectoryName: string;
     analysisId: string;
     listingSlug: string;
     timesteps: number[];
@@ -31,7 +32,7 @@ export class ListingRowPrecomputationService {
     ) {}
 
     async precomputeListingRowsForTimesteps(params: PrecomputeParams): Promise<void> {
-        const { pluginId, teamId, trajectoryId, analysisId, listingSlug, timesteps } = params;
+        const { pluginId, teamId, trajectoryId, trajectoryName, analysisId, listingSlug, timesteps } = params;
 
         // Fetch plugin to get workflow
         const plugin = await this.pluginRepo.findById(pluginId);
@@ -82,7 +83,7 @@ export class ListingRowPrecomputationService {
             }
 
             // Simple resolution using metadata._resolvedContext
-            const row = resolveRow(columns, exposureMeta.props.metadata, analysis.props.createdAt);
+            const row = resolveRow(columns, exposureMeta.props.metadata, analysis.props.createdAt ?? new Date());
             
             logger.info(`[ListingRowPrecomputation] listingSlug=${listingSlug}, timestep=${timestep}`);
             logger.info(`[ListingRowPrecomputation] columns=${JSON.stringify(columns.map(c => c.label))}`);
@@ -99,6 +100,7 @@ export class ListingRowPrecomputationService {
             const rowData = {
                 plugin: pluginId,
                 trajectory: trajectoryId,
+                trajectoryName,
                 analysis: analysisId,
                 exposureId: primaryExposureId,
                 listingSlug,

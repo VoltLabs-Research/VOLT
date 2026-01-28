@@ -136,9 +136,6 @@ const PluginExposureTable = ({
     }, [pluginsBySlug, pluginSlug, listingSlug]);
 
 
-    // Track if initial fetch has been done for current params
-    const fetchedForRef = useRef<string | null>(null);
-
     const fetchBatch = useCallback(async (params: any) => {
         const { cursor, force, page } = params;
         const isInitial = page === 1;
@@ -272,8 +269,6 @@ const PluginExposureTable = ({
 
         return options;
     }, [handleMenuAction, navigate]);
-
-
 
     if (compact) {
         return (

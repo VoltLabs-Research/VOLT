@@ -190,6 +190,7 @@ export default class AnalysisWorker extends BaseWorker<Job> {
                             pluginId: plugin.id,
                             teamId,
                             trajectoryId: metadata.trajectoryId,
+                            trajectoryName: metadata.trajectoryName,
                             analysisId: metadata.analysisId,
                             listingSlug,
                             timesteps: [timestep]

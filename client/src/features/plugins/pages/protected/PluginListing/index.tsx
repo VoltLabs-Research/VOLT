@@ -15,18 +15,12 @@ const PluginListing = () => {
     const [trajectoryId, setTrajectoryId] = useState<string | undefined>(paramTrajectoryId);
     const [trajectories, setTrajectories] = useState<any[]>([]);
 
-    // Track if trajectories have been fetched for this team
-    const fetchedForTeamRef = useRef<string | null>(null);
-
     useEffect(() => {
         setTrajectoryId(paramTrajectoryId);
     }, [paramTrajectoryId]);
 
     useEffect(() => {
         if (!team?._id) return;
-        // Skip if already fetched for this team
-        if (fetchedForTeamRef.current === team._id) return;
-        fetchedForTeamRef.current = team._id;
 
         trajectoryApi.getAll({})
             .then(data => setTrajectories(data))
