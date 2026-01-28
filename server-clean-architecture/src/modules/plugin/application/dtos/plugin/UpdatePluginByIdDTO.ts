@@ -5,6 +5,7 @@ export interface UpdatePluginByIdInputDTO {
     pluginId: string;
     workflow?: WorkflowProps;
     status?: PluginStatus;
+    regenerateSlug?: boolean;
 }
 
 export interface UpdatePluginByIdOutputDTO extends PluginProps{}

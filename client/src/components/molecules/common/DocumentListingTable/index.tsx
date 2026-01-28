@@ -1,13 +1,14 @@
 import Popover from '@/components/molecules/common/Popover';
 import PopoverMenuItem from '@/components/atoms/common/PopoverMenuItem';
 import type { ColumnConfig } from '@/components/organisms/common/DocumentListing';
-import EmptyState from '@/components/atoms/common/EmptyState';
 import { Skeleton } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { List, type RowComponentProps } from 'react-window';
 import Container from '@/components/primitives/Container';
 import Title from '@/components/primitives/Title';
+import Button from '@/components/primitives/Button';
+import { FileText } from 'lucide-react';
 
 const ROW_HEIGHT = 64;
 const MIN_COLUMN_WIDTH = 180;
@@ -371,7 +372,7 @@ const DocumentListingTable = ({
   return (
     <Container className="d-flex column document-listing-table-container" style={{ height: '100%' }}>
       {/* Header */}
-      {columns.length > 0 && (
+      {columns.length > 0 && !shouldShowEmptyState && (
         <div
           className="document-listing-table-header-container p-sticky d-flex"
           style={{
@@ -455,14 +456,39 @@ const DocumentListingTable = ({
 
         {shouldShowEmptyState && (
           <div className="document-listing-overlay-blur p-absolute">
-            <div className="document-listing-empty-content p-absolute">
-              <EmptyState
-                title="No Documents"
-                description={emptyMessage}
-                buttonText={emptyButtonText}
-                buttonOnClick={onEmptyButtonClick}
-                className="document-listing-empty-message"
-              />
+            <div className="document-listing-empty-content p-absolute d-flex items-center content-center">
+              <Container className='d-flex column items-center gap-1-5' style={{ maxWidth: '320px' }}>
+                <Container 
+                  className='d-flex items-center content-center' 
+                  style={{ 
+                    width: '56px', 
+                    height: '56px', 
+                    borderRadius: '16px', 
+                    background: 'var(--color-zinc-800)'
+                  }}
+                >
+                  <FileText size={26} strokeWidth={1.5} style={{ color: 'var(--color-zinc-400)' }} />
+                </Container>
+                <Container className='d-flex column gap-05 text-center'>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 500, color: 'var(--color-zinc-100)' }}>
+                    Nothing here yet
+                  </span>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--color-zinc-500)', lineHeight: 1.5 }}>
+                    {emptyMessage}
+                  </span>
+                </Container>
+                {emptyButtonText && onEmptyButtonClick && (
+                  <Button
+                    variant='solid'
+                    intent='brand'
+                    size='sm'
+                    onClick={onEmptyButtonClick}
+                    style={{ marginTop: '0.5rem' }}
+                  >
+                    {emptyButtonText}
+                  </Button>
+                )}
+              </Container>
             </div>
           </div>
         )}

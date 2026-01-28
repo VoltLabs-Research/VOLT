@@ -15,3 +15,9 @@
 .modifier-configuration .start-analysis-btn {
     width: 100%;
 }
+
+.modifier-configuration .volt-select-trigger {
+    border: none;
+    background-color: var(--input-bg);
+    border-radius: var(--radius-sm);
+}

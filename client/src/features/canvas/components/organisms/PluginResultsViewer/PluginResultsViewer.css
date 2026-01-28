@@ -1,42 +1,44 @@
 .plugin-results-viewer-container {
-    width: 450px;
-    max-height: 320px;
-    background-color: var(--glass-bg);
+    width: 380px;
+    max-height: 280px;
+    background-color: rgba(30, 30, 30, 0.3);
+    backdrop-filter: blur(35px) saturate(160%);
     bottom: 1rem;
     right: 1rem;
-    z-index: 2000;
-    border-radius: var(--radius-sm);
-    backdrop-filter: blur(16px) saturate(180%);
+    z-index: 200;
+    border-radius: var(--radius-lg);
+    color: #cacaca;
 }
 
 .plugin-results-header {
     padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.02);
 }
 
 .plugin-results-header .font-size-3 {
-    font-size: 0.8125rem !important;
+    font-size: 0.8rem !important;
     font-weight: 500;
 }
 
-.plugin-results-close {
-    padding: 0.125rem;
+.plugin-results-close,
+.plugin-results-download {
+    padding: 0.25rem;
     border-radius: var(--radius-xs);
     transition: background-color 0.15s ease;
-    color: var(--color-text-tertiary);
+    color: rgba(255, 255, 255, 0.5);
 }
 
-.plugin-results-close:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--color-text-primary);
+.plugin-results-close:hover,
+.plugin-results-download:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .plugin-results-tabs-container {
     overflow-x: auto;
     flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.02);
+    padding: 0 0.5rem;
 }
 
 .plugin-results-tabs-container::-webkit-scrollbar {
@@ -44,28 +46,29 @@
 }
 
 .plugin-results-tabs-container::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 1px;
 }
 
 .plugin-results-tab {
     min-width: auto;
-    max-width: 140px;
-    padding: 0.375rem 0.75rem;
+    max-width: 120px;
+    padding: 0.35rem 0.6rem;
     background: transparent;
     border: none;
     border-bottom: 1px solid transparent;
-    color: var(--color-text-tertiary);
+    color: rgba(255, 255, 255, 0.45);
     transition: all 0.15s ease;
+    font-size: 0.75rem;
 }
 
 .plugin-results-tab:hover {
-    color: var(--color-text-secondary);
+    color: rgba(255, 255, 255, 0.65);
 }
 
 .plugin-results-tab.active {
-    color: var(--color-text-primary);
-    border-bottom-color: var(--color-text-muted);
+    color: rgba(255, 255, 255, 0.9);
+    border-bottom-color: rgba(255, 255, 255, 0.3);
 }
 
 .plugin-results-tab-name {
@@ -76,10 +79,12 @@
 
 .plugin-results-content {
     overflow-x: auto;
-    padding: .3rem;
+    padding: 0.5rem;
     flex: 1;
-    max-height: 220px;
+    max-height: 180px;
 }
 
 .plugin-results-empty {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.8rem;
 }

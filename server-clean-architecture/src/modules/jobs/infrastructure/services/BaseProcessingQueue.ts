@@ -199,9 +199,9 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
             jobsWithSession[0]
         );
 
-        for (const job of jobsWithSession) {
-            await this.jobHandler.trackJobIncrement(job, sessionId);
-        }
+        await Promise.all(
+            jobsWithSession.map(job => this.jobHandler.trackJobIncrement(job, sessionId))
+        );
 
         await this.addJobsBatch(jobsWithSession, sessionId);
 
@@ -365,12 +365,13 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
     }
 
     private async dispatchJobs(jobs: string[]): Promise<void> {
-        for (const rawData of jobs) {
-            try {
-                await this.dispatchJob(rawData);
-            } catch (error) {
-                await this.handleFailedJobDispatch(rawData);
-            }
+        const results = await Promise.allSettled(
+            jobs.map(rawData => this.dispatchJob(rawData))
+        );
+
+        const failedJobs = jobs.filter((_, index) => results[index].status === 'rejected');
+        if (failedJobs.length > 0) {
+            await Promise.all(failedJobs.map(rawData => this.handleFailedJobDispatch(rawData)));
         }
     }
 

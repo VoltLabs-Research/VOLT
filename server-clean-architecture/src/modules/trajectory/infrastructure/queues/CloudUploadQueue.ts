@@ -43,7 +43,7 @@ export default class CloudUploadQueue extends BaseProcessingQueue {
             {
                 queueName: 'cloud-upload',
                 workerPath: workerPath,
-                maxConcurrentJobs: 4
+                maxConcurrentJobs: Number(process.env.CLOUD_UPLOAD_QUEUE_MAX_CONCURRENT_JOBS) || 4
             },
             jobRepository,
             workerPoolService,

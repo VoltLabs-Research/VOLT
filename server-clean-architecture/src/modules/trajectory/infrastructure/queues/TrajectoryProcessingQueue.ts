@@ -44,7 +44,7 @@ export default class TrajectoryProcessingQueue extends BaseProcessingQueue {
             {
                 queueName: 'trajectory_processing',
                 workerPath: workerPath,
-                maxConcurrentJobs: 4
+                maxConcurrentJobs: Number(process.env.TRAJECTORY_QUEUE_MAX_CONCURRENT_JOBS) || 4
             },
             jobRepository,
             workerPoolService,

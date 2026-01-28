@@ -208,10 +208,10 @@ export const createTeamSlice: SliceCreator<TeamStore> = (set, get) => ({
         })),
 
     initializeSocket: (teamId) => {
-        // We do NOT subscribe here anymore. Subscription is handled by state changes.
-        // socketService.subscribeToTeam(teamId); 
-
         const store = get() as TeamStore;
+
+        // Re-subscribe to ensure we get the user:list event with current online users
+        socketService.subscribeToTeam(teamId);
 
         const offUserOnline = socketService.on(
             'user:online',

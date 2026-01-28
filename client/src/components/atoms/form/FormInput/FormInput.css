@@ -1,6 +1,6 @@
 .form-input-container {
     height: 45px;
-    border-radius: .5rem;
+    border-radius: var(--radius-sm);
     transition: all 0.2s;
 }
 

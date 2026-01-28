@@ -10,6 +10,7 @@ import { TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory
 import { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/TrajectoryCreatedEvent';
+import path from 'node:path';
 
 @injectable()
 export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO, ApplicationError> {
@@ -27,8 +28,11 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
     async execute(input: CreateTrajectoryInputDTO): Promise<Result<CreateTrajectoryOutputDTO, ApplicationError>> {
         const { name, teamId, userId, files } = input;
 
+        const ext = path.extname(name);
+        const cleanName = ext ? name.slice(0, -ext.length) : name;
+
         const trajectory = await this.trajectoryRepo.create({
-            name,
+            name: cleanName,
             team: teamId,
             createdBy: userId,
             status: TrajectoryStatus.WaitingForProcess,

@@ -29,6 +29,7 @@ router.route('/')
 
 router.route('/:pluginId/binary')
     .post(upload.single('file'), controllers.uploadBinary.handle)
+    .patch(upload.single('file'), controllers.uploadBinary.handle)
     .delete(controllers.deleteBinary.handle);
 
 router.route('/:pluginId')

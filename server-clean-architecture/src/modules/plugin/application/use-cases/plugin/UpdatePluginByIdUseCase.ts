@@ -35,10 +35,16 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
 
         if(input.workflow){
             // Update the plugin slug according to the modifier node name.
-            if(input.workflow?.nodes){
+            // Only regenerate slug if explicitly requested (not during import/binary updates)
+            if(input.workflow?.nodes && input.regenerateSlug !== false){
                 const modifierNode = input.workflow.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
                 if(modifierNode?.data?.modifier?.name){
-                    update.slug = slugify(modifierNode.data.modifier.name);
+                    const newSlug = slugify(modifierNode.data.modifier.name);
+                    // Only update if the base slug changed (ignore unique suffixes)
+                    const currentBaseSlug = plugin.props.slug?.replace(/-[a-f0-9]{6,}-[a-f0-9]{8}$/i, '');
+                    if(newSlug !== currentBaseSlug){
+                        update.slug = newSlug;
+                    }
                 }
             }
 

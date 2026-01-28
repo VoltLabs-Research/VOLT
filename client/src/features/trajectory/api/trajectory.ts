@@ -137,6 +137,34 @@ const trajectoryApi = {
         return response.data.data;
     },
 
+    async listSamples(): Promise<string[]> {
+        const response = await client.request<{ status: string; data: string[] }>('get', '/samples');
+        return response.data.data;
+    },
+
+    async downloadSample(filename: string): Promise<void> {
+        const response = await client.request<Blob>('get', `/samples/${encodeURIComponent(filename)}`, {
+            config: { responseType: 'blob' },
+            dedupe: false
+        });
+
+        const url = URL.createObjectURL(response.data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    },
+
+    async downloadAllSamples(): Promise<void> {
+        const files = await this.listSamples();
+        for (const file of files) {
+            await this.downloadSample(file);
+        }
+    },
+
     async getAtoms(
         trajectoryId: string,
         analysisId: string | undefined,

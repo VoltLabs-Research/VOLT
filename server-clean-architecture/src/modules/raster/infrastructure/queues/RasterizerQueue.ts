@@ -42,7 +42,7 @@ export default class RasterizerQueue extends BaseProcessingQueue {
             {
                 queueName: 'rasterizer',
                 workerPath: path.join(__dirname, '../workers/HeadlessRasterizerWorker.ts'),
-                maxConcurrentJobs: 4
+                maxConcurrentJobs: Number(process.env.RASTERIZER_QUEUE_MAX_CONCURRENT_JOBS) || 4
             },
             jobRepository,
             workerPoolService,
