@@ -124,7 +124,7 @@ export default class PluginStorageService implements IPluginStorageService {
         return outputStream;
     }
 
-    async importPlugin(fileBuffer: Buffer, teamId: string): Promise<PluginImportResult> {
+    async importPlugin(fileBuffer: Buffer, teamId: string, status?: PluginStatus): Promise<PluginImportResult> {
         const directory = await unzipper.Open.buffer(fileBuffer);
         const pluginJsonFile = directory.files.find((file) => file.path === 'plugin.json');
         if (!pluginJsonFile) {
@@ -141,13 +141,12 @@ export default class PluginStorageService implements IPluginStorageService {
         const newPlugin = await this.pluginRepo.create({
             slug: uniqueSlug,
             workflow: importData.workflow,
-            status: PluginStatus.Draft,
+            status: status ?? PluginStatus.Draft,
             team: teamId
         });
 
         let binaryImported = false;
         const binaryFile = directory.files.find((file) => file.path.startsWith('binary/'));
-        console.log('BINARY FILE============', binaryFile)
         if (binaryFile) {
             const binaryBuffer = await binaryFile.buffer();
             const binaryFileName = path.basename(binaryFile.path);

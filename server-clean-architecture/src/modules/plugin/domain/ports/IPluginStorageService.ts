@@ -1,5 +1,5 @@
 import { Readable } from 'node:stream';
-import { PluginProps } from '@modules/plugin/domain/entities/Plugin';
+import { PluginProps, PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 
 export interface BinaryUploadResult{
     objectPath: string;
@@ -38,6 +38,7 @@ export interface IPluginStorageService{
      */
     importPlugin(
         fileBuffer: Buffer, 
-        teamId: string
+        teamId: string,
+        status?: PluginStatus
     ): Promise<PluginImportResult>;
 };
