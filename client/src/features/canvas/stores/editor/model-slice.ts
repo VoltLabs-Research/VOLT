@@ -85,8 +85,6 @@ export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get
         set({
             activeModel: null,
             isModelLoading: false,
-            activeScenes: [{ sceneType: 'trajectory', source: 'default' } as any],
-            activeScene: { sceneType: 'trajectory', source: 'default' } as any,
             pointSizeMultiplier: 1.0
         });
     },

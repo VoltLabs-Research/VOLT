@@ -47,9 +47,13 @@ export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPlu
                 const visualizersData = visualizersNode?.data.visualizers || {};
                 const { _id: _v, id: __v, ...cleanedVisualizersData } = visualizersData as any;
 
+                // Clean export data as well
+                const exportData = exportNode?.data.export || {};
+                const { _id: _e, id: __e, ...cleanedExportData } = exportData as any;
+
                 doc.exposures.push({
                     _id: exposureNode.id,
-                    exportData: exportNode?.data.export,
+                    export: Object.keys(cleanedExportData).length > 0 ? cleanedExportData : null,
                     ...cleanedExposureData,
                     ...cleanedVisualizersData,
                 })

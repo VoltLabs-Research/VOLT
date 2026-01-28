@@ -108,12 +108,15 @@ export interface Notification {
     updatedAt: string;
 }
 
+export type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed';
+
 export interface Analysis {
     _id: string;
     plugin: string;
     modifier: string;
     config: Record<string, any>;
     trajectory: Trajectory | string;
+    status?: AnalysisStatus;
     totalFrames?: number;
     completedFrames?: number;
     startedAt?: string;

@@ -7,11 +7,13 @@ import CursorTooltip from '@/components/atoms/common/CursorTooltip';
 import { useEditorStore } from '@/features/canvas/stores/editor';
 import { usePluginStore, type RenderableExposure, type ResolvedModifier } from '@/features/plugins/stores/plugin-slice';
 import { useAnalysisConfigStore } from '@/features/analysis/stores';
+import useAnalysisStatus from '@/features/canvas/hooks/use-analysis-status';
 
 import type { Analysis, Trajectory } from '@/types/models';
 import type { IPluginRecord } from '@/features/plugins/types';
 
 import analysisApi from '@/features/analysis/api/analysis';
+import { socketService } from '@/services/websockets/socketio';
 import '@/features/canvas/components/molecules/CanvasSidebarScene/CanvasSidebarScene.css';
 import { computeDifferingConfigFields, DEFAULT_ENTRY } from '@/features/canvas/components/molecules/CanvasSidebarScene/utils';
 
@@ -20,9 +22,11 @@ import BootstrapSkeleton from '@/features/canvas/components/atoms/BootstrapSkele
 import DefaultSceneOption from '@/features/canvas/components/molecules/DefaultSceneOption';
 import AnalysisTooltipContent from '@/features/canvas/components/molecules/AnalysisTooltipContent';
 import AnalysisSection from '@/features/canvas/components/organisms/AnalysisSection';
+import useToast from '@/hooks/ui/use-toast';
 
 interface CanvasSidebarSceneProps {
   trajectory?: Trajectory | null;
+  trajectoryId?: string;
 }
 
 type ExposureLoadState = 'idle' | 'loading' | 'loaded' | 'error';
@@ -43,7 +47,7 @@ interface AnalysisSectionData {
   config: Record<string, any>;
 }
 
-const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) => {
+const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory, trajectoryId: propTrajectoryId }) => {
   // Editor store
   const setActiveScene = useEditorStore((s) => s.setActiveScene);
   const activeScene = useEditorStore((s) => s.activeScene);
@@ -91,7 +95,12 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
   const activeSceneRef = useRef(activeScene);
   useEffect(() => { activeSceneRef.current = activeScene; }, [activeScene]);
 
-  const trajectoryId = trajectory?._id;
+  // Track if user just manually selected an exposure - skip auto-select in this case
+  const manualSelectionRef = useRef<string | null>(null);
+
+  const trajectoryId = propTrajectoryId || trajectory?._id;
+
+  const { isAnalysisInProgress } = useAnalysisStatus({ trajectoryId, enabled: !!trajectoryId });
 
   useEffect(() => {
     setExpandedSections(new Set());
@@ -143,7 +152,8 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
           normalizedAnalyses.push({
             ...props,
             _id: id,
-            plugin: pluginSlug
+            plugin: pluginSlug,
+            config: props.config || {}
           });
         });
 
@@ -165,6 +175,44 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
 
     bootstrap();
     return () => { cancelled = true; };
+  }, [trajectoryId]);
+
+  // Listen for new analysis created via socket
+  useEffect(() => {
+    if (!trajectoryId) return;
+
+    console.log('[CanvasSidebarScene] Setting up analysis.created listener, trajectoryId:', trajectoryId, 'socket connected:', socketService.isConnected());
+
+    const handleAnalysisCreated = (data: any) => {
+      console.log('[CanvasSidebarScene] GOT analysis.created:', data);
+      if (data.trajectoryId !== trajectoryId) {
+        console.log('[CanvasSidebarScene] SKIP - wrong trajectory');
+        return;
+      }
+
+      const newAnalysis: Analysis = {
+        _id: data.analysisId,
+        plugin: data.pluginSlug,
+        modifier: '',
+        config: data.config || {},
+        trajectory: data.trajectoryId,
+        status: data.status || 'pending',
+        createdAt: data.createdAt,
+        updatedAt: data.createdAt
+      };
+
+      console.log('[CanvasSidebarScene] ADDING analysis:', newAnalysis._id);
+      setAnalyses(prev => {
+        if (prev.some(a => a._id === newAnalysis._id)) return prev;
+        return [newAnalysis, ...prev];
+      });
+    };
+
+    const unsubscribe = socketService.on('analysis.created', handleAnalysisCreated);
+    return () => {
+      console.log('[CanvasSidebarScene] CLEANUP analysis.created listener');
+      unsubscribe();
+    };
   }, [trajectoryId]);
 
   const differingConfigByAnalysis = useMemo(() => {
@@ -220,29 +268,43 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
   }, [expandedSections, analyses, getEntryLatest, loadExposuresForAnalysis]);
 
   // Logic to auto-select exposure when analysis config changes
+  // Only auto-select if the current scene is NOT already from the new analysis
   useEffect(() => {
     if (!analysisConfigId) return;
 
+    // If user just manually selected an exposure for this analysis, skip auto-select
+    if (manualSelectionRef.current === analysisConfigId) {
+      manualSelectionRef.current = null;
+      return;
+    }
+
     const currentScene = activeSceneRef.current;
-    if (!currentScene || currentScene.source !== 'plugin') return;
-    if ((currentScene as any).analysisId === analysisConfigId) return;
+    
+    // If current scene is already from this analysis, don't override
+    if (currentScene?.source === 'plugin' && (currentScene as any).analysisId === analysisConfigId) {
+      return;
+    }
 
     const entry = getEntryLatest(analysisConfigId);
     if (entry.state !== 'loaded') return;
 
     const exposures = entry.exposures;
-    const match = exposures.find(ex => ex.exposureId === currentScene.sceneType);
-
-    if (match) {
-      setActiveScene({
-        sceneType: match.exposureId,
-        source: 'plugin',
-        analysisId: match.analysisId,
-        exposureId: match.exposureId
-      });
-      return;
+    
+    // Try to find matching exposure by sceneType
+    if (currentScene?.source === 'plugin') {
+      const match = exposures.find(ex => ex.exposureId === currentScene.sceneType);
+      if (match) {
+        setActiveScene({
+          sceneType: match.exposureId,
+          source: 'plugin',
+          analysisId: match.analysisId,
+          exposureId: match.exposureId
+        });
+        return;
+      }
     }
 
+    // Fallback to first exposure
     if (exposures.length > 0) {
       const next = exposures[0];
       setActiveScene({
@@ -276,9 +338,25 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
   }, [activeScenes]);
 
   const onSelectScene = useCallback((scene: any, analysis?: any) => {
-    if (analysis) updateAnalysisConfig(analysis);
+    // Mark that user manually selected an exposure for this analysis
+    if (scene?.source === 'plugin' && scene?.analysisId) {
+      manualSelectionRef.current = scene.analysisId;
+    }
     setActiveScene(scene);
+    if (analysis) updateAnalysisConfig(analysis);
   }, [updateAnalysisConfig, setActiveScene]);
+
+  const { showSuccess } = useToast();
+
+  const onDeleteAnalysis = useCallback(async (analysisId: string) => {
+    await analysisApi.delete(analysisId);
+    setAnalyses(prev => prev.filter(a => a._id !== analysisId));
+    // If the deleted analysis was the current one, reset the config
+    if (analysisConfigId === analysisId) {
+      updateAnalysisConfig(null);
+    }
+    showSuccess('Analysis deleted successfully');
+  }, [analysisConfigId, updateAnalysisConfig, showSuccess]);
 
   const totalAnalyses = analyses.length || 0;
 
@@ -342,12 +420,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
 
   const showSectionsSkeleton = bootstrapLoading || (totalAnalyses > 0 && allAnalysisSections.length === 0);
 
-  const setTooltip = useCallback((open: boolean, pos: { x: number, y: number }, content: any | undefined) => {
-    if (open !== undefined) setTooltipOpen(open);
-    if (pos) setTooltipPos(pos);
-    if (content !== undefined) setTooltipAnalysis(content);
-  }, []);
-
   return (
     <div className='editor-sidebar-scene-container p-1-5'>
       <div className='editor-sidebar-scene-options-container d-flex gap-1 column'>
@@ -385,6 +457,8 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory }) =
             onRemoveScene={removeScene}
             isSceneActive={isSceneInActiveScenes}
             updateAnalysisConfig={updateAnalysisConfig}
+            onDelete={onDeleteAnalysis}
+            isInProgress={isAnalysisInProgress(section.analysis._id)}
           />
         ))}
 

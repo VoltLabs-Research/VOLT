@@ -1,6 +1,4 @@
 import { injectable, inject } from 'tsyringe';
-import { BaseController } from '@shared/infrastructure/http/BaseController';
-import { GetPluginExposureGLBUseCase } from '@modules/plugin/application/use-cases/exposure/GetPluginExposureGLBUseCase';
 import { Response, Request, NextFunction } from 'express';
 import slugify from '@shared/infrastructure/utilities/slugify';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';

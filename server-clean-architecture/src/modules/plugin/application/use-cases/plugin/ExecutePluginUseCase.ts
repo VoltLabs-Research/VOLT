@@ -15,11 +15,12 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import { ITrajectoryRepository } from '@modules/trajectory/domain/port/ITrajectoryRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExecutionRequestEvent';
+import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
 import { IAnalysisJobFactory } from '@modules/plugin/domain/ports/IAnalysisJobFactory';
 import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
 
 @injectable()
-export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, null, ApplicationError> {
+export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { analysisId: string }, ApplicationError> {
     constructor(
         @inject(PLUGIN_TOKENS.PluginRepository)
         private pluginRepo: IPluginRepository,
@@ -43,7 +44,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, nul
         private analysisQueue: BaseProcessingQueue
     ){}
 
-    async execute(input: ExecutePluginInputDTO): Promise<Result<null, ApplicationError>> {
+    async execute(input: ExecutePluginInputDTO): Promise<Result<{ analysisId: string }, ApplicationError>> {
         const [trajectory, plugin] = await Promise.all([
             this.trajectoryRepo.findById(input.trajectoryId),
             this.pluginRepo.findOne({
@@ -90,6 +91,17 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, nul
             startedAt: new Date()
         });
 
+        await this.eventBus.publish(new AnalysisCreatedEvent({
+            analysisId: analysis.id,
+            trajectoryId: input.trajectoryId,
+            pluginId: plugin.id,
+            pluginSlug: plugin.props.slug,
+            teamId: input.teamId,
+            config: input.config,
+            status: 'pending',
+            createdAt: new Date()
+        }));
+
         const planResult = await this.workflowEngine.planExecutionStrategy({
             plugin,
             trajectoryId: input.trajectoryId,
@@ -128,6 +140,6 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, nul
         // Add jobs to the analysis queue for processing
         await this.analysisQueue.addJobs(jobs);
 
-        return Result.ok(null);
+        return Result.ok({ analysisId: analysis.id });
     }
 };

@@ -14,6 +14,7 @@ export const computeDifferingConfigFields = (
 
     for (const [, pluginAnalyses] of byPlugin) {
         if (pluginAnalyses.length <= 1) {
+            // Single analysis: show all config fields
             for (const a of pluginAnalyses) {
                 const entries = Object.entries(a.config || {});
                 if (entries.length > 0) result.set(a._id, entries);
@@ -30,9 +31,12 @@ export const computeDifferingConfigFields = (
             if (new Set(values).size > 1) differingKeys.add(key);
         }
 
+        // If no differing keys, show all config fields for each analysis
+        const keysToShow = differingKeys.size > 0 ? differingKeys : allKeys;
+
         for (const a of pluginAnalyses) {
             const entries: [string, any][] = [];
-            for (const key of differingKeys) {
+            for (const key of keysToShow) {
                 if (a.config && key in a.config) entries.push([key, a.config[key]]);
             }
             if (entries.length > 0) result.set(a._id, entries);

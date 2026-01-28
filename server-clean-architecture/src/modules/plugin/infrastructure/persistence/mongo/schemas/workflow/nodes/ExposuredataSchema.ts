@@ -16,5 +16,5 @@ export const ExposureDataSchema = new Schema({
     iterable: {
         type: String
     }
-});
+}, { _id: false });
 

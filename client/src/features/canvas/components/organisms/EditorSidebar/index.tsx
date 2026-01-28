@@ -44,7 +44,7 @@ const EditorSidebar = () => {
         id: "Scene",
         name: "Scene",
         Component: CanvasSidebarScene,
-        props: { trajectory }
+        props: { trajectory, trajectoryId: trajectory?._id }
     }, {
         id: "Modifiers",
         name: "Modifiers",

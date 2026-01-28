@@ -75,9 +75,11 @@ const Sidebar = ({ activeTag, tags, children, showCollapseButton, overrideConten
                                 </Container>
                             </Container>
 
-                            {active && (
-                                <active.Component {...active.props} />
-                            )}
+                            {tags.map(tag => (
+                                <div key={tag.id} style={{ display: tag.id === activeTag ? 'block' : 'none' }}>
+                                    <tag.Component {...tag.props} />
+                                </div>
+                            ))}
                         </>
                     )}
                 </Container>

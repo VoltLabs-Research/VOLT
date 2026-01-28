@@ -23,13 +23,15 @@ interface AnalysisSectionProps {
     isExpanded: boolean;
     onToggle: (id: string) => void;
     differingFields: [string, any][];
-    headerPopoverCallbacks: Map<string, (isOpen: boolean) => void>; // Callback map
-    headerPopoverStates: Map<string, boolean>; // State map
+    headerPopoverCallbacks: Map<string, (isOpen: boolean) => void>;
+    headerPopoverStates: Map<string, boolean>;
     onSelectScene: (scene: any, analysis?: any) => void;
     onAddScene: (scene: any) => void;
     onRemoveScene: (scene: any) => void;
     isSceneActive: (scene: any) => boolean;
     updateAnalysisConfig: (analysis: any) => void;
+    onDelete: (analysisId: string) => void;
+    isInProgress?: boolean;
 }
 
 const AnalysisSection: React.FC<AnalysisSectionProps> = ({
@@ -43,8 +45,11 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     onAddScene,
     onRemoveScene,
     isSceneActive,
-    updateAnalysisConfig
+    updateAnalysisConfig,
+    onDelete,
+    isInProgress = false
 }) => {
+    const [deleteLoading, setDeleteLoading] = useState(false);
     const [detailsLoading, setDetailsLoading] = useState(false);
     const [tooltipOpen, setTooltipOpen] = useState(false);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -71,14 +76,9 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                 onOpenChange={handleHeaderPopoverChange}
                 trigger={
                     <Container
-                        className='analysis-section-header d-flex column cursor-pointer'
+                        className={`analysis-section-header d-flex column ${isInProgress ? 'cursor-progress' : 'cursor-pointer'}`}
                         onClick={() => {
                             onToggle(section.analysis._id);
-                            if (analysisConfig._id === section.analysis._id) {
-                                return;
-                            }
-                            updateAnalysisConfig(section.analysis);
-                            showSuccess(`${section.pluginDisplayName} (${formatDistanceToNow(section.analysis.createdAt, { addSuffix: true })}) selected sucessfully! `);
                         }}
                         onMouseEnter={(e) => {
                             setTooltipOpen(true);
@@ -146,6 +146,19 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                 >
                     View details
                 </PopoverMenuItem>
+                <PopoverMenuItem
+                    isLoading={deleteLoading}
+                    onClick={async () => {
+                        setDeleteLoading(true);
+                        try {
+                            await onDelete(section.analysis._id);
+                        } finally {
+                            setDeleteLoading(false);
+                        }
+                    }}
+                >
+                    Delete
+                </PopoverMenuItem>
             </Popover>
 
             {isExpanded && !isLoaded && (
@@ -169,12 +182,11 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                             analysisId={section.analysis._id}
                             index={index}
                             onSelect={(scene) => {
-                                updateAnalysisConfig(section.analysis);
-                                onSelectScene(scene);
+                                onSelectScene(scene, section.analysis);
                             }}
                             onAdd={(scene) => {
-                                updateAnalysisConfig(section.analysis);
                                 onAddScene(scene);
+                                updateAnalysisConfig(section.analysis);
                             }}
                             onRemove={onRemoveScene}
                             isActive={isSceneActive({
