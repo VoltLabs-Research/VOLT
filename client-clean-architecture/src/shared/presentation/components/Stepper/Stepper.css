@@ -1,0 +1,3 @@
+.stepper-step{
+    will-change: opacity, transform;
+}
