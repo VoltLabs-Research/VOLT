@@ -238,7 +238,12 @@
     text-align: center;
 }
 
-/** TODO: Use tokens for this: md, lg, sm... **/
+.text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .font-size-05{
     font-size: .7rem;
 }

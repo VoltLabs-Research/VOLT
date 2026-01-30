@@ -1,0 +1,73 @@
+.sign-in-layout{
+    display: grid;
+}
+
+@media (min-width: 1024px){
+    .sign-in-layout{
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.sign-in-hero-section{
+    display: none;
+    background: radial-gradient(
+        circle at 50% 50%, 
+        var(--color-surface-3) 0%,
+        var(--color-bg) 100%
+    );
+}
+
+@media (min-width: 1024px){
+    .sign-in-hero-section{
+        display: flex;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+        padding: 4rem;
+    }
+}
+
+.sign-in-hero-overlay{
+    background: linear-gradient(
+        to bottom, transparent 20%, 
+        var(--color-bg) 100%
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+.sign-in-hero-headline{
+    font-size: 4rem;
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+    background: linear-gradient(
+        to bottom right, var(--color-text-primary) 40%,
+        var(--color-text-secondary) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.sign-in-divider::before,
+.sign-in-divider::after{
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--color-border);
+}
+
+/* Form section container */
+.sign-in-form-container{
+    max-width: 26rem;
+    margin: 0 auto;
+}
+
+.sign-in-footer-link{
+    color: var(--color-text-secondary);
+    text-decoration: underline;
+}
+
+.sign-in-footer-link:hover{
+    color: var(--color-text-primary);
+}

@@ -9,6 +9,7 @@
     "resolveJsonModule": true,
     "outDir": "./dist",
     "baseUrl": "./",
+    "verbatimModuleSyntax": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "paths": {

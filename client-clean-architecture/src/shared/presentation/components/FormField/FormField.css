@@ -1,0 +1,62 @@
+.form-field-container{
+    transition: opacity 0.15s ease;
+}
+
+.form-field-container.is-loading{
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.form-field-input{
+    height: 3.25rem;
+    background-color: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    padding: 0 1rem;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+.form-field-input::placeholder{
+    color: var(--color-text-muted);
+}
+
+.form-field-input:hover{
+    border-color: var(--color-border-strong);
+}
+
+.form-field-input:focus{
+    border-color: var(--color-text-primary);
+    background-color: var(--color-surface-1);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+}
+
+.form-field-input.has-error{
+    border-color: var(--status-error);
+}
+
+.form-field-input.has-error:focus{
+    box-shadow: 0 0 0 4px var(--status-error-bg);
+}
+
+.form-field-input.has-icon{
+    padding-left: 2.75rem;
+}
+
+.form-field-icon{
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-muted);
+    transition: color 0.2s;
+}
+
+.form-field-input:focus ~ .form-field-icon,
+.form-field-container:focus-within .form-field-icon{
+    color: var(--color-text-primary);
+}
+
+.form-field-error{
+    color: var(--status-error);
+}
