@@ -10,11 +10,8 @@
 
 .sign-in-hero-section{
     display: none;
-    background: radial-gradient(
-        circle at 50% 50%, 
-        var(--color-surface-3) 0%,
-        var(--color-bg) 100%
-    );
+    background: radial-gradient(circle at 50% 50%, var(--color-surface-3) 0%, var(--color-bg) 100%);
+    padding: 4rem;
 }
 
 @media (min-width: 1024px){
@@ -23,30 +20,58 @@
         height: 100vh;
         position: sticky;
         top: 0;
-        padding: 4rem;
     }
 }
 
 .sign-in-hero-overlay{
-    background: linear-gradient(
-        to bottom, transparent 20%, 
-        var(--color-bg) 100%
-    );
+    background: linear-gradient(to bottom, rgba(9, 9, 11, 0) 20%, rgba(9, 9, 11, 1) 100%);
     pointer-events: none;
     z-index: 1;
 }
 
+.sign-in-hero-text-container{
+    max-width: 36rem;
+    z-index: 10;
+}
+
 .sign-in-hero-headline{
     font-size: 4rem;
+    font-weight: 700;
     line-height: 1.1;
     letter-spacing: -0.04em;
-    background: linear-gradient(
-        to bottom right, var(--color-text-primary) 40%,
-        var(--color-text-secondary) 100%
-    );
+    background: linear-gradient(to bottom right, #ffffff 40%, var(--color-text-secondary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+}
+
+.sign-in-hero-description{
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    max-width: 32rem;
+    font-size: 1.25rem;
+}
+
+.sign-in-form-section{
+    max-width: 26rem;
+    margin: 0 auto;
+}
+
+.sign-in-form-title{
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-size: 2rem;
+}
+
+.sign-in-form-subtitle{
+    color: var(--color-text-muted);
+}
+
+.sign-in-divider{
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 2rem 0;
 }
 
 .sign-in-divider::before,
@@ -57,10 +82,31 @@
     background: var(--color-border);
 }
 
-/* Form section container */
-.sign-in-form-container{
-    max-width: 26rem;
-    margin: 0 auto;
+.sign-in-divider span{
+    padding: 0 1rem;
+}
+
+.sign-in-user-badge{
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+}
+
+.sign-in-user-badge-info{
+    min-width: 0;
+    flex: 1;
+}
+
+.sign-in-user-badge-email{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sign-in-footer-text{
+    margin-top: 2rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
 }
 
 .sign-in-footer-link{

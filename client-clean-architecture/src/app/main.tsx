@@ -1,10 +1,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
-import '@/assets/stylesheets/theme.css';
-import '@/assets/stylesheets/base.css';
-import '@/assets/stylesheets/general.css';
-import '@/assets/stylesheets/animations.css';
+import '@/shared/presentation/assets/stylesheets/theme.css';
+import '@/shared/presentation/assets/stylesheets/base.css';
+import '@/shared/presentation/assets/stylesheets/general.css';
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>

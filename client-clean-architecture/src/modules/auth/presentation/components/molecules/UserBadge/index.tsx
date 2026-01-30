@@ -9,12 +9,12 @@ interface UserBadgeProps{
 };
 
 const UserBadge = ({ label, email, onChangeClick }: UserBadgeProps) => (
-    <Container className='p-1 d-flex content-between items-center b-soft b-radius-08 glass-bg'>
-        <Container className='d-flex items-center gap-075 flex-1' style={{ minWidth: 0 }}>
+    <Container className='sign-in-user-badge p-1 d-flex content-between items-center'>
+        <Container className='d-flex items-center gap-075 sign-in-user-badge-info'>
             <CheckCircle2 size={18} color='#22c55e' className='f-shrink-0' />
             <Container className='d-flex column'>
                 <span className='font-size-1 color-muted'>{label}</span>
-                <span className='font-size-2 font-weight-5 text-truncate'>{email}</span>
+                <span className='font-size-2 font-weight-5 sign-in-user-badge-email'>{email}</span>
             </Container>
         </Container>
         
