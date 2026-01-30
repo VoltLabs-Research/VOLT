@@ -106,13 +106,13 @@ const SignInPage = () => {
                 <Container className='sign-in-hero-section p-relative overflow-hidden content-between column'>
                     <WireframeBackground />
                     <Container className='sign-in-hero-overlay p-absolute inset-0' />
-                    <Container className='d-flex column content-between h-max p-relative z-20'>
+                    <Container className='d-flex column content-between h-max p-relative'>
                         <Container />
-                        <Container className='d-flex column gap-1-5 mb-3'>
-                            <Title className='sign-in-hero-headline font-weight-6'>
+                        <Container className='d-flex column gap-1-5 sign-in-hero-text-container mb-3'>
+                            <Title className='sign-in-hero-headline'>
                                 Connect with<br />your VoltID
                             </Title>
-                            <Paragraph className='color-secondary font-size-4 line-height-5'>
+                            <Paragraph className='sign-in-hero-description'>
                                 Everything your research needs, in one place. Collaborate seamlessly and connect your scientific stack.
                             </Paragraph>
                         </Container>
@@ -120,17 +120,17 @@ const SignInPage = () => {
                 </Container>
 
                 <Container className='d-flex column content-center vh-max p-1-5'>
-                    <Container className='d-flex column gap-2 w-max' style={{ maxWidth: '26rem', margin: '0 auto' }}>
+                    <Container className='d-flex column gap-2 sign-in-form-section w-max'>
                         <Container>
-                            <Title className='font-size-6 font-weight-6'>{title}</Title>
-                            <Paragraph className='color-muted font-size-3 mt-05'>{subtitle}</Paragraph>
+                            <Title className='sign-in-form-title'>{title}</Title>
+                            <Paragraph className='sign-in-form-subtitle font-size-3 mt-05'>{subtitle}</Paragraph>
                         </Container>
 
                         <Stepper 
                             steps={steps} 
                             activeStep={step} />
 
-                        <Paragraph className='text-center font-size-1 color-muted mt-3'>
+                        <Paragraph className='sign-in-footer-text text-center'>
                             By clicking continue, you agree to our{' '}
                             <a href='#' className='sign-in-footer-link'>Terms</a> and{' '}
                             <a href='#' className='sign-in-footer-link'>Privacy Policy</a>.

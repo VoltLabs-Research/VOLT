@@ -50,8 +50,8 @@ const EmailStep = ({ emailField, isLoading, onSubmit, onOAuth }: EmailStepProps)
             ))}
         </Container>
 
-        <Container className='d-flex items-center sign-in-divider font-size-1 color-muted'>
-            <span className='p-1'>Or continue with email</span>
+        <Container className='d-flex items-center sign-in-divider font-size-1'>
+            <span>Or continue with email</span>
         </Container>
 
         <form onSubmit={onSubmit} className='d-flex column gap-1'>
