@@ -10,6 +10,7 @@ import EmailStep from '../../molecules/EmailStep';
 import RegisterStep from '../../molecules/RegisterStep';
 import PasswordStep from '../../molecules/PasswordStep';
 import { signInSchema, SignInForm } from './validation-schema';
+import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
 import './SignIn.css';
 
 type Step = 'email' | 'password' | 'register';
@@ -29,9 +30,10 @@ const stepTitles: StepTitles<Step> = {
     }
 };
 
-const SignInPage = () => {
+const SignInTemplate = () => {
     const { step, goTo } = useStepper<Step>('email');
     const [isLoading, setIsLoading] = useState(false);
+    const { checkEmailUseCase, signInUseCase, signUpUseCase } = useAuthUseCases();
 
     const form = useForm<SignInForm>({
         initialValues: {
@@ -48,14 +50,56 @@ const SignInPage = () => {
         window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/${provider}`;
     };
 
+    const finalizeAuth = () => {
+        window.location.href = '/';
+    };
+
+    const handleEmailStep = async () => {
+        const result = await checkEmailUseCase.execute({ email: form.values.email });
+        if(result.exists && result.hasPassword){
+            goTo('password');
+            return;
+        }
+      
+        goTo('register');
+    };
+
+    const handlePasswordStep = async () => {
+        await signInUseCase.execute({
+            email: form.values.email,
+            password: form.values.password
+        });
+        finalizeAuth();
+    };
+
+
+    const handleRegisterStep = async () => {
+        const [firstName, ...rest] = form.values.fullName.trim().split(/\s+/);
+        const lastName = rest.join(' ');
+        await signUpUseCase.execute({
+            email: form.values.email,
+            firstName,
+            lastName,
+            password: form.values.password,
+            passwordConfirm: form.values.passwordConfirm
+        });
+        finalizeAuth();
+    };
+
     const handleSubmit = form.handleSubmit(async () => {
         setIsLoading(true);
         try{
             if(step === 'email'){
-                // TODO: const { exists } = await authApi.checkEmail(form.values.email);
-                // goTo(exists ? 'password' : 'register');
-                goTo('register');
+                await handleEmailStep();
+                return;
             }
+
+            if(step === 'password'){
+                await handlePasswordStep();
+                return;
+            }
+
+            await handleRegisterStep();
         }finally{
             setIsLoading(false);
         }
@@ -142,4 +186,4 @@ const SignInPage = () => {
     );
 };
 
-export default SignInPage;
+export default SignInTemplate;

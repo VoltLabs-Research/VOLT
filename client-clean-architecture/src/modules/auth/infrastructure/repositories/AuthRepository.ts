@@ -1,15 +1,18 @@
+import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import IAuthRepository from '../../domain/ports/IAuthRepository';
+import { User } from '../../domain/entities';
 import {
-    AuthResponse,
-    ChangePasswordPayload,
-    EmailCheckResult,
-    PasswordInfo,
-    SignInCredentials,
-    SignUpDetails,
-    User
-} from '../../domain/entities/auth';
+    ChangePasswordInputDTO,
+    CheckEmailOutputDTO,
+    GetPasswordInfoOutputDTO,
+    SignInInputDTO,
+    SignInOutputDTO,
+    SignUpInputDTO,
+    SignUpOutputDTO
+} from '../../application/dtos/index.ts';
 
+@injectable()
 export default class AuthRepository extends BaseRepository implements IAuthRepository{
     constructor(){
         super('/auth');
@@ -20,18 +23,18 @@ export default class AuthRepository extends BaseRepository implements IAuthRepos
         return this.unwrap(response);
     }
 
-    async signIn(data: SignInCredentials): Promise<AuthResponse>{
-        const response = await this.client.post<ApiResponse<AuthResponse>>('/sign-in', data);
+    async signIn(data: SignInInputDTO): Promise<SignInOutputDTO>{
+        const response = await this.client.post<ApiResponse<SignInOutputDTO>>('/sign-in', data);
         return this.unwrap(response);
     }
 
-    async signUp(data: SignUpDetails): Promise<AuthResponse>{
-        const response = await this.client.post<ApiResponse<AuthResponse>>('/sign-up', data);
+    async signUp(data: SignUpInputDTO): Promise<SignUpOutputDTO>{
+        const response = await this.client.post<ApiResponse<SignUpOutputDTO>>('/sign-up', data);
         return this.unwrap(response);
     }
 
-    async checkEmail(email: string): Promise<EmailCheckResult>{
-        const response = await this.client.post<ApiResponse<EmailCheckResult>>('/check-email', { email });
+    async checkEmail(email: string): Promise<CheckEmailOutputDTO>{
+        const response = await this.client.post<ApiResponse<CheckEmailOutputDTO>>('/check-email', { email });
         return this.unwrap(response);
     }
 
@@ -49,12 +52,12 @@ export default class AuthRepository extends BaseRepository implements IAuthRepos
         return this.unwrap(response);
     }
 
-    async getPasswordInfo(): Promise<PasswordInfo>{
-        const response = await this.client.get<ApiResponse<PasswordInfo>>('/password/info');
+    async getPasswordInfo(): Promise<GetPasswordInfoOutputDTO>{
+        const response = await this.client.get<ApiResponse<GetPasswordInfoOutputDTO>>('/password/info');
         return this.unwrap(response);
     }
 
-    async changePassword(data: ChangePasswordPayload): Promise<void>{
+    async changePassword(data: ChangePasswordInputDTO): Promise<void>{
         await this.client.patch<ApiResponse<void>>('/me/update/password/', data);
     }
 };
