@@ -1,30 +1,43 @@
 import React from 'react';
-import Container from '@/shared/presentation/components/Container';
+import Button from '@/shared/presentation/components/Button';
 import './PopoverMenuItem.css';
 
 interface PopoverMenuItemProps {
     icon?: React.ReactNode;
-    label: string;
-    onClick: () => void;
+    label?: string;
+    children?: React.ReactNode;
+    onClick?: () => void;
     variant?: 'default' | 'danger';
     disabled?: boolean;
+    isLoading?: boolean;
 };
 
 const PopoverMenuItem: React.FC<PopoverMenuItemProps> = ({
     icon,
     label,
+    children,
     onClick,
     variant = 'default',
-    disabled = false
+    disabled = false,
+    isLoading = false
 }) => {
+    const content = children ?? label;
+
     return (
-        <Container
-            className={`popover-menu-item ${variant === 'danger' ? 'danger' : ''} ${disabled ? 'disabled' : ''}`}
-            onClick={disabled ? undefined : onClick}
+        <Button
+            variant='ghost'
+            intent={variant === 'danger' ? 'danger' : 'neutral'}
+            size='sm'
+            block
+            align='start'
+            className='popover-menu-item font-size-2 color-primary u-select-none'
+            onClick={isLoading ? undefined : onClick}
+            disabled={disabled || isLoading}
+            isLoading={isLoading}
+            leftIcon={icon ? <span className='popover-menu-item-icon d-flex items-center content-center f-shrink-0 font-size-3'>{icon}</span> : undefined}
         >
-            {icon && <Container className='d-flex items-center content-center f-shrink-0'>{icon}</Container>}
-            <Container className='flex-1'>{label}</Container>
-        </Container>
+            {content}
+        </Button>
     );
 };
 

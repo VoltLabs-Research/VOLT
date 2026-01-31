@@ -48,7 +48,7 @@ const Stepper = <K extends string>({ steps, activeStep, className = '' }: Steppe
         setPrevStep(activeStep);
     }
 
-    const currentStep = steps.find((s) => s.key === activeStep);
+    const currentStep = steps.find((state) => state.key === activeStep);
 
     return (
         <AnimatePresence 

@@ -1,0 +1,26 @@
+.simulation-card-users {
+    top: 0.75rem;
+    right: 0.75rem;
+    z-index: 10;
+}
+
+.user-avatar {
+    width: 28px;
+    height: 28px;
+    background: var(--color-surface-2);
+    border: 2px solid var(--color-bg);
+    margin-left: -8px;
+    color: var(--color-text-secondary);
+}
+
+.user-avatar:first-child {
+    margin-left: 0;
+}
+
+.user-avatar.overflow {
+    background: var(--color-surface-3);
+}
+
+.user-avatar img {
+    object-fit: cover;
+}

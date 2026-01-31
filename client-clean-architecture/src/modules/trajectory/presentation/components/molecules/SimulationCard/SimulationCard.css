@@ -1,0 +1,93 @@
+@keyframes opacity-pulse {
+    0%, 100% { border-color: color-mix(in srgb, var(--accent-blue), transparent 60%); }
+    50% { border-color: color-mix(in srgb, var(--accent-blue), transparent 20%); }
+}
+
+.simulation-card {
+    background: transparent;
+    transition: border-color 0.3s ease;
+    cursor: pointer;
+}
+
+.simulation-card:hover {
+    border-color: var(--accent-blue);
+}
+
+.simulation-card.has-jobs {
+    animation: opacity-pulse 2s ease-in-out infinite;
+    cursor: wait;
+}
+
+.simulation-card.is-selected {
+    border-color: var(--accent-blue);
+}
+
+.cover-container {
+    height: 200px;
+    background: var(--color-surface-2);
+}
+
+.cover-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: linear-gradient(to top, color-mix(in srgb, var(--color-bg), transparent 35%) 0%, transparent 100%);
+    pointer-events: none;
+}
+
+.cover-image {
+    object-fit: cover;
+}
+
+.caption-overlay {
+    top: 0.5rem;
+    left: 1rem;
+    z-index: 3;
+    width: min-content;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    backdrop-filter: blur(2px);
+}
+
+.simulation-card:hover .caption-overlay {
+    opacity: 1;
+}
+
+.caption-overlay .user-avatar {
+    width: 32px;
+    height: 32px;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+}
+
+.caption-overlay .user-avatar img {
+    object-fit: cover;
+}
+
+.user-name {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    text-transform: capitalize;
+}
+
+.card-footer {
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    z-index: 3;
+}
+
+.options-btn {
+    font-size: 1.3rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.simulation-card:hover .options-btn {
+    opacity: 1;
+}

@@ -3,30 +3,57 @@ import './StatusBadge.css';
 
 export interface StatusBadgeProps{
     /**
-     * Visual variant of the badge
-     * @default 'neutral'
+     * Status string - will be mapped to variant automatically
      */
-    variant?: 'active' | 'inactive' | 'danger' | 'neutral' | 'success';
+    status?: string;
 
     /**
-     * Badge content
+     * Visual variant override
      */
-    children: React.ReactNode;
+    variant?: 'active' | 'inactive' | 'danger' | 'neutral' | 'success' | 'warning';
+
+    /**
+     * Badge content (alternative to status)
+     */
+    children?: React.ReactNode;
 
     /**
      * Additional CSS classes
      */
     className?: string;
-}
+};
 
-const StatusBadge: React.FC<StatusBadgeProps> = ({
-    variant = 'neutral',
-    children,
-    className = ''
-}) => {
+const statusToVariant = (status: string): string => {
+    const statusLower = status?.toLowerCase();
+    switch(statusLower){
+        case 'ready':
+        case 'completed':
+        case 'success':
+        case 'active':
+            return 'success';
+        case 'processing':
+        case 'queued':
+        case 'rendering':
+        case 'warning':
+            return 'warning';
+        case 'failed':
+        case 'error':
+        case 'danger':
+            return 'danger';
+        case 'inactive':
+            return 'inactive';
+        default:
+            return 'neutral';
+    }
+};
+
+const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant, children, className = '' }) => {
+    const computedVariant = variant ?? (status ? statusToVariant(status) : 'neutral');
+    const content = children ?? status;
+
     const classes = [
         'status-badge',
-        `variant-${variant}`,
+        `variant-${computedVariant}`,
         'gap-025',
         'p-05',
         'font-size-1',
@@ -36,7 +63,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({
 
     return (
         <span className={classes}>
-            {children}
+            {content}
         </span>
     );
 };
