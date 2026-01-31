@@ -6,6 +6,10 @@ export interface ApiResponse<T>{
     data: T;
 };
 
+export interface PaginatedResponse<T>{
+    data: T[];
+};
+
 export default class BaseRepository{
     protected readonly client: VoltClient;
 

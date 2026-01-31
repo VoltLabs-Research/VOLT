@@ -1,0 +1,8 @@
+.invitation-email-input{
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.invitation-email-input-field{
+    flex: 1;
+}

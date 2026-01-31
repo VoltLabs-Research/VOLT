@@ -1,0 +1,17 @@
+.my-team-page {
+    min-height: 100%;
+}
+
+.my-team-members {
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.my-team-loading {
+    padding: 3rem;
+    text-align: center;
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+}

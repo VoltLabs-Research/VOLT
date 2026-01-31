@@ -1,0 +1,25 @@
+.status-dot{
+    display: inline-block;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-dot.size-sm{
+    width: 8px;
+    height: 8px;
+}
+
+.status-dot.size-md{
+    width: 10px;
+    height: 10px;
+}
+
+.status-dot.online{
+    background-color: var(--status-success);
+    box-shadow: 0 0 0 2px var(--color-surface-1);
+}
+
+.status-dot.offline{
+    background-color: var(--color-text-muted);
+    box-shadow: 0 0 0 2px var(--color-surface-1);
+}

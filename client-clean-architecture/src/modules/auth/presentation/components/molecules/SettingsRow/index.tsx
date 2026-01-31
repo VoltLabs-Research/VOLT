@@ -49,7 +49,7 @@ const SettingsRow: React.FC<SettingsRowProps> = ({
         'items-center',
         'gap-075',
         'p-05',
-        'b-radius-08',
+        'radius-md',
         onClick ? 'clickable cursor-pointer' : '',
         className
     ].filter(Boolean).join(' ');

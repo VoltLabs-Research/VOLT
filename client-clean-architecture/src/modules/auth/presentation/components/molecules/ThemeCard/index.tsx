@@ -22,7 +22,7 @@ const ThemeCard: React.FC<ThemeCardProps> = ({
 }) => {
     const cardClasses = [
         'theme-card',
-        'b-radius-08',
+        'radius-md',
         'cursor-pointer',
         'overflow-hidden',
         isSelected ? 'selected' : ''

@@ -28,7 +28,7 @@ const DangerZone: React.FC<DangerZoneProps> = ({
                 description="Irreversible actions that affect your account"
             />
 
-            <Container className="danger-zone p-1 b-radius-08">
+            <Container className='danger-zone p-1 radius-md'>
                 <Container className="d-flex items-center content-between gap-1 sm:column">
                     <Container className="d-flex column gap-025">
                         <Title className="font-size-2 font-weight-6">

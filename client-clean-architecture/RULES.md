@@ -1,0 +1,24 @@
+# Migration guidelines: `client/` → `client-clean-architecture/`
+
+- I’m working on migrating `client/` to `client-clean-architecture/`.
+- You must respect the design pattern. You must not break Clean Architecture rules.
+- Before implementing a feature, check whether any existing file already does something similar.
+- Be consistent when integrating new modules; they must follow the same pattern as the existing ones.
+- You are strictly forbidden from creating new classes in `base.css`, `general.css`, and `theme.css`.
+- When migrating UI, always replicate the legacy UI design using the **minimum** amount of custom CSS possible; instead, use the classes available in `base.css`, `general.css`, and `theme.css`.
+- Prefer single quotes.
+- Respect my coding style. Look at the modules to understand my style.
+- Don’t reformat code into a different style than mine.
+- Always write high-quality code without being full of fallbacks—don’t overengineer.
+- Code must be maintainable and readable; it must be idiomatic.
+- When migrating UI, try to use components already available in modules like `shared`.
+- Use Atomic Design.
+- Pages go in `components/templates`.
+- If you’re working on API features, check what `server-clean-architecture` returns so you create the interface correctly.
+- Use `;` after defining interfaces and functions.
+- Don’t run builds.
+- Always recommend a better version if what I ask for isn’t optimal.
+- Always run `tree` when: you’re creating a new module, touching routing, adding a feature, or moving files.
+- Review 1–3 analogous modules for context every time you do something new.
+- Check `shared` and naming conventions before inventing something new.
+- You should not declare functions within useEffects.
