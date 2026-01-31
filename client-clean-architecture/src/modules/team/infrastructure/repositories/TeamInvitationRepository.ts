@@ -1,7 +1,8 @@
 import { injectable, inject } from 'tsyringe';
 import VoltClient from '@/app/core/http/VoltClient';
 import { http } from '@/app/di';
-import BaseRepository, { ApiResponse, PaginatedApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import { PaginatedResponse } from '@/shared/domain/pagination';
 import ITeamInvitationRepository from '../../domain/ports/ITeamInvitationRepository';
 import ITeamStorage from '../../domain/ports/ITeamStorage';
 import { TeamInvitation } from '../../domain/entities';
@@ -28,7 +29,7 @@ export default class TeamInvitationRepository extends BaseRepository implements 
     }
 
     async getPending(): Promise<TeamInvitation[]>{
-        const response = await this.rbacClient.get<PaginatedApiResponse<TeamInvitation>>('/pending');
+        const response = await this.rbacClient.get<PaginatedResponse<TeamInvitation>>('/pending');
         return response.data;
     }
 

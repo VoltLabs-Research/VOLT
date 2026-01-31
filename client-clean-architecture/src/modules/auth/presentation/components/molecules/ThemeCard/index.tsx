@@ -2,6 +2,7 @@ import React from 'react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import { Check } from 'lucide-react';
+import { cn } from '@/shared/utils';
 import './ThemeCard.css';
 
 interface ThemeCardProps {
@@ -20,13 +21,13 @@ const ThemeCard: React.FC<ThemeCardProps> = ({
     isSelected,
     onClick
 }) => {
-    const cardClasses = [
+    const cardClasses = cn(
         'theme-card',
         'radius-md',
         'cursor-pointer',
         'overflow-hidden',
-        isSelected ? 'selected' : ''
-    ].filter(Boolean).join(' ');
+        isSelected && 'selected'
+    );
 
     return (
         <Container className={cardClasses} onClick={onClick}>

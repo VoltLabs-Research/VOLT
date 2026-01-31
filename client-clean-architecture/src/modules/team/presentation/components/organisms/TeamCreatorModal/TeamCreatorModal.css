@@ -2,5 +2,4 @@
     color: var(--status-error);
     padding: 0.5rem 0.75rem;
     background-color: var(--status-error-bg);
-    border-radius: var(--radius-sm);
 }

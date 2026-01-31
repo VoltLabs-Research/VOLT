@@ -1,10 +1,6 @@
-interface UserLike{
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-};
+import type { User } from '@/modules/auth/domain/entities/User';
 
-export const getInitialsFromUser = (user: UserLike | string | null | undefined): string => {
+export const getInitialsFromUser = (user: User | string | null | undefined): string => {
     if(!user || typeof user === 'string') return '?';
     
     if(user.firstName && user.lastName){
@@ -22,7 +18,7 @@ export const getInitialsFromUser = (user: UserLike | string | null | undefined):
     return '?';
 };
 
-export const getUserDisplayName = (user: UserLike | string | null | undefined): string => {
+export const getUserDisplayName = (user: User | string | null | undefined): string => {
     if(!user || typeof user === 'string') return 'Unknown';
     
     if(user.firstName && user.lastName){

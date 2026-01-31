@@ -2,6 +2,8 @@ import React, { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Container from '@/shared/presentation/components/Container';
+import { cn } from '@/shared/utils';
 import type { HTMLMotionProps } from 'framer-motion';
 import './Button.css';
 
@@ -123,19 +125,25 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
         }
     };
 
-    const classes = [
+    const classes = cn(
         'button',
         `variant-${variant}`,
         `intent-${intent}`,
         `size-${size}`,
         `shape-${shape}`,
-        block ? 'block' : '',
-        align !== 'center' ? `align-${align}` : '',
-        isLoading ? 'is-loading' : '',
-        iconOnly ? 'icon-only' : '',
-        premium ? 'premium' : '',
+        block && 'block',
+        align !== 'center' && `align-${align}`,
+        isLoading && 'is-loading',
+        iconOnly && 'icon-only',
+        premium && 'premium',
+        'p-relative',
+        'items-center',
+        'content-center',
+        'font-weight-5',
+        'u-select-none',
+        'cursor-pointer',
         className
-        , 'p-relative', 'items-center', 'content-center', 'font-weight-5', 'u-select-none', 'cursor-pointer'].filter(Boolean).join(' ');
+    );
 
     return (
         <motion.button
@@ -149,9 +157,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
             {...props}
         >
             {isLoading && (
-                <div className="button-loader p-absolute d-flex items-center content-center">
+                <Container className="button-loader p-absolute d-flex items-center content-center">
                     <Loader2 className="animate-spin" size={size === 'sm' ? 14 : size === 'lg' ? 20 : 18} />
-                </div>
+                </Container>
             )}
 
             {leftIcon && <span className="button-icon-left font-size-4">{leftIcon}</span>}

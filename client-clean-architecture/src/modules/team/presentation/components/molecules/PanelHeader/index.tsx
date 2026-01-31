@@ -1,8 +1,8 @@
 import React from 'react';
-import { X } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Title from '@/shared/presentation/components/Title';
+import CloseButton from '@/shared/presentation/components/CloseButton';
 import './PanelHeader.css';
 
 interface PanelTab {
@@ -47,18 +47,7 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({
                 </Container>
             ) : null}
 
-            {onClose && (
-                <Button
-                    variant='ghost'
-                    intent='neutral'
-                    iconOnly
-                    size='sm'
-                    onClick={onClose}
-                    aria-label='Close'
-                >
-                    <X size={20} />
-                </Button>
-            )}
+            {onClose && <CloseButton onClick={onClose} />}
         </Container>
     );
 };

@@ -74,7 +74,7 @@ const TeamInvitationTemplate: React.FC = () => {
     if(loading){
         return (
             <Container className='team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <Container className='team-invitation-card d-flex column gap-1-5 items-center text-center'>
+                <Container className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
                     <Paragraph className='color-secondary'>Loading invitation...</Paragraph>
                 </Container>
             </Container>
@@ -84,7 +84,7 @@ const TeamInvitationTemplate: React.FC = () => {
     if(error || !invitation || !invitation.team || !invitation.invitedBy){
         return (
             <Container className='team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <Container className='team-invitation-card d-flex column gap-1-5 items-center text-center'>
+                <Container className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
                     <Container className='team-invitation-icon-error'>
                         <XCircle size={48} />
                     </Container>
@@ -110,7 +110,7 @@ const TeamInvitationTemplate: React.FC = () => {
     if(isExpired){
         return (
             <Container className='team-invitation-page w-max vh-max d-flex items-center content-center'>
-                <Container className='team-invitation-card d-flex column gap-1-5 items-center text-center'>
+                <Container className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
                     <Container className='team-invitation-icon-warning'>
                         <Clock size={48} />
                     </Container>
@@ -132,8 +132,8 @@ const TeamInvitationTemplate: React.FC = () => {
 
     return (
         <Container className='team-invitation-page w-max vh-max d-flex items-center content-center'>
-            <Container className='team-invitation-card d-flex column gap-1-5 items-center text-center'>
-                <Container className='team-invitation-badge d-flex items-center gap-05'>
+            <Container className='team-invitation-card radius-lg d-flex column gap-1-5 items-center text-center'>
+                <Container className='team-invitation-badge radius-full d-flex items-center gap-05'>
                     <CheckCircle size={20} />
                     <span>You've been invited!</span>
                 </Container>
@@ -148,7 +148,7 @@ const TeamInvitationTemplate: React.FC = () => {
                     Invited by {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
                 </Paragraph>
 
-                <Container className='team-invitation-details d-flex gap-1 flex-wrap content-center'>
+                <Container className='team-invitation-details radius-md d-flex gap-1 flex-wrap content-center'>
                     <Container className='team-invitation-detail text-center'>
                         <span className='team-invitation-detail-label'>Email</span>
                         <Paragraph className='team-invitation-detail-value d-flex items-center gap-025'>
@@ -200,7 +200,7 @@ const TeamInvitationTemplate: React.FC = () => {
                 </Container>
 
                 {error && (
-                    <Container className='team-invitation-error d-flex items-center gap-025'>
+                    <Container className='team-invitation-error radius-sm d-flex items-center gap-025'>
                         <AlertCircle size={16} />
                         {error}
                     </Container>

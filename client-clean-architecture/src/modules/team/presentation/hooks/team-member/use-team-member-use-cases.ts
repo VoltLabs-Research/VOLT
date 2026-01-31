@@ -1,30 +1,19 @@
-import { useMemo } from 'react';
-import { container } from 'tsyringe';
-import {
+import { createUseCasesHook } from '@/shared/presentation/hooks/create-use-cases-hook';
+import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
+import type {
     GetAllTeamMembersUseCase,
     UpdateTeamMemberUseCase,
     RemoveTeamMemberUseCase
 } from '@/modules/team/application/use-cases/team-member';
-import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
 
-const useTeamMemberUseCases = () => {
-    const getAllTeamMembersUseCase = useMemo(() => {
-        return container.resolve<GetAllTeamMembersUseCase>(TEAM_TOKENS.GetAllTeamMembersUseCase);
-    }, []);
-
-    const updateTeamMemberUseCase = useMemo(() => {
-        return container.resolve<UpdateTeamMemberUseCase>(TEAM_TOKENS.UpdateTeamMemberUseCase);
-    }, []);
-
-    const removeTeamMemberUseCase = useMemo(() => {
-        return container.resolve<RemoveTeamMemberUseCase>(TEAM_TOKENS.RemoveTeamMemberUseCase);
-    }, []);
-
-    return {
-        getAllTeamMembersUseCase,
-        updateTeamMemberUseCase,
-        removeTeamMemberUseCase
-    };
+const useTeamMemberUseCases = createUseCasesHook({
+    getAllTeamMembersUseCase: TEAM_TOKENS.GetAllTeamMembersUseCase,
+    updateTeamMemberUseCase: TEAM_TOKENS.UpdateTeamMemberUseCase,
+    removeTeamMemberUseCase: TEAM_TOKENS.RemoveTeamMemberUseCase
+}) as () => {
+    getAllTeamMembersUseCase: GetAllTeamMembersUseCase;
+    updateTeamMemberUseCase: UpdateTeamMemberUseCase;
+    removeTeamMemberUseCase: RemoveTeamMemberUseCase;
 };
 
 export default useTeamMemberUseCases;

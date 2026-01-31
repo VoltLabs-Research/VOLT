@@ -1,9 +1,8 @@
 import React, { type ReactNode } from 'react';
-import { X } from 'lucide-react';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
+import CloseButton from '@/shared/presentation/components/CloseButton';
 import './Modal.css';
 
 declare module 'react' {
@@ -71,17 +70,11 @@ const Modal = ({
                                 {title && <Title className='font-size-4 font-weight-6'>{title}</Title>}
                                 {description && <Paragraph className='font-size-2 color-secondary'>{description}</Paragraph>}
                             </Container>
-                            <Button
-                                variant='ghost'
-                                intent='neutral'
-                                iconOnly
-                                size='sm'
+                            <CloseButton
                                 commandfor={id}
                                 command='close'
                                 aria-label='Close modal'
-                            >
-                                <X size={20} />
-                            </Button>
+                            />
                         </Container>
                     )}
 

@@ -1,6 +1,5 @@
 .document-listing-table-header-container {
     padding: 2rem 2rem 1rem;
-    top: 0;
     z-index: 200000;
     backdrop-filter: blur(5px);
     -webkit-backdrop-filter: blur(5px);
@@ -13,13 +12,6 @@
 .document-listing-table-row-container {
     padding: 1rem 2rem;
     border-bottom: 1px solid var(--color-border-soft);
-    background: none;
-    border-left: none;
-    border-right: none;
-    border-top: none;
-    text-align: left;
-    font: inherit;
-    color: inherit;
 }
 
 .document-listing-table-row-container:hover {
@@ -46,11 +38,7 @@
 }
 
 .document-listing-overlay-blur {
-    top: 0;
-    left: 0;
     height: calc(100vh - 320px);
-    right: 0;
-    bottom: 0;
     z-index: 100;
     background-color: var(--color-overlay);
     backdrop-filter: blur(5px);
@@ -58,10 +46,6 @@
 }
 
 .document-listing-infinite-skeleton-loader {
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
     opacity: 0.8;
     animation: pulse-infinite 3s ease-in-out infinite;
 }
@@ -74,14 +58,9 @@
 .document-listing-infinite-skeleton-loader .skeleton-row {
     padding: 1rem 0 !important;
     margin: 0 !important;
-    flex-shrink: 0;
 }
 
 .document-listing-empty-content {
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
     z-index: 101;
 }
 

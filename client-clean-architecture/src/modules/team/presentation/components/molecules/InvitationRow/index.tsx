@@ -29,10 +29,10 @@ const InvitationRow: React.FC<InvitationRowProps> = ({
     };
 
     return (
-        <Container className='invitation-row d-flex items-center content-between gap-075'>
+        <Container className='invitation-row radius-sm d-flex items-center content-between gap-075'>
             <Container className='d-flex items-center gap-075 flex-1'>
                 <Container
-                    className='invitation-avatar d-flex items-center content-center f-shrink-0 font-weight-5'
+                    className='invitation-avatar radius-full d-flex items-center content-center f-shrink-0 font-weight-5'
                     style={{ backgroundColor: getAvatarColor(email) }}
                 >
                     {getInitials(email)}

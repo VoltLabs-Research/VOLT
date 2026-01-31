@@ -1,5 +1,6 @@
 import { injectable, inject } from 'tsyringe';
-import BaseRepository, { ApiResponse, PaginatedApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import { PaginatedResponse } from '@/shared/domain/pagination';
 import { base64ToBlobUrl } from '@/shared/utils/file';
 import type ITrajectoryRepository from '../../domain/ports/ITrajectoryRepository';
 import type IPreviewCache from '../../domain/ports/IPreviewCache';
@@ -25,15 +26,8 @@ export default class TrajectoryRepository extends BaseRepository implements ITra
         super('/trajectory', { useRBAC: true });
     }
 
-    async getAll(params: GetTrajectoriesInputDTO = {}): Promise<GetTrajectoriesOutputDTO>{
-        const response = await this.client.get<PaginatedApiResponse<Trajectory>>('/', params);
-        return {
-            trajectories: response.data,
-            total: response.total,
-            page: response.page,
-            limit: response.limit,
-            hasMore: response.page * response.limit < response.total
-        };
+    async getAll(params: GetTrajectoriesInputDTO): Promise<GetTrajectoriesOutputDTO>{
+        return await this.client.get<PaginatedResponse<Trajectory>>('/', params);
     }
 
     async getById(id: string): Promise<Trajectory>{
@@ -114,10 +108,34 @@ export default class TrajectoryRepository extends BaseRepository implements ITra
 
     async getAtoms(params: GetAtomsInputDTO): Promise<GetAtomsOutputDTO>{
         const { trajectoryId, analysisId, ...query } = params;
-        const response = await this.client.get<ApiResponse<GetAtomsOutputDTO>>(`/${trajectoryId}/atoms`, {
+        
+        interface AtomsApiResponse {
+            status: 'success';
+            data: any[];
+            pagination: {
+                page: number;
+                limit: number;
+                total: number;
+                totalPages: number;
+                hasMore: boolean;
+            };
+            _meta?: {
+                properties: string[];
+            };
+        }
+        
+        const response = await this.client.get<AtomsApiResponse>(`/${trajectoryId}/atoms`, {
             analysisId,
             ...query
         });
-        return this.unwrap(response);
+        
+        return {
+            status: 'success' as const,
+            data: response.data,
+            pagination: response.pagination,
+            _meta: {
+                properties: response._meta?.properties || []
+            }
+        };
     }
 };

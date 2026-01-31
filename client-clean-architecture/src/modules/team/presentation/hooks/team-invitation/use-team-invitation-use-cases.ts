@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import { container } from 'tsyringe';
-import {
+import { createUseCasesHook } from '@/shared/presentation/hooks/create-use-cases-hook';
+import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
+import type {
     GetInvitationDetailsUseCase,
     GetPendingInvitationsUseCase,
     SendInvitationUseCase,
@@ -8,41 +8,21 @@ import {
     RejectInvitationUseCase,
     CancelInvitationUseCase
 } from '@/modules/team/application/use-cases/team-invitation';
-import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
 
-const useTeamInvitationUseCases = () => {
-    const getInvitationDetailsUseCase = useMemo(() => {
-        return container.resolve<GetInvitationDetailsUseCase>(TEAM_TOKENS.GetInvitationDetailsUseCase);
-    }, []);
-
-    const getPendingInvitationsUseCase = useMemo(() => {
-        return container.resolve<GetPendingInvitationsUseCase>(TEAM_TOKENS.GetPendingInvitationsUseCase);
-    }, []);
-
-    const sendInvitationUseCase = useMemo(() => {
-        return container.resolve<SendInvitationUseCase>(TEAM_TOKENS.SendInvitationUseCase);
-    }, []);
-
-    const acceptInvitationUseCase = useMemo(() => {
-        return container.resolve<AcceptInvitationUseCase>(TEAM_TOKENS.AcceptInvitationUseCase);
-    }, []);
-
-    const rejectInvitationUseCase = useMemo(() => {
-        return container.resolve<RejectInvitationUseCase>(TEAM_TOKENS.RejectInvitationUseCase);
-    }, []);
-
-    const cancelInvitationUseCase = useMemo(() => {
-        return container.resolve<CancelInvitationUseCase>(TEAM_TOKENS.CancelInvitationUseCase);
-    }, []);
-
-    return {
-        getInvitationDetailsUseCase,
-        getPendingInvitationsUseCase,
-        sendInvitationUseCase,
-        acceptInvitationUseCase,
-        rejectInvitationUseCase,
-        cancelInvitationUseCase
-    };
+const useTeamInvitationUseCases = createUseCasesHook({
+    getInvitationDetailsUseCase: TEAM_TOKENS.GetInvitationDetailsUseCase,
+    getPendingInvitationsUseCase: TEAM_TOKENS.GetPendingInvitationsUseCase,
+    sendInvitationUseCase: TEAM_TOKENS.SendInvitationUseCase,
+    acceptInvitationUseCase: TEAM_TOKENS.AcceptInvitationUseCase,
+    rejectInvitationUseCase: TEAM_TOKENS.RejectInvitationUseCase,
+    cancelInvitationUseCase: TEAM_TOKENS.CancelInvitationUseCase
+}) as () => {
+    getInvitationDetailsUseCase: GetInvitationDetailsUseCase;
+    getPendingInvitationsUseCase: GetPendingInvitationsUseCase;
+    sendInvitationUseCase: SendInvitationUseCase;
+    acceptInvitationUseCase: AcceptInvitationUseCase;
+    rejectInvitationUseCase: RejectInvitationUseCase;
+    cancelInvitationUseCase: CancelInvitationUseCase;
 };
 
 export default useTeamInvitationUseCases;

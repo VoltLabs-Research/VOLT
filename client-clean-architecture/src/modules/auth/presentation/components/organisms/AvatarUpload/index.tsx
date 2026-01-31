@@ -48,7 +48,7 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
     return (
         <Container className="d-flex items-center gap-1">
             <Container
-                className="avatar-upload p-relative overflow-hidden cursor-pointer f-shrink-0"
+                className="avatar-upload radius-full p-relative overflow-hidden cursor-pointer f-shrink-0"
                 onClick={handleAvatarClick}
             >
                 {preview ? (

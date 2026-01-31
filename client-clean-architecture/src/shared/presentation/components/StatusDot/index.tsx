@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/shared/utils';
 import './StatusDot.css';
 
 interface StatusDotProps{
@@ -12,12 +13,14 @@ const StatusDot: React.FC<StatusDotProps> = ({
     size = 'sm',
     className = ''
 }) => {
-    const classes = [
+    const classes = cn(
         'status-dot',
+        'radius-full',
+        'f-shrink-0',
         `size-${size}`,
         isOnline ? 'online' : 'offline',
         className
-    ].filter(Boolean).join(' ');
+    );
 
     return <span className={classes} />;
 };

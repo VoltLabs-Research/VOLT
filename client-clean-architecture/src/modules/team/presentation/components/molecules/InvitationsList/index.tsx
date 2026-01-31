@@ -21,7 +21,7 @@ const InvitationsList: React.FC<InvitationsListProps> = ({
 }) => {
     if(isLoading) {
         return (
-            <Container className='invitations-list-loading'>
+            <Container className='invitations-list-loading d-flex items-center content-center'>
                 <Paragraph className='color-secondary font-size-2 text-center p-1'>
                     Loading invitations...
                 </Paragraph>

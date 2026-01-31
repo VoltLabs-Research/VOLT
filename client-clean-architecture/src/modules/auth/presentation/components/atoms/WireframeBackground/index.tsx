@@ -66,7 +66,7 @@ const WireframeBackground = () => {
     return (
         <canvas
             ref={canvasRef}
-            className='wireframe-canvas' />
+            className='wireframe-canvas p-absolute inset-0 w-max h-max' />
     );
 };
 

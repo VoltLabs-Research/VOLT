@@ -1,0 +1,10 @@
+.simulation-card-header{
+    padding: 0.75rem;
+}
+
+.header-user-name{
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 150px;
+}

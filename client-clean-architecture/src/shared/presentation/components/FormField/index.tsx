@@ -1,6 +1,7 @@
 import { forwardRef, ReactNode } from 'react';
 import { AlertCircle } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
+import { cn } from '@/shared/utils';
 import './FormField.css';
 
 interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement>{
@@ -19,12 +20,12 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({
     ...props 
 }, ref) => {
     const containerClass = isLoading ? 'is-loading' : '';
-    const inputClass = [
-        'form-field-input w-max',
+    const inputClass = cn(
+        'form-field-input radius-sm w-max',
         error && 'has-error',
-        icon && 'has-icon',
+        !!icon && 'has-icon',
         className
-    ].filter(Boolean).join(' ');
+    );
 
     return (
         <Container className={`form-field-container d-flex column gap-05 w-max ${containerClass}`}>

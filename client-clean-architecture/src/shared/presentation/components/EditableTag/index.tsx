@@ -59,7 +59,7 @@ const EditableTag = React.memo(({ as: Tag, onSave, children, className, title }:
         Tag,
         {
             ref: elementRef,
-            className: `${className || ''} ${isEditing ? 'is-editing' : ''}`,
+            className: `${className || ''} ${isEditing ? 'is-editing radius-xs' : ''}`,
             contentEditable: isEditing,
             onDoubleClick: enableEditing,
             onBlur: handleSave,

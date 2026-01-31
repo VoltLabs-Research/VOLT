@@ -6,7 +6,8 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-import MemberAvatar from '../MemberAvatar';
+import Avatar from '@/shared/presentation/components/Avatar';
+import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { TeamMember } from '@/modules/team/domain/entities/TeamMember';
 import './MemberRow.css';
 
@@ -27,17 +28,22 @@ const MemberRow: React.FC<MemberRowProps> = ({
     onRemove,
     onMessage
 }) => {
+    const handleRemove = () => {
+        const memberName = `${member.user.firstName} ${member.user.lastName}`;
+        if(!confirm(`Are you sure you want to remove ${memberName} from this team? This action cannot be undone.`)) return;
+        onRemove(member);
+    };
+
     return (
         <Popover
             id={`member-menu-${member._id}`}
             triggerAction='contextmenu'
             trigger={
-                <Container className='member-row d-flex items-center content-between gap-1 p-1'>
+                <Container className='member-row radius-sm d-flex items-center content-between gap-1 p-1'>
                     <Container className='d-flex items-center gap-1'>
-                        <MemberAvatar
+                        <Avatar
                             src={member.user.avatar}
                             alt={`${member.user.firstName} ${member.user.lastName}`}
-                            showStatus={false}
                             size='md'
                         />
                         <Container className='d-flex column'>
@@ -54,7 +60,7 @@ const MemberRow: React.FC<MemberRowProps> = ({
                     </Container>
 
                     <Container className='d-flex items-center gap-1'>
-                        <Container className='member-role-badge'>
+                        <Container className='member-role-badge radius-sm'>
                             {isOwner ? 'Owner' : member.role.name}
                         </Container>
 
@@ -85,7 +91,7 @@ const MemberRow: React.FC<MemberRowProps> = ({
                             label='Remove Member'
                             variant='danger'
                             onClick={() => {
-                                onRemove(member);
+                                handleRemove();
                                 close();
                             }}
                         />
