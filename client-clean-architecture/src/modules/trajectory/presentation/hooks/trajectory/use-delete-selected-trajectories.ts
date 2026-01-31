@@ -1,10 +1,9 @@
 import { useCallback } from 'react';
-import useTrajectoryStore from '../../stores/use-trajectory-store';
+import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import useDeleteTrajectory from './use-delete-trajectory';
 
 const useDeleteSelectedTrajectories = () => {
-    const selectedIds = useTrajectoryStore((state) => state.selectedIds);
-    const clearSelection = useTrajectoryStore((state) => state.clearSelection);
+    const { selectedIds, clearSelection } = useSelectionParams();
     const deleteTrajectory = useDeleteTrajectory();
 
     const deleteSelectedTrajectories = useCallback(async () => {

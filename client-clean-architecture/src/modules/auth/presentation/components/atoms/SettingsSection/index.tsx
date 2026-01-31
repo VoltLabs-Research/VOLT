@@ -1,5 +1,6 @@
 import React from 'react';
 import Container from '@/shared/presentation/components/Container';
+import { cn } from '@/shared/utils';
 import './SettingsSection.css';
 
 export interface SettingsSectionProps {
@@ -15,7 +16,7 @@ export interface SettingsSectionProps {
 }
 
 const SettingsSection: React.FC<SettingsSectionProps> = ({ children, className = '' }) => {
-    const classes = [
+    const classes = cn(
         'settings-section',
         'd-flex', 
         'column', 
@@ -23,7 +24,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ children, className =
         'p-1-5', 
         'radius-md', 
         className
-    ].filter(Boolean).join(' ');
+    );
 
     return (
         <Container className={classes}>

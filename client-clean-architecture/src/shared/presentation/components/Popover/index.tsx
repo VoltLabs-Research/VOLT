@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import Container from '@/shared/presentation/components/Container';
 import './Popover.css';
 
 interface PopoverProps {
@@ -154,15 +155,15 @@ const Popover: React.FC<PopoverProps> = ({
     };
 
     const popoverContent = isOpen ? createPortal(
-        <div
+        <Container
             ref={popoverRef}
             id={id}
-            className={`popover d-flex column glass-bg ${noPadding ? '' : 'p-05'} ${className} color-primary`}
+            className={`popover radius-lg d-flex column glass-bg ${noPadding ? '' : 'p-05'} ${className} color-primary`}
             style={style}
             onClick={(e) => e.stopPropagation()}
         >
             {renderChildren()}
-        </div>,
+        </Container>,
         document.body
     ) : null;
 

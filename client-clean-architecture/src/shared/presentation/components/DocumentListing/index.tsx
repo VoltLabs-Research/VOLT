@@ -3,181 +3,74 @@ import { motion } from 'framer-motion';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import { Plus } from 'lucide-react';
 import { Skeleton } from '@mui/material';
-import useListingLifecycle, { type FetchParams } from '@/shared/presentation/hooks/use-listing-lifecycle';
-import type { ListingMeta } from '@/shared/domain/entities/ListingMeta';
-import DocumentListingTable, { type ColumnConfig, type MenuOption } from '@/shared/presentation/components/DocumentListingTable';
+import useDocumentListingPagination, { UseDocumentListingPaginationProps } from '@/shared/presentation/hooks/use-document-listing-pagination';
+import useOptimisticAction from '@/shared/presentation/hooks/use-optimistic-action';
+import DocumentListingTable, { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListingTable';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { getValueByPath } from '@/shared/utils/format';
+import { sortData } from '@/shared/utils/sort';
+import { SortConfig } from '@/shared/domain/sorting/types';
 import './DocumentListing.css';
 
 export type { ColumnConfig, MenuOption };
 export { getValueByPath };
 
-const sortDataWorker = (data: unknown[], sortConfig: { key: string; direction: 'asc' | 'desc' } | null): unknown[] => {
-    const toSearchString = (val: unknown): string => {
-        if(val == null) return '';
-        const t = typeof val;
-        if(t === 'string' || t === 'number' || t === 'boolean') return String(val);
-        if(Array.isArray(val)) return val.map((v) => toSearchString(v)).join(' ');
-        if(t === 'object'){
-            const preferredKeys = ['name', 'title', '_id', 'id'];
-            const parts: string[] = [];
-            try{
-                for(const k of preferredKeys){
-                    if(k in (val as object) && (val as Record<string, unknown>)[k] != null){
-                        parts.push(String((val as Record<string, unknown>)[k]));
-                    }
-                }
-                if(parts.length) return parts.join(' ');
-                return Object.values(val as object).map((v) => toSearchString(v)).join(' ');
-            }catch{
-                return '';
-            }
-        }
-        return '';
-    };
-
-    if(!sortConfig) return data;
-
-    const workingData = [...data];
-    workingData.sort((a, b) => {
-        const aVal = getValueByPath(a, sortConfig.key);
-        const bVal = getValueByPath(b, sortConfig.key);
-
-        if(aVal == null && bVal == null) return 0;
-        if(aVal == null) return sortConfig.direction === 'asc' ? -1 : 1;
-        if(bVal == null) return sortConfig.direction === 'asc' ? 1 : -1;
-
-        const aStr = toSearchString(aVal);
-        const bStr = toSearchString(bVal);
-
-        const aNum = Number(aStr);
-        const bNum = Number(bStr);
-        const bothNumeric = !Number.isNaN(aNum) && !Number.isNaN(bNum);
-
-        if(bothNumeric){
-            return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum;
-        }
-
-        return sortConfig.direction === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
-    });
-
-    return workingData;
-};
-
-interface DocumentListingProps {
+interface DocumentListingProps<T = unknown, TContext = Record<string, never>> 
+    extends UseDocumentListingPaginationProps<T, TContext>{
     title: string | React.ReactNode;
     columns: ColumnConfig[];
-    data: unknown[];
-    isLoading?: boolean;
-    onMenuAction?: (action: string, item: unknown) => void;
-    getMenuOptions?: (item: unknown) => MenuOption[];
+    data: T[];
+    onMenuAction?: (action: string, item: T) => void;
+    getMenuOptions?: (item: T) => MenuOption[];
     emptyMessage?: string;
-    keyExtractor?: (item: unknown, index: number) => string | number;
-    hasMore?: boolean;
-    isFetchingMore?: boolean;
-    onLoadMore?: () => void;
     createNew?: { buttonTitle: string; onCreate: () => void };
     headerActions?: React.ReactNode;
     gap?: string;
-    fetchData?: (params: FetchParams) => Promise<void> | void;
-    listingMeta?: ListingMeta;
-    dependencies?: unknown[];
-    initialFetchParams?: Record<string, unknown>;
 };
 
-const DocumentListing: React.FC<DocumentListingProps> = ({
+const DocumentListing = <T, TContext = Record<string, never>>({
     title,
     columns = [],
     data = [],
-    isLoading = false,
+    fetchData,
+    onDataFetched,
+    context,
+    onContextChange,
+    defaultLimit = 20,
+    enabled = true,
     getMenuOptions,
     emptyMessage = 'No data available',
-    keyExtractor = (item, index) => (item as Record<string, unknown>)?._id as string ?? (item as Record<string, unknown>)?.id as string ?? index,
-    hasMore,
-    isFetchingMore,
-    onLoadMore,
     createNew,
     headerActions,
-    gap = 'gap-3',
-    fetchData,
-    listingMeta,
-    dependencies = [],
-    initialFetchParams
-}) => {
-    const { handleLoadMore: hookLoadMore } = useListingLifecycle({
-        data,
-        isLoading,
-        isFetchingMore: !!isFetchingMore,
-        listingMeta: listingMeta || { page: 1, limit: 20, hasMore: hasMore || false, total: 0 },
-        fetchData: fetchData || (() => {}),
-        dependencies,
-        initialFetchParams,
-        skipInitialFetch: !fetchData
+    gap = 'gap-3'
+}: DocumentListingProps<T, TContext>) => {
+    const { isLoading, isFetchingMore, hasMore, error, handleLoadMore } = useDocumentListingPagination<T, TContext>({
+        fetchData,
+        onDataFetched,
+        context,
+        onContextChange,
+        defaultLimit,
+        enabled
     });
 
-    const activeLoadMore = fetchData ? hookLoadMore : onLoadMore;
-    const activeHasMore = listingMeta ? listingMeta.hasMore : hasMore;
+    const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
 
-    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
-    const [optimisticallyDeletedIds, setOptimisticallyDeletedIds] = useState(new Set<string>());
+    const { wrapMenuOptions, filterVisibleData } = useOptimisticAction<T>({
+        shouldTrack: (opt) => opt.destructive === true
+    });
 
-    const wrappedGetMenuOptions = useCallback((item: unknown) => {
+    const wrappedGetMenuOptions = useCallback((item: T) => {
         if(!getMenuOptions) return [];
-        const options = getMenuOptions(item);
+        return wrapMenuOptions(item, getMenuOptions(item));
+    }, [getMenuOptions, wrapMenuOptions]);
 
-        return options.map((opt: MenuOption) => {
-            let label: string, Icon: React.ComponentType, onClick: () => void;
-            let isArray = false;
-
-            if(Array.isArray(opt)){
-                [label, Icon, onClick] = opt;
-                isArray = true;
-            }else{
-                label = opt.label;
-                Icon = opt.icon as React.ComponentType;
-                onClick = opt.onClick;
-            }
-
-            if(label === 'Delete' || label === 'Remove'){
-                const originalOnClick = onClick;
-                const wrappedOnClick = async () => {
-                    const id = String(keyExtractor(item, 0));
-                    setOptimisticallyDeletedIds((prev) => {
-                        const next = new Set(prev);
-                        next.add(id);
-                        return next;
-                    });
-
-                    try{
-                        await originalOnClick();
-                    }catch(err){
-                        setOptimisticallyDeletedIds((prev) => {
-                            const next = new Set(prev);
-                            next.delete(id);
-                            return next;
-                        });
-                        throw err;
-                    }
-                };
-
-                if(isArray) return [label, Icon, wrappedOnClick] as MenuOption;
-                return { ...opt, onClick: wrappedOnClick } as MenuOption;
-            }
-
-            return opt;
-        });
-    }, [getMenuOptions, keyExtractor]);
-
-    const visibleData = useMemo(() => {
-        return data.filter((item, index) => !optimisticallyDeletedIds.has(String(keyExtractor(item, index))));
-    }, [data, optimisticallyDeletedIds, keyExtractor]);
+    const visibleData = filterVisibleData(data);
 
     const sortedData = useMemo(() => {
-        return sortDataWorker(visibleData, sortConfig);
+        return sortData(visibleData, sortConfig, getValueByPath);
     }, [visibleData, sortConfig]);
 
     const handleSort = useCallback((col: ColumnConfig) => {
@@ -246,13 +139,12 @@ const DocumentListing: React.FC<DocumentListingProps> = ({
                         data={sortedData}
                         onCellClick={handleSort}
                         getCellTitle={(col) => <>{col.title} {getSortIndicator(col)}</>}
-                        isLoading={isLoading}
+                        isLoading={isLoading && data.length === 0}
                         getMenuOptions={wrappedGetMenuOptions}
-                        emptyMessage={emptyMessage}
-                        hasMore={activeHasMore}
+                        emptyMessage={error || emptyMessage}
+                        hasMore={hasMore}
                         isFetchingMore={isFetchingMore}
-                        onLoadMore={activeLoadMore}
-                        keyExtractor={keyExtractor}
+                        onLoadMore={handleLoadMore}
                         scrollContainerRef={bodyRef as React.RefObject<HTMLElement>}
                     />
                 </motion.div>

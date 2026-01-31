@@ -7,6 +7,7 @@ import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import PermissionBadge from '../../atoms/PermissionBadge';
+import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
 import './RoleRow.css';
 
@@ -14,19 +15,31 @@ interface RoleRowProps {
     role: TeamRole;
     onEdit: (role: TeamRole) => void;
     onDelete: (role: TeamRole) => void;
+    confirmDelete?: boolean;
 };
 
 const RoleRow: React.FC<RoleRowProps> = ({
     role,
     onEdit,
-    onDelete
+    onDelete,
+    confirmDelete = true
 }) => {
+    const handleDelete = () => {
+        if(confirmDelete){
+            const confirmed = confirm(
+                `Are you sure you want to delete the role "${role.name}"? This action cannot be undone.`
+            );
+            if(!confirmed) return;
+        }
+        onDelete(role);
+    };
+
     return (
         <Popover
             id={`role-menu-${role._id}`}
             triggerAction='contextmenu'
             trigger={
-                <Container className='role-row d-flex items-center content-between gap-1 p-1'>
+                <Container className='role-row radius-sm d-flex items-center content-between gap-1 p-1'>
                     <Container className='d-flex items-center gap-1'>
                         <Shield size={18} className='color-secondary' />
                         <Container className='d-flex column'>
@@ -38,7 +51,7 @@ const RoleRow: React.FC<RoleRowProps> = ({
                     </Container>
 
                     <Container className='d-flex items-center gap-1'>
-                        <span className={`role-badge ${role.isSystem ? 'badge-warning' : 'badge-brand'}`}>
+                        <span className={`role-badge radius-sm ${role.isSystem ? 'badge-warning' : 'badge-brand'}`}>
                             {role.isSystem ? 'System' : 'Custom'}
                         </span>
 
@@ -67,7 +80,7 @@ const RoleRow: React.FC<RoleRowProps> = ({
                             label='Delete Role'
                             variant='danger'
                             onClick={() => {
-                                onDelete(role);
+                                handleDelete();
                                 close();
                             }}
                         />

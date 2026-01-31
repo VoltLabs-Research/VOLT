@@ -1,18 +1,13 @@
 import type { Trajectory } from '../../../domain/entities';
-import type { ListingMeta } from '@/shared/domain/entities/ListingMeta';
+import type { PaginatedResponse } from '@/shared/domain/pagination';
 
 interface GetTrajectoriesInputDTO {
-    page?: number;
-    limit?: number;
+    page: number;
+    limit: number;
     search?: string;
 };
 
-interface GetTrajectoriesOutputDTO {
-    trajectories: Trajectory[];
-    total?: number;
-    page?: number;
-    limit?: number;
-    hasMore?: boolean;
-};
+type GetTrajectoriesOutputDTO = PaginatedResponse<Trajectory>;
 
-export type { GetTrajectoriesInputDTO, GetTrajectoriesOutputDTO, ListingMeta };
+export type { GetTrajectoriesInputDTO, GetTrajectoriesOutputDTO };
+

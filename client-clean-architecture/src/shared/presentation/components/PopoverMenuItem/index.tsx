@@ -30,7 +30,7 @@ const PopoverMenuItem: React.FC<PopoverMenuItemProps> = ({
             size='sm'
             block
             align='start'
-            className='popover-menu-item font-size-2 color-primary u-select-none'
+            className='popover-menu-item radius-sm font-size-2 color-primary u-select-none cursor-pointer'
             onClick={isLoading ? undefined : onClick}
             disabled={disabled || isLoading}
             isLoading={isLoading}

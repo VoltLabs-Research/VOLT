@@ -14,16 +14,26 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
     ){}
 
     async execute(input: GetTrajectoriesByTeamIdInputDTO): Promise<Result<GetTrajectoriesByTeamIdOutputDTO, ApplicationError>> {
-        const { teamId } = input;
+        const { teamId, page = 1, limit = 20, search } = input;
+        
+        const filter: any = { team: teamId };
+        if(search){
+            filter.name = { $regex: search, $options: 'i' };
+        }
+        
         const results = await this.trajectoryRepo.findAll({
-            filter: { team: teamId },
+            filter,
             populate: ['analysis', 'createdBy', 'frames.simulationCell'],
-            page: 1,
-            limit: 100
+            page,
+            limit
         });
+        
         return Result.ok({
-            ...results,
-            data: results.data.map(t => t.props)
+            data: results.data.map(t => t.props),
+            page: results.page,
+            limit: results.limit,
+            total: results.total,
+            totalPages: results.totalPages
         });
     }
 };

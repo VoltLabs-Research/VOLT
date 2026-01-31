@@ -93,7 +93,7 @@ const TeamCreatorModal: React.FC<TeamCreatorModalProps> = ({
                 />
 
                 {apiError && (
-                    <Container className='team-creator-error font-size-2'>
+                    <Container className='team-creator-error radius-sm font-size-2'>
                         {apiError}
                     </Container>
                 )}

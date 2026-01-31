@@ -15,19 +15,18 @@ export default class BaseResponse{
     /**
      * Paginated response.
      */
-    static paginated<T>(res: Response, result: PaginatedResult<T>, statusCode: number = 200): void{
+    static paginated<T>(res: Response, result: PaginatedResult<T>, metadata?: Record<string, unknown>, statusCode: number = 200): void{
         res.status(statusCode).json({
             status: 'success',
-            page: {
-                current: result.page,
-                total: result.totalPages
-            } ,
-            results: {
-                skipped: (result.page - 1) * result.limit,
+            data: result.data,
+            pagination: {
+                page: result.page,
+                limit: result.limit,
                 total: result.total,
-                paginated: result.limit
+                totalPages: result.totalPages,
+                hasMore: result.page < result.totalPages
             },
-            data: result.data
+            ...(metadata ? { _meta: metadata } : {})
         }); 
     }
 

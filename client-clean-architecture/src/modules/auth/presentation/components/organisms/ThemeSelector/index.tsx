@@ -9,7 +9,7 @@ const ThemeSelector: React.FC = () => {
     const { theme, setTheme } = useTheme();
 
     return (
-        <Container className="theme-selector-grid">
+        <Container className="theme-selector-grid gap-1">
             <ThemeCard
                 theme="light"
                 label="Light"

@@ -4,14 +4,11 @@
 
 .manage-roles-list {
     border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-md);
     overflow: hidden;
 }
 
 .manage-roles-loading {
-    padding: 3rem;
     text-align: center;
     background-color: var(--color-surface-1);
     border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-md);
 }

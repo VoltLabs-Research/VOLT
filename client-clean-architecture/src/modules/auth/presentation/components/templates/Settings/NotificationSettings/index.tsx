@@ -42,7 +42,7 @@ const notificationPreferences = [
 
 const NotificationSettings: React.FC = () => {
     return (
-        <Container className="notification-settings-container">
+        <Container className="notification-settings-container d-flex column gap-3 p-2">
             <Title className="font-size-5 font-weight-6">
                 Notification Settings
             </Title>

@@ -3,7 +3,6 @@
 }
 
 .oauth-background-blob{
-    border-radius: var(--radius-full);
     filter: blur(120px);
     opacity: 0.5;
 }
@@ -30,7 +29,6 @@
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-2xl);
     box-shadow: var(--shadow-glass);
 }
 

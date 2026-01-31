@@ -44,7 +44,7 @@ const AuthenticationSettings: React.FC = () => {
     };
 
     return (
-        <Container className="authentication-settings-container">
+        <Container className="authentication-settings-container d-flex column gap-3 p-2">
             <Title className="font-size-5 font-weight-6">
                 Authentication Settings
             </Title>

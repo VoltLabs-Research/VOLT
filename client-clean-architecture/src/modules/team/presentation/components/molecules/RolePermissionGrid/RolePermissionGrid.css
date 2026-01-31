@@ -3,7 +3,6 @@
     grid-template-columns: 1fr repeat(var(--action-count, 4), minmax(80px, 1fr));
     gap: 0;
     border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-sm);
     overflow: hidden;
 }
 
@@ -42,7 +41,6 @@
 .role-permission-checkbox{
     width: 16px;
     height: 16px;
-    cursor: pointer;
     accent-color: var(--accent-blue);
 }
 

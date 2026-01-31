@@ -1,6 +1,5 @@
 .member-row {
     background: var(--surface-secondary);
-    border-radius: var(--radius-sm);
     transition: background 0.2s ease;
 }
 
@@ -11,7 +10,6 @@
 .member-role-badge {
     padding: 0.25rem 0.5rem;
     background: var(--surface-tertiary);
-    border-radius: var(--radius-sm);
     font-size: var(--font-size-1);
     font-weight: var(--font-weight-5);
     color: var(--text-secondary);

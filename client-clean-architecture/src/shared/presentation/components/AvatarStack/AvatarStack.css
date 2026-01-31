@@ -1,0 +1,18 @@
+.avatar-stack{
+    flex-direction: row-reverse;
+}
+
+.avatar-stack-item{
+    margin-left: -0.5rem;
+    border: 2px solid var(--color-bg-primary);
+}
+
+.avatar-stack-item:last-child{
+    margin-left: 0;
+}
+
+.avatar-stack-overflow{
+    margin-left: -0.5rem;
+    background: var(--color-bg-secondary);
+    border: 2px solid var(--color-bg-primary);
+}

@@ -51,7 +51,7 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
         <Container className='d-flex column gap-1'>
             <Title className='font-size-3 color-text-secondary font-weight-6'>Permissions</Title>
 
-            <Container className='role-permission-grid'>
+            <Container className='role-permission-grid radius-sm'>
                 <Container className='role-permission-grid-header text-center font-size-1 font-weight-6 color-secondary'>
                     Resource
                 </Container>
@@ -84,7 +84,7 @@ const RolePermissionGrid: React.FC<RolePermissionGridProps> = ({
                                     checked={isPermissionChecked(resource.key, action.key)}
                                     onChange={() => handleTogglePermission(resource.key, action.key)}
                                     disabled={disabled || hasWildcard}
-                                    className='role-permission-checkbox'
+                                    className='role-permission-checkbox cursor-pointer'
                                 />
                             </Container>
                         ))}

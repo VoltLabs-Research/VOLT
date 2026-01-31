@@ -2,6 +2,7 @@ import React from 'react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import { cn } from '@/shared/utils';
 import './SettingsSectionHeader.css';
 
 export interface SettingsSectionHeaderProps {
@@ -32,7 +33,7 @@ const SettingsSectionHeader: React.FC<SettingsSectionHeaderProps> = ({
     action,
     className = ''
 }) => {
-    const classes = ['settings-section-header', 'd-flex', 'items-start', 'content-between', 'gap-1', className].filter(Boolean).join(' ');
+    const classes = cn('settings-section-header', 'd-flex', 'items-start', 'content-between', 'gap-1', className);
 
     return (
         <Container className={classes}>

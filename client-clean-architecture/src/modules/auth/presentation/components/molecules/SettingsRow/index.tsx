@@ -1,6 +1,7 @@
 import React from 'react';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import { cn } from '@/shared/utils';
 import './SettingsRow.css';
 
 export interface SettingsRowProps {
@@ -43,16 +44,16 @@ const SettingsRow: React.FC<SettingsRowProps> = ({
     onClick,
     className = ''
 }) => {
-    const classes = [
+    const classes = cn(
         'settings-row',
         'd-flex',
         'items-center',
         'gap-075',
         'p-05',
         'radius-md',
-        onClick ? 'clickable cursor-pointer' : '',
+        onClick && 'clickable cursor-pointer',
         className
-    ].filter(Boolean).join(' ');
+    );
 
     return (
         <Container className={classes} onClick={onClick}>

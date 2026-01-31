@@ -4,17 +4,17 @@ import SimulationCard from '../SimulationCard';
 import SimulationSkeletonCard from '../../atoms/SimulationSkeletonCard';
 import useTrajectoryStore from '../../../stores/use-trajectory-store';
 import useDeleteSelectedTrajectories from '../../../hooks/trajectory/use-delete-selected-trajectories';
+import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import './SimulationGrid.css';
 
 const SimulationGrid = memo(() => {
     const trajectories = useTrajectoryStore((state) => state.trajectories);
-    const selectedIds = useTrajectoryStore((state) => state.selectedIds);
-    const isLoading = useTrajectoryStore((state) => state.isLoadingList);
+    const isLoading = useTrajectoryStore((state) => state.isLoading);
     const activeUploads = useTrajectoryStore((state) => state.activeUploads);
-    const toggleSelection = useTrajectoryStore((state) => state.toggleSelection);
 
+    const { selectedIds, isSelected, toggleSelection } = useSelectionParams();
     const deleteSelectedTrajectories = useDeleteSelectedTrajectories();
 
     const activeUploadEntries = Object.entries(activeUploads);
@@ -37,7 +37,6 @@ const SimulationGrid = memo(() => {
     }, [selectedIds.length, deleteSelectedTrajectories]);
 
     const handleDownloadSamples = useCallback(() => {
-        // TODO: Implement via use case
         console.log('Download samples');
     }, []);
 
@@ -70,7 +69,7 @@ const SimulationGrid = memo(() => {
                 <SimulationCard
                     key={trajectory._id}
                     trajectory={trajectory}
-                    isSelected={selectedIds.includes(trajectory._id)}
+                    isSelected={isSelected(trajectory._id)}
                     onSelect={toggleSelection}
                 />
             ))}

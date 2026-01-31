@@ -8,7 +8,7 @@ import './ThemeSettings.css';
 
 const ThemeSettings: React.FC = () => {
     return (
-        <Container className="theme-settings-container">
+        <Container className="theme-settings-container d-flex column gap-3 p-2">
             <Title className="font-size-5 font-weight-6">
                 Theme Settings
             </Title>

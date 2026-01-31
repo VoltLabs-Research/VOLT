@@ -81,7 +81,7 @@ const MyTeamTemplate: React.FC = () => {
             </Container>
 
             {isLoadingMembers ? (
-                <Container className='my-team-loading'>
+                <Container className='my-team-loading radius-md p-3'>
                     <Paragraph className='color-secondary'>Loading members...</Paragraph>
                 </Container>
             ) : members.length === 0 ? (
@@ -90,7 +90,7 @@ const MyTeamTemplate: React.FC = () => {
                     description='No members found in this team.'
                 />
             ) : (
-                <Container className='my-team-members d-flex column gap-05'>
+                <Container className='my-team-members radius-md d-flex column gap-05'>
                     {sortedMembers.map((member) => {
                         const isCurrentUser = member.user._id === user?._id;
                         const isMemberOwner = member.user._id === selectedTeam.owner._id;

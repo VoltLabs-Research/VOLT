@@ -1,6 +1,9 @@
-export interface User{
+export interface User {
     _id: string;
     username: string;
     email: string;
-    [key: string]: any;
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+    avatar?: string;
 };

@@ -1,0 +1,11 @@
+.simulation-card-footer{
+    padding: 0.75rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+}
+
+.footer-options-btn{
+    background: transparent;
+    border: none;
+    padding: 0.25rem;
+    font-size: 1.25rem;
+}

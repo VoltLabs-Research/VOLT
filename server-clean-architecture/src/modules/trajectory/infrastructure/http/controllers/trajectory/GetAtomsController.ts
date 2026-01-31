@@ -6,12 +6,13 @@ import { IAtomPropertiesService } from '@modules/trajectory/domain/port/IAtomPro
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
+import BaseResponse from '@shared/infrastructure/http/BaseResponse';
 
 interface AtomsQuery {
     timestep?: string;
     exposureId?: string;
     page?: string;
-    pageSize?: string;
+    limit?: string;
 }
 
 @injectable()
@@ -27,14 +28,14 @@ export default class GetAtomsController {
     public handle = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { trajectoryId, analysisId } = req.params;
-            const { timestep, exposureId, page = '1', pageSize = '1000' } = req.query as AtomsQuery;
+            const { timestep, exposureId, page = '1', limit = '100' } = req.query as AtomsQuery;
 
             if (!timestep) {
                 throw new RuntimeError(ErrorCodes.VALIDATION_ID_REQUIRED, 400);
             }
 
-            const pageNum = Math.max(1, parseInt(page || '1', 10) || 1);
-            const limit = Math.min(100000, Math.max(1, parseInt(pageSize || '1000', 10) || 1000));
+            const pageNum = Math.max(1, parseInt(page, 10) || 1);
+            const limitNum = Math.min(100000, Math.max(1, parseInt(limit, 10) || 100));
 
             const dumpFilePath = await this.dumpStorage.getDump(trajectoryId, timestep);
             if (!dumpFilePath) {
@@ -82,8 +83,8 @@ export default class GetAtomsController {
                 }
             }
 
-            const startIdx = (pageNum - 1) * limit;
-            const endIdx = Math.min(startIdx + limit, atomCount);
+            const startIdx = (pageNum - 1) * limitNum;
+            const endIdx = Math.min(startIdx + limitNum, atomCount);
 
             const atoms: any[] = [];
             for (let i = startIdx; i < endIdx; i++) {
@@ -107,20 +108,19 @@ export default class GetAtomsController {
                 atoms.push(atom);
             }
 
-            const hasMore = endIdx < totalAtoms;
+            const totalPages = Math.ceil(totalAtoms / limitNum);
 
-            res.status(200).json({
-                status: 'success',
-                data: {
-                    status: 'success',
+            return BaseResponse.paginated(
+                res,
+                {
                     data: atoms,
-                    properties: perAtomProperties,
                     page: pageNum,
-                    pageSize: limit,
+                    limit: limitNum,
                     total: totalAtoms,
-                    hasMore
-                }
-            });
+                    totalPages
+                },
+                { properties: perAtomProperties }
+            );
         } catch (error) {
             next(error);
         }

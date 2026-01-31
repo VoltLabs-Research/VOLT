@@ -21,7 +21,7 @@ const useGetTrajectoryById = (params: UseGetTrajectoryByIdParams = {}): UseGetTr
     
     const { getTrajectoryByIdUseCase } = useTrajectoryUseCases();
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const isLoading = useTrajectoryStore((state) => state.isLoadingSingle);
+    const isLoading = useTrajectoryStore((state) => state.isLoading);
     const error = useTrajectoryStore((state) => state.error);
     const setLoading = useTrajectoryStore((state) => state.setLoading);
     const setError = useTrajectoryStore((state) => state.setError);
@@ -30,7 +30,7 @@ const useGetTrajectoryById = (params: UseGetTrajectoryByIdParams = {}): UseGetTr
     const fetchTrajectory = useCallback(async () => {
         if(!trajectoryId) return;
         
-        setLoading('single', true);
+        setLoading(true);
         setError(null);
 
         try{
@@ -39,7 +39,7 @@ const useGetTrajectoryById = (params: UseGetTrajectoryByIdParams = {}): UseGetTr
         }catch(err){
             setError(err instanceof Error ? err.message : 'Failed to fetch trajectory');
         }finally{
-            setLoading('single', false);
+            setLoading(false);
         }
     }, [trajectoryId, getTrajectoryByIdUseCase, setLoading, setError, setTrajectory]);
 

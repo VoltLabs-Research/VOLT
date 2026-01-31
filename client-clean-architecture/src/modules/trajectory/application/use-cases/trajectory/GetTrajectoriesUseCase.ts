@@ -11,7 +11,7 @@ export default class GetTrajectoriesUseCase implements IUseCase<GetTrajectoriesI
         private readonly trajectoryRepository: ITrajectoryRepository
     ){}
 
-    async execute(params: GetTrajectoriesInputDTO = {}): Promise<GetTrajectoriesOutputDTO>{
+    async execute(params: GetTrajectoriesInputDTO): Promise<GetTrajectoriesOutputDTO>{
         return this.trajectoryRepository.getAll(params);
     }
 };

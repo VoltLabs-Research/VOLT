@@ -132,7 +132,7 @@ const ManageRolesTemplate: React.FC = () => {
             </Container>
 
             {isLoadingRoles ? (
-                <Container className='manage-roles-loading'>
+                <Container className='manage-roles-loading radius-md p-3'>
                     <Paragraph className='color-secondary'>Loading roles...</Paragraph>
                 </Container>
             ) : roles.length === 0 ? (
@@ -141,7 +141,7 @@ const ManageRolesTemplate: React.FC = () => {
                     description='No roles found. Create your first custom role.'
                 />
             ) : (
-                <Container className='manage-roles-list d-flex column gap-05'>
+                <Container className='manage-roles-list radius-md d-flex column gap-05'>
                     {roles.map((role) => (
                         <RoleRow
                             key={role._id}

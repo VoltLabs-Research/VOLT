@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/shared/utils';
 import './StatusBadge.css';
 
 export interface StatusBadgeProps{
@@ -51,15 +52,16 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant, children, cl
     const computedVariant = variant ?? (status ? statusToVariant(status) : 'neutral');
     const content = children ?? status;
 
-    const classes = [
+    const classes = cn(
         'status-badge',
+        'radius-full',
         `variant-${computedVariant}`,
         'gap-025',
         'p-05',
         'font-size-1',
         'font-weight-5',
         className
-    ].filter(Boolean).join(' ');
+    );
 
     return (
         <span className={classes}>

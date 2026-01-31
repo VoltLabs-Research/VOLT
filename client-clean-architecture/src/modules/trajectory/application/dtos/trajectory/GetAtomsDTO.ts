@@ -1,25 +1,25 @@
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+
 export interface GetAtomsInputDTO{
     trajectoryId: string;
     analysisId: string;
-    timestep?: number;
-    page?: number;
-    limit?: number;
     exposureId?: string;
+    timestep: number;
+    page: number;
+    limit: number;
 };
 
 export interface AtomData{
     id: number;
-    type: string;
+    type: string | number;
     x: number;
     y: number;
     z: number;
-    properties: Record<string, unknown>;
+    [key: string]: unknown;
 };
 
-export interface GetAtomsOutputDTO{
-    atoms: AtomData[];
-    total: number;
-    page: number;
-    limit: number;
-    columns: string[];
+export interface GetAtomsOutputDTO extends PaginatedResponse<AtomData> {
+    _meta?: {
+        properties: string[];
+    };
 };

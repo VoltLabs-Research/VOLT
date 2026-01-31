@@ -56,7 +56,7 @@ const GeneralSettings: React.FC = () => {
     };
 
     return (
-        <Container className="general-settings-container">
+        <Container className="general-settings-container d-flex column gap-3 p-2">
             <Title className="font-size-5 font-weight-6">
                 General Settings
             </Title>
