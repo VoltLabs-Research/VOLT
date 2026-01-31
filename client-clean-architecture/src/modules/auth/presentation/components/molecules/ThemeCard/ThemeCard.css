@@ -1,0 +1,32 @@
+.theme-card {
+    border: 2px solid var(--color-border-soft);
+    transition: all 0.2s ease;
+}
+
+.theme-card:hover {
+    border-color: var(--accent-blue);
+    transform: translateY(-2px);
+}
+
+.theme-card.selected {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+}
+
+.theme-preview {
+    height: 120px;
+}
+
+.theme-preview.light-preview {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+}
+
+.theme-preview.dark-preview {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #e2e8f0;
+}
+
+.theme-card-check {
+    color: var(--accent-blue);
+}

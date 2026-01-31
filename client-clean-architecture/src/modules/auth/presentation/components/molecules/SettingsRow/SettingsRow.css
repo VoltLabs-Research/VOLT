@@ -1,0 +1,22 @@
+.settings-row {
+    transition: background 0.2s ease;
+}
+
+.settings-row.clickable:hover {
+    background: var(--hover-bg);
+}
+
+.settings-row-content {
+    min-width: 0;
+}
+
+@media (max-width: 640px) {
+    .settings-row {
+        flex-wrap: wrap;
+    }
+
+    .settings-row-right {
+        flex-basis: 100%;
+        margin-left: 2rem;
+    }
+}

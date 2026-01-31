@@ -30,8 +30,8 @@ export default class VoltClient{
     private buildUrl(path: string){
         const base = this.normalizePath(this.basePath);
         const sub = path === '/' ? '' : this.normalizePath(path);
-        
-        if(!this.opts.useRBAC) `${base}${sub}`;
+
+        if(!this.opts.useRBAC) return `${base}${sub}`;
 
         // Get team id for role-based access 
         const teamId = this.opts.getTeamId?.();
