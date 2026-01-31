@@ -1,0 +1,5 @@
+@media (max-width: 640px) {
+    .settings-section-header {
+        flex-direction: column;
+    }
+}

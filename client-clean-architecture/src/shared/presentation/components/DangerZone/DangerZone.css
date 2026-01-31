@@ -1,0 +1,4 @@
+.danger-zone {
+    background: var(--status-error-bg);
+    border: 1px solid var(--status-error-border);
+}

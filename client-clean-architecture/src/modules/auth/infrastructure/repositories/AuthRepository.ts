@@ -15,7 +15,7 @@ import {
 @injectable()
 export default class AuthRepository extends BaseRepository implements IAuthRepository{
     constructor(){
-        super('/auth');
+        super('/auth', { useRBAC: false });
     }
 
     async getMe(): Promise<User>{

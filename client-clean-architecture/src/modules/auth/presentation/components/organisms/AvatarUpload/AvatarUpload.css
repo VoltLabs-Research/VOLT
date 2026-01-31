@@ -1,0 +1,32 @@
+.avatar-upload {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid var(--color-border-soft);
+}
+
+.avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-placeholder {
+    background: var(--button-bg);
+    color: var(--color-text-muted);
+}
+
+.avatar-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    transition: opacity 0.2s ease;
+    color: white;
+    opacity: 0;
+}
+
+.avatar-upload:hover .avatar-overlay {
+    opacity: 1;
+}
+
+.avatar-file-input {
+    display: none;
+}

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import useFormValidation, { ValidationSchema } from './use-form-validation';
 
 type FieldBind<T, K extends keyof T> = {
@@ -16,6 +16,11 @@ type UseFormOptions<T extends Record<string, any>> = {
     schema?: ValidationSchema<T>;
     validateOnChange?: boolean;
     validateOnBlur?: boolean;
+    onAutoSave?: (data: T) => void | Promise<void>;
+    autoSaveDelay?: number;
+    autoSaveOnlyIfChanged?: boolean;
+    onSubmit?: (data: T) => void | Promise<void>;
+    autoResetOnSubmit?: boolean;
 };
 
 const getEventValue = (e: any) => {
@@ -38,16 +43,81 @@ const useForm = <T extends Record<string, any>>(opts: UseFormOptions<T>) => {
         initialValues,
         schema,
         validateOnChange = false,
-        validateOnBlur = true
+        validateOnBlur = true,
+        onAutoSave,
+        autoSaveDelay = 1000,
+        autoSaveOnlyIfChanged = true,
+        onSubmit,
+        autoResetOnSubmit = false
     } = opts;
 
     const [values, setValues] = useState<T>(initialValues);
+    const [isAutoSaving, setIsAutoSaving] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const validation = useFormValidation<T>(schema ?? {});
+    const autoSaveTimeoutRef = useRef<number | null>(null);
+    const initialValuesRef = useRef<T>(initialValues);
+
+    const hasValuesChanged = useCallback(() => {
+        if(!autoSaveOnlyIfChanged) return true;
+        
+        return Object.keys(values).some(
+            key => values[key] !== initialValuesRef.current[key]
+        );
+    }, [values, autoSaveOnlyIfChanged]);
+
+    const performAutoSave = useCallback(async () => {
+        if(!onAutoSave || !hasValuesChanged()){
+            return;
+        }
+
+        if(schema){
+            const { isValid } = validation.validate(values);
+            if(!isValid) return;
+        }
+
+        try{
+            setIsAutoSaving(true);
+            await onAutoSave(values);
+        }catch(error){
+            console.error('Auto-save failed:', error);
+        }finally{
+            setIsAutoSaving(false);
+        }
+    }, [onAutoSave, schema, validation, values, hasValuesChanged]);
+
+    useEffect(() => {
+        if(!onAutoSave) return;
+
+        if(autoSaveTimeoutRef.current){
+            clearTimeout(autoSaveTimeoutRef.current);
+        }
+
+        if(hasValuesChanged()){
+            autoSaveTimeoutRef.current = window.setTimeout(
+                performAutoSave, 
+                autoSaveDelay
+            );
+        }
+
+        return () => {
+            if(autoSaveTimeoutRef.current){
+                clearTimeout(autoSaveTimeoutRef.current);
+            }
+        };
+    }, [values, onAutoSave, autoSaveDelay, hasValuesChanged, performAutoSave]);
+
+    useEffect(() => {
+        initialValuesRef.current = initialValues;
+    }, [initialValues]);
 
     const setValue = useCallback(<K extends keyof T>(name: K, value: T[K]) => {
         setValues((prev) => {
             if(Object.is(prev[name], value)) return prev;
-            return { ...prev, [name]: value };
+            return { 
+                ...prev, 
+                [name]: value 
+            };
         });
 
         if(schema && validateOnChange){
@@ -81,7 +151,12 @@ const useForm = <T extends Record<string, any>>(opts: UseFormOptions<T>) => {
         validation.validate(values, fields);
     }, [validation.validate, values]);
 
-    const handleSubmit = useCallback((onValid: (data: T) => void | Promise<void>) => async (e?: React.FormEvent) => {
+    const reset = useCallback((next?: Partial<T>) => {
+        setValues(() => ({ ...initialValues, ...(next ?? {}) } as T));
+        validation.setErrors({});
+    }, [initialValues, validation.setErrors]);
+
+    const handleSubmit = useCallback((onValid?: (data: T) => void | Promise<void>) => async (e?: React.FormEvent) => {
         e?.preventDefault();
 
         if(schema){
@@ -89,13 +164,23 @@ const useForm = <T extends Record<string, any>>(opts: UseFormOptions<T>) => {
             if(!isValid) return;
         }
 
-        await onValid(values);
-    }, [schema, validation.validate, values]);
+        const submitHandler = onValid || onSubmit;
+        if(!submitHandler) return;
 
-    const reset = useCallback((next?: Partial<T>) => {
-        setValues(() => ({ ...initialValues, ...(next ?? {}) } as T));
-        validation.setErrors({});
-    }, [initialValues, validation.setErrors]);
+        try{
+            setIsSubmitting(true);
+            await submitHandler(values);
+            
+            if(autoResetOnSubmit){
+                reset();
+            }
+        }catch(error){
+            console.error('Form submission failed:', error);
+            throw error;
+        }finally{
+            setIsSubmitting(false);
+        }
+    }, [schema, validation.validate, values, onSubmit, autoResetOnSubmit, reset]);
 
     return {
         values,
@@ -106,7 +191,9 @@ const useForm = <T extends Record<string, any>>(opts: UseFormOptions<T>) => {
         reset,
         validateForm,
         handleSubmit,
-        setErrors: validation.setErrors
+        setErrors: validation.setErrors,
+        isAutoSaving,
+        isSubmitting
     };
 };
 

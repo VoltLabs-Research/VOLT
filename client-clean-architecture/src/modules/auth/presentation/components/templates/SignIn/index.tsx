@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import useForm from '@/shared/presentation/hooks/use-form';
 import useStepper from '@/shared/presentation/hooks/use-stepper';
 import Container from '@/shared/presentation/components/Container';
@@ -33,7 +32,6 @@ const stepTitles: StepTitles<Step> = {
 
 const SignInTemplate = () => {
     const { step, goTo } = useStepper<Step>('email');
-    const [isLoading, setIsLoading] = useState(false);
     const { checkEmailUseCase, signInUseCase, signUpUseCase } = useAuthUseCases();
     const setUser = useAuthStore((state) => state.setUser);
 
@@ -57,6 +55,11 @@ const SignInTemplate = () => {
     };
 
     const handleEmailStep = async () => {
+        form.validateForm(['email']);
+        if (form.errors.email) {
+            return;
+        }
+        
         const result = await checkEmailUseCase.execute({ email: form.values.email });
         if(result.exists && result.hasPassword){
             goTo('password');
@@ -67,6 +70,12 @@ const SignInTemplate = () => {
     };
 
     const handlePasswordStep = async () => {
+        // Validate only password field
+        form.validateForm(['password']);
+        if (form.errors.password) {
+            return;
+        }
+        
         const result = await signInUseCase.execute({
             email: form.values.email,
             password: form.values.password
@@ -77,6 +86,12 @@ const SignInTemplate = () => {
 
 
     const handleRegisterStep = async () => {
+        // Validate all register fields
+        form.validateForm(['fullName', 'password', 'passwordConfirm']);
+        if (form.errors.fullName || form.errors.password || form.errors.passwordConfirm) {
+            return;
+        }
+        
         const [firstName, ...rest] = form.values.fullName.trim().split(/\s+/);
         const lastName = rest.join(' ');
         const result = await signUpUseCase.execute({
@@ -91,22 +106,17 @@ const SignInTemplate = () => {
     };
 
     const handleSubmit = form.handleSubmit(async () => {
-        setIsLoading(true);
-        try{
-            if(step === 'email'){
-                await handleEmailStep();
-                return;
-            }
-
-            if(step === 'password'){
-                await handlePasswordStep();
-                return;
-            }
-
-            await handleRegisterStep();
-        }finally{
-            setIsLoading(false);
+        if(step === 'email'){
+            await handleEmailStep();
+            return;
         }
+
+        if(step === 'password'){
+            await handlePasswordStep();
+            return;
+        }
+
+        await handleRegisterStep();
     });
 
     const { title, subtitle } = stepTitles[step];
@@ -120,7 +130,7 @@ const SignInTemplate = () => {
         content: (
             <EmailStep
                 emailField={form.field('email')}
-                isLoading={isLoading}
+                isLoading={form.isSubmitting}
                 onSubmit={handleSubmit}
                 onOAuth={handleOAuthRedirect} />
         )
@@ -132,7 +142,7 @@ const SignInTemplate = () => {
                 fullNameField={form.field('fullName')}
                 passwordField={form.field('password')}
                 passwordConfirmField={form.field('passwordConfirm')}
-                isLoading={isLoading}
+                isLoading={form.isSubmitting}
                 onSubmit={handleSubmit}
                 onBack={goBack} />
             )
@@ -142,7 +152,7 @@ const SignInTemplate = () => {
             <PasswordStep
                 email={form.values.email}
                 passwordField={form.field('password')}
-                isLoading={isLoading}
+                isLoading={form.isSubmitting}
                 onSubmit={handleSubmit}
                 onBack={goBack} />
         )
