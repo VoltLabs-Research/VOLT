@@ -10,6 +10,7 @@ import ManageRolesTemplate from '@/modules/team/presentation/components/template
 import TeamInvitationTemplate from '@/modules/team/presentation/components/templates/TeamInvitation';
 import TrajectoriesListing from '@/modules/trajectory/presentation/components/templates/TrajectoriesListing';
 import PerAtomViewer from '@/modules/trajectory/presentation/components/templates/PerAtomViewer';
+import AnalysesListing from '@/modules/analysis/presentation/components/templates/AnalysesListing';
 
 export const routesConfig: RouteGroup = {
     public: [],
@@ -46,6 +47,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId',
             component: PerAtomViewer
+        },
+        {
+            path: '/dashboard/analyses',
+            component: AnalysesListing
         }
     ],
 
