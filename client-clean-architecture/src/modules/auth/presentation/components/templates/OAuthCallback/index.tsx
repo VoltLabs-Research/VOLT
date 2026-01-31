@@ -7,11 +7,13 @@ import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
 import TokenStorage from '@/modules/auth/infrastructure/storage/TokenStorage';
+import { useAuthStore } from '../../../stores/use-auth-store';
 import './OAuthCallback.css';
 
 const OAuthCallbackTemplate = () => {
     const navigate = useNavigate();
     const { getMeUseCase } = useAuthUseCases();
+    const setUser = useAuthStore((state) => state.setUser);
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const tokenStorage = useMemo(() => new TokenStorage(), []);
 
@@ -27,7 +29,8 @@ const OAuthCallbackTemplate = () => {
 
                 tokenStorage.setToken(token);
 
-                await getMeUseCase.execute();
+                const user = await getMeUseCase.execute();
+                setUser(user);
 
                 setStatus('success');
 
@@ -44,7 +47,7 @@ const OAuthCallbackTemplate = () => {
         };
 
         handleOAuthCallback();
-    }, [navigate, getMeUseCase, tokenStorage]);
+    }, [navigate, getMeUseCase, tokenStorage, setUser]);
 
     return (
         <Container className='d-flex flex-center items-center oauth-callback-container p-relative vh-max overflow-hidden'>
