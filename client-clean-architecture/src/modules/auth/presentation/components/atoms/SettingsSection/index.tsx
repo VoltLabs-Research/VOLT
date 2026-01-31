@@ -21,7 +21,7 @@ const SettingsSection: React.FC<SettingsSectionProps> = ({ children, className =
         'column', 
         'gap-1', 
         'p-1-5', 
-        'b-radius-08', 
+        'radius-md', 
         className
     ].filter(Boolean).join(' ');
 

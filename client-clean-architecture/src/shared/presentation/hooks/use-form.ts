@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import useFormValidation, { ValidationSchema } from './use-form-validation';
 
-type FieldBind<T, K extends keyof T> = {
+export type FieldBind<T, K extends keyof T> = {
     name: K;
     value: T[K];
     onChange: (

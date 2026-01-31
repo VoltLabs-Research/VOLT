@@ -1,0 +1,67 @@
+.team-invitation-page{
+    background-color: var(--color-bg);
+}
+
+.team-invitation-card{
+    max-width: 480px;
+    padding: 2.5rem;
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-elevated);
+}
+
+.team-invitation-badge{
+    padding: 0.5rem 1rem;
+    background-color: var(--status-success-bg);
+    color: var(--status-success);
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.team-invitation-icon-error{
+    color: var(--status-error);
+}
+
+.team-invitation-icon-warning{
+    color: var(--status-warning);
+}
+
+.team-invitation-details{
+    padding: 1rem;
+    background-color: var(--color-surface-2);
+    border-radius: var(--radius-md);
+    width: 100%;
+}
+
+.team-invitation-detail{
+    flex: 1;
+    min-width: 100px;
+}
+
+.team-invitation-detail-label{
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+    margin-bottom: 0.25rem;
+}
+
+.team-invitation-detail-value{
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    justify-content: center;
+}
+
+.team-invitation-actions{
+    margin-top: 1rem;
+}
+
+.team-invitation-error{
+    padding: 0.75rem 1rem;
+    background-color: var(--status-error-bg);
+    color: var(--status-error);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    width: 100%;
+}

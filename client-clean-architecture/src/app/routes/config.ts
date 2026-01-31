@@ -5,6 +5,9 @@ import GeneralSettings from '@/modules/auth/presentation/components/templates/Se
 import AuthenticationSettings from '@/modules/auth/presentation/components/templates/Settings/AuthenticationSettings';
 import ThemeSettings from '@/modules/auth/presentation/components/templates/Settings/ThemeSettings';
 import NotificationSettings from '@/modules/auth/presentation/components/templates/Settings/NotificationSettings';
+import MyTeamTemplate from '@/modules/team/presentation/components/templates/MyTeam';
+import ManageRolesTemplate from '@/modules/team/presentation/components/templates/ManageRoles';
+import TeamInvitationTemplate from '@/modules/team/presentation/components/templates/TeamInvitation';
 
 export const routesConfig: RouteGroup = {
     public: [],
@@ -25,6 +28,14 @@ export const routesConfig: RouteGroup = {
         {
             path: '/settings/notifications',
             component: NotificationSettings
+        },
+        {
+            path: '/dashboard/my-team',
+            component: MyTeamTemplate
+        },
+        {
+            path: '/dashboard/manage-roles',
+            component: ManageRolesTemplate
         }
     ],
 
@@ -36,6 +47,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/auth/oauth/callback',
             component: OAuthCallbackPage
+        },
+        {
+            path: '/team-invitation/:invitationId',
+            component: TeamInvitationTemplate
         }
     ]
 };

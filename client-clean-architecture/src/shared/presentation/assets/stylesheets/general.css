@@ -316,8 +316,33 @@
     border: 1px solid var(--color-border-soft);
 }
 
-.b-radius-08{
-    border-radius: 0.8rem;
+/** Border Radius **/
+.radius-xs {
+    border-radius: var(--radius-xs);
+}
+
+.radius-sm {
+    border-radius: var(--radius-sm);
+}
+
+.radius-md {
+    border-radius: var(--radius-md);
+}
+
+.radius-lg {
+    border-radius: var(--radius-lg);
+}
+
+.radius-xl {
+    border-radius: var(--radius-xl);
+}
+
+.radius-2xl {
+    border-radius: var(--radius-2xl);
+}
+
+.radius-full {
+    border-radius: var(--radius-full);
 }
 
 /** Other **/

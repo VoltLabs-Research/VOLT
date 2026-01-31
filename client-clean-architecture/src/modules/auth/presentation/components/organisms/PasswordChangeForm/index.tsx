@@ -62,7 +62,7 @@ const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({
     };
 
     return (
-        <Container className="password-form d-flex column gap-3 p-4 b-soft b-radius-08">
+        <Container className='password-form d-flex column gap-3 p-4 b-soft radius-md'>
             {passwordInfo?.hasPassword && (
                 <FormField
                     label="Current Password"

@@ -1,0 +1,29 @@
+.popover-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    font-size: var(--font-size-2);
+    color: var(--text-primary);
+}
+
+.popover-menu-item:hover {
+    background-color: var(--surface-tertiary);
+}
+
+.popover-menu-item.danger {
+    color: var(--color-danger);
+}
+
+.popover-menu-item.danger:hover {
+    background-color: var(--color-danger-alpha);
+}
+
+.popover-menu-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}

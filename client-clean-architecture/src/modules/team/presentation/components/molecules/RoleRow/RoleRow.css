@@ -1,0 +1,27 @@
+.role-row {
+    background: var(--surface-secondary);
+    border-radius: var(--radius-sm);
+    transition: background 0.2s ease;
+}
+
+.role-row:hover {
+    background: var(--surface-tertiary);
+}
+
+.role-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-1);
+    font-weight: var(--font-weight-5);
+}
+
+.badge-warning {
+    background: var(--color-warning-alpha);
+    color: var(--color-warning);
+}
+
+.badge-brand {
+    background: var(--color-brand-alpha);
+    color: var(--color-brand);
+}
