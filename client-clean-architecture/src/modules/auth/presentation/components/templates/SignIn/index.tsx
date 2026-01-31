@@ -11,6 +11,7 @@ import RegisterStep from '../../molecules/RegisterStep';
 import PasswordStep from '../../molecules/PasswordStep';
 import { signInSchema, SignInForm } from './validation-schema';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
+import { useAuthStore } from '../../../stores/use-auth-store';
 import './SignIn.css';
 
 type Step = 'email' | 'password' | 'register';
@@ -34,6 +35,7 @@ const SignInTemplate = () => {
     const { step, goTo } = useStepper<Step>('email');
     const [isLoading, setIsLoading] = useState(false);
     const { checkEmailUseCase, signInUseCase, signUpUseCase } = useAuthUseCases();
+    const setUser = useAuthStore((state) => state.setUser);
 
     const form = useForm<SignInForm>({
         initialValues: {
@@ -65,10 +67,11 @@ const SignInTemplate = () => {
     };
 
     const handlePasswordStep = async () => {
-        await signInUseCase.execute({
+        const result = await signInUseCase.execute({
             email: form.values.email,
             password: form.values.password
         });
+        setUser(result.user);
         finalizeAuth();
     };
 
@@ -76,13 +79,14 @@ const SignInTemplate = () => {
     const handleRegisterStep = async () => {
         const [firstName, ...rest] = form.values.fullName.trim().split(/\s+/);
         const lastName = rest.join(' ');
-        await signUpUseCase.execute({
+        const result = await signUpUseCase.execute({
             email: form.values.email,
             firstName,
             lastName,
             password: form.values.password,
             passwordConfirm: form.values.passwordConfirm
         });
+        setUser(result.user);
         finalizeAuth();
     };
 
