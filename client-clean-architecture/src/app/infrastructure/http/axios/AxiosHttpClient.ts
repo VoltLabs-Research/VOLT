@@ -69,9 +69,14 @@ export default class AxiosHttpClient implements HttpClient{
     async request<T>(req: HttpRequest): Promise<T>{
         try{
             const res = await this.api.request<T>({
-                ...req,
+                method: req.method,
+                url: req.url,
                 params: toParams(req.query),
                 data: req.body,
+                headers: req.headers,
+                signal: req.signal,
+                responseType: req.responseType,
+                onUploadProgress: req.onUploadProgress
             });
             return res.data;
         }catch(error: any){

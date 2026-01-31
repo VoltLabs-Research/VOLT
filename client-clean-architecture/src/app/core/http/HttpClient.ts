@@ -7,6 +7,8 @@ export type HttpRequest = {
     body?: any;
     headers?: Record<string, string>;
     signal?: AbortSignal;
+    responseType?: 'json' | 'blob' | 'text';
+    onUploadProgress?: (event: { loaded: number; total?: number }) => void;
 };
 
 export interface HttpClient{

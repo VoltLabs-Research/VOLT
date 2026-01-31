@@ -8,6 +8,8 @@ import NotificationSettings from '@/modules/auth/presentation/components/templat
 import MyTeamTemplate from '@/modules/team/presentation/components/templates/MyTeam';
 import ManageRolesTemplate from '@/modules/team/presentation/components/templates/ManageRoles';
 import TeamInvitationTemplate from '@/modules/team/presentation/components/templates/TeamInvitation';
+import TrajectoriesListing from '@/modules/trajectory/presentation/components/templates/TrajectoriesListing';
+import PerAtomViewer from '@/modules/trajectory/presentation/components/templates/PerAtomViewer';
 
 export const routesConfig: RouteGroup = {
     public: [],
@@ -36,6 +38,14 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/manage-roles',
             component: ManageRolesTemplate
+        },
+        {
+            path: '/dashboard/trajectories',
+            component: TrajectoriesListing
+        },
+        {
+            path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId',
+            component: PerAtomViewer
         }
     ],
 

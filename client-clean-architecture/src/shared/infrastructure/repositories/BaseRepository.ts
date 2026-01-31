@@ -6,8 +6,12 @@ export interface ApiResponse<T>{
     data: T;
 };
 
-export interface PaginatedResponse<T>{
+export interface PaginatedApiResponse<T>{
+    status: string;
     data: T[];
+    page: number;
+    limit: number;
+    total: number;
 };
 
 export default class BaseRepository{
