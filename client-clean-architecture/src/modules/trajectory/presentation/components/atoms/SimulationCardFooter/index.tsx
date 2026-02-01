@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PiDotsThreeVerticalBold, PiImageSquareThin } from 'react-icons/pi';
+import { PiDotsThreeVerticalBold } from 'react-icons/pi';
 import { RxTrash } from 'react-icons/rx';
-import { HiOutlineViewfinderCircle, HiArrowDownTray } from 'react-icons/hi2';
+import { HiOutlineViewfinderCircle } from 'react-icons/hi2';
 import EditableTrajectoryName from '../EditableTrajectoryName';
 import useDeleteTrajectory from '../../../hooks/trajectory/use-delete-trajectory';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
@@ -10,6 +10,7 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import IconButton from '@/shared/presentation/components/IconButton';
 import { formatRelativeDate } from '@/shared/utils/format';
 import './SimulationCardFooter.css';
 
@@ -37,14 +38,6 @@ const SimulationCardFooter = ({
         navigate(`/canvas/${trajectoryId}/`);
     }, [navigate, trajectoryId]);
 
-    const handleDownload = useCallback(() => {
-        console.log('Download trajectory:', trajectoryId);
-    }, [trajectoryId]);
-
-    const handleRasterize = useCallback(() => {
-        console.log('Rasterize trajectory:', trajectoryId);
-    }, [trajectoryId]);
-
     const handleDelete = useCallback(async () => {
         if(!await confirm(`Delete trajectory "${name}"? This action cannot be undone.`)) return;
         setIsDeleting(true);
@@ -59,14 +52,6 @@ const SimulationCardFooter = ({
         onClick: handleViewScene,
         label: 'View scene',
         Icon: HiOutlineViewfinderCircle
-    }, {
-        onClick: handleDownload,
-        label: 'Download Dumps',
-        Icon: HiArrowDownTray
-    }, {
-        onClick: handleRasterize,
-        label: 'Rasterize',
-        Icon: PiImageSquareThin
     }, {
         onClick: handleDelete,
         label: 'Delete',
@@ -95,12 +80,12 @@ const SimulationCardFooter = ({
             <Popover
                 id={`simulation-card-popover-${trajectoryId}`}
                 trigger={
-                    <button
-                        className='footer-options-btn color-primary cursor-pointer'
+                    <IconButton
+                        className='footer-options-btn'
                         onClick={(e) => e.stopPropagation()}
                     >
                         <PiDotsThreeVerticalBold />
-                    </button>
+                    </IconButton>
                 }
             >
                 {popoverItems.map(({ Icon, onClick, label, ...props }, index) => (

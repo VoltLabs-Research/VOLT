@@ -64,9 +64,7 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
             teams: [team, ...state.teams],
             selectedTeam: team
         }));
-
-        const teamStorage = container.resolve<ITeamStorage>(TEAM_TOKENS.TeamStorage);
-        teamStorage.setSelectedTeamId(team._id);
+        // Note: localStorage write happens in CreateTeamUseCase
     },
 
     updateTeamInList: (teamId, updates) => {

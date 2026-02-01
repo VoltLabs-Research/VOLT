@@ -1,8 +1,6 @@
 import React from 'react';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import './EmptyState.css';
 
 interface EmptyStateProps {
@@ -11,6 +9,7 @@ interface EmptyStateProps {
     icon?: React.ReactNode;
     buttonText?: string;
     buttonOnClick?: () => void;
+    buttonIsLoading?: boolean;
     className?: string;
 };
 
@@ -20,23 +19,31 @@ const EmptyState: React.FC<EmptyStateProps> = ({
     icon,
     buttonText,
     buttonOnClick,
+    buttonIsLoading = false,
     className
 }: EmptyStateProps) => {
     return (
-        <Container className={`d-flex items-center content-center w-max h-max p-2 sm:p-1-5 empty-state-container ${className || ''}`}>
-            <Container className='text-center d-flex column gap-1 items-center empty-state-content color-primary'>
+        <Container className={`d-flex items-center content-center w-max h-max empty-state-container ${className || ''}`}>
+            <Container className='text-center d-flex column gap-1-5 items-center empty-state-content'>
                 {icon && (
-                    <Container className='d-flex content-center items-center empty-state-icon'>
+                    <Container className='d-flex content-center items-center empty-state-icon color-muted'>
                         {icon}
                     </Container>
                 )}
-                <Title className='font-size-4 empty-state-title font-weight-6 color-primary'>{title}</Title>
-                <Paragraph className='empty-state-description font-size-3 color-primary line-height-5'>{description}</Paragraph>
+
+                <Container className='d-flex column gap-05 text-center'>
+                    <span className='font-size-3 font-weight-5 color-primary'>{title}</span>
+                    <span className='font-size-2 color-secondary line-height-5'>{description}</span>
+                </Container>
+
                 {buttonText && buttonOnClick && (
                     <Button
-                        premium
-                        shape='pill'
+                        variant='solid'
+                        intent='brand'
+                        size='sm'
                         onClick={buttonOnClick}
+                        isLoading={buttonIsLoading}
+                        className='mt-05'
                     >
                         {buttonText}
                     </Button>

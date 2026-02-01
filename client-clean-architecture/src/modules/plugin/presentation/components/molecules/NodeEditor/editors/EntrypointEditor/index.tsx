@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormField from '@/shared/presentation/components/FormField';
 import Button from '@/shared/presentation/components/Button';
@@ -10,22 +9,14 @@ import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
 import { useNodeForm, usePluginUseCases } from '@/modules/plugin/presentation/hooks';
 import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
 import type { IEntrypointData } from '@/modules/plugin/domain/entities';
+import type { EditorProps } from '../types';
 import './EntrypointEditor.css';
 
-interface EntrypointEditorProps {
-    node: Node;
-};
-
-const DEFAULT_ENTRYPOINT: IEntrypointData = {
-    binary: '',
-    arguments: ''
-};
-
-const EntrypointEditor = ({ node }: EntrypointEditorProps) => {
-    const { field, values, setValues } = useNodeForm(node, 'entrypoint', DEFAULT_ENTRYPOINT);
+const EntrypointEditor = ({ node }: EditorProps) => {
+    const { field, values, setValues } = useNodeForm<IEntrypointData>(node, 'entrypoint', {} as IEntrypointData);
     const currentPluginId = usePluginBuilderStore((state) => state.currentPluginId);
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
-    const { uploadBinaryUseCase, deleteBinaryUseCase } = usePluginUseCases();
+    const { pluginRepository } = usePluginUseCases();
 
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -46,7 +37,7 @@ const EntrypointEditor = ({ node }: EntrypointEditorProps) => {
         setUploadError(null);
 
         try {
-            const result = await uploadBinaryUseCase.execute({
+            const result = await pluginRepository.uploadBinary({
                 pluginId: currentPluginId,
                 file,
                 onProgress: (progress: number) => setUploadProgress(progress)
@@ -69,13 +60,13 @@ const EntrypointEditor = ({ node }: EntrypointEditorProps) => {
         } finally {
             setIsUploading(false);
         }
-    }, [currentPluginId, uploadBinaryUseCase, values, setValues, updateNodeData, node.id]);
+    }, [currentPluginId, pluginRepository, values, setValues, updateNodeData, node.id]);
 
     const handleRemoveBinary = useCallback(async () => {
         if (!currentPluginId || !values.binaryObjectPath) return;
 
         try {
-            await deleteBinaryUseCase.execute({ pluginId: currentPluginId });
+            await pluginRepository.deleteBinary(currentPluginId);
             const newData = {
                 ...values,
                 binary: '',
@@ -87,7 +78,7 @@ const EntrypointEditor = ({ node }: EntrypointEditorProps) => {
         } catch (error) {
             setUploadError(error instanceof Error ? error.message : 'Failed to delete binary');
         }
-    }, [currentPluginId, values, deleteBinaryUseCase, setValues, updateNodeData, node.id]);
+    }, [currentPluginId, values, pluginRepository, setValues, updateNodeData, node.id]);
 
     const triggerFileSelect = useCallback(() => {
         fileInputRef.current?.click();

@@ -1,0 +1,26 @@
+.sidebar-nav {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+}
+
+.sidebar-nav-section-title {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Divider */
+.sidebar-divider {
+    margin: 0.75rem;
+}
+
+/* Team Section */
+.sidebar-team-section {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.sidebar-team-section .volt-select-trigger {
+    width: 100%;
+}

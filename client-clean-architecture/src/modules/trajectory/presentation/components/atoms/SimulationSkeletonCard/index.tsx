@@ -1,55 +1,45 @@
 import { Skeleton } from '@mui/material';
 import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import './SimulationSkeletonCard.css';
+import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
 
-interface SimulationSkeletonCardProps{
-    uploadProgress?: number;
-    message?: string;
-    count?: number;
+interface SimulationSkeletonCardProps {
+    n?: number;
+    progress?: number;
+    status?: 'uploading' | 'processing' | 'waiting_for_jobs';
 };
 
-const SingleSkeletonCard = ({ uploadProgress, message }: SimulationSkeletonCardProps) => {
-    const hasProgress = uploadProgress !== undefined;
+const SimulationSkeletonCard = ({ n = 1, progress, status }: SimulationSkeletonCardProps) => {
+    if (progress !== undefined) {
+        let message = `Uploading ${Math.round(progress * 100)}%`;
 
-    return (
-        <Container className='simulation-skeleton-card radius-md b-soft'>
-            <Container className='skeleton-preview'>
-                <Skeleton variant='rectangular' width='100%' height='100%' />
-            </Container>
-            <Container className='d-flex column gap-05 p-1 skeleton-content'>
-                {hasProgress ? (
-                    <>
-                        <Container className='progress-bar radius-sm'>
-                            <Container
-                                className='progress-fill radius-sm'
-                                style={{ width: `${Math.round(uploadProgress * 100)}%` }}
-                            />
-                        </Container>
-                        <Paragraph className='font-size-2 color-secondary'>
-                            {message ?? `Uploading... ${Math.round(uploadProgress * 100)}%`}
-                        </Paragraph>
-                    </>
-                ) : (
-                    <>
-                        <Skeleton variant='text' width='60%' height={20} />
-                        <Skeleton variant='text' width='40%' height={16} />
-                    </>
-                )}
-            </Container>
-        </Container>
-    );
-};
+        if (status === 'processing') {
+            message = `Processing ${Math.round(progress * 100)}%`;
+        } else if (status === 'waiting_for_jobs') {
+            message = 'Preparing...';
+        }
 
-const SimulationSkeletonCard = ({ count = 1, uploadProgress, message }: SimulationSkeletonCardProps) => {
-    if(count === 1){
-        return <SingleSkeletonCard uploadProgress={uploadProgress} message={message} />;
+        return (
+            <Container className='simulation-container loading p-relative w-max overflow-hidden cursor-pointer'>
+                <Skeleton variant='rounded' width='100%' height={200} />
+                <Container className='p-absolute' style={{ bottom: '1.5rem', left: '1.5rem', zIndex: 10 }}>
+                    <Container className='d-flex items-center gap-05'>
+                        <ProcessingLoader
+                            isVisible={true}
+                            message={message}
+                            className='text-white'
+                        />
+                    </Container>
+                </Container>
+            </Container>
+        );
     }
 
     return (
         <>
-            {Array.from({ length: count }).map((_, i) => (
-                <SingleSkeletonCard key={i} />
+            {Array.from({ length: n }).map((_, index) => (
+                <Container className='simulation-container loading p-relative w-max overflow-hidden cursor-pointer' key={index}>
+                    <Skeleton variant='rounded' width='100%' height={200} />
+                </Container>
             ))}
         </>
     );

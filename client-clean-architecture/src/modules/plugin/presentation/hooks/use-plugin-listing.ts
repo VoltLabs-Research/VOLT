@@ -51,7 +51,7 @@ const usePluginListing = ({
     showTrajectoryColumn
 }: UsePluginListingParams): UsePluginListingReturn => {
     const navigate = useNavigate();
-    const { getPluginListingUseCase } = usePluginUseCases();
+    const { pluginListingRepository } = usePluginUseCases();
     const deleteAnalysis = useDeleteAnalysis();
 
     const rows = usePluginListingStore((s) => s.rows);
@@ -79,7 +79,7 @@ const usePluginListing = ({
     const fetchData = useCallback(async (
         params: { page: number; limit: number } & PluginListingContext
     ): Promise<PaginatedResponse<ListingRow>> => {
-        const response = await getPluginListingUseCase.execute({
+        const response = await pluginListingRepository.getListing({
             pluginSlug: params.pluginSlug,
             listingSlug: params.listingSlug,
             trajectoryId: params.trajectoryId,
@@ -93,7 +93,7 @@ const usePluginListing = ({
             pagination: response.pagination,
             _meta: response._meta
         };
-    }, [getPluginListingUseCase]);
+    }, [pluginListingRepository]);
 
     const onDataFetched = useCallback((result: PaginatedResponse<ListingRow>, isFirstPage: boolean) => {
         const cols = result._meta?.columns as ColumnConfig[] | undefined;

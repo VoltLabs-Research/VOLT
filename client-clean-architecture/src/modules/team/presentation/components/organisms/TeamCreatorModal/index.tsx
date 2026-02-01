@@ -26,7 +26,6 @@ const TeamCreatorModal: React.FC<TeamCreatorModalProps> = ({
 
     const { createTeamUseCase } = useTeamUseCases();
     const addTeam = useTeamStore((state) => state.addTeam);
-    const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
 
     const { field, values, handleSubmit, isSubmitting, reset } = useForm<TeamCreatorForm>({
         initialValues: {
@@ -42,7 +41,6 @@ const TeamCreatorModal: React.FC<TeamCreatorModalProps> = ({
                     description: data.description.trim() || undefined
                 });
                 addTeam(team);
-                setSelectedTeam(team);
                 reset();
                 closeModal(MODAL_ID);
                 onSuccess?.();

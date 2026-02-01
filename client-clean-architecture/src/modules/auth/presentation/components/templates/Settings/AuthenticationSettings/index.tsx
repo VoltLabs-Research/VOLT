@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import SettingsSection from '@/modules/auth/presentation/components/atoms/SettingsSection';
@@ -12,30 +12,30 @@ import { PasswordInfo } from '@/modules/auth/presentation/components/organisms/P
 import './AuthenticationSettings.css';
 
 const AuthenticationSettings: React.FC = () => {
-    const { getPasswordInfoUseCase, changePasswordUseCase } = useAuthUseCases();
+    const { authRepository } = useAuthUseCases();
 
     const [passwordInfo, setPasswordInfo] = useState<PasswordInfo | null>(null);
     const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
 
-    const loadPasswordInfo = async () => {
+    const loadPasswordInfo = useCallback(async () => {
         try{
-            const info = await getPasswordInfoUseCase.execute();
+            const info = await authRepository.getPasswordInfo();
             setPasswordInfo(info);
         }catch(error){
             console.error('Failed to load password info:', error);
         }
-    };
+    }, [authRepository]);
 
     useEffect(() => {
         loadPasswordInfo();
-    }, [getPasswordInfoUseCase]);
+    }, [loadPasswordInfo]);
 
     const handleChangePassword = async (data: ChangePasswordInputDTO) => {
-        await changePasswordUseCase.execute(data);
+        await authRepository.changePassword(data);
 
         setIsPasswordFormOpen(false);
 
-        const info = await getPasswordInfoUseCase.execute();
+        const info = await authRepository.getPasswordInfo();
         setPasswordInfo(info);
     };
 

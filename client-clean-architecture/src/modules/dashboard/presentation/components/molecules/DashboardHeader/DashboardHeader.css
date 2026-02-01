@@ -1,0 +1,66 @@
+.dashboard-top-header {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    background: var(--color-bg);
+    top: 0;
+    z-index: 50;
+}
+
+/* Left: Greeting or Breadcrumbs */
+.dashboard-header-left {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+}
+
+.header-greeting {
+    font-size: 1.125rem;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    margin: 0;
+}
+
+/* Center: Search */
+.dashboard-header-center {
+    display: flex;
+    justify-content: center;
+}
+
+/* Right: Actions */
+.dashboard-header-right {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+/* Mobile Sidebar Trigger */
+.mobile-sidebar-trigger {
+    display: none;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-xs);
+}
+
+.mobile-sidebar-trigger:hover {
+    background: var(--color-surface-2);
+}
+
+/* Mobile Responsive */
+@media screen and (max-width: 1024px) {
+    .mobile-sidebar-trigger {
+        display: flex;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .dashboard-top-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .dashboard-header-right .volt-icon-button:not(.dashboard-bell-trigger):not(:last-child) {
+        display: none;
+    }
+}

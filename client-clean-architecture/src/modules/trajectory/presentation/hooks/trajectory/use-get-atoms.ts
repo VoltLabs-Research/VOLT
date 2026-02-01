@@ -3,11 +3,11 @@ import useTrajectoryUseCases from './use-trajectory-use-cases';
 import type { GetAtomsInputDTO, GetAtomsOutputDTO } from '@/modules/trajectory/application/dtos/trajectory/GetAtomsDTO';
 
 const useGetAtoms = () => {
-    const { getAtomsUseCase } = useTrajectoryUseCases();
+    const { trajectoryRepository } = useTrajectoryUseCases();
 
     const getAtoms = useCallback(async (params: GetAtomsInputDTO): Promise<GetAtomsOutputDTO> => {
-        return await getAtomsUseCase.execute(params);
-    }, [getAtomsUseCase]);
+        return await trajectoryRepository.getAtoms(params);
+    }, [trajectoryRepository]);
 
     return getAtoms;
 };

@@ -4,11 +4,11 @@ import ISocketService from '../../domain/ports/ISocketService';
 import { SOCKET_TOKENS } from '../../infrastructure/di/tokens';
 
 const useSocket = (): ISocketService => {
-    const socketService = useMemo(() => {
-        return container.resolve<ISocketService>(SOCKET_TOKENS.SocketService);
+    const socket = useMemo(() => {
+        return container.resolve<ISocketService>(SOCKET_TOKENS.SocketAdapter);
     }, []);
 
-    return socketService;
+    return socket;
 };
 
 export default useSocket;

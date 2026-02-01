@@ -28,7 +28,7 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
     const [loadingInvitations, setLoadingInvitations] = useState(true);
     const [cancelingId, setCancelingId] = useState<string | null>(null);
 
-    const { sendInvitationUseCase, cancelInvitationUseCase } = useTeamInvitationUseCases();
+    const { teamInvitationRepository } = useTeamInvitationUseCases();
     const pendingInvitations = useTeamInvitationStore((state) => state.pendingInvitations);
     const removeInvitation = useTeamInvitationStore((state) => state.removeInvitation);
 
@@ -48,10 +48,7 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
             }
 
             try{
-                await sendInvitationUseCase.execute({ 
-                    email: data.email, 
-                    role: 'Can view' 
-                });
+                await teamInvitationRepository.send(data.email, 'Can view');
                 await fetchPendingInvitations();
                 reset();
                 setButtonState('success');
@@ -84,14 +81,14 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
     const handleCancelInvitation = useCallback(async (invitationId: string) => {
         setCancelingId(invitationId);
         try{
-            await cancelInvitationUseCase.execute({ invitationId });
+            await teamInvitationRepository.cancel(invitationId);
             removeInvitation(invitationId);
         }catch(error){
             console.error('Failed to cancel invitation:', error);
         }finally{
             setCancelingId(null);
         }
-    }, [cancelInvitationUseCase, removeInvitation]);
+    }, [teamInvitationRepository, removeInvitation]);
 
     const emailField = field('email');
 

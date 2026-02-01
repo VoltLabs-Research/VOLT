@@ -4,6 +4,7 @@ import { base64ToBlobUrl } from '@/shared/utils/file';
 import type ITrajectoryRepository from '../../domain/ports/ITrajectoryRepository';
 import type IPreviewCache from '../../domain/ports/IPreviewCache';
 import type { Trajectory } from '../../domain/entities';
+import type { DashboardMetrics } from '@/modules/dashboard/domain/entities';
 import type {
     GetTrajectoriesInputDTO,
     GetTrajectoriesOutputDTO,
@@ -90,8 +91,8 @@ export default class TrajectoryRepository extends BaseRepository implements ITra
         });
     }
 
-    async getMetrics(): Promise<Record<string, unknown>>{
-        const response = await this.client.get<ApiResponse<Record<string, unknown>>>('/metrics');
+    async getMetrics(): Promise<DashboardMetrics>{
+        const response = await this.client.get<ApiResponse<DashboardMetrics>>('/metrics');
         return this.unwrap(response);
     }
 

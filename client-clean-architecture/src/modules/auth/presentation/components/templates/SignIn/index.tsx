@@ -32,7 +32,7 @@ const stepTitles: StepTitles<Step> = {
 
 const SignInTemplate = () => {
     const { step, goTo } = useStepper<Step>('email');
-    const { checkEmailUseCase, signInUseCase, signUpUseCase } = useAuthUseCases();
+    const { authRepository, signInUseCase, signUpUseCase } = useAuthUseCases();
     const setUser = useAuthStore((state) => state.setUser);
 
     const form = useForm<SignInForm>({
@@ -60,7 +60,7 @@ const SignInTemplate = () => {
             return;
         }
         
-        const result = await checkEmailUseCase.execute({ email: form.values.email });
+        const result = await authRepository.checkEmail(form.values.email);
         if(result.exists){
             goTo('password');
             return;

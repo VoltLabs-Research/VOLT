@@ -23,7 +23,7 @@ const PluginsListing = () => {
     const appendPlugins = usePluginStore((state) => state.appendPlugins);
     const selectedTeam = useTeamStore((s) => s.selectedTeam);
 
-    const { getPluginsUseCase, clonePluginUseCase } = usePluginUseCases();
+    const { clonePluginUseCase, pluginRepository } = usePluginUseCases();
     const deletePlugin = useDeletePlugin();
     const exportPlugin = useExportPlugin();
     const importPlugin = useImportPlugin();
@@ -37,8 +37,8 @@ const PluginsListing = () => {
     }, [setPlugins, appendPlugins]);
 
     const fetchData = useCallback(async (params: { page: number; limit: number; search?: string }) => {
-        return await getPluginsUseCase.execute(params);
-    }, [getPluginsUseCase]);
+        return await pluginRepository.getAll(params);
+    }, [pluginRepository]);
 
     const handleClone = useCallback(async (item: Plugin) => {
         const clonedPlugin = await clonePluginUseCase.execute({

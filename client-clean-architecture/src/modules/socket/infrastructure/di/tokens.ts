@@ -1,4 +1,3 @@
 export const SOCKET_TOKENS = {
-    SocketAdapter: Symbol('SocketAdapter'),
-    SocketService: Symbol('SocketService')
+    SocketAdapter: Symbol('SocketAdapter')
 } as const;

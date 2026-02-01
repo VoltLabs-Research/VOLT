@@ -1,0 +1,13 @@
+/* Collapsible Section Header */
+.sidebar-section-header {
+    justify-content: flex-start;
+}
+
+.sidebar-section-chevron {
+    margin-left: auto;
+    transition: transform 0.2s ease;
+}
+
+.sidebar-section-chevron.is-expanded {
+    transform: rotate(180deg);
+}

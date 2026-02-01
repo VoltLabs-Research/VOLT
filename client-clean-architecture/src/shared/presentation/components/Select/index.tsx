@@ -23,6 +23,7 @@ export interface SelectProps {
     showSelectionIcon?: boolean;
     isLoading?: boolean;
     onScrollEnd?: () => void;
+    renderOptionAction?: (option: SelectOption, isSelected: boolean) => React.ReactNode;
 };
 
 const Select = ({
@@ -37,7 +38,8 @@ const Select = ({
     optionClassName = '',
     showSelectionIcon = true,
     isLoading = false,
-    onScrollEnd
+    onScrollEnd,
+    renderOptionAction
 }: SelectProps) => {
     const uid = useId();
     const [isOpen, setIsOpen] = useState(false);
@@ -201,6 +203,8 @@ const Select = ({
                                 />
                             </svg>
                         )}
+
+                        {renderOptionAction?.(opt, isSelected)}
                     </div>
                 );
             })}

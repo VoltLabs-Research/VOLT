@@ -7,13 +7,13 @@ const useTeamRoleData = () => {
     const setLoading = useTeamRoleStore((state) => state.setLoading);
     const setError = useTeamRoleStore((state) => state.setError);
 
-    const { getAllTeamRolesUseCase } = useTeamRoleUseCases();
+    const { teamRoleRepository } = useTeamRoleUseCases();
 
     const fetchRoles = useCallback(async (teamId: string) => {
         setLoading(true);
 
         try{
-            const roles = await getAllTeamRolesUseCase.execute({ teamId });
+            const roles = await teamRoleRepository.getAll(teamId);
             setRoles(roles);
         }catch(error: any){
             console.error('Failed to fetch roles:', error);
@@ -21,7 +21,7 @@ const useTeamRoleData = () => {
         }finally{
             setLoading(false);
         }
-    }, [getAllTeamRolesUseCase, setRoles, setLoading, setError]);
+    }, [teamRoleRepository, setRoles, setLoading, setError]);
 
     return { fetchRoles };
 };

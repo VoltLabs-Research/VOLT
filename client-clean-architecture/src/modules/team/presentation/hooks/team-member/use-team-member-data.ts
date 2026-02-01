@@ -7,13 +7,13 @@ const useTeamMemberData = () => {
     const setLoading = useTeamMemberStore((state) => state.setLoading);
     const setError = useTeamMemberStore((state) => state.setError);
 
-    const { getAllTeamMembersUseCase } = useTeamMemberUseCases();
+    const { teamMemberRepository } = useTeamMemberUseCases();
 
     const fetchMembers = useCallback(async (teamId: string) => {
         setLoading(true);
 
         try{
-            const members = await getAllTeamMembersUseCase.execute({ teamId });
+            const members = await teamMemberRepository.getAll(teamId);
             setMembers(members);
         }catch(error: any){
             console.error('Failed to fetch members:', error);
@@ -21,7 +21,7 @@ const useTeamMemberData = () => {
         }finally{
             setLoading(false);
         }
-    }, [getAllTeamMembersUseCase, setMembers, setLoading, setError]);
+    }, [teamMemberRepository, setMembers, setLoading, setError]);
 
     return { fetchMembers };
 };

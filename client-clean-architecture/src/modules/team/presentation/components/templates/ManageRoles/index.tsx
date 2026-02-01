@@ -1,18 +1,18 @@
 import React, { useEffect, useCallback, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
+import { IoShieldCheckmarkOutline } from 'react-icons/io5';
+import { formatDistanceToNow } from 'date-fns';
 import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
-import Paragraph from '@/shared/presentation/components/Paragraph';
-import Button from '@/shared/presentation/components/Button';
-import RoleRow from '../../molecules/RoleRow';
-import EmptyState from '@/shared/presentation/components/EmptyState';
-import RoleEditorModal, { openRoleEditorModal, RoleEditorPayload } from '../../organisms/RoleEditorModal';
+import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
+import RoleEditorModal, { openRoleEditorModal } from '../../organisms/RoleEditorModal';
+import type { RoleEditorPayload, RBACResource, RBACAction } from '../../organisms/RoleEditorModal';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import useTeamRoleData from '@/modules/team/presentation/hooks/team-role/use-team-role-data';
 import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
+import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
-import type { RBACResource, RBACAction } from '../../molecules/RolePermissionGrid';
 import './ManageRoles.css';
 
 const DEFAULT_RESOURCES: RBACResource[] = [
@@ -30,6 +30,53 @@ const DEFAULT_ACTIONS: RBACAction[] = [
     { key: 'delete', label: 'Delete' }
 ];
 
+const COLUMNS: ColumnConfig[] = [
+    {
+        key: 'name',
+        title: 'Role Name',
+        render: (value: unknown) => (
+            <Container className='d-flex items-center gap-1'>
+                <IoShieldCheckmarkOutline size={18} className='color-secondary' />
+                <span className='font-weight-5 color-primary'>{value as string}</span>
+            </Container>
+        )
+    },
+    {
+        key: 'isSystem',
+        title: 'Type',
+        render: (isSystem: unknown) => (
+            <span className={`badge ${isSystem ? 'badge-warning' : 'badge-brand'}`}>
+                {isSystem ? 'System' : 'Custom'}
+            </span>
+        )
+    },
+    {
+        key: 'permissions',
+        title: 'Permissions',
+        render: (permissions: unknown) => {
+            const perms = permissions as string[];
+            if(perms.includes('*')){
+                return <span className='badge badge-primary'>All Permissions</span>;
+            }
+            const count = perms.length;
+            return (
+                <span className='color-secondary font-size-2'>
+                    {count} permission{count !== 1 ? 's' : ''}
+                </span>
+            );
+        }
+    },
+    {
+        key: 'createdAt',
+        title: 'Created',
+        render: (value: unknown) => (
+            <span className='color-secondary font-size-2'>
+                {formatDistanceToNow(new Date(value as string), { addSuffix: true })}
+            </span>
+        )
+    }
+];
+
 const ManageRolesTemplate: React.FC = () => {
     const [editingRole, setEditingRole] = useState<TeamRole | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -42,22 +89,17 @@ const ManageRolesTemplate: React.FC = () => {
     const removeRole = useTeamRoleStore((state) => state.removeRole);
 
     const { fetchRoles } = useTeamRoleData();
-
-    const {
-        createTeamRoleUseCase,
-        updateTeamRoleUseCase,
-        deleteTeamRoleUseCase
-    } = useTeamRoleUseCases();
+    const { teamRoleRepository } = useTeamRoleUseCases();
 
     useEffect(() => {
-        if(selectedTeam) {
+        if(selectedTeam){
             fetchRoles(selectedTeam._id);
         }
     }, [selectedTeam, fetchRoles]);
 
     const handleOpenCreate = useCallback(() => {
         setEditingRole(null);
-        setTimeout(() => openRoleEditorModal(), 0);
+        openRoleEditorModal();
     }, []);
 
     const handleOpenEdit = useCallback((role: TeamRole) => {
@@ -70,18 +112,11 @@ const ManageRolesTemplate: React.FC = () => {
 
         setIsSaving(true);
         try{
-            if(editingRole) {
-                const updated = await updateTeamRoleUseCase.execute({
-                    teamId: selectedTeam._id,
-                    roleId: editingRole._id,
-                    ...data
-                });
+            if(editingRole){
+                const updated = await teamRoleRepository.update(selectedTeam._id, editingRole._id, data);
                 updateRoleInList(editingRole._id, updated);
             }else{
-                const created = await createTeamRoleUseCase.execute({
-                    teamId: selectedTeam._id,
-                    ...data
-                });
+                const created = await teamRoleRepository.create(selectedTeam._id, data);
                 addRole(created);
             }
             setEditingRole(null);
@@ -91,67 +126,64 @@ const ManageRolesTemplate: React.FC = () => {
         }finally{
             setIsSaving(false);
         }
-    }, [selectedTeam, editingRole, createTeamRoleUseCase, updateTeamRoleUseCase, addRole, updateRoleInList]);
+    }, [selectedTeam, editingRole, teamRoleRepository, addRole, updateRoleInList]);
 
     const handleDeleteRole = useCallback(async (role: TeamRole) => {
         if(!selectedTeam || role.isSystem) return;
 
+        const isConfirmed = await confirm(`Are you sure you want to delete "${role.name}"?`);
+        if(!isConfirmed) return;
+
         try{
-            await deleteTeamRoleUseCase.execute({ 
-                teamId: selectedTeam._id, 
-                roleId: role._id 
-            });
+            await teamRoleRepository.delete(selectedTeam._id, role._id);
             removeRole(role._id);
         }catch(err){
             console.error('Failed to delete role:', err);
         }
-    }, [selectedTeam, deleteTeamRoleUseCase, removeRole]);
+    }, [selectedTeam, teamRoleRepository, removeRole]);
+
+    const getMenuOptions = useCallback((role: TeamRole): MenuOption[] => {
+        if(role.isSystem){
+            return [{
+                label: 'View',
+                icon: RiEyeLine,
+                onClick: () => handleOpenEdit(role)
+            }];
+        }
+
+        return [
+            {
+                label: 'Edit',
+                icon: RiEditLine,
+                onClick: () => handleOpenEdit(role)
+            },
+            {
+                label: 'Delete',
+                icon: RiDeleteBin6Line,
+                onClick: () => handleDeleteRole(role),
+                destructive: true
+            }
+        ];
+    }, [handleOpenEdit, handleDeleteRole]);
 
     if(!selectedTeam){
-        return (
-            <Container className='manage-roles-page p-2'>
-                <Paragraph className='color-secondary'>Please select a team.</Paragraph>
-            </Container>
-        );
+        return <Container className='p-3'>Please select a team.</Container>;
     }
 
     return (
-        <Container className='manage-roles-page d-flex column gap-1-5 p-2'>
-            <Container className='d-flex items-center content-between'>
-                <Title className='font-size-5 font-weight-6'>
-                    Manage Roles ({roles.length})
-                </Title>
-                <Button
-                    variant='solid'
-                    intent='brand'
-                    leftIcon={<Plus size={16} />}
-                    onClick={handleOpenCreate}
-                >
-                    New Role
-                </Button>
-            </Container>
-
-            {isLoadingRoles ? (
-                <Container className='manage-roles-loading radius-md p-3'>
-                    <Paragraph className='color-secondary'>Loading roles...</Paragraph>
-                </Container>
-            ) : roles.length === 0 ? (
-                <EmptyState
-                    title='No Roles'
-                    description='No roles found. Create your first custom role.'
-                />
-            ) : (
-                <Container className='manage-roles-list radius-md d-flex column gap-05'>
-                    {roles.map((role) => (
-                        <RoleRow
-                            key={role._id}
-                            role={role}
-                            onEdit={handleOpenEdit}
-                            onDelete={handleDeleteRole}
-                        />
-                    ))}
-                </Container>
-            )}
+        <Container className='manage-roles-page h-max'>
+            <DocumentListing<TeamRole>
+                title={`Manage Roles (${roles.length})`}
+                columns={COLUMNS}
+                data={roles}
+                isLoading={isLoadingRoles}
+                getMenuOptions={getMenuOptions}
+                emptyMessage='No roles found. Create your first custom role.'
+                createNew={{
+                    buttonTitle: 'New Role',
+                    onCreate: handleOpenCreate
+                }}
+            />
 
             <RoleEditorModal
                 role={editingRole}

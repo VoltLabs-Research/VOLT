@@ -8,3 +8,4 @@ export { default as useSaveWorkflow } from './use-save-workflow';
 export { default as useLoadPlugin } from './use-load-plugin';
 export { default as useNodeForm } from './use-node-form';
 export { default as useKeyValueHandlers } from './use-key-value-handlers';
+export { default as useNodeCollectionForm } from './use-node-collection-form';

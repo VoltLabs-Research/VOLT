@@ -1,16 +1,15 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import IAuthRepository from '../../domain/ports/IAuthRepository';
+import IAuthRepository, { CheckEmailResult } from '../../domain/ports/IAuthRepository';
 import { User } from '../../domain/entities';
 import {
     ChangePasswordInputDTO,
-    CheckEmailOutputDTO,
     GetPasswordInfoOutputDTO,
     SignInInputDTO,
     SignInOutputDTO,
     SignUpInputDTO,
     SignUpOutputDTO
-} from '../../application/dtos/index.ts';
+} from '../../application/dtos';
 
 @injectable()
 export default class AuthRepository extends BaseRepository implements IAuthRepository{
@@ -33,8 +32,8 @@ export default class AuthRepository extends BaseRepository implements IAuthRepos
         return this.unwrap(response);
     }
 
-    async checkEmail(email: string): Promise<CheckEmailOutputDTO>{
-        const response = await this.client.post<ApiResponse<CheckEmailOutputDTO>>('/check-email', { email });
+    async checkEmail(email: string): Promise<CheckEmailResult>{
+        const response = await this.client.post<ApiResponse<CheckEmailResult>>('/check-email', { email });
         return this.unwrap(response);
     }
 

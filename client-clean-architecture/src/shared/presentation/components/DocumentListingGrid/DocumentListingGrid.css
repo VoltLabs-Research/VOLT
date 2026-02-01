@@ -1,0 +1,24 @@
+.document-listing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 2rem;
+    overflow-y: auto;
+    flex: 1;
+    align-content: start;
+}
+
+.document-listing-grid-empty {
+    grid-column: 1 / -1;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media screen and (max-width: 768px) {
+    .document-listing-grid {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+}

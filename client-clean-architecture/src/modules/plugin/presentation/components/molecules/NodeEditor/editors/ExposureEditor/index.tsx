@@ -1,17 +1,11 @@
-import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormField from '@/shared/presentation/components/FormField';
 import { useNodeForm } from '@/modules/plugin/presentation/hooks';
 import type { IExposureData } from '@/modules/plugin/domain/entities';
+import type { EditorProps } from '../types';
 
-interface ExposureEditorProps {
-    node: Node;
-};
-
-const DEFAULT_EXPOSURE: IExposureData = { name: '', results: '' };
-
-const ExposureEditor = ({ node }: ExposureEditorProps) => {
-    const { field } = useNodeForm(node, 'exposure', DEFAULT_EXPOSURE);
+const ExposureEditor = ({ node }: EditorProps) => {
+    const { field } = useNodeForm<IExposureData>(node, 'exposure', {} as IExposureData);
 
     return (
         <CollapsibleSection title='Results Exposure' defaultExpanded>

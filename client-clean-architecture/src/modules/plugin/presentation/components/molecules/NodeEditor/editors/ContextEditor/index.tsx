@@ -1,23 +1,17 @@
-import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormField from '@/shared/presentation/components/FormField';
 import { useNodeForm } from '@/modules/plugin/presentation/hooks';
 import { CONTEXT_OPTIONS } from '@/modules/plugin/presentation/utilities/node-types';
-import type { IContextData, ModifierContext } from '@/modules/plugin/domain/entities';
-
-interface ContextEditorProps {
-    node: Node;
-};
+import type { IContextData } from '@/modules/plugin/domain/entities';
+import type { EditorProps } from '../types';
 
 const CONTEXT_SELECT_OPTIONS = CONTEXT_OPTIONS.map(opt => ({
     value: opt.value,
     title: opt.label
 }));
 
-const DEFAULT_CONTEXT: IContextData = { source: 'trajectory_dumps' as ModifierContext };
-
-const ContextEditor = ({ node }: ContextEditorProps) => {
-    const { field } = useNodeForm(node, 'context', DEFAULT_CONTEXT);
+const ContextEditor = ({ node }: EditorProps) => {
+    const { field } = useNodeForm<IContextData>(node, 'context', {} as IContextData);
 
     return (
         <CollapsibleSection title='Data Source' defaultExpanded>

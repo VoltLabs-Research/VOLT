@@ -1,0 +1,63 @@
+/* Notification Badge */
+.notification-badge {
+    top: 8px;
+    right: 17px;
+    font-size: 9px;
+    min-width: 16px;
+    height: 16px;
+    border-radius: var(--radius-sm);
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-red);
+    color: var(--color-contrast-high);
+}
+
+/* Notifications Dropdown */
+.dashboard-notifications-dropdown {
+    width: 360px;
+    max-height: 420px;
+    border-radius: var(--radius-md);
+    z-index: 50;
+    border: 1px solid var(--color-border-soft);
+    box-shadow: var(--shadow-elevated);
+}
+
+.dashboard-notifications-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.dashboard-notifications-close {
+    background: transparent;
+    border: none;
+    font-size: 18px;
+}
+
+.dashboard-notifications-close:hover {
+    color: var(--color-text-primary);
+}
+
+.dashboard-notification-item {
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    transition: background 0.15s ease;
+}
+
+.dashboard-notification-item:hover {
+    background: var(--color-surface-2);
+}
+
+.dashboard-notification-content {
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+/* Mobile Responsive */
+@media screen and (max-width: 480px) {
+    .dashboard-notifications-dropdown {
+        width: 92vw;
+        max-height: 60vh;
+    }
+}

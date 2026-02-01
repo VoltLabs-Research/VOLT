@@ -17,7 +17,7 @@ const TeamInvitationTemplate: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState(false);
 
-    const { getInvitationDetailsUseCase, acceptInvitationUseCase, rejectInvitationUseCase } = useTeamInvitationUseCases();
+    const { teamInvitationRepository } = useTeamInvitationUseCases();
 
     const fetchInvitation = async () => {
         if(!invitationId) {
@@ -27,7 +27,7 @@ const TeamInvitationTemplate: React.FC = () => {
         }
 
         try{
-            const details = await getInvitationDetailsUseCase.execute({ invitationId });
+            const details = await teamInvitationRepository.getDetails(invitationId);
             setInvitation(details);
         }catch(err: any){
             setError(err?.message || 'An error occurred');
@@ -38,7 +38,7 @@ const TeamInvitationTemplate: React.FC = () => {
 
     useEffect(() => {
         fetchInvitation();
-    }, [invitationId, getInvitationDetailsUseCase]);
+    }, [invitationId, teamInvitationRepository]);
 
     const handleAccept = async () => {
         if(!invitationId || !invitation) return;
@@ -46,7 +46,7 @@ const TeamInvitationTemplate: React.FC = () => {
         setActionLoading(true);
         try{
             localStorage.setItem('selectedTeamId', invitation.team._id);
-            await acceptInvitationUseCase.execute({ invitationId });
+            await teamInvitationRepository.accept(invitationId);
             setError(null);
             window.location.href = '/dashboard';
         }catch(err: any){
@@ -61,7 +61,7 @@ const TeamInvitationTemplate: React.FC = () => {
 
         setActionLoading(true);
         try{
-            await rejectInvitationUseCase.execute({ invitationId });
+            await teamInvitationRepository.reject(invitationId);
             setError(null);
             window.location.href = '/dashboard';
         }catch(err: any){

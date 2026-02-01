@@ -5,14 +5,14 @@ import type { CreatePluginInputDTO } from '../../application/dtos';
 import type { Plugin } from '../../domain/entities';
 
 const useCreatePlugin = () => {
-    const { createPluginUseCase } = usePluginUseCases();
+    const { pluginRepository } = usePluginUseCases();
     const addPlugin = usePluginStore((state) => state.addPlugin);
 
     const createPlugin = useCallback(async (params: CreatePluginInputDTO): Promise<Plugin> => {
-        const plugin = await createPluginUseCase.execute(params);
+        const plugin = await pluginRepository.create(params);
         addPlugin(plugin);
         return plugin;
-    }, [createPluginUseCase, addPlugin]);
+    }, [pluginRepository, addPlugin]);
 
     return createPlugin;
 };

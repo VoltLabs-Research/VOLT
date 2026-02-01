@@ -12,7 +12,7 @@ import './OAuthCallback.css';
 
 const OAuthCallbackTemplate = () => {
     const navigate = useNavigate();
-    const { getMeUseCase } = useAuthUseCases();
+    const { authRepository } = useAuthUseCases();
     const setUser = useAuthStore((state) => state.setUser);
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const tokenStorage = useMemo(() => new TokenStorage(), []);
@@ -29,7 +29,7 @@ const OAuthCallbackTemplate = () => {
 
                 tokenStorage.setToken(token);
 
-                const user = await getMeUseCase.execute();
+                const user = await authRepository.getMe();
                 setUser(user);
 
                 setStatus('success');
@@ -47,7 +47,7 @@ const OAuthCallbackTemplate = () => {
         };
 
         handleOAuthCallback();
-    }, [navigate, getMeUseCase, tokenStorage, setUser]);
+    }, [navigate, authRepository, tokenStorage, setUser]);
 
     return (
         <Container className='d-flex flex-center items-center oauth-callback-container p-relative vh-max overflow-hidden'>

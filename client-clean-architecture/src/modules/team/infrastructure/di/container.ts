@@ -10,37 +10,7 @@ import type ITeamRoleRepository from '../../domain/ports/ITeamRoleRepository';
 import type ITeamMemberRepository from '../../domain/ports/ITeamMemberRepository';
 import type ITeamInvitationRepository from '../../domain/ports/ITeamInvitationRepository';
 import type ITeamStorage from '../../domain/ports/ITeamStorage';
-
-import {
-    CreateTeamUseCase,
-    UpdateTeamUseCase,
-    DeleteTeamUseCase,
-    GetAllTeamsUseCase,
-    LeaveTeamUseCase,
-    CanInviteUseCase
-} from '../../application/use-cases/team';
-
-import {
-    CreateTeamRoleUseCase,
-    UpdateTeamRoleUseCase,
-    DeleteTeamRoleUseCase,
-    GetAllTeamRolesUseCase
-} from '../../application/use-cases/team-role';
-
-import {
-    GetAllTeamMembersUseCase,
-    UpdateTeamMemberUseCase,
-    RemoveTeamMemberUseCase
-} from '../../application/use-cases/team-member';
-
-import {
-    GetInvitationDetailsUseCase,
-    GetPendingInvitationsUseCase,
-    SendInvitationUseCase,
-    AcceptInvitationUseCase,
-    RejectInvitationUseCase,
-    CancelInvitationUseCase
-} from '../../application/use-cases/team-invitation';
+import CreateTeamUseCase from '../../application/use-cases/team/CreateTeamUseCase';
 
 export const ensureTeamDI = () => {
     container.register<ITeamStorage>(TEAM_TOKENS.TeamStorage, TeamStorage);
@@ -51,25 +21,4 @@ export const ensureTeamDI = () => {
     container.register<ITeamInvitationRepository>(TEAM_TOKENS.TeamInvitationRepository, TeamInvitationRepository);
 
     container.register(TEAM_TOKENS.CreateTeamUseCase, CreateTeamUseCase);
-    container.register(TEAM_TOKENS.UpdateTeamUseCase, UpdateTeamUseCase);
-    container.register(TEAM_TOKENS.DeleteTeamUseCase, DeleteTeamUseCase);
-    container.register(TEAM_TOKENS.GetAllTeamsUseCase, GetAllTeamsUseCase);
-    container.register(TEAM_TOKENS.LeaveTeamUseCase, LeaveTeamUseCase);
-    container.register(TEAM_TOKENS.CanInviteUseCase, CanInviteUseCase);
-
-    container.register(TEAM_TOKENS.CreateTeamRoleUseCase, CreateTeamRoleUseCase);
-    container.register(TEAM_TOKENS.UpdateTeamRoleUseCase, UpdateTeamRoleUseCase);
-    container.register(TEAM_TOKENS.DeleteTeamRoleUseCase, DeleteTeamRoleUseCase);
-    container.register(TEAM_TOKENS.GetAllTeamRolesUseCase, GetAllTeamRolesUseCase);
-
-    container.register(TEAM_TOKENS.GetAllTeamMembersUseCase, GetAllTeamMembersUseCase);
-    container.register(TEAM_TOKENS.UpdateTeamMemberUseCase, UpdateTeamMemberUseCase);
-    container.register(TEAM_TOKENS.RemoveTeamMemberUseCase, RemoveTeamMemberUseCase);
-
-    container.register(TEAM_TOKENS.GetInvitationDetailsUseCase, GetInvitationDetailsUseCase);
-    container.register(TEAM_TOKENS.GetPendingInvitationsUseCase, GetPendingInvitationsUseCase);
-    container.register(TEAM_TOKENS.SendInvitationUseCase, SendInvitationUseCase);
-    container.register(TEAM_TOKENS.AcceptInvitationUseCase, AcceptInvitationUseCase);
-    container.register(TEAM_TOKENS.RejectInvitationUseCase, RejectInvitationUseCase);
-    container.register(TEAM_TOKENS.CancelInvitationUseCase, CancelInvitationUseCase);
 };

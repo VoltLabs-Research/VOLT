@@ -14,25 +14,33 @@ import AnalysesListing from '@/modules/analysis/presentation/components/template
 import PluginsListing from '@/modules/plugin/presentation/components/templates/PluginsListing';
 import PluginBuilderPage from '@/modules/plugin/presentation/components/templates/PluginBuilderPage';
 import PluginListingPage from '@/modules/plugin/presentation/components/templates/PluginListingPage';
+import DashboardLayout from '@/modules/dashboard/presentation/components/organisms/DashboardLayout';
+import Dashboard from '@/modules/dashboard/presentation/components/templates/Dashboard';
 
 export const routesConfig: RouteGroup = {
     public: [],
 
     protected: [
+        // Dashboard routes (with layout)
         {
-            path: '/settings/general',
+            path: '/dashboard',
+            component: Dashboard,
+            index: true
+        },
+        {
+            path: '/dashboard/settings/general',
             component: GeneralSettings
         },
         {
-            path: '/settings/authentication',
+            path: '/dashboard/settings/authentication',
             component: AuthenticationSettings
         },
         {
-            path: '/settings/theme',
+            path: '/dashboard/settings/theme',
             component: ThemeSettings
         },
         {
-            path: '/settings/notifications',
+            path: '/dashboard/settings/notifications',
             component: NotificationSettings
         },
         {
@@ -44,7 +52,7 @@ export const routesConfig: RouteGroup = {
             component: ManageRolesTemplate
         },
         {
-            path: '/dashboard/trajectories',
+            path: '/dashboard/trajectories/list',
             component: TrajectoriesListing
         },
         {
@@ -52,11 +60,11 @@ export const routesConfig: RouteGroup = {
             component: PerAtomViewer
         },
         {
-            path: '/dashboard/analyses',
+            path: '/dashboard/analysis-configs/list',
             component: AnalysesListing
         },
         {
-            path: '/dashboard/plugins',
+            path: '/dashboard/plugins/list',
             component: PluginsListing
         },
         {
@@ -86,5 +94,8 @@ export const routesConfig: RouteGroup = {
             path: '/team-invitation/:invitationId',
             component: TeamInvitationTemplate
         }
-    ]
+    ],
+
+    // Layout component for dashboard routes
+    dashboardLayout: DashboardLayout
 };

@@ -6,18 +6,16 @@ import Button from '@/shared/presentation/components/Button';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/domain/entities';
-import {
-    ModifierEditor,
-    ArgumentsEditor,
-    ContextEditor,
-    ForEachEditor,
-    EntrypointEditor,
-    ExposureEditor,
-    SchemaEditor,
-    VisualizersEditor,
-    ExportEditor,
-    IfStatementEditor
-} from '@/modules/plugin/presentation/components/molecules/NodeEditor/editors';
+import ModifierEditor from './editors/ModifierEditor';
+import ArgumentsEditor from './editors/ArgumentsEditor';
+import ContextEditor from './editors/ContextEditor';
+import ForEachEditor from './editors/ForEachEditor';
+import EntrypointEditor from './editors/EntrypointEditor';
+import ExposureEditor from './editors/ExposureEditor';
+import SchemaEditor from './editors/SchemaEditor';
+import VisualizersEditor from './editors/VisualizersEditor';
+import ExportEditor from './editors/ExportEditor';
+import IfStatementEditor from './editors/IfStatementEditor';
 import './NodeEditor.css';
 
 interface NodeEditorProps {

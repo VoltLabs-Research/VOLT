@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { ChevronDown, Trash2, Plus } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
+import IconButton from '@/shared/presentation/components/IconButton';
 import './CollapsibleSection.css';
 
 interface CollapsibleSectionProps {
@@ -66,22 +67,24 @@ const CollapsibleSection = ({
                 <Title className='font-size-3 font-weight-6 color-primary'>{title}</Title>
                 <Container className='d-flex items-center gap-025'>
                     {onAdd && (
-                        <button
-                            type='button'
+                        <IconButton
+                            size='sm'
+                            variant='ghost'
                             onClick={handleAdd}
-                            className='collapsible-section-action collapsible-section-action--add'
+                            className='collapsible-section-action--add'
                         >
                             <Plus size={16} />
-                        </button>
+                        </IconButton>
                     )}
                     {onDelete && isHovered && (
-                        <button
-                            type='button'
+                        <IconButton
+                            size='sm'
+                            variant='ghost'
                             onClick={handleDelete}
-                            className='collapsible-section-action collapsible-section-action--delete'
+                            className='collapsible-section-action--delete'
                         >
                             <Trash2 size={16} />
-                        </button>
+                        </IconButton>
                     )}
                     <Container
                         className={`collapsible-section-arrow d-flex flex-center color-muted ${!isExpanded ? 'collapsible-section-arrow--collapsed' : ''}`}

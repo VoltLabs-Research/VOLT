@@ -1,16 +1,12 @@
-import { useCallback, useMemo, ChangeEvent } from 'react';
-import type { Node } from '@xyflow/react';
+import { useCallback } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormField from '@/shared/presentation/components/FormField';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import { TbPlus } from 'react-icons/tb';
-import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
-import type { IIfStatementData, ICondition, ConditionType, ConditionHandler } from '@/modules/plugin/domain/entities';
-
-interface IfStatementEditorProps {
-    node: Node;
-};
+import { useNodeCollectionForm } from '@/modules/plugin/presentation/hooks';
+import type { ICondition, ConditionType, ConditionHandler } from '@/modules/plugin/domain/entities';
+import type { EditorProps } from '../types';
 
 const CONDITION_TYPE_OPTIONS = [
     { value: 'and', title: 'AND' },
@@ -22,58 +18,38 @@ const CONDITION_HANDLER_OPTIONS = [
     { value: 'is_not_equal_to', title: 'Is not equal to' }
 ];
 
-const DEFAULT_CONDITION: ICondition = {
+const createDefaultCondition = (): ICondition => ({
     type: 'and' as ConditionType,
     leftExpr: '',
     handler: 'is_equal_to' as ConditionHandler,
     rightExpr: ''
-};
+});
 
-const IfStatementEditor = ({ node }: IfStatementEditorProps) => {
-    const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
-    const storeNodes = usePluginBuilderStore((state) => state.nodes);
+const IfStatementEditor = ({ node }: EditorProps) => {
+    const {
+        items: conditions,
+        addItem,
+        removeItem,
+        createFieldHandler
+    } = useNodeCollectionForm<ICondition>(
+        node,
+        'ifStatement',
+        'conditions',
+        createDefaultCondition
+    );
 
-    const conditions = useMemo(() => {
-        const storeNode = storeNodes.find((n) => n.id === node.id);
-        const nodeData = storeNode?.data || node.data;
-        const ifStatementData = (nodeData?.ifStatement || { conditions: [] }) as IIfStatementData;
-        return ifStatementData.conditions || [];
-    }, [storeNodes, node.id, node.data]);
-
-    const updateCondition = useCallback((index: number, field: keyof ICondition, value: unknown) => {
-        const updatedConditions = conditions.map((cond, i) =>
-            i === index ? { ...cond, [field]: value } : cond
-        );
-        updateNodeData(node.id, { ifStatement: { conditions: updatedConditions } });
-    }, [conditions, node.id, updateNodeData]);
-
-    const createChangeHandler = useCallback((index: number, field: keyof ICondition) => {
-        return (e: ChangeEvent<HTMLInputElement>) => {
-            updateCondition(index, field, e.target.value);
-        };
-    }, [updateCondition]);
-
-    const addCondition = useCallback(() => {
-        updateNodeData(node.id, {
-            ifStatement: {
-                conditions: [...conditions, { ...DEFAULT_CONDITION }]
-            }
-        });
-    }, [conditions, node.id, updateNodeData]);
-
-    const removeCondition = useCallback((index: number) => {
-        const updatedConditions = conditions.filter((_, i) => i !== index);
-        updateNodeData(node.id, { ifStatement: { conditions: updatedConditions } });
-    }, [conditions, node.id, updateNodeData]);
+    const getConditionTitle = useCallback((_: ICondition, index: number) => {
+        return `Condition ${index + 1}`;
+    }, []);
 
     return (
         <>
             {conditions.map((condition, index) => (
                 <CollapsibleSection
                     key={index}
-                    title={`Condition ${index + 1}`}
+                    title={getConditionTitle(condition, index)}
                     defaultExpanded={index === 0}
-                    onDelete={() => removeCondition(index)}
+                    onDelete={() => removeItem(index)}
                 >
                     {index > 0 && (
                         <FormField
@@ -82,7 +58,7 @@ const IfStatementEditor = ({ node }: IfStatementEditorProps) => {
                             name='type'
                             fieldType='select'
                             value={condition.type}
-                            onChange={createChangeHandler(index, 'type')}
+                            onChange={createFieldHandler(index, 'type')}
                             options={CONDITION_TYPE_OPTIONS}
                         />
                     )}
@@ -93,7 +69,7 @@ const IfStatementEditor = ({ node }: IfStatementEditorProps) => {
                         name='leftExpr'
                         fieldType='input'
                         value={condition.leftExpr}
-                        onChange={createChangeHandler(index, 'leftExpr')}
+                        onChange={createFieldHandler(index, 'leftExpr')}
                         placeholder='{{ node-id.property }}'
                     />
 
@@ -103,7 +79,7 @@ const IfStatementEditor = ({ node }: IfStatementEditorProps) => {
                         name='handler'
                         fieldType='select'
                         value={condition.handler}
-                        onChange={createChangeHandler(index, 'handler')}
+                        onChange={createFieldHandler(index, 'handler')}
                         options={CONDITION_HANDLER_OPTIONS}
                     />
 
@@ -113,7 +89,7 @@ const IfStatementEditor = ({ node }: IfStatementEditorProps) => {
                         name='rightExpr'
                         fieldType='input'
                         value={condition.rightExpr}
-                        onChange={createChangeHandler(index, 'rightExpr')}
+                        onChange={createFieldHandler(index, 'rightExpr')}
                         placeholder='{{ node-id.expected }}'
                     />
                 </CollapsibleSection>
@@ -125,7 +101,7 @@ const IfStatementEditor = ({ node }: IfStatementEditorProps) => {
                     intent='neutral'
                     size='sm'
                     leftIcon={<TbPlus size={14} />}
-                    onClick={addCondition}
+                    onClick={addItem}
                 >
                     Add Condition
                 </Button>

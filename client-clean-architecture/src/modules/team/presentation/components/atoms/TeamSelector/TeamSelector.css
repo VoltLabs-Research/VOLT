@@ -1,0 +1,12 @@
+.team-selector-leave {
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.select-option:hover .team-selector-leave {
+    opacity: 1;
+}
+
+.team-selector-leave:hover {
+    color: var(--accent-red);
+}

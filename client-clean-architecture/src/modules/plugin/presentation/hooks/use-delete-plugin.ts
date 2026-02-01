@@ -3,7 +3,7 @@ import usePluginUseCases from './use-plugin-use-cases';
 import usePluginStore from '../stores/use-plugin-store';
 
 const useDeletePlugin = () => {
-    const { deletePluginUseCase } = usePluginUseCases();
+    const { pluginRepository } = usePluginUseCases();
     const plugins = usePluginStore((state) => state.plugins);
     const removePlugin = usePluginStore((state) => state.removePlugin);
     const setPlugins = usePluginStore((state) => state.setPlugins);
@@ -15,13 +15,13 @@ const useDeletePlugin = () => {
         removePlugin(id);
 
         try {
-            await deletePluginUseCase.execute({ id });
+            await pluginRepository.delete(id);
         } catch (error) {
             // Rollback on error
             setPlugins(previousPlugins);
             throw error;
         }
-    }, [deletePluginUseCase, plugins, removePlugin, setPlugins]);
+    }, [pluginRepository, plugins, removePlugin, setPlugins]);
 
     return deletePlugin;
 };

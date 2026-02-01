@@ -1,5 +1,4 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import CodeEditor from '@/shared/presentation/components/CodeEditor';
 import Button from '@/shared/presentation/components/Button';
@@ -8,10 +7,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import { TbCheck, TbCopy, TbSparkles } from 'react-icons/tb';
 import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
 import type { ISchemaData } from '@/modules/plugin/domain/entities';
-
-interface SchemaEditorProps {
-    node: Node;
-};
+import type { EditorProps } from '../types';
 
 const SCHEMA_TEMPLATES = [
     {
@@ -42,18 +38,18 @@ const SCHEMA_TEMPLATES = [
     }
 ];
 
-const SchemaEditor = ({ node }: SchemaEditorProps) => {
+const SchemaEditor = ({ node }: EditorProps) => {
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const storeNodes = usePluginBuilderStore((state) => state.nodes);
 
-    const schemaData = useMemo(() => {
+    const schemaData = useMemo((): ISchemaData => {
         const storeNode = storeNodes.find((n) => n.id === node.id);
-        const nodeData = storeNode?.data || node.data;
-        return (nodeData?.schema || { definition: {} }) as ISchemaData;
+        const data = storeNode?.data ?? node.data;
+        return (data.schema ?? { definition: {} }) as ISchemaData;
     }, [storeNodes, node.id, node.data]);
 
     const [jsonText, setJsonText] = useState(() => {
-        return JSON.stringify(schemaData.definition || {}, null, 2);
+        return JSON.stringify(schemaData.definition ?? {}, null, 2);
     });
     const [error, setError] = useState<string | null>(null);
     const [showTemplates, setShowTemplates] = useState(false);

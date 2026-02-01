@@ -4,7 +4,7 @@ import useTrajectoryUseCases from './use-trajectory-use-cases';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
 
 const useUpdateTrajectory = () => {
-    const { updateTrajectoryUseCase } = useTrajectoryUseCases();
+    const { trajectoryRepository } = useTrajectoryUseCases();
     const trajectories = useTrajectoryStore((state) => state.trajectories);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const patchTrajectory = useTrajectoryStore((state) => state.patchTrajectory);
@@ -19,14 +19,14 @@ const useUpdateTrajectory = () => {
         patchTrajectory(id, data);
 
         try{
-            const updated = await updateTrajectoryUseCase.execute({ id, data });
+            const updated = await trajectoryRepository.update(id, data);
             patchTrajectory(id, updated);
         }catch{
             // Rollback
             setTrajectories(previousTrajectories);
             setTrajectory(previousTrajectory);
         }
-    }, [updateTrajectoryUseCase, trajectories, trajectory, patchTrajectory, setTrajectories, setTrajectory]);
+    }, [trajectoryRepository, trajectories, trajectory, patchTrajectory, setTrajectories, setTrajectory]);
 
     return updateTrajectory;
 };

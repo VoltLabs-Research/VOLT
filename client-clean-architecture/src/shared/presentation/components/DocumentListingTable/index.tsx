@@ -1,4 +1,5 @@
 import React, { useRef, useMemo, useEffect } from 'react';
+import { FileText } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import TableRow from '@/shared/presentation/components/TableRow';
@@ -172,8 +173,9 @@ const DocumentListingTable = <T,>({
                 <Container ref={sentinelRef} style={{ height: 1 }} />
 
                 {shouldShowEmptyState && (
-                    <EmptyState 
-                        title='No Results'
+                    <EmptyState
+                        icon={<FileText size={26} strokeWidth={1.5} />}
+                        title='Nothing here yet'
                         description={emptyMessage}
                         buttonText={emptyButtonText}
                         buttonOnClick={onEmptyButtonClick}

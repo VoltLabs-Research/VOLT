@@ -5,7 +5,7 @@ import usePluginBuilderStore from '../stores/use-plugin-builder-store';
 import type { Plugin } from '../../domain/entities';
 
 const useSaveWorkflow = () => {
-    const { createPluginUseCase, updatePluginUseCase } = usePluginUseCases();
+    const { pluginRepository } = usePluginUseCases();
 
     const getWorkflow = usePluginBuilderStore((state) => state.getWorkflow);
     const currentPluginId = usePluginBuilderStore((state) => state.currentPluginId);
@@ -24,14 +24,14 @@ const useSaveWorkflow = () => {
             const workflow = getWorkflow();
 
             if (currentPluginId) {
-                const plugin = await updatePluginUseCase.execute({
+                const plugin = await pluginRepository.update({
                     id: currentPluginId,
                     workflow
                 });
                 updatePluginInStore(currentPluginId, plugin);
                 return plugin;
             } else {
-                const plugin = await createPluginUseCase.execute({ workflow });
+                const plugin = await pluginRepository.create({ workflow });
                 addPlugin(plugin);
                 setCurrentPluginId(plugin._id);
                 return plugin;
@@ -46,8 +46,7 @@ const useSaveWorkflow = () => {
     }, [
         getWorkflow,
         currentPluginId,
-        createPluginUseCase,
-        updatePluginUseCase,
+        pluginRepository,
         setSaving,
         setSaveError,
         setCurrentPluginId,
