@@ -15,6 +15,7 @@ import SimulationCellsListing from '@/modules/simulation-cell/presentation/compo
 import PluginsListing from '@/modules/plugin/presentation/components/templates/PluginsListing';
 import PluginBuilderPage from '@/modules/plugin/presentation/components/templates/PluginBuilderPage';
 import PluginListingPage from '@/modules/plugin/presentation/components/templates/PluginListingPage';
+import ClustersPage from '@/modules/cluster/presentation/components/templates/ClustersPage';
 import DashboardLayout from '@/modules/dashboard/presentation/components/organisms/DashboardLayout';
 import Dashboard from '@/modules/dashboard/presentation/components/templates/Dashboard';
 
@@ -83,6 +84,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginSlug/listing/:listingSlug',
             component: PluginListingPage
+        },
+        {
+            path: '/dashboard/clusters',
+            component: ClustersPage
         }
     ],
 

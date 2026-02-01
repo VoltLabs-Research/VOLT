@@ -1,0 +1,36 @@
+.response-chart-bar {
+    width: 3px;
+    height: 1.25rem;
+    background-color: var(--accent-blue);
+    border-radius: var(--radius-full);
+}
+
+.response-chart-legend {
+    margin-bottom: 1rem;
+}
+
+.response-chart-legend-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: var(--radius-full);
+}
+
+.response-chart-container {
+    min-height: 0;
+}
+
+.response-chart-svg {
+    overflow: visible;
+}
+
+.response-chart-y-labels {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    margin-left: -3rem;
+    padding: 0.25rem 0;
+}
+
+.response-chart-y-label {
+    font-size: 0.625rem;
+}

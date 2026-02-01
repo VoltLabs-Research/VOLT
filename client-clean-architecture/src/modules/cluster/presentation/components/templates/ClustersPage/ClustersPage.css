@@ -1,0 +1,65 @@
+@keyframes fillBar {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.clusters-page {
+    background-color: var(--color-bg);
+    overflow: scroll;
+    height: 100% !important;
+}
+
+.clusters-main {
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+    .clusters-main {
+        padding: 1rem 2rem;
+    }
+
+    .clusters-grid,
+    .clusters-grid-equal {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .clusters-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .clusters-grid-main {
+        grid-column: span 2;
+    }
+}
+
+@media (min-width: 1440px) {
+    .clusters-main {
+        padding: 1rem 3rem;
+    }
+
+    .clusters-grid,
+    .clusters-grid-equal {
+        gap: 2rem;
+    }
+}
