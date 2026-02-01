@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import { Plus } from 'lucide-react';
 import { Skeleton } from '@mui/material';
-import useDocumentListingPagination, { UseDocumentListingPaginationProps } from '@/shared/presentation/hooks/use-document-listing-pagination';
+import useDocumentListingPagination, { PaginationParams } from '@/shared/presentation/hooks/use-document-listing-pagination';
 import useOptimisticAction from '@/shared/presentation/hooks/use-optimistic-action';
+import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import DocumentListingTable, { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListingTable';
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
 import Container from '@/shared/presentation/components/Container';
@@ -14,6 +15,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import { getValueByPath } from '@/shared/utils/format';
 import { sortData } from '@/shared/utils/sort';
 import { SortConfig } from '@/shared/domain/sorting/types';
+import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import './DocumentListing.css';
 
 export type { ColumnConfig, MenuOption };
@@ -21,16 +23,18 @@ export { getValueByPath };
 
 type ViewMode = 'table' | 'grid';
 
-interface DocumentListingBaseProps<T = unknown> {
+interface DocumentListingProps<T, TContext = Record<string, never>> {
     title: string | React.ReactNode;
-    data: T[];
+    fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
+    context?: TContext;
+    defaultLimit?: number;
+    enabled?: boolean;
     emptyMessage?: string;
     createNew?: { buttonTitle: string; onCreate: () => void };
     headerActions?: React.ReactNode;
     gap?: string;
     // Table view props
     columns?: ColumnConfig[];
-    onMenuAction?: (action: string, item: T) => void;
     getMenuOptions?: (item: T) => MenuOption[];
     // Grid view props
     view?: ViewMode;
@@ -46,42 +50,15 @@ interface DocumentListingBaseProps<T = unknown> {
     // Layout options
     hideHeader?: boolean;
     hideTabs?: boolean;
-    // Manual pagination mode (client-side)
-    isLoading?: boolean;
-    isFetchingMore?: boolean;
-    hasMore?: boolean;
-    onLoadMore?: () => void;
 };
-
-// Props when using fetch-based pagination
-interface DocumentListingWithFetchProps<T, TContext> 
-    extends DocumentListingBaseProps<T>, 
-            UseDocumentListingPaginationProps<T, TContext> {};
-
-// Props when using manual pagination
-interface DocumentListingManualProps<T> extends DocumentListingBaseProps<T> {
-    fetchData?: never;
-    onDataFetched?: never;
-    context?: never;
-    onContextChange?: never;
-    defaultLimit?: never;
-    enabled?: never;
-};
-
-type DocumentListingProps<T, TContext = Record<string, never>> = 
-    | DocumentListingWithFetchProps<T, TContext>
-    | DocumentListingManualProps<T>;
 
 const DocumentListing = <T, TContext = Record<string, never>>({
     title,
-    columns = [],
-    data = [],
     fetchData,
-    onDataFetched,
     context,
-    onContextChange,
     defaultLimit = 20,
     enabled = true,
+    columns = [],
     getMenuOptions,
     emptyMessage = 'No data available',
     createNew,
@@ -97,32 +74,25 @@ const DocumentListing = <T, TContext = Record<string, never>>({
     emptyButtonIsLoading = false,
     onEmptyButtonClick,
     hideHeader = false,
-    hideTabs = false,
-    // Manual mode props
-    isLoading: manualIsLoading,
-    isFetchingMore: manualIsFetchingMore,
-    hasMore: manualHasMore,
-    onLoadMore: manualOnLoadMore
+    hideTabs = false
 }: DocumentListingProps<T, TContext>) => {
-    // Determine if we're using fetch-based or manual pagination
-    const useFetchMode = !!fetchData && !!onDataFetched;
-
-    // Use pagination hook only if in fetch mode
-    const paginationHook = useDocumentListingPagination<T, TContext>({
-        fetchData: fetchData || ((() => Promise.resolve({ status: 'success' as const, data: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0, hasMore: false }})) as any),
-        onDataFetched: onDataFetched || (() => {}),
+    const {
+        data,
+        isLoading,
+        isFetchingMore,
+        hasMore,
+        error,
+        handleLoadMore,
+        refresh
+    } = useDocumentListingPagination<T, TContext>({
+        fetchData,
         context,
-        onContextChange,
         defaultLimit,
-        enabled: useFetchMode ? enabled : false
+        enabled
     });
 
-    // Resolve final values based on mode
-    const isLoading = useFetchMode ? paginationHook.isLoading : (manualIsLoading || false);
-    const isFetchingMore = useFetchMode ? paginationHook.isFetchingMore : (manualIsFetchingMore || false);
-    const hasMore = useFetchMode ? paginationHook.hasMore : (manualHasMore || false);
-    const error = useFetchMode ? paginationHook.error : null;
-    const handleLoadMore = useFetchMode ? paginationHook.handleLoadMore : manualOnLoadMore;
+    // F5 keyboard shortcut to refresh data instead of reloading the page
+    useKeyboardShortcut('F5', refresh);
 
     const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
 
@@ -194,7 +164,7 @@ const DocumentListing = <T, TContext = Record<string, never>>({
                         data={sortedData}
                         onCellClick={handleSort}
                         getCellTitle={(col) => <>{col.title} {getSortIndicator(col)}</>}
-                        isLoading={isLoading && data.length === 0}
+                        isLoading={isLoading}
                         getMenuOptions={wrappedGetMenuOptions}
                         emptyMessage={error || emptyMessage}
                         hasMore={hasMore}

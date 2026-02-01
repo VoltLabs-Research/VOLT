@@ -1,6 +1,5 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import useAtomsStore from '../../../stores/use-atoms-store';
 import useGetAtoms from '../../../hooks/trajectory/use-get-atoms';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import AtomTypeBadge from '../../atoms/AtomTypeBadge';
@@ -19,33 +18,28 @@ const PerAtomViewer = () => {
     const [searchParams] = useSearchParams();
     const timestep = Number(searchParams.get('timestep')) || 0;
     
-    const rows = useAtomsStore((state) => state.rows);
-    const properties = useAtomsStore((state) => state.properties);
-    const setRows = useAtomsStore((state) => state.setRows);
-    const appendRows = useAtomsStore((state) => state.appendRows);
-    const setProperties = useAtomsStore((state) => state.setProperties);
-    const reset = useAtomsStore((state) => state.reset);
+    // We need to track properties locally for column generation
+    const [properties, setProperties] = useState<string[]>([]);
     
     const getAtoms = useGetAtoms();
 
-    const fetchData = useCallback((params: any) => {
-        return getAtoms({
-            trajectoryId: trajectoryId!,
-            analysisId: analysisId || 'default',
-            exposureId,
-            timestep,
-            ...params
+    const fetchData = useCallback(async (params: { page: number; limit: number } & PerAtomViewerContext): Promise<PaginatedResponse<AtomData>> => {
+        const result = await getAtoms({
+            trajectoryId: params.trajectoryId,
+            analysisId: params.analysisId || 'default',
+            exposureId: params.exposureId,
+            timestep: params.timestep,
+            page: params.page,
+            limit: params.limit
         });
-    }, [trajectoryId, analysisId, exposureId, timestep, getAtoms]);
-
-    const handleDataFetched = useCallback((result: PaginatedResponse<AtomData>, isFirstPage: boolean) => {
-        if(isFirstPage) {
-            setRows(result.data);
-            setProperties(result._meta?.properties as string[] || []);
-        } else {
-            appendRows(result.data);
+        
+        // Extract and store properties from first page
+        if (params.page === 1 && result._meta?.properties) {
+            setProperties(result._meta.properties as string[]);
         }
-    }, [setRows, appendRows, setProperties]);
+        
+        return result;
+    }, [getAtoms]);
 
     const columns: ColumnConfig[] = useMemo(() => {
         const baseCols: ColumnConfig[] = [
@@ -93,15 +87,19 @@ const PerAtomViewer = () => {
         return baseCols;
     }, [properties]);
 
+    const context: PerAtomViewerContext = useMemo(() => ({
+        trajectoryId: trajectoryId!,
+        analysisId: analysisId || 'default',
+        exposureId,
+        timestep
+    }), [trajectoryId, analysisId, exposureId, timestep]);
+
     return (
         <DocumentListing<AtomData, PerAtomViewerContext>
             title={`Per-Atom Properties - Frame ${timestep}`}
             columns={columns}
-            data={rows}
             fetchData={fetchData}
-            onDataFetched={handleDataFetched}
-            context={{ trajectoryId: trajectoryId!, analysisId: analysisId || 'default', exposureId, timestep }}
-            onContextChange={reset}
+            context={context}
             defaultLimit={100}
             enabled={!!trajectoryId && !!analysisId}
             emptyMessage='No atoms data found.'

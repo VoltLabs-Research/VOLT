@@ -12,8 +12,8 @@ import type { IconType } from 'react-icons';
 import Container from '@/shared/presentation/components/Container';
 import Divider from '@/shared/presentation/components/Divider';
 import TeamSelector from '@/modules/team/presentation/components/atoms/TeamSelector';
-import SidebarNavItem from '../SidebarNavItem';
-import SidebarExpandableSection from '../SidebarExpandableSection';
+import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
+import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import './SidebarNavigation.css';
 
 const MAIN_NAV_ITEMS: Array<[string, IconType, string]> = [

@@ -1,5 +1,5 @@
 .resource-usage {
-    background: var(--glass-bg);
+    background: var(--color-bg);
     border: 1px solid var(--glass-border);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);

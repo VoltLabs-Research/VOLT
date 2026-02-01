@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
-import { IoChevronDown, IoSettingsOutline } from 'react-icons/io5';
+import { IoSettingsOutline } from 'react-icons/io5';
 import { useLocation, useNavigate } from 'react-router';
 import { TbHelp } from 'react-icons/tb';
 import Container from '@/shared/presentation/components/Container';
+import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
+import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 
 interface SidebarFooterNavigationProps {
     setSettingsExpanded: (status: boolean) => void;
@@ -13,53 +15,32 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded }: Side
     const { pathname } = useLocation();
     const navigate = useNavigate();
 
-    const settingsItems = useMemo(() => ([
-        { id: 'general', label: 'General', icon: IoSettingsOutline },
-        { id: 'authentication', label: 'Authentication', icon: IoSettingsOutline },
-        { id: 'theme', label: 'Theme', icon: IoSettingsOutline },
-        { id: 'notifications', label: 'Notifications', icon: IoSettingsOutline },
-        { id: 'sessions', label: 'Sessions', icon: IoSettingsOutline },
-        { id: 'integrations', label: 'Integrations', icon: IoSettingsOutline },
-        { id: 'data-export', label: 'Data & Export', icon: IoSettingsOutline },
-        { id: 'advanced', label: 'Advanced', icon: IoSettingsOutline }
-    ]), []);
+    const settingsSubItems = useMemo(() => [
+        { label: 'General', isSelected: pathname === '/dashboard/settings/general', onClick: () => navigate('/dashboard/settings/general') },
+        { label: 'Authentication', isSelected: pathname === '/dashboard/settings/authentication', onClick: () => navigate('/dashboard/settings/authentication') },
+        { label: 'Theme', isSelected: pathname === '/dashboard/settings/theme', onClick: () => navigate('/dashboard/settings/theme') },
+        { label: 'Notifications', isSelected: pathname === '/dashboard/settings/notifications', onClick: () => navigate('/dashboard/settings/notifications') },
+        { label: 'Sessions', isSelected: pathname === '/dashboard/settings/sessions', onClick: () => navigate('/dashboard/settings/sessions') },
+        { label: 'Integrations', isSelected: pathname === '/dashboard/settings/integrations', onClick: () => navigate('/dashboard/settings/integrations') },
+        { label: 'Data & Export', isSelected: pathname === '/dashboard/settings/data-export', onClick: () => navigate('/dashboard/settings/data-export') },
+        { label: 'Advanced', isSelected: pathname === '/dashboard/settings/advanced', onClick: () => navigate('/dashboard/settings/advanced') }
+    ], [pathname, navigate]);
 
     return (
         <Container className='sidebar-footer-nav'>
-            <button
-                className={`sidebar-nav-item sidebar-section-header ${pathname.startsWith('/dashboard/settings') ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer`}
-                onClick={() => setSettingsExpanded(!settingsExpanded)}
-            >
-                <span className='sidebar-nav-icon font-size-4'>
-                    <IoSettingsOutline />
-                </span>
-                <span className='sidebar-nav-label'>Settings</span>
-                <IoChevronDown
-                    className={`sidebar-section-chevron ${settingsExpanded ? 'is-expanded' : ''} color-muted`}
-                    size={14}
-                />
-            </button>
+            <SidebarExpandableSection
+                label='Settings'
+                icon={IoSettingsOutline}
+                isActive={pathname.startsWith('/dashboard/settings')}
+                subItems={settingsSubItems}
+                expanded={settingsExpanded}
+                onExpandedChange={setSettingsExpanded}
+            />
 
-            {settingsExpanded && (
-                <Container className='sidebar-sub-items'>
-                    {settingsItems.map((item) => (
-                        <button
-                            key={item.id}
-                            className={`sidebar-sub-item ${pathname === `/dashboard/settings/${item.id}` ? 'is-selected' : ''}`}
-                            onClick={() => navigate(`/dashboard/settings/${item.id}`)}
-                        >
-                            {item.label}
-                        </button>
-                    ))}
-                </Container>
-            )}
-
-            <button className='sidebar-nav-item p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer'>
-                <span className='sidebar-nav-icon font-size-4'>
-                    <TbHelp />
-                </span>
-                <span className='sidebar-nav-label'>Support</span>
-            </button>
+            <SidebarNavItem
+                label='Support'
+                icon={TbHelp}
+            />
         </Container>
     );
 };

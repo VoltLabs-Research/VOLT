@@ -25,12 +25,9 @@ const PluginExposureTable = ({
 }: PluginExposureTableProps) => {
     const {
         columns,
-        data,
         context,
         isEnabled,
         fetchData,
-        onDataFetched,
-        onContextChange,
         getMenuOptions
     } = usePluginListing({
         pluginSlug,
@@ -45,11 +42,8 @@ const PluginExposureTable = ({
         <DocumentListing<ListingRow, PluginListingContext>
             title={listingSlug}
             columns={columns}
-            data={data}
             fetchData={fetchData}
-            onDataFetched={onDataFetched}
             context={context}
-            onContextChange={onContextChange}
             defaultLimit={50}
             enabled={isEnabled}
             getMenuOptions={getMenuOptions}

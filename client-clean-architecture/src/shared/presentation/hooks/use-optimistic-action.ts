@@ -56,6 +56,7 @@ const useOptimisticAction = <T>({
     }, [shouldTrack, wrapAction]);
 
     const filterVisibleData = useCallback((data: T[]) => {
+        if (!data) return [];
         return data.filter((item, idx) =>
             !hiddenIds.has(String(extractItemKey(item, idx)))
         );

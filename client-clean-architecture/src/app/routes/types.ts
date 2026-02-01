@@ -2,6 +2,7 @@ export interface RouteConfig{
     path: string;
     component: React.ComponentType;
     index?: boolean;
+    children?: RouteConfig[];
 };
 
 export interface RouteGroup{

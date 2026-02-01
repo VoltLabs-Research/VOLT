@@ -1,0 +1,94 @@
+import Container from '@/shared/presentation/components/Container';
+import CpuChart from '../../molecules/CpuChart';
+import MemoryChart from '../../molecules/MemoryChart';
+import NetworkChart from '@/shared/presentation/components/NetworkChart';
+import Title from '@/shared/presentation/components/Title';
+import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
+import type { Container as ContainerEntity, EnvVariable, PortMapping } from '@/modules/container/domain/entities';
+import type { CpuData } from '../../molecules/CpuChart';
+import type { MemoryData } from '../../molecules/MemoryChart';
+import type { NetworkData } from '@/shared/presentation/components/NetworkChart';
+
+interface ContainerOverviewProps {
+    container: ContainerEntity;
+    stats: {
+        cpu: CpuData | null;
+        memory: MemoryData | null;
+        network: NetworkData | null;
+    };
+    onUpdateEnv: (env: EnvVariable[]) => Promise<void>;
+    onUpdatePorts: (ports: PortMapping[]) => Promise<void>;
+}
+
+const ContainerOverview = ({ container, stats, onUpdateEnv, onUpdatePorts }: ContainerOverviewProps) => {
+    const isRunning = container.status === 'running';
+
+    return (
+        <Container className='container-details-pane p-1 d-flex column gap-2 h-max'>
+            <Container className='d-flex content-between container-details-pane-header'>
+                <Title className='font-size-4 font-weight-6'>Overview</Title>
+                <Container className='d-flex gap-075 container-details-meta-tags'>
+                    <span className='d-flex items-center gap-05 container-details-tag font-family-mono font-size-1 font-weight-5 color-muted'>
+                        ID: {container.containerId.substring(0, 12)}
+                    </span>
+                    <span className='d-flex items-center gap-05 container-details-tag font-size-1 font-weight-5 color-muted'>
+                        Image: {container.image}
+                    </span>
+                    <span className='d-flex items-center gap-05 container-details-tag font-size-1 font-weight-5 color-muted'>
+                        Created: {new Date(container.createdAt).toLocaleDateString()}
+                    </span>
+                </Container>
+            </Container>
+
+            <Container className='container-details-stats-grid gap-2'>
+                <CpuChart data={stats.cpu} isLoading={!isRunning} />
+                <MemoryChart data={stats.memory} isLoading={!isRunning} unit='MB' />
+            </Container>
+
+            <Container className='container-details-stats-grid gap-2'>
+                <NetworkChart data={stats.network} isLoading={!isRunning} />
+            </Container>
+
+            <Container className='container-details-config-grid gap-2'>
+                <EditableKeyValueCard<EnvVariable>
+                    title='Environment Variables'
+                    items={container.env || []}
+                    fields={[
+                        { key: 'key', placeholder: 'Key' },
+                        { key: 'value', placeholder: 'Value' }
+                    ]}
+                    emptyMessage='No environment variables'
+                    onSave={onUpdateEnv}
+                    createEmpty={() => ({ key: '', value: '' })}
+                    renderItem={(item, i) => (
+                        <Container key={i} className='editable-kv-display-row d-flex content-between'>
+                            <span className='font-weight-6'>{item.key}</span>
+                            <span className='color-muted font-family-mono'>{item.value}</span>
+                        </Container>
+                    )}
+                />
+
+                <EditableKeyValueCard<PortMapping>
+                    title='Port Bindings'
+                    items={container.ports || []}
+                    fields={[
+                        { key: 'private', placeholder: 'Container Port', type: 'number' },
+                        { key: 'public', placeholder: 'Host Port', type: 'number' }
+                    ]}
+                    emptyMessage='No ports exposed'
+                    onSave={onUpdatePorts}
+                    createEmpty={() => ({ private: 0, public: 0 })}
+                    renderItem={(item, i) => (
+                        <Container key={i} className='editable-kv-display-row d-flex content-between'>
+                            <span className='color-brand font-weight-6 font-family-mono'>{item.private}/tcp</span>
+                            <span className='color-muted'>→</span>
+                            <span className='font-family-mono'>localhost:{item.public}</span>
+                        </Container>
+                    )}
+                />
+            </Container>
+        </Container>
+    );
+};
+
+export default ContainerOverview;

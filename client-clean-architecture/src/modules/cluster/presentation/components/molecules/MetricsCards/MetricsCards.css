@@ -16,7 +16,7 @@
 }
 
 .metric-card {
-    background: var(--glass-bg);
+    background: var(--color-bg);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     padding: 1.25rem;

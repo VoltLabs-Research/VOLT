@@ -1,10 +1,11 @@
 import type { IconType } from 'react-icons';
+import type { LucideIcon } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import './SidebarNavItem.css';
 
 interface SidebarNavItemProps {
     label: string;
-    icon: IconType;
+    icon: IconType | LucideIcon;
     isSelected?: boolean;
     onClick?: () => void;
     commandFor?: string;

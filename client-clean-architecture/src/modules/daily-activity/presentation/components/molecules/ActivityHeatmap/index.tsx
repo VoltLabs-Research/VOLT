@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import CalendarHeatmap from 'react-calendar-heatmap';
+import CalendarHeatmap, { type HeatmapValue } from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import { addDays, format, subDays } from 'date-fns';
 import Container from '@/shared/presentation/components/Container';
@@ -10,14 +10,14 @@ import './ActivityHeatmap.css';
 interface ActivityHeatmapProps {
     data: DailyActivity[];
     range?: number;
-};
+}
 
-interface ChartDataItem {
+interface ChartDataItem extends HeatmapValue {
     date: string;
     count: number;
     level: number;
     data?: DailyActivity;
-};
+}
 
 const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, range = 365 }) => {
     const today = new Date();
@@ -111,14 +111,14 @@ const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({ data, range = 365 }) 
                 startDate={startDate}
                 endDate={today}
                 values={chartData}
-                classForValue={(value) => {
-                    if(!value || value.count === 0) return 'color-empty';
-                    return `color-scale-${Math.min(value.level, 4)}`;
+                classForValue={(value: HeatmapValue | null) => {
+                    if(!value || (value as ChartDataItem).count === 0) return 'color-empty';
+                    return `color-scale-${Math.min((value as ChartDataItem).level, 4)}`;
                 }}
                 showWeekdayLabels={false}
                 gutterSize={5}
-                transformDayElement={(element, value, index) => {
-                    return React.cloneElement(element as React.ReactElement, {
+                transformDayElement={(element, value, _index) => {
+                    return React.cloneElement(element as React.ReactElement<React.SVGProps<SVGRectElement>>, {
                         onMouseEnter: (e: React.MouseEvent) => handleMouseEnter(e, value as ChartDataItem),
                         onMouseLeave: handleMouseLeave,
                         onMouseMove: handleMouseMove

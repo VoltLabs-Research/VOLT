@@ -23,6 +23,7 @@ import { ensureNotificationDI } from '@/modules/notification/infrastructure/di/c
 import { ensureDailyActivityDI } from '@/modules/daily-activity/infrastructure/di/container';
 import { ensureSocketDI } from '@/modules/socket/infrastructure/di/container';
 import { ensureSimulationCellDI } from '@/modules/simulation-cell/infrastructure/di/container';
+import { ensureContainerDI } from '@/modules/container/infrastructure/di/container';
 
 self.MonacoEnvironment = {
     getWorker(_, label) {
@@ -54,6 +55,7 @@ ensurePluginDI();
 ensureNotificationDI();
 ensureDailyActivityDI();
 ensureSimulationCellDI();
+ensureContainerDI();
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>

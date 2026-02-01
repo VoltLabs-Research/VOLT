@@ -1,5 +1,5 @@
 .server-table-container {
-    background: var(--glass-bg);
+    background: var(--color-bg);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     backdrop-filter: var(--glass-blur);
@@ -14,60 +14,8 @@
     border-radius: var(--radius-full);
 }
 
-.server-table-title {
-    font-size: 1.125rem;
-    margin: 0;
-    letter-spacing: -0.01em;
-}
-
-.server-table-icon {
-    width: 1rem;
-    height: 1rem;
-}
-
-.server-table-icon-sm {
-    width: 0.75rem;
-    height: 0.75rem;
-}
-
 .server-table-wrapper {
     overflow-x: auto;
-}
-
-.server-table {
-    border-collapse: collapse;
-}
-
-.server-table thead tr {
-    border-bottom: 1px solid var(--color-border-soft);
-}
-
-.server-table th {
-    text-align: left;
-    padding: 0.75rem 1rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.server-table tbody tr {
-    border-bottom: 1px solid var(--color-border-soft);
-    transition: all 0.2s ease;
-    cursor: pointer;
-}
-
-.server-table tbody tr:last-child {
-    border-bottom: none;
-}
-
-.server-table tbody tr:hover {
-    background: var(--hover-bg);
-}
-
-.server-table td {
-    padding: 1rem;
 }
 
 .server-table-status-dot {
@@ -76,10 +24,6 @@
     border-radius: var(--radius-full);
     background-color: var(--status-success);
     box-shadow: 0 0 8px var(--status-success);
-}
-
-.server-table-id {
-    font-family: 'SF Mono', ui-monospace, monospace;
 }
 
 .server-table-status {
@@ -117,13 +61,4 @@
 
 .server-table-bar-active {
     background-color: var(--accent-blue);
-}
-
-.server-table-metric-value {
-    min-width: 40px;
-}
-
-.server-table-network,
-.server-table-uptime {
-    color: var(--color-text-secondary);
 }

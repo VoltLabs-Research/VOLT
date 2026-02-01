@@ -1,3 +1,69 @@
 .stepper-step{
     will-change: opacity, transform;
 }
+
+.stepper-with-sidebar{
+    height: 100%;
+}
+
+.stepper-sidebar{
+    width: 260px;
+    flex-shrink: 0;
+    padding: 1.5rem;
+    border-right: 1px solid var(--color-border-soft);
+}
+
+.stepper-indicator{
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+    opacity: 0.5;
+}
+
+.stepper-indicator.active{
+    opacity: 1;
+    background: var(--color-surface-2);
+}
+
+.stepper-indicator-number{
+    width: 28px;
+    height: 28px;
+    background: var(--color-border);
+    border-radius: 50%;
+    font-size: 0.85rem;
+    color: var(--color-muted-foreground);
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.stepper-indicator.active .stepper-indicator-number{
+    background: var(--accent-blue);
+    color: white;
+}
+
+.stepper-indicator-title{
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.stepper-indicator-desc{
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+.stepper-line{
+    width: 2px;
+    height: 20px;
+    background: var(--color-border-soft);
+    margin-left: 21px;
+    transition: background 0.2s;
+}
+
+.stepper-line.active{
+    background: var(--accent-blue);
+}
+
+.stepper-content{
+    padding: 2rem 3rem;
+    max-width: 900px;
+}

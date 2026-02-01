@@ -1,7 +1,6 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiRefreshLine } from 'react-icons/ri';
-import useAnalysisStore from '../../../stores/use-analysis-store';
 import useAnalysisUseCases from '../../../hooks/use-analysis-use-cases';
 import useDeleteAnalysis from '../../../hooks/use-delete-analysis';
 import useRetryFailedFrames from '../../../hooks/use-retry-failed-frames';
@@ -9,26 +8,13 @@ import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import { formatRelativeDate } from '@/shared/utils/format';
 import type { Analysis } from '@/modules/analysis/domain/entities';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
 
 const AnalysesListing = () => {
     const navigate = useNavigate();
 
-    const analyses = useAnalysisStore((state) => state.analyses);
-    const setAnalyses = useAnalysisStore((state) => state.setAnalyses);
-    const appendAnalyses = useAnalysisStore((state) => state.appendAnalyses);
-
     const { getAnalysesUseCase } = useAnalysisUseCases();
     const deleteAnalysis = useDeleteAnalysis();
     const retryFailedFrames = useRetryFailedFrames();
-
-    const handleDataFetched = useCallback((result: PaginatedResponse<Analysis>, isFirstPage: boolean) => {
-        if(isFirstPage) {
-            setAnalyses(result.data);
-        } else {
-            appendAnalyses(result.data);
-        }
-    }, [setAnalyses, appendAnalyses]);
 
     const { getMenuOptions } = useListingActions<Analysis>({
         actions: {
@@ -105,9 +91,7 @@ const AnalysesListing = () => {
         <DocumentListing<Analysis>
             title='Analyses'
             columns={columns}
-            data={analyses}
             fetchData={getAnalysesUseCase.execute}
-            onDataFetched={handleDataFetched}
             defaultLimit={20}
             getMenuOptions={getMenuOptions}
             emptyMessage='No analyses found'

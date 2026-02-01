@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine } from 'react-icons/ri';
-import usePluginStore from '../../../stores/use-plugin-store';
 import { usePluginUseCases, useDeletePlugin, useExportPlugin, useImportPlugin } from '../../../hooks';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
@@ -10,7 +9,6 @@ import Button from '@/shared/presentation/components/Button';
 import { formatRelativeDate } from '@/shared/utils/format';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import type { Plugin } from '../../../../domain/entities';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
 import './PluginsListing.css';
 
 const PluginsListing = () => {
@@ -18,23 +16,12 @@ const PluginsListing = () => {
     const importInputRef = useRef<HTMLInputElement>(null);
     const [isImporting, setIsImporting] = useState(false);
 
-    const plugins = usePluginStore((state) => state.plugins);
-    const setPlugins = usePluginStore((state) => state.setPlugins);
-    const appendPlugins = usePluginStore((state) => state.appendPlugins);
     const selectedTeam = useTeamStore((s) => s.selectedTeam);
 
     const { clonePluginUseCase, pluginRepository } = usePluginUseCases();
     const deletePlugin = useDeletePlugin();
     const exportPlugin = useExportPlugin();
     const importPlugin = useImportPlugin();
-
-    const handleDataFetched = useCallback((result: PaginatedResponse<Plugin>, isFirstPage: boolean) => {
-        if (isFirstPage) {
-            setPlugins(result.data);
-        } else {
-            appendPlugins(result.data);
-        }
-    }, [setPlugins, appendPlugins]);
 
     const fetchData = useCallback(async (params: { page: number; limit: number; search?: string }) => {
         return await pluginRepository.getAll(params);
@@ -53,11 +40,11 @@ const PluginsListing = () => {
         if (!file) return;
 
         setIsImporting(true);
-        try {
+        try{
             await importPlugin(file);
-        } finally {
+        }finally{
             setIsImporting(false);
-            if (importInputRef.current) importInputRef.current.value = '';
+            if(importInputRef.current) importInputRef.current.value = '';
         }
     }, [importPlugin]);
 
@@ -151,9 +138,7 @@ const PluginsListing = () => {
         <DocumentListing<Plugin>
             title='Plugins'
             columns={columns}
-            data={plugins}
             fetchData={fetchData}
-            onDataFetched={handleDataFetched}
             defaultLimit={20}
             getMenuOptions={getMenuOptions}
             emptyMessage='No plugins found. Create your first plugin!'

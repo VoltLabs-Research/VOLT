@@ -1,11 +1,8 @@
-import { useCallback } from 'react';
-import useSimulationCellStore from '../../../stores/use-simulation-cell-store';
 import useGetSimulationCells from '../../../hooks/use-get-simulation-cells';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import { formatNumber, formatRelativeDate } from '@/shared/utils/format';
 import type { SimulationCell } from '@/modules/simulation-cell/domain/entities';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
 
 const formatPeriodicBoundary = (cell: SimulationCell): string => {
     const pbc = cell.geometry?.periodic_boundary_conditions;
@@ -67,30 +64,13 @@ const COLUMNS: ColumnConfig[] = [
 const SimulationCellsListing = () => {
     usePageTitle('Simulation Cells');
 
-    const simulationCells = useSimulationCellStore((state) => state.simulationCells);
-    const setSimulationCells = useSimulationCellStore((state) => state.setSimulationCells);
-    const appendSimulationCells = useSimulationCellStore((state) => state.appendSimulationCells);
-
     const getSimulationCells = useGetSimulationCells();
-
-    const handleDataFetched = useCallback((
-        result: PaginatedResponse<SimulationCell>, 
-        isFirstPage: boolean
-    ) => {
-        if(isFirstPage){
-            setSimulationCells(result.data);
-        }else{
-            appendSimulationCells(result.data);
-        }
-    }, [setSimulationCells, appendSimulationCells]);
 
     return (
         <DocumentListing<SimulationCell>
             title='Simulation Cells'
             columns={COLUMNS}
-            data={simulationCells}
             fetchData={getSimulationCells}
-            onDataFetched={handleDataFetched}
             defaultLimit={20}
             emptyMessage='No simulation cells found'
         />

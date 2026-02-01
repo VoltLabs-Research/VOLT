@@ -25,7 +25,7 @@ const UserInfo = ({
     className 
 }: UserInfoProps) => {
     return (
-        <Container className={cn('user-info-container', `user-info-${variant}`, className)}>
+        <Container className={cn('d-flex gap-075 w-max items-center content-between', `user-info-${variant}`, className)}>
             <Avatar 
                 user={user} 
                 size='sm' 

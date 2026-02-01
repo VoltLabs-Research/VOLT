@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Cpu } from 'lucide-react';
-import Container from '@/shared/presentation/components/Container';
-import ChartContainer from '../../atoms/ChartContainer';
-import { MAX_HISTORY_POINTS } from '@/modules/cluster/domain/constants';
 import type { ClusterMetrics } from '@/modules/cluster/domain/entities';
-import './CpuDistribution.css';
+import ChartContainer from '@/shared/presentation/components/ChartContainer';
+import Container from '@/shared/presentation/components/Container';
+
+const MAX_HISTORY_POINTS = 60;
 
 interface CpuDistributionProps {
     metrics: ClusterMetrics | null;
@@ -15,20 +15,22 @@ interface DataPoint {
 };
 
 const generateCoreColors = (numCores: number): string[] => {
-    return Array.from({ length: numCores }, (_, i) => {
-        const hue = (i * 360) / numCores;
-        return `hsl(${hue}, 80%, 65%)`;
-    });
+    const baseColors = [
+        '#0A84FF', '#30D158', '#FF9F0A', '#FF453A',
+        '#BF5AF2', '#64D2FF', '#FFD60A', '#FF375F',
+        '#AC8E68', '#5E5CE6', '#32D74B', '#FF6482'
+    ];
+    return Array.from({ length: numCores }, (_, i) => baseColors[i % baseColors.length]);
 };
 
 const CpuDistribution = ({ metrics }: CpuDistributionProps) => {
     const [history, setHistory] = useState<DataPoint[]>([]);
 
     const numCores = metrics?.cpu?.cores || 0;
-    const coreColors = generateCoreColors(numCores);
+    const coreColors = useMemo(() => generateCoreColors(numCores), [numCores]);
 
     useEffect(() => {
-        if(!metrics?.cpu) return;
+        if(!metrics?.cpu?.coresUsage) return;
 
         setHistory((prev) => {
             const newHistory = [...prev, { coresUsage: metrics.cpu.coresUsage }];
@@ -37,7 +39,7 @@ const CpuDistribution = ({ metrics }: CpuDistributionProps) => {
         });
     }, [metrics]);
 
-    const stats = (() => {
+    const stats = useMemo(() => {
         if(history.length === 0 || numCores === 0){
             return { avgUsage: '0', maxCore: '0', minCore: '0' };
         }
@@ -55,16 +57,15 @@ const CpuDistribution = ({ metrics }: CpuDistributionProps) => {
             maxCore: Math.max(...coreAverages).toFixed(1),
             minCore: Math.min(...coreAverages).toFixed(1)
         };
-    })();
+    }, [history, numCores]);
 
-    const isLoading = !metrics;
     const hasCoreData = history.some((d) => d.coresUsage && d.coresUsage.length > 0);
 
-    if(!hasCoreData && !isLoading){
+    if(!hasCoreData && !metrics){
         return (
-            <ChartContainer icon={Cpu} title='CPU' isLoading={false}>
+            <ChartContainer icon={Cpu} title='CPU Distribution' isLoading={!metrics}>
                 <Container className='d-flex flex-center flex-1 font-size-2 color-muted'>
-                    Waiting for per-core data...
+                    Waiting for data...
                 </Container>
             </ChartContainer>
         );
@@ -96,17 +97,17 @@ const CpuDistribution = ({ metrics }: CpuDistributionProps) => {
     return (
         <ChartContainer
             icon={Cpu}
-            title='CPU'
-            isLoading={isLoading}
+            title='CPU Distribution'
+            isLoading={!metrics}
             stats={[
                 { label: 'Cores', value: numCores },
-                { label: 'Avg Usage', value: `${stats.avgUsage}%` },
-                { label: 'Max Core', value: `${stats.maxCore}%` },
-                { label: 'Min Core', value: `${stats.minCore}%` }
+                { label: 'Avg', value: `${stats.avgUsage}%` },
+                { label: 'Max', value: `${stats.maxCore}%` },
+                { label: 'Min', value: `${stats.minCore}%` }
             ]}
-            statsLoading={isLoading}
+            statsLoading={!metrics}
         >
-            <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio='none' className='cpu-distribution-chart'>
+            <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio='none' style={{ width: '100%', height: '300px' }}>
                 {history.length > 0 && coreColors.map((color, coreIndex) => {
                     const points = history
                         .filter((d) => d.coresUsage?.[coreIndex] !== undefined)

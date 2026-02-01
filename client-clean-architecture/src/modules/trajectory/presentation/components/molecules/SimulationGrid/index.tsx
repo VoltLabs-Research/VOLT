@@ -16,10 +16,7 @@ interface SimulationGridContext {
 };
 
 const SimulationGrid = memo(() => {
-    const trajectories = useTrajectoryStore((state) => state.trajectories);
     const activeUploads = useTrajectoryStore((state) => state.activeUploads);
-    const setTrajectories = useTrajectoryStore((state) => state.setTrajectories);
-    const appendTrajectories = useTrajectoryStore((state) => state.appendTrajectories);
     
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const getTrajectories = useGetTrajectories();
@@ -69,18 +66,6 @@ const SimulationGrid = memo(() => {
         };
     }, [getTrajectories]);
 
-    const handleDataFetched = useCallback((result: PaginatedResponse<Trajectory>, isFirstPage: boolean) => {
-        if(isFirstPage){
-            setTrajectories(result.data);
-        }else{
-            appendTrajectories(result.data);
-        }
-    }, [setTrajectories, appendTrajectories]);
-
-    const handleContextChange = useCallback(() => {
-        setTrajectories([]);
-    }, [setTrajectories]);
-
     const renderGridItem = useCallback((trajectory: Trajectory) => (
         <SimulationCard
             key={trajectory._id}
@@ -122,11 +107,8 @@ const SimulationGrid = memo(() => {
     return (
         <DocumentListing<Trajectory, SimulationGridContext>
             title='Simulations'
-            data={trajectories}
             view='grid'
             fetchData={fetchData}
-            onDataFetched={handleDataFetched}
-            onContextChange={handleContextChange}
             context={{ teamId: selectedTeam?._id }}
             enabled={!!selectedTeam?._id}
             renderGridItem={renderGridItem}

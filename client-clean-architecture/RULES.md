@@ -22,3 +22,4 @@
 - Review 1–3 analogous modules for context every time you do something new.
 - Check `shared` and naming conventions before inventing something new.
 - You should not declare functions within useEffects.
+- Avoid violating the DRY principle (Don't Repeat Yourself).

@@ -16,6 +16,13 @@ import PluginsListing from '@/modules/plugin/presentation/components/templates/P
 import PluginBuilderPage from '@/modules/plugin/presentation/components/templates/PluginBuilderPage';
 import PluginListingPage from '@/modules/plugin/presentation/components/templates/PluginListingPage';
 import ClustersPage from '@/modules/cluster/presentation/components/templates/ClustersPage';
+import ContainersListing from '@/modules/container/presentation/components/templates/ContainersListing';
+import ContainerDetailsLayout from '@/modules/container/presentation/components/templates/ContainerDetailsLayout';
+import ContainerOverviewPage from '@/modules/container/presentation/pages/ContainerOverviewPage';
+import ContainerProcessesPage from '@/modules/container/presentation/pages/ContainerProcessesPage';
+import ContainerLogsPage from '@/modules/container/presentation/pages/ContainerLogsPage';
+import ContainerStoragePage from '@/modules/container/presentation/pages/ContainerStoragePage';
+import CreateContainer from '@/modules/container/presentation/components/templates/CreateContainer';
 import DashboardLayout from '@/modules/dashboard/presentation/components/organisms/DashboardLayout';
 import Dashboard from '@/modules/dashboard/presentation/components/templates/Dashboard';
 
@@ -88,6 +95,24 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/clusters',
             component: ClustersPage
+        },
+        {
+            path: '/dashboard/containers',
+            component: ContainersListing
+        },
+        {
+            path: '/dashboard/containers/new',
+            component: CreateContainer
+        },
+        {
+            path: '/dashboard/containers/:id',
+            component: ContainerDetailsLayout,
+            children: [
+                { path: 'overview', component: ContainerOverviewPage, index: true },
+                { path: 'processes', component: ContainerProcessesPage },
+                { path: 'logs', component: ContainerLogsPage },
+                { path: 'storage', component: ContainerStoragePage }
+            ]
         }
     ],
 
