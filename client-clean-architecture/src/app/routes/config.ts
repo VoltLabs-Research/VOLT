@@ -11,6 +11,7 @@ import TeamInvitationTemplate from '@/modules/team/presentation/components/templ
 import TrajectoriesListing from '@/modules/trajectory/presentation/components/templates/TrajectoriesListing';
 import PerAtomViewer from '@/modules/trajectory/presentation/components/templates/PerAtomViewer';
 import AnalysesListing from '@/modules/analysis/presentation/components/templates/AnalysesListing';
+import SimulationCellsListing from '@/modules/simulation-cell/presentation/components/templates/SimulationCellsListing';
 import PluginsListing from '@/modules/plugin/presentation/components/templates/PluginsListing';
 import PluginBuilderPage from '@/modules/plugin/presentation/components/templates/PluginBuilderPage';
 import PluginListingPage from '@/modules/plugin/presentation/components/templates/PluginListingPage';
@@ -62,6 +63,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/analysis-configs/list',
             component: AnalysesListing
+        },
+        {
+            path: '/dashboard/simulation-cells/list',
+            component: SimulationCellsListing
         },
         {
             path: '/dashboard/plugins/list',
