@@ -60,7 +60,6 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant, children, cl
         'radius-full',
         `variant-${computedVariant}`,
         'gap-025',
-        'p-05',
         'font-size-1',
         'font-weight-5',
         className

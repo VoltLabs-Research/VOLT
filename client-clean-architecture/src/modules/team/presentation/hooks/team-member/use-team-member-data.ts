@@ -13,8 +13,8 @@ const useTeamMemberData = () => {
         setLoading(true);
 
         try{
-            const members = await teamMemberRepository.getAll(teamId);
-            setMembers(members);
+            const response = await teamMemberRepository.getAll(teamId, { page: 1, limit: 100 });
+            setMembers(response.data);
         }catch(error: any){
             console.error('Failed to fetch members:', error);
             setError(error?.message ?? 'Failed to fetch members');

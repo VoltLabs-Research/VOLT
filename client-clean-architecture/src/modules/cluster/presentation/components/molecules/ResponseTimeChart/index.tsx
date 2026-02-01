@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Container from '@/shared/presentation/components/Container';
-import ChartContainer from '../../atoms/ChartContainer';
+import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import { CHART_COLORS, MAX_HISTORY_POINTS } from '@/modules/cluster/domain/constants';
 import type { ClusterMetrics, ResponseTimes } from '@/modules/cluster/domain/entities';
 import './ResponseTimeChart.css';

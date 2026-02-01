@@ -2,9 +2,8 @@
     display: inline-flex;
     align-items: center;
     white-space: nowrap;
-    line-height: 1.2;
     text-transform: uppercase;
-    letter-spacing: 0.055em;
+    padding: 0.5rem 1rem;
     font-size: 0.65rem !important;
 }
 

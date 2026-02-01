@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { ChevronDown, RefreshCw, Download } from 'lucide-react';
-import { Skeleton } from '@mui/material';
+import { ChevronDown, Download } from 'lucide-react';
 import type { ClusterMetrics } from '@/modules/cluster/domain/entities';
 import { transformClustersToRows, type ServerRow } from '@/modules/cluster/presentation/utilities/transform-cluster-row';
 import Container from '@/shared/presentation/components/Container';
@@ -8,14 +7,14 @@ import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import RefreshButton from '@/shared/presentation/components/RefreshButton';
+import Table, { type Column } from '@/shared/presentation/components/Table';
 import './ServerTable.css';
 
 interface ServerTableProps {
     clusters: ClusterMetrics[];
     selectedClusterId: string;
 };
-
-const TABLE_HEADERS = ['Server ID', 'Status', 'CPU', 'Memory', 'Disk', 'Network', 'Computed Analyzes', 'Uptime'];
 
 const MetricBars = ({ percentage }: { percentage: number }) => {
     const activeBars = Math.floor(percentage / 20);
@@ -32,86 +31,72 @@ const MetricBars = ({ percentage }: { percentage: number }) => {
     );
 };
 
-const LoadingSkeleton = () => (
-    <tr>
-        <td colSpan={8}>
-            <Container className='d-flex column gap-1 p-2-5'>
-                <Container className='d-flex items-center gap-1'>
-                    <Skeleton variant='text' width={100} height={20} />
-                    <Skeleton variant='rectangular' width={60} height={24} sx={{ borderRadius: '4px' }} />
-                    <Skeleton variant='rectangular' width={80} height={24} sx={{ borderRadius: '12px' }} />
-                    <Skeleton variant='text' width={60} height={20} />
-                    <Skeleton variant='text' width={60} height={20} />
-                    <Skeleton variant='text' width={60} height={20} />
-                    <Skeleton variant='text' width={80} height={20} />
-                    <Skeleton variant='text' width={60} height={20} />
-                </Container>
-            </Container>
-        </td>
-    </tr>
-);
-
-const ServerTableRow = ({ server, isSelected }: { server: ServerRow; isSelected: boolean }) => (
-    <tr
-        style={{
-            cursor: 'pointer',
-            background: isSelected ? 'var(--bg-tertiary)' : undefined
-        }}
-    >
-        <td>
+const COLUMNS: Column<ServerRow>[] = [
+    {
+        key: 'id',
+        header: 'Server ID',
+        render: (row) => (
             <Container className='d-flex items-center gap-05'>
                 <Container className='server-table-status-dot' />
-                <Paragraph className='server-table-id font-size-2 color-primary'>
-                    {server.id}
-                </Paragraph>
+                <Paragraph className='font-size-2 color-primary font-family-mono'>{row.id}</Paragraph>
             </Container>
-        </td>
-        <td>
-            <Paragraph className={`server-table-status ${server.statusClass} font-size-1 font-weight-5`}>
-                {server.status}
+        )
+    },
+    {
+        key: 'status',
+        header: 'Status',
+        render: (row) => (
+            <Paragraph className={`server-table-status ${row.statusClass} font-size-1 font-weight-5`}>
+                {row.status}
             </Paragraph>
-        </td>
-        <td>
+        )
+    },
+    {
+        key: 'cpu',
+        header: 'CPU',
+        render: (row) => (
             <Container className='d-flex items-center gap-05'>
-                <MetricBars percentage={server.cpu} />
-                <Paragraph className='server-table-metric-value font-size-1 color-muted-foreground'>
-                    {server.cpu}%
-                </Paragraph>
+                <MetricBars percentage={row.cpu} />
+                <Paragraph className='font-size-1 color-muted'>{row.cpu}%</Paragraph>
             </Container>
-        </td>
-        <td>
+        )
+    },
+    {
+        key: 'memory',
+        header: 'Memory',
+        render: (row) => (
             <Container className='d-flex items-center gap-05'>
-                <MetricBars percentage={server.memory} />
-                <Paragraph className='server-table-metric-value font-size-1 color-muted-foreground'>
-                    {server.memory}%
-                </Paragraph>
+                <MetricBars percentage={row.memory} />
+                <Paragraph className='font-size-1 color-muted'>{row.memory}%</Paragraph>
             </Container>
-        </td>
-        <td>
+        )
+    },
+    {
+        key: 'disk',
+        header: 'Disk',
+        render: (row) => (
             <Container className='d-flex items-center gap-05'>
-                <MetricBars percentage={server.diskUsagePercent} />
-                <Paragraph className='server-table-metric-value font-size-1 color-muted-foreground'>
-                    {server.diskFree.toFixed(1)}GB Available
-                </Paragraph>
+                <MetricBars percentage={row.diskUsagePercent} />
+                <Paragraph className='font-size-1 color-muted'>{row.diskFree.toFixed(1)}GB Available</Paragraph>
             </Container>
-        </td>
-        <td>
-            <Paragraph className='server-table-network font-size-2'>
-                {server.network}
-            </Paragraph>
-        </td>
-        <td>
-            <Paragraph className='server-table-network font-size-2'>
-                {server.analysisCount}
-            </Paragraph>
-        </td>
-        <td>
-            <Paragraph className='server-table-uptime font-size-2 font-weight-5'>
-                {server.uptime}
-            </Paragraph>
-        </td>
-    </tr>
-);
+        )
+    },
+    {
+        key: 'network',
+        header: 'Network',
+        render: (row) => <Paragraph className='font-size-2 color-secondary'>{row.network}</Paragraph>
+    },
+    {
+        key: 'analysisCount',
+        header: 'Computed Analyzes',
+        render: (row) => <Paragraph className='font-size-2 color-secondary'>{row.analysisCount}</Paragraph>
+    },
+    {
+        key: 'uptime',
+        header: 'Uptime',
+        render: (row) => <Paragraph className='font-size-2 font-weight-5 color-secondary'>{row.uptime}</Paragraph>
+    }
+];
 
 const ServerTable = ({ clusters, selectedClusterId }: ServerTableProps) => {
     const isLoading = !clusters?.length;
@@ -122,63 +107,33 @@ const ServerTable = ({ clusters, selectedClusterId }: ServerTableProps) => {
             <Container className='d-flex items-center content-between server-table-header mb-1-5'>
                 <Container className='d-flex items-center gap-075'>
                     <Container className='server-table-title-bar' />
-                    <Title className='font-size-3 server-table-title font-weight-6 color-primary'>
-                        Server Summary
-                    </Title>
+                    <Title className='font-size-3 font-weight-6 color-primary'>Server Summary</Title>
                 </Container>
                 <Container className='d-flex items-center gap-05'>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        size='sm'
-                        rightIcon={<ChevronDown className='server-table-icon-sm color-muted' />}
-                    >
+                    <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown size={12} />}>
                         Status
                     </Button>
-                    <Button
-                        variant='ghost'
-                        intent='neutral'
-                        size='sm'
-                        rightIcon={<ChevronDown className='server-table-icon-sm color-muted' />}
-                    >
+                    <Button variant='ghost' intent='neutral' size='sm' rightIcon={<ChevronDown size={12} />}>
                         Sort
                     </Button>
-                    <Tooltip content='Refresh' placement='bottom'>
-                        <Button variant='ghost' intent='neutral' iconOnly size='sm'>
-                            <RefreshCw className='server-table-icon color-secondary' />
-                        </Button>
-                    </Tooltip>
+                    <RefreshButton size='sm' />
                     <Tooltip content='Download Report' placement='bottom'>
                         <Button variant='ghost' intent='neutral' iconOnly size='sm'>
-                            <Download className='server-table-icon color-secondary' />
+                            <Download size={16} />
                         </Button>
                     </Tooltip>
                 </Container>
             </Container>
 
             <Container className='server-table-wrapper'>
-                <table className='server-table w-max'>
-                    <thead>
-                        <tr>
-                            {TABLE_HEADERS.map((header) => (
-                                <th key={header}>{header}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {isLoading ? (
-                            <LoadingSkeleton />
-                        ) : (
-                            rows.map((server) => (
-                                <ServerTableRow
-                                    key={server.id}
-                                    server={server}
-                                    isSelected={server.id === selectedClusterId}
-                                />
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                <Table
+                    columns={COLUMNS}
+                    data={rows}
+                    getRowKey={(row) => row.id}
+                    isLoading={isLoading}
+                    skeletonRows={3}
+                    rowClassName={(row) => row.id === selectedClusterId ? 'selected' : ''}
+                />
             </Container>
         </Container>
     );

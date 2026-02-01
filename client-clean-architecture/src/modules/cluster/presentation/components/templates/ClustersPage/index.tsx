@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import useClusterMetrics from '@/modules/cluster/presentation/hooks/use-cluster-metrics';
 import Container from '@/shared/presentation/components/Container';
+import NetworkChart from '@/shared/presentation/components/NetworkChart';
 
 import ClusterSelector from '@/modules/cluster/presentation/components/organisms/ClusterSelector';
 import ServerTable from '@/modules/cluster/presentation/components/organisms/ServerTable';
@@ -7,7 +9,6 @@ import ServerTable from '@/modules/cluster/presentation/components/organisms/Ser
 import MetricsCards from '@/modules/cluster/presentation/components/molecules/MetricsCards';
 import ResponseTimeChart from '@/modules/cluster/presentation/components/molecules/ResponseTimeChart';
 import ResourceUsage from '@/modules/cluster/presentation/components/molecules/ResourceUsage';
-import TrafficOverview from '@/modules/cluster/presentation/components/molecules/TrafficOverview';
 import CpuDistribution from '@/modules/cluster/presentation/components/molecules/CpuDistribution';
 import DatabasePerformance from '@/modules/cluster/presentation/components/molecules/DatabasePerformance';
 import DiskOperations from '@/modules/cluster/presentation/components/molecules/DiskOperations';
@@ -21,6 +22,14 @@ const ClustersPage = () => {
         selectedClusterId,
         setSelectedClusterId
     } = useClusterMetrics();
+
+    const networkData = useMemo(() => {
+        if(!metrics?.network) return null;
+        return {
+            rx: metrics.network.incoming,
+            tx: metrics.network.outgoing
+        };
+    }, [metrics?.network]);
 
     return (
         <Container className='clusters-page vh-max color-primary'>
@@ -42,7 +51,13 @@ const ClustersPage = () => {
 
                 <Container className='clusters-grid'>
                     <Container className='clusters-grid-main'>
-                        <TrafficOverview metrics={metrics} />
+                        <NetworkChart 
+                            data={networkData} 
+                            isLoading={!metrics}
+                            calculateDelta={false}
+                            title='Network Traffic'
+                            height={300}
+                        />
                     </Container>
                     <CpuDistribution metrics={metrics} />
                 </Container>

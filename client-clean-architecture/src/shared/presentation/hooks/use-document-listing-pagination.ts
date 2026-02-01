@@ -15,17 +15,7 @@ export interface PaginationParams {
  * Props for useDocumentListingPagination hook.
  */
 export interface UseDocumentListingPaginationProps<T, TContext = Record<string, never>> {
-    fetchData: (
-        params: PaginationParams & TContext
-    ) => Promise<PaginatedResponse<T>>;
-
-    onDataFetched: (
-        result: PaginatedResponse<T>, 
-        isFirstPage: boolean
-    ) => void;
-
-    onContextChange?: () => void;
-
+    fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
     context?: TContext;
     defaultLimit?: number;
     enabled?: boolean;
@@ -34,50 +24,43 @@ export interface UseDocumentListingPaginationProps<T, TContext = Record<string, 
 /**
  * Return type for useDocumentListingPagination hook.
  */
-export interface UseDocumentListingPaginationReturn {
+export interface UseDocumentListingPaginationReturn<T> {
+    data: T[];
     isLoading: boolean;
     isFetchingMore: boolean;
     hasMore: boolean;
     error: string | null;
     handleLoadMore: () => void;
+    refresh: () => void;
 }
 
 /**
  * Hook to manage pagination logic for DocumentListing component.
- * Handles URL params, fetching, loading states, and load more functionality.
+ * Handles URL params, fetching, data state, loading states, and load more functionality.
  */
 export function useDocumentListingPagination<T, TContext = Record<string, never>>(
     props: UseDocumentListingPaginationProps<T, TContext>
-): UseDocumentListingPaginationReturn {
+): UseDocumentListingPaginationReturn<T> {
     const { 
         fetchData, 
-        onDataFetched, 
         context, 
-        onContextChange,
         defaultLimit = 20,
         enabled = true
     } = props;
 
     const { page, limit, search, updateParams } = usePaginationParams({ defaultLimit });
     
+    const [data, setData] = useState<T[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Store callbacks in refs to avoid re-triggering effects when their references change
     const fetchDataRef = useRef(fetchData);
-    const onDataFetchedRef = useRef(onDataFetched);
-    const onContextChangeRef = useRef(onContextChange);
+    const prevContextRef = useRef<string | undefined>(undefined);
 
-    // Keep refs updated with latest callbacks
     useEffect(() => {
         fetchDataRef.current = fetchData;
-        onDataFetchedRef.current = onDataFetched;
-        onContextChangeRef.current = onContextChange;
     });
-
-    // Track previous context to detect changes
-    const prevContextRef = useRef<string | undefined>(undefined);
 
     // Detect context change and reset
     useEffect(() => {
@@ -88,35 +71,42 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
                                    prevContextRef.current !== currentContext;
         
         if(hasContextChanged){
-            onContextChangeRef.current?.();
+            setData([]);
             updateParams({ page: 1 });
         }
         
         prevContextRef.current = currentContext;
     }, [context, updateParams]);
 
-    const fetchDataAsync = useCallback(async () => {
+    const fetchDataAsync = useCallback(async (isRefresh = false) => {
         setIsLoading(true);
         setError(null);
+
+        if(isRefresh){
+            setData([]);
+        }
 
         try{
             const params = { page, limit, search } as PaginationParams & TContext;
             
-            // Merge context into params if provided
             if(context){
                 Object.assign(params, context);
             }
 
             const result = await fetchDataRef.current(params);
-            
             const isFirstPage = page === 1;
-            onDataFetchedRef.current(result, isFirstPage);
+            
+            if(isFirstPage || isRefresh){
+                setData(result.data);
+            }else{
+                setData((prev) => [...prev, ...result.data]);
+            }
             
             setHasMore(result.pagination.hasMore);
         }catch(err){
             const message = err instanceof Error ? err.message : 'Failed to fetch data';
             setError(message);
-            console.error('[useDocumentListingPagination] Error fetching data:', err);
+            console.error('[useDocumentListingPagination] Error:', err);
         }finally{
             setIsLoading(false);
         }
@@ -125,24 +115,36 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
     // Fetch data when pagination params or context changes
     useEffect(() => {
         if(!enabled) return;
-
         fetchDataAsync();
     }, [enabled, fetchDataAsync]);
 
     const handleLoadMore = useCallback(() => {
-        if(!isLoading && hasMore) {
+        if(!isLoading && hasMore){
             updateParams({ page: page + 1 });
         }
     }, [isLoading, hasMore, page, updateParams]);
 
+    const refresh = useCallback(() => {
+        if(!isLoading){
+            if(page === 1){
+                fetchDataAsync(true);
+            }else{
+                setData([]);
+                updateParams({ page: 1 });
+            }
+        }
+    }, [isLoading, page, fetchDataAsync, updateParams]);
+
     const isFetchingMore = isLoading && page > 1;
 
     return {
+        data,
         isLoading,
         isFetchingMore,
         hasMore,
         error,
-        handleLoadMore
+        handleLoadMore,
+        refresh
     };
 }
 

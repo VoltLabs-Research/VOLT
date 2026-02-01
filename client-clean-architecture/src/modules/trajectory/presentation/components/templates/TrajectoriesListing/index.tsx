@@ -1,7 +1,5 @@
-import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiTableLine } from 'react-icons/ri';
-import useTrajectoryStore from '../../../stores/use-trajectory-store';
 import useGetTrajectories from '../../../hooks/trajectory/use-get-trajectories';
 import useDeleteTrajectory from '../../../hooks/trajectory/use-delete-trajectory';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
@@ -9,7 +7,6 @@ import DocumentListing, { type ColumnConfig } from '@/shared/presentation/compon
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { formatNumber, formatSize, formatRelativeDate } from '@/shared/utils/format';
 import type { Trajectory } from '@/modules/trajectory/domain/entities';
-import type { PaginatedResponse } from '@/shared/domain/pagination';
 
 const COLUMNS: ColumnConfig[] = [
     {
@@ -62,20 +59,8 @@ const COLUMNS: ColumnConfig[] = [
 const TrajectoriesListing = () => {
     const navigate = useNavigate();
     
-    const trajectories = useTrajectoryStore((state) => state.trajectories);
-    const setTrajectories = useTrajectoryStore((state) => state.setTrajectories);
-    const appendTrajectories = useTrajectoryStore((state) => state.appendTrajectories);
-    
     const getTrajectories = useGetTrajectories();
     const deleteTrajectory = useDeleteTrajectory();
-
-    const handleDataFetched = useCallback((result: PaginatedResponse<Trajectory>, isFirstPage: boolean) => {
-        if(isFirstPage) {
-            setTrajectories(result.data);
-        } else {
-            appendTrajectories(result.data);
-        }
-    }, [setTrajectories, appendTrajectories]);
 
     const { getMenuOptions } = useListingActions<Trajectory>({
         actions: {
@@ -104,9 +89,7 @@ const TrajectoriesListing = () => {
         <DocumentListing<Trajectory>
             title='Trajectories'
             columns={COLUMNS}
-            data={trajectories}
             fetchData={getTrajectories}
-            onDataFetched={handleDataFetched}
             defaultLimit={20}
             getMenuOptions={getMenuOptions}
             emptyMessage='No trajectories found'

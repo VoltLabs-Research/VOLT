@@ -1,0 +1,61 @@
+.editable-kv-card {
+    background: var(--color-card);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.editable-kv-row {
+    animation: editable-kv-slideIn 0.2s ease-out;
+}
+
+.editable-kv-field {
+    flex: 1;
+}
+
+.editable-kv-field label {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.editable-kv-input {
+    width: 100%;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-soft);
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    color: var(--color-primary);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.editable-kv-input:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 3px rgba(var(--color-brand-rgb), 0.1);
+}
+
+.editable-kv-add-btn {
+    border: 1px dashed var(--color-border-soft) !important;
+}
+
+.editable-kv-add-btn:hover {
+    border-color: var(--color-brand) !important;
+}
+
+.editable-kv-display-row {
+    padding: 0.875rem;
+    background: var(--color-bg-secondary);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    border: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.editable-kv-display-row:hover {
+    border-color: var(--color-border-soft);
+}
+
+@keyframes editable-kv-slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

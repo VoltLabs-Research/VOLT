@@ -3,7 +3,7 @@ import { HardDrive } from 'lucide-react';
 import type { ClusterMetrics } from '@/modules/cluster/domain/entities';
 import { MAX_HISTORY_POINTS, CHART_COLORS } from '@/modules/cluster/domain/constants';
 import { createLinePath, createAreaPath, calculateMaxValue } from '@/modules/cluster/presentation/utilities/generate-svg-paths';
-import ChartContainer from '@/modules/cluster/presentation/components/atoms/ChartContainer';
+import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartLegend, { type LegendItem } from '@/modules/cluster/presentation/components/atoms/ChartLegend';
 import Container from '@/shared/presentation/components/Container';
 import './DiskOperations.css';

@@ -13,11 +13,10 @@ export class ListContainersUseCase implements IUseCase<{ teamId: string, userId:
     async execute(input: { teamId: string, userId: string }): Promise<Result<ListContainersOutputDTO>> {
         const result = await this.repository.findAll({
             filter: { team: input.teamId },
-            page: 1, // Default, or pass from input
-            limit: 100 // Large limit or pass from input
+            page: 1, 
+            limit: 100
         });
 
-        // Map to plain objects if needed, but repository returns Domain entities which are fine
-        return Result.ok({ containers: result.data });
+        return Result.ok(result)
     }
 }

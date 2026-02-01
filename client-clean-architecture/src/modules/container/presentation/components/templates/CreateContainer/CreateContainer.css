@@ -1,0 +1,178 @@
+.create-container-page {
+    background: var(--color-bg);
+}
+
+.create-container-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-bg);
+}
+
+.create-container-templates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    margin-top: 1.5rem;
+}
+
+.create-container-template-card {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.create-container-template-card:hover {
+    border-color: var(--accent-blue);
+}
+
+.create-container-template-card.selected {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px var(--accent-blue);
+}
+
+.create-container-template-icon {
+    width: 56px;
+    height: 56px;
+    background: var(--color-surface-2);
+    border-radius: 12px;
+}
+
+.create-container-template-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
+.create-container-selected-check {
+    top: 8px;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    background: var(--accent-blue);
+    color: white;
+    border-radius: 50%;
+}
+
+.create-container-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 1.5rem;
+}
+
+.create-container-config-section.full-width {
+    grid-column: 1 / -1;
+}
+
+.create-container-config-section-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.create-container-config-section.select button {
+    background-color: var(--color-bg);
+}
+
+.create-container-resource-row {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.create-container-resource-row:last-child {
+    margin-bottom: 0;
+}
+
+.create-container-resource-header {
+    margin-bottom: 0.75rem;
+}
+
+.create-container-resource-value {
+    background: var(--accent-blue);
+    color: white;
+    padding: 0.2rem 0.6rem;
+    border-radius: 16px;
+    font-size: 0.8rem;
+}
+
+.create-container-mapping-row {
+    margin-bottom: 0.5rem;
+}
+
+.create-container-mapping-row:last-child {
+    margin-bottom: 0;
+}
+
+.create-container-mapping-input {
+    flex: 1;
+}
+
+.create-container-mapping-input label {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.create-container-field-input {
+    height: 40px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 6px;
+    padding: 0 0.75rem;
+    font-size: 0.9rem;
+    color: var(--color-primary);
+}
+
+.create-container-field-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+.create-container-empty-state {
+    background: var(--color-surface-2);
+    border: 1px dashed var(--color-border-soft);
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
+
+.create-container-config-card {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 10px;
+    grid-column: 1 / -1;
+}
+
+.create-container-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-blue);
+    cursor: pointer;
+}
+
+.create-container-step-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.create-container-review-card {
+    border: 1px solid var(--color-border-soft);
+    border-radius: 10px;
+    margin-top: 1.5rem;
+}
+
+.create-container-review-item {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.create-container-review-item:last-child {
+    border-bottom: none;
+}
+
+.create-container-label {
+    font-size: 0.9rem;
+}
+
+.create-container-value {
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+}

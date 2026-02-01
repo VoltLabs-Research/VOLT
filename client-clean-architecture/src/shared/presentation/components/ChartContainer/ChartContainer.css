@@ -1,5 +1,5 @@
 .chart-container {
-    background: var(--glass-bg);
+    background: var(--color-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border-radius: var(--radius-lg);

@@ -1,6 +1,5 @@
-/* Search Container */
 .search-container {
-    background-color: var(--color-surface-1);
+    background-color: var(--color-bg);
     border: 1px solid var(--color-border-soft);
     transition: all 0.15s ease;
 }

@@ -66,7 +66,7 @@ const DashboardStatCard = ({
                 </Container>
                 <Container className='d-flex column gap-1'>
                     <Title className='font-size-5 color-primary'>{count}</Title>
-                    <Container className='d-flex gap-025'>
+                    <Container className='d-flex gap-05 font-size-2'>
                         <Container className='d-flex items-center gap-05 dashboard-stat-last-month-icon-container'>
                             <i className={up ? 'up' : 'down'}>
                                 {up ? <FaArrowUpLong /> : <FaArrowDownLong />}

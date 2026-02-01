@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import { IoShieldCheckmarkOutline } from 'react-icons/io5';
 import { formatDistanceToNow } from 'date-fns';
@@ -9,7 +9,6 @@ import RoleEditorModal, { openRoleEditorModal } from '../../organisms/RoleEditor
 import type { RoleEditorPayload, RBACResource, RBACAction } from '../../organisms/RoleEditorModal';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
-import useTeamRoleData from '@/modules/team/presentation/hooks/team-role/use-team-role-data';
 import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
@@ -82,20 +81,22 @@ const ManageRolesTemplate: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
 
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
-    const roles = useTeamRoleStore((state) => state.roles);
-    const isLoadingRoles = useTeamRoleStore((state) => state.isLoading);
     const addRole = useTeamRoleStore((state) => state.addRole);
     const updateRoleInList = useTeamRoleStore((state) => state.updateRoleInList);
     const removeRole = useTeamRoleStore((state) => state.removeRole);
 
-    const { fetchRoles } = useTeamRoleData();
     const { teamRoleRepository } = useTeamRoleUseCases();
 
-    useEffect(() => {
-        if(selectedTeam){
-            fetchRoles(selectedTeam._id);
+    const fetchData = useCallback(async (params: { page: number; limit: number }) => {
+        if(!selectedTeam?._id){
+            return {
+                status: 'success' as const,
+                data: [],
+                pagination: { page: 1, limit: params.limit, total: 0, totalPages: 0, hasMore: false }
+            };
         }
-    }, [selectedTeam, fetchRoles]);
+        return await teamRoleRepository.getAll(selectedTeam._id, params);
+    }, [selectedTeam?._id, teamRoleRepository]);
 
     const handleOpenCreate = useCallback(() => {
         setEditingRole(null);
@@ -173,10 +174,10 @@ const ManageRolesTemplate: React.FC = () => {
     return (
         <Container className='manage-roles-page h-max'>
             <DocumentListing<TeamRole>
-                title={`Manage Roles (${roles.length})`}
+                title='Manage Roles'
                 columns={COLUMNS}
-                data={roles}
-                isLoading={isLoadingRoles}
+                fetchData={fetchData}
+                enabled={!!selectedTeam?._id}
                 getMenuOptions={getMenuOptions}
                 emptyMessage='No roles found. Create your first custom role.'
                 createNew={{

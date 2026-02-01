@@ -3,6 +3,43 @@ import { routesConfig } from './config';
 import ProtectedRoute from '@/modules/auth/presentation/components/atoms/ProtectedRoute';
 import type { RouteConfig } from './types';
 
+const renderRouteWithChildren = (route: RouteConfig) => {
+    if(route.children && route.children.length > 0){
+        return (
+            <Route
+                key={route.path}
+                path={route.path}
+                element={<route.component />}
+            >
+                {route.children.map((child) => (
+                    child.index ? (
+                        <Route
+                            key={child.path}
+                            index
+                            element={<child.component />}
+                        />
+                    ) : (
+                        <Route
+                            key={child.path}
+                            path={child.path}
+                            element={<child.component />}
+                        />
+                    )
+                ))}
+            </Route>
+        );
+    }
+
+    return (
+        <Route
+            key={route.path}
+            path={route.path}
+            index={route.index}
+            element={<route.component />}
+        />
+    );
+};
+
 export const renderPublicRoutes = () => {
     return routesConfig.public.map((route: RouteConfig) => (
         <Route
@@ -24,13 +61,7 @@ export const renderProtectedRoutes = () => {
         <Route element={<ProtectedRoute mode='protected' />}>
             {DashboardLayout && (
                 <Route path='/dashboard' element={<DashboardLayout />}>
-                    {dashboardRoutes.map((route: RouteConfig) => (
-                        <Route
-                            key={route.path}
-                            path={route.path}
-                            index={route.index}
-                            element={<route.component />} />
-                    ))}
+                    {dashboardRoutes.map(renderRouteWithChildren)}
                 </Route>
             )}
         </Route>

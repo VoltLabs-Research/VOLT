@@ -11,8 +11,8 @@ import {
 import { Database } from 'lucide-react';
 import type { ClusterMetrics } from '@/modules/cluster/domain/entities';
 import { MAX_HISTORY_POINTS, CHART_COLORS } from '@/modules/cluster/domain/constants';
-import ChartContainer from '@/modules/cluster/presentation/components/atoms/ChartContainer';
-import ChartTooltip from '@/modules/cluster/presentation/components/atoms/ChartTooltip';
+import ChartContainer from '@/shared/presentation/components/ChartContainer';
+import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
 
 interface DataPoint {
     queries: number;

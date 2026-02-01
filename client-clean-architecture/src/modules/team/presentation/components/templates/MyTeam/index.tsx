@@ -13,7 +13,6 @@ import { useTeamMemberStore } from '@/modules/team/presentation/stores/use-team-
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
-import useTeamMemberData from '@/modules/team/presentation/hooks/team-member/use-team-member-data';
 import useTeamRoleData from '@/modules/team/presentation/hooks/team-role/use-team-role-data';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
 import useTeamMemberUseCases from '@/modules/team/presentation/hooks/team-member/use-team-member-use-cases';
@@ -30,8 +29,6 @@ const MyTeamTemplate: React.FC = () => {
     const canInvite = useTeamStore((state) => state.canInvite);
     const updateTeamInList = useTeamStore((state) => state.updateTeamInList);
 
-    const members = useTeamMemberStore((state) => state.members);
-    const isLoadingMembers = useTeamMemberStore((state) => state.isLoading);
     const removeMemberFromStore = useTeamMemberStore((state) => state.removeMember);
     const updateMemberInList = useTeamMemberStore((state) => state.updateMemberInList);
 
@@ -40,7 +37,6 @@ const MyTeamTemplate: React.FC = () => {
     const user = useAuthStore((state) => state.user);
 
     const { checkCanInvite } = useTeamData();
-    const { fetchMembers } = useTeamMemberData();
     const { fetchRoles } = useTeamRoleData();
     const { teamRepository } = useTeamUseCases();
     const { teamMemberRepository } = useTeamMemberUseCases();
@@ -48,12 +44,22 @@ const MyTeamTemplate: React.FC = () => {
 
     useEffect(() => {
         if(selectedTeam){
-            fetchMembers(selectedTeam._id);
             fetchRoles(selectedTeam._id);
             checkCanInvite(selectedTeam._id);
             fetchActivity();
         }
-    }, [selectedTeam, fetchMembers, fetchRoles, checkCanInvite, fetchActivity]);
+    }, [selectedTeam, fetchRoles, checkCanInvite, fetchActivity]);
+
+    const fetchData = useCallback(async (params: { page: number; limit: number }) => {
+        if(!selectedTeam?._id){
+            return {
+                status: 'success' as const,
+                data: [],
+                pagination: { page: 1, limit: params.limit, total: 0, totalPages: 0, hasMore: false }
+            };
+        }
+        return await teamMemberRepository.getAll(selectedTeam._id, params);
+    }, [selectedTeam?._id, teamMemberRepository]);
 
     const handleSaveTeamName = useCallback(async (newName: string) => {
         if(!selectedTeam || !newName.trim() || newName === selectedTeam.name) return;
@@ -165,7 +171,6 @@ const MyTeamTemplate: React.FC = () => {
             title: 'Status',
             render: (_: unknown, row?: unknown) => {
                 const member = row as TeamMember;
-                // TODO: Implement online status when socket is ready
                 const isOnline = false;
                 return (
                     <>
@@ -249,10 +254,10 @@ const MyTeamTemplate: React.FC = () => {
     return (
         <Container className='my-team-page h-max'>
             <DocumentListing<TeamMember>
-                title={headerContent || `My Team (${members.length})`}
+                title={headerContent || selectedTeam.name}
                 columns={columns}
-                data={members}
-                isLoading={isLoadingMembers}
+                fetchData={fetchData}
+                enabled={!!selectedTeam?._id}
                 getMenuOptions={getMenuOptions}
                 emptyMessage='No members found in this team.'
                 headerActions={<ActivityHeatmap data={activityData} />}

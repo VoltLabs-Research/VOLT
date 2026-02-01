@@ -13,8 +13,8 @@ const useTeamRoleData = () => {
         setLoading(true);
 
         try{
-            const roles = await teamRoleRepository.getAll(teamId);
-            setRoles(roles);
+            const response = await teamRoleRepository.getAll(teamId, { page: 1, limit: 100 });
+            setRoles(response.data);
         }catch(error: any){
             console.error('Failed to fetch roles:', error);
             setError(error?.message ?? 'Failed to fetch roles');

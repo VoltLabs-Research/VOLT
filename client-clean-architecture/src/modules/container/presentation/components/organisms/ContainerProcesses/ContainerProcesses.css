@@ -1,0 +1,17 @@
+.container-processes-container {
+    background: var(--color-card);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+}
+
+.container-processes-header {
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-bg-secondary);
+}
+
+.container-processes-command-cell {
+    max-width: 250px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}

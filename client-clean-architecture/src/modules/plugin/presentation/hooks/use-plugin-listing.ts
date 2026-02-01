@@ -27,12 +27,9 @@ interface PluginListingContext {
 
 interface UsePluginListingReturn {
     columns: ColumnConfig[];
-    data: ListingRow[];
     context: PluginListingContext;
     isEnabled: boolean;
     fetchData: (params: { page: number; limit: number } & PluginListingContext) => Promise<PaginatedResponse<ListingRow>>;
-    onDataFetched: (result: PaginatedResponse<ListingRow>, isFirstPage: boolean) => void;
-    onContextChange: () => void;
     getMenuOptions: (item: ListingRow) => MenuOption[];
 };
 
@@ -54,10 +51,7 @@ const usePluginListing = ({
     const { pluginListingRepository } = usePluginUseCases();
     const deleteAnalysis = useDeleteAnalysis();
 
-    const rows = usePluginListingStore((s) => s.rows);
     const storeColumns = usePluginListingStore((s) => s.columns);
-    const setRows = usePluginListingStore((s) => s.setRows);
-    const appendRows = usePluginListingStore((s) => s.appendRows);
     const setColumns = usePluginListingStore((s) => s.setColumns);
     const removeRowByAnalysisId = usePluginListingStore((s) => s.removeRowByAnalysisId);
     const reset = usePluginListingStore((s) => s.reset);
@@ -87,31 +81,25 @@ const usePluginListing = ({
             limit: params.limit
         });
 
-        return {
-            status: 'success',
-            data: response.data,
-            pagination: response.pagination,
-            _meta: response._meta
-        };
-    }, [pluginListingRepository]);
-
-    const onDataFetched = useCallback((result: PaginatedResponse<ListingRow>, isFirstPage: boolean) => {
-        const cols = result._meta?.columns as ColumnConfig[] | undefined;
+        // Update columns from response metadata
+        const cols = response._meta?.columns as ColumnConfig[] | undefined;
         if (cols) {
             setColumns(cols);
         }
 
-        if (isFirstPage) {
-            setRows(result.data);
-        } else {
-            appendRows(result.data);
+        // Filter by analysisId if provided
+        let filteredData = response.data;
+        if (analysisId) {
+            filteredData = response.data.filter((r) => r.analysisId === analysisId);
         }
-    }, [setRows, appendRows, setColumns]);
 
-    const displayRows = useMemo(() => {
-        if (!analysisId) return rows;
-        return rows.filter((r) => r.analysisId === analysisId);
-    }, [rows, analysisId]);
+        return {
+            status: 'success',
+            data: filteredData,
+            pagination: response.pagination,
+            _meta: response._meta
+        };
+    }, [pluginListingRepository, analysisId, setColumns]);
 
     const handleDelete = useCallback(async (item: ListingRow) => {
         const analysisToDelete = item?.analysisId;
@@ -161,12 +149,9 @@ const usePluginListing = ({
 
     return {
         columns,
-        data: displayRows,
         context,
         isEnabled,
         fetchData,
-        onDataFetched,
-        onContextChange: reset,
         getMenuOptions
     };
 };

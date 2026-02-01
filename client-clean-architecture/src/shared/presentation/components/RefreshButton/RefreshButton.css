@@ -1,0 +1,16 @@
+.refresh-button-icon {
+    transition: transform 0.2s ease;
+}
+
+.refresh-button-icon.spinning {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
