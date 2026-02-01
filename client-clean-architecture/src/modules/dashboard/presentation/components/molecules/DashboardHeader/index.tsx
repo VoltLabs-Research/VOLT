@@ -10,7 +10,7 @@ import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store'
 import TeamInvitePanelPopover from '@/modules/team/presentation/components/molecules/TeamInvitePanelPopover';
 import HeaderBreadcrumbs from '@/modules/dashboard/presentation/components/atoms/HeaderBreadcrumbs';
 import GlobalSearch from '@/modules/dashboard/presentation/components/molecules/GlobalSearch';
-import NotificationsPopover from '@/modules/dashboard/presentation/components/molecules/NotificationsPopover';
+import NotificationsPopover from '@/modules/notification/presentation/components/organisms/NotificationsPopover';
 import './DashboardHeader.css';
 
 interface DashboardHeaderProps {

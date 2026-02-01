@@ -19,6 +19,9 @@ import { ensureTeamDI } from '@/modules/team/infrastructure/di/container';
 import { ensureTrajectoryDI } from '@/modules/trajectory/infrastructure/di/container';
 import { ensureAnalysisDI } from '@/modules/analysis/infrastructure/di/container';
 import { ensurePluginDI } from '@/modules/plugin/infrastructure/di/container';
+import { ensureNotificationDI } from '@/modules/notification/infrastructure/di/container';
+import { ensureDailyActivityDI } from '@/modules/daily-activity/infrastructure/di/container';
+import { ensureSocketDI } from '@/modules/socket/infrastructure/di/container';
 
 self.MonacoEnvironment = {
     getWorker(_, label) {
@@ -42,10 +45,13 @@ loader.config({ monaco });
 
 // Register all dependencies
 ensureAuthDI();
+ensureSocketDI(); // Must be after auth (needs token storage)
 ensureTeamDI();
 ensureTrajectoryDI();
 ensureAnalysisDI();
 ensurePluginDI();
+ensureNotificationDI();
+ensureDailyActivityDI();
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>
