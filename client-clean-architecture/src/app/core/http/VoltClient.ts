@@ -14,6 +14,12 @@ export interface RequestArgs{
     onUploadProgress?: (event: { loaded: number; total?: number }) => void;
 };
 
+let globalGetTeamId: (() => string | null) | undefined;
+
+export const setGetTeamId = (fn: () => string | null) => {
+    globalGetTeamId = fn;
+};
+
 export default class VoltClient{
     private readonly inFlight = new Map<string, Promise<unknown>>();
 
@@ -38,7 +44,7 @@ export default class VoltClient{
         if(!this.opts.useRBAC) return `${base}${sub}`;
 
         // Get team id for role-based access 
-        const teamId = this.opts.getTeamId?.();
+        const teamId = this.opts.getTeamId?.() ?? globalGetTeamId?.();
         if(!teamId) throw new Error('VoltClient: missing teamId for RBAC');
 
         // Server routes that uses RBAC follows this rule:

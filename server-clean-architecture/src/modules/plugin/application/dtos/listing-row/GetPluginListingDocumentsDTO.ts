@@ -6,9 +6,32 @@ export interface GetPluginListingDocumentsInputDTO {
     page?: number;
     limit?: number;
     sortAsc?: boolean;
-    afterCursor?: string;
-}
+};
+
+export interface ColumnDef {
+    path: string;
+    label: string;
+};
+
+export interface ListingRowData {
+    _id: string;
+    timestep: number;
+    analysisId: string;
+    trajectoryId: string;
+    exposureId: string;
+    trajectoryName: string;
+    [key: string]: unknown;
+};
 
 export interface GetPluginListingDocumentsOutputDTO {
-    [key: string]: any;
-}
+    data: ListingRowData[];
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    _meta: {
+        pluginSlug: string;
+        listingSlug: string;
+        columns: ColumnDef[];
+    };
+};

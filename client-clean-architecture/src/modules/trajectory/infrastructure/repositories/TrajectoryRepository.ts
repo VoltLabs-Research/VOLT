@@ -1,6 +1,5 @@
 import { injectable, inject } from 'tsyringe';
-import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
-import { PaginatedResponse } from '@/shared/domain/pagination';
+import BaseRepository, { ApiResponse, RawPaginatedResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import { base64ToBlobUrl } from '@/shared/utils/file';
 import type ITrajectoryRepository from '../../domain/ports/ITrajectoryRepository';
 import type IPreviewCache from '../../domain/ports/IPreviewCache';
@@ -27,7 +26,8 @@ export default class TrajectoryRepository extends BaseRepository implements ITra
     }
 
     async getAll(params: GetTrajectoriesInputDTO): Promise<GetTrajectoriesOutputDTO>{
-        return await this.client.get<PaginatedResponse<Trajectory>>('/', params);
+        const raw = await this.client.get<RawPaginatedResponse<Trajectory>>('/', params);
+        return this.unwrapPaginated(raw);
     }
 
     async getById(id: string): Promise<Trajectory>{

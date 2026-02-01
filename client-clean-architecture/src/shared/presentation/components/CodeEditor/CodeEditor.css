@@ -1,0 +1,37 @@
+.code-editor {
+    width: 100%;
+}
+
+.code-editor-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.code-editor-textarea:focus {
+    border-color: var(--color-primary);
+}
+
+.code-editor-textarea::placeholder {
+    color: var(--color-text-tertiary);
+}
+
+.code-editor.has-error .code-editor-textarea {
+    border-color: var(--color-danger);
+}
+
+.code-editor-error {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--color-danger);
+}

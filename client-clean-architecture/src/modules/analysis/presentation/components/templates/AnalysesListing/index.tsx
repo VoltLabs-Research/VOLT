@@ -1,13 +1,13 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiRefreshLine } from 'react-icons/ri';
-import { formatDistanceToNow } from 'date-fns';
 import useAnalysisStore from '../../../stores/use-analysis-store';
-import useGetAnalyses from '../../../hooks/use-get-analyses';
+import useAnalysisUseCases from '../../../hooks/use-analysis-use-cases';
 import useDeleteAnalysis from '../../../hooks/use-delete-analysis';
 import useRetryFailedFrames from '../../../hooks/use-retry-failed-frames';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import { formatRelativeDate } from '@/shared/utils/format';
 import type { Analysis } from '@/modules/analysis/domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 
@@ -18,7 +18,7 @@ const AnalysesListing = () => {
     const setAnalyses = useAnalysisStore((state) => state.setAnalyses);
     const appendAnalyses = useAnalysisStore((state) => state.appendAnalyses);
 
-    const getAnalyses = useGetAnalyses();
+    const { getAnalysesUseCase } = useAnalysisUseCases();
     const deleteAnalysis = useDeleteAnalysis();
     const retryFailedFrames = useRetryFailedFrames();
 
@@ -56,13 +56,6 @@ const AnalysesListing = () => {
         }
     });
 
-    const formatDate = useCallback((value: unknown) => {
-        if(!value) return '-';
-        const date = new Date(String(value));
-        if(isNaN(date.getTime())) return '-';
-        return formatDistanceToNow(date, { addSuffix: true });
-    }, []);
-
     const columns: ColumnConfig[] = useMemo(() => [
         {
             key: 'trajectory.name',
@@ -89,31 +82,31 @@ const AnalysesListing = () => {
             key: 'startedAt',
             title: 'Started At',
             sortable: true,
-            render: (value) => formatDate(value),
+            render: (value) => formatRelativeDate(value),
             skeleton: { variant: 'text', width: 100 }
         },
         {
             key: 'finishedAt',
             title: 'Finished At',
             sortable: true,
-            render: (value) => formatDate(value),
+            render: (value) => formatRelativeDate(value),
             skeleton: { variant: 'text', width: 100 }
         },
         {
             key: 'createdAt',
             title: 'Created',
             sortable: true,
-            render: (value) => formatDate(value),
+            render: (value) => formatRelativeDate(value),
             skeleton: { variant: 'text', width: 100 }
         }
-    ], [formatDate]);
+    ], []);
 
     return (
         <DocumentListing<Analysis>
             title='Analyses'
             columns={columns}
             data={analyses}
-            fetchData={getAnalyses}
+            fetchData={getAnalysesUseCase.execute}
             onDataFetched={handleDataFetched}
             defaultLimit={20}
             getMenuOptions={getMenuOptions}

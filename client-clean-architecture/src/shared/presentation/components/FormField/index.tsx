@@ -1,24 +1,134 @@
-import { forwardRef, ReactNode } from 'react';
+import { forwardRef, ReactNode, ChangeEvent } from 'react';
 import { AlertCircle } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
+import Title from '@/shared/presentation/components/Title';
+import Select from '@/shared/presentation/components/Select';
 import { cn } from '@/shared/utils';
 import './FormField.css';
 
-interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement>{
+export interface SelectOption {
+    value: string;
+    title: string;
+    description?: string;
+};
+
+export interface FormFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value'> {
     label?: string;
+    fieldType?: 'input' | 'select' | 'checkbox' | 'textarea';
+    value?: string | number | boolean;
     error?: string;
     icon?: ReactNode;
     isLoading?: boolean;
+    options?: SelectOption[];
+    rows?: number;
+    inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
+    variant?: 'default' | 'inline';
 };
 
-const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({ 
-    label, 
+const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({
+    label,
+    name,
+    fieldType = 'input',
+    value,
+    onChange,
     error,
     icon,
     isLoading,
+    options = [],
+    placeholder,
+    rows = 3,
     className = '',
-    ...props 
+    inputProps,
+    variant = 'default',
+    ...restProps
 }, ref) => {
+    const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        onChange?.(e as ChangeEvent<HTMLInputElement>);
+    };
+
+    const handleSelectChange = (selectedValue: string) => {
+        const syntheticEvent = {
+            target: { name, value: selectedValue }
+        } as ChangeEvent<HTMLInputElement>;
+        onChange?.(syntheticEvent);
+    };
+
+    const handleCheckboxChange = (e: ChangeEvent<HTMLInputElement>) => {
+        onChange?.(e);
+    };
+
+    // Inline variant (for workflow editors)
+    if (variant === 'inline') {
+        const renderInlineField = () => {
+            switch (fieldType) {
+                case 'select':
+                    return (
+                        <Select
+                            options={options}
+                            value={String(value ?? '')}
+                            onChange={handleSelectChange}
+                            placeholder={placeholder}
+                            className='form-field-inline-select'
+                        />
+                    );
+
+                case 'checkbox':
+                    return (
+                        <input
+                            type='checkbox'
+                            name={name as string}
+                            className='form-field-inline-checkbox'
+                            checked={Boolean(value)}
+                            onChange={handleCheckboxChange}
+                        />
+                    );
+
+                case 'textarea':
+                    return (
+                        <textarea
+                            name={name as string}
+                            className='form-field-inline-input form-field-inline-textarea'
+                            value={String(value ?? '')}
+                            onChange={handleInputChange}
+                            placeholder={placeholder}
+                            rows={rows}
+                        />
+                    );
+
+                case 'input':
+                default:
+                    return (
+                        <input
+                            ref={ref}
+                            name={name as string}
+                            {...inputProps}
+                            className='form-field-inline-input'
+                            value={String(value ?? '')}
+                            onChange={handleInputChange}
+                            placeholder={placeholder}
+                        />
+                    );
+            }
+        };
+
+        const isCheckbox = fieldType === 'checkbox';
+        const containerClass = isCheckbox
+            ? 'form-field-inline form-field-inline-checkbox-container d-flex content-between items-center'
+            : 'form-field-inline d-flex content-between items-center gap-1';
+
+        return (
+            <Container className={`${containerClass} ${isLoading ? 'is-loading' : ''}`}>
+                <Title className='form-field-inline-label font-size-2-5 font-weight-4'>
+                    {label}
+                </Title>
+                <Container className='d-flex items-center' style={{ flex: isCheckbox ? undefined : 1 }}>
+                    {renderInlineField()}
+                </Container>
+            </Container>
+        );
+    }
+
+    // Default variant (original FormField behavior - vertical layout with spread props)
     const containerClass = isLoading ? 'is-loading' : '';
     const inputClass = cn(
         'form-field-input radius-sm w-max',
@@ -36,10 +146,14 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({
             )}
 
             <Container className='p-relative'>
-                <input 
+                <input
                     ref={ref}
+                    name={name as string}
                     className={inputClass}
-                    {...props} 
+                    placeholder={placeholder}
+                    value={String(value ?? '')}
+                    onChange={handleInputChange}
+                    {...restProps}
                 />
                 {icon && (
                     <Container className='form-field-icon p-absolute d-flex flex-center'>

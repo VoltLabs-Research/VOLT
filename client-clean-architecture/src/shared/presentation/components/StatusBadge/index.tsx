@@ -31,17 +31,20 @@ const statusToVariant = (status: string): string => {
         case 'completed':
         case 'success':
         case 'active':
+        case 'published':
             return 'success';
         case 'processing':
         case 'queued':
         case 'rendering':
         case 'warning':
+        case 'pending':
             return 'warning';
         case 'failed':
         case 'error':
         case 'danger':
             return 'danger';
         case 'inactive':
+        case 'draft':
             return 'inactive';
         default:
             return 'neutral';

@@ -1,5 +1,4 @@
 import React from 'react';
-import { formatDistanceToNow } from 'date-fns';
 import { MessageCircle, UserMinus } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
@@ -8,6 +7,7 @@ import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import Avatar from '@/shared/presentation/components/Avatar';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import { formatRelativeDate } from '@/shared/utils/format';
 import type { TeamMember } from '@/modules/team/domain/entities/TeamMember';
 import './MemberRow.css';
 
@@ -66,7 +66,7 @@ const MemberRow: React.FC<MemberRowProps> = ({
 
                         {member.joinedAt && (
                             <Paragraph className='font-size-1 color-tertiary'>
-                                Joined {formatDistanceToNow(new Date(member.joinedAt), { addSuffix: true })}
+                                Joined {formatRelativeDate(member.joinedAt)}
                             </Paragraph>
                         )}
                     </Container>

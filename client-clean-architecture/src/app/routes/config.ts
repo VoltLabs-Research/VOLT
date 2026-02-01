@@ -11,6 +11,9 @@ import TeamInvitationTemplate from '@/modules/team/presentation/components/templ
 import TrajectoriesListing from '@/modules/trajectory/presentation/components/templates/TrajectoriesListing';
 import PerAtomViewer from '@/modules/trajectory/presentation/components/templates/PerAtomViewer';
 import AnalysesListing from '@/modules/analysis/presentation/components/templates/AnalysesListing';
+import PluginsListing from '@/modules/plugin/presentation/components/templates/PluginsListing';
+import PluginBuilderPage from '@/modules/plugin/presentation/components/templates/PluginBuilderPage';
+import PluginListingPage from '@/modules/plugin/presentation/components/templates/PluginListingPage';
 
 export const routesConfig: RouteGroup = {
     public: [],
@@ -51,6 +54,22 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/analyses',
             component: AnalysesListing
+        },
+        {
+            path: '/dashboard/plugins',
+            component: PluginsListing
+        },
+        {
+            path: '/dashboard/plugins/builder',
+            component: PluginBuilderPage
+        },
+        {
+            path: '/dashboard/plugins/:pluginSlug/listing/:listingSlug',
+            component: PluginListingPage
+        },
+        {
+            path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginSlug/listing/:listingSlug',
+            component: PluginListingPage
         }
     ],
 

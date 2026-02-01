@@ -119,6 +119,8 @@ const useFormValidation = <T extends Record<string, any>>(schema: ValidationSche
             }
         }
 
+        console.log(nextErrors, formData);
+
         setErrors(nextErrors);
         return { isValid, errors: nextErrors };
     }, [schema, validateField]);

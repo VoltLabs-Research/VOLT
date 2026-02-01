@@ -3,14 +3,44 @@ import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepositor
 import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
 import ListingRow from '@modules/plugin/domain/entities/ListingRow';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
 
 interface ListingOptions {
     teamId?: string;
     trajectoryId?: string;
+    page?: number;
     limit?: number;
     sortAsc?: boolean;
-    afterCursor?: string;
-}
+};
+
+interface ColumnConfig {
+    key: string;
+    title: string;
+    sortable: boolean;
+};
+
+interface ListingRowData {
+    _id: string;
+    timestep: number;
+    analysisId: string;
+    trajectoryId: string;
+    exposureId: string;
+    trajectoryName: string;
+    [key: string]: unknown;
+};
+
+export interface PluginListingPaginatedResult {
+    data: ListingRowData[];
+    total: number;
+    page: number;
+    totalPages: number;
+    limit: number;
+    _meta: {
+        pluginSlug: string;
+        listingSlug: string;
+        columns: ColumnConfig[];
+    };
+};
 
 const RESERVED_KEYS = new Set([
     '_id',
@@ -28,19 +58,10 @@ export class PluginListingService {
         @inject(PLUGIN_TOKENS.ListingRowRepository) private listingRowRepository: IListingRowRepository
     ) {}
 
-    async getListingDocuments(pluginSlug: string, listingSlug: string, options: ListingOptions): Promise<any> {
+    async getListingDocuments(pluginSlug: string, listingSlug: string, options: ListingOptions): Promise<PluginListingPaginatedResult> {
+        const page = Math.max(1, options.page || 1);
         const limit = Math.min(200, Math.max(1, options.limit || 50));
         const sortAsc = options.sortAsc || false;
-
-        // Parse cursor
-        let afterTimestep: number | null = null;
-        let afterId: string | null = null;
-
-        if (options.afterCursor?.includes(':')) {
-            const [timestep, id] = options.afterCursor.split(':');
-            afterTimestep = Number(timestep);
-            afterId = id;
-        }
 
         // Find plugin by slug
         const plugin = await this.pluginRepository.findOne({ slug: pluginSlug });
@@ -49,7 +70,7 @@ export class PluginListingService {
         }
 
         // Build base query
-        const baseQuery: any = {
+        const baseQuery: Record<string, unknown> = {
             plugin: plugin.id,
             listingSlug,
             team: options.teamId
@@ -61,37 +82,20 @@ export class PluginListingService {
             throw new Error('Team::IdRequired');
         }
 
-        // Add cursor-based pagination
-        if (afterTimestep != null && afterId) {
-            baseQuery.$or = sortAsc
-                ? [
-                    { timestep: { $gt: afterTimestep } },
-                    { timestep: afterTimestep, _id: { $gt: afterId } }
-                ]
-                : [
-                    { timestep: { $lt: afterTimestep } },
-                    { timestep: afterTimestep, _id: { $lt: afterId } }
-                ];
-        }
-
-        // Query database with trajectory populate for name fallback
-        const result = await this.listingRowRepository.findAll({
-            filter: baseQuery,
-            limit: limit + 1,
-            page: 1,
-            sort: { 
-                timestep: sortAsc ? 1 : -1, 
-                _id: sortAsc ? 1 : -1 
+        // Query database with pagination
+        const result: PaginatedResult<ListingRow> = await this.listingRowRepository.findAll({
+            filter: baseQuery as any,
+            limit,
+            page,
+            sort: {
+                timestep: sortAsc ? 1 : -1,
+                _id: sortAsc ? 1 : -1
             },
             populate: 'trajectory'
         });
 
-        const docs = result.data;
-        const hasMore = docs.length > limit;
-        const slice = hasMore ? docs.slice(0, limit) : docs;
-
         // Transform to raw rows
-        const rawRows = slice.map((doc: ListingRow) => {
+        const rawRows = result.data.map((doc: ListingRow) => {
             const trajectory = doc.props.trajectory as any;
             return {
                 _id: doc.id,
@@ -106,7 +110,7 @@ export class PluginListingService {
 
         // Reorder fields to have reserved keys first
         const rows = rawRows.map((r: any) => {
-            const fixed: Record<string, any> = {
+            const fixed: Record<string, unknown> = {
                 _id: r._id,
                 timestep: r.timestep,
                 analysisId: r.analysisId,
@@ -138,20 +142,21 @@ export class PluginListingService {
             }
         }
 
-        const columns = ordered
+        const columns: ColumnConfig[] = ordered
             .filter((k) => nonNull.has(k))
-            .map((k) => ({ path: k, label: k }));
-
-        const nextCursor = hasMore && slice.length > 0
-            ? `${slice[slice.length - 1].props.timestep}:${slice[slice.length - 1].id}`
-            : null;
+            .map((k) => ({ key: k, title: k, sortable: true }));
 
         return {
-            meta: { pluginSlug, listingSlug, columns },
-            rows,
-            limit,
-            hasMore,
-            nextCursor
+            data: rows,
+            total: result.total,
+            page: result.page,
+            totalPages: result.totalPages,
+            limit: result.limit,
+            _meta: {
+                pluginSlug,
+                listingSlug,
+                columns
+            }
         };
     }
-}
+};

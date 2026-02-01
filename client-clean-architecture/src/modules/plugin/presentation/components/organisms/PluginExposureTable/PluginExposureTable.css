@@ -1,0 +1,12 @@
+.plugin-exposure-table-container {
+    height: 100%;
+}
+
+.plugin-exposure-table-header-container {
+    padding-bottom: 0.5rem;
+}
+
+.plugin-exposure-table-body-container {
+    flex: 1;
+    overflow: auto;
+}

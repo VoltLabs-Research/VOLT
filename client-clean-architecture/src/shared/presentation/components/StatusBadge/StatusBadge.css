@@ -3,30 +3,29 @@
     align-items: center;
     white-space: nowrap;
     line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.055em;
+    font-size: 0.65rem !important;
 }
 
 .status-badge.variant-active,
 .status-badge.variant-success {
-    background: var(--status-success-bg);
     color: var(--status-success);
     border: 1px solid var(--status-success-border);
 }
 
 .status-badge.variant-inactive,
 .status-badge.variant-neutral {
-    background: var(--button-bg);
     color: var(--color-text-secondary);
     border: 1px solid var(--color-border-soft);
 }
 
 .status-badge.variant-warning {
-    background: var(--status-warning-bg);
     color: var(--status-warning);
     border: 1px solid var(--status-warning-border);
 }
 
 .status-badge.variant-danger {
-    background: var(--status-error-bg);
     color: var(--status-error);
     border: 1px solid var(--status-error-border);
 }

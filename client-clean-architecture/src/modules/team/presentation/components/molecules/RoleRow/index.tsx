@@ -1,5 +1,4 @@
 import React from 'react';
-import { formatDistanceToNow } from 'date-fns';
 import { Shield, Eye, Edit, Trash2 } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
@@ -8,6 +7,7 @@ import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import PermissionBadge from '../../atoms/PermissionBadge';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import { formatRelativeDate } from '@/shared/utils/format';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
 import './RoleRow.css';
 
@@ -57,7 +57,7 @@ const RoleRow: React.FC<RoleRowProps> = ({
 
                         {role.createdAt && (
                             <Paragraph className='font-size-1 color-tertiary'>
-                                Created {formatDistanceToNow(new Date(role.createdAt), { addSuffix: true })}
+                                Created {formatRelativeDate(role.createdAt)}
                             </Paragraph>
                         )}
                     </Container>

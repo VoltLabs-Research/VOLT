@@ -38,9 +38,13 @@ const useTrajectoryStore = create<TrajectoryStore>((set) => ({
 
     setTrajectories: (items) => set({ trajectories: items }),
 
-    appendTrajectories: (items) => set((state) => ({
-        trajectories: [...state.trajectories, ...items]
-    })),
+    appendTrajectories: (items) => set((state) => {
+        const existingIds = new Set(state.trajectories.map(t => t._id));
+        const uniqueNewItems = items.filter(t => !existingIds.has(t._id));
+        return {
+            trajectories: [...state.trajectories, ...uniqueNewItems]
+        };
+    }),
 
     setTrajectory: (item) => set({ trajectory: item }),
 

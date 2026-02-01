@@ -1,0 +1,27 @@
+.plugin-listing-trajectory-select {
+    padding: 0.5rem 0.75rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+    min-width: 180px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.plugin-listing-trajectory-select:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.plugin-listing-trajectory-select:focus {
+    outline: none;
+    border-color: var(--color-brand);
+    box-shadow: 0 0 0 2px rgba(var(--color-brand-rgb), 0.2);
+}
+
+.plugin-listing-trajectory-select option {
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+}

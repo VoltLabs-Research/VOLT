@@ -29,9 +29,13 @@ const useAnalysisStore = create<AnalysisStore>((set) => ({
 
     setAnalyses: (items) => set({ analyses: items }),
 
-    appendAnalyses: (items) => set((state) => ({
-        analyses: [...state.analyses, ...items]
-    })),
+    appendAnalyses: (items) => set((state) => {
+        const existingIds = new Set(state.analyses.map(a => a._id));
+        const uniqueNewItems = items.filter(a => !existingIds.has(a._id));
+        return {
+            analyses: [...state.analyses, ...uniqueNewItems]
+        };
+    }),
 
     removeAnalysis: (id) => set((state) => ({
         analyses: state.analyses.filter((a) => a._id !== id)
