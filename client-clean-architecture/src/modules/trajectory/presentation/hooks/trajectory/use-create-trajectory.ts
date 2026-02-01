@@ -4,7 +4,7 @@ import useTrajectoryUseCases from './use-trajectory-use-cases';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
 
 const useCreateTrajectory = () => {
-    const { createTrajectoryUseCase } = useTrajectoryUseCases();
+    const { trajectoryRepository } = useTrajectoryUseCases();
     const setUploadProgress = useTrajectoryStore((state) => state.setUploadProgress);
     const removeUpload = useTrajectoryStore((state) => state.removeUpload);
     const addTrajectory = useTrajectoryStore((state) => state.addTrajectory);
@@ -18,12 +18,9 @@ const useCreateTrajectory = () => {
         setUploadProgress(uploadId, 0);
 
         try{
-            const result = await createTrajectoryUseCase.execute({
-                formData,
-                onProgress: (progress: number) => {
-                    setUploadProgress(uploadId, progress);
-                    onProgress?.(progress);
-                }
+            const result = await trajectoryRepository.create(formData, (progress: number) => {
+                setUploadProgress(uploadId, progress);
+                onProgress?.(progress);
             });
 
             removeUpload(uploadId);
@@ -34,7 +31,7 @@ const useCreateTrajectory = () => {
             setError(error instanceof Error ? error.message : 'Failed to create trajectory');
             return null;
         }
-    }, [createTrajectoryUseCase, setUploadProgress, removeUpload, addTrajectory, setError]);
+    }, [trajectoryRepository, setUploadProgress, removeUpload, addTrajectory, setError]);
 
     return createTrajectory;
 };

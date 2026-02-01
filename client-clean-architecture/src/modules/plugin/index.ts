@@ -5,7 +5,7 @@ export type { default as IPluginListingRepository } from './domain/ports/IPlugin
 
 // Application layer exports
 export * from './application/dtos';
-export * from './application/use-cases';
+export { default as ClonePluginUseCase } from './application/use-cases/ClonePluginUseCase';
 
 // Infrastructure layer exports
 export * from './infrastructure';

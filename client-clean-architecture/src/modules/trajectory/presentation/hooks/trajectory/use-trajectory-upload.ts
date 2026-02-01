@@ -1,12 +1,8 @@
 import { useCallback, useState } from 'react';
 import useCreateTrajectory from './use-create-trajectory';
+import type { FileWithPath } from '@/shared/utils/file';
 
-export interface FileWithPath{
-    file: File;
-    path: string;
-};
-
-interface UseTrajectoryUploadResult{
+interface UseTrajectoryUploadResult {
     uploadTrajectory: (files: FileWithPath[], folderName: string) => Promise<void>;
     isUploading: boolean;
 };
@@ -16,11 +12,11 @@ const useTrajectoryUpload = (): UseTrajectoryUploadResult => {
     const createTrajectory = useCreateTrajectory();
 
     const uploadTrajectory = useCallback(async (files: FileWithPath[], folderName: string) => {
-        if(files.length === 0) return;
+        if (files.length === 0) return;
 
         setIsUploading(true);
 
-        try{
+        try {
             const formData = new FormData();
             formData.append('name', folderName);
 
@@ -30,7 +26,7 @@ const useTrajectoryUpload = (): UseTrajectoryUploadResult => {
             });
 
             await createTrajectory(formData);
-        }finally{
+        } finally {
             setIsUploading(false);
         }
     }, [createTrajectory]);

@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface TitleProps extends React.HTMLAttributes<HTMLHRElement>{
+interface TitleProps extends React.HTMLAttributes<HTMLHeadingElement>{
     children?: React.ReactNode;
 };
 

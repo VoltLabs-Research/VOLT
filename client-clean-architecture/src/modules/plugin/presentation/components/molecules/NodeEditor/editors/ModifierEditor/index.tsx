@@ -1,17 +1,11 @@
-import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormField from '@/shared/presentation/components/FormField';
 import { useNodeForm } from '@/modules/plugin/presentation/hooks';
 import type { IModifierData } from '@/modules/plugin/domain/entities';
+import type { EditorProps } from '../types';
 
-interface ModifierEditorProps {
-    node: Node;
-};
-
-const DEFAULT_MODIFIER: Partial<IModifierData> = {};
-
-const ModifierEditor = ({ node }: ModifierEditorProps) => {
-    const { field } = useNodeForm(node, 'modifier', DEFAULT_MODIFIER);
+const ModifierEditor = ({ node }: EditorProps) => {
+    const { field } = useNodeForm<IModifierData>(node, 'modifier', {} as IModifierData);
 
     return (
         <>

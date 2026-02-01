@@ -1,4 +1,5 @@
 import type { Trajectory } from '../entities/Trajectory';
+import type { DashboardMetrics } from '@/modules/dashboard/domain/entities';
 import type {
     GetTrajectoriesInputDTO,
     GetTrajectoriesOutputDTO,
@@ -19,7 +20,7 @@ export default interface ITrajectoryRepository{
     getPreview(params: GetPreviewInputDTO): Promise<GetPreviewOutputDTO>;
     invalidatePreviewCache(trajectoryId: string): void;
     download(params: DownloadTrajectoryInputDTO): Promise<Blob>;
-    getMetrics(): Promise<Record<string, unknown>>;
+    getMetrics(): Promise<DashboardMetrics>;
     listSamples(): Promise<string[]>;
     downloadSample(filename: string): Promise<Blob>;
     getAtoms(params: GetAtomsInputDTO): Promise<GetAtomsOutputDTO>;

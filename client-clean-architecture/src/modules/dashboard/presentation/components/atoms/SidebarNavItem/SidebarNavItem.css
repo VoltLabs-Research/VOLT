@@ -1,0 +1,40 @@
+.sidebar-nav-item {
+    display: flex;
+    align-items: center;
+    padding: 0.625rem 0.75rem;
+    border-radius: var(--radius-xs);
+    transition: all 0.15s ease;
+    margin-bottom: 0;
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    text-align: left;
+}
+
+.sidebar-nav-item:hover {
+    background: var(--hover-bg);
+    color: var(--color-text-primary);
+}
+
+.sidebar-nav-item.is-selected {
+    color: var(--color-text-primary);
+    font-weight: 600;
+    background-color: var(--hover-bg);
+}
+
+.sidebar-nav-icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    color: inherit;
+}
+
+.sidebar-nav-label {
+    flex: 1;
+}
+
+.sidebar-nav-badge {
+    background: var(--color-surface-3);
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-full);
+}

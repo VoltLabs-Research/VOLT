@@ -1,22 +1,11 @@
-import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormField from '@/shared/presentation/components/FormField';
 import { useNodeForm } from '@/modules/plugin/presentation/hooks';
 import type { IVisualizersData } from '@/modules/plugin/domain/entities';
+import type { EditorProps } from '../types';
 
-interface VisualizersEditorProps {
-    node: Node;
-};
-
-const DEFAULT_VISUALIZERS: IVisualizersData = {
-    canvas: false,
-    raster: false,
-    listing: {},
-    perAtomProperties: []
-};
-
-const VisualizersEditor = ({ node }: VisualizersEditorProps) => {
-    const { field } = useNodeForm(node, 'visualizers', DEFAULT_VISUALIZERS);
+const VisualizersEditor = ({ node }: EditorProps) => {
+    const { field } = useNodeForm<IVisualizersData>(node, 'visualizers', {} as IVisualizersData);
 
     return (
         <>

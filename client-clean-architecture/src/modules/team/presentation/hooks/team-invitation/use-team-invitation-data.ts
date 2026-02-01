@@ -7,13 +7,13 @@ const useTeamInvitationData = () => {
     const setLoading = useTeamInvitationStore((state) => state.setLoading);
     const setError = useTeamInvitationStore((state) => state.setError);
 
-    const { getPendingInvitationsUseCase } = useTeamInvitationUseCases();
+    const { teamInvitationRepository } = useTeamInvitationUseCases();
 
     const fetchPendingInvitations = useCallback(async () => {
         setLoading(true);
 
         try{
-            const pendingInvitations = await getPendingInvitationsUseCase.execute();
+            const pendingInvitations = await teamInvitationRepository.getPending();
             setPendingInvitations(pendingInvitations);
         }catch(error: any){
             console.error('Failed to fetch invitations:', error);
@@ -21,7 +21,7 @@ const useTeamInvitationData = () => {
         }finally{
             setLoading(false);
         }
-    }, [getPendingInvitationsUseCase, setPendingInvitations, setLoading, setError]);
+    }, [teamInvitationRepository, setPendingInvitations, setLoading, setError]);
 
     return { fetchPendingInvitations };
 };

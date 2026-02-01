@@ -2,15 +2,11 @@ import { forwardRef, ReactNode, ChangeEvent } from 'react';
 import { AlertCircle } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
-import Select from '@/shared/presentation/components/Select';
+import Select, { type SelectOption } from '@/shared/presentation/components/Select';
 import { cn } from '@/shared/utils';
 import './FormField.css';
 
-export interface SelectOption {
-    value: string;
-    title: string;
-    description?: string;
-};
+export type { SelectOption };
 
 export interface FormFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value'> {
     label?: string;

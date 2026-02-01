@@ -3,7 +3,7 @@ import usePluginUseCases from './use-plugin-use-cases';
 import usePluginBuilderStore from '../stores/use-plugin-builder-store';
 
 const useLoadPlugin = () => {
-    const { getPluginUseCase } = usePluginUseCases();
+    const { pluginRepository } = usePluginUseCases();
 
     const loadWorkflow = usePluginBuilderStore((state) => state.loadWorkflow);
     const setCurrentPluginId = usePluginBuilderStore((state) => state.setCurrentPluginId);
@@ -15,7 +15,7 @@ const useLoadPlugin = () => {
         setLoadError(null);
 
         try {
-            const plugin = await getPluginUseCase.execute({ id });
+            const plugin = await pluginRepository.getById({ id });
             loadWorkflow(plugin.workflow);
             setCurrentPluginId(plugin._id);
         } catch (error) {
@@ -24,7 +24,7 @@ const useLoadPlugin = () => {
         } finally {
             setLoading(false);
         }
-    }, [getPluginUseCase, loadWorkflow, setCurrentPluginId, setLoading, setLoadError]);
+    }, [pluginRepository, loadWorkflow, setCurrentPluginId, setLoading, setLoadError]);
 
     return loadPlugin;
 };

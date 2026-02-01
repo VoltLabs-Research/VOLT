@@ -1,0 +1,22 @@
+.sidebar-brand {
+    padding: 1.5rem 1.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar-brand-logo {
+    width: 32px;
+    height: 32px;
+    background: var(--color-contrast-high);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-bg);
+    font-weight: 700;
+}
+
+.sidebar-brand-title {
+    font-size: 1rem;
+    text-transform: uppercase;
+}

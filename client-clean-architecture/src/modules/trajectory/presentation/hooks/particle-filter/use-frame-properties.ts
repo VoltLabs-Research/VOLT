@@ -19,7 +19,7 @@ const useFrameProperties = (params: UseFramePropertiesParams): UseFramePropertie
     const [properties, setProperties] = useState<FilterPropertiesData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { getFilterPropertiesUseCase } = useParticleFilterUseCases();
+    const { particleFilterRepository } = useParticleFilterUseCases();
 
     const fetchProperties = async (
         trajectoryId: string,
@@ -30,7 +30,7 @@ const useFrameProperties = (params: UseFramePropertiesParams): UseFramePropertie
         setError(null);
 
         try{
-            const result = await getFilterPropertiesUseCase.execute({
+            const result = await particleFilterRepository.getProperties({
                 trajectoryId,
                 analysisId,
                 timestep
@@ -47,7 +47,7 @@ const useFrameProperties = (params: UseFramePropertiesParams): UseFramePropertie
         if(!trajectoryId || !analysisId || timestep === undefined) return;
 
         fetchProperties(trajectoryId, analysisId, timestep);
-    }, [trajectoryId, analysisId, timestep, getFilterPropertiesUseCase]);
+    }, [trajectoryId, analysisId, timestep, particleFilterRepository]);
 
     return { properties, isLoading, error };
 };

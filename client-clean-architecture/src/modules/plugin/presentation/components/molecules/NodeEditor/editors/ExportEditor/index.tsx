@@ -1,16 +1,13 @@
-import { useCallback, useState, useMemo, useEffect, ChangeEvent } from 'react';
-import type { Node } from '@xyflow/react';
+import { useCallback, useState, useMemo, useEffect } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormField from '@/shared/presentation/components/FormField';
 import CodeEditor from '@/shared/presentation/components/CodeEditor';
-import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
+import { useNodeForm } from '@/modules/plugin/presentation/hooks';
 import { EXPORTER_OPTIONS, EXPORT_TYPE_OPTIONS } from '@/modules/plugin/presentation/utilities/node-types';
 import type { IExportData } from '@/modules/plugin/domain/entities';
-import { Exporter } from '@/modules/plugin/domain/entities';
-
-interface ExportEditorProps {
-    node: Node;
-};
+import { Exporter, ExportType } from '@/modules/plugin/domain/entities';
+import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
+import type { EditorProps } from '../types';
 
 const EXPORTER_SELECT_OPTIONS = EXPORTER_OPTIONS.map(opt => ({
     value: opt.value,
@@ -29,66 +26,50 @@ const CHART_TYPE_OPTIONS = [
     { value: 'area', title: 'Area Chart' }
 ];
 
-const ExportEditor = ({ node }: ExportEditorProps) => {
+const ExportEditor = ({ node }: EditorProps) => {
+    const { values, field } = useNodeForm<IExportData>(node, 'export', {
+        exporter: Exporter.ATOMISTIC,
+        type: ExportType.GLB,
+        options: {}
+    });
+
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
-    const storeNodes = usePluginBuilderStore((state) => state.nodes);
 
-    const exportData = useMemo(() => {
-        const storeNode = storeNodes.find((n) => n.id === node.id);
-        const nodeData = storeNode?.data || node.data;
-        return (nodeData?.export || {
-            exporter: 'AtomisticExporter',
-            type: 'glb',
-            options: {}
-        }) as IExportData;
-    }, [storeNodes, node.id, node.data]);
-
-    const { exporter, type, options = {} } = exportData;
-    const isChartExporter = exporter === Exporter.CHART;
+    const isChartExporter = values.exporter === Exporter.CHART;
+    const options = values.options ?? {};
 
     const chartOptions = useMemo(() => ({
-        xAxisKey: String(options.xAxisKey || ''),
-        yAxisKey: String(options.yAxisKey || ''),
-        chartType: String(options.chartType || 'line'),
-        title: String(options.title || ''),
-        xAxisLabel: String(options.xAxisLabel || ''),
-        yAxisLabel: String(options.yAxisLabel || '')
+        xAxisKey: String(options.xAxisKey ?? ''),
+        yAxisKey: String(options.yAxisKey ?? ''),
+        chartType: String(options.chartType ?? 'line'),
+        title: String(options.title ?? ''),
+        xAxisLabel: String(options.xAxisLabel ?? ''),
+        yAxisLabel: String(options.yAxisLabel ?? '')
     }), [options]);
 
     const [jsonValue, setJsonValue] = useState(() => JSON.stringify(options, null, 2));
     const optionsJson = useMemo(() => JSON.stringify(options, null, 2), [options]);
 
-    const updateExport = useCallback((field: string, value: unknown) => {
-        updateNodeData(node.id, { export: { ...exportData, [field]: value } });
-    }, [node.id, exportData, updateNodeData]);
-
     const updateChartOption = useCallback((key: string, value: unknown) => {
         const newOptions = { ...options, [key]: value };
-        updateExport('options', newOptions);
-    }, [options, updateExport]);
-
-    const createExportChangeHandler = useCallback((field: string) => {
-        return (e: ChangeEvent<HTMLInputElement>) => {
-            updateExport(field, e.target.value);
-        };
-    }, [updateExport]);
+        updateNodeData(node.id, { export: { ...values, options: newOptions } });
+    }, [options, values, node.id, updateNodeData]);
 
     const createChartOptionChangeHandler = useCallback((key: string) => {
-        return (e: ChangeEvent<HTMLInputElement>) => {
+        return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
             updateChartOption(key, e.target.value);
         };
     }, [updateChartOption]);
 
     const handleJsonChange = useCallback((value: string) => {
         setJsonValue(value);
-
         try {
             const parsed = JSON.parse(value);
-            updateExport('options', parsed);
+            updateNodeData(node.id, { export: { ...values, options: parsed } });
         } catch {
-            // Invalid JSON, don't update
+            // Invalid JSON, don't update store
         }
-    }, [updateExport]);
+    }, [values, node.id, updateNodeData]);
 
     useEffect(() => {
         setJsonValue(optionsJson);
@@ -100,19 +81,15 @@ const ExportEditor = ({ node }: ExportEditorProps) => {
                 <FormField
                     variant='inline'
                     label='Exporter'
-                    name='exporter'
                     fieldType='select'
-                    value={exporter}
-                    onChange={createExportChangeHandler('exporter')}
+                    {...field('exporter')}
                     options={EXPORTER_SELECT_OPTIONS}
                 />
                 <FormField
                     variant='inline'
                     label='Export Type'
-                    name='type'
                     fieldType='select'
-                    value={type}
-                    onChange={createExportChangeHandler('type')}
+                    {...field('type')}
                     options={EXPORT_TYPE_SELECT_OPTIONS}
                 />
             </CollapsibleSection>

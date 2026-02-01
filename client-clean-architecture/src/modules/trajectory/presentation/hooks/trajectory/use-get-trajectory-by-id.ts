@@ -19,7 +19,7 @@ interface UseGetTrajectoryByIdResult{
 const useGetTrajectoryById = (params: UseGetTrajectoryByIdParams = {}): UseGetTrajectoryByIdResult => {
     const { trajectoryId, enabled = true } = params;
     
-    const { getTrajectoryByIdUseCase } = useTrajectoryUseCases();
+    const { trajectoryRepository } = useTrajectoryUseCases();
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const isLoading = useTrajectoryStore((state) => state.isLoading);
     const error = useTrajectoryStore((state) => state.error);
@@ -34,14 +34,14 @@ const useGetTrajectoryById = (params: UseGetTrajectoryByIdParams = {}): UseGetTr
         setError(null);
 
         try{
-            const result = await getTrajectoryByIdUseCase.execute(trajectoryId);
+            const result = await trajectoryRepository.getById(trajectoryId);
             setTrajectory(result);
         }catch(err){
             setError(err instanceof Error ? err.message : 'Failed to fetch trajectory');
         }finally{
             setLoading(false);
         }
-    }, [trajectoryId, getTrajectoryByIdUseCase, setLoading, setError, setTrajectory]);
+    }, [trajectoryId, trajectoryRepository, setLoading, setError, setTrajectory]);
 
     useEffect(() => {
         if(!enabled || !trajectoryId) return;

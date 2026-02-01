@@ -1,0 +1,26 @@
+.dashboard-main {
+    background-color: var(--color-bg);
+    flex-direction: row;
+}
+
+.dashboard-content-wrapper {
+    margin-left: 280px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+}
+
+.dashboard-content-main {
+    flex: 1;
+    background: var(--color-bg);
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    min-height: 0;
+}
+
+@media screen and (max-width: 1024px) {
+    .dashboard-content-wrapper {
+        margin-left: 0;
+    }
+}

@@ -1,5 +1,5 @@
 import Select from '@/shared/presentation/components/Select';
-import useTrajectorySelector from '../../../hooks/use-trajectory-selector';
+import useTrajectorySelector from '../../../hooks/trajectory/use-trajectory-selector';
 
 export interface TrajectorySelectorProps {
     value: string | null;

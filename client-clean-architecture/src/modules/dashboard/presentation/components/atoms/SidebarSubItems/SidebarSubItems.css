@@ -1,0 +1,76 @@
+.sidebar-sub-items {
+    margin-left: 2rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.sidebar-sub-item {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    border-radius: var(--radius-xs);
+    text-align: left;
+    transition: all 0.15s ease;
+}
+
+.sidebar-sub-item:hover {
+    background: var(--hover-bg);
+    color: var(--color-text-primary);
+}
+
+.sidebar-sub-item.is-selected {
+    color: var(--color-text-primary);
+    font-weight: 500;
+    background-color: var(--hover-bg);
+}
+
+/* Nested Sections (plugins with exposures) */
+.sidebar-nested-section {
+    margin-bottom: 0.125rem;
+}
+
+.sidebar-nested-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sidebar-nested-chevron {
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.sidebar-nested-chevron.is-expanded {
+    transform: rotate(180deg);
+}
+
+.sidebar-nested-items {
+    margin-left: 0.75rem;
+    margin-top: 0.125rem;
+    border-left: 1px solid var(--color-border-soft);
+    padding-left: 0.5rem;
+}
+
+.sidebar-nested-item {
+    display: block;
+    padding: 0.375rem 0.5rem;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-xs);
+    text-align: left;
+    transition: all 0.15s ease;
+}
+
+.sidebar-nested-item:hover {
+    background: var(--hover-bg);
+    color: var(--color-text-primary);
+}
+
+.sidebar-nested-item.is-selected {
+    background: transparent;
+    color: var(--accent-blue);
+    font-weight: 500;
+}

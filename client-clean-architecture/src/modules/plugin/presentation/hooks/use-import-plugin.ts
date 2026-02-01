@@ -4,14 +4,14 @@ import usePluginStore from '../stores/use-plugin-store';
 import type { Plugin } from '../../domain/entities';
 
 const useImportPlugin = () => {
-    const { importPluginUseCase } = usePluginUseCases();
+    const { pluginRepository } = usePluginUseCases();
     const addPlugin = usePluginStore((state) => state.addPlugin);
 
     const importPlugin = useCallback(async (file: File): Promise<Plugin> => {
-        const plugin = await importPluginUseCase.execute({ file });
+        const plugin = await pluginRepository.importPlugin(file);
         addPlugin(plugin);
         return plugin;
-    }, [importPluginUseCase, addPlugin]);
+    }, [pluginRepository, addPlugin]);
 
     return importPlugin;
 };

@@ -1,17 +1,11 @@
-import type { Node } from '@xyflow/react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import FormField from '@/shared/presentation/components/FormField';
 import { useNodeForm } from '@/modules/plugin/presentation/hooks';
 import type { IForEachData } from '@/modules/plugin/domain/entities';
+import type { EditorProps } from '../types';
 
-interface ForEachEditorProps {
-    node: Node;
-};
-
-const DEFAULT_FOREACH: IForEachData = { iterableSource: '' };
-
-const ForEachEditor = ({ node }: ForEachEditorProps) => {
-    const { field } = useNodeForm(node, 'forEach', DEFAULT_FOREACH);
+const ForEachEditor = ({ node }: EditorProps) => {
+    const { field } = useNodeForm<IForEachData>(node, 'forEach', {} as IForEachData);
 
     return (
         <CollapsibleSection title='Iteration' defaultExpanded>

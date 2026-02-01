@@ -13,13 +13,13 @@ interface TrajectoryUpdatePayload{
 const useTrajectoryUpdates = (): void => {
     const patchTrajectory = useTrajectoryStore((state) => state.patchTrajectory);
     const setTrajectory = useTrajectoryStore((state) => state.setTrajectory);
-    const { getTrajectoryByIdUseCase } = useTrajectoryUseCases();
+    const { trajectoryRepository } = useTrajectoryUseCases();
     const refetchingRef = useRef<Set<string>>(new Set());
 
     const fetchTrajectory = useCallback(async (trajectoryId: string) => {
-        const result = await getTrajectoryByIdUseCase.execute(trajectoryId);
+        const result = await trajectoryRepository.getById(trajectoryId);
         setTrajectory(result);
-    }, [getTrajectoryByIdUseCase, setTrajectory]);
+    }, [trajectoryRepository, setTrajectory]);
 
     useSocketEvent<TrajectoryUpdatePayload>('trajectory.updated', (data) => {
         const { trajectoryId, updates } = data;

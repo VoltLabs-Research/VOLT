@@ -15,7 +15,7 @@ import './GeneralSettings.css';
 const GeneralSettings: React.FC = () => {
     const user = useAuthStore((state) => state.user);
     const setUser = useAuthStore((state) => state.setUser);
-    const { updateMeUseCase } = useAuthUseCases();
+    const { authRepository } = useAuthUseCases();
 
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
@@ -26,9 +26,7 @@ const GeneralSettings: React.FC = () => {
             const formData = new FormData();
             formData.append('avatar', file);
 
-            const updatedUser = await updateMeUseCase.execute({
-                data: formData
-            });
+            const updatedUser = await authRepository.updateMe(formData);
 
             setUser(updatedUser);
         }catch(error){
@@ -40,11 +38,9 @@ const GeneralSettings: React.FC = () => {
     };
 
     const handleProfileUpdate = async (data: ProfileFormType) => {
-        const updatedUser = await updateMeUseCase.execute({
-            data: {
-                fullName: data.fullName,
-                email: data.email
-            }
+        const updatedUser = await authRepository.updateMe({
+            fullName: data.fullName,
+            email: data.email
         });
         setUser(updatedUser);
     };

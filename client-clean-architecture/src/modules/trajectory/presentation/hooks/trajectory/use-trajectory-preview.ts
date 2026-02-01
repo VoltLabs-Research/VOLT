@@ -16,7 +16,7 @@ interface UseTrajectoryPreviewResult{
 
 const useTrajectoryPreview = (params: UseTrajectoryPreviewParams): UseTrajectoryPreviewResult => {
     const { trajectoryId, version, enabled = true } = params;
-    const { getPreviewUseCase } = useTrajectoryUseCases();
+    const { trajectoryRepository } = useTrajectoryUseCases();
     const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(false);
@@ -28,14 +28,14 @@ const useTrajectoryPreview = (params: UseTrajectoryPreviewParams): UseTrajectory
         setError(false);
 
         try{
-            const result = await getPreviewUseCase.execute({ trajectoryId, version });
+            const result = await trajectoryRepository.getPreview({ trajectoryId, version });
             setPreviewBlobUrl(result.blobUrl);
         }catch{
             setError(true);
         }finally{
             setIsLoading(false);
         }
-    }, [trajectoryId, version, enabled, getPreviewUseCase]);
+    }, [trajectoryId, version, enabled, trajectoryRepository]);
 
     useEffect(() => {
         fetchPreview();

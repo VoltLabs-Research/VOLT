@@ -9,10 +9,11 @@ const useTeamData = () => {
     const teams = useTeamStore((state) => state.teams);
     const setTeams = useTeamStore((state) => state.setTeams);
     const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
+    const setCanInvite = useTeamStore((state) => state.setCanInvite);
     const setLoading = useTeamStore((state) => state.setLoading);
     const setError = useTeamStore((state) => state.setError);
 
-    const { getAllTeamsUseCase } = useTeamUseCases();
+    const { teamRepository } = useTeamUseCases();
 
     const fetchTeams = useCallback(async () => {
         if(teams.length > 0) return;
@@ -21,7 +22,7 @@ const useTeamData = () => {
         setError(null);
 
         try{
-            const fetchedTeams = await getAllTeamsUseCase.execute();
+            const fetchedTeams = await teamRepository.getAll();
             setTeams(fetchedTeams);
             
             const teamStorage = container.resolve<ITeamStorage>(TEAM_TOKENS.TeamStorage);
@@ -39,9 +40,18 @@ const useTeamData = () => {
         }finally{
             setLoading(false);
         }
-    }, [teams.length, getAllTeamsUseCase, setTeams, setSelectedTeam, setLoading, setError]);
+    }, [teams.length, teamRepository, setTeams, setSelectedTeam, setLoading, setError]);
 
-    return { fetchTeams };
+    const checkCanInvite = useCallback(async (teamId: string) => {
+        try{
+            const canInvite = await teamRepository.canInvite(teamId);
+            setCanInvite(canInvite);
+        }catch{
+            setCanInvite(false);
+        }
+    }, [teamRepository, setCanInvite]);
+
+    return { fetchTeams, checkCanInvite };
 };
 
 export default useTeamData;

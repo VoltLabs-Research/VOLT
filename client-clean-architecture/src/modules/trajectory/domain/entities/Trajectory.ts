@@ -7,7 +7,7 @@ import type { Analysis } from './Analysis';
 import type { AvailableModels } from './AvailableModels';
 
 export type TrajectoryStatus = 
-    | 'waiting_for_proccess'
+    | 'waiting_for_process'
     | 'queued'
     | 'processing'
     | 'rendering'

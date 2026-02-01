@@ -172,18 +172,7 @@ const usePluginBuilderStore = create<PluginBuilderStore>((set, get) => ({
                 id: n.id,
                 type: n.type as NodeType,
                 position: n.position,
-                data: {
-                    modifier: n.data?.modifier,
-                    arguments: n.data?.arguments,
-                    context: n.data?.context,
-                    forEach: n.data?.forEach,
-                    entrypoint: n.data?.entrypoint,
-                    exposure: n.data?.exposure,
-                    schema: n.data?.schema,
-                    visualizers: n.data?.visualizers,
-                    export: n.data?.export,
-                    ifStatement: n.data?.ifStatement
-                }
+                data: n.data
             })),
             edges: edges.map((e) => ({
                 id: e.id,
@@ -202,14 +191,14 @@ const usePluginBuilderStore = create<PluginBuilderStore>((set, get) => ({
                 id: n.id,
                 type: n.type,
                 position: n.position,
-                data: { ...n.data }
+                data: n.data
             })) as Node<INodeData>[],
             edges: workflow.edges.map((e) => ({
                 id: e.id,
                 source: e.source,
                 target: e.target,
-                sourceHandle: e.sourceHandle ?? undefined,
-                targetHandle: e.targetHandle ?? undefined,
+                sourceHandle: e.sourceHandle,
+                targetHandle: e.targetHandle,
                 ...DEFAULT_EDGE_STYLE
             })),
             selectedNode: null,

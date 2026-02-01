@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiTableLine } from 'react-icons/ri';
 import useTrajectoryStore from '../../../stores/use-trajectory-store';
@@ -10,6 +10,54 @@ import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { formatNumber, formatSize, formatRelativeDate } from '@/shared/utils/format';
 import type { Trajectory } from '@/modules/trajectory/domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
+
+const COLUMNS: ColumnConfig[] = [
+    {
+        key: 'name',
+        title: 'Name',
+        render: (v) => String(v),
+        skeleton: { variant: 'text', width: 120 }
+    },
+    {
+        key: 'status',
+        title: 'Status',
+        render: (v) => <StatusBadge status={String(v || 'unknown')} />,
+        skeleton: { variant: 'rounded', width: 70, height: 24 }
+    },
+    {
+        key: 'atoms',
+        title: 'Atoms',
+        render: (_, row) => {
+            const trajectory = row as Trajectory;
+            return formatNumber(trajectory.frames[0].natoms);
+        },
+        skeleton: { variant: 'text', width: 70 }
+    },
+    {
+        key: 'framesCount',
+        title: 'Frames',
+        render: (_, row) => formatNumber((row as Trajectory).frames.length),
+        skeleton: { variant: 'text', width: 70 }
+    },
+    {
+        key: 'stats.totalSize',
+        title: 'Total Size',
+        render: (_, row) => formatSize((row as Trajectory).stats.totalSize),
+        skeleton: { variant: 'text', width: 70 }
+    },
+    {
+        key: 'createdAt',
+        title: 'Created At',
+        render: (v) => formatRelativeDate(v),
+        skeleton: { variant: 'text', width: 90 }
+    },
+    {
+        key: 'updatedAt',
+        title: 'Updated At',
+        render: (v) => formatRelativeDate(v),
+        skeleton: { variant: 'text', width: 90 }
+    }
+];
 
 const TrajectoriesListing = () => {
     const navigate = useNavigate();
@@ -52,58 +100,10 @@ const TrajectoriesListing = () => {
         }
     });
 
-    const columns: ColumnConfig[] = useMemo(() => [
-        {
-            key: 'name',
-            title: 'Name',
-            render: (v) => String(v),
-            skeleton: { variant: 'text', width: 120 }
-        },
-        {
-            key: 'status',
-            title: 'Status',
-            render: (v) => <StatusBadge status={String(v || 'unknown')} />,
-            skeleton: { variant: 'rounded', width: 70, height: 24 }
-        },
-        {
-            key: 'atoms',
-            title: 'Atoms',
-            render: (_, row) => {
-                const trajectory = row as Trajectory;
-                return formatNumber(trajectory.frames[0].natoms);
-            },
-            skeleton: { variant: 'text', width: 70 }
-        },
-        {
-            key: 'framesCount',
-            title: 'Frames',
-            render: (_, row) => formatNumber((row as Trajectory).frames.length),
-            skeleton: { variant: 'text', width: 70 }
-        },
-        {
-            key: 'stats.totalSize',
-            title: 'Total Size',
-            render: (_, row) => formatSize((row as Trajectory).stats.totalSize),
-            skeleton: { variant: 'text', width: 70 }
-        },
-        {
-            key: 'createdAt',
-            title: 'Created At',
-            render: (v) => formatRelativeDate(v),
-            skeleton: { variant: 'text', width: 90 }
-        },
-        {
-            key: 'updatedAt',
-            title: 'Updated At',
-            render: (v) => formatRelativeDate(v),
-            skeleton: { variant: 'text', width: 90 }
-        }
-    ], []);
-
     return (
         <DocumentListing<Trajectory>
             title='Trajectories'
-            columns={columns}
+            columns={COLUMNS}
             data={trajectories}
             fetchData={getTrajectories}
             onDataFetched={handleDataFetched}

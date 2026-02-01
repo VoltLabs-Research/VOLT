@@ -1,0 +1,103 @@
+/* Search Container */
+.search-container {
+    background-color: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    transition: all 0.15s ease;
+}
+
+.search-container:focus-within {
+    border-color: var(--color-border);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue) 8%, transparent);
+}
+
+.search-icon-container {
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: var(--color-text-muted);
+}
+
+/* Search Results */
+.global-search-results {
+    top: calc(100% + 0.5rem);
+    left: 0;
+    right: 0;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-elevated);
+    max-height: 60vh;
+    z-index: 1000;
+}
+
+.global-search-loading,
+.global-search-empty {
+    padding: 2rem;
+    text-align: center;
+}
+
+.global-search-section {
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.global-search-section:last-child {
+    border-bottom: none;
+}
+
+.global-search-section-header {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--color-surface-2);
+}
+
+.global-search-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--color-border-soft);
+    text-align: left;
+    transition: background 0.15s ease;
+}
+
+.global-search-item:last-child {
+    border-bottom: none;
+}
+
+.global-search-item:hover {
+    background: var(--hover-bg);
+}
+
+.global-search-item p {
+    margin: 0;
+}
+
+/* Mobile Responsive */
+@media screen and (max-width: 1024px) {
+    .search-container {
+        width: 240px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .search-container {
+        width: 180px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .search-container {
+        display: none;
+    }
+}

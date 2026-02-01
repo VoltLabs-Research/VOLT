@@ -1,6 +1,6 @@
 import { Route } from 'react-router-dom';
 import { routesConfig } from './config';
-import ProtectedRoute from '@/shared/presentation/components/ProtectedRoute';
+import ProtectedRoute from '@/modules/auth/presentation/components/atoms/ProtectedRoute';
 import type { RouteConfig } from './types';
 
 export const renderPublicRoutes = () => {
@@ -13,14 +13,26 @@ export const renderPublicRoutes = () => {
 };
 
 export const renderProtectedRoutes = () => {
+    const DashboardLayout = routesConfig.dashboardLayout;
+
+    // Separate dashboard routes from non-dashboard routes
+    const dashboardRoutes = routesConfig.protected.filter((route) => 
+        route.path.startsWith('/dashboard')
+    );
+
     return (
         <Route element={<ProtectedRoute mode='protected' />}>
-            {routesConfig.protected.map((route: RouteConfig) => (
-                <Route
-                    key={route.path}
-                    path={route.path}
-                    element={<route.component />} />
-            ))}
+            {DashboardLayout && (
+                <Route path='/dashboard' element={<DashboardLayout />}>
+                    {dashboardRoutes.map((route: RouteConfig) => (
+                        <Route
+                            key={route.path}
+                            path={route.path}
+                            index={route.index}
+                            element={<route.component />} />
+                    ))}
+                </Route>
+            )}
         </Route>
     );
 };

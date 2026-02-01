@@ -6,14 +6,6 @@ export interface TeamCreatorForm{
 };
 
 export const teamCreatorSchema: ValidationSchema<TeamCreatorForm> = {
-    name: {
-        required: true,
-        minLength: 3,
-        maxLength: 50,
-        message: 'Team name must be between 3 and 50 characters'
-    },
-    description: {
-        maxLength: 250,
-        message: 'Description cannot exceed 250 characters'
-    }
+    name: { required: true, message: 'Team name is required' },
+    description: {}
 };

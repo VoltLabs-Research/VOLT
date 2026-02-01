@@ -5,8 +5,5 @@ export interface TeamInviteForm{
 };
 
 export const teamInviteSchema: ValidationSchema<TeamInviteForm> = {
-    email: [
-        { required: true, message: 'Email is required' },
-        { pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Please enter a valid email address' }
-    ]
+    email: { required: true, message: 'Email is required' }
 };

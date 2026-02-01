@@ -1,5 +1,4 @@
 import { container } from 'tsyringe';
-import SocketService from '../services/SocketService';
 import ISocketService from '../../domain/ports/ISocketService';
 import SocketIOAdapter from '../adapters/SocketIOAdapter';
 import { SOCKET_TOKENS } from './tokens';
@@ -22,5 +21,4 @@ export const ensureSocketDI = (): void => {
     });
 
     container.registerInstance<ISocketService>(SOCKET_TOKENS.SocketAdapter, socketAdapter);
-    container.register<ISocketService>(SOCKET_TOKENS.SocketService, SocketService);
 };

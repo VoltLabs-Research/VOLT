@@ -1,0 +1,12 @@
+.breadcrumb-item {
+    transition: color 0.15s ease;
+    text-transform: capitalize;
+}
+
+.breadcrumb-link:hover {
+    color: var(--color-text-primary);
+}
+
+.breadcrumb-separator {
+    opacity: 0.5;
+}

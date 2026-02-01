@@ -1,19 +1,12 @@
-import { createUseCasesHook } from '@/shared/presentation/hooks/create-use-cases-hook';
+import { useMemo } from 'react';
+import { container } from 'tsyringe';
 import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
-import type {
-    GetAllTeamMembersUseCase,
-    UpdateTeamMemberUseCase,
-    RemoveTeamMemberUseCase
-} from '@/modules/team/application/use-cases/team-member';
+import type ITeamMemberRepository from '@/modules/team/domain/ports/ITeamMemberRepository';
 
-const useTeamMemberUseCases = createUseCasesHook({
-    getAllTeamMembersUseCase: TEAM_TOKENS.GetAllTeamMembersUseCase,
-    updateTeamMemberUseCase: TEAM_TOKENS.UpdateTeamMemberUseCase,
-    removeTeamMemberUseCase: TEAM_TOKENS.RemoveTeamMemberUseCase
-}) as () => {
-    getAllTeamMembersUseCase: GetAllTeamMembersUseCase;
-    updateTeamMemberUseCase: UpdateTeamMemberUseCase;
-    removeTeamMemberUseCase: RemoveTeamMemberUseCase;
+const useTeamMemberUseCases = () => {
+    return useMemo(() => ({
+        teamMemberRepository: container.resolve<ITeamMemberRepository>(TEAM_TOKENS.TeamMemberRepository)
+    }), []);
 };
 
 export default useTeamMemberUseCases;
