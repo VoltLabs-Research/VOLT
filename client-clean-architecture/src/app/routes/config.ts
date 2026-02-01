@@ -23,6 +23,8 @@ import ContainerProcessesPage from '@/modules/container/presentation/pages/Conta
 import ContainerLogsPage from '@/modules/container/presentation/pages/ContainerLogsPage';
 import ContainerStoragePage from '@/modules/container/presentation/pages/ContainerStoragePage';
 import CreateContainer from '@/modules/container/presentation/components/templates/CreateContainer';
+import SSHConnectionsPage from '@/modules/ssh/presentation/components/templates/SSHConnectionsPage';
+import SSHFileExplorerPage from '@/modules/ssh/presentation/components/templates/SSHFileExplorerPage';
 import DashboardLayout from '@/modules/dashboard/presentation/components/organisms/DashboardLayout';
 import Dashboard from '@/modules/dashboard/presentation/components/templates/Dashboard';
 
@@ -113,6 +115,14 @@ export const routesConfig: RouteGroup = {
                 { path: 'logs', component: ContainerLogsPage },
                 { path: 'storage', component: ContainerStoragePage }
             ]
+        },
+        {
+            path: '/dashboard/ssh-connections',
+            component: SSHConnectionsPage
+        },
+        {
+            path: '/dashboard/ssh-connections/:connectionId/file-explorer',
+            component: SSHFileExplorerPage
         }
     ],
 
