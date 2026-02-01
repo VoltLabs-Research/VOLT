@@ -19,6 +19,8 @@ import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use
 import useTeamMemberUseCases from '@/modules/team/presentation/hooks/team-member/use-team-member-use-cases';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { TeamMember } from '@/modules/team/domain/entities/TeamMember';
+import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/use-daily-activity-data';
+import ActivityHeatmap from '@/modules/daily-activity/presentation/components/molecules/ActivityHeatmap';
 import './MyTeam.css';
 
 const MyTeamTemplate: React.FC = () => {
@@ -42,14 +44,16 @@ const MyTeamTemplate: React.FC = () => {
     const { fetchRoles } = useTeamRoleData();
     const { teamRepository } = useTeamUseCases();
     const { teamMemberRepository } = useTeamMemberUseCases();
+    const { activityData, fetchActivity } = useDailyActivityData();
 
     useEffect(() => {
         if(selectedTeam){
             fetchMembers(selectedTeam._id);
             fetchRoles(selectedTeam._id);
             checkCanInvite(selectedTeam._id);
+            fetchActivity();
         }
-    }, [selectedTeam, fetchMembers, fetchRoles, checkCanInvite]);
+    }, [selectedTeam, fetchMembers, fetchRoles, checkCanInvite, fetchActivity]);
 
     const handleSaveTeamName = useCallback(async (newName: string) => {
         if(!selectedTeam || !newName.trim() || newName === selectedTeam.name) return;
@@ -251,6 +255,7 @@ const MyTeamTemplate: React.FC = () => {
                 isLoading={isLoadingMembers}
                 getMenuOptions={getMenuOptions}
                 emptyMessage='No members found in this team.'
+                headerActions={<ActivityHeatmap data={activityData} />}
                 gap=''
             />
         </Container>
