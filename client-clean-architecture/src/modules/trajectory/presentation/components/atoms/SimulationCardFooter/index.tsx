@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { PiDotsThreeVerticalBold, PiImageSquareThin } from 'react-icons/pi';
 import { RxTrash } from 'react-icons/rx';
 import { HiOutlineViewfinderCircle, HiArrowDownTray } from 'react-icons/hi2';
-import { formatDistanceToNow } from 'date-fns';
 import EditableTrajectoryName from '../EditableTrajectoryName';
 import useDeleteTrajectory from '../../../hooks/trajectory/use-delete-trajectory';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
@@ -11,6 +10,7 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import { formatRelativeDate } from '@/shared/utils/format';
 import './SimulationCardFooter.css';
 
 interface SimulationCardFooterProps{
@@ -87,7 +87,7 @@ const SimulationCardFooter = ({
                     {isProcessing ? (
                         <Paragraph className='color-muted'>{processingMessage}</Paragraph>
                     ) : (
-                        <Paragraph>Edited {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}</Paragraph>
+                        <Paragraph>Edited {formatRelativeDate(updatedAt)}</Paragraph>
                     )}
                 </Container>
             </Container>

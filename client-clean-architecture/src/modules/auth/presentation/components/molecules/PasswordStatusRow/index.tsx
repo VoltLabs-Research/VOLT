@@ -2,6 +2,7 @@ import React from 'react';
 import Button from '@/shared/presentation/components/Button';
 import SettingsRow from '@/modules/auth/presentation/components/molecules/SettingsRow';
 import { PasswordInfo } from '@/modules/auth/presentation/components/organisms/PasswordChangeForm/validation-schema';
+import { formatFullDate } from '@/shared/utils/format';
 import { Lock, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface PasswordStatusRowProps {
@@ -9,15 +10,6 @@ interface PasswordStatusRowProps {
     isFormOpen: boolean;
     onToggleForm: () => void;
 }
-
-const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Never';
-    return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-};
 
 const PasswordStatusRow: React.FC<PasswordStatusRowProps> = ({
     passwordInfo,
@@ -30,7 +22,7 @@ const PasswordStatusRow: React.FC<PasswordStatusRowProps> = ({
             title="Password"
             description={
                 passwordInfo?.hasPassword
-                    ? `Last changed: ${formatDate(passwordInfo.lastChanged)}`
+                    ? `Last changed: ${formatFullDate(passwordInfo.lastChanged)}`
                     : 'No password set (OAuth only)'
             }
             rightContent={

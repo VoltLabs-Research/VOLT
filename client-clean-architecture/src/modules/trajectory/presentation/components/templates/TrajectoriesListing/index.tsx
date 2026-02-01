@@ -1,14 +1,13 @@
 import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiTableLine } from 'react-icons/ri';
-import { formatDistanceToNow } from 'date-fns';
 import useTrajectoryStore from '../../../stores/use-trajectory-store';
 import useGetTrajectories from '../../../hooks/trajectory/use-get-trajectories';
 import useDeleteTrajectory from '../../../hooks/trajectory/use-delete-trajectory';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
-import { formatNumber, formatSize } from '@/shared/utils/format';
+import { formatNumber, formatSize, formatRelativeDate } from '@/shared/utils/format';
 import type { Trajectory } from '@/modules/trajectory/domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 
@@ -67,7 +66,7 @@ const TrajectoriesListing = () => {
             skeleton: { variant: 'rounded', width: 70, height: 24 }
         },
         {
-            key: 'frames',
+            key: 'atoms',
             title: 'Atoms',
             render: (_, row) => {
                 const trajectory = row as Trajectory;
@@ -76,7 +75,7 @@ const TrajectoriesListing = () => {
             skeleton: { variant: 'text', width: 70 }
         },
         {
-            key: 'frames',
+            key: 'framesCount',
             title: 'Frames',
             render: (_, row) => formatNumber((row as Trajectory).frames.length),
             skeleton: { variant: 'text', width: 70 }
@@ -90,13 +89,13 @@ const TrajectoriesListing = () => {
         {
             key: 'createdAt',
             title: 'Created At',
-            render: (v) => formatDistanceToNow(new Date(String(v)), { addSuffix: true }),
+            render: (v) => formatRelativeDate(v),
             skeleton: { variant: 'text', width: 90 }
         },
         {
             key: 'updatedAt',
             title: 'Updated At',
-            render: (v) => formatDistanceToNow(new Date(String(v)), { addSuffix: true }),
+            render: (v) => formatRelativeDate(v),
             skeleton: { variant: 'text', width: 90 }
         }
     ], []);

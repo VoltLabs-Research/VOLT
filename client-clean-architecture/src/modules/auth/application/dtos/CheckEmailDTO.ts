@@ -4,5 +4,4 @@ export interface CheckEmailInputDTO{
 
 export interface CheckEmailOutputDTO{
     exists: boolean;
-    hasPassword: boolean;
 };

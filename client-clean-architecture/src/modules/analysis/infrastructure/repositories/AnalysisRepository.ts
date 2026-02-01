@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository, { ApiResponse, RawPaginatedResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import type IAnalysisRepository from '../../domain/ports/IAnalysisRepository';
 import type { Analysis } from '../../domain/entities';
 import type {
@@ -9,7 +9,6 @@ import type {
     GetAnalysesByTrajectoryOutputDTO,
     RetryFailedFramesOutputDTO
 } from '../../application/dtos';
-import { PaginatedResponse } from '@/shared/domain/pagination';
 
 @injectable()
 export default class AnalysisRepository extends BaseRepository implements IAnalysisRepository {
@@ -27,12 +26,14 @@ export default class AnalysisRepository extends BaseRepository implements IAnaly
             query.q = params.search;
         }
 
-        return this.client.get<PaginatedResponse<Analysis>>('/', query);
+        const raw = await this.client.get<RawPaginatedResponse<Analysis>>('/', query);
+        return this.unwrapPaginated(raw);
     }
 
     async getByTrajectoryId(params: GetAnalysesByTrajectoryInputDTO): Promise<GetAnalysesByTrajectoryOutputDTO> {
         const { trajectoryId, page, limit } = params;
-        return this.client.get<PaginatedResponse<Analysis>>(`/trajectory/${trajectoryId}`, { page, limit });
+        const raw = await this.client.get<RawPaginatedResponse<Analysis>>(`/trajectory/${trajectoryId}`, { page, limit });
+        return this.unwrapPaginated(raw);
     }
 
     async delete(id: string): Promise<void> {

@@ -6,16 +6,7 @@ import useTeamInvitationData from '@/modules/team/presentation/hooks/team-invita
 import { teamInviteSchema, TeamInviteForm } from '../../components/organisms/TeamInvitePanel/validation-schema';
 import type { TeamInvitation } from '@/modules/team/domain/entities/TeamInvitation';
 import type { InviteButtonState } from '../../components/atoms/InviteButton';
-
-type FieldBind<T, K extends keyof T> = {
-    name: K;
-    value: T[K];
-    onChange: (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement> | T[K]
-    ) => void;
-    onBlur: () => void;
-    error?: string;
-};
+import { FieldBind } from '@/shared/presentation/hooks/use-form';
 
 interface UseInvitePanelOptions{
     teamId: string;

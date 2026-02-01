@@ -66,6 +66,15 @@ const DocumentListingTable = <T,>({
 }: DocumentListingTableProps<T>) => {
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     const bodyRef = useRef<HTMLDivElement | null>(null);
+    const hasMountedRef = useRef(false);
+
+    // Prevent auto-load on mount - wait for initial content to render
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            hasMountedRef.current = true;
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
 
     const columnWidths = useMemo(() => columns.map(getColumnWidth), [columns]);
     const minContentWidth = useMemo(() => {
@@ -89,7 +98,9 @@ const DocumentListingTable = <T,>({
         const observer = new IntersectionObserver(
             (entries) => {
                 const entry = entries[0];
-                if(entry?.isIntersecting && hasMore && !isFetchingMore) onLoadMore?.();
+                if(entry?.isIntersecting && hasMore && !isFetchingMore && hasMountedRef.current) {
+                    onLoadMore?.();
+                }
             },
             { root: root ?? null, rootMargin: '0px 0px 200px 0px', threshold: 0 }
         );

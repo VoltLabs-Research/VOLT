@@ -1,3 +1,5 @@
+import { formatDistanceToNow, format } from 'date-fns';
+
 /**
  * Format a number to a human-readable string with K, M, B suffixes
  */
@@ -41,4 +43,44 @@ export const getValueByPath = (obj: unknown, path: string): unknown => {
         current = (current as Record<string, unknown>)[key];
     }
     return current;
+};
+
+/**
+ * Parse a date value safely
+ */
+const parseDate = (value: Date | string | unknown): Date | null => {
+    if(!value) return null;
+    const date = value instanceof Date ? value : new Date(String(value));
+    return isNaN(date.getTime()) ? null : date;
+};
+
+/**
+ * Format date as relative time (e.g., "2 hours ago", "3 days ago")
+ */
+export const formatRelativeDate = (value: Date | string | unknown): string => {
+    const date = parseDate(value);
+    if(!date) return '-';
+    return formatDistanceToNow(date, { addSuffix: true });
+};
+
+/**
+ * Format date as full date (e.g., "January 15, 2024")
+ */
+export const formatFullDate = (value: Date | string | unknown): string => {
+    const date = parseDate(value);
+    if(!date) return 'Never';
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
+/**
+ * Format date as short date with time (e.g., "Jan 15, 3:30 PM")
+ */
+export const formatShortDate = (value: Date | string | unknown): string => {
+    const date = parseDate(value);
+    if(!date) return '-';
+    return format(date, 'MMM d, h:mm a');
 };

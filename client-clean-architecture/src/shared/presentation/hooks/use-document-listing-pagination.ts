@@ -64,6 +64,18 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
     const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Store callbacks in refs to avoid re-triggering effects when their references change
+    const fetchDataRef = useRef(fetchData);
+    const onDataFetchedRef = useRef(onDataFetched);
+    const onContextChangeRef = useRef(onContextChange);
+
+    // Keep refs updated with latest callbacks
+    useEffect(() => {
+        fetchDataRef.current = fetchData;
+        onDataFetchedRef.current = onDataFetched;
+        onContextChangeRef.current = onContextChange;
+    });
+
     // Track previous context to detect changes
     const prevContextRef = useRef<string | undefined>(undefined);
 
@@ -76,14 +88,14 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
                                    prevContextRef.current !== currentContext;
         
         if(hasContextChanged){
-            onContextChange?.();
+            onContextChangeRef.current?.();
             updateParams({ page: 1 });
         }
         
         prevContextRef.current = currentContext;
-    }, [context, onContextChange, updateParams]);
+    }, [context, updateParams]);
 
-    const fetchDataAsync = async () => {
+    const fetchDataAsync = useCallback(async () => {
         setIsLoading(true);
         setError(null);
 
@@ -95,10 +107,10 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
                 Object.assign(params, context);
             }
 
-            const result = await fetchData(params);
+            const result = await fetchDataRef.current(params);
             
             const isFirstPage = page === 1;
-            onDataFetched(result, isFirstPage);
+            onDataFetchedRef.current(result, isFirstPage);
             
             setHasMore(result.pagination.hasMore);
         }catch(err){
@@ -108,14 +120,14 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
         }finally{
             setIsLoading(false);
         }
-    };
+    }, [page, limit, search, context]);
 
     // Fetch data when pagination params or context changes
     useEffect(() => {
         if(!enabled) return;
 
         fetchDataAsync();
-    }, [page, limit, search, context, enabled, fetchData, onDataFetched]);
+    }, [enabled, fetchDataAsync]);
 
     const handleLoadMore = useCallback(() => {
         if(!isLoading && hasMore) {

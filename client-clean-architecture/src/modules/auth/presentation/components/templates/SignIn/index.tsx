@@ -56,12 +56,12 @@ const SignInTemplate = () => {
 
     const handleEmailStep = async () => {
         form.validateForm(['email']);
-        if (form.errors.email) {
+        if(form.errors.email){
             return;
         }
         
         const result = await checkEmailUseCase.execute({ email: form.values.email });
-        if(result.exists && result.hasPassword){
+        if(result.exists){
             goTo('password');
             return;
         }
@@ -70,7 +70,6 @@ const SignInTemplate = () => {
     };
 
     const handlePasswordStep = async () => {
-        // Validate only password field
         form.validateForm(['password']);
         if (form.errors.password) {
             return;
@@ -86,7 +85,6 @@ const SignInTemplate = () => {
 
 
     const handleRegisterStep = async () => {
-        // Validate all register fields
         form.validateForm(['fullName', 'password', 'passwordConfirm']);
         if (form.errors.fullName || form.errors.password || form.errors.passwordConfirm) {
             return;
@@ -105,7 +103,9 @@ const SignInTemplate = () => {
         finalizeAuth();
     };
 
-    const handleSubmit = form.handleSubmit(async () => {
+    const handleSubmit = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+        
         if(step === 'email'){
             await handleEmailStep();
             return;
@@ -117,7 +117,7 @@ const SignInTemplate = () => {
         }
 
         await handleRegisterStep();
-    });
+    };
 
     const { title, subtitle } = stepTitles[step];
     
