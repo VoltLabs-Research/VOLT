@@ -1,0 +1,122 @@
+.file-explorer {
+    overflow: hidden;
+}
+
+.file-explorer-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    gap: 1rem;
+}
+
+.file-explorer-breadcrumb {
+    min-width: 0;
+}
+
+.file-explorer-columns {
+    display: grid;
+    grid-template-columns: 1fr 100px 100px 120px;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.file-explorer-list {
+    overflow-y: auto;
+}
+
+.file-explorer-row {
+    display: grid;
+    grid-template-columns: 1fr 100px 100px 120px;
+    padding: 0.625rem 1rem;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.file-explorer-row:hover {
+    background: var(--hover-bg);
+}
+
+.file-explorer-row.is-selected {
+    background: var(--color-surface-2);
+}
+
+.file-explorer-row-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.file-explorer-row-icon {
+    flex-shrink: 0;
+    color: var(--color-muted);
+}
+
+.file-explorer-row:hover .file-explorer-row-icon {
+    color: var(--color-secondary);
+}
+
+.file-explorer-row-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-secondary);
+}
+
+.file-explorer-row:hover .file-explorer-row-text {
+    color: var(--color-primary);
+}
+
+.file-explorer-row-meta {
+    font-size: 0.85rem;
+    color: var(--color-muted);
+}
+
+.file-explorer-message {
+    padding: 2rem 1rem;
+    text-align: center;
+}
+
+.file-explorer-nav-btn {
+    padding: 0.375rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-secondary);
+    transition: background 0.15s, opacity 0.15s;
+}
+
+.file-explorer-nav-btn:hover:not(:disabled) {
+    background: var(--hover-bg);
+}
+
+.file-explorer-nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.file-explorer-breadcrumb-item {
+    font-size: 0.875rem;
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.file-explorer-breadcrumb-item:hover {
+    color: var(--color-secondary);
+}
+
+.file-explorer-breadcrumb-item.is-current {
+    color: var(--color-primary);
+    cursor: default;
+}
+
+.file-explorer-breadcrumb-separator {
+    margin: 0 0.375rem;
+    color: var(--color-muted);
+    font-size: 0.75rem;
+}
