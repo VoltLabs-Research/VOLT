@@ -1,0 +1,49 @@
+.group-management-tabs {
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.group-management-tab {
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.group-management-tab:hover {
+    color: var(--color-text-primary);
+}
+
+.group-management-tab.active {
+    border-bottom-color: var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.group-management-content {
+    padding: 1.5rem;
+}
+
+.group-management-member {
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s ease;
+}
+
+.group-management-member:hover {
+    background: var(--color-surface-2);
+}
+
+.group-management-member-role {
+    font-size: 0.7rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--radius-xs);
+    background: var(--color-surface-3);
+}
+
+.group-management-member-role.admin {
+    background: var(--accent-blue);
+    color: white;
+}
+
+.group-management-member-role.owner {
+    background: var(--accent-purple);
+    color: white;
+}

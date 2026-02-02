@@ -1,6 +1,5 @@
-/* ChatInput Component Styles */
 .chat-input-container {
-    background: var(--glass-bg);
+    background: var(--color-bg);
     backdrop-filter: blur(25px) saturate(180%);
     border-top: 1px solid var(--color-border-soft);
     z-index: 2;
@@ -10,15 +9,8 @@
 }
 
 .chat-input-wrapper {
-    background: var(--color-surface-1);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--color-border-soft);
-    border-radius: var(--radius-xl);
+    background: var(--color-bg);
     padding: 0.75rem 1rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow:
-        var(--shadow-elevated),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .chat-input-wrapper::before {

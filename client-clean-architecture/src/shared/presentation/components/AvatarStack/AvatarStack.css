@@ -4,7 +4,7 @@
 
 .avatar-stack-item{
     margin-left: -0.5rem;
-    border: 2px solid var(--color-bg-primary);
+    border: 2px solid var(--color-color-bg);
 }
 
 .avatar-stack-item:last-child{
@@ -14,5 +14,5 @@
 .avatar-stack-overflow{
     margin-left: -0.5rem;
     background: var(--color-bg-secondary);
-    border: 2px solid var(--color-bg-primary);
+    border: 2px solid var(--color-color-bg);
 }

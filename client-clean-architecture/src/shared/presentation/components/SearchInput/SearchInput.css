@@ -1,0 +1,23 @@
+.search-input-container {
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-lg);
+    padding: 0.5rem 0.75rem;
+    background-color: var(--color-bg);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-input-container:focus-within {
+    border-color: var(--color-border);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-blue) 8%, transparent);
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    min-width: 0;
+}
+
+.search-input::placeholder {
+    color: var(--color-text-muted);
+}

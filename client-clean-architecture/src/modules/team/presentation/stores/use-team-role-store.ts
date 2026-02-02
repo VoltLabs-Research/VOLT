@@ -1,58 +1,30 @@
 import { create } from 'zustand';
 import type { TeamRole } from '@/modules/team/domain/entities';
 
-interface TeamRoleState {
+interface TeamRoleStore {
     roles: TeamRole[];
     isLoading: boolean;
     error: string | null;
-};
-
-interface TeamRoleActions {
     setRoles: (roles: TeamRole[]) => void;
     addRole: (role: TeamRole) => void;
-    updateRoleInList: (roleId: string, updates: Partial<TeamRole>) => void;
-    removeRole: (roleId: string) => void;
+    updateRole: (id: string, updates: Partial<TeamRole>) => void;
+    removeRole: (id: string) => void;
     setLoading: (isLoading: boolean) => void;
     setError: (error: string | null) => void;
     reset: () => void;
 };
 
-type TeamRoleStore = TeamRoleState & TeamRoleActions;
-
-const initialState: TeamRoleState = {
-    roles: [],
-    isLoading: false,
-    error: null
-};
+const initialState = { roles: [] as TeamRole[], isLoading: false, error: null as string | null };
 
 export const useTeamRoleStore = create<TeamRoleStore>((set) => ({
     ...initialState,
-
     setRoles: (roles) => set({ roles }),
-
-    addRole: (role) => {
-        set((state) => ({
-            roles: [...state.roles, role]
-        }));
-    },
-
-    updateRoleInList: (roleId, updates) => {
-        set((state) => ({
-            roles: state.roles.map((r) => 
-                r._id === roleId ? { ...r, ...updates } : r
-            )
-        }));
-    },
-
-    removeRole: (roleId) => {
-        set((state) => ({
-            roles: state.roles.filter((r) => r._id !== roleId)
-        }));
-    },
-
+    addRole: (role) => set((s) => ({ roles: [...s.roles, role] })),
+    updateRole: (id, updates) => set((s) => ({ 
+        roles: s.roles.map((r) => r._id === id ? { ...r, ...updates } : r) 
+    })),
+    removeRole: (id) => set((s) => ({ roles: s.roles.filter((r) => r._id !== id) })),
     setLoading: (isLoading) => set({ isLoading }),
-
     setError: (error) => set({ error }),
-
     reset: () => set(initialState)
 }));

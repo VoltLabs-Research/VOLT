@@ -27,6 +27,7 @@ import SSHConnectionsPage from '@/modules/ssh/presentation/components/templates/
 import SSHFileExplorerPage from '@/modules/ssh/presentation/components/templates/SSHFileExplorerPage';
 import DashboardLayout from '@/modules/dashboard/presentation/components/organisms/DashboardLayout';
 import Dashboard from '@/modules/dashboard/presentation/components/templates/Dashboard';
+import MessagesPage from '@/modules/chat/presentation/components/templates/MessagesPage';
 
 export const routesConfig: RouteGroup = {
     public: [],
@@ -123,6 +124,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/ssh-connections/:connectionId/file-explorer',
             component: SSHFileExplorerPage
+        },
+        {
+            path: '/dashboard/messages/:chatId?',
+            component: MessagesPage
         }
     ],
 

@@ -1,12 +1,11 @@
-import { useMemo } from 'react';
-import { container } from 'tsyringe';
+import { createUseCasesHook } from '@/shared/presentation/hooks/create-use-cases-hook';
 import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
 import type ITeamRoleRepository from '@/modules/team/domain/ports/ITeamRoleRepository';
 
-const useTeamRoleUseCases = () => {
-    return useMemo(() => ({
-        teamRoleRepository: container.resolve<ITeamRoleRepository>(TEAM_TOKENS.TeamRoleRepository)
-    }), []);
+const useTeamRoleUseCases = createUseCasesHook({
+    teamRoleRepository: TEAM_TOKENS.TeamRoleRepository
+}) as () => {
+    teamRoleRepository: ITeamRoleRepository;
 };
 
 export default useTeamRoleUseCases;

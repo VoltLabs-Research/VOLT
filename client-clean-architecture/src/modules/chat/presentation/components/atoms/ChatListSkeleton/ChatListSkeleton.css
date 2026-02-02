@@ -1,0 +1,45 @@
+.chat-skeleton-item {
+    padding: 0.75rem;
+    background: var(--color-surface-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border-soft);
+    cursor: default;
+    pointer-events: none;
+}
+
+.chat-skeleton-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--color-surface-3);
+    animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+
+.chat-skeleton-line {
+    height: 12px;
+    border-radius: var(--radius-xs);
+    background: var(--color-surface-3);
+    animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+
+.chat-skeleton-line-wide {
+    width: 120px;
+    height: 14px;
+}
+
+.chat-skeleton-line-narrow {
+    width: 80px;
+}
+
+.chat-skeleton-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-surface-3);
+    animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes skeleton-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+}

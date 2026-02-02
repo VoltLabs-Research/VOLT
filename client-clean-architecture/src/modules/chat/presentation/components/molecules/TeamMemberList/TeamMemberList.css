@@ -1,0 +1,49 @@
+.team-member-list {
+    max-height: 300px;
+}
+
+.team-member-item {
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.team-member-item:hover {
+    background: var(--color-surface-2);
+}
+
+.team-member-item.selected {
+    background: var(--color-surface-2);
+    border-color: var(--accent-blue);
+}
+
+.team-member-item-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-xs);
+    border: 2px solid var(--color-border-soft);
+    transition: all 0.2s ease;
+}
+
+.team-member-item.selected .team-member-item-checkbox {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+.team-member-item-info {
+    min-width: 0;
+}
+
+.team-member-item-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.team-member-item-email {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

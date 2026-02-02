@@ -399,6 +399,43 @@
     cursor: pointer;
 }
 
+/** Transitions **/
+.transition-fast {
+    transition: all 0.15s ease;
+}
+
+.transition-normal {
+    transition: all 0.2s ease;
+}
+
+/** List Items **/
+.list-item-hoverable {
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    transition: background 0.2s ease;
+}
+
+.list-item-hoverable:hover {
+    background: var(--color-surface-2);
+}
+
+/** Panel Headers **/
+.panel-header-bordered {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.panel-footer-bordered {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--color-border-soft);
+}
+
+/** Settings Page Container **/
+.settings-page-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
 /** Mobile **/
 @media (max-width: 768px) {
 

@@ -38,7 +38,7 @@
 }
 
 .file-item:hover {
-    background: var(--bg-primary);
+    background: var(--color-bg);
 }
 
 .file-icon {

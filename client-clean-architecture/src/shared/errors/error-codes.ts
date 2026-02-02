@@ -144,17 +144,6 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'DefaultAccessDenied': 'Access denied',
 };
 
-/**
- * Get user-friendly error message for a given error code
- * Returns the mapped message or a fallback if not found
- */
 export const getErrorMessage = (code: string, fallback: string = 'Unknown error'): string => {
     return ERROR_CODE_MESSAGES[code] || fallback;
-};
-
-/**
- * Check if an error code is known/mapped
- */
-export const isKnownErrorCode = (code: string): boolean => {
-    return code in ERROR_CODE_MESSAGES;
 };

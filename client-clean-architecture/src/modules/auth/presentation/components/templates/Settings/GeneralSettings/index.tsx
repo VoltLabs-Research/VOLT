@@ -10,7 +10,6 @@ import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store'
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
 import { ProfileForm as ProfileFormType } from '@/modules/auth/presentation/components/organisms/ProfileForm/validation-schema';
 import { Trash2 } from 'lucide-react';
-import './GeneralSettings.css';
 
 const GeneralSettings: React.FC = () => {
     const user = useAuthStore((state) => state.user);
@@ -52,7 +51,7 @@ const GeneralSettings: React.FC = () => {
     };
 
     return (
-        <Container className="general-settings-container d-flex column gap-3 p-2">
+        <Container className="settings-page-container d-flex column gap-3 p-2">
             <Title className="font-size-5 font-weight-6">
                 General Settings
             </Title>

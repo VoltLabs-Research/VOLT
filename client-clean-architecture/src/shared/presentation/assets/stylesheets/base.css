@@ -96,3 +96,25 @@ input:-webkit-autofill:hover {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+/** Status Zones **/
+.zone-danger {
+    background: var(--status-error-bg);
+    border: 1px solid var(--status-error-border);
+    border-radius: var(--radius-md);
+}
+
+.zone-warning {
+    padding: 0.75rem 1rem;
+    background: var(--status-warning-bg);
+    border: 1px solid var(--status-warning-border);
+    border-radius: var(--radius-md);
+}
+
+/** Card Elevated **/
+.card-elevated {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    box-shadow: var(--shadow-elevated);
+    border-radius: var(--radius-lg);
+}

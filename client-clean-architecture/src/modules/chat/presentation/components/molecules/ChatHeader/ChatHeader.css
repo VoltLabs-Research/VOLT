@@ -1,0 +1,18 @@
+.chat-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-bg);
+}
+
+.chat-header-avatar-group {
+    background: var(--color-surface-3);
+    color: var(--color-text-secondary);
+}
+
+.chat-header-status {
+    font-size: 0.8rem;
+}
+
+:root[data-theme='light'] .chat-header {
+    background: rgba(255, 255, 255, 0.8);
+}

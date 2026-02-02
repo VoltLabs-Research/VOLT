@@ -1,0 +1,39 @@
+.chat-list-item {
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.chat-list-item:hover {
+    background: var(--color-surface-2);
+}
+
+.chat-list-item.active {
+    border-color: var(--color-border-soft);
+}
+
+.chat-list-item-avatar-group {
+    background: var(--color-surface-3);
+    color: var(--color-text-secondary);
+}
+
+.chat-list-item-name {
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-list-item-preview {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+.chat-list-item-time {
+    font-size: 0.7rem;
+    white-space: nowrap;
+}

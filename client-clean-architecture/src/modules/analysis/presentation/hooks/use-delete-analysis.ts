@@ -8,21 +8,16 @@ const useDeleteAnalysis = () => {
     const removeAnalysis = useAnalysisStore((state) => state.removeAnalysis);
     const setAnalyses = useAnalysisStore((state) => state.setAnalyses);
 
-    const deleteAnalysis = useCallback(async (id: string) => {
-        const previousAnalyses = analyses;
-
-        // Optimistic delete
+    return useCallback(async (id: string) => {
+        const previousItems = analyses;
         removeAnalysis(id);
-
         try {
             await deleteAnalysisUseCase.execute({ id });
-        } catch {
-            // Rollback
-            setAnalyses(previousAnalyses);
+        } catch (error) {
+            setAnalyses(previousItems);
+            throw error;
         }
     }, [deleteAnalysisUseCase, analyses, removeAnalysis, setAnalyses]);
-
-    return deleteAnalysis;
 };
 
 export default useDeleteAnalysis;

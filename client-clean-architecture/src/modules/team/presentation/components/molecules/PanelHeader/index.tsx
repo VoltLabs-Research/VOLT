@@ -3,7 +3,6 @@ import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Title from '@/shared/presentation/components/Title';
 import CloseButton from '@/shared/presentation/components/CloseButton';
-import './PanelHeader.css';
 
 interface PanelTab {
     label: string;
@@ -24,13 +23,13 @@ const PanelHeader: React.FC<PanelHeaderProps> = ({
     title
 }) => {
     return (
-        <Container className='panel-header d-flex items-center content-between f-shrink-0'>
+        <Container className='panel-header-bordered d-flex items-center content-between f-shrink-0'>
             {title ? (
                 <Title className='font-size-4 font-weight-6 flex-1'>
                     {title}
                 </Title>
             ) : tabs && tabs.length > 0 ? (
-                <Container className='panel-header-tabs d-flex flex-1'>
+                <Container className='d-flex flex-1 gap-025'>
                     {tabs.map((tab, index) => (
                         <Button
                             key={index}

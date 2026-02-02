@@ -1,0 +1,57 @@
+.chat-input-container {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--color-border-soft);
+    background: var(--color-bg);
+}
+
+.chat-input-wrapper {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-lg);
+    padding: 0.5rem 0.75rem;
+    transition: border-color 0.2s ease;
+}
+
+.chat-input-wrapper:focus-within {
+    border-color: var(--accent-blue);
+}
+
+.chat-input-textarea {
+    background-color: transparent;
+    resize: none;
+    font-family: inherit;
+}
+
+.chat-file-previews {
+    max-height: 150px;
+    margin-bottom: 0.75rem;
+}
+
+.chat-file-preview-item {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem;
+}
+
+.chat-file-preview-thumbnail {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-xs);
+    background: var(--color-surface-3);
+    object-fit: cover;
+}
+
+.chat-file-preview-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-xs);
+    background: var(--color-surface-3);
+}
+
+.chat-file-preview-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}

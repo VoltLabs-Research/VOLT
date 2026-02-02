@@ -1,49 +1,26 @@
 import { create } from 'zustand';
 import type { TeamInvitation } from '@/modules/team/domain/entities';
 
-interface TeamInvitationState {
-    pendingInvitations: TeamInvitation[];
+interface TeamInvitationStore {
+    invitations: TeamInvitation[];
     isLoading: boolean;
     error: string | null;
-};
-
-interface TeamInvitationActions {
-    setPendingInvitations: (invitations: TeamInvitation[]) => void;
+    setInvitations: (invitations: TeamInvitation[]) => void;
     addInvitation: (invitation: TeamInvitation) => void;
-    removeInvitation: (invitationId: string) => void;
+    removeInvitation: (id: string) => void;
     setLoading: (isLoading: boolean) => void;
     setError: (error: string | null) => void;
     reset: () => void;
 };
 
-type TeamInvitationStore = TeamInvitationState & TeamInvitationActions;
-
-const initialState: TeamInvitationState = {
-    pendingInvitations: [],
-    isLoading: false,
-    error: null
-};
+const initialState = { invitations: [] as TeamInvitation[], isLoading: false, error: null as string | null };
 
 export const useTeamInvitationStore = create<TeamInvitationStore>((set) => ({
     ...initialState,
-
-    setPendingInvitations: (invitations) => set({ pendingInvitations: invitations }),
-
-    addInvitation: (invitation) => {
-        set((state) => ({
-            pendingInvitations: [...state.pendingInvitations, invitation]
-        }));
-    },
-
-    removeInvitation: (invitationId) => {
-        set((state) => ({
-            pendingInvitations: state.pendingInvitations.filter((i) => i._id !== invitationId)
-        }));
-    },
-
+    setInvitations: (invitations) => set({ invitations }),
+    addInvitation: (invitation) => set((s) => ({ invitations: [...s.invitations, invitation] })),
+    removeInvitation: (id) => set((s) => ({ invitations: s.invitations.filter((i) => i._id !== id) })),
     setLoading: (isLoading) => set({ isLoading }),
-
     setError: (error) => set({ error }),
-
     reset: () => set(initialState)
 }));

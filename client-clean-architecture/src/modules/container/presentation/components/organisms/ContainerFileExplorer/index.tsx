@@ -8,7 +8,7 @@ import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import RefreshButton from '@/shared/presentation/components/RefreshButton';
-import FileRowSkeleton from '../../atoms/FileRowSkeleton';
+import FileRowSkeleton from '@/shared/presentation/components/FileExplorer/FileRowSkeleton';
 import type { ContainerFile } from '@/modules/container/domain/entities';
 import './ContainerFileExplorer.css';
 
@@ -131,7 +131,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
             <Container className='d-flex flex-1 y-scroll column'>
                 {isLoading ? (
                     <>
-                        {Array.from({ length: 8 }).map((_, i) => <FileRowSkeleton key={i} />)}
+                        {Array.from({ length: 8 }).map((_, i) => <FileRowSkeleton key={i} className='container-file-item items-center' />)}
                     </>
                 ) : (
                     <>

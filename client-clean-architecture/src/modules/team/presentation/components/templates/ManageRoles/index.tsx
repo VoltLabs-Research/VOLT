@@ -12,7 +12,6 @@ import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-ro
 import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
-import './ManageRoles.css';
 
 const DEFAULT_RESOURCES: RBACResource[] = [
     { key: 'trajectory', label: 'Trajectories' },
@@ -82,7 +81,7 @@ const ManageRolesTemplate: React.FC = () => {
 
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const addRole = useTeamRoleStore((state) => state.addRole);
-    const updateRoleInList = useTeamRoleStore((state) => state.updateRoleInList);
+    const updateRole = useTeamRoleStore((state) => state.updateRole);
     const removeRole = useTeamRoleStore((state) => state.removeRole);
 
     const { teamRoleRepository } = useTeamRoleUseCases();
@@ -115,7 +114,7 @@ const ManageRolesTemplate: React.FC = () => {
         try{
             if(editingRole){
                 const updated = await teamRoleRepository.update(selectedTeam._id, editingRole._id, data);
-                updateRoleInList(editingRole._id, updated);
+                updateRole(editingRole._id, updated);
             }else{
                 const created = await teamRoleRepository.create(selectedTeam._id, data);
                 addRole(created);
@@ -127,7 +126,7 @@ const ManageRolesTemplate: React.FC = () => {
         }finally{
             setIsSaving(false);
         }
-    }, [selectedTeam, editingRole, teamRoleRepository, addRole, updateRoleInList]);
+    }, [selectedTeam, editingRole, teamRoleRepository, addRole, updateRole]);
 
     const handleDeleteRole = useCallback(async (role: TeamRole) => {
         if(!selectedTeam || role.isSystem) return;

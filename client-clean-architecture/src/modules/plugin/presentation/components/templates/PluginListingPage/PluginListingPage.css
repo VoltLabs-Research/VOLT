@@ -22,6 +22,6 @@
 }
 
 .plugin-listing-trajectory-select option {
-    background: var(--color-bg-primary);
+    background: var(--color-color-bg);
     color: var(--color-text-primary);
 }

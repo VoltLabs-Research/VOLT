@@ -1,0 +1,114 @@
+.message-bubble {
+    max-width: 70%;
+    animation: message-slide-in 0.3s ease;
+}
+
+.message-bubble.sent {
+    margin-left: auto;
+}
+
+.message-bubble.received {
+    margin-right: auto;
+}
+
+.message-bubble.with-avatar {
+    padding-left: 0;
+}
+
+@keyframes message-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message-bubble-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    color: white;
+    font-size: 0.75rem;
+}
+
+.message-bubble-sender {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+    padding-left: 0.5rem;
+}
+
+.message-bubble-content {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+    padding: 0.75rem 1rem;
+    backdrop-filter: blur(15px);
+}
+
+.message-bubble.sent .message-bubble-content {
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+    color: white;
+}
+
+.message-bubble.deleted .message-bubble-content {
+    opacity: 0.6;
+    background: var(--color-surface-2);
+}
+
+.message-bubble-text {
+    word-wrap: break-word;
+    line-height: 1.5;
+}
+
+.message-bubble-file {
+    padding: 0.5rem;
+    background: var(--color-surface-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border-soft);
+}
+
+.message-bubble.sent .message-bubble-file {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.message-bubble-file-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-3);
+}
+
+.message-bubble.sent .message-bubble-file-icon {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.message-bubble-time {
+    font-size: 0.7rem;
+    margin-top: 0.5rem;
+}
+
+.message-bubble.sent .message-bubble-time {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.message-bubble-edited {
+    font-size: 0.65rem;
+    font-style: italic;
+}
+
+:root[data-theme='light'] .message-bubble-content {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+@media (max-width: 768px) {
+    .message-bubble {
+        max-width: 85%;
+    }
+}

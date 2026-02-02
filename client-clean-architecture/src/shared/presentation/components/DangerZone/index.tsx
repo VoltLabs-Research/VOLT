@@ -4,7 +4,6 @@ import Title from '@/shared/presentation/components/Title';
 import Button from '@/shared/presentation/components/Button';
 import SettingsSection from '@/modules/auth/presentation/components/atoms/SettingsSection';
 import SettingsSectionHeader from '@/modules/auth/presentation/components/molecules/SettingsSectionHeader';
-import './DangerZone.css';
 
 interface DangerZoneProps{
     title: string;
@@ -28,7 +27,7 @@ const DangerZone: React.FC<DangerZoneProps> = ({
                 description="Irreversible actions that affect your account"
             />
 
-            <Container className='danger-zone p-1 radius-md'>
+            <Container className='zone-danger p-1'>
                 <Container className="d-flex items-center content-between gap-1 sm:column">
                     <Container className="d-flex column gap-025">
                         <Title className="font-size-2 font-weight-6">

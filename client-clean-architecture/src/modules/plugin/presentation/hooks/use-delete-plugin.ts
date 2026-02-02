@@ -8,22 +8,16 @@ const useDeletePlugin = () => {
     const removePlugin = usePluginStore((state) => state.removePlugin);
     const setPlugins = usePluginStore((state) => state.setPlugins);
 
-    const deletePlugin = useCallback(async (id: string): Promise<void> => {
-        const previousPlugins = plugins;
-
-        // Optimistic delete
+    return useCallback(async (id: string): Promise<void> => {
+        const previousItems = plugins;
         removePlugin(id);
-
         try {
             await pluginRepository.delete(id);
         } catch (error) {
-            // Rollback on error
-            setPlugins(previousPlugins);
+            setPlugins(previousItems);
             throw error;
         }
     }, [pluginRepository, plugins, removePlugin, setPlugins]);
-
-    return deletePlugin;
 };
 
 export default useDeletePlugin;

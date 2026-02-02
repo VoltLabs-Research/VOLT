@@ -32,11 +32,11 @@ const ChartContainer = ({
             return (Icon as () => ReactNode)();
         }
         const LucideIcon = Icon as LucideIcon;
-        return <LucideIcon className='chart-icon color-muted-foreground' />;
+        return <LucideIcon className='color-muted-foreground' style={{ width: 20, height: 20 }} />;
     };
 
     return (
-        <Container className='d-flex h-max column p-1-5 chart-container sm:p-1'>
+        <Container className='d-flex h-max column p-1-5 chart-container radius-lg sm:p-1'>
             <Container className='d-flex content-between mb-1-5 sm:column sm:gap-1'>
                 <Container className='d-flex items-center gap-075'>
                     {renderIcon()}
