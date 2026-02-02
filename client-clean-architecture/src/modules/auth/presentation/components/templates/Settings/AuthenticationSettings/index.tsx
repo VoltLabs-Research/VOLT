@@ -9,7 +9,6 @@ import PasswordChangeForm from '@/modules/auth/presentation/components/organisms
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
 import { ChangePasswordInputDTO } from '@/modules/auth/application/dtos';
 import { PasswordInfo } from '@/modules/auth/presentation/components/organisms/PasswordChangeForm/validation-schema';
-import './AuthenticationSettings.css';
 
 const AuthenticationSettings: React.FC = () => {
     const { authRepository } = useAuthUseCases();
@@ -44,7 +43,7 @@ const AuthenticationSettings: React.FC = () => {
     };
 
     return (
-        <Container className="authentication-settings-container d-flex column gap-3 p-2">
+        <Container className="settings-page-container d-flex column gap-3 p-2">
             <Title className="font-size-5 font-weight-6">
                 Authentication Settings
             </Title>

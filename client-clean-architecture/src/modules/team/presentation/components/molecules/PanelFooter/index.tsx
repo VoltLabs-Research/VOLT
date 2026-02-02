@@ -1,7 +1,6 @@
 import React, { ReactNode } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
-import './PanelFooter.css';
 
 interface PanelAction {
     label: string;
@@ -18,7 +17,7 @@ const PanelFooter: React.FC<PanelFooterProps> = ({ actions }) => {
     if(!actions || actions.length === 0) return null;
 
     return (
-        <Container className='panel-footer d-flex gap-05 content-between f-shrink-0'>
+        <Container className='panel-footer-bordered d-flex gap-05 content-between f-shrink-0' style={{ marginTop: 'auto' }}>
             {actions.map((action, index) => (
                 <Button
                     key={index}

@@ -5,6 +5,8 @@ import { SOCKET_TOKENS } from './tokens';
 import { AUTH_TOKENS } from '@/modules/auth/infrastructure/di/tokens';
 import type ITokenStorage from '@/modules/auth/domain/ports/ITokenStorage';
 
+let socketInitialized = false;
+
 const getInitialAuth = (): Record<string, unknown> => {
     try{
         const tokenStorage = container.resolve<ITokenStorage>(AUTH_TOKENS.TokenStorage);
@@ -16,6 +18,9 @@ const getInitialAuth = (): Record<string, unknown> => {
 };
 
 export const ensureSocketDI = (): void => {
+    if(socketInitialized) return;
+    socketInitialized = true;
+
     const socketAdapter = new SocketIOAdapter(import.meta.env.VITE_API_URL, {
         auth: getInitialAuth()
     });

@@ -8,21 +8,16 @@ const useDeleteTrajectory = () => {
     const removeTrajectory = useTrajectoryStore((state) => state.removeTrajectory);
     const setTrajectories = useTrajectoryStore((state) => state.setTrajectories);
 
-    const deleteTrajectory = useCallback(async (id: string) => {
-        const previousTrajectories = trajectories;
-
-        // Optimistic delete
+    return useCallback(async (id: string) => {
+        const previousItems = trajectories;
         removeTrajectory(id);
-
-        try{
+        try {
             await deleteTrajectoryUseCase.execute({ id });
-        }catch{
-            // Rollback
-            setTrajectories(previousTrajectories);
+        } catch (error) {
+            setTrajectories(previousItems);
+            throw error;
         }
     }, [deleteTrajectoryUseCase, trajectories, removeTrajectory, setTrajectories]);
-
-    return deleteTrajectory;
 };
 
 export default useDeleteTrajectory;

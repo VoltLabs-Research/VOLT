@@ -6,7 +6,6 @@ import SettingsSectionHeader from '@/modules/auth/presentation/components/molecu
 import SettingsRow from '@/modules/auth/presentation/components/molecules/SettingsRow';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { Bell, Mail, MessageSquare, AlertCircle } from 'lucide-react';
-import './NotificationSettings.css';
 
 // TODO:
 const notificationPreferences = [
@@ -42,7 +41,7 @@ const notificationPreferences = [
 
 const NotificationSettings: React.FC = () => {
     return (
-        <Container className="notification-settings-container d-flex column gap-3 p-2">
+        <Container className="settings-page-container d-flex column gap-3 p-2">
             <Title className="font-size-5 font-weight-6">
                 Notification Settings
             </Title>

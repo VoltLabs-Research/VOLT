@@ -209,6 +209,8 @@ export default class SocketIOAdapter implements ISocketService{
 
         this.subscriptions.forEach((sub) => {
             if(this.socket){
+                // Remove existing listener first to prevent duplicates
+                this.socket.off(sub.event, sub.callback);
                 this.socket.on(sub.event, sub.callback);
             }
         });

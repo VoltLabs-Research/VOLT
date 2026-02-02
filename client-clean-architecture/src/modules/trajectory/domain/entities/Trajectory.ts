@@ -1,9 +1,9 @@
 import type { User } from '@/modules/auth/domain/entities';
 import type { Team } from '@/modules/team/domain/entities';
+import type { Analysis } from '@/modules/analysis/domain/entities';
 import type { TrajectoryStats } from './TrajectoryStats';
 import type { TrajectoryProcessingProgress } from './TrajectoryProcessingProgress';
 import type { TimestepInfo } from './TimestepInfo';
-import type { Analysis } from './Analysis';
 import type { AvailableModels } from './AvailableModels';
 
 export type TrajectoryStatus = 

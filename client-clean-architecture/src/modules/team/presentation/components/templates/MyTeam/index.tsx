@@ -30,7 +30,7 @@ const MyTeamTemplate: React.FC = () => {
     const updateTeamInList = useTeamStore((state) => state.updateTeamInList);
 
     const removeMemberFromStore = useTeamMemberStore((state) => state.removeMember);
-    const updateMemberInList = useTeamMemberStore((state) => state.updateMemberInList);
+    const updateMember = useTeamMemberStore((state) => state.updateMember);
 
     const roles = useTeamRoleStore((state) => state.roles);
 
@@ -77,11 +77,11 @@ const MyTeamTemplate: React.FC = () => {
 
         try{
             const updated = await teamMemberRepository.update(selectedTeam._id, memberId, { role: roleId });
-            updateMemberInList(memberId, updated);
+            updateMember(memberId, updated);
         }catch(err){
             console.error('Failed to update role:', err);
         }
-    }, [selectedTeam?._id, teamMemberRepository, updateMemberInList]);
+    }, [selectedTeam?._id, teamMemberRepository, updateMember]);
 
     const handleRemoveMember = useCallback(async (member: TeamMember) => {
         if(!selectedTeam) return;

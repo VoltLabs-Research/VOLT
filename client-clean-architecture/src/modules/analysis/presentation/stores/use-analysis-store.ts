@@ -1,13 +1,10 @@
 import { create } from 'zustand';
 import type { Analysis } from '../../domain/entities';
 
-interface AnalysisState {
+interface AnalysisStore {
     analyses: Analysis[];
     isLoading: boolean;
     error: string | null;
-};
-
-interface AnalysisActions {
     setAnalyses: (items: Analysis[]) => void;
     appendAnalyses: (items: Analysis[]) => void;
     removeAnalysis: (id: string) => void;
@@ -16,35 +13,18 @@ interface AnalysisActions {
     reset: () => void;
 };
 
-type AnalysisStore = AnalysisState & AnalysisActions;
-
-const initialState: AnalysisState = {
-    analyses: [],
-    isLoading: false,
-    error: null
-};
+const initialState = { analyses: [] as Analysis[], isLoading: false, error: null as string | null };
 
 const useAnalysisStore = create<AnalysisStore>((set) => ({
     ...initialState,
-
     setAnalyses: (items) => set({ analyses: items }),
-
-    appendAnalyses: (items) => set((state) => {
-        const existingIds = new Set(state.analyses.map(a => a._id));
-        const uniqueNewItems = items.filter(a => !existingIds.has(a._id));
-        return {
-            analyses: [...state.analyses, ...uniqueNewItems]
-        };
+    appendAnalyses: (items) => set((s) => {
+        const ids = new Set(s.analyses.map(a => a._id));
+        return { analyses: [...s.analyses, ...items.filter(a => !ids.has(a._id))] };
     }),
-
-    removeAnalysis: (id) => set((state) => ({
-        analyses: state.analyses.filter((a) => a._id !== id)
-    })),
-
+    removeAnalysis: (id) => set((s) => ({ analyses: s.analyses.filter((a) => a._id !== id) })),
     setLoading: (value) => set({ isLoading: value }),
-
     setError: (error) => set({ error }),
-
     reset: () => set(initialState)
 }));
 

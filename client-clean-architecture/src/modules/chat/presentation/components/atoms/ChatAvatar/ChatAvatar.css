@@ -1,0 +1,4 @@
+.chat-avatar-group {
+    background: var(--color-surface-elevated);
+    border: 1px solid var(--color-border);
+}

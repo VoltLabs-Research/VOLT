@@ -29,7 +29,7 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
     const [cancelingId, setCancelingId] = useState<string | null>(null);
 
     const { teamInvitationRepository } = useTeamInvitationUseCases();
-    const pendingInvitations = useTeamInvitationStore((state) => state.pendingInvitations);
+    const invitations = useTeamInvitationStore((state) => state.invitations);
     const removeInvitation = useTeamInvitationStore((state) => state.removeInvitation);
 
     const { fetchPendingInvitations } = useTeamInvitationData();
@@ -40,7 +40,7 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
         },
         schema: teamInviteSchema,
         onSubmit: async (data) => {
-            const existingInvitation = pendingInvitations.find(inv => inv.email === data.email.trim());
+            const existingInvitation = invitations.find(inv => inv.email === data.email.trim());
             if(existingInvitation){
                 setButtonState('error');
                 setTimeout(() => setButtonState('idle'), 2000);
@@ -97,7 +97,7 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
         handleSubmit: formHandleSubmit(),
         isSubmitting,
         buttonState,
-        pendingInvitations,
+        pendingInvitations: invitations,
         loadingInvitations,
         cancelingId,
         handleCancelInvitation

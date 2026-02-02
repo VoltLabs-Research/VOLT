@@ -11,7 +11,6 @@ import {
 import { MemoryStick } from 'lucide-react';
 import ChartContainer from '@/shared/presentation/components/ChartContainer';
 import ChartTooltip from '@/shared/presentation/components/ChartTooltip';
-import './MemoryChart.css';
 
 const MAX_HISTORY_POINTS = 60;
 

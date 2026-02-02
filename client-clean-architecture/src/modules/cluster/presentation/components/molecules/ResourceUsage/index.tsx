@@ -64,11 +64,11 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
     ] : [];
 
     return (
-        <Container className='d-flex column resource-usage h-max p-1-5'>
+        <Container className='d-flex column resource-usage h-max p-1-5 radius-lg'>
             <Container className='d-flex items-start content-between resource-usage-header mb-1-5 f-shrink-0'>
                 <Title className='font-size-3 font-weight-6 color-primary'>Resource Usage</Title>
                 <Button variant='ghost' intent='neutral' iconOnly size='sm'>
-                    <MoreVertical className='resource-usage-icon color-muted' />
+                    <MoreVertical className='color-muted' style={{ width: '1rem', height: '1rem' }} />
                 </Button>
             </Container>
 
@@ -96,7 +96,7 @@ const ResourceUsage = ({ metrics }: ResourceUsageProps) => {
 
                         return (
                             <Container key={resource.name} className='d-flex column resource-usage-item'>
-                                <Container className='d-flex items-center content-between resource-usage-item-header'>
+<Container className='d-flex items-center content-between mb-05'>
                                     <span className='font-size-1 color-secondary'>{resource.name}</span>
                                     <span className='font-size-2 font-weight-6' style={{ color }}>
                                         {resource.value}%

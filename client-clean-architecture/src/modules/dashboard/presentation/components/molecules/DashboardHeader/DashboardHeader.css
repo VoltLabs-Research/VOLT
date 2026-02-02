@@ -7,7 +7,6 @@
     z-index: 50;
 }
 
-/* Left: Greeting or Breadcrumbs */
 .dashboard-header-left {
     display: flex;
     align-items: center;
@@ -22,13 +21,12 @@
     margin: 0;
 }
 
-/* Center: Search */
 .dashboard-header-center {
     display: flex;
     justify-content: center;
+    width: 400px;
 }
 
-/* Right: Actions */
 .dashboard-header-right {
     display: flex;
     align-items: center;
@@ -36,7 +34,6 @@
     justify-content: flex-end;
 }
 
-/* Mobile Sidebar Trigger */
 .mobile-sidebar-trigger {
     display: none;
     background: transparent;
@@ -48,7 +45,6 @@
     background: var(--color-surface-2);
 }
 
-/* Mobile Responsive */
 @media screen and (max-width: 1024px) {
     .mobile-sidebar-trigger {
         display: flex;

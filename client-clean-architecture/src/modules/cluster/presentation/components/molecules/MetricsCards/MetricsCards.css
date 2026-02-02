@@ -32,18 +32,7 @@
     transform: translateY(-2px);
 }
 
-.metric-card-icon {
-    width: 1rem;
-    height: 1rem;
-    color: var(--accent-blue);
-}
-
 .metric-card-value {
     letter-spacing: -0.02em;
     font-feature-settings: 'tnum' on, 'lnum' on;
-}
-
-.metric-card-trend-icon {
-    width: 0.75rem;
-    height: 0.75rem;
 }

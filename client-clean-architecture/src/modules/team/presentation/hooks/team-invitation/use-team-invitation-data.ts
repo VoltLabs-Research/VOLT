@@ -3,7 +3,7 @@ import { useTeamInvitationStore } from '@/modules/team/presentation/stores/use-t
 import useTeamInvitationUseCases from '@/modules/team/presentation/hooks/team-invitation/use-team-invitation-use-cases';
 
 const useTeamInvitationData = () => {
-    const setPendingInvitations = useTeamInvitationStore((state) => state.setPendingInvitations);
+    const setInvitations = useTeamInvitationStore((state) => state.setInvitations);
     const setLoading = useTeamInvitationStore((state) => state.setLoading);
     const setError = useTeamInvitationStore((state) => state.setError);
 
@@ -13,15 +13,15 @@ const useTeamInvitationData = () => {
         setLoading(true);
 
         try{
-            const pendingInvitations = await teamInvitationRepository.getPending();
-            setPendingInvitations(pendingInvitations);
+            const invitations = await teamInvitationRepository.getPending();
+            setInvitations(invitations);
         }catch(error: any){
             console.error('Failed to fetch invitations:', error);
             setError(error?.message ?? 'Failed to fetch invitations');
         }finally{
             setLoading(false);
         }
-    }, [teamInvitationRepository, setPendingInvitations, setLoading, setError]);
+    }, [teamInvitationRepository, setInvitations, setLoading, setError]);
 
     return { fetchPendingInvitations };
 };

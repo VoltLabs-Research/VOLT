@@ -1,0 +1,17 @@
+.message-controls {
+    top: -0.5rem;
+    right: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 10;
+}
+
+.message-bubble:hover .message-controls,
+.message-controls:focus-within {
+    opacity: 1;
+}
+
+.message-bubble.sent .message-controls {
+    right: auto;
+    left: 0.5rem;
+}

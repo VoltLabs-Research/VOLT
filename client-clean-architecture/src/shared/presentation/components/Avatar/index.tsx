@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { User } from '@/modules/auth/domain/entities/User';
 import { getInitialsFromUser } from '@/shared/utils/user';
 import { cn } from '@/shared/utils/cn';
@@ -17,6 +18,7 @@ interface AvatarProps {
     className?: string;
     isOnline?: boolean;
     showStatus?: boolean;
+    icon?: ReactNode;
 };
 
 const Avatar = ({ 
@@ -27,7 +29,8 @@ const Avatar = ({
     size = 'md', 
     className = '',
     isOnline = false,
-    showStatus = false
+    showStatus = false,
+    icon
 }: AvatarProps) => {
     const imageSrc = src ?? user?.avatar;
     const initials = fallback ?? (user ? getInitialsFromUser(user) : '?');
@@ -35,7 +38,11 @@ const Avatar = ({
 
     return (
         <Container className={cn('avatar', `avatar-${size}`, 'd-flex flex-center radius-full overflow-hidden f-shrink-0 p-relative', className)}>
-            {imageSrc ? (
+            {icon ? (
+                <Container className='avatar-icon d-flex flex-center'>
+                    {icon}
+                </Container>
+            ) : imageSrc ? (
                 <img src={imageSrc} alt={altText} className='w-max h-max avatar-image' />
             ) : (
                 <Paragraph className='avatar-initials font-weight-6'>

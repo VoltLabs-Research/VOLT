@@ -1,0 +1,33 @@
+.chat-details {
+    border-left: 1px solid var(--color-border-soft);
+    background: var(--color-bg);
+}
+
+.chat-details-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.chat-details-content {
+    padding: 1.5rem;
+}
+
+.chat-details-avatar-group {
+    width: 80px;
+    height: 80px;
+    background: var(--color-surface-3);
+    color: var(--color-text-secondary);
+}
+
+.chat-details-section {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.chat-details-section:last-child {
+    border-bottom: none;
+}
+
+.chat-details-section-title {
+    margin-bottom: 0.75rem;
+}
