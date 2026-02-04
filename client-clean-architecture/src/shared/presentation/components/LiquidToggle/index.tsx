@@ -8,8 +8,6 @@ interface LiquidToggleProps {
     defaultPressed?: boolean;
     onChange?: (pressed: boolean) => void;
     bounce?: boolean;
-    deviation?: number;
-    alpha?: number;
 }
 
 const LiquidToggle = ({
@@ -17,13 +15,9 @@ const LiquidToggle = ({
     pressed,
     defaultPressed = false,
     onChange,
-    bounce = true,
-    deviation = 2,
-    alpha = 16
+    bounce = true
 }: LiquidToggleProps) => {
     const btnRef = useRef<HTMLButtonElement | null>(null);
-    const gooBlurRef = useRef<SVGFEGaussianBlurElement | null>(null);
-    const gooMatrixRef = useRef<SVGFEColorMatrixElement | null>(null);
 
     const isControlled = typeof pressed === 'boolean';
     const [internalPressed, setInternalPressed] = useState(defaultPressed);
@@ -38,21 +32,6 @@ const LiquidToggle = ({
     const pressTimeRef = useRef(0);
 
     const completeRef = useRef(effectivePressed ? 100 : 0);
-
-    useEffect(() => {
-        if (gooBlurRef.current) {
-            gooBlurRef.current.setAttribute('stdDeviation', String(deviation));
-        }
-        if (gooMatrixRef.current) {
-            const values = `
-                1 0 0 0 0
-                0 1 0 0 0
-                0 0 1 0 0
-                0 0 0 ${alpha} -10
-            `;
-            gooMatrixRef.current.setAttribute('values', values);
-        }
-    }, [deviation, alpha]);
 
     useEffect(() => {
         document.documentElement.dataset.bounce = String(bounce);
@@ -203,18 +182,6 @@ const LiquidToggle = ({
 
     return (
         <div className='liquid-toggle-wrapper'>
-            <svg width='0' height='0' aria-hidden='true' focusable='false'>
-                <defs>
-                    <filter id='goo'>
-                        <feGaussianBlur in='SourceGraphic' stdDeviation={deviation} result='blur' ref={gooBlurRef} />
-                        <feColorMatrix in='blur' mode='matrix' values='1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 16 -10' result='goo' ref={gooMatrixRef} />
-                        <feComposite in='SourceGraphic' in2='goo' operator='atop' />
-                    </filter>
-                    <filter id='remove-black'>
-                        <feColorMatrix in='SourceGraphic' type='matrix' values='1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  -1 -1 -1 0 1' />
-                    </filter>
-                </defs>
-            </svg>
             <button
                 ref={btnRef}
                 aria-label='toggle'

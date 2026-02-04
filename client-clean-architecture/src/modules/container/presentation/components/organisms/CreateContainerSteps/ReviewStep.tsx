@@ -31,7 +31,7 @@ const ReviewStep = ({
     return (
         <Container className='create-container-step d-flex column gap-2'>
             <Title className='font-size-5 font-weight-6'>Review & Deploy</Title>
-            <Container className='create-container-review-card overflow-hidden'>
+            <Container className='create-container-review-card radius-md overflow-hidden'>
                 <ReviewItem label='Name' value={config.name} />
                 <ReviewItem label='Team' value={teams.find((t) => t._id === selectedTeamId)?.name || 'None'} />
                 <ReviewItem label='Image' value={image} valueClassName='font-family-mono' />

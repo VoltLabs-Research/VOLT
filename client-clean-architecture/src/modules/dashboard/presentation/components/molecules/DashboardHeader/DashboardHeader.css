@@ -1,44 +1,26 @@
 .dashboard-top-header {
-    padding: 0.75rem 1.5rem;
-    display: flex;
-    align-items: center;
     background: var(--color-bg);
-    top: 0;
     z-index: 50;
 }
 
 .dashboard-header-left {
-    display: flex;
-    align-items: center;
-    flex: 1;
     min-width: 0;
 }
 
 .header-greeting {
-    font-size: 1.125rem;
     letter-spacing: -0.02em;
     white-space: nowrap;
     margin: 0;
 }
 
 .dashboard-header-center {
-    display: flex;
-    justify-content: center;
     width: 400px;
-}
-
-.dashboard-header-right {
-    display: flex;
-    align-items: center;
-    flex: 1;
-    justify-content: flex-end;
 }
 
 .mobile-sidebar-trigger {
     display: none;
     background: transparent;
     border: none;
-    border-radius: var(--radius-xs);
 }
 
 .mobile-sidebar-trigger:hover {

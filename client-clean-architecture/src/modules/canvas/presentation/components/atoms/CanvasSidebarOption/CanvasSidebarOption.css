@@ -27,12 +27,9 @@
     background-color: var(--color-surface-2);
     padding: .8rem;
     font-size: 1.3rem;
-    border-radius: var(--radius-sm);
 }
 
 .editor-sidebar-scene-option-container {
-    padding: .5rem;
-    border-radius: var(--radius-md);
     will-change: transform;
 }
 

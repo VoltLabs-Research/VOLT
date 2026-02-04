@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import FormSchema, { type SectionDef } from '@/modules/canvas/presentation/components/atoms/form/FormSchema';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 
@@ -44,4 +44,4 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ title, icon, subsections 
     );
 };
 
-export default SettingsPanel;
+export default memo(SettingsPanel);

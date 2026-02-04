@@ -8,12 +8,12 @@ interface DashboardStatsSkeletonProps {
 
 const DashboardStatsSkeleton: React.FC<DashboardStatsSkeletonProps> = ({ count = 3 }) => {
     return (
-        <Container className='d-flex dashboard-stats-container w-max overflow-hidden'>
+        <Container className='d-flex dashboard-stats-container w-max overflow-hidden radius-lg'>
             {Array.from({ length: count }).map((_, i) => (
-                <Container className='dashboard-stat-container p-relative cursor-pointer' key={i}>
+                <Container className='dashboard-stat-container p-relative cursor-pointer p-1-5' key={i}>
                     <Container className='d-flex column gap-2 w-max'>
                         <Container className='d-flex items-center gap-1'>
-                            <i className='dashboard-stat-icon-container color-muted'>
+                            <i className='dashboard-stat-icon-container color-muted d-flex flex-center radius-sm'>
                                 <Skeleton variant='circular' width={28} height={28} />
                             </i>
                             <Container style={{ width: 120 }}>
@@ -35,7 +35,7 @@ const DashboardStatsSkeleton: React.FC<DashboardStatsSkeletonProps> = ({ count =
                             </Container>
                         </Container>
                     </Container>
-                    <Container className='dashboard-stat-analytic-container p-absolute'>
+                    <Container className='dashboard-stat-analytic-container p-absolute right-1-5'>
                         <Skeleton variant='rounded' width={150} height='100%' />
                     </Container>
                 </Container>

@@ -1,11 +1,4 @@
-.job-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
 .job-name {
-    font-size: 0.85rem;
     letter-spacing: 0.15px;
     line-height: 1.2;
 }
@@ -16,41 +9,29 @@
 
 .job-meta {
     opacity: 0.7;
-    font-size: 0.65rem;
     white-space: nowrap;
 }
 
 .job-count-badge {
-    padding: 0.1rem 0.35rem;
-    border-radius: var(--radius-xs);
     color: var(--status-info);
-    font-size: 0.6rem;
 }
 
 .job-status-badge {
-    padding: 0.2rem 0.6rem;
-    border-radius: var(--radius-full);
-    font-size: 0.65rem;
     text-transform: capitalize;
     border: 1px solid var(--color-border-soft);
 }
 
 .job-error {
-    font-size: 0.7rem;
     color: var(--status-error);
-    margin-top: 0.2rem;
     line-height: 1.3;
 }
 
 .job-progress-bar {
     width: 60px;
     height: 18px;
-    border-radius: var(--radius-xs);
 }
 
 .job-progress-fill {
-    top: 0;
-    left: 0;
     transition: width 0.3s ease;
 }
 
@@ -58,7 +39,6 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 0.6rem;
     z-index: 1;
 }
 

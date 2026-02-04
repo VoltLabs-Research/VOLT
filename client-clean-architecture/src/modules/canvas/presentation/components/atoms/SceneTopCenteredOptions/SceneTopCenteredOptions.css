@@ -1,22 +1,18 @@
 .editor-top-centered-options-container {
-    top: 1.4rem;
+    top: 2rem;
     left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(14, 14, 14, 0.5);
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: var(--radius-full);
-    padding: 0.5rem 0.75rem;
-    z-index: 200;
+    transform: translate(-50%, 0) !important;
+    width: auto;
+    height: 55px;
+    margin: 0 auto;
+    padding: 0.5rem 1rem;
+    z-index: 100;
 }
 
 .editor-top-centered-options-container .editor-sidebar-scene-option-icon-container {
     background: transparent;
-    border: none;
     padding: 0.35rem;
     font-size: 1.2rem;
-    border-radius: var(--radius-sm);
-    transition: background 0.15s ease, color 0.15s ease;
 }
 
 .editor-top-centered-options-container .editor-sidebar-scene-option-icon-container.selected,
@@ -34,9 +30,11 @@
 
 @media (max-width: 768px) {
     .editor-top-centered-options-container {
+        position: absolute;
         top: 0.75rem;
-        left: 1rem;
-        transform: none;
+        left: 50%;
+        transform: translateX(-50%);
+        width: fit-content;
         padding: 0.35rem 0.5rem;
     }
 }

@@ -1,39 +1,24 @@
-import { useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import { createExternalStore, useExternalStore } from '@/modules/canvas/presentation/utils/external-store';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
-import type { AnalysisStatus } from '@/modules/canvas/presentation/types';
 
-interface AnalysisStatusState {
-    statusByAnalysisId: Map<string, AnalysisStatus>;
-    listeners: Set<() => void>;
-}
+type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed';
 
-const state: AnalysisStatusState = {
-    statusByAnalysisId: new Map(),
-    listeners: new Set(),
-};
+const store = createExternalStore({ initialState: new Map<string, AnalysisStatus>() });
 
 const setStatus = (analysisId: string, status: AnalysisStatus) => {
-    const current = state.statusByAnalysisId.get(analysisId);
+    const current = store.state.get(analysisId);
     if (current === status) return;
-    const next = new Map(state.statusByAnalysisId);
+    const next = new Map(store.state);
     next.set(analysisId, status);
-    state.statusByAnalysisId = next;
-    state.listeners.forEach((listener) => listener());
+    store.setState(next);
 };
 
-const clearStatusForTrajectory = () => {
-    if (state.statusByAnalysisId.size > 0) {
-        state.statusByAnalysisId = new Map();
-        state.listeners.forEach((listener) => listener());
+const clearStatus = () => {
+    if (store.state.size > 0) {
+        store.setState(new Map());
     }
 };
-
-const subscribe = (listener: () => void) => {
-    state.listeners.add(listener);
-    return () => state.listeners.delete(listener);
-};
-
-const getSnapshot = () => state.statusByAnalysisId;
 
 interface UseAnalysisStatusProps {
     trajectoryId?: string;
@@ -44,7 +29,7 @@ const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusPr
     const socketService = useSocket();
     const currentTrajectoryIdRef = useRef(trajectoryId);
 
-    const statusMap = useSyncExternalStore(subscribe, getSnapshot);
+    const statusMap = useExternalStore(store);
 
     useEffect(() => {
         currentTrajectoryIdRef.current = trajectoryId;
@@ -62,17 +47,14 @@ const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusPr
     }, []);
 
     useEffect(() => {
-        if (!enabled || !trajectoryId) {
-            return;
-        }
+        if (!enabled || !trajectoryId) return;
 
-        clearStatusForTrajectory();
-
+        clearStatus();
         const unsubscribe = socketService.on('team.job.updated', handleJobUpdate);
 
         return () => {
             unsubscribe();
-            clearStatusForTrajectory();
+            clearStatus();
         };
     }, [trajectoryId, enabled, handleJobUpdate, socketService]);
 

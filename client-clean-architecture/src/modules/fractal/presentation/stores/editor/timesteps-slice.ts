@@ -49,7 +49,7 @@ export const createTimestepSlice: StateCreator<any, [], [], TimestepStore> = (se
         const { useTeamStore } = await import('@/modules/team/presentation/stores/use-team-store');
         const { default: useTrajectoryStore } = await import('@/modules/trajectory/presentation/stores/use-trajectory-store');
         const { AssetLoader } = await import('@/modules/fractal/core/AssetLoader');
-        const { computeGlbUrl } = await import('@/modules/canvas/presentation/utilities/scene-utils');
+        const { computeGlbUrl } = await import('@/shared/utils/glb-url');
         const { useEditorStore } = await import('@/modules/fractal/presentation/stores/editor');
 
         const teamId = useTeamStore.getState().selectedTeam?._id;

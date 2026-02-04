@@ -3,17 +3,12 @@
     max-height: 280px;
     background-color: rgba(30, 30, 30, 0.3);
     backdrop-filter: blur(35px) saturate(160%);
-    bottom: 1rem;
-    right: 1rem;
     z-index: 200;
-    border-radius: var(--radius-lg);
-    color: #cacaca;
 }
 
 .plugin-results-header {
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    flex-shrink: 0;
 }
 
 .plugin-results-header .font-size-3 {
@@ -23,9 +18,6 @@
 
 .plugin-results-close,
 .plugin-results-download {
-    padding: 0.25rem;
-    border-radius: var(--radius-xs);
-    transition: background-color 0.15s ease;
     color: rgba(255, 255, 255, 0.5);
 }
 
@@ -37,7 +29,6 @@
 
 .plugin-results-tabs-container {
     overflow-x: auto;
-    flex-shrink: 0;
     padding: 0 0.5rem;
 }
 

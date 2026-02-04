@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { IoIosArrowDown } from 'react-icons/io';
 import FormField from '@/shared/presentation/components/FormField';
-import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
+import WidgetContainer from '@/modules/canvas/presentation/components/atoms/WidgetContainer';
 import Button from '@/shared/presentation/components/Button';
 import { usePluginStore } from '@/modules/plugin';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
@@ -208,7 +208,7 @@ const ModifierConfiguration = ({
     }
 
     return (
-        <EditorWidget className={`modifier-configuration d-flex column p-1 ${className}`} draggable={false}>
+        <WidgetContainer className={`modifier-configuration d-flex column p-1 ${className}`}>
             <Container className='d-flex content-between items-center'>
                 <Title className='font-weight-5-5'>{displayTitle}</Title>
                 {icon}
@@ -256,7 +256,7 @@ const ModifierConfiguration = ({
                     Start Analysis
                 </Button>
             </Container>
-        </EditorWidget>
+        </WidgetContainer>
     );
 };
 

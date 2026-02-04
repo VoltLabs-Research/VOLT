@@ -20,7 +20,6 @@
     height: 48px;
     background: var(--color-card);
     border: 1px solid var(--color-border-soft);
-    border-radius: 12px;
     color: var(--color-primary);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
@@ -82,7 +81,6 @@
 
 .container-details-visit-btn {
     padding: 0.75rem;
-    border-radius: 8px;
     text-decoration: none;
     color: var(--color-brand);
     border: 1px solid var(--color-brand);
@@ -96,7 +94,6 @@
 }
 
 .container-details-content-area {
-    padding: 0;
     background: var(--color-bg);
 }
 
@@ -108,10 +105,6 @@
 @keyframes container-details-fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
-}
-
-.container-details-full-height {
-    height: 100%;
 }
 
 .container-details-pane-header {

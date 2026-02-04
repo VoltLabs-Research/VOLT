@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Slider from '@/shared/presentation/components/Slider';
 import Container from '@/shared/presentation/components/Container';
 import '@/modules/canvas/presentation/components/atoms/form/FormRow/FormRow.css';
@@ -41,4 +42,4 @@ const FormRow = ({
     );
 };
 
-export default FormRow;
+export default memo(FormRow);

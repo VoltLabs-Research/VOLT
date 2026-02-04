@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import FormSection from '@/modules/canvas/presentation/components/atoms/form/FormSection';
 import FormRow from '@/modules/canvas/presentation/components/atoms/form/FormRow';
 
@@ -64,4 +64,4 @@ const FormSchema: React.FC<FormSchemaProps> = ({ sections, className }) => {
     );
 };
 
-export default FormSchema;
+export default memo(FormSchema);

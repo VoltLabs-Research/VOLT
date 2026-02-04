@@ -1,5 +1,4 @@
 import React from 'react';
-import type { IconType } from 'react-icons/lib';
 import { RiArrowDownSLine, RiArrowUpSLine } from 'react-icons/ri';
 import { RiMore2Fill } from 'react-icons/ri';
 import Loader from '@/shared/presentation/components/Loader';
@@ -11,7 +10,7 @@ interface CanvasSidebarOptionProps {
     activeOption: boolean;
     isSelected?: boolean;
     option: {
-        Icon: IconType;
+        Icon: React.ComponentType<any>;
         title: string;
         modifierId: string;
         options?: [{
@@ -38,11 +37,11 @@ const CanvasSidebarOption = React.forwardRef<HTMLDivElement, CanvasSidebarOption
             <div
                 {...rest}
                 ref={ref}
-                className={`d-flex content-between items-center editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''} ${isSelected ? 'selected' : ''} cursor-pointer ${className || ''}`}
+                className={`d-flex content-between items-center editor-sidebar-scene-option-container p-05 radius-md ${activeOption ? 'active-option' : ''} ${isSelected ? 'selected' : ''} cursor-pointer ${className || ''}`}
                 onClick={() => onSelect(option)}
             >
                 <div className='d-flex items-center gap-1 editor-sidebar-scene-option-left-container'>
-                    <i className='editor-sidebar-scene-option-icon-container'>
+                    <i className='editor-sidebar-scene-option-icon-container radius-sm'>
                         <option.Icon />
                     </i>
                     <Title className='font-size-3-5 editor-sidebar-scene-option-title'>{option.title}</Title>
@@ -71,7 +70,7 @@ const CanvasSidebarOption = React.forwardRef<HTMLDivElement, CanvasSidebarOption
                 <div className='editor-sidebar-scene-option-select-container p-relative'>
                     {option.options.map(({ title, modifierId }, index) => (
                         <div
-                            className={`d-flex content-between items-center editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''} cursor-pointer`}
+                            className={`d-flex content-between items-center editor-sidebar-scene-option-container p-05 radius-md ${activeOption ? 'active-option' : ''} cursor-pointer`}
                             onClick={() => onSelect({ title, modifierId })}
                             key={title + '-' + index}
                         >

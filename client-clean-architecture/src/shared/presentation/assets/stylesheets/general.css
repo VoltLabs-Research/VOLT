@@ -361,6 +361,10 @@
     border: 1px solid var(--color-border-soft);
 }
 
+.b-none{
+    border: none;
+}
+
 /** Border Radius **/
 .radius-xs {
     border-radius: var(--radius-xs);

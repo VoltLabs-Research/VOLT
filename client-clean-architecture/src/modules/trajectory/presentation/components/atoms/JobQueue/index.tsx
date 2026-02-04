@@ -74,13 +74,13 @@ const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => 
     };
 
     const jobContent = (
-        <Container className={containerClass}>
+        <Container className={containerClass + ' d-flex content-between items-center'}>
             <Container className='d-flex column gap-025 flex-1'>
                 <Container className='d-flex items-center content-between gap-05'>
                     <Title className='font-size-1 job-name font-weight-6 color-primary'>
                         {getJobDisplayName(job)}
                     </Title>
-                    <span className={`job-status-badge ${job.status}`}>
+                    <span className={`job-status-badge ${job.status} p-025 radius-full font-size-1`}>
                         {job.status}
                     </span>
                 </Container>
@@ -89,20 +89,20 @@ const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => 
                         {job.message || job.status}
                     </Paragraph>
                     {job.processingTimeMs && job.status === 'completed' && (
-                        <span className='job-meta color-muted'>• {formatDuration(job.processingTimeMs)}</span>
+                        <span className='job-meta color-muted font-size-1'>• {formatDuration(job.processingTimeMs)}</span>
                     )}
                 </Container>
                 {job.error && (
-                    <Paragraph className='job-error'>{job.error}</Paragraph>
+                    <Paragraph className='job-error font-size-1 mt-025'>{job.error}</Paragraph>
                 )}
             </Container>
             {(job.progress !== undefined && job.progress > 0 && job.status === 'running') && (
-                <Container className='job-progress-bar p-relative overflow-hidden'>
+                <Container className='job-progress-bar p-relative overflow-hidden radius-xs'>
                     <Container
-                        className='job-progress-fill p-absolute h-max'
+                        className='job-progress-fill p-absolute h-max top-0 left-0'
                         style={{ width: `${Math.min(100, job.progress)}%` }}
                     />
-                    <span className='job-progress-text p-absolute font-weight-6 color-primary'>{Math.round(job.progress)}%</span>
+                    <span className='job-progress-text p-absolute font-weight-6 color-primary font-size-1'>{Math.round(job.progress)}%</span>
                 </Container>
             )}
         </Container>

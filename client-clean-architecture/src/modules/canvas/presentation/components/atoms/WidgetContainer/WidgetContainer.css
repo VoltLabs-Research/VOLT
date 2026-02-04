@@ -1,25 +1,18 @@
-.editor-floating-container {
+.widget-container {
     background-color: rgba(30, 30, 30, 0.3);
     backdrop-filter: blur(35px) saturate(160%);
     z-index: 200;
-    border-radius: var(--radius-lg);
-    color: #cacaca;
     line-height: 1.6rem;
-    width: 400px;
     opacity: 1;
     transition: opacity 500ms ease;
 }
 
-.editor-floating-container.dimmed {
+.widget-container.dimmed {
     opacity: 0.5;
 }
 
-.editor-floating-header-icon {
-    color: #cacaca;
-}
-
 @media screen and (max-width: 768px) {
-    .editor-floating-container {
+    .widget-container {
         left: 0;
         right: 0;
         width: auto;

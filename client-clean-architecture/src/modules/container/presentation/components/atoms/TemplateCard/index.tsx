@@ -21,10 +21,10 @@ const TemplateCard = ({
     variant = 'default'
 }: TemplateCardProps) => (
     <Container
-        className={`create-container-template-card ${variant} d-flex column items-center gap-1 p-relative text-center cursor-pointer ${isSelected ? 'selected' : ''}`}
+        className={`create-container-template-card ${variant} d-flex column items-center gap-1 p-1 p-relative text-center cursor-pointer radius-md ${isSelected ? 'selected' : ''}`}
         onClick={onClick}
     >
-        <Container className='create-container-template-icon d-flex flex-center f-shrink-0'>
+        <Container className='create-container-template-icon d-flex flex-center f-shrink-0 radius-md'>
             {icon}
         </Container>
         <Container className='create-container-template-info d-flex column gap-05'>
@@ -32,7 +32,7 @@ const TemplateCard = ({
             <Paragraph className='color-muted font-size-2'>{description}</Paragraph>
         </Container>
         {isSelected && (
-            <Container className='create-container-selected-check d-flex flex-center p-absolute'>
+            <Container className='create-container-selected-check d-flex flex-center p-absolute radius-full'>
                 <Check size={16} />
             </Container>
         )}

@@ -17,10 +17,6 @@
     border-top: 1px solid var(--color-border);
 }
 
-.document-listing-header-top-container {
-    padding: 2rem 2rem;
-}
-
 .sort-indicator {
     margin-left: 0.25rem;
     opacity: 0.6;

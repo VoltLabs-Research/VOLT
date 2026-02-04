@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import useTrajectoryUseCases from './use-trajectory-use-cases';
+import { triggerBrowserDownload } from '@/shared/utils/file';
 
 interface UseDownloadSamplesReturn {
     downloadAllSamples: () => Promise<void>;
@@ -9,17 +10,6 @@ interface UseDownloadSamplesReturn {
 const useDownloadSamples = (): UseDownloadSamplesReturn => {
     const { trajectoryRepository } = useTrajectoryUseCases();
     const [isDownloading, setIsDownloading] = useState(false);
-
-    const triggerBrowserDownload = useCallback((blob: Blob, filename: string) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }, []);
 
     const downloadAllSamples = useCallback(async () => {
         setIsDownloading(true);
@@ -32,7 +22,7 @@ const useDownloadSamples = (): UseDownloadSamplesReturn => {
         }finally{
             setIsDownloading(false);
         }
-    }, [trajectoryRepository, triggerBrowserDownload]);
+    }, [trajectoryRepository]);
 
     return { downloadAllSamples, isDownloading };
 };

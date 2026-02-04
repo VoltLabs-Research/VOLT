@@ -3,7 +3,6 @@
 }
 
 .create-container-header {
-    padding: 1.5rem 2rem;
     border-bottom: 1px solid var(--color-border-soft);
     background: var(--color-bg);
 }
@@ -11,13 +10,10 @@
 .create-container-templates-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    margin-top: 1.5rem;
 }
 
 .create-container-template-card {
     border: 1px solid var(--color-border-soft);
-    border-radius: 12px;
-    padding: 1.25rem;
     transition: all 0.2s ease;
 }
 
@@ -34,7 +30,6 @@
     width: 56px;
     height: 56px;
     background: var(--color-surface-2);
-    border-radius: 12px;
 }
 
 .create-container-template-logo {
@@ -50,13 +45,11 @@
     height: 22px;
     background: var(--accent-blue);
     color: white;
-    border-radius: 50%;
 }
 
 .create-container-config-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    margin-top: 1.5rem;
 }
 
 .create-container-config-section.full-width {
@@ -64,8 +57,6 @@
 }
 
 .create-container-config-section-header {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--color-border-soft);
 }
 
@@ -75,32 +66,17 @@
 
 .create-container-resource-row {
     border: 1px solid var(--color-border-soft);
-    border-radius: 8px;
-    margin-bottom: 0.75rem;
 }
 
 .create-container-resource-row:last-child {
     margin-bottom: 0;
 }
 
-.create-container-resource-header {
-    margin-bottom: 0.75rem;
-}
-
 .create-container-resource-value {
     background: var(--accent-blue);
     color: white;
     padding: 0.2rem 0.6rem;
-    border-radius: 16px;
     font-size: 0.8rem;
-}
-
-.create-container-mapping-row {
-    margin-bottom: 0.5rem;
-}
-
-.create-container-mapping-row:last-child {
-    margin-bottom: 0;
 }
 
 .create-container-mapping-input {
@@ -136,7 +112,6 @@
 
 .create-container-config-card {
     border: 1px solid var(--color-border-soft);
-    border-radius: 10px;
     grid-column: 1 / -1;
 }
 
@@ -148,15 +123,12 @@
 }
 
 .create-container-step-actions {
-    margin-top: 2rem;
     padding-top: 1.5rem;
     border-top: 1px solid var(--color-border-soft);
 }
 
 .create-container-review-card {
     border: 1px solid var(--color-border-soft);
-    border-radius: 10px;
-    margin-top: 1.5rem;
 }
 
 .create-container-review-item {

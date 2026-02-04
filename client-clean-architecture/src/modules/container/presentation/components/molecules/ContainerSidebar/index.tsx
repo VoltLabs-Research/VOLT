@@ -64,7 +64,7 @@ const ContainerSidebar = ({
                 </Button>
 
                 <Container className='d-flex items-center gap-1 container-details-identity'>
-                    <Container className='d-flex items-center content-center container-details-icon-large'>
+                    <Container className='d-flex items-center content-center container-details-icon-large radius-md'>
                         <Box size={24} />
                     </Container>
                     <Container className='container-details-identity-text d-flex column gap-05'>
@@ -130,7 +130,7 @@ const ContainerSidebar = ({
                         href={`http://localhost:${container.ports[0].public}`}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='d-flex items-center content-center gap-05 container-details-visit-btn font-size-2 font-weight-6'
+                        className='d-flex items-center content-center gap-05 container-details-visit-btn radius-sm font-size-2 font-weight-6'
                     >
                         Visit App <ExternalLink size={14} />
                     </a>

@@ -103,7 +103,7 @@ const CreateContainer = () => {
 
     return (
         <Container className='d-flex column create-container-page h-max overflow-hidden'>
-            <Container className='d-flex items-center gap-1-5 create-container-header f-shrink-0'>
+            <Container className='d-flex items-center gap-1-5 create-container-header p-1-5 f-shrink-0'>
                 <Button variant='ghost' intent='neutral' iconOnly onClick={() => navigate('/dashboard/containers')}>
                     <ArrowLeft size={20} />
                 </Button>

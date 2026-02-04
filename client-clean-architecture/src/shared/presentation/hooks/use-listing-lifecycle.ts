@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef, useMemo } from 'react';
 
 interface ListingMeta {
     page: number;
@@ -19,6 +19,9 @@ interface UseListingLifecycleOptions<T> {
     initialFetchParams?: Record<string, any>;
     dependencies?: any[];
     skipInitialFetch?: boolean;
+    onReset?: () => void;
+    onLoadMore?: (nextPage: number) => void;
+    resetDependencies?: any[];
 }
 
 const useListingLifecycle = <T = any>({
@@ -29,8 +32,28 @@ const useListingLifecycle = <T = any>({
     fetchData,
     initialFetchParams = { page: 1, limit: 20 },
     dependencies = [],
-    skipInitialFetch = false
+    skipInitialFetch = false,
+    onReset,
+    onLoadMore,
+    resetDependencies
 }: UseListingLifecycleOptions<T>) => {
+    // Use refs to avoid stale closures and prevent infinite loops
+    const fetchDataRef = useRef(fetchData);
+    const initialFetchParamsRef = useRef(initialFetchParams);
+    const onResetRef = useRef(onReset);
+    
+    useEffect(() => {
+        fetchDataRef.current = fetchData;
+        initialFetchParamsRef.current = initialFetchParams;
+        onResetRef.current = onReset;
+    });
+
+    // Serialize initialFetchParams for stable dependency
+    const initialFetchParamsSignature = useMemo(
+        () => JSON.stringify(initialFetchParams), 
+        [initialFetchParams]
+    );
+
     useEffect(() => {
         if (skipInitialFetch) return;
 
@@ -38,24 +61,42 @@ const useListingLifecycle = <T = any>({
         const shouldFetch = data.length === 0 || hasDependencies;
 
         if (shouldFetch) {
-            fetchData({
-                ...initialFetchParams,
+            fetchDataRef.current({
+                ...initialFetchParamsRef.current,
                 force: hasDependencies && data.length > 0
             });
         }
-    }, dependencies);
+    }, [skipInitialFetch, data.length, initialFetchParamsSignature, ...dependencies]);
+
+    const resetDeps = resetDependencies ?? dependencies;
+    const didResetRef = useRef(false);
+    useEffect(() => {
+        if (skipInitialFetch || !onResetRef.current) return;
+        if (!resetDeps || resetDeps.length === 0) return;
+
+        if (!didResetRef.current) {
+            didResetRef.current = true;
+            return;
+        }
+
+        onResetRef.current();
+    }, [skipInitialFetch, ...(resetDeps ?? [])]);
 
     const handleLoadMore = useCallback(async () => {
         if (!listingMeta.hasMore || isFetchingMore) return;
+        if (onLoadMore) {
+            onLoadMore(listingMeta.page + 1);
+            return;
+        }
         const fetchParams = {
-            ...initialFetchParams,
+            ...initialFetchParamsRef.current,
             page: listingMeta.page + 1,
             limit: listingMeta.limit,
             append: true,
             cursor: listingMeta.nextCursor
         };
-        await fetchData(fetchParams);
-    }, [listingMeta, isFetchingMore, fetchData, initialFetchParams]);
+        await fetchDataRef.current(fetchParams);
+    }, [listingMeta, isFetchingMore, onLoadMore]);
 
     return {
         handleLoadMore,

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import FormField from '@/shared/presentation/components/FormField';
 
@@ -30,4 +31,4 @@ const FormSection = ({ title, enabled, onToggle, children }: FormSectionProps) =
     );
 };
 
-export default FormSection;
+export default memo(FormSection);

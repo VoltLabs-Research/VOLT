@@ -1,16 +1,9 @@
 .collapsible-section-header {
     padding: 0.5rem 0;
-    cursor: pointer;
-    user-select: none;
 }
 
 .collapsible-section-header:hover .collapsible-section-arrow {
     color: var(--color-text-primary);
-}
-
-.collapsible-section-icon {
-    display: flex;
-    align-items: center;
 }
 
 .collapsible-section-arrow {
@@ -28,22 +21,6 @@
 
 .collapsible-section-content {
     padding: 0.5rem 0;
-}
-
-.collapsible-section-action {
-    padding: 0.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--color-text-muted);
-    transition: color 0.15s ease;
-    background: none;
-    border: none;
-}
-
-.collapsible-section-action:hover {
-    color: var(--color-text-primary);
 }
 
 .collapsible-section-action--add:hover {

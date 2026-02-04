@@ -21,9 +21,6 @@
 }
 
 .analysis-section-arrow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     color: var(--color-secondary);
 }
 
@@ -68,14 +65,6 @@
 
 .color-accent {
     color: var(--accent-blue);
-}
-
-.color-muted {
-    color: var(--color-tertiary);
-}
-
-.pl-2 {
-    padding-left: 1.5rem;
 }
 
 .analysis-search-container {

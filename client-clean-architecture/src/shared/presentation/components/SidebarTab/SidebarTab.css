@@ -8,10 +8,13 @@
 
 .editor-sidebar-option-container {
     border-radius: var(--radius-full);
-    width: 48%;
+    flex: 1 0 auto;
+    min-width: 130px;
+    padding: 0 1rem;
     transition: .1s;
     height: 45px;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .editor-sidebar-option-title {

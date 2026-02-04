@@ -1,104 +1,71 @@
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
-import Sidebar from '@/shared/presentation/components/Sidebar';
+import { useState } from 'react';
+import { memo, useMemo } from 'react';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import CanvasSidebarModifiers from '@/modules/canvas/presentation/components/molecules/CanvasSidebarModifiers';
+import Sidebar from '@/shared/presentation/components/Sidebar';
 import CanvasSidebarScene from '@/modules/canvas/presentation/components/molecules/CanvasSidebarScene';
+import CanvasSidebarModifiers from '@/modules/canvas/presentation/components/molecules/CanvasSidebarModifiers';
 import SidebarUserAvatar from '@/modules/auth/presentation/components/atoms/SidebarUserAvatar';
 import EditableTrajectoryName from '@/modules/trajectory/presentation/components/atoms/EditableTrajectoryName';
-import { BsArrowLeft } from 'react-icons/bs';
+import RenderSettingsContent from '@/modules/canvas/presentation/components/molecules/modifiers/RenderSettingsContent';
 import { MdKeyboardArrowDown } from 'react-icons/md';
-import LightsControls from '@/modules/canvas/presentation/components/molecules/LightsControls';
-import EffectsControls from '@/modules/canvas/presentation/components/molecules/EffectsControls';
-import PerformanceSettingsControls from '@/modules/canvas/presentation/components/molecules/PerformanceSettingsControls';
-import EnvironmentControls from '@/modules/canvas/presentation/components/molecules/EnvironmentControls';
-import CameraSettingsControls from '@/modules/canvas/presentation/components/molecules/CameraSettingsControls';
-import RendererSettingsControls from '@/modules/canvas/presentation/components/molecules/RendererSettingsControls';
-import CanvasGridControls from '@/modules/canvas/presentation/components/molecules/CanvasGridControls';
-import OrbitControls from '@/modules/canvas/presentation/components/molecules/OrbitControls';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import '@/modules/canvas/presentation/components/organisms/EditorSidebar/EditorSidebar.css';
 
-const RenderConfig = () => (
-    <Container className='d-flex column editor-render-options-container y-auto p-1-5'>
-        <LightsControls />
-        <EffectsControls />
-        <PerformanceSettingsControls />
-        <EnvironmentControls />
-        <CameraSettingsControls />
-        <OrbitControls />
-        <RendererSettingsControls />
-        <CanvasGridControls />
-    </Container>
-);
-
 const EditorSidebar = () => {
-    const { searchParams, updateSearchParams } = useSearchParamsState();
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const activeSidebarTab = searchParams.get('sidebar') || 'Scene';
-    const showRenderConfig = searchParams.get('renderConfig') === 'true';
+    const [activeTab, setActiveTab] = useState('Scene');
 
-    const setActiveSidebarTab = (tab: string) => {
-        updateSearchParams({ sidebar: tab === 'Scene' ? null : tab }, { replace: true });
-    };
-    
-    const setShowRenderConfig = (show: boolean) => {
-        updateSearchParams({ renderConfig: show ? 'true' : null }, { replace: true });
-    };
+    const tags = useMemo(() => {
+        const SceneTab = () => (
+            <CanvasSidebarScene trajectory={trajectory} trajectoryId={trajectory?._id} />
+        );
 
-    const SceneTab = () => (
-        <CanvasSidebarScene trajectory={trajectory} trajectoryId={trajectory?._id} />
-    );
+        const RenderTab = () => (
+            <Container>
+                <RenderSettingsContent trajectoryId={trajectory?._id} />
+            </Container>
+        );
 
-    const ModifiersTab = () => <CanvasSidebarModifiers />;
+        const ModifiersTab = () => <CanvasSidebarModifiers />;
 
-    const tags = [
-        { id: 'Scene', name: 'Scene', Component: SceneTab },
-        { id: 'Modifiers', name: 'Modifiers', Component: ModifiersTab }
-    ];
+        return [
+            { id: 'Scene', name: 'Scene', Component: SceneTab },
+            { id: 'Modifiers', name: 'Modifiers', Component: ModifiersTab },
+            { id: 'Render', name: 'Render', Component: RenderTab }
+        ];
+    }, [trajectory]);
 
     return (
         <Sidebar
             tags={tags}
-            activeTag={activeSidebarTab}
-            onTagChange={setActiveSidebarTab}
-            overrideContent={showRenderConfig ? <RenderConfig /> : null}
+            activeTag={activeTab}
+            onTagChange={setActiveTab}
+            keepMounted
         >
             <Sidebar.Header>
                 <Container className='d-flex column gap-1 sm:gap-0'>
                     <Container className='d-flex content-between items-center'>
                         <Container className='d-flex gap-1 items-center'>
-                            {showRenderConfig ? (
-                                <Container className='d-flex items-center gap-05'>
-                                    <i onClick={() => setShowRenderConfig(false)}>
-                                        <BsArrowLeft size={30} />
-                                    </i>
-
-                                    <Title>Render Settings</Title>
-                                </Container>
+                            {trajectory ? (
+                                <EditableTrajectoryName
+                                    trajectoryId={trajectory._id}
+                                    name={trajectory.name}
+                                    className='editor-sidebar-trajectory-name'
+                                />
                             ) : (
-                                <>
-                                    {trajectory ? (
-                                        <EditableTrajectoryName
-                                            trajectoryId={trajectory._id}
-                                            name={trajectory.name}
-                                            className='editor-sidebar-trajectory-name'
-                                        />
-                                    ) : (
-                                        <Title className='editor-sidebar-trajectory-name'>Trajectory</Title>
-                                    )}
-
-                                    <i className='editor-sidebar-trajectory-drop-icon-container'>
-                                        <MdKeyboardArrowDown />
-                                    </i>
-                                </>
+                                <Title className='editor-sidebar-trajectory-name'>Trajectory</Title>
                             )}
+
+                            <i className='editor-sidebar-trajectory-drop-icon-container'>
+                                <MdKeyboardArrowDown />
+                            </i>
                         </Container>
                     </Container>
                 </Container>
 
-                {!showRenderConfig && trajectory?.team && typeof trajectory.team !== 'string' && (
+                {trajectory?.team && typeof trajectory.team !== 'string' && (
                     <Paragraph className='editor-sidebar-header-team-name'>
                         {trajectory.team.name}
                     </Paragraph>
@@ -117,4 +84,4 @@ const EditorSidebar = () => {
     );
 };
 
-export default EditorSidebar;
+export default memo(EditorSidebar);

@@ -45,13 +45,13 @@ const DashboardStatCard = ({
     return (
         <Container
             onClick={handleClick}
-            className='dashboard-stat-container p-relative cursor-pointer'
+            className='dashboard-stat-container p-relative cursor-pointer p-1-5'
             style={{ cursor: isClickable ? 'pointer' : 'default' }}
         >
             <Container className='d-flex column gap-2 w-max'>
                 <Container className='d-flex column gap-1 justify-center' style={{ minHeight: '38px' }}>
                     <Container className='d-flex items-center gap-1'>
-                        <i className='d-flex flex-center dashboard-stat-icon-container color-muted'>
+                        <i className='d-flex flex-center dashboard-stat-icon-container color-muted radius-sm font-size-3'>
                             <HiOutlineServerStack />
                         </i>
                         <Container className='d-flex column gap-02'>
@@ -80,11 +80,11 @@ const DashboardStatCard = ({
                 </Container>
             </Container>
 
-            <i className='dashboard-stat-arrow-icon-container p-absolute font-size-5'>
+            <i className='dashboard-stat-arrow-icon-container p-absolute font-size-5 bottom-1 right-1'>
                 <GoArrowRight />
             </i>
 
-            <Container className='dashboard-stat-analytic-container p-absolute'>
+            <Container className='dashboard-stat-analytic-container p-absolute right-1-5'>
                 <TinyLineChart
                     lineColor={up ? themeColors.success : themeColors.error}
                     pData={series}

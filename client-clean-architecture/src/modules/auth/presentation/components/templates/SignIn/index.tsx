@@ -161,12 +161,12 @@ const SignInTemplate = () => {
     return (
         <Container className='w-max vh-max overflow-hidden'>
             <Container className='w-max vh-max sign-in-layout'>
-                <Container className='sign-in-hero-section p-relative overflow-hidden content-between column'>
+                <Container className='sign-in-hero-section p-relative overflow-hidden content-between column p-4'>
                     <WireframeBackground />
                     <Container className='sign-in-hero-overlay p-absolute inset-0' />
                     <Container className='d-flex column content-between h-max p-relative'>
                         <Container />
-                        <Container className='d-flex column gap-1-5 sign-in-hero-text-container mb-3'>
+                        <Container className='d-flex column gap-1-5 sign-in-hero-text-container mb-3 z-10'>
                             <Title className='sign-in-hero-headline'>
                                 Connect with<br />your VoltID
                             </Title>
@@ -188,7 +188,7 @@ const SignInTemplate = () => {
                             steps={steps} 
                             activeStep={step} />
 
-                        <Paragraph className='sign-in-footer-text text-center'>
+                        <Paragraph className='sign-in-footer-text text-center mt-2 font-size-1'>
                             By clicking continue, you agree to our{' '}
                             <a href='#' className='sign-in-footer-link'>Terms</a> and{' '}
                             <a href='#' className='sign-in-footer-link'>Privacy Policy</a>.

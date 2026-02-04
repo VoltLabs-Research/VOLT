@@ -182,7 +182,7 @@ const DocumentListing = <T, TContext = Record<string, never>>({
         <Container className='d-flex column h-max document-listing-container color-primary'>
             {!hideHeader && (
                 <Container className={`d-flex column ${gap}`}>
-                    <Container className='d-flex column gap-1-5 document-listing-header-top-container'>
+                    <Container className='d-flex column gap-1-5 document-listing-header-top-container p-2'>
                         <Container className='d-flex content-between items-center'>
                             <Container className='d-flex gap-1-5 items-center'>
                                 {isLoading && !data.length ? (

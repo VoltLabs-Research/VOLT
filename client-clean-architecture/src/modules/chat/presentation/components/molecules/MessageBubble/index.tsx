@@ -37,17 +37,17 @@ const MessageBubble = ({
             showAvatar && 'with-avatar'
         )}>
             {showAvatar && (
-                <Avatar user={message.sender} size='xs' className='message-bubble-avatar' />
+                <Avatar user={message.sender} size='xs' className='message-bubble-avatar radius-full' />
             )}
 
             <Container className='d-flex column w-max'>
                 {showAvatar && (
-                    <Paragraph className='message-bubble-sender font-weight-6 color-secondary'>
+                    <Paragraph className='message-bubble-sender font-weight-6 color-secondary font-size-1 mb-025'>
                         {message.sender.firstName} {message.sender.lastName}
                     </Paragraph>
                 )}
 
-                <Container className='message-bubble-content p-relative'>
+                <Container className='message-bubble-content p-075 p-relative'>
                     {isDeleted ? (
                         <Paragraph className='message-bubble-text font-size-2-5 color-muted' style={{ fontStyle: 'italic' }}>
                             This message was deleted
@@ -72,7 +72,7 @@ const MessageBubble = ({
                     {!isDeleted && children}
                 </Container>
 
-                <Container className='d-flex items-center gap-05 message-bubble-time color-muted'>
+                <Container className='d-flex items-center gap-05 message-bubble-time color-muted mt-05 font-size-1'>
                     <Paragraph>{formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}</Paragraph>
                     {message.editedAt && (
                         <Paragraph className='message-bubble-edited'>(edited)</Paragraph>

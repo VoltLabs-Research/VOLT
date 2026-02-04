@@ -1,5 +1,4 @@
 .dashboard-stats-container {
-    border-radius: var(--radius-lg);
     border: 1px solid var(--color-border-soft);
     box-shadow: var(--shadow-glass);
     backdrop-filter: var(--glass-blur);
@@ -20,37 +19,15 @@
 
 .badge-container {
     z-index: 300;
-    padding: 0.375rem 0.875rem;
-    border-radius: var(--radius-full);
     color: var(--badge-fg);
-    font-size: 0.8rem;
-}
-
-.scene-preview-name-badge {
-    top: 0.75rem;
-    left: 0.75rem;
-}
-
-.scene-preview-natoms-badge {
-    right: 0.75rem;
-    bottom: 0.75rem;
-}
-
-.scene-preview-navigate-icon {
-    right: 0.75rem;
-    top: 0.75rem;
-    padding: 0.375rem;
 }
 
 .scene-preview-container {
     box-shadow: var(--shadow-elevated);
-    border-radius: var(--radius-md);
     border: 1px solid var(--color-border-soft);
 }
 
 .dashboard-stat-arrow-icon-container {
-    bottom: 1rem;
-    right: 1rem;
     opacity: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--accent-blue);
@@ -63,7 +40,6 @@
 .dashboard-stat-container {
     flex: 1;
     min-width: 0;
-    padding: 1.25rem;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -75,10 +51,6 @@
     border-right: 1px solid var(--color-border-soft);
 }
 
-.dashboard-stat-analytic-container {
-    right: 1.25rem;
-}
-
 .dashboard-stat-analytic-container:has(.MuiChartsGrid-root) {
     top: 2.5rem;
 }
@@ -87,20 +59,10 @@
     color: var(--accent-green);
 }
 
-.dashboard-stat-last-month-helper-text {
-    font-size: .85rem;
-}
-
-.dashboard-stat-last-month-title {
-    font-size: .85rem;
-}
-
 .dashboard-stat-icon-container {
     background: var(--color-surface-2);
     width: 36px;
     height: 36px;
-    border-radius: var(--radius-sm);
-    font-size: 1.2rem;
     border: 1px solid var(--color-border);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -120,13 +82,8 @@ body.jobs-history-expanded {
 
 .jobs-history-viewer-enhanced {
     z-index: 10;
-    transition: .5s;
     width: 15rem;
     height: 3.5rem;
-    left: 1rem;
-    bottom: 1rem;
-    border-radius: var(--radius-2xl);
-    padding: 1rem 1.5rem;
     background: var(--glass-bg);
     backdrop-filter: blur(52px) saturate(160%);
     box-shadow: var(--shadow-glass);
@@ -134,10 +91,6 @@ body.jobs-history-expanded {
 }
 
 .jobs-history-viewer-enhanced.expanded {
-    left: 1rem;
-    bottom: 1rem;
-    border-radius: var(--radius-2xl);
-    padding: 0;
     cursor: default;
     width: 340px;
     height: clamp(240px, 30vh, 340px);
@@ -145,8 +98,6 @@ body.jobs-history-expanded {
 }
 
 .jobs-history-viewer-enhanced.expanded .jobs-history-expanded-content {
-    position: absolute;
-    inset: 0;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease-in-out 0.2s;
@@ -157,16 +108,11 @@ body.jobs-history-expanded {
     pointer-events: auto;
 }
 
-.jobs-history-viewer-header-enhanced {
-    padding: 1.25rem 1rem 0.75rem;
-}
-
 .header-content {
     min-width: 0;
 }
 
 .jobs-history-subtitle {
-    margin-top: 0.25rem;
     white-space: nowrap;
     text-overflow: ellipsis;
 }
@@ -185,14 +131,11 @@ body.jobs-history-expanded {
     background: var(--glass-bg);
     backdrop-filter: blur(18px) saturate(160%);
     box-shadow: var(--shadow-glass);
-    padding: .8rem 1rem;
-    border-radius: var(--radius-full);
 }
 
 .dashboard-canvas-overlay {
     background: var(--color-overlay);
     backdrop-filter: blur(6px);
-    border-radius: var(--radius-lg);
     z-index: 100;
 }
 

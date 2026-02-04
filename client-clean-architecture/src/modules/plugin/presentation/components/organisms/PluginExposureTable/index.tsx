@@ -164,12 +164,6 @@ const PluginExposureTable = ({
         }
     }, [listingSlug, pluginSlug, trajectoryId, teamId, columnDefs, pageSize, showTrajectoryColumn, pluginListingRepository]);
 
-    useEffect(() => {
-        setRows([]);
-        setColumns([]);
-        setListingMeta(prev => ({ ...prev, page: 1, hasMore: false, nextCursor: null }));
-    }, [pluginSlug, listingSlug, trajectoryId, teamId]);
-
     const { handleLoadMore } = useListingLifecycle({
         data: rows,
         isLoading: loading,
@@ -178,7 +172,12 @@ const PluginExposureTable = ({
         fetchData: fetchBatch,
         initialFetchParams: { page: 1, limit: pageSize },
         dependencies: [pluginSlug, listingSlug, trajectoryId, teamId],
-        skipInitialFetch: !compact
+        skipInitialFetch: !compact,
+        onReset: () => {
+            setRows([]);
+            setColumns([]);
+            setListingMeta(prev => ({ ...prev, page: 1, hasMore: false, nextCursor: null }));
+        }
     });
 
     const displayRows = useMemo(() => {

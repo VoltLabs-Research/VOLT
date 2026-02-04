@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type ReactNode, type ComponentType } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo, type ReactNode, type ComponentType, memo } from 'react';
 import { motion } from 'framer-motion';
 import SidebarHeader from '@/shared/presentation/components/SidebarHeader';
 import SidebarBottom from '@/shared/presentation/components/SidebarBottom';
@@ -21,25 +21,62 @@ export interface SidebarProps {
     className?: string;
     overrideContent?: ReactNode;
     children?: ReactNode;
+    position?: 'left' | 'right';
+    collapsible?: boolean;
+    /** Keep inactive tabs mounted but hidden (prevents refetch on tab switch) */
+    keepMounted?: boolean;
 };
 
 const Sidebar = ({ 
-    activeTag, 
+    activeTag: activeTagId, 
     onTagChange,
     tags, 
     children, 
     overrideContent, 
-    className = '' 
+    className = '',
+    position = 'left',
+    collapsible = true,
+    keepMounted = false
 }: SidebarProps) => {
     const [collapsed, setCollapsed] = useState(false);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+    const tabsContainerRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        if (window.innerWidth <= MOBILE_BREAKPOINT) {
-            setCollapsed(true);
-        }
+    const checkOverflow = useCallback(() => {
+        const container = tabsContainerRef.current;
+        if (!container) return;
+        
+        const { scrollLeft, scrollWidth, clientWidth } = container;
+        setCanScrollLeft(scrollLeft > 0);
+        setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
     }, []);
 
-    const toggleCollapsed = () => setCollapsed((v) => !v);
+    useEffect(() => {
+        if (window.innerWidth <= MOBILE_BREAKPOINT && collapsible) {
+            setCollapsed(true);
+        }
+    }, [collapsible]);
+
+    useEffect(() => {
+        const container = tabsContainerRef.current;
+        if (!container) return;
+
+        checkOverflow();
+        container.addEventListener('scroll', checkOverflow);
+        window.addEventListener('resize', checkOverflow);
+
+        return () => {
+            container.removeEventListener('scroll', checkOverflow);
+            window.removeEventListener('resize', checkOverflow);
+        };
+    }, [checkOverflow, tags.length]);
+
+    const toggleCollapsed = () => {
+        if (collapsible) {
+            setCollapsed((v) => !v);
+        }
+    };
 
     const header = React.Children.toArray(children).find(
         (child) => React.isValidElement(child) && child.type === SidebarHeader
@@ -56,15 +93,20 @@ const Sidebar = ({
         })
         : null;
 
+    const positionClass = position === 'right' ? 'editor-sidebar-wrapper--right' : '';
+    const activeTagConfig = useMemo(() => tags.find((tag) => tag.id === activeTagId), [tags, activeTagId]);
+
     return (
         <motion.aside
-            className={`editor-sidebar-wrapper d-flex ${className} p-absolute`}
+            className={`editor-sidebar-wrapper d-flex ${positionClass} ${className} p-absolute`}
             data-collapsed={collapsed}
+            data-collapsible={collapsible}
+            data-position={position}
             initial={false}
             animate={{ width: collapsed ? 64 : (overrideContent ? 460 : 380) }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
-            <Container className='editor-sidebar-container d-flex column content-between overflow-hidden w-max h-max'>
+            <Container className='editor-sidebar-container glass-bg b-none d-flex column content-between overflow-hidden w-max h-max'>
                 <Container className='editor-sidebar-top-container'>
                     {headerElement}
 
@@ -74,24 +116,49 @@ const Sidebar = ({
                         <>
                             {tags.length > 1 && (
                                 <Container className='p-1-5'>
-                                    <Container className='d-flex p-05 content-between editor-sidebar-options-container'>
-                                        {tags.map((tag) => (
-                                            <SidebarTab
-                                                key={tag.id}
-                                                label={tag.name}
-                                                isActive={tag.id === activeTag}
-                                                onClick={() => onTagChange?.(tag.id)}
-                                            />
-                                        ))}
+                                    <Container className='editor-sidebar-tabs-wrapper p-relative'>
+                                        {canScrollLeft && (
+                                            <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--left' />
+                                        )}
+                                        <Container 
+                                            ref={tabsContainerRef}
+                                            className='d-flex p-05 content-between editor-sidebar-options-container'
+                                        >
+                                            {tags.map((tag) => (
+                                                <SidebarTab
+                                                    key={tag.id}
+                                                    label={tag.name}
+                                                    isActive={tag.id === activeTagId}
+                                                    onClick={() => onTagChange?.(tag.id)}
+                                                />
+                                            ))}
+                                        </Container>
+                                        {canScrollRight && (
+                                            <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--right' />
+                                        )}
                                     </Container>
                                 </Container>
                             )}
 
-                            {tags.map((tag) => (
-                                <div key={tag.id} style={{ display: tag.id === activeTag ? 'block' : 'none' }}>
-                                    <tag.Component />
-                                </div>
-                            ))}
+                            {keepMounted ? (
+                                // Keep all tabs mounted, hide inactive ones with CSS
+                                tags.map((tag) => (
+                                    <div
+                                        key={tag.id}
+                                        className='editor-sidebar-body'
+                                        style={{ display: tag.id === activeTagId ? 'block' : 'none' }}
+                                    >
+                                        <tag.Component />
+                                    </div>
+                                ))
+                            ) : (
+                                // Default: only render active tab
+                                activeTagConfig && (
+                                    <div className='editor-sidebar-body'>
+                                        <activeTagConfig.Component />
+                                    </div>
+                                )
+                            )}
                         </>
                     )}
                 </Container>
@@ -102,7 +169,12 @@ const Sidebar = ({
     );
 };
 
-Sidebar.Header = SidebarHeader;
-Sidebar.Bottom = SidebarBottom;
+const MemoizedSidebar = memo(Sidebar) as React.MemoExoticComponent<typeof Sidebar> & {
+    Header: typeof SidebarHeader;
+    Bottom: typeof SidebarBottom;
+};
 
-export default Sidebar;
+MemoizedSidebar.Header = SidebarHeader;
+MemoizedSidebar.Bottom = SidebarBottom;
+
+export default MemoizedSidebar;

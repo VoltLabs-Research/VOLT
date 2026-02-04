@@ -6,7 +6,7 @@ interface UsePaginationParamsOptions {
     defaultLimit?: number;
 };
 
-interface PaginationParams {
+export interface PaginationParams {
     page: number;
     limit: number;
     search: string;

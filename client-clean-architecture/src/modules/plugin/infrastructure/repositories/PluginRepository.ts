@@ -1,6 +1,7 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import { buildFileFormData } from '@/shared/utils/file';
+import { buildPaginationQuery } from '@/shared/utils/pagination';
 import type IPluginRepository from '../../domain/ports/IPluginRepository';
 import type { Plugin } from '../../domain/entities';
 import type {
@@ -25,14 +26,12 @@ export default class PluginRepository extends BaseRepository implements IPluginR
     }
 
     async getAll(params: GetPluginsInputDTO): Promise<GetPluginsOutputDTO> {
-        const query: Record<string, unknown> = {
+        return this.getAllPaginated('/', buildPaginationQuery({
             page: params.page,
             limit: params.limit,
-            ...(params.search ? { q: params.search } : {}),
-            ...(params.status ? { status: params.status } : {})
-        };
-
-        return this.getAllPaginated('/', query);
+            search: params.search,
+            extras: params.status ? { status: params.status } : undefined
+        }));
     }
 
     async getById(params: GetPluginInputDTO): Promise<GetPluginOutputDTO> {

@@ -19,7 +19,7 @@ const ImageSelectionStep = ({
 }: ImageSelectionStepProps) => (
     <Container className='create-container-step d-flex column gap-2'>
         <Title className='font-size-5 font-weight-6'>Select a Template</Title>
-        <Container className='create-container-templates-grid gap-1'>
+        <Container className='create-container-templates-grid gap-1 mt-1-5'>
             {CONTAINER_TEMPLATES.map((template) => (
                 <TemplateCard
                     key={template.id}

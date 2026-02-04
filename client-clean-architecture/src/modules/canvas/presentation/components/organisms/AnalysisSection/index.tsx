@@ -13,7 +13,7 @@ import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-stor
 
 import ExposureOption from '@/modules/canvas/presentation/components/molecules/ExposureOption';
 import { formatConfigValue, buildArgumentLabelMap } from '@/modules/canvas/presentation/components/molecules/CanvasSidebarScene/utils';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
 
 interface AnalysisSectionProps {
     section: any;
@@ -52,7 +52,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     const [tooltipOpen, setTooltipOpen] = useState(false);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
     const getPluginArguments = usePluginStore((s) => s.getPluginArguments);
-    const { updateSearchParams } = useSearchParamsState();
+    const { setAnalysisId, setResultsSlug } = useCanvasUrlState();
 
     const handleHeaderPopoverChange = headerPopoverCallbacks.get(section.analysis._id)!;
 
@@ -67,8 +67,8 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
 
     const handleExposureAdd = useCallback((scene: any) => {
         onAddScene(scene);
-        updateSearchParams({ analysis: section.analysis._id }, { replace: true });
-    }, [onAddScene, section.analysis, updateSearchParams]);
+        setAnalysisId(section.analysis._id, { replace: true });
+    }, [onAddScene, section.analysis, setAnalysisId]);
 
     const entry = section.entry;
     const isLoaded = entry.state === 'loaded';
@@ -125,7 +125,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                     >
                         <Container className='d-flex items-center gap-05'>
                             <i
-                                className='analysis-section-arrow font-size-4'
+                                className='analysis-section-arrow d-flex items-center content-center font-size-4'
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     if (isInProgress) return;
@@ -162,10 +162,8 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                         if (!trajectoryId) return;
                         setDetailsLoading(true);
                         try {
-                            updateSearchParams({
-                                results: section.pluginSlug,
-                                analysis: section.analysis._id
-                            }, { replace: true });
+                            setResultsSlug(section.pluginSlug, { replace: true });
+                            setAnalysisId(section.analysis._id, { replace: true });
                         } finally {
                             setDetailsLoading(false);
                         }

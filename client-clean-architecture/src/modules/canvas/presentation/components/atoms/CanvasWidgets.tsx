@@ -1,26 +1,14 @@
 import React, { useMemo } from 'react';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
 import EditorSidebar from '@/modules/canvas/presentation/components/organisms/EditorSidebar';
 import TrajectoryVisibilityStatusFloatIcon from '@/modules/canvas/presentation/components/atoms/TrajectoryVisibilityStatusFloatIcon';
 import SceneTopCenteredOptions from '@/modules/canvas/presentation/components/atoms/SceneTopCenteredOptions';
 import TimestepControls from '@/modules/canvas/presentation/components/organisms/TimestepControls';
-import SlicePlane from '@/modules/canvas/presentation/components/organisms/SlicePlane';
-import PerformanceMonitor from '@/modules/canvas/presentation/components/organisms/PerformanceMonitor';
-import ColorCoding from '@/modules/canvas/presentation/components/organisms/ColorCoding';
-import ParticleFilter from '@/modules/canvas/presentation/components/organisms/ParticleFilter';
 import PluginResultsViewer from '@/modules/canvas/presentation/components/organisms/PluginResultsViewer';
-import ModifierConfiguration from '@/modules/plugin/presentation/components/organisms/ModifierConfiguration';
 import { usePluginStore } from '@/modules/plugin';
 import { useShallow } from 'zustand/react/shallow';
-import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
+import { buildModifierWidgetEntries } from '@/modules/canvas/presentation/modifiers/registry';
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
-
-const LEGACY_MODIFIERS_MAP = {
-    'slice-plane': SlicePlane,
-    'performance-monitor': PerformanceMonitor,
-    'color-coding': ColorCoding,
-    'particle-filter': ParticleFilter
-} as const;
 
 interface CanvasWidgetsProps {
     trajectory: Trajectory | null;
@@ -29,59 +17,58 @@ interface CanvasWidgetsProps {
 }
 
 const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: CanvasWidgetsProps) => {
-    const { searchParams } = useSearchParamsState();
-    const { selectedIds: activeModifiers } = useSelectionParams({ paramName: 'modifiers' });
-    const showWidgets = searchParams.get('widgets') !== 'false';
-    const resultsParam = searchParams.get('results');
-    const analysisConfigId = searchParams.get('analysis') || undefined;
+    const { activeModifiers, showWidgets, resultsSlug, analysisId, pluginSelection } = useCanvasUrlState();
     const plugins = usePluginStore(useShallow((s) => s.plugins));
 
-    // Plugin modifier format in URL: plugin=pluginId:modifierSlug
-    const pluginParam = searchParams.get('plugin');
-    const activePluginModifier = useMemo(() => {
-        if (!pluginParam) return null;
-        const [pluginId, modifierSlug] = pluginParam.split(':');
-        return pluginId && modifierSlug ? { pluginId, modifierSlug } : null;
-    }, [pluginParam]);
-
-    const legacyComponents = useMemo(() => {
-        return activeModifiers
-            .map((key) => [key, LEGACY_MODIFIERS_MAP[key as keyof typeof LEGACY_MODIFIERS_MAP]] as const)
-            .filter(([, Comp]) => !!Comp);
-    }, [activeModifiers]);
-
     const activePlugin = useMemo(() => {
-        if (!activePluginModifier?.pluginId) return null;
-        return plugins.find((plugin) => plugin._id === activePluginModifier.pluginId) ?? null;
-    }, [activePluginModifier?.pluginId, plugins]);
+        if (!pluginSelection?.pluginId) return null;
+        return plugins.find((plugin) => plugin._id === pluginSelection.pluginId) ?? null;
+    }, [pluginSelection?.pluginId, plugins]);
+
+    const modifierWidgets = useMemo(() => buildModifierWidgetEntries({
+        activeModifierIds: activeModifiers,
+        pluginSelection,
+        activePlugin,
+        trajectoryId: trajectory?._id,
+        currentTimestep
+    }), [activeModifiers, pluginSelection, activePlugin, trajectory?._id, currentTimestep]);
+
+    const widgets = useMemo(() => {
+        const entries: Array<{ key: string; element: React.ReactNode }> = [
+            { key: 'sidebar', element: <EditorSidebar /> },
+            { key: 'trajectory-status', element: <TrajectoryVisibilityStatusFloatIcon /> },
+            { key: 'scene-options', element: <SceneTopCenteredOptions scene3DRef={scene3DRef} /> }
+        ];
+
+        if (trajectory && currentTimestep !== undefined) {
+            entries.push({ key: 'timestep-controls', element: <TimestepControls /> });
+        }
+
+        if (resultsSlug) {
+            entries.push({
+                key: 'plugin-results',
+                element: (
+                    <PluginResultsViewer
+                        pluginSlug={resultsSlug}
+                        analysisId={analysisId || 'default'}
+                    />
+                )
+            });
+        }
+
+        modifierWidgets.forEach(({ key, Component, props }) => {
+            entries.push({ key, element: <Component {...(props ?? {})} /> });
+        });
+
+        return entries;
+    }, [scene3DRef, trajectory, currentTimestep, resultsSlug, analysisId, modifierWidgets]);
 
     if (!showWidgets) return null;
 
     return (
         <>
-            <EditorSidebar />
-            <TrajectoryVisibilityStatusFloatIcon />
-            <SceneTopCenteredOptions scene3DRef={scene3DRef} />
-            {(trajectory && currentTimestep !== undefined) && <TimestepControls />}
-
-            {resultsParam && (
-                <PluginResultsViewer
-                    pluginSlug={resultsParam}
-                    analysisId={analysisConfigId || 'default'}
-                />
-            )}
-
-            {activePluginModifier && activePlugin && trajectory && (
-                <ModifierConfiguration
-                    pluginId={activePluginModifier.pluginId}
-                    modifierId={activePluginModifier.modifierSlug}
-                    trajectoryId={trajectory._id}
-                    currentTimestep={currentTimestep}
-                />
-            )}
-
-            {legacyComponents.map(([key, Comp]) => (
-                <Comp key={`modifier-${key}`} />
+            {widgets.map((widget) => (
+                <React.Fragment key={widget.key}>{widget.element}</React.Fragment>
             ))}
         </>
     );

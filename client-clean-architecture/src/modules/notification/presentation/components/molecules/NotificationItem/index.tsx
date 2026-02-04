@@ -19,7 +19,7 @@ const NotificationItem = ({ notification, onClose }: NotificationItemProps) => {
 
     return (
         <Container
-            className={`notification-item cursor-pointer radius-sm ${notification.read ? 'is-read' : ''}`}
+            className={`notification-item p-075 cursor-pointer radius-sm ${notification.read ? 'is-read' : ''}`}
             onClick={handleClick}
         >
             <Container className='font-weight-6 color-primary font-size-2'>
