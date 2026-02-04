@@ -11,8 +11,8 @@ const getLibFromIconName = (iconName: string): IconLib | null => {
     return prefix in ICON_LIB_LOADERS ? (prefix as IconLib) : null;
 };
 
-const isRenderableComponent = (x: unknown): x is IconType => {
-    return typeof x === 'function';
+const isRenderableComponent = (value: unknown): value is IconType => {
+    return typeof value === 'function';
 };
 
 const moduleCache = new Map<IconLib, Promise<Record<string, unknown>>>();
@@ -45,7 +45,7 @@ const resolveIcon = async (iconName: string, fallback: IconType): Promise<IconTy
     }
 };
 
-export interface DynamicIconProps extends IconBaseProps {
+export type DynamicIconProps = IconBaseProps & {
     iconName: string;
     fallback?: IconType;
 };

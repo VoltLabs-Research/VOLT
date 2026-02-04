@@ -10,6 +10,7 @@ import ManageRolesTemplate from '@/modules/team/presentation/components/template
 import TeamInvitationTemplate from '@/modules/team/presentation/components/templates/TeamInvitation';
 import TrajectoriesListing from '@/modules/trajectory/presentation/components/templates/TrajectoriesListing';
 import PerAtomViewer from '@/modules/trajectory/presentation/components/templates/PerAtomViewer';
+import CanvasPage from '@/modules/canvas/presentation/components/templates/CanvasPage';
 import AnalysesListing from '@/modules/analysis/presentation/components/templates/AnalysesListing';
 import SimulationCellsListing from '@/modules/simulation-cell/presentation/components/templates/SimulationCellsListing';
 import PluginsListing from '@/modules/plugin/presentation/components/templates/PluginsListing';
@@ -66,6 +67,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/trajectories/list',
             component: TrajectoriesListing
+        },
+        {
+            path: '/canvas/:trajectoryId',
+            component: CanvasPage
         },
         {
             path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId',

@@ -1,12 +1,48 @@
 import { create } from 'zustand';
+import { container } from 'tsyringe';
 import type { Plugin } from '../../domain/entities';
+import type { IExposureComputed, IArgumentDefinition } from '../../domain/entities';
+import type IPluginRepository from '../../domain/ports/IPluginRepository';
+import { PLUGIN_TOKENS } from '../../infrastructure/di/tokens';
+import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+
+export interface RenderableExposure {
+    pluginId: string;
+    pluginSlug: string;
+    analysisId: string;
+    exposureId: string;
+    modifierId?: string;
+    name: string;
+    icon?: string;
+    results: string;
+    canvas: boolean;
+    raster: boolean;
+    perAtomProperties?: string[];
+    export?: {
+        exporter?: string;
+        type?: string;
+        options?: Record<string, unknown>;
+    };
+}
+
+export interface ResolvedModifier {
+    plugin: Plugin;
+    pluginSlug: string;
+    name: string;
+    icon?: string;
+}
+
+export type PluginArgument = IArgumentDefinition;
 
 interface PluginState {
     plugins: Plugin[];
     pluginsBySlug: Record<string, Plugin>;
-    isLoading: boolean;
+    modifiers: ResolvedModifier[];
+    loading: boolean;
+    isFetchingMore: boolean;
     error: string | null;
-};
+    listingMeta: { page: number; limit: number; total: number; hasMore: boolean };
+}
 
 interface PluginActions {
     setPlugins: (items: Plugin[]) => void;
@@ -16,28 +52,85 @@ interface PluginActions {
     updatePlugin: (id: string, updates: Partial<Plugin>) => void;
     setLoading: (value: boolean) => void;
     setError: (error: string | null) => void;
-    reset: () => void;
-};
+
+    fetchPlugins: (opts?: {
+        page?: number;
+        limit?: number;
+        search?: string;
+        append?: boolean;
+        force?: boolean;
+    }) => Promise<void>;
+    fetchPlugin: (slug: string) => Promise<void>;
+    getModifiers: () => ResolvedModifier[];
+    getPluginArguments: (pluginSlug: string) => PluginArgument[];
+    getRenderableExposures: (
+        trajectoryId: string,
+        analysisId?: string,
+        context?: 'canvas' | 'raster',
+        pluginSlug?: string
+    ) => Promise<RenderableExposure[]>;
+    getAllExposures: (
+        trajectoryId: string,
+        analysisId?: string,
+        pluginSlug?: string
+    ) => Promise<RenderableExposure[]>;
+    registerPlugins: (plugins: Plugin[]) => void;
+    resetPlugins: () => void;
+}
 
 type PluginStore = PluginState & PluginActions;
 
 const initialState: PluginState = {
     plugins: [],
     pluginsBySlug: {},
-    isLoading: false,
-    error: null
+    modifiers: [],
+    loading: false,
+    isFetchingMore: false,
+    error: null,
+    listingMeta: { page: 1, limit: 20, total: 0, hasMore: false }
 };
 
 const buildPluginsBySlug = (plugins: Plugin[]): Record<string, Plugin> => {
     return Object.fromEntries(plugins.map((p) => [p.slug, p]));
 };
 
-const usePluginStore = create<PluginStore>((set) => ({
+const resolveModifiersFromPlugins = (plugins: Plugin[]): ResolvedModifier[] => {
+    return plugins
+        .filter(plugin => plugin.modifier)
+        .map(plugin => ({
+            plugin,
+            pluginSlug: plugin.slug,
+            name: plugin.modifier?.name || plugin.slug,
+            icon: plugin.modifier?.icon
+        }));
+};
+
+const toRenderableExposure = (
+    plugin: Plugin,
+    exposure: IExposureComputed,
+    analysisId: string
+): RenderableExposure => ({
+    pluginId: plugin._id,
+    pluginSlug: plugin.slug,
+    analysisId,
+    exposureId: exposure._id,
+    modifierId: plugin.slug,
+    name: exposure.name,
+    icon: exposure.icon,
+    results: exposure.results,
+    canvas: exposure.canvas,
+    raster: exposure.raster,
+    perAtomProperties: exposure.perAtomProperties,
+    export: exposure.export || undefined
+});
+
+const usePluginStore = create<PluginStore>((set, get) => ({
     ...initialState,
 
     setPlugins: (items) => set({
         plugins: items,
-        pluginsBySlug: buildPluginsBySlug(items)
+        pluginsBySlug: buildPluginsBySlug(items),
+        modifiers: resolveModifiersFromPlugins(items)
     }),
 
     appendPlugins: (items) => set((state) => {
@@ -46,7 +139,8 @@ const usePluginStore = create<PluginStore>((set) => ({
         const newPlugins = [...state.plugins, ...uniqueNewItems];
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins)
+            pluginsBySlug: buildPluginsBySlug(newPlugins),
+            modifiers: resolveModifiersFromPlugins(newPlugins)
         };
     }),
 
@@ -54,7 +148,8 @@ const usePluginStore = create<PluginStore>((set) => ({
         const newPlugins = [item, ...state.plugins];
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins)
+            pluginsBySlug: buildPluginsBySlug(newPlugins),
+            modifiers: resolveModifiersFromPlugins(newPlugins)
         };
     }),
 
@@ -62,7 +157,8 @@ const usePluginStore = create<PluginStore>((set) => ({
         const newPlugins = state.plugins.filter((p) => p._id !== id);
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins)
+            pluginsBySlug: buildPluginsBySlug(newPlugins),
+            modifiers: resolveModifiersFromPlugins(newPlugins)
         };
     }),
 
@@ -72,14 +168,142 @@ const usePluginStore = create<PluginStore>((set) => ({
         );
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins)
+            pluginsBySlug: buildPluginsBySlug(newPlugins),
+            modifiers: resolveModifiersFromPlugins(newPlugins)
         };
     }),
 
-    setLoading: (value) => set({ isLoading: value }),
+    setLoading: (value) => set({ loading: value }),
 
     setError: (error) => set({ error }),
 
+    async fetchPlugins(options = {}) {
+        const {
+            page = 1,
+            limit = 20,
+            search = '',
+            append = false,
+            force = false
+        } = options;
+
+        const state = get();
+        if (append && state.isFetchingMore) return;
+        if (!append && state.loading) return;
+
+        if (!force && !append && page === 1 && state.plugins.length > 0) {
+            return;
+        }
+
+        const loadingKey = append ? 'isFetchingMore' : 'loading';
+        set({ [loadingKey]: true } as any);
+
+        try {
+            const repository = container.resolve<IPluginRepository>(PLUGIN_TOKENS.PluginRepository);
+            const response = await repository.getAll({ page, limit, search });
+            const data = (response as PaginatedResponse<Plugin>).data ?? [];
+            const pagination = (response as PaginatedResponse<Plugin>).pagination;
+
+            const nextPlugins = append ? [...state.plugins, ...data] : data;
+            const pluginsBySlug = buildPluginsBySlug(nextPlugins);
+            const modifiers = resolveModifiersFromPlugins(nextPlugins);
+
+            set({
+                plugins: nextPlugins,
+                pluginsBySlug,
+                modifiers,
+                listingMeta: {
+                    page: pagination.page,
+                    limit: pagination.limit,
+                    total: pagination.total,
+                    hasMore: pagination.hasMore
+                },
+                error: null
+            });
+        } catch (error) {
+            set({ error: error instanceof Error ? error.message : 'Failed to load plugins' });
+        } finally {
+            set({ [loadingKey]: false } as any);
+        }
+    },
+
+    async fetchPlugin(slug: string) {
+        const state = get();
+        if (state.pluginsBySlug[slug]) return;
+
+        set({ loading: true });
+        try {
+            const repository = container.resolve<IPluginRepository>(PLUGIN_TOKENS.PluginRepository);
+            const plugin = await repository.getById({ id: slug });
+            const nextPluginsBySlug = { ...get().pluginsBySlug, [plugin.slug]: plugin };
+            const nextPlugins = [plugin, ...get().plugins.filter(p => p.slug !== plugin.slug)];
+            set({
+                plugins: nextPlugins,
+                pluginsBySlug: nextPluginsBySlug,
+                modifiers: resolveModifiersFromPlugins(nextPlugins),
+                loading: false
+            });
+        } catch (error) {
+            console.error(`Failed to fetch plugin ${slug}:`, error);
+            set({ loading: false });
+        }
+    },
+
+    getModifiers: () => get().modifiers,
+
+    getPluginArguments: (pluginSlug: string) => {
+        const plugin = get().pluginsBySlug[pluginSlug];
+        return (plugin?.arguments as PluginArgument[]) ?? [];
+    },
+
+    getRenderableExposures: async (_trajectoryId, analysisId, context, pluginSlug) => {
+        if (!analysisId) return [];
+        const state = get();
+        const plugin = pluginSlug ? state.pluginsBySlug[pluginSlug] : undefined;
+        if (!plugin?.exposures) return [];
+
+        const exposures = plugin.exposures
+            .filter((exp) => (context === 'raster' ? exp.raster : exp.canvas))
+            .map((exp) => toRenderableExposure(plugin, exp, analysisId));
+
+        return exposures;
+    },
+
+    getAllExposures: async (_trajectoryId, analysisId, pluginSlug) => {
+        if (!analysisId) return [];
+        const state = get();
+        const plugin = pluginSlug ? state.pluginsBySlug[pluginSlug] : undefined;
+        if (!plugin?.exposures) return [];
+        return plugin.exposures.map((exp) => toRenderableExposure(plugin, exp, analysisId));
+    },
+
+    registerPlugins(incomingPlugins: Plugin[]) {
+        const state = get();
+        const nextPluginsBySlug = { ...state.pluginsBySlug };
+
+        let changed = false;
+
+        const nextPlugins = [...state.plugins];
+
+        for (const plugin of incomingPlugins) {
+            if (!plugin?.slug) continue;
+            const existing = nextPluginsBySlug[plugin.slug];
+            if (!existing) {
+                nextPlugins.unshift(plugin);
+                changed = true;
+            }
+            nextPluginsBySlug[plugin.slug] = plugin;
+        }
+
+        if (changed) {
+            set({
+                plugins: nextPlugins,
+                pluginsBySlug: nextPluginsBySlug,
+                modifiers: resolveModifiersFromPlugins(nextPlugins)
+            });
+        }
+    },
+
+    resetPlugins: () => set(initialState),
     reset: () => set(initialState)
 }));
 

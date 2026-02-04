@@ -66,7 +66,7 @@ const TrajectoriesListing = () => {
         actions: {
             view: {
                 label: 'View Scene',
-                handler: (trajectory) => navigate(`/dashboard/trajectory/${trajectory._id}`)
+                handler: (trajectory) => navigate(`/canvas/${trajectory._id}`)
             },
             viewAtoms: {
                 label: 'Inspect Atoms',

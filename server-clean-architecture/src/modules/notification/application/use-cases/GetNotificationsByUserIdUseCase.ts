@@ -19,13 +19,10 @@ export default class GetNotificationsByUserIdUseCase
         const { userId } = input;
         const result = await this.notificationRepo.findAll({
             filter: { recipient: userId },
-            page: 1, // Assume default pagination
+            page: 1,
             limit: 50
         });
 
-        // The DTO likely expects 'notifications' array, not 'results'.
-        // Assuming GetNotificationsByUserIdOutputDTO has { notifications: NotificationProps[], total: number } 
-        // Based on other patterns. I will check DTO if this fails, but usually:
         return Result.ok({
             data: result.data.map(n => n.props),
             total: result.total,

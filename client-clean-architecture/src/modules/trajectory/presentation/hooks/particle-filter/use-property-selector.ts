@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import useFrameProperties from './use-frame-properties';
 
 export interface PropertyOption{
@@ -48,8 +48,8 @@ const usePropertySelector = (params: UsePropertySelectorParams): UsePropertySele
         Object.entries(properties.modifiers).forEach(([exposureId, props]) => {
             props.forEach((prop) => {
                 options.push({
-                    value: `${exposureId}:${prop}`,
-                    title: `${prop} (${exposureId})`,
+                    value: prop,
+                    title: prop,
                     exposureId
                 });
             });
@@ -57,6 +57,19 @@ const usePropertySelector = (params: UsePropertySelectorParams): UsePropertySele
 
         return options;
     }, [properties]);
+
+    useEffect(() => {
+        setSelectedProperty('');
+        setSelectedExposureId(null);
+    }, [analysisId]);
+
+    useEffect(() => {
+        if (selectedProperty !== '' || !properties?.base?.length) return;
+        const typeProperty = properties.base.find((prop) => prop.toLowerCase() === 'type');
+        if (typeProperty) {
+            setSelectedProperty(typeProperty);
+        }
+    }, [properties?.base, selectedProperty]);
 
     const handlePropertyChange = useCallback((value: string) => {
         setSelectedProperty(value);

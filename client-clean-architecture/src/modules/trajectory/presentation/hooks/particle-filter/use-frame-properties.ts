@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import useParticleFilterUseCases from './use-particle-filter-use-cases';
-import type { FilterPropertiesData } from '../../../application/dtos/particle-filter';
+import { useState, useEffect } from 'react';
+import useColorCodingUseCases from '../color-coding/use-color-coding-use-cases';
+import type { ColorCodingProperties } from '../../../application/dtos/color-coding';
 
 interface UseFramePropertiesParams{
     trajectoryId?: string;
@@ -9,17 +10,17 @@ interface UseFramePropertiesParams{
 };
 
 interface UseFramePropertiesResult{
-    properties: FilterPropertiesData | null;
+    properties: ColorCodingProperties;
     isLoading: boolean;
     error: string | null;
 };
 
 const useFrameProperties = (params: UseFramePropertiesParams): UseFramePropertiesResult => {
     const { trajectoryId, analysisId, timestep } = params;
-    const [properties, setProperties] = useState<FilterPropertiesData | null>(null);
+    const [properties, setProperties] = useState<ColorCodingProperties>({ base: [], modifiers: {} });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { particleFilterRepository } = useParticleFilterUseCases();
+    const { colorCodingRepository } = useColorCodingUseCases();
 
     const fetchProperties = async (
         trajectoryId: string,
@@ -30,7 +31,7 @@ const useFrameProperties = (params: UseFramePropertiesParams): UseFramePropertie
         setError(null);
 
         try{
-            const result = await particleFilterRepository.getProperties({
+            const result = await colorCodingRepository.getProperties({
                 trajectoryId,
                 analysisId,
                 timestep
@@ -44,10 +45,10 @@ const useFrameProperties = (params: UseFramePropertiesParams): UseFramePropertie
     };
 
     useEffect(() => {
-        if(!trajectoryId || !analysisId || timestep === undefined) return;
+        if(!trajectoryId || timestep === undefined) return;
 
-        fetchProperties(trajectoryId, analysisId, timestep);
-    }, [trajectoryId, analysisId, timestep, particleFilterRepository]);
+        fetchProperties(trajectoryId, analysisId || '', timestep);
+    }, [trajectoryId, analysisId, timestep, colorCodingRepository]);
 
     return { properties, isLoading, error };
 };

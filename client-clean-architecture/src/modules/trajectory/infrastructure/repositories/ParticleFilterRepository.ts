@@ -8,7 +8,9 @@ import type {
     PreviewFilterOutputDTO,
     ApplyFilterInputDTO,
     ApplyFilterOutputDTO,
-    GetFilteredGlbInputDTO
+    GetFilteredGlbInputDTO,
+    GetUniqueValuesInputDTO,
+    GetUniqueValuesOutputDTO
 } from '../../application/dtos/particle-filter';
 
 @injectable()
@@ -42,5 +44,13 @@ export default class ParticleFilterRepository extends BaseRepository implements 
         return this.client.request<Blob>('GET', `/glb/${trajectoryId}/${analysisId}/${fileId}`, {
             responseType: 'blob'
         });
+    }
+
+    async getUniqueValues(params: GetUniqueValuesInputDTO): Promise<GetUniqueValuesOutputDTO>{
+        const { trajectoryId, analysisId, ...query } = params;
+        const path = analysisId
+            ? `/unique-values/${trajectoryId}/${analysisId}`
+            : `/unique-values/${trajectoryId}`;
+        return this.client.get<GetUniqueValuesOutputDTO>(path, query);
     }
 };

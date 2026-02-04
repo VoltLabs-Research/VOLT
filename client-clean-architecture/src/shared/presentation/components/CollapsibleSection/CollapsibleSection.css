@@ -8,6 +8,11 @@
     color: var(--color-text-primary);
 }
 
+.collapsible-section-icon {
+    display: flex;
+    align-items: center;
+}
+
 .collapsible-section-arrow {
     transition: transform 0.25s ease;
 }

@@ -12,13 +12,15 @@ export interface ApiResponse<T>{
  */
 export interface RawPaginatedResponse<T>{
     status: 'success';
-    data: {
+    data: T[] | {
         data: T[];
         total: number;
         page: number;
         totalPages: number;
         limit: number;
     };
+    pagination?: PaginationMeta;
+    _meta?: Record<string, unknown>;
 };
 
 export default class BaseRepository{
@@ -39,7 +41,22 @@ export default class BaseRepository{
      * Transforms the raw server paginated response to the client's PaginatedResponse format
      */
     protected unwrapPaginated<T>(raw: RawPaginatedResponse<T>): PaginatedResponse<T>{
-        const { data: inner } = raw;
+        if(Array.isArray(raw.data) && raw.pagination){
+            return {
+                status: 'success',
+                data: raw.data,
+                pagination: raw.pagination,
+                _meta: raw._meta
+            };
+        }
+
+        const inner = raw.data as {
+            data: T[];
+            total: number;
+            page: number;
+            totalPages: number;
+            limit: number;
+        };
 
         const pagination: PaginationMeta = {
             page: inner.page,
