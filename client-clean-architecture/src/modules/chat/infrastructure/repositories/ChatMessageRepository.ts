@@ -1,5 +1,6 @@
 import { injectable } from 'tsyringe';
-import BaseRepository, { ApiResponse, RawPaginatedResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import { buildFileFormData } from '@/shared/utils/file';
 import type IChatMessageRepository from '../../domain/ports/IChatMessageRepository';
 import type { FilePreview, UploadedFile } from '../../domain/ports/IChatMessageRepository';
 import type { ChatMessage } from '../../domain/entities';
@@ -16,11 +17,7 @@ export default class ChatMessageRepository extends BaseRepository implements ICh
         chatId: string,
         params?: { page?: number; limit?: number }
     ): Promise<PaginatedResponse<ChatMessage>> {
-        const response = await this.client.get<RawPaginatedResponse<ChatMessage>>(
-            `/${chatId}/messages`,
-            params
-        );
-        return this.unwrapPaginated(response);
+        return this.getAllPaginated(`/${chatId}/messages`, params);
     }
 
     async sendMessage(chatId: string, dto: SendMessageDTO): Promise<ChatMessage> {
@@ -32,8 +29,7 @@ export default class ChatMessageRepository extends BaseRepository implements ICh
     }
 
     async sendFileMessage(chatId: string, file: File): Promise<ChatMessage> {
-        const formData = new FormData();
-        formData.append('file', file);
+        const formData = buildFileFormData([{ name: 'file', file }]);
         
         const response = await this.client.post<ApiResponse<ChatMessage>>(
             `/${chatId}/send-file`,
@@ -43,8 +39,7 @@ export default class ChatMessageRepository extends BaseRepository implements ICh
     }
 
     async uploadFile(chatId: string, file: File): Promise<UploadedFile> {
-        const formData = new FormData();
-        formData.append('file', file);
+        const formData = buildFileFormData([{ name: 'file', file }]);
         
         const response = await this.client.post<ApiResponse<UploadedFile>>(
             `/${chatId}/upload`,

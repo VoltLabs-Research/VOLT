@@ -1,16 +1,15 @@
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import Sidebar from '@/shared/presentation/components/Sidebar';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import CanvasSidebarModifiers from '@/modules/canvas/presentation/components/molecules/CanvasSidebarModifiers';
 import CanvasSidebarScene from '@/modules/canvas/presentation/components/molecules/CanvasSidebarScene';
 import SidebarUserAvatar from '@/modules/auth/presentation/components/atoms/SidebarUserAvatar';
-import useCanvasUIStore from '@/modules/canvas/presentation/stores/use-canvas-ui-store';
 import EditableTrajectoryName from '@/modules/trajectory/presentation/components/atoms/EditableTrajectoryName';
 import { BsArrowLeft } from 'react-icons/bs';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import LightsControls from '@/modules/canvas/presentation/components/molecules/LightsControls';
 import EffectsControls from '@/modules/canvas/presentation/components/molecules/EffectsControls';
-import PerformanceSettingsControls from '@/modules/canvas/presentation/components/molecules/PerfomanceSettingsControls';
+import PerformanceSettingsControls from '@/modules/canvas/presentation/components/molecules/PerformanceSettingsControls';
 import EnvironmentControls from '@/modules/canvas/presentation/components/molecules/EnvironmentControls';
 import CameraSettingsControls from '@/modules/canvas/presentation/components/molecules/CameraSettingsControls';
 import RendererSettingsControls from '@/modules/canvas/presentation/components/molecules/RendererSettingsControls';
@@ -35,11 +34,18 @@ const RenderConfig = () => (
 );
 
 const EditorSidebar = () => {
+    const { searchParams, updateSearchParams } = useSearchParamsState();
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const activeSidebarTab = useEditorStore((state) => state.configuration.activeSidebarTab);
-    const setActiveSidebarTab = useEditorStore((state) => state.configuration.setActiveSidebarTag);
-    const showRenderConfig = useCanvasUIStore((state) => state.showRenderConfig);
-    const setShowRenderConfig = useCanvasUIStore((state) => state.setShowRenderConfig);
+    const activeSidebarTab = searchParams.get('sidebar') || 'Scene';
+    const showRenderConfig = searchParams.get('renderConfig') === 'true';
+
+    const setActiveSidebarTab = (tab: string) => {
+        updateSearchParams({ sidebar: tab === 'Scene' ? null : tab }, { replace: true });
+    };
+    
+    const setShowRenderConfig = (show: boolean) => {
+        updateSearchParams({ renderConfig: show ? 'true' : null }, { replace: true });
+    };
 
     const SceneTab = () => (
         <CanvasSidebarScene trajectory={trajectory} trajectoryId={trajectory?._id} />

@@ -9,11 +9,11 @@ import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import ExposureSkeleton from '@/modules/canvas/presentation/components/atoms/ExposureSkeleton';
 import CursorTooltip from '@/shared/presentation/components/CursorTooltip';
 import AnalysisTooltipContent from '@/modules/canvas/presentation/components/molecules/AnalysisTooltipContent';
+import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 
 import ExposureOption from '@/modules/canvas/presentation/components/molecules/ExposureOption';
 import { formatConfigValue, buildArgumentLabelMap } from '@/modules/canvas/presentation/components/molecules/CanvasSidebarScene/utils';
-import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
-import useCanvasUIStore from '@/modules/canvas/presentation/stores/use-canvas-ui-store';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 
 interface AnalysisSectionProps {
     section: any;
@@ -28,7 +28,6 @@ interface AnalysisSectionProps {
     onRemoveScene: (scene: any) => void;
     isSceneActive: (scene: any) => boolean;
     activeScene: any;
-    updateAnalysisConfig: (analysis: any) => void;
     onDelete: (analysisId: string) => void;
     isInProgress?: boolean;
 }
@@ -45,7 +44,6 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     onRemoveScene,
     isSceneActive,
     activeScene,
-    updateAnalysisConfig,
     onDelete,
     isInProgress = false
 }) => {
@@ -54,7 +52,7 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
     const [tooltipOpen, setTooltipOpen] = useState(false);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
     const getPluginArguments = usePluginStore((s) => s.getPluginArguments);
-    const setResultsViewerData = useCanvasUIStore((s) => s.setResultsViewerData);
+    const { updateSearchParams } = useSearchParamsState();
 
     const handleHeaderPopoverChange = headerPopoverCallbacks.get(section.analysis._id)!;
 
@@ -69,8 +67,8 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
 
     const handleExposureAdd = useCallback((scene: any) => {
         onAddScene(scene);
-        updateAnalysisConfig(section.analysis);
-    }, [onAddScene, updateAnalysisConfig, section.analysis]);
+        updateSearchParams({ analysis: section.analysis._id }, { replace: true });
+    }, [onAddScene, section.analysis, updateSearchParams]);
 
     const entry = section.entry;
     const isLoaded = entry.state === 'loaded';
@@ -164,18 +162,10 @@ const AnalysisSection: React.FC<AnalysisSectionProps> = ({
                         if (!trajectoryId) return;
                         setDetailsLoading(true);
                         try {
-                            const allExposures = await usePluginStore.getState().getAllExposures(
-                                trajectoryId,
-                                section.analysis._id,
-                                section.pluginSlug
-                            );
-
-                            setResultsViewerData({
-                                pluginSlug: section.pluginSlug,
-                                pluginName: section.pluginDisplayName,
-                                analysisId: section.analysis._id,
-                                exposures: allExposures
-                            });
+                            updateSearchParams({
+                                results: section.pluginSlug,
+                                analysis: section.analysis._id
+                            }, { replace: true });
                         } finally {
                             setDetailsLoading(false);
                         }

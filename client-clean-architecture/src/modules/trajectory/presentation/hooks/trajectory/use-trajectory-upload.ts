@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import useCreateTrajectory from './use-create-trajectory';
+import { buildFileFormData } from '@/shared/utils/file';
 import type { FileWithPath } from '@/shared/utils/file';
 
 interface UseTrajectoryUploadResult {
@@ -17,11 +18,12 @@ const useTrajectoryUpload = (): UseTrajectoryUploadResult => {
         setIsUploading(true);
 
         try {
-            const formData = new FormData();
-            formData.append('name', folderName);
+            const formData = buildFileFormData(
+                files.map(({ file }) => ({ name: 'files', file })),
+                { name: folderName }
+            );
 
-            files.forEach(({ file, path }) => {
-                formData.append('files', file);
+            files.forEach(({ path }) => {
                 formData.append('paths', path);
             });
 

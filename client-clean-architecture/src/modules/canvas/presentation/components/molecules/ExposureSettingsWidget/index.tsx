@@ -1,10 +1,10 @@
-import { useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { TbSettings, TbX } from 'react-icons/tb';
 import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
 import FormRow from '@/modules/canvas/presentation/components/atoms/form/FormRow';
-import useCanvasUIStore from '@/modules/canvas/presentation/stores/use-canvas-ui-store';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
-import type { SceneObjectType } from '@/modules/canvas/presentation/types/stores/editor/model';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
+import type { SceneObjectType } from '@/modules/fractal/presentation/types/stores/editor/scene-types';
 import '@/modules/canvas/presentation/components/molecules/ExposureSettingsWidget/ExposureSettingsWidget.css';
 
 const getSceneKey = (scene: SceneObjectType): string => {
@@ -15,15 +15,32 @@ const getSceneKey = (scene: SceneObjectType): string => {
 };
 
 const ExposureSettingsWidget = () => {
-    const exposureSettingsScene = useCanvasUIStore((s) => s.exposureSettingsScene);
-    const closeExposureSettings = useCanvasUIStore((s) => s.closeExposureSettings);
-    const sceneOpacities = useEditorStore((s) => s.sceneOpacities);
-    const setSceneOpacity = useEditorStore((s) => s.setSceneOpacity);
+    const { searchParams, removeParam } = useSearchParamsState();
+    const settings = searchParams.get('settings');
+    const { sceneOpacities, setSceneOpacity } = useEditorStore(useShallow((s) => ({
+        sceneOpacities: s.sceneOpacities,
+        setSceneOpacity: s.setSceneOpacity
+    })));
 
-    const sceneKey = useMemo(() => {
-        if (!exposureSettingsScene) return '';
-        return getSceneKey(exposureSettingsScene);
-    }, [exposureSettingsScene]);
+    const parseScene = (value: string | null): SceneObjectType | null => {
+        if (!value) return null;
+        if (value.startsWith('plugin:')) {
+            const [, analysisId, exposureId] = value.split(':');
+            if (!analysisId || !exposureId) return null;
+            return {
+                source: 'plugin',
+                sceneType: exposureId,
+                analysisId,
+                exposureId
+            } as any;
+        }
+        const [source, sceneType] = value.split(':');
+        if (!source || !sceneType) return null;
+        return { source, sceneType } as any;
+    };
+
+    const exposureSettingsScene = parseScene(settings);
+    const sceneKey = exposureSettingsScene ? getSceneKey(exposureSettingsScene) : '';
 
     const opacity = sceneOpacities[sceneKey] ?? 1.0;
 
@@ -43,7 +60,7 @@ const ExposureSettingsWidget = () => {
                     </span>
                     <button
                         className='exposure-settings-widget-close cursor-pointer'
-                        onClick={closeExposureSettings}
+                        onClick={() => removeParam('settings', { replace: true })}
                         type='button'
                     >
                         <TbX size={16} />

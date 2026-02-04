@@ -1,5 +1,5 @@
 import { injectable, inject } from 'tsyringe';
-import BaseRepository, { ApiResponse, RawPaginatedResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import { base64ToBlobUrl } from '@/shared/utils/file';
 import type ITrajectoryRepository from '../../domain/ports/ITrajectoryRepository';
 import type IPreviewCache from '../../domain/ports/IPreviewCache';
@@ -27,8 +27,7 @@ export default class TrajectoryRepository extends BaseRepository implements ITra
     }
 
     async getAll(params: GetTrajectoriesInputDTO): Promise<GetTrajectoriesOutputDTO>{
-        const raw = await this.client.get<RawPaginatedResponse<Trajectory>>('/', params);
-        return this.unwrapPaginated(raw);
+        return this.getAllPaginated('/', params);
     }
 
     async getById(id: string): Promise<Trajectory>{
@@ -69,9 +68,8 @@ export default class TrajectoryRepository extends BaseRepository implements ITra
             }
         }
 
-        const response = await this.client.get<ApiResponse<{ preview: string }>>(`/${trajectoryId}/preview`, query);
-        const base64 = this.unwrap(response).preview;
-        const blobUrl = base64ToBlobUrl(base64);
+        const response = await this.client.get<ApiResponse<string>>(`/${trajectoryId}/preview`, query);
+        const blobUrl = base64ToBlobUrl(response.data);
 
         this.previewCache.set(trajectoryId, blobUrl, cacheVersion);
 

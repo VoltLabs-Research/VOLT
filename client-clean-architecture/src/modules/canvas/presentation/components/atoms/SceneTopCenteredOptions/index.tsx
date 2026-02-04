@@ -9,13 +9,13 @@ import { CiShare1 } from 'react-icons/ci';
 import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
 import Select from '@/shared/presentation/components/Select';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import type { Scene3DRef } from '@/modules/canvas/presentation/components/organisms/Scene3D';
+import type { FractalSceneRef } from '@/modules/fractal/presentation/components/FractalScene';
 import '@/modules/canvas/presentation/components/atoms/SceneTopCenteredOptions/SceneTopCenteredOptions.css';
 
 const ZOOM_PRESETS = [50, 75, 100, 125, 150, 200];
 
 interface SceneTopCenteredOptionsProps {
-    scene3DRef?: React.RefObject<Scene3DRef>;
+    scene3DRef?: React.RefObject<FractalSceneRef>;
 }
 
 const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) => {

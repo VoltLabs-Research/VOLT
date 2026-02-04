@@ -4,8 +4,8 @@ import { AnimatePresence } from 'framer-motion';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import useKeyboardShortcuts from '@/shared/presentation/hooks/use-keyboard-shortcuts';
 import { useKeyboardShortcutsStore } from '@/shared/presentation/stores/use-keyboard-shortcuts-store';
-import Scene3D, { type Scene3DRef } from '@/modules/canvas/presentation/components/organisms/Scene3D';
-import TimestepViewer from '@/modules/canvas/presentation/components/organisms/TimestepViewer';
+import FractalScene, { type FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
+import TimestepViewer from '@/modules/fractal/presentation/components/organisms/TimestepViewer';
 import useCanvasCoordinator from '@/modules/canvas/presentation/hooks/use-canvas-coordinator';
 import useCanvasPresence from '@/modules/canvas/presentation/hooks/use-canvas-presence';
 import CanvasWidgets from '@/modules/canvas/presentation/components/atoms/CanvasWidgets';
@@ -13,12 +13,16 @@ import CanvasPresenceAvatars from '@/modules/canvas/presentation/components/atom
 import PreloadingOverlay from '@/modules/canvas/presentation/components/atoms/PreloadingOverlay';
 import KeyboardShortcutsPanel from '@/shared/presentation/components/KeyboardShortcutsPanel';
 import ShortcutFeedback from '@/shared/presentation/components/ShortcutFeedback';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
-import useAnalysisConfigStore from '@/modules/canvas/presentation/stores/use-analysis-config-store';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
+import { useShallow } from 'zustand/react/shallow';
+import { selectFractalSceneConfig, selectFractalSceneConfigSignature } from '@/modules/fractal/presentation/stores/editor/selectors';
+import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import Loader from '@/shared/presentation/components/Loader';
 import Container from '@/shared/presentation/components/Container';
 import ExposureSettingsWidget from '@/modules/canvas/presentation/components/molecules/ExposureSettingsWidget';
 import JobsHistoryViewer from '@/modules/trajectory/presentation/components/organisms/JobsHistoryViewer';
+import { setSceneInteracting } from '@/modules/canvas/presentation/hooks/use-scene-interaction';
 import '@/modules/canvas/presentation/components/templates/CanvasPage/CanvasPage.css';
 
 const CANVAS_CONFIG = {
@@ -33,7 +37,8 @@ const CANVAS_CONFIG = {
 const CanvasPage: React.FC = () => {
     usePageTitle('Canvas');
     const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
-    const scene3DRef = useRef<Scene3DRef>(null);
+    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const scene3DRef = useRef<FractalSceneRef>(null);
     const trajectoryId = rawTrajectoryId ?? '';
 
     const { trajectory, currentTimestep, isLoading: trajectoryLoading } = useCanvasCoordinator({ trajectoryId });
@@ -47,11 +52,53 @@ const CanvasPage: React.FC = () => {
         return () => setCurrentScope('global');
     }, [setCurrentScope]);
 
-    const isModelLoading = useEditorStore((s) => s.isModelLoading);
-    const didPreload = useEditorStore((s) => s.didPreload ?? false);
-    const isPlaying = useEditorStore((s) => s.isPlaying);
-    const showCanvasGrid = useEditorStore((s) => s.grid.enabled);
-    const analysisConfigId = useAnalysisConfigStore((s) => s.analysisConfig?._id);
+    const { isModelLoading, didPreload, isPlaying, setRendererStats } = useEditorStore(useShallow((s) => ({
+        isModelLoading: s.isModelLoading,
+        didPreload: s.didPreload ?? false,
+        isPlaying: s.isPlaying,
+        setRendererStats: s.setRendererStats
+    })));
+    const sceneConfigSignature = useEditorStore(selectFractalSceneConfigSignature);
+    const sceneConfig = useMemo(() => selectFractalSceneConfig(useEditorStore.getState()), [sceneConfigSignature]);
+    const analysisConfigId = searchParams.get('analysis') || undefined;
+
+    useEffect(() => {
+        if (!trajectory?.analysis?.length || analysisConfigId) return;
+        const latest = trajectory.analysis[trajectory.analysis.length - 1] as any;
+        if (!latest?._id) return;
+        updateSearchParams({ analysis: latest._id }, { replace: true });
+    }, [trajectory, analysisConfigId, updateSearchParams]);
+
+    const { selectedIds: activeModifiers, toggleSelection: toggleModifier } = useSelectionParams({ paramName: 'modifiers' });
+    const showCanvasGrid = searchParams.get('grid') !== 'false';
+    const showPerformanceStats = activeModifiers.includes('performance-monitor');
+
+    // Handle keyboard shortcut events for URL-based state
+    useEffect(() => {
+        const handleToggleWidgets = () => {
+            const current = searchParams.get('widgets') !== 'false';
+            updateSearchParams({ widgets: current ? 'false' : null }, { replace: true });
+        };
+
+        const handleToggleGrid = () => {
+            const current = searchParams.get('grid') !== 'false';
+            updateSearchParams({ grid: current ? 'false' : null }, { replace: true });
+        };
+
+        const handleToggleModifier = (e: CustomEvent<{ modifier: string }>) => {
+            toggleModifier(e.detail.modifier);
+        };
+
+        window.addEventListener('Volt:toggle-widgets', handleToggleWidgets);
+        window.addEventListener('Volt:toggle-grid', handleToggleGrid);
+        window.addEventListener('Volt:toggle-modifier', handleToggleModifier as EventListener);
+
+        return () => {
+            window.removeEventListener('Volt:toggle-widgets', handleToggleWidgets);
+            window.removeEventListener('Volt:toggle-grid', handleToggleGrid);
+            window.removeEventListener('Volt:toggle-modifier', handleToggleModifier as EventListener);
+        };
+    }, [searchParams, updateSearchParams, toggleModifier]);
 
     useEffect(() => {
         return () => {
@@ -84,7 +131,14 @@ const CanvasPage: React.FC = () => {
                 <JobsHistoryViewer trajectoryId={trajectoryId} showHeader={false} queueFilter='analysis' />
             </Container>
 
-            <Scene3D ref={scene3DRef} showCanvasGrid={showCanvasGrid}>
+            <FractalScene
+                ref={scene3DRef}
+                config={sceneConfig}
+                onInteractionChange={setSceneInteracting}
+                onStats={setRendererStats}
+                showPerformanceStats={showPerformanceStats}
+                showGrid={showCanvasGrid}
+            >
                 <TimestepViewer
                     trajectoryId={trajectory?._id || ''}
                     currentTimestep={currentTimestep}
@@ -93,7 +147,7 @@ const CanvasPage: React.FC = () => {
                     rotation={CANVAS_CONFIG.timestepViewerDefaults.rotation}
                     position={CANVAS_CONFIG.timestepViewerDefaults.position}
                 />
-            </Scene3D>
+            </FractalScene>
 
             <KeyboardShortcutsPanel />
             <ShortcutFeedback />

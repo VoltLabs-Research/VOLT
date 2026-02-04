@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import useGetAtoms from '../../../hooks/trajectory/use-get-atoms';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import AtomTypeBadge from '../../atoms/AtomTypeBadge';
@@ -15,7 +16,7 @@ interface PerAtomViewerContext {
 
 const PerAtomViewer = () => {
     const { trajectoryId, analysisId, exposureId } = useParams();
-    const [searchParams] = useSearchParams();
+    const { searchParams } = useSearchParamsState();
     const timestep = Number(searchParams.get('timestep')) || 0;
     
     // We need to track properties locally for column generation

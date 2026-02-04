@@ -1,5 +1,4 @@
-import { useEffect, useRef, useCallback, useMemo } from 'react';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 import type { AnalysisStatus } from '@/modules/canvas/presentation/types';
 
@@ -13,23 +12,19 @@ const state: AnalysisStatusState = {
     listeners: new Set(),
 };
 
-const notifyListeners = () => {
-    state.listeners.forEach(l => l());
-};
-
-const updateAnalysisStatus = (analysisId: string, status: AnalysisStatus) => {
+const setStatus = (analysisId: string, status: AnalysisStatus) => {
     const current = state.statusByAnalysisId.get(analysisId);
-    if (current !== status) {
-        state.statusByAnalysisId = new Map(state.statusByAnalysisId);
-        state.statusByAnalysisId.set(analysisId, status);
-        notifyListeners();
-    }
+    if (current === status) return;
+    const next = new Map(state.statusByAnalysisId);
+    next.set(analysisId, status);
+    state.statusByAnalysisId = next;
+    state.listeners.forEach((listener) => listener());
 };
 
 const clearStatusForTrajectory = () => {
     if (state.statusByAnalysisId.size > 0) {
         state.statusByAnalysisId = new Map();
-        notifyListeners();
+        state.listeners.forEach((listener) => listener());
     }
 };
 
@@ -47,7 +42,6 @@ interface UseAnalysisStatusProps {
 
 const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusProps) => {
     const socketService = useSocket();
-    const isConnectedRef = useRef(socketService.isConnected());
     const currentTrajectoryIdRef = useRef(trajectoryId);
 
     const statusMap = useSyncExternalStore(subscribe, getSnapshot);
@@ -56,13 +50,6 @@ const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusPr
         currentTrajectoryIdRef.current = trajectoryId;
     }, [trajectoryId]);
 
-    useEffect(() => {
-        const unsubscribe = socketService.onConnectionChange((connected) => {
-            isConnectedRef.current = connected;
-        });
-        return unsubscribe;
-    }, [socketService]);
-
     const handleJobUpdate = useCallback((update: any) => {
         if (!currentTrajectoryIdRef.current) return;
         if (update.trajectoryId !== currentTrajectoryIdRef.current) return;
@@ -70,7 +57,7 @@ const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusPr
 
         const status = update.status as AnalysisStatus;
         if (status === 'running' || status === 'completed' || status === 'failed') {
-            updateAnalysisStatus(update.analysisId, status);
+            setStatus(update.analysisId, status);
         }
     }, []);
 
@@ -98,11 +85,11 @@ const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusPr
         return status === 'running' || status === 'pending';
     }, [statusMap]);
 
-    return useMemo(() => ({
+    return {
         statusMap,
         getAnalysisStatus,
         isAnalysisInProgress
-    }), [statusMap, getAnalysisStatus, isAnalysisInProgress]);
+    };
 };
 
 export default useAnalysisStatus;

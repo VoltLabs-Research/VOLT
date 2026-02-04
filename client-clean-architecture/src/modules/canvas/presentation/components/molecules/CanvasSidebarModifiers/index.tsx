@@ -12,7 +12,8 @@ import CanvasSidebarOption from '@/modules/canvas/presentation/components/atoms/
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
 
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import useCanvasUIStore, { type ActiveModifier } from '@/modules/canvas/presentation/stores/use-canvas-ui-store';
+import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 
 import '@/modules/canvas/presentation/components/molecules/CanvasSidebarModifiers/CanvasSidebarModifiers.css';
@@ -30,10 +31,13 @@ const SKELETON_ROWS = 6;
 
 const CanvasSidebarModifiers = () => {
   const navigate = useNavigate();
+  const { searchParams, updateSearchParams } = useSearchParamsState();
 
-  const activeModifiers = useCanvasUIStore((s) => s.activeModifiers);
-  const toggleModifier = useCanvasUIStore((s) => s.toggleModifier);
-  const setShowRenderConfig = useCanvasUIStore((s) => s.setShowRenderConfig);
+  const {
+    selectedIds: activeModifiers,
+    toggleSelection,
+    isSelected
+  } = useSelectionParams({ paramName: 'modifiers' });
 
   const modifiers = usePluginStore((s) => (s as any).modifiers ?? []);
 
@@ -42,7 +46,7 @@ const CanvasSidebarModifiers = () => {
 
   const [bootstrapLoading, setBootstrapLoading] = useState(true);
 
-  const prevActiveRef = useRef<ActiveModifier[]>(activeModifiers);
+  const prevActiveRef = useRef<string[]>(activeModifiers);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,28 +92,17 @@ const CanvasSidebarModifiers = () => {
       return;
     }
 
-    const prev = prevActiveRef.current.map(m => m.key);
-    const current = activeModifiers.map(m => m.key);
-    const justActivated = current.filter((key) => !prev.includes(key));
+    const prev = prevActiveRef.current;
+    const justActivated = activeModifiers.filter((key) => !prev.includes(key));
 
     for (const modifierKey of justActivated) {
       if (modifierKey === 'raster') {
         navigate('/raster/' + trajectoryId);
-      } else if (modifierKey === 'render-settings') {
-        setShowRenderConfig(true);
       }
     }
 
     prevActiveRef.current = activeModifiers;
-  }, [activeModifiers, trajectoryId, navigate, setShowRenderConfig]);
-
-  const activeSet = useMemo(() => {
-    return new Set(activeModifiers.map(m => m.key));
-  }, [activeModifiers]);
-
-  const isActive = useCallback((modifierId: string) => {
-    return activeSet.has(modifierId);
-  }, [activeSet]);
+  }, [activeModifiers, trajectoryId, navigate]);
 
   const staticOptions = useMemo<ModifierOption[]>(() => ([
     { Icon: IoColorPalette, title: 'Color Coding', modifierId: 'color-coding', isPlugin: false },
@@ -139,11 +132,28 @@ const CanvasSidebarModifiers = () => {
 
   const handleToggle = useCallback((option: ModifierOption) => {
     if (option.isPlugin) {
-      toggleModifier(option.modifierId, option.pluginId, option.pluginModifierId);
+      const currentPlugin = searchParams.get('plugin');
+      const newPlugin = `${option.pluginId}:${option.pluginModifierId}`;
+      updateSearchParams({ plugin: currentPlugin === newPlugin ? null : newPlugin });
+    } else if (option.modifierId === 'render-settings') {
+      const next = isSelected(option.modifierId)
+        ? activeModifiers
+        : Array.from(new Set([...activeModifiers, option.modifierId]));
+      updateSearchParams({
+        modifiers: next.length === 0 ? null : next.join(','),
+        renderConfig: 'true'
+      });
     } else {
-      toggleModifier(option.modifierId);
+      toggleSelection(option.modifierId);
     }
-  }, [toggleModifier]);
+  }, [searchParams, updateSearchParams, toggleSelection, isSelected, activeModifiers]);
+
+  const isActive = useCallback((option: ModifierOption) => {
+    if (option.isPlugin) {
+      return searchParams.get('plugin') === `${option.pluginId}:${option.pluginModifierId}`;
+    }
+    return isSelected(option.modifierId);
+  }, [searchParams, isSelected]);
 
   if (bootstrapLoading) {
     return (
@@ -170,7 +180,7 @@ const CanvasSidebarModifiers = () => {
             key={option.modifierId}
             option={option}
             isLoading={false}
-            activeOption={isActive(option.modifierId)}
+            activeOption={isActive(option)}
             onSelect={handleToggle}
           />
         ))}

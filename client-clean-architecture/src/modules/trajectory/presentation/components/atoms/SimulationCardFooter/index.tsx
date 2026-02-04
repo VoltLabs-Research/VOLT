@@ -61,7 +61,7 @@ const SimulationCardFooter = ({
     }];
 
     return (
-        <Container className='simulation-card-footer d-flex items-start gap-05 p-absolute bottom-0 left-0 right-0'>
+        <Container className='simulation-card-footer z-10 p-1-5 d-flex items-start gap-05 p-absolute bottom-0 left-0 right-0'>
             <Container className='d-flex column gap-05 flex-1'>
                 <EditableTrajectoryName
                     trajectoryId={trajectoryId}

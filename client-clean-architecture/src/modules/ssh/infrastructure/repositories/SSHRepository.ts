@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import BaseRepository, { RawPaginatedResponse, ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import type ISSHRepository from '../../domain/ports/ISSHRepository';
 import type { 
     CreateSSHConnectionParams, 
@@ -18,8 +18,7 @@ export default class SSHRepository extends BaseRepository implements ISSHReposit
     }
 
     async getConnections(params?: { page?: number; limit?: number }): Promise<PaginatedResponse<SSHConnection>> {
-        const response = await this.client.get<RawPaginatedResponse<SSHConnection>>('/', params);
-        return this.unwrapPaginated(response);
+        return this.getAllPaginated('/', params);
     }
 
     async createConnection(params: CreateSSHConnectionParams): Promise<SSHConnection> {

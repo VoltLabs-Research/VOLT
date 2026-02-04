@@ -1,19 +1,27 @@
 import React, { useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Slider from '@/shared/presentation/components/Slider';
-import type { SliceAxis } from '@/modules/canvas/presentation/types/stores/editor/configuration';
+import type { SliceAxis } from '@/modules/fractal/presentation/types/configuration';
 import '@/modules/canvas/presentation/components/organisms/SlicePlane/SlicePlane.css';
 
 const AXES: SliceAxis[] = ['x', 'y', 'z'];
 
 const SlicePlane: React.FC = () => {
-    const slicePlaneConfig = useEditorStore((s) => s.configuration.slicePlaneConfig);
-    const toggleSliceAxis = useEditorStore((s) => s.configuration.toggleSliceAxis);
-    const setSlicePosition = useEditorStore((s) => s.configuration.setSlicePosition);
-    const setSliceAngle = useEditorStore((s) => s.configuration.setSliceAngle);
+    const {
+        slicePlaneConfig,
+        toggleSliceAxis,
+        setSlicePosition,
+        setSliceAngle
+    } = useEditorStore(useShallow((s) => ({
+        slicePlaneConfig: s.configuration.slicePlaneConfig,
+        toggleSliceAxis: s.configuration.toggleSliceAxis,
+        setSlicePosition: s.configuration.setSlicePosition,
+        setSliceAngle: s.configuration.setSliceAngle
+    })));
 
     const handleAxisClick = useCallback((axis: SliceAxis) => {
         toggleSliceAxis(axis);

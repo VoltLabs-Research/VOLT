@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import EditorSidebar from '@/modules/canvas/presentation/components/organisms/EditorSidebar';
 import TrajectoryVisibilityStatusFloatIcon from '@/modules/canvas/presentation/components/atoms/TrajectoryVisibilityStatusFloatIcon';
 import SceneTopCenteredOptions from '@/modules/canvas/presentation/components/atoms/SceneTopCenteredOptions';
@@ -10,8 +11,16 @@ import ParticleFilter from '@/modules/canvas/presentation/components/organisms/P
 import PluginResultsViewer from '@/modules/canvas/presentation/components/organisms/PluginResultsViewer';
 import ModifierConfiguration from '@/modules/plugin/presentation/components/organisms/ModifierConfiguration';
 import { usePluginStore } from '@/modules/plugin';
-import useCanvasUIStore from '@/modules/canvas/presentation/stores/use-canvas-ui-store';
+import { useShallow } from 'zustand/react/shallow';
+import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
+
+const LEGACY_MODIFIERS_MAP = {
+    'slice-plane': SlicePlane,
+    'performance-monitor': PerformanceMonitor,
+    'color-coding': ColorCoding,
+    'particle-filter': ParticleFilter
+} as const;
 
 interface CanvasWidgetsProps {
     trajectory: Trajectory | null;
@@ -20,27 +29,25 @@ interface CanvasWidgetsProps {
 }
 
 const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: CanvasWidgetsProps) => {
-    const showWidgets = useCanvasUIStore((store) => store.showEditorWidgets);
-    const activeModifiers = useCanvasUIStore((store) => store.activeModifiers);
-    const resultsViewerData = useCanvasUIStore((store) => store.resultsViewerData);
-    const plugins = usePluginStore((s) => s.plugins);
+    const { searchParams } = useSearchParamsState();
+    const { selectedIds: activeModifiers } = useSelectionParams({ paramName: 'modifiers' });
+    const showWidgets = searchParams.get('widgets') !== 'false';
+    const resultsParam = searchParams.get('results');
+    const analysisConfigId = searchParams.get('analysis') || undefined;
+    const plugins = usePluginStore(useShallow((s) => s.plugins));
 
-    const legacyModifiersMap = useMemo(() => ({
-        'slice-plane': SlicePlane,
-        'performance-monitor': PerformanceMonitor,
-        'color-coding': ColorCoding,
-        'particle-filter': ParticleFilter
-    }) as Record<string, React.ComponentType<any>>, []);
+    // Plugin modifier format in URL: plugin=pluginId:modifierSlug
+    const pluginParam = searchParams.get('plugin');
+    const activePluginModifier = useMemo(() => {
+        if (!pluginParam) return null;
+        const [pluginId, modifierSlug] = pluginParam.split(':');
+        return pluginId && modifierSlug ? { pluginId, modifierSlug } : null;
+    }, [pluginParam]);
 
     const legacyComponents = useMemo(() => {
         return activeModifiers
-            .filter((modifier) => modifier.type === 'legacy')
-            .map((modifier) => [modifier.key, legacyModifiersMap[modifier.key]] as const)
+            .map((key) => [key, LEGACY_MODIFIERS_MAP[key as keyof typeof LEGACY_MODIFIERS_MAP]] as const)
             .filter(([, Comp]) => !!Comp);
-    }, [activeModifiers, legacyModifiersMap]);
-
-    const activePluginModifier = useMemo(() => {
-        return activeModifiers.find((modifier) => modifier.type === 'plugin');
     }, [activeModifiers]);
 
     const activePlugin = useMemo(() => {
@@ -57,19 +64,17 @@ const CanvasWidgets = React.memo(({ trajectory, currentTimestep, scene3DRef }: C
             <SceneTopCenteredOptions scene3DRef={scene3DRef} />
             {(trajectory && currentTimestep !== undefined) && <TimestepControls />}
 
-            {resultsViewerData && (
+            {resultsParam && (
                 <PluginResultsViewer
-                    pluginSlug={resultsViewerData.pluginSlug}
-                    pluginName={resultsViewerData.pluginName}
-                    analysisId={resultsViewerData.analysisId}
-                    exposures={resultsViewerData.exposures}
+                    pluginSlug={resultsParam}
+                    analysisId={analysisConfigId || 'default'}
                 />
             )}
 
             {activePluginModifier && activePlugin && trajectory && (
                 <ModifierConfiguration
-                    pluginId={activePluginModifier.pluginId || ''}
-                    modifierId={activePluginModifier.modifierId || activePlugin.slug}
+                    pluginId={activePluginModifier.pluginId}
+                    modifierId={activePluginModifier.modifierSlug}
                     trajectoryId={trajectory._id}
                     currentTimestep={currentTimestep}
                 />

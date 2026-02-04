@@ -1,5 +1,6 @@
 import { injectable } from 'tsyringe';
-import BaseRepository, { ApiResponse, RawPaginatedResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import { buildFileFormData } from '@/shared/utils/file';
 import type IPluginRepository from '../../domain/ports/IPluginRepository';
 import type { Plugin } from '../../domain/entities';
 import type {
@@ -26,19 +27,12 @@ export default class PluginRepository extends BaseRepository implements IPluginR
     async getAll(params: GetPluginsInputDTO): Promise<GetPluginsOutputDTO> {
         const query: Record<string, unknown> = {
             page: params.page,
-            limit: params.limit
+            limit: params.limit,
+            ...(params.search ? { q: params.search } : {}),
+            ...(params.status ? { status: params.status } : {})
         };
 
-        if (params.search) {
-            query.q = params.search;
-        }
-
-        if (params.status) {
-            query.status = params.status;
-        }
-
-        const raw = await this.client.get<RawPaginatedResponse<Plugin>>('/', query);
-        return this.unwrapPaginated(raw);
+        return this.getAllPaginated('/', query);
     }
 
     async getById(params: GetPluginInputDTO): Promise<GetPluginOutputDTO> {
@@ -83,8 +77,7 @@ export default class PluginRepository extends BaseRepository implements IPluginR
     }
 
     async importPlugin(file: File): Promise<Plugin> {
-        const formData = new FormData();
-        formData.append('file', file);
+        const formData = buildFileFormData([{ name: 'file', file }]);
 
         const response = await this.client.request<ApiResponse<Plugin>>('POST', '/import', {
             body: formData,
@@ -95,8 +88,7 @@ export default class PluginRepository extends BaseRepository implements IPluginR
 
     async uploadBinary(params: UploadBinaryInputDTO): Promise<UploadBinaryOutputDTO> {
         const { pluginId, file, onProgress } = params;
-        const formData = new FormData();
-        formData.append('file', file);
+        const formData = buildFileFormData([{ name: 'file', file }]);
 
         const response = await this.client.request<ApiResponse<UploadBinaryOutputDTO>>(
             'PATCH',

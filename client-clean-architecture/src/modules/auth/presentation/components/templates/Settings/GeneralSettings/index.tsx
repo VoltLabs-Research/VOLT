@@ -6,6 +6,7 @@ import SettingsSectionHeader from '@/modules/auth/presentation/components/molecu
 import AvatarUpload from '@/modules/auth/presentation/components/organisms/AvatarUpload';
 import ProfileForm from '@/modules/auth/presentation/components/organisms/ProfileForm';
 import DangerZone from '@/shared/presentation/components/DangerZone';
+import { buildFileFormData } from '@/shared/utils/file';
 import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
 import { ProfileForm as ProfileFormType } from '@/modules/auth/presentation/components/organisms/ProfileForm/validation-schema';
@@ -22,8 +23,7 @@ const GeneralSettings: React.FC = () => {
         setIsUploadingAvatar(true);
 
         try{
-            const formData = new FormData();
-            formData.append('avatar', file);
+            const formData = buildFileFormData([{ name: 'avatar', file }]);
 
             const updatedUser = await authRepository.updateMe(formData);
 

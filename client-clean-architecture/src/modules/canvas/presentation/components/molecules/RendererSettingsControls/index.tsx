@@ -1,24 +1,19 @@
 import React from 'react';
 import Select from '@/shared/presentation/components/Select';
-import FormSchema from '@/modules/canvas/presentation/components/atoms/form/FormSchema';
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import FormField from '@/shared/presentation/components/FormField';
+import SettingsPanel from '@/modules/canvas/presentation/components/molecules/SettingsPanel';
+import { useShallow } from 'zustand/react/shallow';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import Button from '@/shared/presentation/components/Button';
 import { MdTune } from 'react-icons/md';
 
 const RendererSettingsControls: React.FC = () => {
-    const create = useEditorStore((s) => s.rendererSettings.create);
-    const runtime = useEditorStore((s) => s.rendererSettings.runtime);
-    const setCreate = useEditorStore((s) => s.rendererSettings.setCreate);
-    const setRuntime = useEditorStore((s) => s.rendererSettings.setRuntime);
-    const reset = useEditorStore((s) => s.rendererSettings.reset);
+    const { create, runtime, setCreate, setRuntime, reset } = useEditorStore(useShallow((s) => s.rendererSettings));
 
     const contextSection = {
         key: 'context',
         title: 'WebGL Context (GL Create)',
         enabled: true,
-        onToggle: () => {},
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
@@ -91,7 +86,6 @@ const RendererSettingsControls: React.FC = () => {
         key: 'tone',
         title: 'Tone Mapping & Color',
         enabled: true,
-        onToggle: () => {},
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
@@ -173,7 +167,6 @@ const RendererSettingsControls: React.FC = () => {
         key: 'shadows',
         title: 'Shadow Configuration',
         enabled: true,
-        onToggle: () => {},
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
@@ -209,7 +202,6 @@ const RendererSettingsControls: React.FC = () => {
         key: 'clipping',
         title: 'Clipping & Culling',
         enabled: true,
-        onToggle: () => {},
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
@@ -230,7 +222,6 @@ const RendererSettingsControls: React.FC = () => {
         key: 'buffer',
         title: 'Buffer Clearing',
         enabled: true,
-        onToggle: () => {},
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
@@ -261,7 +252,6 @@ const RendererSettingsControls: React.FC = () => {
         key: 'advanced',
         title: 'Advanced Settings',
         enabled: true,
-        onToggle: () => {},
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
@@ -312,21 +302,18 @@ const RendererSettingsControls: React.FC = () => {
     };
 
     return (
-        <CollapsibleSection
+        <SettingsPanel
             title='Renderer Settings'
             icon={<MdTune size={16} />}
-        >
-            <FormSchema
-                sections={[
-                    contextSection,
-                    toneSection,
-                    shadowSection,
-                    clippingSection,
-                    bufferSection,
-                    advancedSection
-                ]}
-            />
-        </CollapsibleSection>
+            subsections={[
+                { label: 'WebGL Context (GL Create)', sections: [contextSection] },
+                { label: 'Tone Mapping & Color', sections: [toneSection] },
+                { label: 'Shadow Configuration', sections: [shadowSection] },
+                { label: 'Clipping & Culling', sections: [clippingSection] },
+                { label: 'Buffer Clearing', sections: [bufferSection] },
+                { label: 'Advanced Settings', sections: [advancedSection] }
+            ]}
+        />
     );
 };
 

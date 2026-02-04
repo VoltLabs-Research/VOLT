@@ -2,10 +2,10 @@ import { memo, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import JobsHistory from '@/shared/presentation/components/JobsHistory';
 import useTeamJobsStore from '@/modules/trajectory/presentation/stores/use-team-jobs-store';
-import useAnalysisConfigStore from '@/modules/canvas/presentation/stores/use-analysis-config-store';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
 import useGetTrajectoryById from '@/modules/trajectory/presentation/hooks/trajectory/use-get-trajectory-by-id';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import useToast from '@/shared/presentation/hooks/use-toast';
 import useTeamJobs from '@/modules/trajectory/presentation/hooks/jobs/use-team-jobs';
 import type { TrajectoryJobGroup, Job } from '@/shared/domain/jobs';
@@ -32,7 +32,7 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo(({
     const groups = useTeamJobsStore((state) => state.groups);
     const isConnected = useTeamJobsStore((state) => state.isConnected);
     const isLoading = useTeamJobsStore((state) => state.isLoading);
-    const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
+    const { updateSearchParams } = useSearchParamsState();
     const { refetch: refetchTrajectory } = useGetTrajectoryById({ trajectoryId, enabled: false });
     const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
     const { showSuccess } = useToast();
@@ -100,7 +100,7 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo(({
                         const analysisList = updatedTrajectory?.analysis || [];
                         const analysis = analysisList.find((a: any) => a._id === analysisId);
                         if (analysis) {
-                            updateAnalysisConfig(analysis);
+                            updateSearchParams({ analysis: analysis._id }, { replace: true });
                             if (job.timestep !== undefined) setCurrentTimestep(job.timestep);
                         }
                     } catch (error) {
@@ -110,7 +110,7 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo(({
                 break;
             }
         }
-    }, [relevantJobs, trajectoryId, updateAnalysisConfig, setCurrentTimestep, refetchTrajectory]);
+    }, [relevantJobs, trajectoryId, updateSearchParams, setCurrentTimestep, refetchTrajectory]);
 
     const shouldShowPanel = useMemo(() => {
         if (relevantJobs.length === 0) return false;

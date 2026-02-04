@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-import useCanvasUIStore from '@/modules/canvas/presentation/stores/use-canvas-ui-store';
+import useSceneInteraction from '@/modules/canvas/presentation/hooks/use-scene-interaction';
 import Draggable from '@/shared/presentation/components/Draggable';
 import '@/modules/canvas/presentation/components/organisms/EditorWidget/EditorWidget.css';
 
@@ -19,7 +19,7 @@ export interface EditorWidgetRef {
 
 const EditorWidget = forwardRef<EditorWidgetRef, EditorWidgetProps>(
   ({ children, className = '', style = {}, draggable = true }, ref) => {
-    const isSceneInteracting = useCanvasUIStore((s) => s.isSceneInteracting);
+    const isSceneInteracting = useSceneInteraction();
     const innerRef = useRef<any | null>(null);
 
     useImperativeHandle(

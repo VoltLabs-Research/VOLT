@@ -1,24 +1,18 @@
 import React from 'react';
-import FormSchema from '@/modules/canvas/presentation/components/atoms/form/FormSchema';
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import FormField from '@/shared/presentation/components/FormField';
+import SettingsPanel from '@/modules/canvas/presentation/components/molecules/SettingsPanel';
+import { useShallow } from 'zustand/react/shallow';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import { MdLightbulb } from 'react-icons/md';
 
 const LightsControls: React.FC = () => {
-    const st = useEditorStore((s) => s.lights);
-    const setGlobal = useEditorStore((s) => s.lights.setGlobal);
-    const setDirectional = useEditorStore((s) => s.lights.setDirectional);
-    const setPoint = useEditorStore((s) => s.lights.setPoint);
-    const setSpot = useEditorStore((s) => s.lights.setSpot);
-    const setHemisphere = useEditorStore((s) => s.lights.setHemisphere);
-    const setRectArea = useEditorStore((s) => s.lights.setRectArea);
+    const st = useEditorStore(useShallow((s) => s.lights));
+    const { setGlobal, setDirectional, setPoint, setSpot, setHemisphere, setRectArea } = st;
 
     const global = {
         key: 'global',
         title: 'Global IBL',
         enabled: true,
-        onToggle: () => {},
         rows: [
             { label: 'Intensity', min: 0, max: 10, step: 0.01, get: () => st.global.envIntensity, set: (v: number) => setGlobal({ envIntensity: v }), format: (v: number) => v.toFixed(2) },
             { label: 'Yaw(rad)', min: -Math.PI, max: Math.PI, step: 0.01, get: () => st.global.envRotationYaw, set: (v: number) => setGlobal({ envRotationYaw: v }), format: (v: number) => v.toFixed(2) },
@@ -149,37 +143,18 @@ const LightsControls: React.FC = () => {
     };
 
     return (
-        <CollapsibleSection
+        <SettingsPanel
             title='Lights'
             icon={<MdLightbulb size={16} />}
-        >
-            <div style={{ display: 'grid', gap: 12 }}>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Global IBL(Image Based Lighting)</div>
-                    <FormSchema sections={[global]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Directional Light(Sun-like)</div>
-                    <FormSchema sections={[dir]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Point Light(Omnidirectional)</div>
-                    <FormSchema sections={[point]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Spot Light(Cone-shaped)</div>
-                    <FormSchema sections={[spot]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Hemisphere Light(Sky + Ground)</div>
-                    <FormSchema sections={[hemi]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Rect Area Light(Rectangular)</div>
-                    <FormSchema sections={[rect]} />
-                </div>
-            </div>
-        </CollapsibleSection>
+            subsections={[
+                { label: 'Global IBL (Image Based Lighting)', sections: [global] },
+                { label: 'Directional Light (Sun-like)', sections: [dir] },
+                { label: 'Point Light (Omnidirectional)', sections: [point] },
+                { label: 'Spot Light (Cone-shaped)', sections: [spot] },
+                { label: 'Hemisphere Light (Sky + Ground)', sections: [hemi] },
+                { label: 'Rect Area Light (Rectangular)', sections: [rect] }
+            ]}
+        />
     );
 };
 

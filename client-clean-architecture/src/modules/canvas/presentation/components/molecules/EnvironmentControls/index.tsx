@@ -1,9 +1,9 @@
 import React from 'react';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
-import FormSchema from '@/modules/canvas/presentation/components/atoms/form/FormSchema';
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
+import { useShallow } from 'zustand/react/shallow';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
+import FormField from '@/shared/presentation/components/FormField';
 import Select from '@/shared/presentation/components/Select';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import SettingsPanel from '@/modules/canvas/presentation/components/molecules/SettingsPanel';
 import { MdNature } from 'react-icons/md';
 
 const EnvironmentControls: React.FC = () => {
@@ -21,13 +21,12 @@ const EnvironmentControls: React.FC = () => {
         setEnvironmentPreset,
         setFogConfig,
         setToneMappingExposure
-    } = useEditorStore((s) => s.environment);
+    } = useEditorStore(useShallow((s) => s.environment));
 
     const backgroundSection = {
         key: 'background',
         title: 'Background & Environment',
         enabled: true,
-        onToggle: () => {},
         rows: [{
             label: 'Tone Mapping Exposure',
             min: 0,
@@ -110,21 +109,14 @@ const EnvironmentControls: React.FC = () => {
     };
 
     return (
-        <CollapsibleSection
+        <SettingsPanel
             title='Environment'
             icon={<MdNature size={16} />}
-        >
-            <div style={{ display: 'grid', gap: 12 }}>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Background & Environment</div>
-                    <FormSchema sections={[backgroundSection]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Fog Settings</div>
-                    <FormSchema sections={[fogSection]} />
-                </div>
-            </div>
-        </CollapsibleSection>
+            subsections={[
+                { label: 'Background & Environment', sections: [backgroundSection] },
+                { label: 'Fog Settings', sections: [fogSection] }
+            ]}
+        />
     );
 };
 

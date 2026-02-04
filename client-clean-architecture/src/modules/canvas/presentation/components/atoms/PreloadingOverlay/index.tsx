@@ -1,15 +1,18 @@
 import React from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { motion } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import TetrahedronLoader from '@/modules/canvas/presentation/components/atoms/TetrahedronLoader';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
 
 const PreloadingOverlay: React.FC = () => {
-    const isPreloading = useEditorStore((state) => state.isPreloading ?? false);
-    const preloadProgress = useEditorStore((state) => state.preloadProgress ?? 0);
+    const { isPreloading, preloadProgress } = useEditorStore(useShallow((state) => ({
+        isPreloading: state.isPreloading ?? false,
+        preloadProgress: state.preloadProgress ?? 0
+    })));
 
     if (!isPreloading) return null;
 
