@@ -2,11 +2,12 @@ export interface FilterCondition{
     property: string;
     operator: 'eq' | 'ne' | 'gt' | 'lt' | 'gte' | 'lte' | 'in' | 'nin';
     value: unknown;
+    exposureId?: string;
 };
 
 export interface PreviewFilterInputDTO{
     trajectoryId: string;
-    analysisId: string;
+    analysisId?: string;
     timestep: number;
     conditions: FilterCondition[];
 };

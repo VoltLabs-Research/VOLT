@@ -3,6 +3,7 @@ export type {
     GetFilterPropertiesOutputDTO,
     FilterPropertiesData
 } from './GetFilterPropertiesDTO';
+export type { GetUniqueValuesInputDTO, GetUniqueValuesOutputDTO } from './GetUniqueValuesDTO';
 
 export type {
     PreviewFilterInputDTO,

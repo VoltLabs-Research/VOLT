@@ -1,0 +1,17 @@
+.color-coding-container {
+    bottom: 2rem;
+    right: 2rem;
+}
+
+.color-coding-footer-container .button {
+    width: 100%;
+}
+
+@media screen and (max-width: 768px) {
+    .color-coding-container {
+        bottom: 5rem;
+        right: 0.5rem;
+        left: 0.5rem;
+        width: auto;
+    }
+}

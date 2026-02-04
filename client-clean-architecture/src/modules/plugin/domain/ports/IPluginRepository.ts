@@ -22,6 +22,7 @@ export default interface IPluginRepository {
     delete(id: string): Promise<void>;
     execute(params: ExecutePluginInputDTO): Promise<ExecutePluginOutputDTO>;
     exportPlugin(id: string): Promise<Blob>;
+    exportAnalysisResults(pluginSlug: string, analysisId: string): Promise<Blob>;
     importPlugin(file: File): Promise<Plugin>;
     uploadBinary(params: UploadBinaryInputDTO): Promise<UploadBinaryOutputDTO>;
     deleteBinary(id: string): Promise<void>;

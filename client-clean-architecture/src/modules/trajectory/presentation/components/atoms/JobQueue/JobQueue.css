@@ -1,0 +1,154 @@
+.job-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.job-name {
+    font-size: 0.85rem;
+    letter-spacing: 0.15px;
+    line-height: 1.2;
+}
+
+.job-message {
+    line-height: 1.3;
+}
+
+.job-meta {
+    opacity: 0.7;
+    font-size: 0.65rem;
+    white-space: nowrap;
+}
+
+.job-count-badge {
+    padding: 0.1rem 0.35rem;
+    border-radius: var(--radius-xs);
+    color: var(--status-info);
+    font-size: 0.6rem;
+}
+
+.job-status-badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: var(--radius-full);
+    font-size: 0.65rem;
+    text-transform: capitalize;
+    border: 1px solid var(--color-border-soft);
+}
+
+.job-error {
+    font-size: 0.7rem;
+    color: var(--status-error);
+    margin-top: 0.2rem;
+    line-height: 1.3;
+}
+
+.job-progress-bar {
+    width: 60px;
+    height: 18px;
+    border-radius: var(--radius-xs);
+}
+
+.job-progress-fill {
+    top: 0;
+    left: 0;
+    transition: width 0.3s ease;
+}
+
+.job-progress-text {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.6rem;
+    z-index: 1;
+}
+
+.job-container.completed path {
+    stroke: var(--status-success);
+}
+
+.job-container.completed .job-status-badge,
+.job-container.completed .job-message {
+    color: var(--status-success);
+}
+
+.job-container.completed .job-status-badge {
+    background-color: var(--status-success-bg);
+}
+
+.job-container.running path {
+    stroke: var(--status-info);
+}
+
+.job-container.running .job-status-badge,
+.job-container.running .job-message {
+    color: var(--status-info);
+}
+
+.job-container.running .job-status-badge {
+    background-color: var(--status-info-bg);
+}
+
+.job-container.queued path {
+    stroke: var(--status-warning);
+}
+
+.job-container.queued .job-status-badge,
+.job-container.queued .job-message {
+    color: var(--status-warning);
+}
+
+.job-container.queued .job-status-badge {
+    background-color: var(--status-warning-bg);
+}
+
+.job-container.retrying path {
+    stroke: var(--accent-orange);
+}
+
+.job-container.retrying .job-status-badge,
+.job-container.retrying .job-message {
+    color: var(--accent-orange);
+}
+
+.job-container.retrying .job-status-badge {
+    background-color: color-mix(in srgb, var(--accent-orange) 8%, transparent);
+}
+
+.job-container.queued_after_failure path {
+    stroke: var(--status-error);
+}
+
+.job-container.queued_after_failure .job-status-badge,
+.job-container.queued_after_failure .job-message {
+    color: var(--status-error);
+}
+
+.job-container.queued_after_failure .job-status-badge {
+    background-color: var(--status-error-bg);
+}
+
+.job-container.failed path {
+    stroke: var(--status-error);
+}
+
+.job-container.failed .job-status-badge,
+.job-container.failed .job-message {
+    color: var(--status-error);
+}
+
+.job-container.failed .job-status-badge {
+    background-color: var(--status-error-bg);
+}
+
+.job-container.unknown path {
+    stroke: var(--color-text-muted);
+}
+
+.job-container.unknown .job-status-badge,
+.job-container.unknown .job-message {
+    color: var(--color-text-secondary);
+}
+
+.job-container.unknown .job-status-badge {
+    background-color: var(--hover-bg);
+}

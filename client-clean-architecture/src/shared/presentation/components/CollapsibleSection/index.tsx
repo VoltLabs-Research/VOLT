@@ -12,6 +12,7 @@ interface CollapsibleSectionProps {
     className?: string;
     onDelete?: () => void;
     onAdd?: () => void;
+    icon?: ReactNode;
 };
 
 const CollapsibleSection = ({
@@ -20,7 +21,8 @@ const CollapsibleSection = ({
     defaultExpanded = false,
     className = '',
     onDelete,
-    onAdd
+    onAdd,
+    icon
 }: CollapsibleSectionProps) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [isHovered, setIsHovered] = useState(false);
@@ -64,7 +66,10 @@ const CollapsibleSection = ({
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
-                <Title className='font-size-3 font-weight-6 color-primary'>{title}</Title>
+                <Container className='d-flex items-center gap-05'>
+                    {icon && <span className='collapsible-section-icon'>{icon}</span>}
+                    <Title className='font-size-3 font-weight-6 color-primary'>{title}</Title>
+                </Container>
                 <Container className='d-flex items-center gap-025'>
                     {onAdd && (
                         <IconButton

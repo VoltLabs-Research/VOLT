@@ -29,11 +29,8 @@ export default class GetTrajectoriesByTeamIdUseCase implements IUseCase<GetTraje
         });
         
         return Result.ok({
-            data: results.data.map(t => t.props),
-            page: results.page,
-            limit: results.limit,
-            total: results.total,
-            totalPages: results.totalPages
+            ...results,
+            data: results.data.map(a => a.props)
         });
     }
 };

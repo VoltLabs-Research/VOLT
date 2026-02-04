@@ -56,9 +56,13 @@ export const renderProtectedRoutes = () => {
     const dashboardRoutes = routesConfig.protected.filter((route) => 
         route.path.startsWith('/dashboard')
     );
+    const nonDashboardRoutes = routesConfig.protected.filter((route) =>
+        !route.path.startsWith('/dashboard')
+    );
 
     return (
         <Route element={<ProtectedRoute mode='protected' />}>
+            {nonDashboardRoutes.map(renderRouteWithChildren)}
             {DashboardLayout && (
                 <Route path='/dashboard' element={<DashboardLayout />}>
                     {dashboardRoutes.map(renderRouteWithChildren)}

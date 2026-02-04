@@ -5,7 +5,9 @@ import type {
     PreviewFilterOutputDTO,
     ApplyFilterInputDTO,
     ApplyFilterOutputDTO,
-    GetFilteredGlbInputDTO
+    GetFilteredGlbInputDTO,
+    GetUniqueValuesInputDTO,
+    GetUniqueValuesOutputDTO
 } from '../../application/dtos/particle-filter';
 
 export default interface IParticleFilterRepository{
@@ -13,4 +15,5 @@ export default interface IParticleFilterRepository{
     preview(params: PreviewFilterInputDTO): Promise<PreviewFilterOutputDTO>;
     applyAction(params: ApplyFilterInputDTO): Promise<ApplyFilterOutputDTO>;
     getFilteredGlb(params: GetFilteredGlbInputDTO): Promise<Blob>;
+    getUniqueValues(params: GetUniqueValuesInputDTO): Promise<GetUniqueValuesOutputDTO>;
 };

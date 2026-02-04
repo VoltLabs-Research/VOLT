@@ -4,7 +4,7 @@ export type FilterAction = 'delete' | 'highlight';
 
 export interface ApplyFilterInputDTO{
     trajectoryId: string;
-    analysisId: string;
+    analysisId?: string;
     timestep: number;
     conditions: FilterCondition[];
     action: FilterAction;

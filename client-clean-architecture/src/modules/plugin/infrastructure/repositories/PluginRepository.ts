@@ -76,6 +76,12 @@ export default class PluginRepository extends BaseRepository implements IPluginR
         });
     }
 
+    async exportAnalysisResults(pluginSlug: string, analysisId: string): Promise<Blob> {
+        return this.client.request<Blob>('GET', `/${pluginSlug}/analysis/${analysisId}/export-results`, {
+            responseType: 'blob'
+        });
+    }
+
     async importPlugin(file: File): Promise<Plugin> {
         const formData = new FormData();
         formData.append('file', file);
