@@ -1,27 +1,11 @@
-import { useSyncExternalStore } from 'react';
+import { createExternalStore, useExternalStore } from '@/modules/canvas/presentation/utils/external-store';
 
-const store = {
-    isInteracting: false,
-    listeners: new Set<() => void>()
-};
-
-const emit = () => {
-    store.listeners.forEach((listener) => listener());
-};
+const store = createExternalStore({ initialState: false, serverSnapshot: false });
 
 export const setSceneInteracting = (isInteracting: boolean) => {
-    if (store.isInteracting === isInteracting) return;
-    store.isInteracting = isInteracting;
-    emit();
+    store.setState(isInteracting);
 };
 
-const subscribe = (listener: () => void) => {
-    store.listeners.add(listener);
-    return () => store.listeners.delete(listener);
-};
-
-const getSnapshot = () => store.isInteracting;
-const getServerSnapshot = () => false;
-const useSceneInteraction = () => useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+const useSceneInteraction = () => useExternalStore(store);
 
 export default useSceneInteraction;

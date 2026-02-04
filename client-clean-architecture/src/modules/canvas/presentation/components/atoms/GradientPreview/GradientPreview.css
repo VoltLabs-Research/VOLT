@@ -1,17 +1,10 @@
-.gradient-preview-container {
-    width: 100%;
-    margin-top: 0.25rem;
-}
-
 .gradient-preview-bar {
-    position: relative;
     height: 16px;
     border-radius: 4px;
     cursor: crosshair;
 }
 
 .gradient-preview-tooltip {
-    position: absolute;
     bottom: calc(100% + 6px);
     transform: translateX(-50%);
     background: var(--black-2);
@@ -21,7 +14,6 @@
     font-size: 0.75rem;
     white-space: nowrap;
     pointer-events: none;
-    z-index: 10;
 }
 
 .gradient-preview-tooltip::after {
@@ -35,9 +27,6 @@
 }
 
 .gradient-preview-labels {
-    display: flex;
-    justify-content: space-between;
     font-size: 0.7rem;
     color: var(--white-4);
-    margin-top: 0.25rem;
 }

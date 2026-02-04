@@ -7,27 +7,20 @@
 .chart-viewer-container {
     width: 800px;
     height: 500px;
-    z-index: 500;
     background-color: rgba(10, 10, 10, 0.55);
-    border-radius: 10px;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .chart-viewer-drag-container {
     z-index: 500;
-    top: 0;
 }
 
 .raster-frames-container {
-    right: 2rem;
-    top: 7rem;
     max-height: 800px;
     overflow: scroll;
 }
 
 .editor-model-loading-container {
-    border-radius: 24px;
-    padding: 60px;
     max-width: 550px;
     box-shadow:
         0 20px 40px rgba(0, 0, 0, 0.4),
@@ -93,7 +86,6 @@
 .editor-model-loading-description {
     color: rgba(255, 255, 255, 0.7);
     letter-spacing: -0.1px;
-    margin: 0 auto;
 }
 
 .editor-model-loading-container::marker {
@@ -107,11 +99,9 @@
 
 .editor-container .jobs-history-viewer-enhanced.expanded {
     width: 400px;
-    border-radius: var(--radius-2xl);
 }
 
 .file-upload-loader-container p {
-    margin-top: 7rem;
     color: #dadada;
 }
 
@@ -127,22 +117,17 @@
 }
 
 .canvas-jobs-panel {
-    right: 1rem;
-    bottom: 1rem;
     max-height: 40vh;
-    z-index: 50;
 }
 
 .canvas-jobs-panel .jobs-history-viewer-enhanced {
-    position: relative;
     max-height: 200px;
-    border-radius: var(--radius-2xl);
 }
 
 @media screen and (max-width: 768px) {
     .canvas-jobs-panel {
         right: 0.5rem;
-        bottom: 0.5rem;
+        bottom: 6rem;
         max-width: 280px;
         max-height: 35vh;
     }

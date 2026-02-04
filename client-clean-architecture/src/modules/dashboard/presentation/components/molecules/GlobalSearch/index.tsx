@@ -70,22 +70,22 @@ const GlobalSearch: React.FC = () => {
             <SearchInput placeholder='Search...' value={query} onChange={(e) => setQuery(e.target.value)} onFocus={() => query && setShowResults(true)} />
 
             {showResults && (
-                <Container className='global-search-results p-absolute y-auto'>
-                    {isLoading && <Container className='global-search-loading'><Paragraph className='color-muted font-size-1'>Searching...</Paragraph></Container>}
+                <Container className='global-search-results p-absolute left-0 right-0 radius-md y-auto'>
+                    {isLoading && <Container className='global-search-loading p-2'><Paragraph className='color-muted font-size-1'>Searching...</Paragraph></Container>}
 
-                    {!isLoading && results && totalResults === 0 && <Container className='global-search-empty'><Paragraph className='color-muted font-size-2'>No results found</Paragraph></Container>}
+                    {!isLoading && results && totalResults === 0 && <Container className='global-search-empty p-2'><Paragraph className='color-muted font-size-2'>No results found</Paragraph></Container>}
 
                     {!isLoading && results && totalResults > 0 && SECTIONS.map(({ key, icon, title, getPath, getTitle, getSubtitle }) => {
                         const items = results[key];
                         if(!items?.length) return null;
                         return (
                             <Container key={key} className='global-search-section'>
-                                <Container className='global-search-section-header gap-05 font-size-3 color-muted'>
+                                <Container className='global-search-section-header d-flex items-center gap-05 p-075 font-size-3 color-muted'>
                                     {icon}
                                     <Paragraph className='font-size-1 font-weight-5'>{title}</Paragraph>
                                 </Container>
                                 {items.map((item: any) => (
-                                    <button key={item._id} onClick={() => handleNav(getPath(item))} className='global-search-item gap-025 w-max cursor-pointer'>
+                                    <button key={item._id} onClick={() => handleNav(getPath(item))} className='global-search-item d-flex column items-start gap-025 p-075 w-max cursor-pointer'>
                                         <Paragraph className='font-size-2 font-weight-5'>{getTitle(item)}</Paragraph>
                                         <Paragraph className='font-size-1 color-muted'>{getSubtitle(item)}</Paragraph>
                                     </button>

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import './Slider.css';
 
@@ -384,4 +384,4 @@ const Slider: React.FC<SliderProps> = ({
     );
 };
 
-export default Slider;
+export default memo(Slider);

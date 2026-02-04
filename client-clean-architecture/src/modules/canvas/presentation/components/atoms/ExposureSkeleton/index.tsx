@@ -15,7 +15,7 @@ const ExposureSkeletonItem: React.FC<{ index: number; staggerDelay: number; comp
     compact
 }) => (
     <motion.div
-        className={`exposure-skeleton-item d-flex items-center gap-075 ${compact ? 'compact' : ''} p-05`}
+        className={`exposure-skeleton-item d-flex items-center gap-075 radius-md ${compact ? 'compact' : ''} p-05`}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
@@ -24,8 +24,8 @@ const ExposureSkeletonItem: React.FC<{ index: number; staggerDelay: number; comp
             ease: [0.16, 1, 0.3, 1]
         }}
     >
-        <div className="exposure-skeleton-icon shimmer" />
-        <Container className="exposure-skeleton-content flex-1">
+        <div className="exposure-skeleton-icon shimmer radius-sm f-shrink-0" />
+        <Container className="exposure-skeleton-content flex-1 d-flex column gap-035">
             <div className="exposure-skeleton-title shimmer" />
             {!compact && <div className="exposure-skeleton-subtitle shimmer w-50" />}
         </Container>
@@ -38,7 +38,7 @@ const ExposureSkeleton: React.FC<ExposureSkeletonProps> = ({
     compact = false
 }) => {
     return (
-        <Container className="exposure-skeleton-container d-flex column gap-05">
+        <Container className="exposure-skeleton-container d-flex column gap-05 p-025">
             {Array.from({ length: count }).map((_, index) => (
                 <ExposureSkeletonItem
                     key={index}

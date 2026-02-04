@@ -1,7 +1,7 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
 
 interface SceneOptionMenuProps extends PropsWithChildren {
     id: string;
@@ -20,7 +20,7 @@ const SceneOptionMenu = ({
     onRemove,
     trigger
 }: SceneOptionMenuProps) => {
-    const { setParam } = useSearchParamsState();
+    const { setSettingsKey } = useCanvasUrlState();
 
     return (
         <Popover
@@ -41,7 +41,7 @@ const SceneOptionMenu = ({
                 Remove from scene
             </PopoverMenuItem>
             <PopoverMenuItem
-                onClick={() => setParam('settings', settingsKey, { replace: true })}
+                onClick={() => setSettingsKey(settingsKey, { replace: true })}
             >
                 Settings
             </PopoverMenuItem>

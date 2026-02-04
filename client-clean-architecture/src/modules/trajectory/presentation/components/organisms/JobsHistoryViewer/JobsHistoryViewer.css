@@ -18,8 +18,8 @@ body.jobs-history-expanded {
 }
 
 .jobs-history-viewer-enhanced.expanded {
-    left: 1rem;
-    bottom: 1rem;
+    left: 0rem;
+    bottom: 0rem;
     border-radius: var(--radius-2xl);
     padding: 0;
     cursor: default;

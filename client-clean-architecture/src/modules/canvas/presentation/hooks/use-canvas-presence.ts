@@ -1,4 +1,5 @@
-import { useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
+import { createExternalStore, useExternalStore } from '@/modules/canvas/presentation/utils/external-store';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 
 export interface CanvasPresenceUser {
@@ -9,40 +10,35 @@ export interface CanvasPresenceUser {
     isAnonymous: boolean;
 }
 
+interface PresenceState {
+    canvasUsers: CanvasPresenceUser[];
+    rasterUsers: CanvasPresenceUser[];
+}
+
 interface UseCanvasPresenceProps {
     trajectoryId?: string;
     enabled?: boolean;
 }
 
-const presenceState = {
-    canvasUsers: [] as CanvasPresenceUser[],
-    rasterUsers: [] as CanvasPresenceUser[],
-    listeners: new Set<() => void>(),
-};
+const store = createExternalStore<PresenceState>({
+    initialState: { canvasUsers: [], rasterUsers: [] }
+});
 
 const setUsers = (key: 'canvasUsers' | 'rasterUsers', users: CanvasPresenceUser[]) => {
-    presenceState[key] = users;
-    presenceState.listeners.forEach((listener) => listener());
+    store.setState(prev => ({ ...prev, [key]: users }));
 };
-
-const subscribe = (listener: () => void) => {
-    presenceState.listeners.add(listener);
-    return () => presenceState.listeners.delete(listener);
-};
-
-const getSnapshot = () => presenceState;
 
 const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresenceProps) => {
     const socketService = useSocket();
     const isConnectedRef = useRef(socketService.isConnected());
     const subscribedRef = useRef(false);
 
-    const state = useSyncExternalStore(subscribe, getSnapshot);
+    const state = useExternalStore(store);
 
     useEffect(() => {
         const unsubscribe = socketService.onConnectionChange((connected) => {
             isConnectedRef.current = connected;
-            if(connected && enabled && trajectoryId && !subscribedRef.current){
+            if (connected && enabled && trajectoryId && !subscribedRef.current) {
                 subscribeToPresence();
             }
         });
@@ -50,7 +46,7 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
     }, [enabled, trajectoryId, socketService]);
 
     const subscribeToPresence = useCallback(() => {
-        if(!enabled || !trajectoryId || !isConnectedRef.current || subscribedRef.current){
+        if (!enabled || !trajectoryId || !isConnectedRef.current || subscribedRef.current) {
             return;
         }
 
@@ -67,11 +63,9 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
     }, [enabled, trajectoryId, socketService]);
 
     useEffect(() => {
-        if(!enabled || !trajectoryId){
-            return;
-        }
+        if (!enabled || !trajectoryId) return;
 
-        if(isConnectedRef.current){
+        if (isConnectedRef.current) {
             subscribeToPresence();
         }
 
@@ -83,7 +77,7 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
             unsubscribeCanvas();
             unsubscribeRaster();
 
-            if(isConnectedRef.current){
+            if (isConnectedRef.current) {
                 socketService.emit('unsubscribe_from_canvas', { trajectoryId }).catch(() => { });
                 socketService.emit('unsubscribe_from_raster', { trajectoryId }).catch(() => { });
             }

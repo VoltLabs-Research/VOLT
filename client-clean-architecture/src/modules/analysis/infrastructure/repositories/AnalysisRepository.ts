@@ -1,6 +1,7 @@
 import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import type IAnalysisRepository from '../../domain/ports/IAnalysisRepository';
+import { buildPaginationQuery } from '@/shared/utils/pagination';
 import type { Analysis } from '../../domain/entities';
 import type {
     GetAnalysesInputDTO,
@@ -17,11 +18,11 @@ export default class AnalysisRepository extends BaseRepository implements IAnaly
     }
 
     async getAll(params: GetAnalysesInputDTO): Promise<GetAnalysesOutputDTO> {
-        return this.getAllPaginated('/', {
+        return this.getAllPaginated('/', buildPaginationQuery({
             page: params.page,
             limit: params.limit,
-            ...(params.search ? { q: params.search } : {})
-        });
+            search: params.search
+        }));
     }
 
     async getByTrajectoryId(params: GetAnalysesByTrajectoryInputDTO): Promise<GetAnalysesByTrajectoryOutputDTO> {

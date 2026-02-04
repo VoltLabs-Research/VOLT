@@ -1,0 +1,7 @@
+.shortcut-feedback {
+    bottom: 7rem;
+    left: 46%;
+    transform: translateX(-50%);
+    z-index: 10001;
+    pointer-events: none;
+}

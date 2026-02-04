@@ -4,7 +4,6 @@
     font-size: 9px;
     min-width: 16px;
     height: 16px;
-    border-radius: var(--radius-sm);
     padding: 0 4px;
     background: var(--accent-red);
     color: var(--color-contrast-high);
@@ -13,22 +12,18 @@
 .notifications-popover-dropdown {
     width: 360px;
     max-height: 420px;
-    border-radius: var(--radius-md);
     z-index: 50;
     border: 1px solid var(--color-border-soft);
     box-shadow: var(--shadow-elevated);
     background: var(--color-surface-1);
-    overflow: hidden;
 }
 
 .notifications-header {
-    padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--color-border-soft);
 }
 
 .notifications-close {
     background: transparent;
-    border: none;
     font-size: 18px;
     transition: color 0.15s ease;
 }
@@ -39,11 +34,9 @@
 
 .notification-list-container {
     max-height: 360px;
-    overflow-y: auto;
 }
 
 .notification-item {
-    padding: 0.75rem;
     transition: background 0.15s ease;
 }
 

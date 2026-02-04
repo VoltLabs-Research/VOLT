@@ -4,8 +4,9 @@ import useGlbScene from '@/modules/fractal/presentation/hooks/use-glb-scene';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import SimulationCellBox from '@/modules/fractal/presentation/components/molecules/SimulationCellBox';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import { calculateBoxTransforms } from '@/modules/fractal/presentation/utilities/boxUtils';
-import { computeGlbUrl } from '@/modules/canvas/presentation/utilities/scene-utils';
+import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset, getTrajectoryBoxBounds } from '@/modules/fractal/presentation/utilities/boxUtils';
+import { getSceneKey, normalizeVec3 } from '@/modules/fractal/presentation/utilities/sceneUtils';
+import { computeGlbUrl } from '@/shared/utils/glb-url';
 
 interface SingleModelViewerProps {
     trajectoryId: string;
@@ -68,29 +69,7 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
 
     const trajectory = useTrajectoryStore(state => state.trajectory);
     const boxBounds = useMemo(() => {
-        if (!trajectory || currentTimestep === undefined) return undefined;
-        let frame = trajectory.frames?.find((f: any) => f.timestep === currentTimestep);
-
-        if (!frame?.simulationCell) {
-            frame = trajectory.frames?.find((f: any) => f.simulationCell);
-        }
-
-        if (frame?.simulationCell) {
-            const { geometry, boundingBox } = frame.simulationCell as any;
-            if (geometry?.cell_origin && boundingBox) {
-                const [xlo, ylo, zlo] = geometry.cell_origin;
-                return {
-                    xlo,
-                    xhi: xlo + boundingBox.width,
-                    ylo,
-                    yhi: ylo + boundingBox.length,
-                    zlo,
-                    zhi: zlo + boundingBox.height
-                };
-            }
-        }
-
-        return frame?.boxBounds;
+        return getTrajectoryBoxBounds(trajectory, currentTimestep);
     }, [trajectory, currentTimestep]);
 
     const boxTransforms = useMemo(() => {
@@ -98,45 +77,16 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         return calculateBoxTransforms(boxBounds as any);
     }, [boxBounds]);
 
-    const sceneKey = useMemo(() => {
-        if (sceneConfig.source === 'plugin') {
-            return `plugin-${sceneConfig.analysisId}-${sceneConfig.exposureId}`;
-        }
-        return `${sceneConfig.source}-${sceneConfig.sceneType}`;
-    }, [sceneConfig]);
+    const sceneKey = useMemo(() => getSceneKey(sceneConfig), [sceneConfig]);
 
-    const groundOffset = useMemo(() => {
-        if (!boxBounds || !boxTransforms) return 0;
-        const minZWorld = (boxBounds.zlo * boxTransforms.scale) + boxTransforms.position.z;
-        return -minZWorld;
-    }, [boxBounds, boxTransforms]);
-
-    const cellBoxTransforms = useMemo(() => {
-        if (!boxTransforms) return undefined;
-        return {
-            scale: boxTransforms.scale,
-            position: {
-                x: 0,
-                y: 0,
-                z: 0
-            },
-            groundOffset
-        };
-    }, [boxTransforms, groundOffset, position]);
+    const groundOffset = useMemo(() => getGroundOffset(boxBounds, boxTransforms), [boxBounds, boxTransforms]);
+    const cellBoxTransforms = useMemo(() => buildCellBoxTransforms(boxTransforms, groundOffset), [boxTransforms, groundOffset]);
 
     const { modelBounds, deselect, model, setSimBoxMesh } = useGlbScene({
         url,
         sliceClippingPlanes,
-        position: {
-            x: position.x || 0,
-            y: position.y || 0,
-            z: position.z || 0
-        },
-        rotation: {
-            x: rotation.x || 0,
-            y: rotation.y || 0,
-            z: rotation.z || 0
-        },
+        position: normalizeVec3(position),
+        rotation: normalizeVec3(rotation),
         scale,
         enableInstancing,
         updateThrottle,

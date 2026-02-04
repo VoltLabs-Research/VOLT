@@ -27,14 +27,14 @@ const DashboardStats = ({ teamId }: DashboardStatsProps) => {
 
     if(error){
         return (
-            <Container className='dashboard-stats-container w-max overflow-hidden'>
+            <Container className='dashboard-stats-container w-max overflow-hidden radius-lg'>
                 <Container className='color-secondary p-1-5'>{error}</Container>
             </Container>
         );
     }
 
     return (
-        <Container className='d-flex dashboard-stats-container w-max overflow-hidden'>
+        <Container className='d-flex dashboard-stats-container w-max overflow-hidden radius-lg'>
             {cards.map((card: DashboardCard, index: number) => (
                 <DashboardStatCard
                     key={index}

@@ -1,222 +1,189 @@
-import { useState, useEffect } from 'react';
-import usePropertySelector from '@/modules/trajectory/presentation/hooks/particle-filter/use-property-selector';
-import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
+import { memo } from 'react';
+import useColorCoding, { ColorGradient } from '@/modules/canvas/presentation/hooks/use-color-coding';
+import WidgetContainer from '@/modules/canvas/presentation/components/atoms/WidgetContainer';
+import ModifierHeader from '@/modules/canvas/presentation/components/atoms/ModifierHeader';
 import Button from '@/shared/presentation/components/Button';
 import FormField from '@/shared/presentation/components/FormField';
 import Loader from '@/shared/presentation/components/Loader';
-import useColorCodingUseCases from '@/modules/trajectory/presentation/hooks/color-coding/use-color-coding-use-cases';
-import Title from '@/shared/presentation/components/Title';
 import Container from '@/shared/presentation/components/Container';
 import GradientPreview from '@/modules/canvas/presentation/components/atoms/GradientPreview';
-import useToast from '@/shared/presentation/hooks/use-toast';
-import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
-import { useShallow } from 'zustand/react/shallow';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import '@/modules/canvas/presentation/components/organisms/ColorCoding/ColorCoding.css';
 
-const COLOR_GRADIENTS = [
-    'Viridis',
-    'Plasma',
-    'BlueRed',
-    'GrayScale'
-];
+interface ColorCodingProps {
+    trajectoryId?: string;
+    analysisId?: string;
+    currentTimestep?: number;
+}
 
-const ColorCoding = () => {
-    const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const { searchParams } = useSearchParamsState();
-    const analysisId = searchParams.get('analysis') || undefined;
-    const { currentTimestep, setActiveScene } = useEditorStore(useShallow((state) => ({
-        currentTimestep: state.currentTimestep,
-        setActiveScene: state.setActiveScene
-    })));
+interface ColorCodingFormProps {
+    property: string;
+    propertyOptions: { value: string; title: string }[];
+    onPropertyChange: (value: string) => void;
+    gradient: ColorGradient;
+    setGradient: (g: ColorGradient) => void;
+    gradientOptions: { value: string; title: string }[];
+    startValue: number;
+    setStartValue: (v: number) => void;
+    endValue: number;
+    setEndValue: (v: number) => void;
+    automaticRange: boolean;
+    setAutomaticRange: (v: boolean) => void;
+    symmetricRange: boolean;
+    setSymmetricRange: (v: boolean) => void;
+    isFetchingStats: boolean;
+    isApplying: boolean;
+    canApply: boolean;
+    onApply: () => void;
+}
 
+const ColorCodingForm = memo(({
+    property,
+    propertyOptions,
+    onPropertyChange,
+    gradient,
+    setGradient,
+    gradientOptions,
+    startValue,
+    setStartValue,
+    endValue,
+    setEndValue,
+    automaticRange,
+    setAutomaticRange,
+    symmetricRange,
+    setSymmetricRange,
+    isFetchingStats,
+    isApplying,
+    canApply,
+    onApply
+}: ColorCodingFormProps) => (
+    <WidgetContainer className='color-coding-container p-1 overflow-hidden d-flex column gap-1'>
+        <ModifierHeader title='Color Coding' modifierId='color-coding'>
+            {isFetchingStats && <Loader scale={0.5} isFixed={false} />}
+        </ModifierHeader>
+
+        <Container className='d-flex column gap-1'>
+            <FormField
+                fieldKey='property'
+                fieldType='select'
+                label='Property'
+                fieldValue={property}
+                onFieldChange={(_, value) => onPropertyChange(String(value))}
+                options={propertyOptions}
+            />
+
+            <FormField
+                fieldKey='gradient'
+                fieldType='select'
+                label='Color Gradient'
+                fieldValue={gradient}
+                onFieldChange={(_, value) => setGradient(value as ColorGradient)}
+                options={gradientOptions}
+            />
+
+            <GradientPreview
+                gradient={gradient}
+                startValue={startValue}
+                endValue={endValue}
+            />
+
+            <FormField
+                fieldKey='startValue'
+                fieldType='input'
+                onFieldChange={(_, value) => setStartValue(Number(value))}
+                fieldValue={startValue}
+                label='Start value'
+            />
+
+            <FormField
+                fieldKey='endValue'
+                onFieldChange={(_, value) => setEndValue(Number(value))}
+                fieldValue={endValue}
+                fieldType='input'
+                label='End value'
+            />
+
+            <FormField
+                fieldKey='automaticRange'
+                fieldType='checkbox'
+                label='Automatic Range'
+                fieldValue={automaticRange}
+                onFieldChange={(_, value) => setAutomaticRange(Boolean(value))}
+            />
+            <FormField
+                fieldKey='symmetricRange'
+                fieldType='checkbox'
+                label='Symmetric Range'
+                fieldValue={symmetricRange}
+                onFieldChange={(_, value) => setSymmetricRange(Boolean(value))}
+            />
+        </Container>
+
+        <Container className='color-coding-footer-container'>
+            <Button
+                isLoading={isApplying}
+                variant='solid'
+                intent='brand'
+                block
+                onClick={onApply}
+                disabled={!canApply}
+            >
+                Apply
+            </Button>
+        </Container>
+    </WidgetContainer>
+));
+ColorCodingForm.displayName = 'ColorCodingForm';
+
+const ColorCoding = memo(({
+    trajectoryId,
+    analysisId,
+    currentTimestep
+}: ColorCodingProps) => {
     const {
         property,
-        exposureId,
         propertyOptions,
-        isLoading,
-        handlePropertyChange
-    } = usePropertySelector({
-        trajectoryId: trajectory?._id,
-        analysisId,
-        timestep: currentTimestep
-    });
-
-    const { colorCodingRepository } = useColorCodingUseCases();
-    const { showSuccess, showError } = useToast();
-
-    const [startValue, setStartValue] = useState(0);
-    const [endValue, setEndValue] = useState(0);
-    const [gradient, setGradient] = useState('Viridis');
-    const [automaticRange, setAutomaticRange] = useState(true);
-    const [symmetricRange, setSymmetricRange] = useState(true);
-    const [isFetchingStats, setIsFetchingStats] = useState(false);
-    const [isApplying, setIsApplying] = useState(false);
-
-    const applyColorCoding = async () => {
-        if (!trajectory?._id || currentTimestep === undefined || !property) return;
-        setIsApplying(true);
-        try {
-            await colorCodingRepository.apply({
-                trajectoryId: trajectory._id,
-                analysisId,
-                timestep: currentTimestep,
-                payload: {
-                    property,
-                    startValue,
-                    endValue,
-                    gradient,
-                    exposureId: exposureId || undefined
-                }
-            });
-
-            setActiveScene({
-                analysisId,
-                endValue: String(endValue),
-                exposureId: exposureId || undefined,
-                gradient,
-                property,
-                source: 'color-coding',
-                startValue: String(startValue),
-                sceneType: 'color-coding'
-            } as any);
-
-            showSuccess('Color coding applied successfully');
-        } catch (error) {
-            console.error(error);
-            showError('Failed to apply color coding');
-        } finally {
-            setIsApplying(false);
-        }
-    };
-
-    const fetchStats = async () => {
-        if (!property || !trajectory?._id) return;
-
-        const selectedOption = propertyOptions.find((opt) => opt.value === property);
-        const type = selectedOption?.exposureId ? 'modifier' : 'base';
-
-        if (type === 'modifier' && !analysisId) return;
-
-        setIsFetchingStats(true);
-        try {
-            const stats = await colorCodingRepository.getStats({
-                trajectoryId: trajectory._id,
-                analysisId,
-                timestep: currentTimestep,
-                property,
-                type,
-                exposureId: selectedOption?.exposureId || undefined
-            });
-            const { min, max } = stats;
-            setStartValue(min);
-            setEndValue(max);
-        } catch (error) {
-            console.error(error);
-            showError('Failed to fetch property statistics');
-        } finally {
-            setIsFetchingStats(false);
-        }
-    };
-
-    useEffect(() => {
-        if (automaticRange) {
-            fetchStats();
-        }
-    }, [automaticRange, currentTimestep, property, exposureId]);
-
-    useEffect(() => {
-        if (!symmetricRange) return;
-
-        if (endValue === 0 && !automaticRange) {
-            setAutomaticRange(true);
-            return;
-        }
-
-        const limit = Math.max(Math.abs(startValue), Math.abs(endValue));
-        setStartValue(-limit);
-        setEndValue(limit);
-    }, [symmetricRange, endValue]);
+        handlePropertyChange,
+        gradient,
+        setGradient,
+        gradientOptions,
+        startValue,
+        setStartValue,
+        endValue,
+        setEndValue,
+        automaticRange,
+        setAutomaticRange,
+        symmetricRange,
+        setSymmetricRange,
+        isFetchingStats,
+        isApplying,
+        canApply,
+        applyColorCoding
+    } = useColorCoding({ trajectoryId, analysisId, currentTimestep });
 
     return (
-        <EditorWidget className='color-coding-container p-1 overflow-hidden d-flex column gap-1' draggable={false}>
-            <Container className='d-flex content-between items-center'>
-                <Title className='font-weight-5-5'>Color Coding</Title>
-                {isFetchingStats && <Loader scale={0.5} isFixed={false} />}
-            </Container>
-
-            <Container className='d-flex column gap-1'>
-                <FormField
-                    fieldKey='property'
-                    fieldType='select'
-                    label='Property'
-                    fieldValue={property}
-                    onFieldChange={(_, value) => handlePropertyChange(String(value))}
-                    options={propertyOptions}
-                />
-
-                <FormField
-                    fieldKey='gradient'
-                    fieldType='select'
-                    label='Color Gradient'
-                    fieldValue={gradient}
-                    onFieldChange={(_, value) => setGradient(String(value))}
-                    options={COLOR_GRADIENTS.map((color) => ({ value: color, title: color }))}
-                />
-
-                <GradientPreview
-                    gradient={gradient}
-                    startValue={startValue}
-                    endValue={endValue}
-                />
-
-                <FormField
-                    fieldKey='startValue'
-                    fieldType='input'
-                    onFieldChange={(_, value) => setStartValue(Number(value))}
-                    fieldValue={startValue}
-                    label='Start value'
-                />
-
-                <FormField
-                    fieldKey='endValue'
-                    onFieldChange={(_, value) => setEndValue(Number(value))}
-                    fieldValue={endValue}
-                    fieldType='input'
-                    label='End value'
-                />
-
-                <FormField
-                    fieldKey='automaticRange'
-                    fieldType='checkbox'
-                    label='Automatic Range'
-                    fieldValue={automaticRange}
-                    onFieldChange={(_, value) => setAutomaticRange(Boolean(value))}
-                />
-                <FormField
-                    fieldKey='symmetricRange'
-                    fieldType='checkbox'
-                    label='Symmetric Range'
-                    fieldValue={symmetricRange}
-                    onFieldChange={(_, value) => setSymmetricRange(Boolean(value))}
-                />
-            </Container>
-
-            <Container className='color-coding-footer-container'>
-                <Button
-                    isLoading={isApplying}
-                    variant='solid'
-                    intent='brand'
-                    block
-                    onClick={applyColorCoding}
-                    disabled={isLoading || isFetchingStats || isApplying}
-                >
-                    Apply
-                </Button>
-            </Container>
-        </EditorWidget>
+        <ColorCodingForm
+            property={property}
+            propertyOptions={propertyOptions}
+            onPropertyChange={handlePropertyChange}
+            gradient={gradient}
+            setGradient={setGradient}
+            gradientOptions={gradientOptions}
+            startValue={startValue}
+            setStartValue={setStartValue}
+            endValue={endValue}
+            setEndValue={setEndValue}
+            automaticRange={automaticRange}
+            setAutomaticRange={setAutomaticRange}
+            symmetricRange={symmetricRange}
+            setSymmetricRange={setSymmetricRange}
+            isFetchingStats={isFetchingStats}
+            isApplying={isApplying}
+            canApply={canApply}
+            onApply={applyColorCoding}
+        />
     );
-};
+});
+
+ColorCoding.displayName = 'ColorCoding';
 
 export default ColorCoding;

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { CiLock, CiUnlock } from 'react-icons/ci';
-import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
+import WidgetContainer from '@/modules/canvas/presentation/components/atoms/WidgetContainer';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
 import useUpdateTrajectory from '@/modules/trajectory/presentation/hooks/trajectory/use-update-trajectory';
@@ -32,8 +32,8 @@ const TrajectoryVisibilityStatusFloatIcon = () => {
     const tooltipContent = isPublic ? 'Public · Click to make Private' : 'Private · Click to make Public';
 
     return (
-        <EditorWidget
-            className={`trajectory-share-status-container ${isUpdating ? 'is-disabled' : ''} p-absolute overflow-hidden p-1`}
+        <WidgetContainer
+            className={`trajectory-share-status-container ${isUpdating ? 'is-disabled' : ''} overflow-hidden p-1 right-1 radius-full`}
         >
             <Tooltip content={tooltipContent} placement="left">
                 <Button
@@ -48,7 +48,7 @@ const TrajectoryVisibilityStatusFloatIcon = () => {
                     {isPublic ? <CiUnlock /> : <CiLock />}
                 </Button>
             </Tooltip>
-        </EditorWidget>
+        </WidgetContainer>
     );
 };
 

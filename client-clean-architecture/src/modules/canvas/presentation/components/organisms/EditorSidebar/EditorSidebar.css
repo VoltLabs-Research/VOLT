@@ -7,18 +7,6 @@
     margin-top: 5px;
 }
 
-.editor-sidebar-scene-container {
-    height: 64vh;
-    overflow: scroll;
-}
-
-.editor-render-options-container {
-    height: 79vh;
-}
-
-.editor-sidebar-user-avatar-wrapper {
-}
-
 .editor-sidebar-user-avatar-wrapper .sidebar-user-fullname {
     color: #dadada;
 }

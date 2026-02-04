@@ -2,42 +2,29 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@mui/material';
 
-import { PiEngine, PiSelectionThin } from 'react-icons/pi';
-import { CiImageOn } from 'react-icons/ci';
-import { IoColorPalette } from 'react-icons/io5';
-import { VscPulse } from 'react-icons/vsc';
-import { RiSliceFill } from 'react-icons/ri';
 
 import CanvasSidebarOption from '@/modules/canvas/presentation/components/atoms/CanvasSidebarOption';
-import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
 
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
+import { buildCanvasModifierOptions, toggleModifierOption, type ModifierOption } from '@/modules/canvas/presentation/modifiers/registry';
 
 import '@/modules/canvas/presentation/components/molecules/CanvasSidebarModifiers/CanvasSidebarModifiers.css';
-
-type ModifierOption = {
-  Icon: React.ComponentType<any>;
-  title: string;
-  modifierId: string;
-  isPlugin: boolean;
-  pluginId?: string;
-  pluginModifierId?: string;
-};
 
 const SKELETON_ROWS = 6;
 
 const CanvasSidebarModifiers = () => {
   const navigate = useNavigate();
-  const { searchParams, updateSearchParams } = useSearchParamsState();
-
   const {
-    selectedIds: activeModifiers,
-    toggleSelection,
-    isSelected
-  } = useSelectionParams({ paramName: 'modifiers' });
+    pluginParam,
+    activeModifiers,
+    toggleModifier,
+    isModifierSelected,
+    setPluginParam,
+    setModifiers,
+    setRenderConfigOpen
+  } = useCanvasUrlState();
 
   const modifiers = usePluginStore((s) => (s as any).modifiers ?? []);
 
@@ -104,56 +91,27 @@ const CanvasSidebarModifiers = () => {
     prevActiveRef.current = activeModifiers;
   }, [activeModifiers, trajectoryId, navigate]);
 
-  const staticOptions = useMemo<ModifierOption[]>(() => ([
-    { Icon: IoColorPalette, title: 'Color Coding', modifierId: 'color-coding', isPlugin: false },
-    { Icon: RiSliceFill, title: 'Slice Plane', modifierId: 'slice-plane', isPlugin: false },
-    { Icon: PiSelectionThin, title: 'Particle Selection', modifierId: 'particle-filter', isPlugin: false },
-    { Icon: PiEngine, title: 'Render Settings', modifierId: 'render-settings', isPlugin: false },
-    { Icon: VscPulse, title: 'Performance Monitor', modifierId: 'performance-monitor', isPlugin: false },
-    { Icon: CiImageOn, title: 'Raster Frames', modifierId: 'raster', isPlugin: false },
-  ]), []);
-
-  const pluginOptions = useMemo<ModifierOption[]>(() => {
-    return modifiers.map((modifier: any) => ({
-      title: modifier.name,
-      modifierId: modifier.plugin._id,
-      pluginId: modifier.plugin._id,
-      pluginModifierId: modifier.plugin.slug,
-      Icon: modifier.icon
-        ? () => <DynamicIcon iconName={modifier.icon ?? ''} />
-        : PiEngine,
-      isPlugin: true
-    }));
+  const allModifiers = useMemo<ModifierOption[]>(() => {
+    return buildCanvasModifierOptions(modifiers);
   }, [modifiers]);
 
-  const allModifiers = useMemo<ModifierOption[]>(() => {
-    return [...pluginOptions, ...staticOptions];
-  }, [pluginOptions, staticOptions]);
-
   const handleToggle = useCallback((option: ModifierOption) => {
-    if (option.isPlugin) {
-      const currentPlugin = searchParams.get('plugin');
-      const newPlugin = `${option.pluginId}:${option.pluginModifierId}`;
-      updateSearchParams({ plugin: currentPlugin === newPlugin ? null : newPlugin });
-    } else if (option.modifierId === 'render-settings') {
-      const next = isSelected(option.modifierId)
-        ? activeModifiers
-        : Array.from(new Set([...activeModifiers, option.modifierId]));
-      updateSearchParams({
-        modifiers: next.length === 0 ? null : next.join(','),
-        renderConfig: 'true'
-      });
-    } else {
-      toggleSelection(option.modifierId);
-    }
-  }, [searchParams, updateSearchParams, toggleSelection, isSelected, activeModifiers]);
+    toggleModifierOption(option, {
+      activeModifiers,
+      pluginParam,
+      toggleModifier,
+      setPluginParam,
+      setModifiers,
+      setRenderConfigOpen
+    });
+  }, [activeModifiers, pluginParam, toggleModifier, setPluginParam, setModifiers, setRenderConfigOpen]);
 
   const isActive = useCallback((option: ModifierOption) => {
     if (option.isPlugin) {
-      return searchParams.get('plugin') === `${option.pluginId}:${option.pluginModifierId}`;
+      return pluginParam === `${option.pluginId}:${option.pluginModifierId}`;
     }
-    return isSelected(option.modifierId);
-  }, [searchParams, isSelected]);
+    return isModifierSelected(option.modifierId);
+  }, [pluginParam, isModifierSelected]);
 
   if (bootstrapLoading) {
     return (

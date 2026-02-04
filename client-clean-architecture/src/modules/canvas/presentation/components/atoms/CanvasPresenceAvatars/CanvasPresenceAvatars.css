@@ -10,9 +10,6 @@
     border-radius: var(--radius-2xl);
 }
 
-.canvas-presence-avatar-wrapper {
-}
-
 .canvas-presence-avatar {
     width: 2.5rem;
     height: 2.5rem;

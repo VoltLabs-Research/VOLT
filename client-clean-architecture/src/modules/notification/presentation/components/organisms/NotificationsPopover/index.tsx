@@ -37,16 +37,16 @@ const NotificationsPopover = () => {
                     <NotificationBadge count={unreadCount} />
                 </IconButton>
             }
-            className='notifications-popover-dropdown'
+            className='notifications-popover-dropdown radius-md overflow-hidden'
             noPadding
             onOpenChange={handleOpenChange}
         >
             {(closePopover) => (
                 <>
-                    <Container className='notifications-header d-flex items-center content-between color-primary font-weight-6 font-size-2'>
+                    <Container className='notifications-header d-flex items-center content-between p-075 color-primary font-weight-6 font-size-2'>
                         <span>Notifications</span>
                         <button
-                            className='notifications-close cursor-pointer color-muted'
+                            className='notifications-close b-none cursor-pointer color-muted'
                             onClick={(e) => {
                                 e.stopPropagation();
                                 closePopover();

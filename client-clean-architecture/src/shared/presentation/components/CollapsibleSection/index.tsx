@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, type ReactNode, memo } from 'react';
 import { ChevronDown, Trash2, Plus } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
@@ -26,8 +26,15 @@ const CollapsibleSection = ({
 }: CollapsibleSectionProps) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [isHovered, setIsHovered] = useState(false);
+    const [hasBeenExpanded, setHasBeenExpanded] = useState(defaultExpanded);
     const bodyRef = useRef<HTMLDivElement>(null);
     const [height, setHeight] = useState<number | 'auto'>(defaultExpanded ? 'auto' : 0);
+
+    useEffect(() => {
+        if (isExpanded && !hasBeenExpanded) {
+            setHasBeenExpanded(true);
+        }
+    }, [isExpanded, hasBeenExpanded]);
 
     useEffect(() => {
         if (!bodyRef.current) return;
@@ -61,13 +68,13 @@ const CollapsibleSection = ({
     return (
         <Container className={`d-flex column mb-1-5 ${className}`}>
             <Container
-                className='collapsible-section-header d-flex content-between items-center'
+                className='collapsible-section-header d-flex content-between items-center cursor-pointer u-select-none'
                 onClick={handleToggle}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
                 <Container className='d-flex items-center gap-05'>
-                    {icon && <span className='collapsible-section-icon'>{icon}</span>}
+                    {icon && <span className='d-flex items-center'>{icon}</span>}
                     <Title className='font-size-3 font-weight-6 color-primary'>{title}</Title>
                 </Container>
                 <Container className='d-flex items-center gap-025'>
@@ -104,11 +111,11 @@ const CollapsibleSection = ({
                 style={{ height }}
             >
                 <Container className='collapsible-section-content d-flex column gap-1'>
-                    {children}
+                    {hasBeenExpanded ? children : null}
                 </Container>
             </div>
         </Container>
     );
 };
 
-export default CollapsibleSection;
+export default memo(CollapsibleSection);

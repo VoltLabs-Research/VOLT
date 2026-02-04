@@ -1,16 +1,6 @@
 import React, { useMemo, useRef, useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, GizmoHelper, GizmoViewport, AdaptiveDpr, AdaptiveEvents, Preload, Bvh } from '@react-three/drei';
-import { EffectComposer, SSAO } from '@react-three/postprocessing';
-import DynamicRenderer from '@/modules/fractal/presentation/components/molecules/DynamicRenderer';
-import DynamicBackground from '@/modules/fractal/presentation/components/molecules/DynamicBackground';
-import DynamicEnvironment from '@/modules/fractal/presentation/components/molecules/DynamicEnvironment';
-import DynamicLights from '@/modules/fractal/presentation/components/molecules/DynamicLights';
-import DynamicEffects from '@/modules/fractal/presentation/components/molecules/DynamicEffects';
-import CameraRig from '@/modules/fractal/presentation/components/atoms/CameraRig';
-import CanvasGrid from '@/modules/fractal/presentation/components/atoms/CanvasGrid';
-import SlicePlaneHelper from '@/modules/fractal/presentation/components/atoms/SlicePlaneHelper';
-import PerformanceStatsCollector from '@/modules/fractal/presentation/components/atoms/PerformanceStatsCollector';
+import FractalScenePipeline from '@/modules/fractal/presentation/components/organisms/FractalScenePipeline';
 import type { FractalSceneConfig } from '@/modules/fractal/presentation/types/scene-config';
 import type { RendererStats } from '@/modules/fractal/presentation/stores/editor/visual-settings-slice';
 
@@ -51,11 +41,6 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
             : config.dpr.min;
         return [min, config.dpr.max] as [number, number];
     }, [config.dpr, config.interactionDegradeEnabled, isInteracting]);
-
-    const handleControlsRef = useCallback((r: any) => {
-        orbitControlsRef.current = r;
-        onControlsRef?.(r);
-    }, [onControlsRef]);
 
     useEffect(() => {
         if (!orbitControlsRef.current) return;
@@ -118,7 +103,10 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
         powerPreference: config.rendererCreate.powerPreference
     }), [config.rendererCreate]);
 
-    const isDefectScene = config.activeScene?.sceneType === 'defect';
+    const orbitProps = useMemo(() => {
+        const { target, set, setTarget, reset, ...rest } = config.orbitControls as any;
+        return rest;
+    }, [config.orbitControls]);
     return (
         <div style={{ width: '100%', height: '100%' }}>
             <Canvas
@@ -131,69 +119,19 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                     state.invalidate();
                 }}
             >
-            <DynamicRenderer settings={config.rendererRuntime} />
-            <CameraRig orbitRef={orbitControlsRef} camera={config.camera} />
-            {onStats && showPerformanceStats && (
-                <PerformanceStatsCollector enabled onStats={onStats} />
-            )}
-            <Preload all />
-            {config.dpr.mode === 'adaptive' && <AdaptiveDpr pixelated={config.dpr.pixelated} />}
-            {config.adaptiveEventsEnabled && <AdaptiveEvents />}
-
-            {showGizmo && (
-                <GizmoHelper alignment='top-left' renderPriority={2} margin={[450, 70]}>
-                    <directionalLight position={[5, 5, 5]} intensity={1} />
-                    <ambientLight intensity={0.7} />
-                    <GizmoViewport scale={30} hideNegativeAxes axisColors={['#2c2c2e', '#2c2c2e', '#2c2c2e']} labelColor='#8e8e93' />
-                </GizmoHelper>
-            )}
-
-            <DynamicBackground settings={config.environment} />
-            <DynamicEffects settings={config.effects} />
-            <DynamicLights settings={config.lights} />
-            <DynamicEnvironment settings={config.environment} />
-
-            <DynamicLights preset={isDefectScene ? 'defect' : 'trajectory'} />
-
-            <OrbitControls
-                ref={handleControlsRef}
-                enabled={config.orbitControls.enabled}
-                enableDamping={config.orbitControls.enableDamping}
-                dampingFactor={config.orbitControls.dampingFactor}
-                enableZoom={config.orbitControls.enableZoom}
-                zoomSpeed={config.orbitControls.zoomSpeed}
-                enableRotate={config.orbitControls.enableRotate}
-                rotateSpeed={config.orbitControls.rotateSpeed}
-                enablePan={config.orbitControls.enablePan}
-                panSpeed={config.orbitControls.panSpeed}
-                screenSpacePanning={config.orbitControls.screenSpacePanning}
-                autoRotate={config.orbitControls.autoRotate}
-                autoRotateSpeed={config.orbitControls.autoRotateSpeed}
-                minDistance={config.orbitControls.minDistance}
-                maxDistance={config.orbitControls.maxDistance}
-                minPolarAngle={config.orbitControls.minPolarAngle}
-                maxPolarAngle={config.orbitControls.maxPolarAngle}
-                minAzimuthAngle={config.orbitControls.minAzimuthAngle}
-                maxAzimuthAngle={config.orbitControls.maxAzimuthAngle}
-                onStart={() => markInteracting(true)}
-                onChange={() => markInteracting(true)}
-                onEnd={() => markInteracting(false)}
-            />
-
-            {(showGrid ?? config.grid.enabled) && (
-                <CanvasGrid settings={{ ...config.grid, enabled: showGrid ?? config.grid.enabled }} />
-            )}
-            <SlicePlaneHelper config={config.slicePlaneConfig} />
-
-            <color attach="background" args={['#0a0a0a']} />
-
-            <Bvh firstHitOnly>
+            <FractalScenePipeline
+                config={config}
+                orbitRef={orbitControlsRef}
+                orbitProps={orbitProps}
+                showGizmo={showGizmo}
+                showPerformanceStats={showPerformanceStats}
+                showGrid={showGrid}
+                onControlsRef={onControlsRef}
+                onStats={onStats}
+                markInteracting={markInteracting}
+            >
                 {children}
-            </Bvh>
-
-            <EffectComposer enableNormalPass={isDefectScene} multisampling={0} renderPriority={1}>
-                {isDefectScene && <SSAO {...config.renderConfig.SSAO} />}
-            </EffectComposer>
+            </FractalScenePipeline>
             </Canvas>
         </div>
     );

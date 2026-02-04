@@ -1,8 +1,9 @@
 import { useShallow } from 'zustand/react/shallow';
 import { TbSettings, TbX } from 'react-icons/tb';
-import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
+import Draggable from '@/shared/presentation/components/Draggable';
+import useSceneInteraction from '@/modules/canvas/presentation/hooks/use-scene-interaction';
 import FormRow from '@/modules/canvas/presentation/components/atoms/form/FormRow';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
 import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import type { SceneObjectType } from '@/modules/fractal/presentation/types/stores/editor/scene-types';
 import '@/modules/canvas/presentation/components/molecules/ExposureSettingsWidget/ExposureSettingsWidget.css';
@@ -15,8 +16,8 @@ const getSceneKey = (scene: SceneObjectType): string => {
 };
 
 const ExposureSettingsWidget = () => {
-    const { searchParams, removeParam } = useSearchParamsState();
-    const settings = searchParams.get('settings');
+    const { settingsKey, setSettingsKey } = useCanvasUrlState();
+    const isSceneInteracting = useSceneInteraction();
     const { sceneOpacities, setSceneOpacity } = useEditorStore(useShallow((s) => ({
         sceneOpacities: s.sceneOpacities,
         setSceneOpacity: s.setSceneOpacity
@@ -39,7 +40,7 @@ const ExposureSettingsWidget = () => {
         return { source, sceneType } as any;
     };
 
-    const exposureSettingsScene = parseScene(settings);
+    const exposureSettingsScene = parseScene(settingsKey ?? null);
     const sceneKey = exposureSettingsScene ? getSceneKey(exposureSettingsScene) : '';
 
     const opacity = sceneOpacities[sceneKey] ?? 1.0;
@@ -47,27 +48,31 @@ const ExposureSettingsWidget = () => {
     if (!exposureSettingsScene) return null;
 
     return (
-        <EditorWidget
+        <Draggable
+            enabled
+            doubleClickToDrag
+            axis="both"
+            scaleWhileDragging={0.95}
+            bounds="parent"
             style={{ bottom: '1rem', right: '1rem', top: 'auto', left: 'auto' }}
-            className='exposure-settings-widget p-1'
-            draggable={true}
+            className={`widget-container exposure-settings-widget p-1 ${isSceneInteracting ? 'dimmed' : ''}`}
         >
             <div className='d-flex column w-max'>
-                <div className='exposure-settings-widget-header'>
-                    <span className='exposure-settings-widget-title gap-05 font-weight-5'>
+                <div className='exposure-settings-widget-header d-flex items-center content-between'>
+                    <span className='exposure-settings-widget-title d-flex items-center gap-05 font-weight-5'>
                         <TbSettings size={14} />
                         Settings
                     </span>
                     <button
-                        className='exposure-settings-widget-close cursor-pointer'
-                        onClick={() => removeParam('settings', { replace: true })}
+                        className='exposure-settings-widget-close cursor-pointer d-flex items-center content-center p-025 b-none transition-normal'
+                        onClick={() => setSettingsKey(null, { replace: true })}
                         type='button'
                     >
                         <TbX size={16} />
                     </button>
                 </div>
 
-                <div className='exposure-settings-widget-content gap-05'>
+                <div className='d-flex column gap-05'>
                     <FormRow
                         label='Opacity'
                         value={opacity}
@@ -80,7 +85,7 @@ const ExposureSettingsWidget = () => {
                     />
                 </div>
             </div>
-        </EditorWidget>
+        </Draggable>
     );
 };
 

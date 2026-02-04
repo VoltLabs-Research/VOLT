@@ -1,15 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import usePaginationParams from './use-pagination-params';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import usePaginationParams, { type PaginationParams } from './use-pagination-params';
+import useListingLifecycle from './use-listing-lifecycle';
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-
-/**
- * Pagination params that will be merged with context.
- */
-export interface PaginationParams {
-    page: number;
-    limit: number;
-    search?: string;
-};
 
 /**
  * Props for useDocumentListingPagination hook.
@@ -56,27 +48,9 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
     const [error, setError] = useState<string | null>(null);
 
     const fetchDataRef = useRef(fetchData);
-    const prevContextRef = useRef<string | undefined>(undefined);
-
     useEffect(() => {
         fetchDataRef.current = fetchData;
     });
-
-    // Detect context change and reset
-    useEffect(() => {
-        if(!context) return;
-        
-        const currentContext = JSON.stringify(context);
-        const hasContextChanged = prevContextRef.current !== undefined && 
-                                   prevContextRef.current !== currentContext;
-        
-        if(hasContextChanged){
-            setData([]);
-            updateParams({ page: 1 });
-        }
-        
-        prevContextRef.current = currentContext;
-    }, [context, updateParams]);
 
     const fetchDataAsync = useCallback(async (isRefresh = false) => {
         setIsLoading(true);
@@ -113,16 +87,40 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
     }, [page, limit, search, context]);
 
     // Fetch data when pagination params or context changes
-    useEffect(() => {
-        if(!enabled) return;
-        fetchDataAsync();
-    }, [enabled, fetchDataAsync]);
+    const contextSignature = useMemo(() => JSON.stringify(context ?? {}), [context]);
 
-    const handleLoadMore = useCallback(() => {
-        if(!isLoading && hasMore){
-            updateParams({ page: page + 1 });
+    // Memoize callbacks to prevent infinite loops in useListingLifecycle
+    const stableFetchData = useCallback(() => fetchDataAsync(), [fetchDataAsync]);
+    const stableInitialFetchParams = useMemo(() => ({ page: 1, limit }), [limit]);
+    const stableOnLoadMore = useCallback((nextPage: number) => updateParams({ page: nextPage }), [updateParams]);
+    const stableOnReset = useCallback(() => {
+        setData([]);
+        if (page === 1) {
+            fetchDataAsync(true);
+        } else {
+            updateParams({ page: 1 });
         }
-    }, [isLoading, hasMore, page, updateParams]);
+    }, [page, fetchDataAsync, updateParams]);
+
+    const { handleLoadMore: handleLoadMoreInternal } = useListingLifecycle({
+        data,
+        isLoading,
+        isFetchingMore: isLoading && page > 1,
+        listingMeta: {
+            page,
+            limit,
+            hasMore
+        },
+        fetchData: stableFetchData,
+        initialFetchParams: stableInitialFetchParams,
+        dependencies: [page, limit, search, enabled],
+        resetDependencies: [contextSignature],
+        onLoadMore: stableOnLoadMore,
+        skipInitialFetch: !enabled,
+        onReset: stableOnReset
+    });
+
+    const handleLoadMore = handleLoadMoreInternal;
 
     const refresh = useCallback(() => {
         if(!isLoading){

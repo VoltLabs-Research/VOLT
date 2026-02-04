@@ -38,7 +38,7 @@ const FileExplorer = ({
 
         if(error){
             return (
-                <Container className='file-explorer-message'>
+                <Container className='file-explorer-message p-2 text-center'>
                     <Paragraph className='color-danger'>{error}</Paragraph>
                 </Container>
             );
@@ -46,7 +46,7 @@ const FileExplorer = ({
 
         if(isEmpty){
             return (
-                <Container className='file-explorer-message'>
+                <Container className='file-explorer-message p-2 text-center'>
                     <Paragraph className='color-muted'>{emptyMessage}</Paragraph>
                 </Container>
             );
@@ -56,8 +56,8 @@ const FileExplorer = ({
     };
 
     return (
-        <Container className='file-explorer d-flex column h-max'>
-            <Container className='file-explorer-header d-flex content-between items-center'>
+        <Container className='file-explorer d-flex column h-max overflow-hidden'>
+            <Container className='file-explorer-header d-flex content-between items-center gap-1 p-075'>
                 <Container className='file-explorer-header-left d-flex items-center gap-05'>
                     {headerLeft}
                 </Container>

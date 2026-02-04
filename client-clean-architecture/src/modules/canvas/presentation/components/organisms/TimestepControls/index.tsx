@@ -4,7 +4,7 @@ import { CiPlay1, CiPause1 } from 'react-icons/ci';
 import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import Slider from '@/shared/presentation/components/Slider';
-import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
+import WidgetContainer from '@/modules/canvas/presentation/components/atoms/WidgetContainer';
 import Container from '@/shared/presentation/components/Container';
 import { useShallow } from 'zustand/react/shallow';
 import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
@@ -50,11 +50,11 @@ const TimestepControls: React.FC = () => {
     const sliderProgress = maxIndex > 0 ? (safeCurrentIndex / maxIndex) * 100 : 0;
 
     return (
-        <EditorWidget className='editor-timestep-controls p-1 row items-center content-between p-absolute' draggable={false}>
+        <WidgetContainer className='editor-timestep-controls d-flex p-1 row items-center content-between'>
             <Tooltip content={isPlaying ? 'Pause' : 'Play'} placement='top'>
                 <Button
                     onClick={togglePlay}
-                    className='editor-timestep-controls-play-pause-button font-size-3 font-size-5 cursor-pointer'
+                    className='editor-timestep-controls-play-pause-button font-size-3 font-size-5 cursor-pointer b-none transition-normal'
                     variant='ghost'
                     iconOnly
                 >
@@ -63,7 +63,7 @@ const TimestepControls: React.FC = () => {
             </Tooltip>
 
             <Container className='timestep-slider-wrapper p-relative flex-1'>
-                <div className='d-flex items-center gap-05 editor-timesteps-controls-slider w-max'>
+                <div className='d-flex items-center gap-05 editor-timesteps-controls-slider'>
                     <Slider
                         min={minIndex}
                         max={maxIndex}
@@ -112,7 +112,7 @@ const TimestepControls: React.FC = () => {
                 />
                 {playSpeed.toFixed(1)}x
             </div>
-        </EditorWidget>
+        </WidgetContainer>
     );
 };
 

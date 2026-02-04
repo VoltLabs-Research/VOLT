@@ -6,10 +6,10 @@ import { MdOutlineLightMode } from 'react-icons/md';
 import { TbAugmentedReality2 } from 'react-icons/tb';
 import { GoDownload } from 'react-icons/go';
 import { CiShare1 } from 'react-icons/ci';
-import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
+import WidgetContainer from '@/modules/canvas/presentation/components/atoms/WidgetContainer';
 import Select from '@/shared/presentation/components/Select';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import type { FractalSceneRef } from '@/modules/fractal/presentation/components/FractalScene';
+import type { FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
 import '@/modules/canvas/presentation/components/atoms/SceneTopCenteredOptions/SceneTopCenteredOptions.css';
 
 const ZOOM_PRESETS = [50, 75, 100, 125, 150, 200];
@@ -89,12 +89,12 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
     ];
 
     return (
-        <EditorWidget className='d-flex items-center gap-1 row editor-top-centered-options-container p-absolute' draggable={false}>
+        <WidgetContainer className='d-flex items-center gap-1 row editor-top-centered-options-container p-absolute radius-full'>
             {leftIcons.map((item, index) => (
                 <Tooltip key={index} content={item.tooltip} placement="bottom">
                     <i
                         onClick={item.callback}
-                        className={'editor-sidebar-scene-option-icon-container '.concat((index === 0) ? 'selected' : '')}
+                        className={'editor-sidebar-scene-option-icon-container b-none radius-sm transition-fast '.concat((index === 0) ? 'selected' : '')}
                     >
                         <item.Icon />
                     </i>
@@ -109,7 +109,6 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
                     placeholder='Zoom'
                     onDark
                     className='editor-scene-zoom-selector'
-                    maxListWidth={200}
                 />
             </div>
 
@@ -117,13 +116,13 @@ const SceneTopCenteredOptions = ({ scene3DRef }: SceneTopCenteredOptionsProps) =
                 <Tooltip key={index} content={item.tooltip} placement="bottom">
                     <i
                         onClick={item.callback}
-                        className={'editor-sidebar-scene-option-icon-container '.concat((index === 0) ? 'selected' : '')}
+                        className={'editor-sidebar-scene-option-icon-container b-none radius-sm transition-fast '.concat((index === 0) ? 'selected' : '')}
                     >
                         <item.Icon />
                     </i>
                 </Tooltip>
             ))}
-        </EditorWidget>
+        </WidgetContainer>
     );
 };
 

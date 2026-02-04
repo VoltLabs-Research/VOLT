@@ -1,89 +1,39 @@
-import FormField from '@/shared/presentation/components/FormField';
+import { memo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import Select from '@/shared/presentation/components/Select';
 import SettingsPanel from '@/modules/canvas/presentation/components/molecules/SettingsPanel';
 import { MdAutoFixHigh } from 'react-icons/md';
+import { valueRow, checkbox } from '../controls/config-helpers';
 
 const EffectsControls = () => {
-    const {
-        ssao,
-        bloom,
-        chromaticAberration,
-        vignette,
-        depthOfField,
-        noise,
-        sepia,
-        setSSAOEffect,
-        setBloomEffect,
-        setChromaticAberration,
-        setVignette,
-        setDepthOfField,
-        setNoise,
-        setSepia
-    } = useEditorStore(useShallow((s) => s.effects));
+    const fx = useEditorStore(useShallow((s) => s.effects));
+
     const sections = [
         {
             key: 'ssao',
             title: 'SSAO(Screen Space Ambient Occlusion)',
-            enabled: ssao.enabled,
-            onToggle: (enabled: boolean) => setSSAOEffect({ enabled }),
+            enabled: fx.ssao.enabled,
+            onToggle: (enabled: boolean) => fx.setSSAOEffect({ enabled }),
             rows: [
-                {
-                    label: 'Intensity',
-                    min: 0,
-                    max: 20,
-                    step: 0.5,
-                    value: ssao.intensity,
-                    onChange: (intensity: number) => setSSAOEffect({ intensity }),
-                    format: (v: number) => v.toFixed(2)
-                },
-                {
-                    label: 'Luminance', min: 0, max: 1, step: 0.01,
-                    value: ssao.luminanceInfluence,
-                    onChange: (luminanceInfluence: number) => setSSAOEffect({ luminanceInfluence }),
-                    format: (v: number) => v.toFixed(2)
-                }
+                valueRow({ label: 'Intensity', min: 0, max: 20, step: 0.5, decimals: 2, value: fx.ssao.intensity, onChange: (v) => fx.setSSAOEffect({ intensity: v }) }),
+                valueRow({ label: 'Luminance', min: 0, max: 1, step: 0.01, decimals: 2, value: fx.ssao.luminanceInfluence, onChange: (v) => fx.setSSAOEffect({ luminanceInfluence: v }) })
             ]
         },
         {
             key: 'bloom',
             title: 'Bloom',
-            enabled: bloom.enabled,
-            onToggle: (enabled: boolean) => setBloomEffect({ enabled }),
+            enabled: fx.bloom.enabled,
+            onToggle: (enabled: boolean) => fx.setBloomEffect({ enabled }),
             rows: [
-                {
-                    label: 'Intensity',
-                    min: 0,
-                    max: 3,
-                    step: 0.1,
-                    value: bloom.intensity,
-                    onChange: (intensity: number) => setBloomEffect({ intensity }),
-                    format: (v: number) => v.toFixed(1)
-                },
-                {
-                    label: 'Threshold',
-                    min: 0,
-                    max: 2,
-                    step: 0.01,
-                    value: bloom.luminanceThreshold,
-                    onChange: (luminanceThreshold: number) => setBloomEffect({ luminanceThreshold }),
-                    format: (v: number) => v.toFixed(2)
-                },
-                {
-                    label: 'Smoothing',
-                    min: 0,
-                    max: 0.1,
-                    step: 0.001,
-                    value: bloom.luminanceSmoothing,
-                    onChange: (luminanceSmoothing: number) => setBloomEffect({ luminanceSmoothing }),
-                    format: (v: number) => v.toFixed(3)
-                }
+                valueRow({ label: 'Intensity', min: 0, max: 3, step: 0.1, decimals: 1, value: fx.bloom.intensity, onChange: (v) => fx.setBloomEffect({ intensity: v }) }),
+                valueRow({ label: 'Threshold', min: 0, max: 2, step: 0.01, decimals: 2, value: fx.bloom.luminanceThreshold, onChange: (v) => fx.setBloomEffect({ luminanceThreshold: v }) }),
+                valueRow({ label: 'Smoothing', min: 0, max: 0.1, step: 0.001, decimals: 3, value: fx.bloom.luminanceSmoothing, onChange: (v) => fx.setBloomEffect({ luminanceSmoothing: v }) })
             ],
             extras: (
                 <Select
-                    value={String(bloom.kernelSize)}
-                    onChange={(value) => setBloomEffect({ kernelSize: Number(value) })}
+                    value={String(fx.bloom.kernelSize)}
+                    onChange={(v) => fx.setBloomEffect({ kernelSize: Number(v) })}
                     placeholder='Kernel size'
                     options={Array.from({ length: 6 }, (_, i) => ({ title: `${i}`, value: `${i}` }))}
                 />
@@ -92,131 +42,51 @@ const EffectsControls = () => {
         {
             key: 'chromaticAberration',
             title: 'Chromatic Aberration',
-            enabled: chromaticAberration.enabled,
-            onToggle: (enabled: boolean) => setChromaticAberration({ enabled }),
+            enabled: fx.chromaticAberration.enabled,
+            onToggle: (enabled: boolean) => fx.setChromaticAberration({ enabled }),
             rows: [
-                {
-                    label: 'Offset X',
-                    min: -0.01,
-                    max: 0.01,
-                    step: 0.001,
-                    value: chromaticAberration.offset[0],
-                    onChange: (x: number) => setChromaticAberration({ offset: [x, chromaticAberration.offset[1]] }),
-                    format: (v: number) => v.toFixed(3)
-                },
-                {
-                    label: 'Offset Y',
-                    min: -0.01,
-                    max: 0.01,
-                    step: 0.001,
-                    value: chromaticAberration.offset[1],
-                    onChange: (y: number) => setChromaticAberration({ offset: [chromaticAberration.offset[0], y] }),
-                    format: (v: number) => v.toFixed(3)
-                }
+                valueRow({ label: 'Offset X', min: -0.01, max: 0.01, step: 0.001, decimals: 3, value: fx.chromaticAberration.offset[0], onChange: (v) => fx.setChromaticAberration({ offset: [v, fx.chromaticAberration.offset[1]] }) }),
+                valueRow({ label: 'Offset Y', min: -0.01, max: 0.01, step: 0.001, decimals: 3, value: fx.chromaticAberration.offset[1], onChange: (v) => fx.setChromaticAberration({ offset: [fx.chromaticAberration.offset[0], v] }) })
             ]
         },
         {
             key: 'vignette',
             title: 'Vignette',
-            enabled: vignette.enabled,
-            onToggle: (enabled: boolean) => setVignette({ enabled }),
+            enabled: fx.vignette.enabled,
+            onToggle: (enabled: boolean) => fx.setVignette({ enabled }),
             rows: [
-                {
-                    label: 'Offset',
-                    min: 0,
-                    max: 1,
-                    step: 0.01,
-                    value: vignette.offset,
-                    onChange: (offset: number) => setVignette({ offset }),
-                    format: (v: number) => v.toFixed(2)
-                },
-                {
-                    label: 'Darkness',
-                    min: 0,
-                    max: 1,
-                    step: 0.01,
-                    value: vignette.darkness,
-                    onChange: (darkness: number) => setVignette({ darkness }),
-                    format: (v: number) => v.toFixed(2)
-                }
+                valueRow({ label: 'Offset', min: 0, max: 1, step: 0.01, decimals: 2, value: fx.vignette.offset, onChange: (v) => fx.setVignette({ offset: v }) }),
+                valueRow({ label: 'Darkness', min: 0, max: 1, step: 0.01, decimals: 2, value: fx.vignette.darkness, onChange: (v) => fx.setVignette({ darkness: v }) })
             ],
-            extras: (
-                <FormField
-                    fieldValue={vignette.eskil}
-                    fieldKey='eskil'
-                    fieldType='checkbox'
-                    label='Eskil Mode'
-                    onFieldChange={(_, eskil) => setVignette({ eskil: Boolean(eskil) })}
-                />
-            )
+            extras: checkbox('eskil', 'Eskil Mode', fx.vignette.eskil, (v) => fx.setVignette({ eskil: v }))
         },
         {
             key: 'depthOfField',
             title: 'Depth of Field',
-            enabled: depthOfField.enabled,
-            onToggle: (enabled: boolean) => setDepthOfField({ enabled }),
+            enabled: fx.depthOfField.enabled,
+            onToggle: (enabled: boolean) => fx.setDepthOfField({ enabled }),
             rows: [
-                {
-                    label: 'Focus Distance',
-                    min: 0.001,
-                    max: 1,
-                    step: 0.001,
-                    value: depthOfField.focusDistance,
-                    onChange: (focusDistance: number) => setDepthOfField({ focusDistance }),
-                    format: (v: number) => v.toFixed(3)
-                },
-                {
-                    label: 'Focal Length',
-                    min: 0.1,
-                    max: 2,
-                    step: 0.01,
-                    value: depthOfField.focalLength,
-                    onChange: (focalLength: number) => setDepthOfField({ focalLength }),
-                    format: (v: number) => v.toFixed(2)
-                },
-                {
-                    label: 'Bokeh Scale',
-                    min: 0.1,
-                    max: 5,
-                    step: 0.1,
-                    value: depthOfField.bokehScale,
-                    onChange: (bokehScale: number) => setDepthOfField({ bokehScale }),
-                    format: (v: number) => v.toFixed(1)
-                }
+                valueRow({ label: 'Focus Distance', min: 0.001, max: 1, step: 0.001, decimals: 3, value: fx.depthOfField.focusDistance, onChange: (v) => fx.setDepthOfField({ focusDistance: v }) }),
+                valueRow({ label: 'Focal Length', min: 0.1, max: 2, step: 0.01, decimals: 2, value: fx.depthOfField.focalLength, onChange: (v) => fx.setDepthOfField({ focalLength: v }) }),
+                valueRow({ label: 'Bokeh Scale', min: 0.1, max: 5, step: 0.1, decimals: 1, value: fx.depthOfField.bokehScale, onChange: (v) => fx.setDepthOfField({ bokehScale: v }) })
             ]
         },
         {
             key: 'sepia',
             title: 'Sepia',
-            enabled: sepia.enabled,
-            onToggle: (enabled: boolean) => setSepia({ enabled }),
+            enabled: fx.sepia.enabled,
+            onToggle: (enabled: boolean) => fx.setSepia({ enabled }),
             rows: [
-                {
-                    label: 'Intensity',
-                    min: 0,
-                    max: 2,
-                    step: 0.01,
-                    value: sepia.intensity,
-                    onChange: (intensity: number) => setSepia({ intensity }),
-                    format: (v: number) => v.toFixed(2)
-                }
+                valueRow({ label: 'Intensity', min: 0, max: 2, step: 0.01, decimals: 2, value: fx.sepia.intensity, onChange: (v) => fx.setSepia({ intensity: v }) })
             ]
         },
         {
             key: 'noise',
             title: 'Noise',
-            enabled: noise.enabled,
-            onToggle: (enabled: boolean) => setNoise({ enabled }),
+            enabled: fx.noise.enabled,
+            onToggle: (enabled: boolean) => fx.setNoise({ enabled }),
             rows: [],
-            extras: (
-                <FormField
-                    fieldValue={noise.premultiply}
-                    fieldKey='premultiply'
-                    fieldType='checkbox'
-                    label='Premultiply'
-                    onFieldChange={(_, premultiply) => setNoise({ premultiply: Boolean(premultiply) })}
-                />
-            )
+            extras: checkbox('premultiply', 'Premultiply', fx.noise.premultiply, (v) => fx.setNoise({ premultiply: v }))
         }
     ];
 
@@ -237,4 +107,4 @@ const EffectsControls = () => {
     );
 };
 
-export default EffectsControls;
+export default memo(EffectsControls);

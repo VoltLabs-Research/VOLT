@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { RiCloseLine, RiDownloadLine } from 'react-icons/ri';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
 import { usePluginStore } from '@/modules/plugin';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
@@ -12,6 +12,7 @@ import useToast from '@/shared/presentation/hooks/use-toast';
 import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
 import PluginExposureTable from '@/modules/plugin/presentation/components/organisms/PluginExposureTable';
 import PluginAtomsTable from '@/modules/plugin/presentation/components/organisms/PluginAtomsTable';
+import { triggerBrowserDownload } from '@/shared/utils/file';
 import '@/modules/canvas/presentation/components/organisms/PluginResultsViewer/PluginResultsViewer.css';
 
 interface PluginResultsViewerProps {
@@ -23,9 +24,9 @@ const PluginResultsViewer = ({
     pluginSlug,
     analysisId
 }: PluginResultsViewerProps) => {
-    const { removeParam } = useSearchParamsState();
+    const { setResultsSlug } = useCanvasUrlState();
     const closeResults = () => {
-        removeParam('results', { replace: true });
+        setResultsSlug(undefined, { replace: true });
     };
     const plugin = usePluginStore((state) => state.pluginsBySlug[pluginSlug]);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
@@ -72,14 +73,7 @@ const PluginResultsViewer = ({
         try {
             setIsDownloading(true);
             const blob = await pluginRepository.exportAnalysisResults(pluginSlug, analysisId);
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `${pluginSlug}_analysis_${analysisId}.zip`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            triggerBrowserDownload(blob, `${pluginSlug}_analysis_${analysisId}.zip`);
             showSuccess('Analysis results downloaded successfully');
         } catch (error) {
             console.error('Failed to download results:', error);
@@ -90,10 +84,10 @@ const PluginResultsViewer = ({
 
     if (listingExposures.length === 0 && !hasAtomsTab) {
         return (
-            <Container className='plugin-results-viewer-container d-flex column p-absolute h-max overflow-hidden'>
-                <Container className='plugin-results-header d-flex items-center content-between p-1'>
+            <Container className='plugin-results-viewer-container d-flex column p-absolute h-max overflow-hidden right-1 bottom-1 radius-lg color-secondary'>
+<Container className='plugin-results-header d-flex items-center content-between f-shrink-0'>
                     <Title className='font-size-3 font-weight-5'>{plugin?.modifier?.name || plugin?.slug || pluginSlug}</Title>
-                    <i className='plugin-results-close cursor-pointer' onClick={closeResults}>
+                    <i className='plugin-results-close cursor-pointer p-025 radius-xs transition-fast' onClick={closeResults}>
                         <RiCloseLine size={20} />
                     </i>
                 </Container>
@@ -105,24 +99,24 @@ const PluginResultsViewer = ({
     }
 
     return (
-        <Container className='plugin-results-viewer-container d-flex column p-absolute h-max overflow-hidden'>
-            <Container className='plugin-results-header d-flex items-center content-between p-1'>
+        <Container className='plugin-results-viewer-container d-flex column p-absolute h-max overflow-hidden right-1 bottom-1 radius-lg color-secondary'>
+            <Container className='plugin-results-header d-flex items-center content-between f-shrink-0'>
                 <Title className='font-size-3 font-weight-5'>{plugin?.modifier?.name || plugin?.slug || pluginSlug}</Title>
                 <Container className='d-flex items-center gap-05'>
                     <i
-                        className='plugin-results-download cursor-pointer'
+                        className='plugin-results-download cursor-pointer p-025 radius-xs transition-fast'
                         onClick={handleDownload}
                         title='Download as XLSX'
                     >
                         {isDownloading ? <Loader scale={0.4} /> : <RiDownloadLine size={18} />}
                     </i>
-                    <i className='plugin-results-close cursor-pointer' onClick={closeResults}>
+                    <i className='plugin-results-close cursor-pointer p-025 radius-xs transition-fast' onClick={closeResults}>
                         <RiCloseLine size={20} />
                     </i>
                 </Container>
             </Container>
 
-            <Container className='plugin-results-tabs-container d-flex gap-05 px-1 w-max'>
+            <Container className='plugin-results-tabs-container d-flex gap-05 f-shrink-0 w-max'>
                 {listingExposures.map((exposure, index) => (
                     <button
                         key={`${exposure.exposureId}-${index}`}

@@ -7,6 +7,32 @@ export interface BoxTransforms {
     maxDimension: number;
 };
 
+export const getTrajectoryBoxBounds = (trajectory: any, currentTimestep?: number): BoxBounds | undefined => {
+    if (!trajectory || currentTimestep === undefined) return undefined;
+    let frame = trajectory.frames?.find((f: any) => f.timestep === currentTimestep);
+
+    if (!frame?.simulationCell) {
+        frame = trajectory.frames?.find((f: any) => f.simulationCell);
+    }
+
+    if (frame?.simulationCell) {
+        const { geometry, boundingBox } = frame.simulationCell as any;
+        if (geometry?.cell_origin && boundingBox) {
+            const [xlo, ylo, zlo] = geometry.cell_origin;
+            return {
+                xlo,
+                xhi: xlo + boundingBox.width,
+                ylo,
+                yhi: ylo + boundingBox.length,
+                zlo,
+                zhi: zlo + boundingBox.height
+            };
+        }
+    }
+
+    return frame?.boxBounds;
+};
+
 export const calculateBoxTransforms = (boxBounds: BoxBounds): BoxTransforms => {
     const width = boxBounds.xhi - boxBounds.xlo;
     const height = boxBounds.yhi - boxBounds.ylo;
@@ -30,4 +56,19 @@ export const calculateBoxTransforms = (boxBounds: BoxBounds): BoxTransforms => {
     };
 
     return { scale, position, center, maxDimension };
+};
+
+export const getGroundOffset = (boxBounds?: BoxBounds, transforms?: BoxTransforms) => {
+    if (!boxBounds || !transforms) return 0;
+    const minZWorld = (boxBounds.zlo * transforms.scale) + transforms.position.z;
+    return -minZWorld;
+};
+
+export const buildCellBoxTransforms = (transforms?: BoxTransforms, groundOffset = 0) => {
+    if (!transforms) return undefined;
+    return {
+        scale: transforms.scale,
+        position: { x: 0, y: 0, z: 0 },
+        groundOffset
+    };
 };

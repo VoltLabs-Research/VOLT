@@ -29,13 +29,13 @@ const PreloadingOverlay: React.FC = () => {
             exit={{ opacity: 0, scale: 0.97 }}
             transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
         >
-            <Container className="w-max text-center p-relative overflow-hidden d-flex column gap-3 editor-model-loading-container" style={ringVars}>
+            <Container className="w-max text-center p-relative overflow-hidden d-flex column gap-3 radius-2xl p-3 editor-model-loading-container" style={ringVars}>
                 <Canvas>
                     <TetrahedronLoader />
                 </Canvas>
                 <Container className="d-flex column gap-2">
                     <Title className="font-size-5-5 font-weight-6 editor-model-loading-title">Setting up your scene...</Title>
-                    <Paragraph className="font-weight-4 font-size-4 line-height-5 editor-model-loading-description">
+                    <Paragraph className="font-weight-4 font-size-4 line-height-5 mx-auto editor-model-loading-description">
                         For quick analysis and visualizations you may prefer to rasterize your simulation.
                     </Paragraph>
                 </Container>

@@ -71,10 +71,10 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
     const gradientStyle = GRADIENT_CSS[gradient] || GRADIENT_CSS.Viridis;
 
     return (
-        <Container className='gradient-preview-container'>
+        <Container className='gradient-preview-container w-max mt-025'>
             <Container
                 ref={barRef}
-                className='gradient-preview-bar'
+                className='gradient-preview-bar p-relative'
                 style={{ background: gradientStyle }}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
@@ -82,14 +82,14 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
             >
                 {tooltipValue !== null && (
                     <Container
-                        className='gradient-preview-tooltip'
+                        className='gradient-preview-tooltip p-absolute z-10'
                         style={{ left: tooltipX }}
                     >
                         {tooltipValue}
                     </Container>
                 )}
             </Container>
-            <Container className='gradient-preview-labels'>
+            <Container className='gradient-preview-labels d-flex content-between mt-025'>
                 <span>{formatValue(startValue)}</span>
                 <span>{formatValue(endValue)}</span>
             </Container>

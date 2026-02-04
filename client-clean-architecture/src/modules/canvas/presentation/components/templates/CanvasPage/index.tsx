@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
-import useKeyboardShortcuts from '@/shared/presentation/hooks/use-keyboard-shortcuts';
-import { useKeyboardShortcutsStore } from '@/shared/presentation/stores/use-keyboard-shortcuts-store';
+import useKeyboardShortcuts from '@/modules/canvas/presentation/hooks/use-keyboard-shortcuts';
+import { useKeyboardShortcutsStore } from '@/modules/canvas/presentation/stores/use-keyboard-shortcuts-store';
 import FractalScene, { type FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
 import TimestepViewer from '@/modules/fractal/presentation/components/organisms/TimestepViewer';
 import useCanvasCoordinator from '@/modules/canvas/presentation/hooks/use-canvas-coordinator';
@@ -11,13 +11,13 @@ import useCanvasPresence from '@/modules/canvas/presentation/hooks/use-canvas-pr
 import CanvasWidgets from '@/modules/canvas/presentation/components/atoms/CanvasWidgets';
 import CanvasPresenceAvatars from '@/modules/canvas/presentation/components/atoms/CanvasPresenceAvatars';
 import PreloadingOverlay from '@/modules/canvas/presentation/components/atoms/PreloadingOverlay';
-import KeyboardShortcutsPanel from '@/shared/presentation/components/KeyboardShortcutsPanel';
-import ShortcutFeedback from '@/shared/presentation/components/ShortcutFeedback';
+import KeyboardShortcutsPanel from '@/modules/canvas/presentation/components/organisms/KeyboardShortcutsPanel';
+import ShortcutFeedback from '@/modules/canvas/presentation/components/molecules/ShortcutFeedback';
 import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import { useShallow } from 'zustand/react/shallow';
-import { selectFractalSceneConfig, selectFractalSceneConfigSignature } from '@/modules/fractal/presentation/stores/editor/selectors';
-import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
-import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import useFractalSceneConfig from '@/modules/fractal/presentation/hooks/use-fractal-scene-config';
+import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
+import useCanvasShortcuts from '@/modules/canvas/presentation/hooks/use-canvas-shortcuts';
 import Loader from '@/shared/presentation/components/Loader';
 import Container from '@/shared/presentation/components/Container';
 import ExposureSettingsWidget from '@/modules/canvas/presentation/components/molecules/ExposureSettingsWidget';
@@ -37,7 +37,6 @@ const CANVAS_CONFIG = {
 const CanvasPage: React.FC = () => {
     usePageTitle('Canvas');
     const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
-    const { searchParams, updateSearchParams } = useSearchParamsState();
     const scene3DRef = useRef<FractalSceneRef>(null);
     const trajectoryId = rawTrajectoryId ?? '';
 
@@ -58,47 +57,19 @@ const CanvasPage: React.FC = () => {
         isPlaying: s.isPlaying,
         setRendererStats: s.setRendererStats
     })));
-    const sceneConfigSignature = useEditorStore(selectFractalSceneConfigSignature);
-    const sceneConfig = useMemo(() => selectFractalSceneConfig(useEditorStore.getState()), [sceneConfigSignature]);
-    const analysisConfigId = searchParams.get('analysis') || undefined;
+    const sceneConfig = useFractalSceneConfig();
+    const { analysisId, setAnalysisId, showGrid, activeModifiers } = useCanvasUrlState();
 
     useEffect(() => {
-        if (!trajectory?.analysis?.length || analysisConfigId) return;
+        if (!trajectory?.analysis?.length || analysisId) return;
         const latest = trajectory.analysis[trajectory.analysis.length - 1] as any;
         if (!latest?._id) return;
-        updateSearchParams({ analysis: latest._id }, { replace: true });
-    }, [trajectory, analysisConfigId, updateSearchParams]);
+        setAnalysisId(latest._id, { replace: true });
+    }, [trajectory, analysisId, setAnalysisId]);
 
-    const { selectedIds: activeModifiers, toggleSelection: toggleModifier } = useSelectionParams({ paramName: 'modifiers' });
-    const showCanvasGrid = searchParams.get('grid') !== 'false';
+    useCanvasShortcuts();
+
     const showPerformanceStats = activeModifiers.includes('performance-monitor');
-
-    // Handle keyboard shortcut events for URL-based state
-    useEffect(() => {
-        const handleToggleWidgets = () => {
-            const current = searchParams.get('widgets') !== 'false';
-            updateSearchParams({ widgets: current ? 'false' : null }, { replace: true });
-        };
-
-        const handleToggleGrid = () => {
-            const current = searchParams.get('grid') !== 'false';
-            updateSearchParams({ grid: current ? 'false' : null }, { replace: true });
-        };
-
-        const handleToggleModifier = (e: CustomEvent<{ modifier: string }>) => {
-            toggleModifier(e.detail.modifier);
-        };
-
-        window.addEventListener('Volt:toggle-widgets', handleToggleWidgets);
-        window.addEventListener('Volt:toggle-grid', handleToggleGrid);
-        window.addEventListener('Volt:toggle-modifier', handleToggleModifier as EventListener);
-
-        return () => {
-            window.removeEventListener('Volt:toggle-widgets', handleToggleWidgets);
-            window.removeEventListener('Volt:toggle-grid', handleToggleGrid);
-            window.removeEventListener('Volt:toggle-modifier', handleToggleModifier as EventListener);
-        };
-    }, [searchParams, updateSearchParams, toggleModifier]);
 
     useEffect(() => {
         return () => {
@@ -127,7 +98,7 @@ const CanvasPage: React.FC = () => {
             <CanvasWidgets trajectory={trajectory} currentTimestep={currentTimestep} scene3DRef={scene3DRef} />
             <CanvasPresenceAvatars users={canvasUsers} />
 
-            <Container className='canvas-jobs-panel p-absolute'>
+            <Container className='canvas-jobs-panel p-absolute right-1 bottom-1 z-10'>
                 <JobsHistoryViewer trajectoryId={trajectoryId} showHeader={false} queueFilter='analysis' />
             </Container>
 
@@ -137,12 +108,12 @@ const CanvasPage: React.FC = () => {
                 onInteractionChange={setSceneInteracting}
                 onStats={setRendererStats}
                 showPerformanceStats={showPerformanceStats}
-                showGrid={showCanvasGrid}
+                showGrid={showGrid}
             >
                 <TimestepViewer
                     trajectoryId={trajectory?._id || ''}
                     currentTimestep={currentTimestep}
-                    analysisId={analysisConfigId || 'default'}
+                    analysisId={analysisId || 'default'}
                     scale={CANVAS_CONFIG.timestepViewerDefaults.scale}
                     rotation={CANVAS_CONFIG.timestepViewerDefaults.rotation}
                     position={CANVAS_CONFIG.timestepViewerDefaults.position}

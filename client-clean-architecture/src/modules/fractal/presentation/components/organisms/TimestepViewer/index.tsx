@@ -2,6 +2,7 @@ import React, { useMemo, forwardRef } from 'react';
 import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 import SingleModelViewer from '@/modules/fractal/presentation/components/molecules/SingleModelViewer';
+import { getRenderableScenes } from '@/modules/fractal/presentation/utilities/sceneUtils';
 
 interface TimestepViewerProps {
     trajectoryId: string;
@@ -33,8 +34,6 @@ export interface TimestepViewerRef {
     loadModel: () => void;
 }
 
-const DEFAULT_SCENE = { sceneType: 'trajectory', source: 'default' };
-
 const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     trajectoryId,
     currentTimestep,
@@ -53,27 +52,9 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     const storeActiveScenes = useEditorStore((state) => state.activeScenes);
     const plugins = usePluginStore((state) => state.plugins);
 
-    const isChartScene = React.useCallback((scene: any) => {
-        if (scene.source !== 'plugin') return false;
-        const { exposureId } = scene;
-        if (!exposureId) return false;
-
-        for (const plugin of plugins) {
-            if (!plugin.exposures) continue;
-            const exposure = plugin.exposures.find((exposureItem) => exposureItem._id === exposureId);
-            if (exposure?.export?.type === 'chart-png') {
-                return true;
-            }
-        }
-        return false;
-    }, [plugins]);
-
     const scenesToRender = useMemo(() => {
-        if (forceDefaultScene) {
-            return [DEFAULT_SCENE];
-        }
-        return storeActiveScenes.filter((scene) => !isChartScene(scene));
-    }, [storeActiveScenes, isChartScene, forceDefaultScene]);
+        return getRenderableScenes(storeActiveScenes, plugins, forceDefaultScene);
+    }, [storeActiveScenes, plugins, forceDefaultScene]);
 
     const [modelHeights, setModelHeights] = React.useState<Record<number, number>>({});
     const [selectedModelIndex, setSelectedModelIndex] = React.useState<number | null>(null);
@@ -87,36 +68,44 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
         }
     }, []);
 
-    if (scenesToRender.length === 0) return null;
+    const scenePositions = useMemo(() => {
+        if (scenesToRender.length === 0) return [] as Array<{ x?: number; y?: number; z?: number }>;
 
-    let previousCenter = position.y || 0;
-    let previousHalfHeight = 0;
+        let previousCenter = position.y || 0;
+        let previousHalfHeight = 0;
+
+        return scenesToRender.map((_, index) => {
+            const height = modelHeights[index] || 12;
+            const halfHeight = height / 2;
+            const padding = spacing;
+
+            let currentY;
+            if (index === 0) {
+                currentY = position.y || 0;
+                previousHalfHeight = halfHeight;
+            } else {
+                currentY = previousCenter + previousHalfHeight + padding + halfHeight;
+                previousCenter = currentY;
+                previousHalfHeight = halfHeight;
+            }
+
+            if (index === 0) {
+                previousCenter = currentY;
+            }
+
+            return {
+                ...position,
+                y: currentY
+            };
+        });
+    }, [scenesToRender, modelHeights, position, spacing]);
+
+    if (scenesToRender.length === 0) return null;
 
     return (
         <>
             {scenesToRender.map((scene, index) => {
-                const height = modelHeights[index] || 12;
-                const halfHeight = height / 2;
-                const padding = spacing;
-
-                let currentY;
-                if (index === 0) {
-                    currentY = position.y || 0;
-                    previousHalfHeight = halfHeight;
-                } else {
-                    currentY = previousCenter + previousHalfHeight + padding + halfHeight;
-                    previousCenter = currentY;
-                    previousHalfHeight = halfHeight;
-                }
-
-                if (index === 0) {
-                    previousCenter = currentY;
-                }
-
-                const scenePosition = {
-                    ...position,
-                    y: currentY
-                };
+                const scenePosition = scenePositions[index] || position;
 
                 return (
                     <SingleModelViewer

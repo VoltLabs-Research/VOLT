@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useKeyboardShortcutsStore } from '@/shared/presentation/stores/use-keyboard-shortcuts-store';
+import { useKeyboardShortcutsStore } from '@/modules/canvas/presentation/stores/use-keyboard-shortcuts-store';
 import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import { useSearchParams } from 'react-router-dom';
 

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useEffect, useRef } from 'react';
 import useSearchParamsState from './use-search-params';
 
 interface UseSelectionParamsOptions {
@@ -21,11 +21,13 @@ const useSelectionParams = ({
 }: UseSelectionParamsOptions = {}): UseSelectionParamsReturn => {
     const { searchParams, updateSearchParams } = useSearchParamsState();
 
-    const selectedIds = useMemo(() => {
+    const getSelectedIds = useCallback(() => {
         const param = searchParams.get(paramName);
         if(!param) return [];
         return multi ? param.split(',').filter(Boolean) : [param];
     }, [searchParams, paramName, multi]);
+
+    const selectedIds = useMemo(() => getSelectedIds(), [getSelectedIds]);
 
     const updateSelection = useCallback((ids: string[]) => {
         updateSearchParams({
@@ -33,30 +35,38 @@ const useSelectionParams = ({
         });
     }, [updateSearchParams, paramName, multi]);
 
+    const updateSelectionRef = useRef(updateSelection);
+
+    useEffect(() => {
+        updateSelectionRef.current = updateSelection;
+    }, [updateSelection]);
+
     const isSelected = useCallback((id: string) => {
         return selectedIds.includes(id);
     }, [selectedIds]);
 
     const toggleSelection = useCallback((id: string) => {
-        updateSelection(
-            selectedIds.includes(id)
-                ? selectedIds.filter((sid) => sid !== id)
-                : multi ? [...selectedIds, id] : [id]
+        const currentIds = getSelectedIds();
+        updateSelectionRef.current(
+            currentIds.includes(id)
+                ? currentIds.filter((sid) => sid !== id)
+                : multi ? [...currentIds, id] : [id]
         );
-    }, [selectedIds, multi, updateSelection]);
+    }, [getSelectedIds, multi]);
 
     const clearSelection = useCallback(() => {
-        updateSelection([]);
-    }, [updateSelection]);
+        updateSelectionRef.current([]);
+    }, []);
 
     const selectAll = useCallback((ids: string[]) => {
-        updateSelection(ids);
-    }, [updateSelection]);
+        updateSelectionRef.current(ids);
+    }, []);
 
     const selectMultiple = useCallback((ids: string[]) => {
         if(!multi) throw new Error('Multi-selection not enabled');
-        updateSelection([...new Set([...selectedIds, ...ids])]);
-    }, [multi, selectedIds, updateSelection]);
+        const currentIds = getSelectedIds();
+        updateSelectionRef.current([...new Set([...currentIds, ...ids])]);
+    }, [multi, getSelectedIds]);
 
     return {
         selectedIds,

@@ -1,17 +1,4 @@
-.trajectory-share-status-icon-container {
-    font-size: 1.6rem;
-    background: transparent;
-    border: none;
-    padding: 0;
-    line-height: 1;
-    display: inline-flex;
-    color: inherit;
-}
-
 .trajectory-share-status-container {
-    right: 1rem;
-    width: auto;
-    border-radius: var(--radius-full);
     top: 2rem;
     z-index: 200;
 }
