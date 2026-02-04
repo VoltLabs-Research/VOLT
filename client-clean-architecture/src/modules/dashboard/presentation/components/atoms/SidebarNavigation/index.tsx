@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { RiHomeSmile2Fill } from 'react-icons/ri';
 import { TbCube3dSphere } from 'react-icons/tb';
 import { IoCubeOutline, IoAnalytics, IoPeopleOutline, IoKeyOutline } from 'react-icons/io5';
@@ -36,7 +37,7 @@ interface SidebarNavigationProps {
 };
 
 const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavigationProps) => {
-    const [searchParams] = useSearchParams();
+    const { searchParams } = useSearchParamsState();
     const navigate = useNavigate();
     const { pathname } = useLocation();
 

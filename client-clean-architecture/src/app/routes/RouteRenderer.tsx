@@ -1,7 +1,14 @@
 import { Route } from 'react-router-dom';
 import { routesConfig } from './config';
 import ProtectedRoute from '@/modules/auth/presentation/components/atoms/ProtectedRoute';
+import PageTransition from '@/shared/presentation/components/PageTransition';
 import type { RouteConfig } from './types';
+
+const wrapWithPageTransition = (Component: React.ComponentType) => (
+    <PageTransition>
+        <Component />
+    </PageTransition>
+);
 
 const renderRouteWithChildren = (route: RouteConfig) => {
     if(route.children && route.children.length > 0){
@@ -9,20 +16,20 @@ const renderRouteWithChildren = (route: RouteConfig) => {
             <Route
                 key={route.path}
                 path={route.path}
-                element={<route.component />}
+                element={wrapWithPageTransition(route.component)}
             >
                 {route.children.map((child) => (
                     child.index ? (
                         <Route
                             key={child.path}
                             index
-                            element={<child.component />}
+                            element={wrapWithPageTransition(child.component)}
                         />
                     ) : (
                         <Route
                             key={child.path}
                             path={child.path}
-                            element={<child.component />}
+                            element={wrapWithPageTransition(child.component)}
                         />
                     )
                 ))}
@@ -35,7 +42,7 @@ const renderRouteWithChildren = (route: RouteConfig) => {
             key={route.path}
             path={route.path}
             index={route.index}
-            element={<route.component />}
+            element={wrapWithPageTransition(route.component)}
         />
     );
 };
@@ -45,7 +52,7 @@ export const renderPublicRoutes = () => {
         <Route
             key={route.path}
             path={route.path}
-            element={<route.component />} />
+            element={wrapWithPageTransition(route.component)} />
     ));
 };
 
@@ -79,7 +86,7 @@ export const renderGuestRoutes = () => {
                 <Route
                     key={route.path}
                     path={route.path}
-                    element={<route.component />} />
+                    element={wrapWithPageTransition(route.component)} />
             ))}
         </Route>
     );

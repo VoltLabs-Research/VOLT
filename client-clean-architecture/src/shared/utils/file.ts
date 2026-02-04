@@ -20,6 +20,23 @@ export const base64ToBlobUrl = (base64: string, fallbackMime?: string): string =
     return URL.createObjectURL(blob);
 };
 
+export const buildFileFormData = (
+    files: { name: string; file: File }[],
+    fields?: Record<string, string>
+): FormData => {
+    const formData = new FormData();
+
+    Object.entries(fields ?? {}).forEach(([key, value]) => {
+        formData.append(key, value);
+    });
+
+    files.forEach(({ name, file }) => {
+        formData.append(name, file);
+    });
+
+    return formData;
+};
+
 export interface FileWithPath {
     file: File;
     path: string;

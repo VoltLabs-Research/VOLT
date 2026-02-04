@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import CursorTooltip from '@/shared/presentation/components/CursorTooltip';
 
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import usePluginStore, { type RenderableExposure, type ResolvedModifier } from '@/modules/plugin/presentation/stores/use-plugin-store';
-import useAnalysisConfigStore from '@/modules/canvas/presentation/stores/use-analysis-config-store';
 import useAnalysisStatus from '@/modules/canvas/presentation/hooks/use-analysis-status';
 import useAnalysisUseCases from '@/modules/analysis/presentation/hooks/use-analysis-use-cases';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
@@ -49,19 +50,22 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory, tra
     const socketService = useSocket();
     const { getAnalysesByTrajectoryUseCase, deleteAnalysisUseCase } = useAnalysisUseCases();
 
-    const setActiveScene = useEditorStore((s) => s.setActiveScene);
-    const activeScene = useEditorStore((s) => s.activeScene);
-    const addScene = useEditorStore((s) => s.addScene);
-    const removeScene = useEditorStore((s) => s.removeScene);
-    const activeScenes = useEditorStore((s) => s.activeScenes);
+    const { setActiveScene, activeScene, addScene, removeScene, activeScenes } = useEditorStore(useShallow((s) => ({
+        setActiveScene: s.setActiveScene,
+        activeScene: s.activeScene,
+        addScene: s.addScene,
+        removeScene: s.removeScene,
+        activeScenes: s.activeScenes
+    })));
 
-    const getRenderableExposures = usePluginStore((s) => s.getRenderableExposures);
-    const getModifiers = usePluginStore((s) => s.getModifiers);
-    const pluginsBySlug = usePluginStore((s) => s.pluginsBySlug);
+    const { getRenderableExposures, getModifiers, pluginsBySlug } = usePluginStore(useShallow((s) => ({
+        getRenderableExposures: s.getRenderableExposures,
+        getModifiers: s.getModifiers,
+        pluginsBySlug: s.pluginsBySlug
+    })));
 
-    const analysisConfig = useAnalysisConfigStore((s) => s.analysisConfig);
-    const updateAnalysisConfig = useAnalysisConfigStore((s) => s.updateAnalysisConfig);
-    const analysisConfigId = analysisConfig?._id;
+    const { searchParams, updateSearchParams } = useSearchParamsState();
+    const analysisConfigId = searchParams.get('analysis') || undefined;
 
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
     const [searchQuery, setSearchQuery] = useState('');
@@ -327,19 +331,19 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory, tra
             manualSelectionRef.current = scene.analysisId;
         }
         setActiveScene(scene);
-        if (analysis) {
-            updateAnalysisConfig(analysis);
+        if (analysis?._id) {
+            updateSearchParams({ analysis: analysis._id }, { replace: true });
         }
-    }, [updateAnalysisConfig, setActiveScene]);
+    }, [setActiveScene, updateSearchParams]);
 
     const onDeleteAnalysis = useCallback(async (analysisId: string) => {
         await deleteAnalysisUseCase.execute({ id: analysisId });
         setAnalyses(prev => prev.filter((analysis) => analysis._id !== analysisId));
         if (analysisConfigId === analysisId) {
-            updateAnalysisConfig(null);
+            updateSearchParams({ analysis: null }, { replace: true });
         }
         showSuccess('Analysis deleted successfully');
-    }, [analysisConfigId, updateAnalysisConfig, deleteAnalysisUseCase, showSuccess]);
+    }, [analysisConfigId, updateSearchParams, deleteAnalysisUseCase, showSuccess]);
 
     const totalAnalyses = analyses.length || 0;
 
@@ -435,7 +439,6 @@ const CanvasSidebarScene: React.FC<CanvasSidebarSceneProps> = ({ trajectory, tra
                         onRemoveScene={removeScene}
                         isSceneActive={isSceneInActiveScenes}
                         activeScene={activeScene}
-                        updateAnalysisConfig={updateAnalysisConfig}
                         onDelete={onDeleteAnalysis}
                         isInProgress={isAnalysisInProgress(section.analysis._id)}
                     />

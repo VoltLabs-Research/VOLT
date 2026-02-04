@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import BaseRepository, { RawPaginatedResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository from '@/shared/infrastructure/repositories/BaseRepository';
 import type INotificationRepository from '../../domain/ports/INotificationRepository';
 import type { GetNotificationsParams } from '../../domain/ports/INotificationRepository';
 import type { Notification } from '../../domain/entities';
@@ -12,8 +12,7 @@ export default class NotificationRepository extends BaseRepository implements IN
     }
 
     async getAll(params?: GetNotificationsParams): Promise<PaginatedResponse<Notification>> {
-        const response = await this.client.get<RawPaginatedResponse<Notification>>('/', params);
-        return this.unwrapPaginated(response);
+        return this.getAllPaginated('/', params);
     }
 
     async markAllAsRead(): Promise<void> {

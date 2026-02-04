@@ -1,9 +1,9 @@
 import React from 'react';
 import Select from '@/shared/presentation/components/Select';
-import FormSchema from '@/modules/canvas/presentation/components/atoms/form/FormSchema';
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import FormField from '@/shared/presentation/components/FormField';
+import SettingsPanel from '@/modules/canvas/presentation/components/molecules/SettingsPanel';
+import { useShallow } from 'zustand/react/shallow';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import Button from '@/shared/presentation/components/Button';
 import { MdCameraAlt, MdViewInAr, MdTransform } from 'react-icons/md';
 import { IoCameraOutline } from 'react-icons/io5';
@@ -11,23 +11,24 @@ import { IoCameraOutline } from 'react-icons/io5';
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 const CameraSettingsControls: React.FC = () => {
-    const type = useEditorStore((s) => s.camera.type);
-    const position = useEditorStore((s) => s.camera.position);
-    const up = useEditorStore((s) => s.camera.up);
-    const persp = useEditorStore((s) => s.camera.perspective as any);
-    const ortho = useEditorStore((s) => s.camera.orthographic);
-    const setType = useEditorStore((s) => s.camera.setType);
-    const setPosition = useEditorStore((s) => s.camera.setPosition);
-    const setUp = useEditorStore((s) => s.camera.setUp);
-    const setPerspective = useEditorStore((s) => s.camera.setPerspective);
-    const setOrthographic = useEditorStore((s) => s.camera.setOrthographic);
-    const reset = useEditorStore((s) => s.camera.reset);
+    const {
+        type,
+        position,
+        up,
+        perspective: persp,
+        orthographic: ortho,
+        setType,
+        setPosition,
+        setUp,
+        setPerspective,
+        setOrthographic,
+        reset
+    } = useEditorStore(useShallow((s) => s.camera));
 
     const projectionSection = {
         key: 'projection',
         title: 'Projection',
         enabled: true,
-        onToggle: () => {},
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 8 }}>
@@ -57,7 +58,6 @@ const CameraSettingsControls: React.FC = () => {
         key: 'perspective',
         title: 'Perspective Optics',
         enabled: type === 'perspective',
-        onToggle: () => {},
         rows: [
             {
                 label: 'FOV(°)',
@@ -174,7 +174,6 @@ const CameraSettingsControls: React.FC = () => {
         key: 'orthographic',
         title: 'Orthographic Optics',
         enabled: type === 'orthographic',
-        onToggle: () => {},
         rows: [
             {
                 label: 'Near',
@@ -210,7 +209,6 @@ const CameraSettingsControls: React.FC = () => {
         key: 'transform',
         title: 'Transform(Z-up)',
         enabled: true,
-        onToggle: () => {},
         rows: [
             {
                 label: 'Pos X',
@@ -270,45 +268,16 @@ const CameraSettingsControls: React.FC = () => {
     };
 
     return (
-        <CollapsibleSection
+        <SettingsPanel
             title='Camera Settings'
             icon={<MdCameraAlt size={16} />}
-        >
-            <div style={{ display: 'grid', gap: 12 }}>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <MdCameraAlt size={14} />
-                        Projection Settings
-                    </div>
-                    <FormSchema sections={[projectionSection]} />
-                </div>
-                {type === 'perspective' && (
-                    <div>
-                        <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <IoCameraOutline size={14} />
-                            Perspective Camera
-                        </div>
-                        <FormSchema sections={[perspectiveSection]} />
-                    </div>
-                )}
-                {type === 'orthographic' && (
-                    <div>
-                        <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <MdViewInAr size={14} />
-                            Orthographic Camera
-                        </div>
-                        <FormSchema sections={[orthographicSection]} />
-                    </div>
-                )}
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <MdTransform size={14} />
-                        Transform & Position
-                    </div>
-                    <FormSchema sections={[transformSection]} />
-                </div>
-            </div>
-        </CollapsibleSection>
+            subsections={[
+                { label: 'Projection Settings', icon: <MdCameraAlt size={14} />, sections: [projectionSection] },
+                { label: 'Perspective Camera', icon: <IoCameraOutline size={14} />, sections: [perspectiveSection], visible: type === 'perspective' },
+                { label: 'Orthographic Camera', icon: <MdViewInAr size={14} />, sections: [orthographicSection], visible: type === 'orthographic' },
+                { label: 'Transform & Position', icon: <MdTransform size={14} />, sections: [transformSection] }
+            ]}
+        />
     );
 };
 

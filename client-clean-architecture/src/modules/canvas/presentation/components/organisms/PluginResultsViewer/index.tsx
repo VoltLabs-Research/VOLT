@@ -1,12 +1,12 @@
 import { useState, useMemo, useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { RiCloseLine, RiDownloadLine } from 'react-icons/ri';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
-import useCanvasUIStore from '@/modules/canvas/presentation/stores/use-canvas-ui-store';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { usePluginStore } from '@/modules/plugin';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import type { RenderableExposure } from '@/modules/plugin/presentation/stores/use-plugin-store';
 import Loader from '@/shared/presentation/components/Loader';
 import useToast from '@/shared/presentation/hooks/use-toast';
 import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
@@ -16,26 +16,28 @@ import '@/modules/canvas/presentation/components/organisms/PluginResultsViewer/P
 
 interface PluginResultsViewerProps {
     pluginSlug: string;
-    pluginName: string;
     analysisId: string;
-    exposures: RenderableExposure[];
 }
 
 const PluginResultsViewer = ({
     pluginSlug,
-    pluginName,
-    analysisId,
-    exposures
+    analysisId
 }: PluginResultsViewerProps) => {
-    const closeResultsViewer = useCanvasUIStore((state) => state.closeResultsViewer);
+    const { removeParam } = useSearchParamsState();
+    const closeResults = () => {
+        removeParam('results', { replace: true });
+    };
+    const plugin = usePluginStore((state) => state.pluginsBySlug[pluginSlug]);
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const team = useTeamStore((state) => state.selectedTeam);
+    const team = useTeamStore(useShallow((state) => state.selectedTeam));
     const { pluginRepository } = usePluginUseCases();
 
     const [isDownloading, setIsDownloading] = useState(false);
     const { showSuccess } = useToast();
 
     const [activeTab, setActiveTab] = useState(0);
+
+    const exposures = plugin?.exposures ?? [];
 
     const listingExposures = useMemo(() => {
         return exposures.filter((exp) => Boolean(exp.name));
@@ -58,14 +60,13 @@ const PluginResultsViewer = ({
     const isAtomsTabActive = hasAtomsTab && activeTab === atomsTabIndex;
 
     const atomExposureId = useMemo(() => {
-        const plugin = usePluginStore.getState().pluginsBySlug[pluginSlug];
-        if (!plugin?.exposures) return exposures[0]?.exposureId;
+        if (!exposures.length) return undefined;
 
-        const atomExposure = plugin.exposures.find((e) =>
+        const atomExposure = exposures.find((e) =>
             e.perAtomProperties && e.perAtomProperties.length > 0
         );
-        return atomExposure?._id || exposures[0]?.exposureId;
-    }, [exposures, pluginSlug]);
+        return atomExposure?._id || exposures[0]?._id;
+    }, [exposures]);
 
     const handleDownload = useCallback(async () => {
         try {
@@ -91,8 +92,8 @@ const PluginResultsViewer = ({
         return (
             <Container className='plugin-results-viewer-container d-flex column p-absolute h-max overflow-hidden'>
                 <Container className='plugin-results-header d-flex items-center content-between p-1'>
-                    <Title className='font-size-3 font-weight-5'>{pluginName}</Title>
-                    <i className='plugin-results-close cursor-pointer' onClick={closeResultsViewer}>
+                    <Title className='font-size-3 font-weight-5'>{plugin?.modifier?.name || plugin?.slug || pluginSlug}</Title>
+                    <i className='plugin-results-close cursor-pointer' onClick={closeResults}>
                         <RiCloseLine size={20} />
                     </i>
                 </Container>
@@ -106,7 +107,7 @@ const PluginResultsViewer = ({
     return (
         <Container className='plugin-results-viewer-container d-flex column p-absolute h-max overflow-hidden'>
             <Container className='plugin-results-header d-flex items-center content-between p-1'>
-                <Title className='font-size-3 font-weight-5'>{pluginName}</Title>
+                <Title className='font-size-3 font-weight-5'>{plugin?.modifier?.name || plugin?.slug || pluginSlug}</Title>
                 <Container className='d-flex items-center gap-05'>
                     <i
                         className='plugin-results-download cursor-pointer'
@@ -115,7 +116,7 @@ const PluginResultsViewer = ({
                     >
                         {isDownloading ? <Loader scale={0.4} /> : <RiDownloadLine size={18} />}
                     </i>
-                    <i className='plugin-results-close cursor-pointer' onClick={closeResultsViewer}>
+                    <i className='plugin-results-close cursor-pointer' onClick={closeResults}>
                         <RiCloseLine size={20} />
                     </i>
                 </Container>
@@ -144,7 +145,7 @@ const PluginResultsViewer = ({
             <Container className='plugin-results-content flex-1 y-auto'>
                 {activeExposure && (
                     <PluginExposureTable
-                        key={`${activeExposure.exposureId}-${analysisId}`}
+                        key={`${activeExposure._id}-${analysisId}`}
                         pluginSlug={pluginSlug}
                         listingSlug={activeExposure.name}
                         trajectoryId={trajectory?._id}

@@ -1,32 +1,32 @@
 import React from 'react';
 import Select from '@/shared/presentation/components/Select';
-import FormSchema from '@/modules/canvas/presentation/components/atoms/form/FormSchema';
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import FormField from '@/shared/presentation/components/FormField';
+import SettingsPanel from '@/modules/canvas/presentation/components/molecules/SettingsPanel';
+import { useShallow } from 'zustand/react/shallow';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import { MdSpeed, MdHighQuality, MdTouchApp, MdTune } from 'react-icons/md';
 import { IoHardwareChipOutline } from 'react-icons/io5';
 
 const PerformanceSettingsControls: React.FC = () => {
-    const preset = useEditorStore((s) => s.performanceSettings.preset);
-    const dpr = useEditorStore((s) => s.performanceSettings.dpr);
-    const canvas = useEditorStore((s) => s.performanceSettings.canvas);
-    const performance = useEditorStore((s) => s.performanceSettings.performance);
-    const adaptiveEvents = useEditorStore((s) => s.performanceSettings.adaptiveEvents);
-    const interactionDegrade = useEditorStore((s) => s.performanceSettings.interactionDegrade);
-
-    const setPreset = useEditorStore((s) => s.performanceSettings.setPreset);
-    const setDpr = useEditorStore((s) => s.performanceSettings.setDpr);
-    const setCanvas = useEditorStore((s) => s.performanceSettings.setCanvas);
-    const setPerformance = useEditorStore((s) => s.performanceSettings.setPerformance);
-    const setAdaptiveEvents = useEditorStore((s) => s.performanceSettings.setAdaptiveEvents);
-    const setInteractionDegrade = useEditorStore((s) => s.performanceSettings.setInteractionDegrade);
+    const {
+        preset,
+        dpr,
+        canvas,
+        performance,
+        adaptiveEvents,
+        interactionDegrade,
+        setPreset,
+        setDpr,
+        setCanvas,
+        setPerformance,
+        setAdaptiveEvents,
+        setInteractionDegrade
+    } = useEditorStore(useShallow((s) => s.performanceSettings));
 
     const presetSection = {
         key: 'preset',
         title: 'Performance Preset',
         enabled: true,
-        onToggle: () => {},
         rows: [],
         extras: (
             <Select
@@ -37,7 +37,7 @@ const PerformanceSettingsControls: React.FC = () => {
                     { title: 'Ultra', value: 'ultra' },
                     { title: 'High', value: 'high' },
                     { title: 'Balanced', value: 'balanced' },
-                    { title: 'Perfomance', value: 'perfomance' },
+                    { title: 'Performance', value: 'performance' },
                     { title: 'Battery', value: 'battery' }
                 ]}
             />
@@ -48,7 +48,6 @@ const PerformanceSettingsControls: React.FC = () => {
         key: 'dpr',
         title: 'DPR & Resolution',
         enabled: true,
-        onToggle: () => {},
         rows: [
             {
                 label: 'Min DPR',
@@ -122,7 +121,6 @@ const PerformanceSettingsControls: React.FC = () => {
         key: 'canvas',
         title: 'Canvas & Performance',
         enabled: true,
-        onToggle: () => {},
         rows: [
             {
                 label: 'Perf Current',
@@ -179,7 +177,6 @@ const PerformanceSettingsControls: React.FC = () => {
         key: 'adaptive',
         title: 'Adaptive & Interaction',
         enabled: true,
-        onToggle: () => {},
         rows: [
             {
                 label: 'Interaction Debounce(ms)',
@@ -212,41 +209,16 @@ const PerformanceSettingsControls: React.FC = () => {
     };
 
     return (
-        <CollapsibleSection
+        <SettingsPanel
             title='Performance Settings'
             icon={<MdSpeed size={16} />}
-        >
-            <div style={{ display: 'grid', gap: 12 }}>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <MdTune size={14} />
-                        Performance Presets
-                    </div>
-                    <FormSchema sections={[presetSection]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <IoHardwareChipOutline size={14} />
-                        Device Pixel Ratio(DPR)
-                    </div>
-                    <FormSchema sections={[dprSection]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <MdHighQuality size={14} />
-                        Canvas & Performance
-                    </div>
-                    <FormSchema sections={[canvasPerfSection]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <MdTouchApp size={14} />
-                        Adaptive & Interaction
-                    </div>
-                    <FormSchema sections={[adaptiveSection]} />
-                </div>
-            </div>
-        </CollapsibleSection>
+            subsections={[
+                { label: 'Performance Presets', icon: <MdTune size={14} />, sections: [presetSection] },
+                { label: 'Device Pixel Ratio (DPR)', icon: <IoHardwareChipOutline size={14} />, sections: [dprSection] },
+                { label: 'Canvas & Performance', icon: <MdHighQuality size={14} />, sections: [canvasPerfSection] },
+                { label: 'Adaptive & Interaction', icon: <MdTouchApp size={14} />, sections: [adaptiveSection] }
+            ]}
+        />
     );
 };
 

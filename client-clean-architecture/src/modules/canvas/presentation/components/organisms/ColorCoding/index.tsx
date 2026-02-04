@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import usePropertySelector from '@/modules/trajectory/presentation/hooks/particle-filter/use-property-selector';
 import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
 import Button from '@/shared/presentation/components/Button';
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
+import FormField from '@/shared/presentation/components/FormField';
 import Loader from '@/shared/presentation/components/Loader';
 import useColorCodingUseCases from '@/modules/trajectory/presentation/hooks/color-coding/use-color-coding-use-cases';
 import Title from '@/shared/presentation/components/Title';
@@ -10,8 +10,9 @@ import Container from '@/shared/presentation/components/Container';
 import GradientPreview from '@/modules/canvas/presentation/components/atoms/GradientPreview';
 import useToast from '@/shared/presentation/hooks/use-toast';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import useAnalysisConfigStore from '@/modules/canvas/presentation/stores/use-analysis-config-store';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import { useShallow } from 'zustand/react/shallow';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import '@/modules/canvas/presentation/components/organisms/ColorCoding/ColorCoding.css';
 
 const COLOR_GRADIENTS = [
@@ -23,9 +24,12 @@ const COLOR_GRADIENTS = [
 
 const ColorCoding = () => {
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
-    const currentTimestep = useEditorStore((state) => state.currentTimestep);
-    const setActiveScene = useEditorStore((state) => state.setActiveScene);
+    const { searchParams } = useSearchParamsState();
+    const analysisId = searchParams.get('analysis') || undefined;
+    const { currentTimestep, setActiveScene } = useEditorStore(useShallow((state) => ({
+        currentTimestep: state.currentTimestep,
+        setActiveScene: state.setActiveScene
+    })));
 
     const {
         property,
@@ -35,7 +39,7 @@ const ColorCoding = () => {
         handlePropertyChange
     } = usePropertySelector({
         trajectoryId: trajectory?._id,
-        analysisId: analysisConfig?._id,
+        analysisId,
         timestep: currentTimestep
     });
 
@@ -56,7 +60,7 @@ const ColorCoding = () => {
         try {
             await colorCodingRepository.apply({
                 trajectoryId: trajectory._id,
-                analysisId: analysisConfig?._id,
+                analysisId,
                 timestep: currentTimestep,
                 payload: {
                     property,
@@ -68,7 +72,7 @@ const ColorCoding = () => {
             });
 
             setActiveScene({
-                analysisId: analysisConfig?._id,
+                analysisId,
                 endValue: String(endValue),
                 exposureId: exposureId || undefined,
                 gradient,
@@ -93,13 +97,13 @@ const ColorCoding = () => {
         const selectedOption = propertyOptions.find((opt) => opt.value === property);
         const type = selectedOption?.exposureId ? 'modifier' : 'base';
 
-        if (type === 'modifier' && !analysisConfig?._id) return;
+        if (type === 'modifier' && !analysisId) return;
 
         setIsFetchingStats(true);
         try {
             const stats = await colorCodingRepository.getStats({
                 trajectoryId: trajectory._id,
-                analysisId: analysisConfig?._id,
+                analysisId,
                 timestep: currentTimestep,
                 property,
                 type,

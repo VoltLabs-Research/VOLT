@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import BaseRepository, { ApiResponse, RawPaginatedResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import type ITeamMemberRepository from '../../domain/ports/ITeamMemberRepository';
 import type { GetTeamMembersParams, UpdateTeamMemberParams } from '../../domain/ports/ITeamMemberRepository';
 import type { TeamMember } from '../../domain/entities';
@@ -12,8 +12,7 @@ export default class TeamMemberRepository extends BaseRepository implements ITea
     }
 
     async getAll(teamId: string, params: GetTeamMembersParams): Promise<PaginatedResponse<TeamMember>> {
-        const raw = await this.client.get<RawPaginatedResponse<TeamMember>>(`/${teamId}`, params);
-        return this.unwrapPaginated(raw);
+        return this.getAllPaginated(`/${teamId}`, params);
     }
 
     async update(teamId: string, memberId: string, data: UpdateTeamMemberParams): Promise<TeamMember> {

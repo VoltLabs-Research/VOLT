@@ -2,12 +2,13 @@ import { useState, useCallback } from 'react';
 import usePropertySelector from '@/modules/trajectory/presentation/hooks/particle-filter/use-property-selector';
 import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
 import Button from '@/shared/presentation/components/Button';
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
+import FormField from '@/shared/presentation/components/FormField';
 import Title from '@/shared/presentation/components/Title';
 import Container from '@/shared/presentation/components/Container';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import useAnalysisConfigStore from '@/modules/canvas/presentation/stores/use-analysis-config-store';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
+import { useShallow } from 'zustand/react/shallow';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import useParticleFilterUseCases from '@/modules/trajectory/presentation/hooks/particle-filter/use-particle-filter-use-cases';
 import '@/modules/canvas/presentation/components/organisms/ParticleFilter/ParticleFilter.css';
 
@@ -39,9 +40,12 @@ const OPERATOR_MAP: Record<FilterOperator, 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | '
 
 const ParticleFilter = () => {
     const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
-    const currentTimestep = useEditorStore((state) => state.currentTimestep);
-    const setActiveScene = useEditorStore((state) => state.setActiveScene);
+    const { searchParams } = useSearchParamsState();
+    const analysisId = searchParams.get('analysis') || undefined;
+    const { currentTimestep, setActiveScene } = useEditorStore(useShallow((state) => ({
+        currentTimestep: state.currentTimestep,
+        setActiveScene: state.setActiveScene
+    })));
 
     const {
         property,
@@ -51,7 +55,7 @@ const ParticleFilter = () => {
         handlePropertyChange: baseHandlePropertyChange
     } = usePropertySelector({
         trajectoryId: trajectory?._id,
-        analysisId: analysisConfig?._id,
+        analysisId,
         timestep: currentTimestep
     });
 
@@ -88,7 +92,7 @@ const ParticleFilter = () => {
         try {
             const result = await particleFilterRepository.getUniqueValues({
                 trajectoryId: trajectory._id,
-                analysisId: analysisConfig?._id,
+                analysisId,
                 timestep: currentTimestep,
                 property,
                 exposureId: exposureId || undefined,
@@ -98,7 +102,7 @@ const ParticleFilter = () => {
         } catch (err) {
             console.error('Failed to fetch suggestions:', err);
         }
-    }, [trajectory, currentTimestep, property, analysisConfig, exposureId, particleFilterRepository]);
+    }, [trajectory, currentTimestep, property, analysisId, exposureId, particleFilterRepository]);
 
     const handlePreview = useCallback(async () => {
         if (!property || !trajectory?._id || currentTimestep === undefined) {
@@ -107,7 +111,7 @@ const ParticleFilter = () => {
         }
 
         const selectedOption = propertyOptions.find((opt) => opt.value === property);
-        if (selectedOption?.exposureId && !analysisConfig?._id) {
+        if (selectedOption?.exposureId && !analysisId) {
             setError('Analysis required for modifier properties');
             return;
         }
@@ -119,7 +123,7 @@ const ParticleFilter = () => {
         try {
             const result = await particleFilterRepository.preview({
                 trajectoryId: trajectory._id,
-                analysisId: analysisConfig?._id,
+                analysisId,
                 timestep: currentTimestep,
                 conditions: [{
                     property,
@@ -138,7 +142,7 @@ const ParticleFilter = () => {
         } finally {
             setIsLoadingPreview(false);
         }
-    }, [trajectory, analysisConfig, currentTimestep, property, operator, value, exposureId, propertyOptions, particleFilterRepository]);
+    }, [trajectory, analysisId, currentTimestep, property, operator, value, exposureId, propertyOptions, particleFilterRepository]);
 
     const handleApplyAction = useCallback(async () => {
         if (!previewResult || !trajectory?._id || currentTimestep === undefined) {
@@ -153,7 +157,7 @@ const ParticleFilter = () => {
             const { filterParams } = previewResult;
             await particleFilterRepository.applyAction({
                 trajectoryId: trajectory._id,
-                analysisId: analysisConfig?._id,
+                analysisId,
                 timestep: currentTimestep,
                 conditions: [{
                     property: filterParams.property,
@@ -167,7 +171,7 @@ const ParticleFilter = () => {
             setActiveScene({
                 sceneType: 'particle-filter',
                 source: 'particle-filter',
-                analysisId: analysisConfig?._id,
+                analysisId,
                 property: filterParams.property,
                 operator: filterParams.operator,
                 value: filterParams.value,
@@ -181,15 +185,11 @@ const ParticleFilter = () => {
         } finally {
             setIsApplying(false);
         }
-    }, [trajectory, analysisConfig, currentTimestep, action, previewResult, setActiveScene, particleFilterRepository]);
+    }, [trajectory, analysisId, currentTimestep, action, previewResult, setActiveScene, particleFilterRepository]);
 
     const handleCancelPreview = () => {
         setPreviewResult(null);
         setError(null);
-    };
-
-    const formatNumber = (num: number): string => {
-        return num.toLocaleString('en-US');
     };
 
     const getPercentage = (): string => {
@@ -202,7 +202,7 @@ const ParticleFilter = () => {
         return (
             <EditorWidget className='particle-filter-action-panel p-1 overflow-hidden d-flex column gap-1' draggable={false}>
                 <Container className='d-flex content-between items-center'>
-                    <Title className='font-weight-5-5'>{formatNumber(previewResult.matchCount)} Particles Selected</Title>
+                    <Title className='font-weight-5-5'>{previewResult.matchCount.toLocaleString()} Particles Selected</Title>
                 </Container>
 
                 <Container className='d-flex column gap-1'>

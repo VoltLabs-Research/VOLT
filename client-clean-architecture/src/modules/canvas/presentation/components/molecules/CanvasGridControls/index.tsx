@@ -1,27 +1,26 @@
 import React from 'react';
-import FormSchema from '@/modules/canvas/presentation/components/atoms/form/FormSchema';
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import FormField from '@/shared/presentation/components/FormField';
+import SettingsPanel from '@/modules/canvas/presentation/components/molecules/SettingsPanel';
+import { useShallow } from 'zustand/react/shallow';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import { MdSettings, MdStraighten, MdOpacity, MdColorLens, MdTransform } from 'react-icons/md';
 import { IoGridOutline } from 'react-icons/io5';
 
 const CanvasGridControls: React.FC = () => {
-    const settings = useEditorStore((s) => s.grid);
-    const setEnabled = useEditorStore((s) => s.grid.setEnabled);
-    const setInfiniteGrid = useEditorStore((s) => s.grid.setInfiniteGrid);
-    const setCellSize = useEditorStore((s) => s.grid.setCellSize);
-    const setSectionSize = useEditorStore((s) => s.grid.setSectionSize);
-    const setCellThickness = useEditorStore((s) => s.grid.setCellThickness);
-    const setSectionThickness = useEditorStore((s) => s.grid.setSectionThickness);
-    const setFadeDistance = useEditorStore((s) => s.grid.setFadeDistance);
-    const setFadeStrength = useEditorStore((s) => s.grid.setFadeStrength);
-    const setSectionColor = useEditorStore((s) => s.grid.setSectionColor);
-    const setCellColor = useEditorStore((s) => s.grid.setCellColor);
-    const setPosition = useEditorStore((s) => s.grid.setPosition);
-    const setRotation = useEditorStore((s) => s.grid.setRotation);
-
+    const settings = useEditorStore(useShallow((s) => s.grid));
     const {
+        setEnabled,
+        setInfiniteGrid,
+        setCellSize,
+        setSectionSize,
+        setCellThickness,
+        setSectionThickness,
+        setFadeDistance,
+        setFadeStrength,
+        setSectionColor,
+        setCellColor,
+        setPosition,
+        setRotation,
         enabled,
         infiniteGrid,
         cellSize,
@@ -40,7 +39,6 @@ const CanvasGridControls: React.FC = () => {
         key: 'general',
         title: 'General Settings',
         enabled: true,
-        onToggle: () => {},
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
@@ -72,7 +70,6 @@ const CanvasGridControls: React.FC = () => {
         key: 'size',
         title: 'Size & Spacing',
         enabled: true,
-        onToggle: () => {},
         rows: [
             {
                 label: 'Cell Size',
@@ -100,7 +97,6 @@ const CanvasGridControls: React.FC = () => {
         key: 'thickness',
         title: 'Line Thickness',
         enabled: true,
-        onToggle: () => {},
         rows: [
             {
                 label: 'Cell Thickness',
@@ -128,7 +124,6 @@ const CanvasGridControls: React.FC = () => {
         key: 'fade',
         title: 'Fade Settings',
         enabled: true,
-        onToggle: () => {},
         rows: [
             {
                 label: 'Fade Distance',
@@ -156,7 +151,6 @@ const CanvasGridControls: React.FC = () => {
         key: 'color',
         title: 'Colors',
         enabled: true,
-        onToggle: () => {},
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 12 }}>
@@ -188,7 +182,6 @@ const CanvasGridControls: React.FC = () => {
         key: 'transform',
         title: 'Transform',
         enabled: true,
-        onToggle: () => {},
         rows: [
             {
                 label: 'Position X',
@@ -249,55 +242,18 @@ const CanvasGridControls: React.FC = () => {
     };
 
     return (
-        <CollapsibleSection
+        <SettingsPanel
             title='Canvas Grid'
             icon={<IoGridOutline size={16} />}
-        >
-            <div style={{ display: 'grid', gap: 12 }}>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <MdSettings size={14} />
-                        General Settings
-                    </div>
-                    <FormSchema sections={[generalSection]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <IoGridOutline size={14} />
-                        Size & Spacing
-                    </div>
-                    <FormSchema sections={[sizeSection]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <MdStraighten size={14} />
-                        Line Thickness
-                    </div>
-                    <FormSchema sections={[thicknessSection]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <MdOpacity size={14} />
-                        Fade Settings
-                    </div>
-                    <FormSchema sections={[fadeSection]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <MdColorLens size={14} />
-                        Colors
-                    </div>
-                    <FormSchema sections={[colorSection]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <MdTransform size={14} />
-                        Transform
-                    </div>
-                    <FormSchema sections={[transformSection]} />
-                </div>
-            </div>
-        </CollapsibleSection>
+            subsections={[
+                { label: 'General Settings', icon: <MdSettings size={14} />, sections: [generalSection] },
+                { label: 'Size & Spacing', icon: <IoGridOutline size={14} />, sections: [sizeSection] },
+                { label: 'Line Thickness', icon: <MdStraighten size={14} />, sections: [thicknessSection] },
+                { label: 'Fade Settings', icon: <MdOpacity size={14} />, sections: [fadeSection] },
+                { label: 'Colors', icon: <MdColorLens size={14} />, sections: [colorSection] },
+                { label: 'Transform', icon: <MdTransform size={14} />, sections: [transformSection] }
+            ]}
+        />
     );
 };
 

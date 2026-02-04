@@ -1,5 +1,4 @@
-import { useEffect, useRef, useCallback, useMemo } from 'react';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 
 export interface CanvasPresenceUser {
@@ -21,18 +20,9 @@ const presenceState = {
     listeners: new Set<() => void>(),
 };
 
-const notifyListeners = () => {
-    presenceState.listeners.forEach(l => l());
-};
-
-const setCanvasUsers = (users: CanvasPresenceUser[]) => {
-    presenceState.canvasUsers = users;
-    notifyListeners();
-};
-
-const setRasterUsers = (users: CanvasPresenceUser[]) => {
-    presenceState.rasterUsers = users;
-    notifyListeners();
+const setUsers = (key: 'canvasUsers' | 'rasterUsers', users: CanvasPresenceUser[]) => {
+    presenceState[key] = users;
+    presenceState.listeners.forEach((listener) => listener());
 };
 
 const subscribe = (listener: () => void) => {
@@ -85,8 +75,8 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
             subscribeToPresence();
         }
 
-        const unsubscribeCanvas = socketService.on('canvas_users_update', setCanvasUsers);
-        const unsubscribeRaster = socketService.on('raster_users_update', setRasterUsers);
+        const unsubscribeCanvas = socketService.on('canvas_users_update', (users) => setUsers('canvasUsers', users));
+        const unsubscribeRaster = socketService.on('raster_users_update', (users) => setUsers('rasterUsers', users));
 
         return () => {
             subscribedRef.current = false;
@@ -98,16 +88,16 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
                 socketService.emit('unsubscribe_from_raster', { trajectoryId }).catch(() => { });
             }
 
-            setCanvasUsers([]);
-            setRasterUsers([]);
+            setUsers('canvasUsers', []);
+            setUsers('rasterUsers', []);
         };
     }, [trajectoryId, enabled, subscribeToPresence, socketService]);
 
-    return useMemo(() => ({
+    return {
         canvasUsers: state.canvasUsers,
         rasterUsers: state.rasterUsers,
         allUsers: [...state.canvasUsers, ...state.rasterUsers]
-    }), [state.canvasUsers, state.rasterUsers]);
+    };
 };
 
 export default useCanvasPresence;

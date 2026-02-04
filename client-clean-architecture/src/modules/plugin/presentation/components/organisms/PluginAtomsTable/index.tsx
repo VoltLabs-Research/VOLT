@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import PluginCompactTable, { type ColumnConfig } from '@/modules/plugin/presentation/components/organisms/PluginCompactTable';
 import useListingLifecycle, { type ListingMeta } from '@/shared/presentation/hooks/use-listing-lifecycle';
 import useGetAtoms from '@/modules/trajectory/presentation/hooks/trajectory/use-get-atoms';

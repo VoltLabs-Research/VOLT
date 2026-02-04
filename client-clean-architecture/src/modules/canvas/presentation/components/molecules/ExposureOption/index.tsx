@@ -1,10 +1,8 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { TbObjectScan } from 'react-icons/tb';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import CanvasSidebarOption from '@/modules/canvas/presentation/components/atoms/CanvasSidebarOption';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
-import useCanvasUIStore from '@/modules/canvas/presentation/stores/use-canvas-ui-store';
+import SceneOptionMenu from '@/modules/canvas/presentation/components/molecules/SceneOptionMenu';
 
 interface ExposureOptionProps {
     exposure: any;
@@ -29,26 +27,24 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
     isSelected = false,
     isInProgress = false
 }) => {
-    const openExposureSettings = useCanvasUIStore((s) => s.openExposureSettings);
-
-    const sceneObject = useMemo(() => ({
+    const sceneObject = {
         sceneType: exposure.exposureId,
         source: 'plugin' as const,
         analysisId: exposure.analysisId,
         exposureId: exposure.exposureId
-    }), [exposure.exposureId, exposure.analysisId]);
+    };
 
-    const Icon = useMemo(() => {
-        const IconComponent = () => (
-            exposure.icon ? <DynamicIcon iconName={exposure.icon} /> : <TbObjectScan />
-        );
-        return IconComponent;
-    }, [exposure.icon]);
+    const Icon = exposure.icon ? () => <DynamicIcon iconName={exposure.icon} /> : TbObjectScan;
+
+    const settingsKey = `plugin:${sceneObject.analysisId}:${sceneObject.exposureId}`;
 
     return (
-        <Popover
+        <SceneOptionMenu
             id={`exposure-option-menu-${analysisId}-${index}`}
-            triggerAction='contextmenu'
+            isActive={isActive}
+            settingsKey={settingsKey}
+            onAdd={() => onAdd(sceneObject)}
+            onRemove={() => onRemove(sceneObject)}
             trigger={
                 <CanvasSidebarOption
                     onSelect={() => {
@@ -72,25 +68,7 @@ const ExposureOption: React.FC<ExposureOptionProps> = ({
                     className={isInProgress ? 'cursor-progress' : ''}
                 />
             }
-        >
-            <PopoverMenuItem
-                onClick={() => onAdd(sceneObject)}
-                disabled={isActive}
-            >
-                Add to scene
-            </PopoverMenuItem>
-            <PopoverMenuItem
-                onClick={() => onRemove(sceneObject)}
-                disabled={!isActive}
-            >
-                Remove from scene
-            </PopoverMenuItem>
-            <PopoverMenuItem
-                onClick={() => openExposureSettings(sceneObject)}
-            >
-                Settings
-            </PopoverMenuItem>
-        </Popover>
+        />
     );
 };
 

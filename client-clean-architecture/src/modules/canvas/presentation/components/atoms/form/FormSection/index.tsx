@@ -1,5 +1,5 @@
 import Container from '@/shared/presentation/components/Container';
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
+import FormField from '@/shared/presentation/components/FormField';
 
 interface FormSectionProps {
     title: string;

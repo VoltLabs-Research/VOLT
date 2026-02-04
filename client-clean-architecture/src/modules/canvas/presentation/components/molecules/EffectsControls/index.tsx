@@ -1,10 +1,9 @@
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import FormField from '@/shared/presentation/components/FormField';
+import { useShallow } from 'zustand/react/shallow';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import Select from '@/shared/presentation/components/Select';
-import FormSchema from '@/modules/canvas/presentation/components/atoms/form/FormSchema';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import SettingsPanel from '@/modules/canvas/presentation/components/molecules/SettingsPanel';
 import { MdAutoFixHigh } from 'react-icons/md';
-import '@/modules/canvas/presentation/components/molecules/EffectsControls/EffectsControls.css';
 
 const EffectsControls = () => {
     const {
@@ -22,7 +21,7 @@ const EffectsControls = () => {
         setDepthOfField,
         setNoise,
         setSepia
-    } = useEditorStore((s) => s.effects);
+    } = useEditorStore(useShallow((s) => s.effects));
     const sections = [
         {
             key: 'ssao',
@@ -147,7 +146,7 @@ const EffectsControls = () => {
                     fieldKey='eskil'
                     fieldType='checkbox'
                     label='Eskil Mode'
-                    onFieldChange={(_, eskil) => setVignette({ eskil })}
+                    onFieldChange={(_, eskil) => setVignette({ eskil: Boolean(eskil) })}
                 />
             )
         },
@@ -215,48 +214,26 @@ const EffectsControls = () => {
                     fieldKey='premultiply'
                     fieldType='checkbox'
                     label='Premultiply'
-                    onFieldChange={(_, premultiply) => setNoise({ premultiply })}
+                    onFieldChange={(_, premultiply) => setNoise({ premultiply: Boolean(premultiply) })}
                 />
             )
         }
     ];
 
     return (
-        <CollapsibleSection
+        <SettingsPanel
             title='Post-Processing Effects'
             icon={<MdAutoFixHigh size={16} />}
-        >
-            <div style={{ display: 'grid', gap: 12 }}>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>SSAO(Screen Space Ambient Occlusion)</div>
-                    <FormSchema sections={[sections[0]]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Bloom Effect</div>
-                    <FormSchema sections={[sections[1]]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Chromatic Aberration</div>
-                    <FormSchema sections={[sections[2]]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Vignette Effect</div>
-                    <FormSchema sections={[sections[3]]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Depth of Field</div>
-                    <FormSchema sections={[sections[4]]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Sepia Filter</div>
-                    <FormSchema sections={[sections[5]]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Noise Effect</div>
-                    <FormSchema sections={[sections[6]]} />
-                </div>
-            </div>
-        </CollapsibleSection>
+            subsections={[
+                { label: 'SSAO (Screen Space Ambient Occlusion)', sections: [sections[0]] },
+                { label: 'Bloom Effect', sections: [sections[1]] },
+                { label: 'Chromatic Aberration', sections: [sections[2]] },
+                { label: 'Vignette Effect', sections: [sections[3]] },
+                { label: 'Depth of Field', sections: [sections[4]] },
+                { label: 'Sepia Filter', sections: [sections[5]] },
+                { label: 'Noise Effect', sections: [sections[6]] }
+            ]}
+        />
     );
 };
 

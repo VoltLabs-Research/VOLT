@@ -1,31 +1,35 @@
 import { useEffect, useRef } from 'react';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import { useShallow } from 'zustand/react/shallow';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import useGetTrajectoryById from '@/modules/trajectory/presentation/hooks/trajectory/use-get-trajectory-by-id';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import useAnalysisConfigStore from '@/modules/canvas/presentation/stores/use-analysis-config-store';
 
 const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
-    const lastLogTimeRef = useRef(0);
-
     const { trajectory, isLoading, error } = useGetTrajectoryById({
         trajectoryId,
         enabled: !!trajectoryId
     });
     const setTrajectory = useTrajectoryStore((state) => state.setTrajectory);
 
-    const updateAnalysisConfig = useAnalysisConfigStore((state) => state.updateAnalysisConfig);
-    const analysisConfig = useAnalysisConfigStore((state) => state.analysisConfig);
-
-    const currentTimestep = useEditorStore((state) => state.currentTimestep);
-    const setCurrentTimestep = useEditorStore((state) => state.setCurrentTimestep);
-    const resetPlayback = useEditorStore((state) => state.resetPlayback);
-
-    const computeTimestepData = useEditorStore((state) => state.computeTimestepData);
-    const timestepData = useEditorStore((state) => state.timestepData);
-    const activeModel = useEditorStore((state) => state.activeModel);
-    const resetTimestep = useEditorStore((state) => state.resetTimesteps);
-
-    const resetModel = useEditorStore((state) => state.resetModel);
+    const {
+        currentTimestep,
+        setCurrentTimestep,
+        resetPlayback,
+        computeTimestepData,
+        timestepData,
+        activeModel,
+        resetTimesteps,
+        resetModel
+    } = useEditorStore(useShallow((state) => ({
+        currentTimestep: state.currentTimestep,
+        setCurrentTimestep: state.setCurrentTimestep,
+        resetPlayback: state.resetPlayback,
+        computeTimestepData: state.computeTimestepData,
+        timestepData: state.timestepData,
+        activeModel: state.activeModel,
+        resetTimesteps: state.resetTimesteps,
+        resetModel: state.resetModel
+    })));
 
     useEffect(() => {
         if (!trajectory || currentTimestep !== undefined) return;
@@ -34,39 +38,16 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
             return;
         }
 
-        const frames = trajectory.frames || [];
-        const timesteps = frames
+        const timesteps = trajectory.frames
             .map((frame: any) => frame.timestep)
             .filter((ts: any) => ts !== undefined && ts !== null);
 
-        const sortedTimesteps = [...timesteps].sort((a: number, b: number) => a - b);
-
-        if (sortedTimesteps.length > 0) {
-            const firstTimestep = sortedTimesteps[0];
+        if (timesteps.length > 0) {
+            const firstTimestep = Math.min(...timesteps);
             setCurrentTimestep(firstTimestep);
 
-            if ((trajectory.analysis ?? []).length >= 1) {
-                const config = trajectory.analysis[trajectory.analysis.length - 1] as any;
-                updateAnalysisConfig(config);
-            }
         }
-    }, [trajectory, currentTimestep, setCurrentTimestep, updateAnalysisConfig]);
-
-    const prevAnalysisIdRef = useRef<string | undefined>(undefined);
-
-    useEffect(() => {
-        if (trajectory?._id && currentTimestep !== undefined && analysisConfig?._id) {
-            if (analysisConfig._id !== prevAnalysisIdRef.current) {
-                prevAnalysisIdRef.current = analysisConfig._id;
-
-                resetModel();
-
-                setTimeout(() => {
-                    computeTimestepData(trajectory, currentTimestep, Date.now());
-                }, 50);
-            }
-        }
-    }, [analysisConfig?._id, trajectory?._id, currentTimestep, resetModel, computeTimestepData, trajectory]);
+    }, [trajectory, currentTimestep, setCurrentTimestep]);
 
     const prevTrajectoryStatusRef = useRef<string | undefined>(undefined);
 
@@ -86,11 +67,6 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     }, [trajectory?.status, trajectory?._id, currentTimestep, computeTimestepData, resetModel]);
 
     useEffect(() => {
-        const now = Date.now();
-        if (now - lastLogTimeRef.current > 1000) {
-            lastLogTimeRef.current = now;
-        }
-
         if (trajectory?._id && currentTimestep !== undefined) {
             computeTimestepData(trajectory, currentTimestep);
         }
@@ -99,10 +75,10 @@ const useCanvasCoordinator = ({ trajectoryId }: { trajectoryId?: string }) => {
     useEffect(() => {
         return () => {
             resetPlayback();
-            resetTimestep();
+            resetTimesteps();
             setTrajectory(null);
         };
-    }, [resetPlayback, resetTimestep, setTrajectory]);
+    }, [resetPlayback, resetTimesteps, setTrajectory]);
 
     return {
         trajectory,

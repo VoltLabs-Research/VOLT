@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { IoExitOutline } from 'react-icons/io5';
 import Select, { type SelectOption } from '@/shared/presentation/components/Select';
 import IconButton from '@/shared/presentation/components/IconButton';
@@ -12,7 +12,7 @@ interface TeamSelectorProps {
 };
 
 const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
-    const [, setSearchParams] = useSearchParams();
+    const { updateSearchParams } = useSearchParamsState();
     const teams = useTeamStore((state) => state.teams);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const { teamRepository } = useTeamUseCases();
@@ -22,8 +22,8 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
 
         const teamStore = useTeamStore.getState();
         teamStore.selectTeamById(teamId);
-        setSearchParams({ team: teamId });
-    }, [selectedTeam?._id, setSearchParams]);
+        updateSearchParams({ team: teamId }, { replace: true });
+    }, [selectedTeam?._id, updateSearchParams]);
 
     const handleLeaveTeam = useCallback(async (e: React.MouseEvent, teamId: string) => {
         e.preventDefault();
@@ -39,12 +39,12 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
             if (currentSelected?._id === teamId && remainingTeams.length > 0) {
                 const newTeamId = remainingTeams[0]._id;
                 state.selectTeamById(newTeamId);
-                setSearchParams({ team: newTeamId });
+                updateSearchParams({ team: newTeamId }, { replace: true });
             }
         } catch (err: unknown) {
             console.error('Failed to leave team:', err);
         }
-    }, [teamRepository, setSearchParams]);
+    }, [teamRepository, updateSearchParams]);
 
     const teamOptions = useMemo(() =>
         teams.map(team => ({

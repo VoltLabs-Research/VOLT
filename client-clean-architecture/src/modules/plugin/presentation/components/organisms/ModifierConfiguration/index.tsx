@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { IoIosArrowDown } from 'react-icons/io';
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
+import FormField from '@/shared/presentation/components/FormField';
 import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
 import Button from '@/shared/presentation/components/Button';
 import { usePluginStore } from '@/modules/plugin';

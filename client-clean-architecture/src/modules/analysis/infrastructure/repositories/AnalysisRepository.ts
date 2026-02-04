@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import BaseRepository, { ApiResponse, RawPaginatedResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import type IAnalysisRepository from '../../domain/ports/IAnalysisRepository';
 import type { Analysis } from '../../domain/entities';
 import type {
@@ -17,23 +17,16 @@ export default class AnalysisRepository extends BaseRepository implements IAnaly
     }
 
     async getAll(params: GetAnalysesInputDTO): Promise<GetAnalysesOutputDTO> {
-        const query: Record<string, unknown> = {
+        return this.getAllPaginated('/', {
             page: params.page,
-            limit: params.limit
-        };
-
-        if(params.search) {
-            query.q = params.search;
-        }
-
-        const raw = await this.client.get<RawPaginatedResponse<Analysis>>('/', query);
-        return this.unwrapPaginated(raw);
+            limit: params.limit,
+            ...(params.search ? { q: params.search } : {})
+        });
     }
 
     async getByTrajectoryId(params: GetAnalysesByTrajectoryInputDTO): Promise<GetAnalysesByTrajectoryOutputDTO> {
         const { trajectoryId, page, limit } = params;
-        const raw = await this.client.get<RawPaginatedResponse<Analysis>>(`/trajectory/${trajectoryId}`, { page, limit });
-        return this.unwrapPaginated(raw);
+        return this.getAllPaginated(`/trajectory/${trajectoryId}`, { page, limit });
     }
 
     async delete(id: string): Promise<void> {

@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import BaseRepository, { ApiResponse, RawPaginatedResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import type IContainerRepository from '../../domain/ports/IContainerRepository';
 import type { GetContainersParams, CreateContainerParams, UpdateContainerParams, GetFilesParams } from '../../domain/ports/IContainerRepository';
 import type { Container, ContainerStatsResponse, ContainerFile, RawContainerProcess } from '../../domain/entities';
@@ -33,8 +33,7 @@ export default class ContainerRepository extends BaseRepository implements ICont
     }
 
     async getAll(params: GetContainersParams): Promise<PaginatedResponse<Container>> {
-        const raw = await this.client.get<RawPaginatedResponse<Container>>('/', params);
-        return this.unwrapPaginated(raw);
+        return this.getAllPaginated('/', params);
     }
 
     async getById(containerId: string): Promise<Container> {

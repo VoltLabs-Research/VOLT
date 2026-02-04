@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
 import useContainerUseCases from '../../../hooks/use-container-use-cases';
 import useToast from '@/shared/presentation/hooks/use-toast';
@@ -18,7 +18,7 @@ interface ContainerFileExplorerProps {
 
 const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
     const { showError } = useToast();
-    const [searchParams, setSearchParams] = useSearchParams();
+    const { searchParams, updateSearchParams, setParam, removeParam } = useSearchParamsState();
     const [files, setFiles] = useState<ContainerFile[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [fileContent, setFileContent] = useState<string | null>(null);
@@ -55,11 +55,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
                 setFileContent(content);
             } catch {
                 showError('Failed to read file');
-                setSearchParams((prev) => {
-                    const newParams = new URLSearchParams(prev);
-                    newParams.delete('file');
-                    return newParams;
-                });
+                removeParam('file');
             }
         };
 
@@ -68,7 +64,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
 
     const handleNavigate = (folderName: string) => {
         const newPath = path === '/' ? `/${folderName}` : `${path}/${folderName}`;
-        setSearchParams({ path: newPath });
+        updateSearchParams({ path: newPath });
     };
 
     const handleGoUp = () => {
@@ -76,23 +72,15 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
         const parts = path.split('/');
         parts.pop();
         const newPath = parts.join('/') || '/';
-        setSearchParams(newPath === '/' ? {} : { path: newPath });
+        updateSearchParams({ path: newPath === '/' ? null : newPath });
     };
 
     const handleFileClick = (fileName: string) => {
-        setSearchParams((prev) => {
-            const newParams = new URLSearchParams(prev);
-            newParams.set('file', fileName);
-            return newParams;
-        });
+        setParam('file', fileName);
     };
 
     const closeFileViewer = () => {
-        setSearchParams((prev) => {
-            const newParams = new URLSearchParams(prev);
-            newParams.delete('file');
-            return newParams;
-        });
+        removeParam('file');
     };
 
     if(viewingFile && fileContent !== null){

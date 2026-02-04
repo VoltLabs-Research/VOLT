@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe';
-import BaseRepository, { ApiResponse, RawPaginatedResponse } from '@/shared/infrastructure/repositories/BaseRepository';
+import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import type ITeamRoleRepository from '../../domain/ports/ITeamRoleRepository';
 import type { GetTeamRolesParams, CreateTeamRoleParams, UpdateTeamRoleParams } from '../../domain/ports/ITeamRoleRepository';
 import type { TeamRole } from '../../domain/entities';
@@ -12,8 +12,7 @@ export default class TeamRoleRepository extends BaseRepository implements ITeamR
     }
 
     async getAll(teamId: string, params: GetTeamRolesParams): Promise<PaginatedResponse<TeamRole>> {
-        const raw = await this.client.get<RawPaginatedResponse<TeamRole>>(`/${teamId}`, params);
-        return this.unwrapPaginated(raw);
+        return this.getAllPaginated(`/${teamId}`, params);
     }
 
     async create(teamId: string, data: CreateTeamRoleParams): Promise<TeamRole> {

@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import EditorWidget from '@/modules/canvas/presentation/components/organisms/EditorWidget';
 import Container from '@/shared/presentation/components/Container';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
+import { formatNumber } from '@/shared/utils/format';
 import '@/modules/canvas/presentation/components/organisms/PerformanceMonitor/PerformanceMonitor.css';
 
 interface RendererStats {
@@ -20,15 +22,11 @@ interface RendererStats {
     };
 }
 
-const formatNumber = (num: number): string => {
-    if (num >= 1_000_000) return (num / 1_000_000).toFixed(2) + 'M';
-    if (num >= 1_000) return (num / 1_000).toFixed(1) + 'K';
-    return num.toString();
-};
-
 const PerformanceMonitor: React.FC = () => {
-    const rendererStats = useEditorStore((state) => state.rendererStats);
-    const currentTimestep = useEditorStore((state) => state.currentTimestep);
+    const { rendererStats, currentTimestep } = useEditorStore(useShallow((state) => ({
+        rendererStats: state.rendererStats,
+        currentTimestep: state.currentTimestep
+    })));
     const trajectory = useTrajectoryStore((state) => state.trajectory);
 
     const [stats, setStats] = useState<RendererStats>({
@@ -45,9 +43,8 @@ const PerformanceMonitor: React.FC = () => {
     }, [trajectory?.frames, currentTimestep]);
 
     useEffect(() => {
-        if (rendererStats) {
-            setStats(rendererStats as RendererStats);
-        }
+        if (!rendererStats) return;
+        setStats(rendererStats as RendererStats);
     }, [rendererStats]);
 
     return (

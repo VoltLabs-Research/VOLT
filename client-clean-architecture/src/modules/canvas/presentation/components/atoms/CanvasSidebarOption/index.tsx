@@ -23,7 +23,7 @@ interface CanvasSidebarOptionProps {
     secondaryAction?: React.ReactNode;
 }
 
-const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps & React.HTMLAttributes<HTMLDivElement>> = ({
+const CanvasSidebarOption = React.forwardRef<HTMLDivElement, CanvasSidebarOptionProps & React.HTMLAttributes<HTMLDivElement>>(({
     option,
     onSelect,
     activeOption,
@@ -32,12 +32,12 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps & React.HTMLAttribu
     secondaryAction,
     className,
     ...rest
-}) => {
-
+}, ref) => {
     return (
         <>
             <div
                 {...rest}
+                ref={ref}
                 className={`d-flex content-between items-center editor-sidebar-scene-option-container ${activeOption ? 'active-option' : ''} ${isSelected ? 'selected' : ''} cursor-pointer ${className || ''}`}
                 onClick={() => onSelect(option)}
             >
@@ -85,6 +85,6 @@ const CanvasSidebarOption: React.FC<CanvasSidebarOptionProps & React.HTMLAttribu
             )}
         </>
     );
-};
+});
 
 export default CanvasSidebarOption;

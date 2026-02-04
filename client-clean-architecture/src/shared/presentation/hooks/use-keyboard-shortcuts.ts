@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useKeyboardShortcutsStore } from '@/shared/presentation/stores/use-keyboard-shortcuts-store';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
-import useCanvasUIStore from '@/modules/canvas/presentation/stores/use-canvas-ui-store';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
+import { useSearchParams } from 'react-router-dom';
 
 const normalizeKey = (key: string): string => {
     const keyMap: Record<string, string> = {
@@ -22,6 +22,7 @@ const useKeyboardShortcuts = () => {
     const setLastTriggered = useKeyboardShortcutsStore((s) => s.setLastTriggered);
     const togglePanel = useKeyboardShortcutsStore((s) => s.togglePanel);
     const setShowPanel = useKeyboardShortcutsStore((s) => s.setShowPanel);
+    const [, setSearchParams] = useSearchParams();
 
     const actionsRef = useRef<Record<string, () => void>>({});
 
@@ -90,12 +91,11 @@ const useKeyboardShortcuts = () => {
             },
 
             'toggle-grid': () => {
-                const { grid } = useEditorStore.getState();
-                grid.setEnabled(!grid.enabled);
+                window.dispatchEvent(new CustomEvent('Volt:toggle-grid'));
             },
 
             'toggle-widgets': () => {
-                useCanvasUIStore.getState().toggleEditorWidgets();
+                window.dispatchEvent(new CustomEvent('Volt:toggle-widgets'));
             },
 
             'reset-camera': () => {
@@ -105,15 +105,15 @@ const useKeyboardShortcuts = () => {
             },
 
             'color-coding': () => {
-                useCanvasUIStore.getState().toggleModifier('color-coding');
+                window.dispatchEvent(new CustomEvent('Volt:toggle-modifier', { detail: { modifier: 'color-coding' } }));
             },
 
             'slice-plane': () => {
-                useCanvasUIStore.getState().toggleModifier('slice-plane');
+                window.dispatchEvent(new CustomEvent('Volt:toggle-modifier', { detail: { modifier: 'slice-plane' } }));
             },
 
             'particle-filter': () => {
-                useCanvasUIStore.getState().toggleModifier('particle-filter');
+                window.dispatchEvent(new CustomEvent('Volt:toggle-modifier', { detail: { modifier: 'particle-filter' } }));
             },
 
             'increase-point-size': () => {
@@ -133,34 +133,31 @@ const useKeyboardShortcuts = () => {
                     setShowPanel(false);
                     return;
                 }
-                useCanvasUIStore.getState().closeResultsViewer();
+                setSearchParams((prev) => {
+                    prev.delete('results');
+                    return prev;
+                }, { replace: true });
             },
 
             'toggle-opacity-settings': () => {
                 const { activeScene } = useEditorStore.getState();
-                const { exposureSettingsScene, openExposureSettings, closeExposureSettings } = useCanvasUIStore.getState();
-
                 if (!activeScene) return;
 
-                const areScenesEqual = (scene1: any, scene2: any): boolean => {
-                    if (!scene1 || !scene2) return false;
-                    if (scene1.source !== scene2.source) return false;
-                    if (scene1.sceneType !== scene2.sceneType) return false;
-                    if (scene1.source === 'plugin') {
-                        return scene1.analysisId === scene2.analysisId &&
-                               scene1.exposureId === scene2.exposureId;
-                    }
-                    return true;
-                };
+                const key = activeScene.source === 'plugin'
+                    ? `plugin:${activeScene.analysisId}:${activeScene.exposureId}`
+                    : `${activeScene.source}:${activeScene.sceneType}`;
 
-                if (exposureSettingsScene && areScenesEqual(activeScene, exposureSettingsScene)) {
-                    closeExposureSettings();
-                } else {
-                    openExposureSettings(activeScene);
-                }
+                setSearchParams((prev) => {
+                    if (prev.get('settings') === key) {
+                        prev.delete('settings');
+                    } else {
+                        prev.set('settings', key);
+                    }
+                    return prev;
+                }, { replace: true });
             }
         };
-    }, [togglePanel, setShowPanel]);
+    }, [togglePanel, setShowPanel, setSearchParams]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

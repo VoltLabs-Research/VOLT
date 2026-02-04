@@ -37,6 +37,14 @@ export default class BaseRepository{
         return response.data;
     }
 
+    protected async getAllPaginated<T>(
+        path: string,
+        params?: Record<string, unknown>
+    ): Promise<PaginatedResponse<T>>{
+        const raw = await this.client.get<RawPaginatedResponse<T>>(path, params);
+        return this.unwrapPaginated(raw);
+    }
+
     /**
      * Transforms the raw server paginated response to the client's PaginatedResponse format
      */

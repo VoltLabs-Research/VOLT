@@ -1,40 +1,41 @@
 import React from 'react';
-import FormSchema from '@/modules/canvas/presentation/components/atoms/form/FormSchema';
-import FormField from '@/modules/canvas/presentation/components/atoms/FormField';
-import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
-import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import FormField from '@/shared/presentation/components/FormField';
+import SettingsPanel from '@/modules/canvas/presentation/components/molecules/SettingsPanel';
+import { useShallow } from 'zustand/react/shallow';
+import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import Button from '@/shared/presentation/components/Button';
 import { MdRotateLeft } from 'react-icons/md';
 
 const OrbitControls: React.FC = () => {
-    const enabled = useEditorStore((s) => s.orbitControls.enabled);
-    const enableDamping = useEditorStore((s) => s.orbitControls.enableDamping);
-    const dampingFactor = useEditorStore((s) => s.orbitControls.dampingFactor);
-    const enableZoom = useEditorStore((s) => s.orbitControls.enableZoom);
-    const zoomSpeed = useEditorStore((s) => s.orbitControls.zoomSpeed);
-    const enableRotate = useEditorStore((s) => s.orbitControls.enableRotate);
-    const rotateSpeed = useEditorStore((s) => s.orbitControls.rotateSpeed);
-    const enablePan = useEditorStore((s) => s.orbitControls.enablePan);
-    const panSpeed = useEditorStore((s) => s.orbitControls.panSpeed);
-    const screenSpacePanning = useEditorStore((s) => s.orbitControls.screenSpacePanning);
-    const autoRotate = useEditorStore((s) => s.orbitControls.autoRotate);
-    const autoRotateSpeed = useEditorStore((s) => s.orbitControls.autoRotateSpeed);
-    const minDistance = useEditorStore((s) => s.orbitControls.minDistance);
-    const maxDistance = useEditorStore((s) => s.orbitControls.maxDistance);
-    const minPolarAngle = useEditorStore((s) => s.orbitControls.minPolarAngle);
-    const maxPolarAngle = useEditorStore((s) => s.orbitControls.maxPolarAngle);
-    const minAzimuthAngle = useEditorStore((s) => s.orbitControls.minAzimuthAngle);
-    const maxAzimuthAngle = useEditorStore((s) => s.orbitControls.maxAzimuthAngle);
-    const target = useEditorStore((s) => s.orbitControls.target);
-    const set = useEditorStore((s) => s.orbitControls.set);
-    const setTarget = useEditorStore((s) => s.orbitControls.setTarget);
-    const reset = useEditorStore((s) => s.orbitControls.reset);
+    const {
+        enabled,
+        enableDamping,
+        dampingFactor,
+        enableZoom,
+        zoomSpeed,
+        enableRotate,
+        rotateSpeed,
+        enablePan,
+        panSpeed,
+        screenSpacePanning,
+        autoRotate,
+        autoRotateSpeed,
+        minDistance,
+        maxDistance,
+        minPolarAngle,
+        maxPolarAngle,
+        minAzimuthAngle,
+        maxAzimuthAngle,
+        target,
+        set,
+        setTarget,
+        reset
+    } = useEditorStore(useShallow((s) => s.orbitControls));
 
     const general = {
         key: 'general',
         title: 'OrbitControls',
         enabled: true,
-        onToggle: () => {},
         rows: [],
         extras: (
             <div style={{ display: 'grid', gap: 8 }}>
@@ -55,7 +56,6 @@ const OrbitControls: React.FC = () => {
         key: 'speeds',
         title: 'Speeds',
         enabled: true,
-        onToggle: () => {},
         rows: [
             { label: 'Rotate Speed', min: 0.01, max: 10, step: 0.01, get: () => rotateSpeed, set: (v: number) => set({ rotateSpeed: v }), format: (v: number) => v.toFixed(2) },
             { label: 'Zoom Speed', min: 0.01, max: 10, step: 0.01, get: () => zoomSpeed, set: (v: number) => set({ zoomSpeed: v }), format: (v: number) => v.toFixed(2) },
@@ -72,7 +72,6 @@ const OrbitControls: React.FC = () => {
         key: 'limits',
         title: 'Limits',
         enabled: true,
-        onToggle: () => {},
         rows: [
             { label: 'Min Distance', min: 0.001, max: Math.max(10, maxDistance), step: 0.001, get: () => minDistance, set: (v: number) => set({ minDistance: v }), format: (v: number) => v.toFixed(3) },
             { label: 'Max Distance', min: Math.max(0.001, minDistance + 0.001), max: 100000, step: 0.1, get: () => maxDistance, set: (v: number) => set({ maxDistance: v }), format: (v: number) => v.toFixed(1) },
@@ -88,7 +87,6 @@ const OrbitControls: React.FC = () => {
         key: 'target',
         title: 'Target(Z-up)',
         enabled: true,
-        onToggle: () => {},
         rows: [
             { label: 'Target X', min: -100000, max: 100000, step: 0.1, get: () => target[0], set: (v: number) => setTarget([v, target[1], target[2]]), format: (v: number) => v.toFixed(2) },
             { label: 'Target Y', min: -100000, max: 100000, step: 0.1, get: () => target[1], set: (v: number) => setTarget([target[0], v, target[2]]), format: (v: number) => v.toFixed(2) },
@@ -98,29 +96,16 @@ const OrbitControls: React.FC = () => {
     };
 
     return (
-        <CollapsibleSection
+        <SettingsPanel
             title='Orbit Controls'
             icon={<MdRotateLeft size={16} />}
-        >
-            <div style={{ display: 'grid', gap: 12 }}>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>General Settings</div>
-                    <FormSchema sections={[general]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Movement Speeds</div>
-                    <FormSchema sections={[speeds]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Distance & Angle Limits</div>
-                    <FormSchema sections={[limits]} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '8px', fontWeight: '500' }}>Target Position</div>
-                    <FormSchema sections={[targetSection]} />
-                </div>
-            </div>
-        </CollapsibleSection>
+            subsections={[
+                { label: 'General Settings', sections: [general] },
+                { label: 'Movement Speeds', sections: [speeds] },
+                { label: 'Distance & Angle Limits', sections: [limits] },
+                { label: 'Target Position', sections: [targetSection] }
+            ]}
+        />
     );
 };
 

@@ -1,9 +1,7 @@
 import React from 'react';
 import { TbObjectScan } from 'react-icons/tb';
-import Popover from '@/shared/presentation/components/Popover';
-import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import CanvasSidebarOption from '@/modules/canvas/presentation/components/atoms/CanvasSidebarOption';
-import useCanvasUIStore from '@/modules/canvas/presentation/stores/use-canvas-ui-store';
+import SceneOptionMenu from '@/modules/canvas/presentation/components/molecules/SceneOptionMenu';
 
 interface DefaultSceneOptionProps {
     onSelect: (scene: any) => void;
@@ -18,8 +16,6 @@ const DefaultSceneOption: React.FC<DefaultSceneOptionProps> = ({
     onRemove,
     isSceneActive
 }) => {
-    const openExposureSettings = useCanvasUIStore((s) => s.openExposureSettings);
-
     const scene = { sceneType: 'trajectory', source: 'default' as const };
     const option = {
         Icon: TbObjectScan,
@@ -29,10 +25,15 @@ const DefaultSceneOption: React.FC<DefaultSceneOptionProps> = ({
 
     const active = isSceneActive(scene);
 
+    const settingsKey = `${scene.source}:${scene.sceneType}`;
+
     return (
-        <Popover
+        <SceneOptionMenu
             id='default-option-menu'
-            triggerAction='contextmenu'
+            isActive={active}
+            settingsKey={settingsKey}
+            onAdd={() => onAdd(scene)}
+            onRemove={() => onRemove(scene)}
             trigger={
                 <CanvasSidebarOption
                     onSelect={() => onSelect(scene)}
@@ -41,25 +42,7 @@ const DefaultSceneOption: React.FC<DefaultSceneOptionProps> = ({
                     option={option}
                 />
             }
-        >
-            <PopoverMenuItem
-                onClick={() => onAdd(scene)}
-                disabled={active}
-            >
-                Add to scene
-            </PopoverMenuItem>
-            <PopoverMenuItem
-                onClick={() => onRemove(scene)}
-                disabled={!active}
-            >
-                Remove from scene
-            </PopoverMenuItem>
-            <PopoverMenuItem
-                onClick={() => openExposureSettings(scene)}
-            >
-                Settings
-            </PopoverMenuItem>
-        </Popover>
+        />
     );
 };
 
