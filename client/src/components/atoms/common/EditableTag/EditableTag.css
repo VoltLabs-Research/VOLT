@@ -1,6 +1,0 @@
-.is-editing {
-    cursor: text;
-    border-radius: var(--radius-xs);
-    width: fit-content;
-    outline: 1px solid var(--accent-blue);
-}

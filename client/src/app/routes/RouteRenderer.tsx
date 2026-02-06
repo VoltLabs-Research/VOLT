@@ -1,63 +1,78 @@
 import { Route } from 'react-router-dom';
-import ProtectedRoute from '@/features/auth/components/atoms/ProtectedRoute';
-import DashboardLayout from '@/components/organisms/dashboard/DashboardLayout';
-import SettingsLayout from '@/features/settings/components/organisms/SettingsLayout';
-import PageTransition from '@/components/atoms/animations/PageTransition';
-import { routesConfig } from '@/app/routes/config';
-import type { RouteConfig } from '@/app/routes/types';
+import { routesConfig } from './config';
+import ProtectedRoute from '@/modules/auth/presentation/components/atoms/ProtectedRoute';
+import PageTransition from '@/shared/presentation/components/PageTransition';
+import type { RouteConfig } from './types';
 
-const wrapWithPageWrapper = (Component: React.ComponentType) => (
+const wrapWithPageTransition = (Component: React.ComponentType) => (
     <PageTransition>
         <Component />
     </PageTransition>
 );
+
+const renderRouteWithChildren = (route: RouteConfig) => {
+    if(route.children && route.children.length > 0){
+        return (
+            <Route
+                key={route.path}
+                path={route.path}
+                element={wrapWithPageTransition(route.component)}
+            >
+                {route.children.map((child) => (
+                    child.index ? (
+                        <Route
+                            key={child.path}
+                            index
+                            element={wrapWithPageTransition(child.component)}
+                        />
+                    ) : (
+                        <Route
+                            key={child.path}
+                            path={child.path}
+                            element={wrapWithPageTransition(child.component)}
+                        />
+                    )
+                ))}
+            </Route>
+        );
+    }
+
+    return (
+        <Route
+            key={route.path}
+            path={route.path}
+            index={route.index}
+            element={wrapWithPageTransition(route.component)}
+        />
+    );
+};
 
 export const renderPublicRoutes = () => {
     return routesConfig.public.map((route: RouteConfig) => (
         <Route
             key={route.path}
             path={route.path}
-            element={wrapWithPageWrapper(route.component)}
-        />
+            element={wrapWithPageTransition(route.component)} />
     ));
 };
 
 export const renderProtectedRoutes = () => {
-    const routesWithLayout = routesConfig.protected.filter(r => r.requiresLayout && !r.requiresSettingsLayout);
-    const routesWithSettingsLayout = routesConfig.protected.filter(r => r.requiresSettingsLayout);
-    const routesWithoutLayout = routesConfig.protected.filter(r => !r.requiresLayout);
+    const DashboardLayout = routesConfig.dashboardLayout;
+
+    // Separate dashboard routes from non-dashboard routes
+    const dashboardRoutes = routesConfig.protected.filter((route) => 
+        route.path.startsWith('/dashboard')
+    );
+    const nonDashboardRoutes = routesConfig.protected.filter((route) =>
+        !route.path.startsWith('/dashboard')
+    );
 
     return (
-        <Route element={<ProtectedRoute mode='protect' />}>
-            {routesWithoutLayout.map((route: RouteConfig) => (
-                <Route
-                    key={route.path}
-                    path={route.path}
-                    element={wrapWithPageWrapper(route.component)}
-                />
-            ))}
-
-            {routesWithLayout.length > 0 && (
-                <Route element={<DashboardLayout />}>
-                    {routesWithLayout.map((route: RouteConfig) => (
-                        <Route
-                            key={route.path}
-                            path={route.path}
-                            element={wrapWithPageWrapper(route.component)}
-                        />
-                    ))}
-
-                    {routesWithSettingsLayout.length > 0 && (
-                        <Route element={<SettingsLayout />}>
-                            {routesWithSettingsLayout.map((route: RouteConfig) => (
-                                <Route
-                                    key={route.path}
-                                    path={route.path}
-                                    element={wrapWithPageWrapper(route.component)}
-                                />
-                            ))}
-                        </Route>
-                    )}
+        <Route element={<ProtectedRoute mode='protected' />}>
+            {nonDashboardRoutes.map(renderRouteWithChildren)}
+            {DashboardLayout && (
+                <Route path='/dashboard' element={<DashboardLayout />}>
+                    {dashboardRoutes.map(renderRouteWithChildren)}
                 </Route>
             )}
         </Route>
@@ -71,8 +86,7 @@ export const renderGuestRoutes = () => {
                 <Route
                     key={route.path}
                     path={route.path}
-                    element={wrapWithPageWrapper(route.component)}
-                />
+                    element={wrapWithPageTransition(route.component)} />
             ))}
         </Route>
     );

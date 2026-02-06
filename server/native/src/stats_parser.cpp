@@ -1,5 +1,8 @@
 #include <node_api.h>
 #include <cmath>
+#include <set>
+#include <vector>
+#include <algorithm>
 #include "common.hpp"
 
 struct StatsResult {
@@ -261,8 +264,95 @@ static napi_value ComputeMagnitudes(napi_env env, napi_callback_info info) {
     return outArray;
 }
 
+HOT static std::vector<double> getUniqueValuesForProperty(const char* RESTRICT filepath, int propIdx, int maxValues) {
+    std::set<double> uniqueSet;
+    
+    MappedFile file = mapFile(filepath);
+    if (!file.valid) return {};
+    
+    const char* end = file.data + file.size;
+    
+    const char* atomsMarker = (const char*)memmem(file.data, file.size, "ITEM: ATOMS", 11);
+    if (UNLIKELY(!atomsMarker)) {
+        unmapFile(file);
+        return {};
+    }
+    
+    const char* p = jumpToNextLine(atomsMarker, end);
+    
+    while (p < end && (maxValues <= 0 || (int)uniqueSet.size() < maxValues)) {
+        const char* lineEnd = findLineEnd(p, end);
+        const char* content = skipWhitespace(p, lineEnd);
+        
+        if (UNLIKELY(content[0] == 'I' && lineEnd - content >= 5 && content[4] == ':')) {
+            break;
+        }
+        
+        int fieldIdx = 0;
+        const char* tok = content;
+        
+        while (tok < lineEnd) {
+            const char* tokEnd = findTokenEnd(tok, lineEnd);
+            
+            if (fieldIdx == propIdx) {
+                double val = fastAtof(tok, tokEnd);
+                uniqueSet.insert(val);
+                break;
+            }
+            
+            fieldIdx++;
+            tok = skipWhitespace(tokEnd, lineEnd);
+        }
+        
+        p = lineEnd + 1;
+    }
+    
+    unmapFile(file);
+    
+    std::vector<double> result(uniqueSet.begin(), uniqueSet.end());
+    std::sort(result.begin(), result.end());
+    
+    if (maxValues > 0 && (int)result.size() > maxValues) {
+        result.resize(maxValues);
+    }
+    
+    return result;
+}
+
+static napi_value GetUniqueValuesForProperty(napi_env env, napi_callback_info info) {
+    size_t argc = 3;
+    napi_value args[3];
+    napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+    
+    size_t pathLen;
+    napi_get_value_string_utf8(env, args[0], nullptr, 0, &pathLen);
+    char filepath[pathLen + 1];
+    napi_get_value_string_utf8(env, args[0], filepath, pathLen + 1, &pathLen);
+    
+    int32_t propIdx;
+    napi_get_value_int32(env, args[1], &propIdx);
+    
+    int32_t maxValues = 100;
+    if (argc >= 3) {
+        napi_get_value_int32(env, args[2], &maxValues);
+    }
+    
+    std::vector<double> uniqueValues = getUniqueValuesForProperty(filepath, propIdx, maxValues);
+    
+    napi_value result;
+    napi_create_array_with_length(env, uniqueValues.size(), &result);
+    
+    for (size_t i = 0; i < uniqueValues.size(); i++) {
+        napi_value val;
+        napi_create_double(env, uniqueValues[i], &val);
+        napi_set_element(env, result, i, val);
+    }
+    
+    return result;
+}
+
 static napi_value Init(napi_env env, napi_value exports) {
-    napi_value fn1, fn2, fn3;
+    napi_value fn1, fn2, fn3, fn4;
     
     napi_create_function(env, nullptr, 0, GetStatsForProperty, nullptr, &fn1);
     napi_set_named_property(env, exports, "getStatsForProperty", fn1);
@@ -272,6 +362,9 @@ static napi_value Init(napi_env env, napi_value exports) {
     
     napi_create_function(env, nullptr, 0, ComputeMagnitudes, nullptr, &fn3);
     napi_set_named_property(env, exports, "computeMagnitudes", fn3);
+    
+    napi_create_function(env, nullptr, 0, GetUniqueValuesForProperty, nullptr, &fn4);
+    napi_set_named_property(env, exports, "getUniqueValuesForProperty", fn4);
     
     return exports;
 }
