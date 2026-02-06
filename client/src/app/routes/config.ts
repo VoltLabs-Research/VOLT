@@ -1,214 +1,156 @@
-import type { RouteGroup } from '@/app/routes/types';
-import Canvas from '@/features/canvas/pages/protected/Canvas';
-import Dashboard from '@/pages/protected/Dashboard';
-import FileExplorer from '@/features/trajectory/pages/protected/FileExplorer';
-import SSHConnectionsListing from '@/features/ssh/pages/protected/SSHConnectionsListing';
-import SSHFileExplorer from '@/features/ssh/pages/protected/SSHFileExplorer';
-import MyTeam from '@/features/team/pages/protected/MyTeam';
-import HeadlessRasterizerView from '@/features/raster/pages/protected/HeadlessRasterizerView';
-import Messages from '@/features/chat/pages/protected/Messages';
-import PluginListing from '@/features/plugins/pages/protected/PluginListing';
-import Plugins from '@/features/plugins/pages/protected/Plugins';
-import AnalysisConfigsListing from '@/features/analysis/pages/protected/AnalysisConfigsListing';
-import TrajectoriesListing from '@/features/trajectory/pages/protected/TrajectoriesListing';
-import SimulationCellsListing from '@/features/simulation-cell/pages/SimulationCellsListing';
-import {
-    GeneralPage,
-    AuthenticationPage,
-    ThemePage,
-    NotificationsPage,
-    SessionsPage,
-    IntegrationsPage,
-    DataExportPage,
-    AdvancedPage
-} from '@/features/settings/pages/protected/';
-import Clusters from '@/features/clusters/pages/protected/Clusters';
-import SignIn from '@/features/auth/pages/guest/SignIn';
-import TeamInvitationPage from '@/features/team-invitation/pages/guest/TeamInvitationPage';
-import OAuthCallback from '@/features/auth/pages/guest/OAuthCallback';
-import Containers from '@/features/container/pages/protected/Containers';
-import ContainerDetails from '@/features/container/pages/protected/ContainerDetails';
-import CreateContainer from '@/features/container/pages/protected/CreateContainer';
-import PluginBuilder from '@/features/plugins/pages/protected/PluginBuilder';
-import PerAtomViewer from '@/features/trajectory/pages/protected/PerAtomViewer';
-import ManageRoles from '@/features/team-role/pages/protected/ManageRoles';
+import { RouteGroup } from './types';
+import SignInPage from '@/modules/auth/presentation/components/templates/SignIn';
+import OAuthCallbackPage from '@/modules/auth/presentation/components/templates/OAuthCallback';
+import GeneralSettings from '@/modules/auth/presentation/components/templates/Settings/GeneralSettings';
+import AuthenticationSettings from '@/modules/auth/presentation/components/templates/Settings/AuthenticationSettings';
+import ThemeSettings from '@/modules/auth/presentation/components/templates/Settings/ThemeSettings';
+import NotificationSettings from '@/modules/auth/presentation/components/templates/Settings/NotificationSettings';
+import MyTeamTemplate from '@/modules/team/presentation/components/templates/MyTeam';
+import ManageRolesTemplate from '@/modules/team/presentation/components/templates/ManageRoles';
+import TeamInvitationTemplate from '@/modules/team/presentation/components/templates/TeamInvitation';
+import TrajectoriesListing from '@/modules/trajectory/presentation/components/templates/TrajectoriesListing';
+import PerAtomViewer from '@/modules/trajectory/presentation/components/templates/PerAtomViewer';
+import CanvasPage from '@/modules/canvas/presentation/components/templates/CanvasPage';
+import AnalysesListing from '@/modules/analysis/presentation/components/templates/AnalysesListing';
+import SimulationCellsListing from '@/modules/simulation-cell/presentation/components/templates/SimulationCellsListing';
+import PluginsListing from '@/modules/plugin/presentation/components/templates/PluginsListing';
+import PluginBuilderPage from '@/modules/plugin/presentation/components/templates/PluginBuilderPage';
+import PluginListingPage from '@/modules/plugin/presentation/components/templates/PluginListingPage';
+import ClustersPage from '@/modules/cluster/presentation/components/templates/ClustersPage';
+import ContainersListing from '@/modules/container/presentation/components/templates/ContainersListing';
+import ContainerDetailsLayout from '@/modules/container/presentation/components/templates/ContainerDetailsLayout';
+import ContainerOverviewPage from '@/modules/container/presentation/pages/ContainerOverviewPage';
+import ContainerProcessesPage from '@/modules/container/presentation/pages/ContainerProcessesPage';
+import ContainerLogsPage from '@/modules/container/presentation/pages/ContainerLogsPage';
+import ContainerStoragePage from '@/modules/container/presentation/pages/ContainerStoragePage';
+import CreateContainer from '@/modules/container/presentation/components/templates/CreateContainer';
+import SSHConnectionsPage from '@/modules/ssh/presentation/components/templates/SSHConnectionsPage';
+import SSHFileExplorerPage from '@/modules/ssh/presentation/components/templates/SSHFileExplorerPage';
+import DashboardLayout from '@/modules/dashboard/presentation/components/organisms/DashboardLayout';
+import Dashboard from '@/modules/dashboard/presentation/components/templates/Dashboard';
+import MessagesPage from '@/modules/chat/presentation/components/templates/MessagesPage';
 
 export const routesConfig: RouteGroup = {
-    public: [
-        {
-            path: '/canvas/:trajectoryId/',
-            component: Canvas,
-        },
-        {
-            path: '/raster/:trajectoryId',
-            component: HeadlessRasterizerView,
-        },
-        {
-            path: '/team-invitation/:token',
-            component: TeamInvitationPage,
-        },
-        {
-            path: '/auth/oauth/success',
-            component: OAuthCallback,
-        },
-    ],
+    public: [],
 
     protected: [
+        // Dashboard routes (with layout)
         {
             path: '/dashboard',
             component: Dashboard,
-            requiresLayout: true,
+            index: true
         },
-        {
-            path: '/dashboard/clusters',
-            component: Clusters,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/my-team',
-            component: MyTeam,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/manage-roles',
-            component: ManageRoles,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/containers',
-            component: Containers,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/containers/new',
-            component: CreateContainer,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/containers/:id',
-            component: ContainerDetails,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/trajectories/list',
-            component: TrajectoriesListing,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/simulation-cells/list',
-            component: SimulationCellsListing,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/analysis-configs/list',
-            component: AnalysisConfigsListing,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/plugins/list',
-            component: Plugins,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/plugins/builder',
-            component: PluginBuilder,
-            requiresLayout: false
-        },
-        {
-            path: '/dashboard/plugins/:pluginSlug/listing/:listingSlug',
-            component: PluginListing,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginSlug/listing/:listingSlug',
-            component: PluginListing,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/file-explorer',
-            component: FileExplorer,
-            requiresLayout: true
-        },
-        {
-            path: '/dashboard/import/:connectionId',
-            component: SSHFileExplorer,
-            requiresLayout: true
-        },
-        {
-            path: '/dashboard/ssh-connections',
-            component: SSHConnectionsListing,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/ssh-connections/:connectionId/file-explorer',
-            component: SSHFileExplorer,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId',
-            component: PerAtomViewer,
-            requiresLayout: true,
-        },
-        {
-            path: '/dashboard/messages/',
-            component: Messages,
-            requiresLayout: true,
-        },
-        // Settings routes with nested layout
         {
             path: '/dashboard/settings/general',
-            component: GeneralPage,
-            requiresLayout: true,
-            requiresSettingsLayout: true,
+            component: GeneralSettings
         },
         {
             path: '/dashboard/settings/authentication',
-            component: AuthenticationPage,
-            requiresLayout: true,
-            requiresSettingsLayout: true,
+            component: AuthenticationSettings
         },
         {
             path: '/dashboard/settings/theme',
-            component: ThemePage,
-            requiresLayout: true,
-            requiresSettingsLayout: true,
+            component: ThemeSettings
         },
         {
             path: '/dashboard/settings/notifications',
-            component: NotificationsPage,
-            requiresLayout: true,
-            requiresSettingsLayout: true,
+            component: NotificationSettings
         },
         {
-            path: '/dashboard/settings/sessions',
-            component: SessionsPage,
-            requiresLayout: true,
-            requiresSettingsLayout: true,
+            path: '/dashboard/my-team',
+            component: MyTeamTemplate
         },
         {
-            path: '/dashboard/settings/integrations',
-            component: IntegrationsPage,
-            requiresLayout: true,
-            requiresSettingsLayout: true,
+            path: '/dashboard/manage-roles',
+            component: ManageRolesTemplate
         },
         {
-            path: '/dashboard/settings/data-export',
-            component: DataExportPage,
-            requiresLayout: true,
-            requiresSettingsLayout: true,
+            path: '/dashboard/trajectories/list',
+            component: TrajectoriesListing
         },
         {
-            path: '/dashboard/settings/advanced',
-            component: AdvancedPage,
-            requiresLayout: true,
-            requiresSettingsLayout: true,
+            path: '/canvas/:trajectoryId',
+            component: CanvasPage
         },
+        {
+            path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId',
+            component: PerAtomViewer
+        },
+        {
+            path: '/dashboard/analysis-configs/list',
+            component: AnalysesListing
+        },
+        {
+            path: '/dashboard/simulation-cells/list',
+            component: SimulationCellsListing
+        },
+        {
+            path: '/dashboard/plugins/list',
+            component: PluginsListing
+        },
+        {
+            path: '/dashboard/plugins/builder',
+            component: PluginBuilderPage
+        },
+        {
+            path: '/dashboard/plugins/:pluginSlug/listing/:listingSlug',
+            component: PluginListingPage
+        },
+        {
+            path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginSlug/listing/:listingSlug',
+            component: PluginListingPage
+        },
+        {
+            path: '/dashboard/clusters',
+            component: ClustersPage
+        },
+        {
+            path: '/dashboard/containers',
+            component: ContainersListing
+        },
+        {
+            path: '/dashboard/containers/new',
+            component: CreateContainer
+        },
+        {
+            path: '/dashboard/containers/:id',
+            component: ContainerDetailsLayout,
+            children: [
+                { path: 'overview', component: ContainerOverviewPage, index: true },
+                { path: 'processes', component: ContainerProcessesPage },
+                { path: 'logs', component: ContainerLogsPage },
+                { path: 'storage', component: ContainerStoragePage }
+            ]
+        },
+        {
+            path: '/dashboard/ssh-connections',
+            component: SSHConnectionsPage
+        },
+        {
+            path: '/dashboard/ssh-connections/:connectionId/file-explorer',
+            component: SSHFileExplorerPage
+        },
+        {
+            path: '/dashboard/messages/:chatId?',
+            component: MessagesPage
+        }
     ],
 
     guest: [
         {
             path: '/auth/sign-in',
-            component: SignIn,
+            component: SignInPage
         },
+        {
+            path: '/auth/oauth/callback',
+            component: OAuthCallbackPage
+        },
+        {
+            path: '/team-invitation/:invitationId',
+            component: TeamInvitationTemplate
+        }
     ],
+
+    // Layout component for dashboard routes
+    dashboardLayout: DashboardLayout
 };

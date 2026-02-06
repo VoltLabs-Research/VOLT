@@ -1,12 +1,13 @@
-export interface RouteConfig {
+export interface RouteConfig{
     path: string;
-    component: any;
-    requiresLayout?: boolean;
-    requiresSettingsLayout?: boolean;
+    component: React.ComponentType;
+    index?: boolean;
+    children?: RouteConfig[];
 };
 
-export interface RouteGroup {
+export interface RouteGroup{
     public: RouteConfig[];
     protected: RouteConfig[];
     guest: RouteConfig[];
+    dashboardLayout?: React.ComponentType;
 };

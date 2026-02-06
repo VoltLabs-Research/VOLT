@@ -2,6 +2,8 @@
 venv/
 dislocations.json
 
+OLD/
+
 __pycache__
 
 build-release/
