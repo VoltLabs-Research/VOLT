@@ -29,8 +29,9 @@ const PluginResultsViewer = ({ pluginSlug, analysisId }: PluginResultsViewerProp
                         <Button
                             variant="ghost"
                             intent="canvas"
-                            shape="square"
+                            shape="rounded"
                             size="sm"
+                            className="font-size-05 canvas-btn-compact"
                             onClick={download}
                             title="Download as XLSX"
                             isLoading={isDownloading}
@@ -50,7 +51,7 @@ const PluginResultsViewer = ({ pluginSlug, analysisId }: PluginResultsViewerProp
                 </Container>
             ) : (
                 <>
-                    <Container className="canvas-results-tabs d-flex items-center gap-025 overflow-auto" role="tablist">
+                    <Container className="canvas-results-tabs d-flex items-center overflow-auto" role="tablist">
                         {tabs.map((label, index) => (
                             <Button
                                 key={label}
@@ -58,8 +59,9 @@ const PluginResultsViewer = ({ pluginSlug, analysisId }: PluginResultsViewerProp
                                 aria-selected={activeTab === index}
                                 variant={activeTab === index ? 'solid' : 'ghost'}
                                 intent="canvas"
-                                shape="square"
+                                shape="rounded"
                                 size="sm"
+                                className="font-size-05 canvas-btn-compact"
                                 onClick={() => setActiveTab(index)}
                             >
                                 {label}

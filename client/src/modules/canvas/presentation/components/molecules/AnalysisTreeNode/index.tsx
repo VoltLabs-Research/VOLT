@@ -35,6 +35,7 @@ const AnalysisTreeNode = ({
                 className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none canvas-tree-item--indent ${isCurrentAnalysis ? 'selected' : ''}`}
                 onClick={() => {
                     onToggle(analysis._id);
+                    onSelectScene({ sceneType: 'trajectory', source: 'default' as const }, analysis);
                 }}
                 role="treeitem"
                 aria-selected={isCurrentAnalysis}
@@ -54,13 +55,13 @@ const AnalysisTreeNode = ({
                         : <ChevronRight style={{ width: 13, height: 13 }} />
                     }
                 </button>
-                <FlaskConical style={{ width: 13, height: 13, color: '#a78bfa' }} />
+                <FlaskConical style={{ width: 13, height: 13, color: isCurrentAnalysis ? '#a78bfa' : 'rgba(167, 139, 250, 0.35)' }} />
                 <span className={`${isCurrentAnalysis ? 'color-primary' : 'color-secondary'}`}>
                     {pluginDisplayName}
                 </span>
                 <span className="flex-1" />
                 {effectiveStatus && effectiveStatus !== 'idle' && (
-                    <span className={`canvas-tree-status-dot canvas-tree-status-dot--${effectiveStatus}`}>
+                    <span className={`canvas-tree-status-dot canvas-tree-status-dot--${effectiveStatus} font-size-05`}>
                         ●
                     </span>
                 )}

@@ -39,7 +39,7 @@ const TopToolbar = () => {
     return (
         <header className="canvas-top-toolbar d-flex items-stretch u-select-none">
             <Container className="canvas-toolbar-logo d-flex items-center">
-                <h1 className="canvas-volt">VOLT</h1>
+                <h1 className="canvas-volt font-size-05 color-secondary">VOLT</h1>
             </Container>
 
             <nav className="canvas-toolbar-menus px-025 d-flex gap-025 items-center" aria-label="Main menu">
@@ -59,7 +59,7 @@ const TopToolbar = () => {
                 {['Scene', 'ViewLayer'].map((label, i) => (
                     <Fragment key={label}>
                         {i > 0 && <Container className="canvas-toolbar-divider-v" />}
-                        <span className="canvas-toolbar-info-text">{label}</span>
+                        <span className="canvas-toolbar-info-text font-size-05 color-muted">{label}</span>
                     </Fragment>
                 ))}
             </Container>

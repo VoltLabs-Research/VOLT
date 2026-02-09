@@ -57,7 +57,7 @@ const CanvasRenderSections = () => {
 
                 const visibleSubsections = group.subsections.filter((sub) => sub.visible !== false);
                 const hasSubsections = visibleSubsections.length > 1;
-                const openIndices = openSubsectionByGroup[group.id];
+                const openIndices = openSubsectionByGroup[group.id] ?? [];
 
                 return (
                     <CollapsibleSection
@@ -89,7 +89,7 @@ const CanvasRenderSections = () => {
                                     onExpandedChange={hasSubsections
                                         ? () =>
                                             setOpenSubsectionByGroup((prev) => {
-                                                const current = prev[group.id];
+                                                const current = prev[group.id] ?? [];
                                                 const exists = current.includes(idx);
                                                 const next = exists
                                                     ? current.filter((value) => value !== idx)
@@ -115,7 +115,7 @@ const CanvasRenderSections = () => {
                                             <Container key={section.key} className="canvas-form-section d-flex column gap-05">
                                                 {section.onToggle && (
                                                     <Container className="canvas-form-section-header d-flex items-center content-between">
-                                                        <span className="canvas-form-section-title font-weight-5">Enabled</span>
+                                                        <span className="canvas-form-section-title font-weight-5 font-size-1">Enabled</span>
                                                         <FormField
                                                             fieldValue={section.enabled}
                                                             fieldKey={`${section.key}-enabled`}
@@ -134,7 +134,7 @@ const CanvasRenderSections = () => {
                                                                 key={`${section.key}-${row.label}`}
                                                                 className={`canvas-form-row d-flex items-center content-between gap-05 ${row.className}`}
                                                             >
-                                                                <label className="canvas-form-label">{row.label}</label>
+                                                                <label className="canvas-form-label font-size-05">{row.label}</label>
                                                                 <Container className="canvas-form-control d-flex items-center gap-02">
                                                                     <Slider
                                                                         min={row.min}
@@ -143,7 +143,7 @@ const CanvasRenderSections = () => {
                                                                         value={value}
                                                                         onChange={onChange}
                                                                     />
-                                                                    <span className="canvas-form-value">
+                                                                    <span className="canvas-form-value font-size-05">
                                                                         {row.format(value)}
                                                                     </span>
                                                                 </Container>

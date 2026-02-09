@@ -17,7 +17,7 @@
 
 .canvas-render-warning {
     padding: 6px 8px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: rgba(248, 113, 113, 0.08);
     color: #f87171;
 }
@@ -31,17 +31,14 @@
 }
 
 .canvas-form-section-title {
-    font-size: 12px;
     color: var(--color-text-secondary);
 }
 
 .canvas-form-label {
-    font-size: 11px;
     color: var(--color-text-muted);
 }
 
 .canvas-form-value {
-    font-size: 11px;
     color: var(--color-text-secondary);
     min-width: 40px;
     text-align: right;

@@ -4,7 +4,10 @@
     transform: translateX(-50%);
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     padding: 6px 10px;
+    border-radius: var(--radius-md);
     z-index: 1001;
 }
 
@@ -16,6 +19,5 @@
     height: 24px;
     background: var(--color-surface-2);
     border: 1px solid var(--color-border-soft);
-    border-radius: 5px;
-    font-size: 11px;
+    border-radius: var(--radius-xs);
 }

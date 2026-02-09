@@ -40,7 +40,7 @@ const TimelineRuler = ({
             {ticks.map((tick, i) => (
                 <Container key={i} className="canvas-ruler-tick d-flex column items-center">
                     {tick.major && (
-                        <span className="canvas-ruler-tick-label">{tick.frame}</span>
+                        <span className="canvas-ruler-tick-label font-size-05">{tick.frame}</span>
                     )}
                     <Container className={`canvas-ruler-tick-mark ${tick.major ? 'major' : 'minor'}`} />
                 </Container>

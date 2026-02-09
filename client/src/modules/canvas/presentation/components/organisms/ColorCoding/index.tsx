@@ -114,10 +114,11 @@ const ColorCodingForm = ({
                     isLoading={isApplying}
                     variant="solid"
                     intent="canvas"
-                    shape="square"
+                    shape="rounded"
                     block
                     onClick={onApply}
                     disabled={!canApply}
+                    className="font-size-1"
                 >
                     Apply
                 </Button>

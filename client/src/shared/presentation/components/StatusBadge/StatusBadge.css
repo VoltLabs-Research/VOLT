@@ -13,7 +13,11 @@
     border-radius: 0;
 }
 
-.status-badge.variant-active,
+.status-badge.variant-active {
+    color: var(--accent-blue);
+    border: 1px solid var(--accent-blue);
+}
+
 .status-badge.variant-success {
     color: var(--status-success);
     border: 1px solid var(--status-success-border);

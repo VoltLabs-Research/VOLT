@@ -15,8 +15,9 @@ const renderMenuItems = (items: MenuItem[], close: () => void) => (
                     key={i}
                     variant={item.checked ? 'solid' : 'ghost'}
                     intent="canvas"
-                    shape="square"
+                    shape="rounded"
                     size="sm"
+                    className="font-size-05"
                     block
                     align="start"
                     leftIcon={item.icon ? <span className="d-flex items-center content-center f-shrink-0 font-size-3">{item.icon}</span> : undefined}
@@ -48,8 +49,9 @@ const MenuPopover = ({ menu, openMenu, onOpenChange }: MenuPopoverProps) => (
             <Button
                 variant={openMenu === menu.label ? 'solid' : 'ghost'}
                 intent="canvas"
-                shape="square"
+                shape="rounded"
                 size="sm"
+                className="font-size-05 canvas-btn-compact"
             >
                 {menu.label}
             </Button>

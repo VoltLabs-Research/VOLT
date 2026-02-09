@@ -38,7 +38,7 @@ const KeyboardShortcutsPanel = () => {
             <Container className="d-flex column gap-1">
                 {groupedShortcuts.map(({ category, shortcuts }) => (
                     <Container key={category} className="d-flex column gap-05">
-                        <Title className="canvas-shortcuts-category">{category.charAt(0).toUpperCase() + category.slice(1)}</Title>
+                        <Title className="canvas-shortcuts-category font-size-05">{category.charAt(0).toUpperCase() + category.slice(1)}</Title>
                         <Container className="d-flex column gap-025">
                             {shortcuts.map((shortcut: Shortcut) => (
                                 <Container key={shortcut.id} className="canvas-shortcut-row d-flex items-center content-between u-select-none">
@@ -47,7 +47,7 @@ const KeyboardShortcutsPanel = () => {
                                         {shortcut.keys.map((key, i) => (
                                             <span key={key} className="d-flex items-center gap-025">
                                                 {i > 0 && <span className="font-size-1 color-secondary">+</span>}
-                                                <kbd className="canvas-shortcut-key">{formatKeyName(key)}</kbd>
+                                                <kbd className="canvas-shortcut-key font-size-05">{formatKeyName(key)}</kbd>
                                             </span>
                                         ))}
                                     </Container>

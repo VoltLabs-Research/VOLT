@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react';
 import { createElement } from 'react';
-import { Wrench, Layers, LineChart, Scissors, Droplets } from 'lucide-react';
+import { Wrench, LineChart, Scissors, Droplets } from 'lucide-react';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
 import SlicePlane from '../components/organisms/SlicePlane';
 import ParticleFilter from '../components/organisms/ParticleFilter';
@@ -11,7 +11,7 @@ export interface LegacyModifierDefinition {
     title: string;
     icon: ComponentType<any>;
     component?: ComponentType<any>;
-    type?: 'legacy' | 'plugin' | 'raster';
+    type?: 'legacy' | 'plugin';
 }
 
 export const LEGACY_MODIFIERS: LegacyModifierDefinition[] = [
@@ -35,12 +35,6 @@ export const LEGACY_MODIFIERS: LegacyModifierDefinition[] = [
         icon: LineChart,
         component: ColorCoding,
         type: 'legacy'
-    },
-    {
-        id: 'raster',
-        title: 'Raster',
-        icon: Layers,
-        type: 'raster'
     }
 ];
 

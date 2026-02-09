@@ -67,17 +67,19 @@ const PreviewResultView = ({
                 block
                 onClick={onApply}
                 disabled={isApplying}
-                shape="square"
+                shape="rounded"
+                className="font-size-1"
             >
                 {action === 'delete' ? 'Delete Selection' : 'Apply Color'}
             </Button>
             <Button
                 variant="ghost"
                 intent="canvas"
-                shape="square"
+                shape="rounded"
                 block
                 onClick={onCancel}
                 disabled={isApplying}
+                className="font-size-1"
             >
                 Cancel
             </Button>
@@ -154,10 +156,11 @@ const FilterFormView = ({
                     isLoading={isLoadingPreview}
                     variant="soft"
                     intent="canvas"
-                    shape="square"
+                    shape="rounded"
                     block
                     onClick={onPreview}
                     disabled={!canPreview}
+                    className="font-size-1"
                 >
                     Preview
                 </Button>

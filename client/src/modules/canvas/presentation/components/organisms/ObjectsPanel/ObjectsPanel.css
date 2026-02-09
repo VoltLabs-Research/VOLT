@@ -3,6 +3,7 @@
 }
 
 .canvas-tree-item {
+    position: relative;
     padding: 4px 6px;
 }
 
@@ -16,10 +17,23 @@
 
 .canvas-tree-item:hover {
     background: var(--hover-bg);
+    border-radius: var(--radius-xs);
 }
 
 .canvas-tree-item.selected {
-    background: var(--active-bg);
+    border-radius: var(--radius-xs);
+}
+
+.canvas-tree-item.selected::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 12px;
+    border-radius: 1px;
+    background: #a78bfa;
 }
 
 .canvas-tree-toggle {
@@ -36,6 +50,7 @@
     height: 10px;
     width: 120px;
     background: var(--color-surface-2);
+    border-radius: var(--radius-xs);
 }
 
 .canvas-tree-skeleton--compact {
@@ -43,7 +58,6 @@
 }
 
 .canvas-tree-status-dot {
-    font-size: 10px;
     opacity: 0.8;
 }
 
