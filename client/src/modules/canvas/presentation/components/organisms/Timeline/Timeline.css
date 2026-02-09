@@ -7,6 +7,8 @@
 .canvas-playhead {
     width: 2px;
     background: var(--accent-blue);
+    pointer-events: none;
+    z-index: 2;
 }
 
 .canvas-playhead-head {
@@ -15,21 +17,34 @@
     width: 10px;
     height: 10px;
     background: var(--accent-blue);
+    border-radius: 50%;
 }
 
 .canvas-timeline-ruler {
-    height: 18px;
+    height: 100%;
+    min-height: 18px;
     background: var(--color-surface-2);
     border-bottom: 1px solid var(--color-border-soft);
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+}
+
+.canvas-timeline-ruler::-webkit-scrollbar {
+    display: none;
 }
 
 .canvas-ruler-tick {
     padding: 0 6px;
+    flex-shrink: 0;
+    cursor: pointer;
 }
 
 .canvas-ruler-tick-label {
     font-size: 10px;
     color: var(--color-text-muted);
+    white-space: nowrap;
+    line-height: 1;
 }
 
 .canvas-ruler-tick-mark {
