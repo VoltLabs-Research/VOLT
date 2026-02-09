@@ -55,7 +55,7 @@ const AnalysisTreeNode = ({
                         : <ChevronRight style={{ width: 13, height: 13 }} />
                     }
                 </button>
-                <FlaskConical style={{ width: 13, height: 13, color: isCurrentAnalysis ? '#a78bfa' : 'rgba(167, 139, 250, 0.35)' }} />
+                <FlaskConical style={{ width: 13, height: 13, color: isCurrentAnalysis ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.3)' }} />
                 <span className={`${isCurrentAnalysis ? 'color-primary' : 'color-secondary'}`}>
                     {pluginDisplayName}
                 </span>

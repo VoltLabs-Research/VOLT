@@ -14,11 +14,17 @@ interface TimelineProps {
     sceneRef: React.RefObject<FractalSceneRef | null>;
     trajectory: Trajectory | null | undefined;
     analysisId: string | undefined;
+    onTabChange?: (tab: TimelineTab) => void;
 }
 
 
-const Timeline = ({ sceneRef, trajectory, analysisId }: TimelineProps) => {
+const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange }: TimelineProps) => {
     const [activeTab, setActiveTab] = useState<TimelineTab>('timeline');
+
+    const handleTabChange = useCallback((tab: TimelineTab) => {
+        setActiveTab(tab);
+        onTabChange?.(tab);
+    }, [onTabChange]);
 
     const resolvedExposureId = useMemo(() => {
         if (!trajectory?.analysis?.length) return undefined;
@@ -205,7 +211,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId }: TimelineProps) => {
         <Container className="canvas-timeline d-flex column overflow-hidden min-h-0">
             <TimelineHeader
                 activeTab={activeTab}
-                onTabChange={setActiveTab}
+                onTabChange={handleTabChange}
                 startFrame={startFrame}
                 endFrame={endFrame}
                 availableTimesteps={availableTimesteps}

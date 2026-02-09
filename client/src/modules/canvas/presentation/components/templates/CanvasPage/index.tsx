@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
@@ -84,11 +84,15 @@ const CanvasPage = () => {
 
     const timeline = useResizable({
         direction: 'vertical',
-        initialSize: 120,
+        initialSize: 65,
         minSize: 60,
         maxSize: 360,
         growPositive: false
     });
+
+    const handleTimelineTabChange = useCallback((tab: string) => {
+        timeline.setSize(tab === 'timeline' ? 65 : 280);
+    }, [timeline.setSize]);
 
     const leftSplit = useResizable({
         direction: 'vertical',
@@ -142,7 +146,7 @@ const CanvasPage = () => {
                         {...timeline.handleProps}
                     />
                     <Container className="canvas-center-timeline d-flex column f-shrink-0" style={{ height: timeline.size }}>
-                        <Timeline sceneRef={sceneRef} trajectory={trajectory} analysisId={analysisId} />
+                        <Timeline sceneRef={sceneRef} trajectory={trajectory} analysisId={analysisId} onTabChange={handleTimelineTabChange} />
                     </Container>
                 </Container>
 

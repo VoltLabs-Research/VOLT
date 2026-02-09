@@ -1,7 +1,4 @@
-import { useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
-import { motion } from 'framer-motion';
 import { Box, Gauge } from 'lucide-react';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
@@ -9,10 +6,10 @@ import IconButton from '@/shared/presentation/components/IconButton';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Loader from '@/shared/presentation/components/Loader';
+import EditableTrajectoryName from '@/modules/trajectory/presentation/components/atoms/EditableTrajectoryName';
 import type { PerformancePreset } from '@/modules/fractal/presentation/types/stores/editor/performance-types';
 import FractalScene, { type FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
 import TimestepViewer from '@/modules/fractal/presentation/components/organisms/TimestepViewer';
-import useTrajectorySelector from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-selector';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import type { FractalSceneConfig } from '@/modules/fractal/presentation/types/scene-config';
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
@@ -52,10 +49,6 @@ const Viewport = ({
     isLoading,
     sceneRef
 }: ViewportProps) => {
-    const { trajectoryId } = useParams<{ trajectoryId?: string }>();
-    const navigate = useNavigate();
-    const { options: trajectoryOptions } = useTrajectorySelector();
-
     const {
         activeScenes,
         slicePlaneConfig,
@@ -78,11 +71,6 @@ const Viewport = ({
         setPerformancePreset: s.performanceSettings.setPreset
     })));
 
-    const handleTabClick = useCallback((id: string) => {
-        if (id === trajectoryId) return;
-        navigate(`/canvas/${id}`);
-    }, [trajectoryId, navigate]);
-
     return (
         <Container className="canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">
             <Container className="canvas-viewport-header d-flex items-center f-shrink-0">
@@ -90,34 +78,14 @@ const Viewport = ({
                     <Box size={14} />
                 </IconButton>
 
-                {trajectoryOptions.length > 0 && (
+                {trajectory && (
                     <>
                         <Container className="canvas-viewport-divider d-block f-shrink-0" />
-                        <Container className="canvas-viewport-segmented d-flex items-center p-relative" role="tablist" aria-label="Trajectories">
-                            {trajectoryOptions.map((opt) => {
-                                const isActive = opt.value === trajectoryId;
-                                return (
-                                    <button
-                                        key={opt.value}
-                                        role="tab"
-                                        aria-selected={isActive}
-                                        data-active={isActive}
-                                        className="canvas-viewport-segment font-size-1 font-weight-5 d-flex items-center gap-05"
-                                        onClick={() => handleTabClick(opt.value)}
-                                        title={opt.title}
-                                    >
-                                        {isActive && (
-                                            <motion.span
-                                                className="canvas-viewport-segment-dot"
-                                                layoutId="viewport-tab-dot"
-                                                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                                            />
-                                        )}
-                                        <span>{opt.title}</span>
-                                    </button>
-                                );
-                            })}
-                        </Container>
+                        <EditableTrajectoryName
+                            trajectoryId={trajectory._id}
+                            name={trajectory.name}
+                            className="canvas-viewport-trajectory-name"
+                        />
                     </>
                 )}
 

@@ -18,14 +18,14 @@ const getArgumentFieldProps = (arg: IArgumentDefinition, index: number) => {
     const fieldKey = `arg-${arg.argument}-${index}`;
 
     if(arg.type === 'boolean'){
-        return { label, fieldKey, fieldType: 'checkbox' as const, fieldValue: true, variant: 'inline' as const };
+        return { label, fieldKey, fieldType: 'checkbox' as const, fieldValue: true, variant: 'canvas' as const };
     }
 
     if(arg.type === 'select'){
         return {
             label, fieldKey, fieldType: 'select' as const, fieldValue: '',
             options: arg.options.map((opt) => ({ value: opt.key, title: opt.label })),
-            variant: 'inline' as const
+            variant: 'canvas' as const
         };
     }
 
@@ -33,12 +33,12 @@ const getArgumentFieldProps = (arg: IArgumentDefinition, index: number) => {
         return {
             label, fieldKey, fieldType: 'select' as const, fieldValue: 'Frame 1',
             options: [{ value: 'frame-1', title: 'Frame 1' }],
-            variant: 'inline' as const
+            variant: 'canvas' as const
         };
     }
 
     return {
-        label, fieldKey, fieldType: 'input' as const, fieldValue: '', variant: 'inline' as const,
+        label, fieldKey, fieldType: 'input' as const, fieldValue: '', variant: 'canvas' as const,
         inputProps: arg.type === 'number' ? { type: 'number', step: arg.step, min: arg.min, max: arg.max } : undefined
     };
 };

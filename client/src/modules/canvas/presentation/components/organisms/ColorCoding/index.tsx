@@ -66,8 +66,8 @@ const ColorCodingForm = ({
     ];
 
     return (
-        <Container className="canvas-color-coding d-flex column gap-1">
-            <Container className="d-flex column gap-1">
+        <Container className="canvas-color-coding d-flex column gap-05">
+            <Container className="d-flex column gap-05">
                 {selectFields.map((f) => (
                     <FormField
                         key={f.key}
@@ -77,6 +77,7 @@ const ColorCodingForm = ({
                         fieldValue={f.value}
                         onFieldChange={(_, value) => f.onChange(String(value))}
                         options={f.options}
+                        variant="canvas"
                     />
                 ))}
 
@@ -94,6 +95,7 @@ const ColorCodingForm = ({
                         label={f.label}
                         fieldValue={f.value}
                         onFieldChange={(_, value) => f.onChange(Number(value))}
+                        variant="canvas"
                     />
                 ))}
 
@@ -105,6 +107,7 @@ const ColorCodingForm = ({
                         label={f.label}
                         fieldValue={f.value}
                         onFieldChange={(_, value) => f.onChange(Boolean(value))}
+                        variant="canvas"
                     />
                 ))}
             </Container>
@@ -115,10 +118,11 @@ const ColorCodingForm = ({
                     variant="solid"
                     intent="canvas"
                     shape="rounded"
+                    size="sm"
                     block
                     onClick={onApply}
                     disabled={!canApply}
-                    className="font-size-1"
+                    className="font-size-05"
                 >
                     Apply
                 </Button>
