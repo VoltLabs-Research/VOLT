@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ZoomIn, Atom, Box } from 'lucide-react';
+import { ZoomIn, Gauge, Atom, Box } from 'lucide-react';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Popover from '@/shared/presentation/components/Popover';
@@ -8,6 +8,7 @@ import TransportControls from '../TransportControls';
 import FrameCombobox from '../FrameCombobox';
 
 const ZOOM_PRESETS = [25, 50, 75, 100, 125, 150, 200, 400];
+const SPEED_PRESETS = [0.25, 0.5, 1, 2, 4, 8, 10];
 
 type TimelineTab = 'timeline' | 'particles' | 'simulation-cell';
 
@@ -37,6 +38,8 @@ interface TimelineHeaderProps {
     onZoomPreset: (preset: number) => void;
     onRangeStartChange: (value: number | undefined) => void;
     onRangeEndChange: (value: number | undefined) => void;
+    playSpeed: number;
+    onPlaySpeedChange: (speed: number) => void;
 }
 
 const TimelineHeader = ({
@@ -48,7 +51,9 @@ const TimelineHeader = ({
     zoomPercent,
     onZoomPreset,
     onRangeStartChange,
-    onRangeEndChange
+    onRangeEndChange,
+    playSpeed,
+    onPlaySpeedChange
 }: TimelineHeaderProps) => {
     const isTimelineTab = activeTab === 'timeline';
 
@@ -94,6 +99,42 @@ const TimelineHeader = ({
                         ))}
 
                         <Container className="canvas-viewport-divider f-shrink-0" />
+
+                        <Popover
+                            id="timeline-speed"
+                            noPadding
+                            trigger={(
+                                <Button
+                                    variant="ghost"
+                                    intent="canvas"
+                                    shape="square"
+                                    size="sm"
+                                    leftIcon={<Gauge size={12} />}
+                                    title="Playback speed"
+                                >
+                                    {playSpeed}x
+                                </Button>
+                            )}
+                        >
+                            {(close) => (
+                                <PopoverMenu>
+                                    {SPEED_PRESETS.map((preset) => (
+                                        <Button
+                                            key={preset}
+                                            variant={preset === playSpeed ? 'solid' : 'ghost'}
+                                            intent="canvas"
+                                            shape="square"
+                                            size="sm"
+                                            block
+                                            align="start"
+                                            onClick={() => { onPlaySpeedChange(preset); close(); }}
+                                        >
+                                            {preset}x
+                                        </Button>
+                                    ))}
+                                </PopoverMenu>
+                            )}
+                        </Popover>
 
                         <Popover
                             id="timeline-zoom"

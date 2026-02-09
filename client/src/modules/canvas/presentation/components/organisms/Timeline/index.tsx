@@ -34,11 +34,13 @@ const Timeline = ({ sceneRef, trajectory, analysisId }: TimelineProps) => {
     }, [trajectory?.analysis]);
 
     const {
-        timestepData, currentTimestep, setCurrentTimestep
+        timestepData, currentTimestep, setCurrentTimestep, playSpeed, setPlaySpeed
     } = useEditorStore(useShallow((state) => ({
         timestepData: state.timestepData,
         currentTimestep: state.currentTimestep,
-        setCurrentTimestep: state.setCurrentTimestep
+        setCurrentTimestep: state.setCurrentTimestep,
+        playSpeed: state.playSpeed,
+        setPlaySpeed: state.setPlaySpeed
     })));
 
     const availableTimesteps = timestepData.timesteps;
@@ -179,6 +181,8 @@ const Timeline = ({ sceneRef, trajectory, analysisId }: TimelineProps) => {
                 onZoomPreset={handleZoomPreset}
                 onRangeStartChange={setRangeStart}
                 onRangeEndChange={setRangeEnd}
+                playSpeed={playSpeed}
+                onPlaySpeedChange={setPlaySpeed}
             />
 
             {activeTab === 'timeline' && (
