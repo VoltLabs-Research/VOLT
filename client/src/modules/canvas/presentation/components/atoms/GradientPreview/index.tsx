@@ -81,12 +81,12 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
                 onClick={handleClick}
             >
                 {tooltipValue !== null && (
-                    <Container className="canvas-gradient-tooltip p-absolute radius-sm" style={{ left: tooltipX }}>
+                    <Container className="canvas-gradient-tooltip p-absolute radius-sm font-size-05" style={{ left: tooltipX }}>
                         {tooltipValue}
                     </Container>
                 )}
             </Container>
-            <Container className="canvas-gradient-labels d-flex content-between">
+            <Container className="canvas-gradient-labels d-flex content-between font-size-05">
                 <span>{formatValue(startValue)}</span>
                 <span>{formatValue(endValue)}</span>
             </Container>

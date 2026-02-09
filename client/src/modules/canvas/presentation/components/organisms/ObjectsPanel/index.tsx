@@ -47,7 +47,7 @@ const ObjectsPanel = ({ trajectory }: ObjectsPanelProps) => {
                 }
             />
 
-                <Container className="canvas-tree-container overflow-auto" role="tree" aria-label="Scene hierarchy">
+                <Container className="canvas-tree-container overflow-auto d-flex column gap-025" role="tree" aria-label="Scene hierarchy">
                     <Container className="canvas-tree-item canvas-tree-item-root font-size-1 d-flex items-center gap-05 color-secondary u-select-none" role="treeitem">
                         <ChevronDown style={{ width: 13, height: 13, color: 'var(--text-tertiary)' }} />
                         <Layers style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.25)' }} />

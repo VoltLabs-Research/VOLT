@@ -63,6 +63,7 @@ const TransportControls = () => {
                     intent="canvas"
                     size="sm"
                     shape="circle"
+                    className="canvas-btn-compact"
                     iconOnly
                     aria-label={btn.label}
                     title={btn.label}

@@ -36,7 +36,7 @@ const useCameraGroup = (): RenderGroup => {
                                 { title: 'Orthographic', value: 'orthographic' }
                             ]}
                         />
-                        <Button variant="ghost" intent="canvas" shape="square" size="sm" onClick={reset} style={{ justifySelf: 'start' }}>
+                        <Button variant="ghost" intent="canvas" shape="rounded" size="sm" className="font-size-05" onClick={reset} style={{ justifySelf: 'start' }}>
                             Reset Camera
                         </Button>
                     </Container>

@@ -16,8 +16,9 @@ const AxisButtons = ({ axes, isAxisActive, onAxisClick }: AxisButtonsProps) => (
                 key={axis}
                 variant={isAxisActive(axis) ? 'solid' : 'soft'}
                 intent="canvas"
-                shape="square"
+                shape="rounded"
                 size="sm"
+                className="font-size-05"
                 block
                 onClick={() => onAxisClick(axis)}
             >

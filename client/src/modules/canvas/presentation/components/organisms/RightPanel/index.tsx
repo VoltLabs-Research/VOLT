@@ -1,8 +1,7 @@
 import type { ComponentType, ReactNode } from 'react';
 import { useCallback, useMemo, useState } from 'react';
-import { Wrench, Monitor, ExternalLink } from 'lucide-react';
+import { Wrench, Monitor } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
@@ -11,10 +10,9 @@ import {
     LEGACY_MODIFIERS,
     type ModifierOption
 } from '../../../modifiers/registry';
-import { useNavigate } from 'react-router-dom';
 import CanvasRenderSections from '../CanvasRenderSections';
 import ModifiersSection from '../../molecules/ModifiersSection';
-import ModifierConfig, { PluginToggle, LegacyToggle, ArgumentField } from '../../molecules/ModifierConfig';
+import ModifierConfig, { ArgumentField } from '../../molecules/ModifierConfig';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import usePluginExecution, { type ExecState } from '../../../hooks/usePluginExecution';
 import './RightPanel.css';
@@ -30,7 +28,6 @@ interface RightPanelProps {
 }
 
 const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelProps) => {
-    const navigate = useNavigate();
     const { activeModifiers, toggleModifier, pluginParam } = useCanvasUrlState();
     const { pluginRepository } = usePluginUseCases();
     const modifiers = usePluginStore((s) => s.modifiers);
@@ -70,15 +67,30 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
         toggleModifier(option.modifierId);
     }, [toggleModifier]);
 
-    const openRaster = useCallback(() => {
-        if (!trajectoryId) return;
-        navigate(`/raster/${trajectoryId}`);
-    }, [trajectoryId, navigate]);
+    const getExecState = useCallback((option: ModifierOption): ExecState => {
+        return execStates.get(option.modifierId) ?? 'idle';
+    }, [execStates]);
 
-    const renderModifierConfig = useCallback((option: ModifierOption, active: boolean) => {
-        const execState: ExecState = execStates.get(option.modifierId);
-        const showToggle = option.modifierId !== 'slice-plane';
+    const shouldShowAction = useCallback((option: ModifierOption): boolean => {
+        return option.modifierId !== 'slice-plane';
+    }, []);
 
+    const modifierHasContent = useCallback((option: ModifierOption): boolean => {
+        if (option.isPlugin && option.pluginModifierId) {
+            return getPluginArguments(option.pluginModifierId).filter((a) => a.value === undefined).length > 0;
+        }
+        return LEGACY_COMPONENT_MAP.has(option.modifierId);
+    }, [getPluginArguments]);
+
+    const handleAction = useCallback((option: ModifierOption) => {
+        if (option.isPlugin) {
+            handleExecutePlugin(option);
+        } else {
+            handleToggleLegacyModifier(option);
+        }
+    }, [handleExecutePlugin, handleToggleLegacyModifier]);
+
+    const renderModifierConfig = useCallback((option: ModifierOption, _active: boolean) => {
         let content: ReactNode = null;
         if(option.isPlugin && option.pluginModifierId){
             const args = getPluginArguments(option.pluginModifierId).filter((a) => a.value === undefined);
@@ -91,21 +103,6 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                     </Container>
                 );
             }
-        }else if(option.modifierId === 'raster'){
-            content = (
-                <Button
-                    variant="ghost"
-                    intent="canvas"
-                    shape="square"
-                    size="sm"
-                    block
-                    align="start"
-                    leftIcon={<ExternalLink style={{ width: 13, height: 13, opacity: 0.6 }} />}
-                    onClick={openRaster}
-                >
-                    Open Raster View
-                </Button>
-            );
         }else{
             const LegacyComponent = LEGACY_COMPONENT_MAP.get(option.modifierId);
             if(LegacyComponent){
@@ -119,19 +116,12 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
             }
         }
 
-        let action: ReactNode = null;
-        if(showToggle){
-            action = option.isPlugin
-                ? <PluginToggle option={option} execState={execState} onExecute={handleExecutePlugin} />
-                : <LegacyToggle option={option} active={active} onToggle={handleToggleLegacyModifier} />;
-        }
-
         return (
-            <ModifierConfig action={action}>
+            <ModifierConfig>
                 {content}
             </ModifierConfig>
         );
-    }, [execStates, handleExecutePlugin, handleToggleLegacyModifier, getPluginArguments, openRaster, trajectoryId, analysisId, currentTimestep]);
+    }, [getPluginArguments, trajectoryId, analysisId, currentTimestep]);
 
     return (
         <Container className="d-flex h-max overflow-hidden">
@@ -144,7 +134,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                     className="canvas-right-dropdown"
                     headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
                     titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
-                    iconClassName="canvas-right-dropdown-icon canvas-right-dropdown-icon--modifiers"
+                    iconClassName="canvas-right-dropdown-icon"
                     bodyClassName="canvas-right-dropdown-body"
                     contentClassName="d-flex column"
                     noSpacing
@@ -158,6 +148,10 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                         openModifierIds={openModifierIds}
                         onToggleOpen={toggleOpen}
                         isModifierActive={isModifierActive}
+                        getExecState={getExecState}
+                        showAction={shouldShowAction}
+                        hasContent={modifierHasContent}
+                        onAction={handleAction}
                         renderModifierConfig={renderModifierConfig}
                     />
                 </CollapsibleSection>
@@ -170,7 +164,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                     className="canvas-right-dropdown"
                     headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
                     titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
-                    iconClassName="canvas-right-dropdown-icon canvas-right-dropdown-icon--render"
+                    iconClassName="canvas-right-dropdown-icon"
                     bodyClassName="canvas-right-dropdown-body"
                     contentClassName="d-flex column"
                     noSpacing

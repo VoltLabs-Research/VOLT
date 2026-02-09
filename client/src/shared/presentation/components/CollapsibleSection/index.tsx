@@ -24,6 +24,8 @@ interface CollapsibleSectionProps {
     onDelete?: () => void;
     onAdd?: () => void;
     icon?: ReactNode;
+    headerAction?: ReactNode;
+    collapsible?: boolean;
 };
 
 const CollapsibleSection = ({
@@ -44,7 +46,9 @@ const CollapsibleSection = ({
     useDefaultTitleStyles = true,
     onDelete,
     onAdd,
-    icon
+    icon,
+    headerAction,
+    collapsible = true
 }: CollapsibleSectionProps) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [isHovered, setIsHovered] = useState(false);
@@ -80,6 +84,7 @@ const CollapsibleSection = ({
     }, [actualExpanded]);
 
     const handleToggle = () => {
+        if (!collapsible) return;
         const next = !actualExpanded;
         if (isControlled) {
             onExpandedChange?.(next);
@@ -111,6 +116,7 @@ const CollapsibleSection = ({
                     <Title className={`${titleBaseClass} ${titleClassName}`}>{title}</Title>
                 </Container>
                 <Container className='d-flex items-center gap-025'>
+                    {headerAction}
                     {onAdd && (
                         <IconButton
                             size='sm'
@@ -131,22 +137,26 @@ const CollapsibleSection = ({
                             <Trash2 size={16} />
                         </IconButton>
                     )}
-                    <Container
-                        className={`collapsible-section-arrow d-flex flex-center color-muted ${!actualExpanded ? 'collapsible-section-arrow--collapsed' : ''}`}
-                    >
-                        <ChevronDown size={arrowSize} />
-                    </Container>
+                    {collapsible && (
+                        <Container
+                            className={`collapsible-section-arrow d-flex flex-center color-muted ${!actualExpanded ? 'collapsible-section-arrow--collapsed' : ''}`}
+                        >
+                            <ChevronDown size={arrowSize} />
+                        </Container>
+                    )}
                 </Container>
             </Container>
-            <div
-                ref={bodyRef}
-                className={`collapsible-section-body ${bodyClassName}`}
-                style={{ height }}
-            >
-                <Container className={`collapsible-section-content d-flex column ${contentClassName}`}>
-                    {hasBeenExpanded ? children : null}
-                </Container>
-            </div>
+            {collapsible && (
+                <div
+                    ref={bodyRef}
+                    className={`collapsible-section-body ${bodyClassName}`}
+                    style={{ height }}
+                >
+                    <Container className={`collapsible-section-content d-flex column ${contentClassName}`}>
+                        {hasBeenExpanded ? children : null}
+                    </Container>
+                </div>
+            )}
         </Container>
     );
 };

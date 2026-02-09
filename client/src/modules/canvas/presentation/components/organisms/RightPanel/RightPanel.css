@@ -3,8 +3,8 @@
 }
 
 .canvas-right-dropdown-header {
-    height: 38px;
-    padding: 0 16px;
+    height: 39px;
+    padding: 0 8px;
 }
 
 .canvas-right-dropdown-title {
@@ -17,38 +17,18 @@
     height: 13px;
 }
 
-.canvas-right-dropdown-icon--modifiers {
-    color: #a78bfa;
-}
-
-.canvas-right-dropdown-icon--render {
-    color: #60a5fa;
-}
-
 .canvas-modifier-skeleton-icon {
     width: 14px;
     height: 14px;
     background: var(--color-surface-2);
+    border-radius: var(--radius-xs);
 }
 
 .canvas-modifier-skeleton-title {
     width: 60%;
     height: 12px;
     background: var(--color-surface-2);
-}
-
-.canvas-modifier-toggle-area {
-    padding: 6px 10px;
-    background: var(--color-surface-2);
-    font-size: 12px;
-}
-
-.canvas-modifier-toggle-area--success {
-    color: var(--accent-green);
-}
-
-.canvas-modifier-toggle-area--error {
-    color: var(--accent-red);
+    border-radius: var(--radius-xs);
 }
 
 .canvas-right-dropdown .liquid-toggle {

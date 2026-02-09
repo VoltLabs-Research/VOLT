@@ -1,70 +1,16 @@
 import type { ReactNode } from 'react';
 import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
 import FormField from '@/shared/presentation/components/FormField';
-import Loader from '@/shared/presentation/components/Loader';
-import { Check } from 'lucide-react';
 import type { IArgumentDefinition } from '@/modules/plugin/domain/entities';
-import type { ModifierOption } from '../../../modifiers/registry';
-import type { ExecState } from '../../../hooks/usePluginExecution';
 
 interface ModifierConfigProps {
     children?: ReactNode;
-    action?: ReactNode;
 }
 
-const ModifierConfig = ({ children, action }: ModifierConfigProps) => (
+const ModifierConfig = ({ children }: ModifierConfigProps) => (
     <Container className="d-flex column gap-05">
         {children}
-        {action}
     </Container>
-);
-
-interface PluginToggleProps {
-    option: ModifierOption;
-    execState: ExecState;
-    onExecute: (option: ModifierOption) => void;
-}
-
-const TOGGLE_STATES: Record<string, { modifier?: string; content: React.ReactNode }> = {
-    loading: { content: <Loader scale={0.4} isFixed={false} /> },
-    success: { modifier: '--success', content: <><Check style={{ width: 13, height: 13 }} /><span>Analysis queued</span></> },
-    error: { modifier: '--error', content: <span>Execution failed</span> }
-};
-
-const PluginToggle = ({ option, execState, onExecute }: PluginToggleProps) => {
-    const state = TOGGLE_STATES[execState];
-    if (state) {
-        return (
-            <Container className={`canvas-modifier-toggle-area${state.modifier ? ` canvas-modifier-toggle-area${state.modifier}` : ''} d-flex items-center content-center`}>
-                {state.content}
-            </Container>
-        );
-    }
-
-    return (
-        <Button variant="outline" intent="canvas" shape="square" size="sm" onClick={() => onExecute(option)}>
-            Start
-        </Button>
-    );
-};
-
-interface LegacyToggleProps {
-    option: ModifierOption;
-    active: boolean;
-    onToggle: (option: ModifierOption) => void;
-}
-
-const LegacyToggle = ({ option, active, onToggle }: LegacyToggleProps) => (
-    <Button
-        variant={active ? 'solid' : 'soft'}
-        intent="canvas"
-        shape="square"
-        size="sm"
-        onClick={() => onToggle(option)}
-    >
-        {active ? 'Stop' : 'Start'}
-    </Button>
 );
 
 const getArgumentFieldProps = (arg: IArgumentDefinition, index: number) => {
@@ -125,5 +71,5 @@ const ArgumentField = ({ arg, index }: ArgumentFieldProps) => {
     );
 };
 
-export { PluginToggle, LegacyToggle, ArgumentField };
+export { ArgumentField };
 export default ModifierConfig;

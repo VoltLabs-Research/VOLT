@@ -1,11 +1,45 @@
 .canvas-viewport-header {
-    height: 36px;
+    height: 40px;
     border-bottom: 1px solid var(--color-border-soft);
-    padding: 0 8px;
+    padding: 4px 8px;
 }
 
-.canvas-viewport-tabs {
-    max-width: 340px;
+.canvas-viewport-segmented {
+    padding: 2px;
+    gap: 2px;
+    max-width: 380px;
+    overflow: hidden;
+}
+
+.canvas-viewport-segment {
+    height: 24px;
+    padding: 0 10px;
+    border-radius: calc(var(--radius-sm) - 2px);
+    background: transparent;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--color-text-muted);
+    transition: color 0.2s ease;
+}
+
+.canvas-viewport-segment:hover {
+    color: var(--color-text-secondary);
+}
+
+.canvas-viewport-segment[data-active="true"] {
+    color: var(--color-text-primary);
+}
+
+.canvas-viewport-segment-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-text-primary);
+    flex-shrink: 0;
 }
 
 .canvas-viewport-divider {

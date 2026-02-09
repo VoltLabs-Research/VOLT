@@ -1,5 +1,6 @@
 .canvas-timeline-header {
-    height: 36px;
+    height: 40px;
+    padding: 4px 8px;
     border-bottom: 1px solid var(--color-border-soft);
 }
 
@@ -41,7 +42,6 @@
 }
 
 .canvas-ruler-tick-label {
-    font-size: 10px;
     color: var(--color-text-muted);
     white-space: nowrap;
     line-height: 1;

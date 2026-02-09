@@ -1,11 +1,15 @@
 import { useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
-import { Box } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Box, Gauge } from 'lucide-react';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import IconButton from '@/shared/presentation/components/IconButton';
+import Popover from '@/shared/presentation/components/Popover';
+import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Loader from '@/shared/presentation/components/Loader';
+import type { PerformancePreset } from '@/modules/fractal/presentation/types/stores/editor/performance-types';
 import FractalScene, { type FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
 import TimestepViewer from '@/modules/fractal/presentation/components/organisms/TimestepViewer';
 import useTrajectorySelector from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-selector';
@@ -31,6 +35,14 @@ const TIMESTEP_VIEWER_DEFAULTS = {
     position: { x: 0, y: 0, z: 0 }
 } as const;
 
+const PERFORMANCE_PRESETS: { label: string; value: PerformancePreset }[] = [
+    { label: 'Ultra', value: 'ultra' },
+    { label: 'High', value: 'high' },
+    { label: 'Balanced', value: 'balanced' },
+    { label: 'Performance', value: 'performance' },
+    { label: 'Battery', value: 'battery' }
+];
+
 const Viewport = ({
     trajectory,
     currentTimestep,
@@ -51,7 +63,9 @@ const Viewport = ({
         sceneOpacities,
         activeModelBounds,
         setModelBounds,
-        setIsModelLoading
+        setIsModelLoading,
+        performancePreset,
+        setPerformancePreset
     } = useEditorStore(useShallow((s) => ({
         activeScenes: s.activeScenes,
         slicePlaneConfig: s.configuration.slicePlaneConfig,
@@ -59,7 +73,9 @@ const Viewport = ({
         sceneOpacities: s.sceneOpacities,
         activeModelBounds: s.activeModel?.modelBounds,
         setModelBounds: s.setModelBounds,
-        setIsModelLoading: s.setIsModelLoading
+        setIsModelLoading: s.setIsModelLoading,
+        performancePreset: s.performanceSettings.preset,
+        setPerformancePreset: s.performanceSettings.setPreset
     })));
 
     const handleTabClick = useCallback((id: string) => {
@@ -77,28 +93,73 @@ const Viewport = ({
                 {trajectoryOptions.length > 0 && (
                     <>
                         <Container className="canvas-viewport-divider d-block f-shrink-0" />
-                        <Container className="px-025 d-flex gap-025" role="tablist" aria-label="Trajectories">
-                            {trajectoryOptions.map((opt) => (
-                                <Button
-                                    key={opt.value}
-                                    role="tab"
-                                    aria-selected={opt.value === trajectoryId}
-                                    variant={opt.value === trajectoryId ? 'solid' : 'ghost'}
-                                    intent="canvas"
-                                    shape="square"
-                                    size="sm"
-                                    onClick={() => handleTabClick(opt.value)}
-                                    title={opt.title}
-                                >
-                                    {opt.title}
-                                </Button>
-                            ))}
+                        <Container className="canvas-viewport-segmented d-flex items-center p-relative" role="tablist" aria-label="Trajectories">
+                            {trajectoryOptions.map((opt) => {
+                                const isActive = opt.value === trajectoryId;
+                                return (
+                                    <button
+                                        key={opt.value}
+                                        role="tab"
+                                        aria-selected={isActive}
+                                        data-active={isActive}
+                                        className="canvas-viewport-segment font-size-1 font-weight-5 d-flex items-center gap-05"
+                                        onClick={() => handleTabClick(opt.value)}
+                                        title={opt.title}
+                                    >
+                                        {isActive && (
+                                            <motion.span
+                                                className="canvas-viewport-segment-dot"
+                                                layoutId="viewport-tab-dot"
+                                                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                                            />
+                                        )}
+                                        <span>{opt.title}</span>
+                                    </button>
+                                );
+                            })}
                         </Container>
                     </>
                 )}
 
                 <Container className="flex-1" />
 
+                <Popover
+                    id="viewport-performance"
+                    noPadding
+                    trigger={(
+                        <Button
+                            variant="ghost"
+                            intent="canvas"
+                            shape="rounded"
+                            size="sm"
+                            className="font-size-05 canvas-btn-compact"
+                            leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Gauge size={12} /></span>}
+                            title="Performance preset"
+                        >
+                            {PERFORMANCE_PRESETS.find((p) => p.value === performancePreset)?.label ?? 'Battery'}
+                        </Button>
+                    )}
+                >
+                    {(close) => (
+                        <PopoverMenu>
+                            {PERFORMANCE_PRESETS.map((preset) => (
+                                <Button
+                                    key={preset.value}
+                                    variant={preset.value === performancePreset ? 'solid' : 'ghost'}
+                                    intent="canvas"
+                                    shape="rounded"
+                                    size="sm"
+                                    className="font-size-05"
+                                    block
+                                    align="start"
+                                    onClick={() => { setPerformancePreset(preset.value); close(); }}
+                                >
+                                    {preset.label}
+                                </Button>
+                            ))}
+                        </PopoverMenu>
+                    )}
+                </Popover>
             </Container>
 
             <Container className="canvas-viewport-body flex-1 p-relative min-h-0">

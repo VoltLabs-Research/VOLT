@@ -19,7 +19,7 @@ interface WorkspaceTabsProps {
 }
 
 const WorkspaceTabs = ({ activeWorkspace, onSelect }: WorkspaceTabsProps) => (
-    <Container className="d-flex items-stretch gap-025 items-center px-025" role="tablist" aria-label="Workspaces">
+    <Container className="d-flex items-center px-025" role="tablist" aria-label="Workspaces">
         {workspaces.map((ws) => (
             <Button
                 key={ws.id}
@@ -28,8 +28,9 @@ const WorkspaceTabs = ({ activeWorkspace, onSelect }: WorkspaceTabsProps) => (
                 onClick={() => onSelect(ws.id)}
                 variant={activeWorkspace === ws.id ? 'solid' : 'ghost'}
                 intent="canvas"
-                shape="square"
+                shape="rounded"
                 size="sm"
+                className="font-size-05 canvas-btn-compact"
             >
                 {ws.label}
             </Button>

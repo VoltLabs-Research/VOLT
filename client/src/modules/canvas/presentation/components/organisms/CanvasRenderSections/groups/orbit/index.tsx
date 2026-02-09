@@ -25,7 +25,7 @@ const useOrbitGroup = (): RenderGroup => {
                             { key: 'enableRotate', label: 'Enable Rotate', value: s.enableRotate, onChange: (v: boolean) => s.set({ enableRotate: v }) },
                             { key: 'enablePan', label: 'Enable Pan', value: s.enablePan, onChange: (v: boolean) => s.set({ enablePan: v }) }
                         ])}
-                        <Button variant="ghost" intent="canvas" shape="square" size="sm" onClick={() => s.reset()} style={{ justifySelf: 'start' }}>
+                        <Button variant="ghost" intent="canvas" shape="rounded" size="sm" className="font-size-05" onClick={() => s.reset()} style={{ justifySelf: 'start' }}>
                             Reset Orbit
                         </Button>
                     </Container>

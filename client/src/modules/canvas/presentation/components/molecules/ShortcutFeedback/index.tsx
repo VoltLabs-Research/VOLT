@@ -17,7 +17,7 @@ const ShortcutFeedback = () => {
                 {shortcut.keys.map((key, i) => (
                     <Fragment key={key}>
                         {i > 0 && <span className="font-size-1 color-secondary">+</span>}
-                        <kbd className="canvas-shortcut-key">{formatKeyName(key)}</kbd>
+                        <kbd className="canvas-shortcut-key font-size-05">{formatKeyName(key)}</kbd>
                     </Fragment>
                 ))}
             </Container>

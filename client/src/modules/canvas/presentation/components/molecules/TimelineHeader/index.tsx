@@ -58,8 +58,8 @@ const TimelineHeader = ({
     const isTimelineTab = activeTab === 'timeline';
 
     return (
-        <Container className="canvas-timeline-header d-flex items-center p-05 w-max">
-            <Container className="canvas-timeline-tabs d-flex items-center gap-05 flex-1" role="tablist" aria-label="Timeline tabs">
+        <Container className="canvas-timeline-header d-flex items-center w-max">
+            <Container className="d-flex items-center flex-1" role="tablist" aria-label="Timeline tabs">
                 {TABS.map((tab) => (
                     <Button
                         key={tab.id}
@@ -67,8 +67,9 @@ const TimelineHeader = ({
                         aria-selected={activeTab === tab.id}
                         variant={activeTab === tab.id ? 'solid' : 'ghost'}
                         intent="canvas"
-                        shape="square"
+                        shape="rounded"
                         size="sm"
+                        className="font-size-05 canvas-btn-compact"
                         onClick={() => onTabChange(tab.id)}
                         title={tab.label}
                         leftIcon={tab.icon}
@@ -107,8 +108,9 @@ const TimelineHeader = ({
                                 <Button
                                     variant="ghost"
                                     intent="canvas"
-                                    shape="square"
+                                    shape="rounded"
                                     size="sm"
+                                    className="font-size-05 canvas-btn-compact"
                                     leftIcon={<Gauge size={12} />}
                                     title="Playback speed"
                                 >
@@ -123,8 +125,9 @@ const TimelineHeader = ({
                                             key={preset}
                                             variant={preset === playSpeed ? 'solid' : 'ghost'}
                                             intent="canvas"
-                                            shape="square"
+                                            shape="rounded"
                                             size="sm"
+                                            className="font-size-05"
                                             block
                                             align="start"
                                             onClick={() => { onPlaySpeedChange(preset); close(); }}
@@ -143,8 +146,9 @@ const TimelineHeader = ({
                                 <Button
                                     variant="ghost"
                                     intent="canvas"
-                                    shape="square"
+                                    shape="rounded"
                                     size="sm"
+                                    className="font-size-05 canvas-btn-compact"
                                     leftIcon={<ZoomIn size={12} />}
                                     title="Zoom level"
                                 >
@@ -159,8 +163,9 @@ const TimelineHeader = ({
                                             key={preset}
                                             variant={preset === zoomPercent ? 'solid' : 'ghost'}
                                             intent="canvas"
-                                            shape="square"
+                                            shape="rounded"
                                             size="sm"
+                                            className="font-size-05"
                                             block
                                             align="start"
                                             onClick={() => { onZoomPreset(preset); close(); }}

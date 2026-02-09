@@ -297,7 +297,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             };
         });
 
-        return sections.sort((a, b) => (a.isCurrentAnalysis ? -1 : b.isCurrentAnalysis ? 1 : 0));
+        return sections;
     }, [analyses, getModifiers, exposureEntries, analysisConfigId]);
 
     // Computed: filtered sections

@@ -33,7 +33,7 @@ const useRendererGroup = (): RenderGroup => {
                         { title: 'Medium Precision', value: 'mediump' },
                         { title: 'Low Precision', value: 'lowp' }
                     ])}
-                    <Button variant="ghost" intent="canvas" shape="square" size="sm" onClick={() => reset()} style={{ justifySelf: 'start' }}>
+                    <Button variant="ghost" intent="canvas" shape="rounded" size="sm" className="font-size-05" onClick={() => reset()} style={{ justifySelf: 'start' }}>
                         Reset All Settings
                     </Button>
                 </Container>

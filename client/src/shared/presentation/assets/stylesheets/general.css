@@ -437,7 +437,7 @@
 
 /** Panel Headers **/
 .panel-header-bordered {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 8px;
     border-bottom: 1px solid var(--color-border-soft);
 }
 

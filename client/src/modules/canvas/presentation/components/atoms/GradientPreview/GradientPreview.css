@@ -4,6 +4,7 @@
 
 .canvas-gradient-bar {
     height: 14px;
+    border-radius: var(--radius-xs);
 }
 
 .canvas-gradient-tooltip {
@@ -11,10 +12,9 @@
     transform: translateX(-50%);
     background: var(--color-surface-2);
     padding: 2px 6px;
-    font-size: 10px;
+    border-radius: var(--radius-xs);
 }
 
 .canvas-gradient-labels {
-    font-size: 10px;
     color: var(--color-text-muted);
 }
