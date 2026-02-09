@@ -1,148 +1,91 @@
-import { createElement, type ComponentType } from 'react';
-import { PiEngine, PiSelectionThin } from 'react-icons/pi';
-import { CiImageOn } from 'react-icons/ci';
-import { IoColorPalette } from 'react-icons/io5';
-import { VscPulse } from 'react-icons/vsc';
-import { RiSliceFill } from 'react-icons/ri';
-
-import SlicePlane from '@/modules/canvas/presentation/components/organisms/SlicePlane';
-import PerformanceMonitor from '@/modules/canvas/presentation/components/organisms/PerformanceMonitor';
-import ColorCoding from '@/modules/canvas/presentation/components/organisms/ColorCoding';
-import ParticleFilter from '@/modules/canvas/presentation/components/organisms/ParticleFilter';
-import ModifierConfiguration from '@/modules/plugin/presentation/components/organisms/ModifierConfiguration';
+import type { ComponentType } from 'react';
+import { createElement } from 'react';
+import { Wrench, Layers, LineChart, Scissors, Droplets } from 'lucide-react';
 import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
+import SlicePlane from '../components/organisms/SlicePlane';
+import ParticleFilter from '../components/organisms/ParticleFilter';
+import ColorCoding from '../components/organisms/ColorCoding';
 
 export interface LegacyModifierDefinition {
     id: string;
     title: string;
-    Icon: ComponentType<any>;
-    component?: ComponentType<any> | null;
-    opensRenderConfig?: boolean;
-}
-
-export interface ModifierOption {
-    Icon: ComponentType<any>;
-    title: string;
-    modifierId: string;
-    isPlugin: boolean;
-    pluginId?: string;
-    pluginModifierId?: string;
-    opensRenderConfig?: boolean;
-}
-
-interface ModifierToggleContext {
-    activeModifiers: string[];
-    pluginParam?: string;
-    toggleModifier: (id: string) => void;
-    setPluginParam: (value?: string | null) => void;
-    setModifiers: (ids: string[]) => void;
-    setRenderConfigOpen: (open: boolean) => void;
-}
-
-export interface PluginSelection {
-    pluginId: string;
-    modifierSlug: string;
-}
-
-export interface ModifierWidgetEntry {
-    key: string;
-    Component: ComponentType<any>;
-    props?: Record<string, unknown>;
+    icon: ComponentType<any>;
+    component?: ComponentType<any>;
+    type?: 'legacy' | 'plugin' | 'raster';
 }
 
 export const LEGACY_MODIFIERS: LegacyModifierDefinition[] = [
-    { id: 'color-coding', title: 'Color Coding', Icon: IoColorPalette, component: ColorCoding },
-    { id: 'slice-plane', title: 'Slice Plane', Icon: RiSliceFill, component: SlicePlane },
-    { id: 'particle-filter', title: 'Particle Selection', Icon: PiSelectionThin, component: ParticleFilter },
-    { id: 'performance-monitor', title: 'Performance Monitor', Icon: VscPulse, component: PerformanceMonitor },
-    { id: 'raster', title: 'Raster Frames', Icon: CiImageOn, component: null }
+    {
+        id: 'slice-plane',
+        title: 'Slice Plane',
+        icon: Scissors,
+        component: SlicePlane,
+        type: 'legacy'
+    },
+    {
+        id: 'particle-filter',
+        title: 'Particle Filter',
+        icon: Droplets,
+        component: ParticleFilter,
+        type: 'legacy'
+    },
+    {
+        id: 'color-coding',
+        title: 'Color Coding',
+        icon: LineChart,
+        component: ColorCoding,
+        type: 'legacy'
+    },
+    {
+        id: 'raster',
+        title: 'Raster',
+        icon: Layers,
+        type: 'raster'
+    }
 ];
 
-export const getLegacyModifierOptions = () => (
-    LEGACY_MODIFIERS.map((modifier) => ({
-        id: modifier.id,
-        title: modifier.title,
-        Icon: modifier.Icon,
-        opensRenderConfig: modifier.opensRenderConfig
-    }))
-);
+export interface ModifierOption {
+    modifierId: string;
+    title: string;
+    Icon: ComponentType<any>;
+    isPlugin: boolean;
+    pluginId?: string;
+    pluginModifierId?: string;
+}
 
-export const getActiveLegacyComponents = (activeIds: string[]) => (
-    LEGACY_MODIFIERS
-        .filter((modifier) => !!modifier.component && activeIds.includes(modifier.id))
-        .map((modifier) => [modifier.id, modifier.component!] as const)
-);
+interface PluginModifierInput {
+    plugin?: { _id?: string };
+    pluginSlug?: string;
+    name?: string;
+    icon?: string;
+}
 
-export const buildPluginModifierOptions = (modifiers: any[]): ModifierOption[] => (
-    modifiers.map((modifier: any) => ({
-        title: modifier.name,
-        modifierId: modifier.plugin._id,
-        pluginId: modifier.plugin._id,
-        pluginModifierId: modifier.plugin.slug,
-        Icon: modifier.icon
-            ? () => createElement(DynamicIcon, { iconName: modifier.icon ?? '' })
-            : PiEngine,
-        isPlugin: true
-    }))
-);
+const fallbackIcon = Wrench;
 
-export const buildCanvasModifierOptions = (modifiers: any[]): ModifierOption[] => (
-    [
-        ...buildPluginModifierOptions(modifiers),
-        ...getLegacyModifierOptions().map((modifier) => ({
-            Icon: modifier.Icon,
-            title: modifier.title,
-            modifierId: modifier.id,
-            isPlugin: false,
-            opensRenderConfig: modifier.opensRenderConfig
-        }))
-    ]
-);
-
-export const toggleModifierOption = (option: ModifierOption, context: ModifierToggleContext) => {
-    if (option.isPlugin) {
-        const newPlugin = `${option.pluginId}:${option.pluginModifierId}`;
-        context.setPluginParam(context.pluginParam === newPlugin ? null : newPlugin);
-        return;
-    }
-
-    if (option.opensRenderConfig) {
-        const next = context.activeModifiers.includes(option.modifierId)
-            ? context.activeModifiers
-            : Array.from(new Set([...context.activeModifiers, option.modifierId]));
-        context.setModifiers(next);
-        context.setRenderConfigOpen(true);
-        return;
-    }
-
-    context.toggleModifier(option.modifierId);
+const resolveIcon = (icon?: string): ComponentType<any> => {
+    if (!icon) return fallbackIcon;
+    const IconWrapper: ComponentType<any> = (props) =>
+        createElement(DynamicIcon, { iconName: icon, fallback: fallbackIcon, ...props });
+    IconWrapper.displayName = `DynamicIcon(${icon})`;
+    return IconWrapper;
 };
 
-export const buildModifierWidgetEntries = (config: {
-    activeModifierIds: string[];
-    pluginSelection: PluginSelection | null;
-    activePlugin: any | null;
-    trajectoryId?: string;
-    currentTimestep?: number;
-}): ModifierWidgetEntry[] => {
-    const entries: ModifierWidgetEntry[] = [];
+export const buildCanvasModifierOptions = (pluginModifiers: PluginModifierInput[]): ModifierOption[] => {
+    const legacyOptions: ModifierOption[] = LEGACY_MODIFIERS.map((m) => ({
+        modifierId: m.id,
+        title: m.title,
+        Icon: m.icon,
+        isPlugin: false
+    }));
 
-    getActiveLegacyComponents(config.activeModifierIds).forEach(([key, Component]) => {
-        entries.push({ key: `modifier-${key}`, Component });
-    });
+    const pluginOptions: ModifierOption[] = pluginModifiers.map((modifier) => ({
+        modifierId: `plugin:${modifier.pluginSlug}`,
+        title: modifier.name,
+        Icon: resolveIcon(modifier.icon),
+        isPlugin: true,
+        pluginId: modifier.plugin?._id,
+        pluginModifierId: modifier.pluginSlug
+    }));
 
-    if (config.pluginSelection && config.activePlugin && config.trajectoryId) {
-        entries.push({
-            key: 'plugin-modifier',
-            Component: ModifierConfiguration,
-            props: {
-                pluginId: config.pluginSelection.pluginId,
-                modifierId: config.pluginSelection.modifierSlug,
-                trajectoryId: config.trajectoryId,
-                currentTimestep: config.currentTimestep
-            }
-        });
-    }
-
-    return entries;
+    return [...legacyOptions, ...pluginOptions];
 };

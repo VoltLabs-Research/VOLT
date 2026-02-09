@@ -1,12 +1,13 @@
+import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { TbSettings, TbX } from 'react-icons/tb';
+import Container from '@/shared/presentation/components/Container';
 import Draggable from '@/shared/presentation/components/Draggable';
-import useSceneInteraction from '@/modules/canvas/presentation/hooks/use-scene-interaction';
-import FormRow from '@/modules/canvas/presentation/components/atoms/form/FormRow';
-import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
+import FormField from '@/shared/presentation/components/FormField';
+import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
+import useSceneInteraction from '../../../hooks/use-scene-interaction';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import type { SceneObjectType } from '@/modules/fractal/presentation/types/stores/editor/scene-types';
-import '@/modules/canvas/presentation/components/molecules/ExposureSettingsWidget/ExposureSettingsWidget.css';
+import './ExposureSettingsWidget.css';
 
 const getSceneKey = (scene: SceneObjectType): string => {
     if (scene.source === 'plugin') {
@@ -16,17 +17,17 @@ const getSceneKey = (scene: SceneObjectType): string => {
 };
 
 const ExposureSettingsWidget = () => {
-    const { settingsKey, setSettingsKey } = useCanvasUrlState();
+    const { settingsKey } = useCanvasUrlState();
     const isSceneInteracting = useSceneInteraction();
     const { sceneOpacities, setSceneOpacity } = useEditorStore(useShallow((s) => ({
         sceneOpacities: s.sceneOpacities,
         setSceneOpacity: s.setSceneOpacity
     })));
 
-    const parseScene = (value: string | null): SceneObjectType | null => {
-        if (!value) return null;
-        if (value.startsWith('plugin:')) {
-            const [, analysisId, exposureId] = value.split(':');
+    const exposureSettingsScene = useMemo(() => {
+        if (!settingsKey) return null;
+        if (settingsKey.startsWith('plugin:')) {
+            const [, analysisId, exposureId] = settingsKey.split(':');
             if (!analysisId || !exposureId) return null;
             return {
                 source: 'plugin',
@@ -35,15 +36,13 @@ const ExposureSettingsWidget = () => {
                 exposureId
             } as any;
         }
-        const [source, sceneType] = value.split(':');
+        const [source, sceneType] = settingsKey.split(':');
         if (!source || !sceneType) return null;
         return { source, sceneType } as any;
-    };
+    }, [settingsKey]);
 
-    const exposureSettingsScene = parseScene(settingsKey ?? null);
     const sceneKey = exposureSettingsScene ? getSceneKey(exposureSettingsScene) : '';
-
-    const opacity = sceneOpacities[sceneKey] ?? 1.0;
+    const opacity = sceneOpacities[sceneKey];
 
     if (!exposureSettingsScene) return null;
 
@@ -55,36 +54,18 @@ const ExposureSettingsWidget = () => {
             scaleWhileDragging={0.95}
             bounds="parent"
             style={{ bottom: '1rem', right: '1rem', top: 'auto', left: 'auto' }}
-            className={`widget-container exposure-settings-widget p-1 ${isSceneInteracting ? 'dimmed' : ''}`}
+            className={`canvas-widget canvas-exposure-widget ${isSceneInteracting ? 'is-dimmed' : ''}`}
         >
-            <div className='d-flex column w-max'>
-                <div className='exposure-settings-widget-header d-flex items-center content-between'>
-                    <span className='exposure-settings-widget-title d-flex items-center gap-05 font-weight-5'>
-                        <TbSettings size={14} />
-                        Settings
-                    </span>
-                    <button
-                        className='exposure-settings-widget-close cursor-pointer d-flex items-center content-center p-025 b-none transition-normal'
-                        onClick={() => setSettingsKey(null, { replace: true })}
-                        type='button'
-                    >
-                        <TbX size={16} />
-                    </button>
-                </div>
-
-                <div className='d-flex column gap-05'>
-                    <FormRow
-                        label='Opacity'
-                        value={opacity}
-                        onChange={(value: number) => setSceneOpacity(sceneKey, value)}
-                        min={0}
-                        max={1}
-                        step={0.01}
-                        format={(v: number) => `${Math.round(v * 100)}%`}
-                        className=''
-                    />
-                </div>
-            </div>
+            <Container className="d-flex column gap-05">
+                <FormField
+                    fieldKey="sceneOpacity"
+                    label="Opacity"
+                    fieldType="input"
+                    fieldValue={opacity}
+                    onFieldChange={(_, value) => setSceneOpacity(sceneKey, Number(value))}
+                    inputProps={{ type: 'range', min: 0, max: 1, step: 0.01 }}
+                />
+            </Container>
         </Draggable>
     );
 };

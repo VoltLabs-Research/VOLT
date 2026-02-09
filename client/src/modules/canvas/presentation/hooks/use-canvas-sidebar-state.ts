@@ -1,4 +1,4 @@
-import useCanvasSidebarScene from '@/modules/canvas/presentation/hooks/use-canvas-sidebar-scene';
+import useCanvasSidebarScene from './use-canvas-sidebar-scene';
 
 interface UseCanvasSidebarStateProps {
     trajectory?: any | null;

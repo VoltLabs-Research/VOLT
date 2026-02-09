@@ -1,9 +1,8 @@
 import { useShallow } from 'zustand/react/shallow';
-import { useShallow } from 'zustand/react/shallow';
 import usePropertySelector from '@/modules/trajectory/presentation/hooks/particle-filter/use-property-selector';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
+import useCanvasUrlState from './use-canvas-url-state';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 
 export interface UseModifierBaseOptions {
     trajectoryId?: string;
@@ -19,14 +18,14 @@ const useModifierBase = (options: UseModifierBaseOptions = {}) => {
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const { analysisId: urlAnalysisId } = useCanvasUrlState();
     
-    const analysisId = options.analysisId || urlAnalysisId || undefined;
+    const analysisId = options.analysisId ?? urlAnalysisId;
     
     const { currentTimestep, setActiveScene } = useEditorStore(useShallow((state) => ({
         currentTimestep: options.currentTimestep ?? state.currentTimestep,
         setActiveScene: state.setActiveScene
     })));
 
-    const effectiveTrajectoryId = options.trajectoryId || trajectory?._id;
+    const effectiveTrajectoryId = options.trajectoryId ?? trajectory?._id;
 
     const propertySelector = usePropertySelector({
         trajectoryId: effectiveTrajectoryId,

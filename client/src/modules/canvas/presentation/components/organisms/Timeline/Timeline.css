@@ -1,0 +1,48 @@
+.canvas-timeline-header {
+    height: 36px;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+
+.canvas-playhead {
+    width: 2px;
+    background: var(--accent-blue);
+}
+
+.canvas-playhead-head {
+    top: -4px;
+    left: -4px;
+    width: 10px;
+    height: 10px;
+    background: var(--accent-blue);
+}
+
+.canvas-timeline-ruler {
+    height: 18px;
+    background: var(--color-surface-2);
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.canvas-ruler-tick {
+    padding: 0 6px;
+}
+
+.canvas-ruler-tick-label {
+    font-size: 10px;
+    color: var(--color-text-muted);
+}
+
+.canvas-ruler-tick-mark {
+    width: 1px;
+    background: var(--color-border);
+    height: 6px;
+}
+
+.canvas-ruler-tick-mark.major {
+    height: 10px;
+    background: var(--color-text-muted);
+}
+
+.canvas-simcell-value--mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}

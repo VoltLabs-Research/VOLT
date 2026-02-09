@@ -33,6 +33,10 @@
     padding: 0;
 }
 
+.px-025{
+    padding: 0 0.25rem;
+}
+
 .p-025{
     padding: 0.25rem;
 }

@@ -11,6 +11,7 @@ import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store'
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import type { GetTeamRolesParams } from '@/modules/team/domain/ports/ITeamRoleRepository';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
 
 const DEFAULT_RESOURCES: RBACResource[] = [
@@ -79,23 +80,16 @@ const ManageRolesTemplate: React.FC = () => {
     const [editingRole, setEditingRole] = useState<TeamRole | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const selectedTeam = useTeamStore((state) => state.selectedTeam)!;
     const addRole = useTeamRoleStore((state) => state.addRole);
     const updateRole = useTeamRoleStore((state) => state.updateRole);
     const removeRole = useTeamRoleStore((state) => state.removeRole);
 
     const { teamRoleRepository } = useTeamRoleUseCases();
 
-    const fetchData = useCallback(async (params: { page: number; limit: number }) => {
-        if(!selectedTeam?._id){
-            return {
-                status: 'success' as const,
-                data: [],
-                pagination: { page: 1, limit: params.limit, total: 0, totalPages: 0, hasMore: false }
-            };
-        }
+    const fetchData = useCallback(async (params: GetTeamRolesParams) => {
         return await teamRoleRepository.getAll(selectedTeam._id, params);
-    }, [selectedTeam?._id, teamRoleRepository]);
+    }, [selectedTeam._id, teamRoleRepository]);
 
     const handleOpenCreate = useCallback(() => {
         setEditingRole(null);
@@ -108,8 +102,6 @@ const ManageRolesTemplate: React.FC = () => {
     }, []);
 
     const handleSaveRole = useCallback(async (data: RoleEditorPayload) => {
-        if(!selectedTeam) return;
-
         setIsSaving(true);
         try{
             if(editingRole){
@@ -126,10 +118,10 @@ const ManageRolesTemplate: React.FC = () => {
         }finally{
             setIsSaving(false);
         }
-    }, [selectedTeam, editingRole, teamRoleRepository, addRole, updateRole]);
+    }, [selectedTeam._id, editingRole, teamRoleRepository, addRole, updateRole]);
 
     const handleDeleteRole = useCallback(async (role: TeamRole) => {
-        if(!selectedTeam || role.isSystem) return;
+        if(role.isSystem) return;
 
         const isConfirmed = await confirm(`Are you sure you want to delete "${role.name}"?`);
         if(!isConfirmed) return;
@@ -140,7 +132,7 @@ const ManageRolesTemplate: React.FC = () => {
         }catch(err){
             console.error('Failed to delete role:', err);
         }
-    }, [selectedTeam, teamRoleRepository, removeRole]);
+    }, [selectedTeam._id, teamRoleRepository, removeRole]);
 
     const getMenuOptions = useCallback((role: TeamRole): MenuOption[] => {
         if(role.isSystem){
@@ -166,17 +158,12 @@ const ManageRolesTemplate: React.FC = () => {
         ];
     }, [handleOpenEdit, handleDeleteRole]);
 
-    if(!selectedTeam){
-        return <Container className='p-3'>Please select a team.</Container>;
-    }
-
     return (
         <Container className='manage-roles-page h-max'>
             <DocumentListing<TeamRole>
                 title='Manage Roles'
                 columns={COLUMNS}
                 fetchData={fetchData}
-                enabled={!!selectedTeam?._id}
                 getMenuOptions={getMenuOptions}
                 emptyMessage='No roles found. Create your first custom role.'
                 createNew={{

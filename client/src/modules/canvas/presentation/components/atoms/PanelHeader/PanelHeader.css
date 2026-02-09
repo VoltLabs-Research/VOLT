@@ -1,0 +1,8 @@
+.canvas-panel-header {
+    height: 38px;
+}
+
+.canvas-panel-header-title {
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}

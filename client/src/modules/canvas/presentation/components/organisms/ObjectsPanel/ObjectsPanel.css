@@ -1,0 +1,64 @@
+.canvas-tree-container {
+    padding: 6px 8px 10px;
+}
+
+.canvas-tree-item {
+    padding: 4px 6px;
+}
+
+.canvas-tree-item--indent {
+    padding-left: 16px;
+}
+
+.canvas-tree-item--indent-lg {
+    padding-left: 32px;
+}
+
+.canvas-tree-item:hover {
+    background: var(--hover-bg);
+}
+
+.canvas-tree-item.selected {
+    background: var(--active-bg);
+}
+
+.canvas-tree-toggle {
+    background-color: transparent;
+    color: var(--color-text-muted);
+}
+
+.canvas-tree-spacer {
+    width: 13px;
+    height: 13px;
+}
+
+.canvas-tree-skeleton {
+    height: 10px;
+    width: 120px;
+    background: var(--color-surface-2);
+}
+
+.canvas-tree-skeleton--compact {
+    width: 80px;
+}
+
+.canvas-tree-status-dot {
+    font-size: 10px;
+    opacity: 0.8;
+}
+
+.canvas-tree-status-dot--running {
+    color: var(--accent-blue);
+}
+
+.canvas-tree-status-dot--completed {
+    color: var(--accent-green);
+}
+
+.canvas-tree-status-dot--pending {
+    color: var(--accent-yellow);
+}
+
+.canvas-tree-status-dot--failed {
+    color: var(--accent-red);
+}

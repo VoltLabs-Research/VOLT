@@ -19,7 +19,7 @@ const COLUMNS: ColumnConfig[] = [
     {
         key: 'status',
         title: 'Status',
-        render: (v) => <StatusBadge status={String(v || 'unknown')} />,
+        render: (v) => <StatusBadge status={String(v)} />,
         skeleton: { variant: 'rounded', width: 70, height: 24 }
     },
     {

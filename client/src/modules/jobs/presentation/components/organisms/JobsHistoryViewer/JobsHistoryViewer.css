@@ -63,3 +63,8 @@ body.jobs-history-expanded {
 
 .jobs-history-viewer-body-enhanced {
 }
+
+.jobs-history-viewer-embedded {
+    width: 100%;
+    height: 100%;
+}

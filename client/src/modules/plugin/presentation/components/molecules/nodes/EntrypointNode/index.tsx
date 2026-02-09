@@ -1,9 +1,9 @@
-import { memo } from 'react';
+import React from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { NodeType, type IEntrypointData } from '@/modules/plugin/domain/entities';
 import BaseNode from '@/modules/plugin/presentation/components/atoms/BaseNode';
 
-const EntrypointNode = memo((props: NodeProps) => {
+const EntrypointNode = (props: NodeProps) => {
     const { data } = props;
     const entrypoint = (data.entrypoint as IEntrypointData) || {};
 
@@ -19,8 +19,6 @@ const EntrypointNode = memo((props: NodeProps) => {
             description={hasBinary ? binaryDisplay : 'No binary attached'}
         />
     );
-});
-
-EntrypointNode.displayName = 'EntrypointNode';
+};
 
 export default EntrypointNode;

@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { getUserDisplayName } from '@/shared/utils/user';
 import Avatar from '@/shared/presentation/components/Avatar';
 import { User } from '@/modules/auth/domain/entities/User';
 import Paragraph from '@/shared/presentation/components/Paragraph';
@@ -52,7 +51,7 @@ const SimulationCardHeader = ({ user }: SimulationCardHeaderProps) => {
                 >
                     <Paragraph className='font-size-1 font-weight-5 color-secondary'>Uploaded by</Paragraph>
                     <Paragraph className='font-size-1 font-weight-5 color-secondary header-user-name'>
-                        {getUserDisplayName(user)}
+                        {`${user.firstName} ${user.lastName}`}
                     </Paragraph>
                 </motion.div>
             </motion.div>

@@ -8,6 +8,7 @@ import DocumentListing, { type ColumnConfig } from '@/shared/presentation/compon
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Button from '@/shared/presentation/components/Button';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import type { GetPluginsInputDTO } from '@/modules/plugin/application/dtos';
 import type { Plugin } from '../../../../domain/entities';
 import './PluginsListing.css';
 
@@ -16,35 +17,34 @@ const PluginsListing = () => {
     const importInputRef = useRef<HTMLInputElement>(null);
     const [isImporting, setIsImporting] = useState(false);
 
-    const selectedTeam = useTeamStore((s) => s.selectedTeam);
+    const selectedTeam = useTeamStore((s) => s.selectedTeam)!;
 
     const { clonePluginUseCase, pluginRepository } = usePluginUseCases();
     const deletePlugin = useDeletePlugin();
     const exportPlugin = useExportPlugin();
     const importPlugin = useImportPlugin();
 
-    const fetchData = useCallback(async (params: { page: number; limit: number; search?: string }) => {
+    const fetchData = useCallback(async (params: GetPluginsInputDTO) => {
         return await pluginRepository.getAll(params);
     }, [pluginRepository]);
 
     const handleClone = useCallback(async (item: Plugin) => {
         const clonedPlugin = await clonePluginUseCase.execute({
             pluginId: item._id,
-            teamId: selectedTeam?._id
+            teamId: selectedTeam._id
         });
         navigate(`/dashboard/plugins/builder?id=${clonedPlugin._id}`);
-    }, [clonePluginUseCase, selectedTeam?._id, navigate]);
+    }, [clonePluginUseCase, selectedTeam._id, navigate]);
 
     const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const file = e.target.files[0];
 
         setIsImporting(true);
         try{
             await importPlugin(file);
         }finally{
             setIsImporting(false);
-            if(importInputRef.current) importInputRef.current.value = '';
+            importInputRef.current!.value = '';
         }
     }, [importPlugin]);
 
@@ -158,7 +158,7 @@ const PluginsListing = () => {
                     <Button
                         variant='ghost'
                         intent='neutral'
-                        onClick={() => importInputRef.current?.click()}
+                        onClick={() => importInputRef.current!.click()}
                         disabled={isImporting}
                         isLoading={isImporting}
                         leftIcon={<RiUploadLine size={18} />}

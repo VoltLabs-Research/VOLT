@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { createExternalStore, useExternalStore } from '@/modules/canvas/presentation/utils/external-store';
+import { createExternalStore, useExternalStore } from '../utils/external-store';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 
 type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed';
@@ -7,15 +7,16 @@ type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed';
 const store = createExternalStore({ initialState: new Map<string, AnalysisStatus>() });
 
 const setStatus = (analysisId: string, status: AnalysisStatus) => {
-    const current = store.state.get(analysisId);
+    const snapshot = store.getSnapshot();
+    const current = snapshot.get(analysisId);
     if (current === status) return;
-    const next = new Map(store.state);
+    const next = new Map(snapshot);
     next.set(analysisId, status);
     store.setState(next);
 };
 
 const clearStatus = () => {
-    if (store.state.size > 0) {
+    if (store.getSnapshot().size > 0) {
         store.setState(new Map());
     }
 };

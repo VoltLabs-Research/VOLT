@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { useKeyboardShortcutsStore } from '@/modules/canvas/presentation/stores/use-keyboard-shortcuts-store';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
-import { useSearchParams } from 'react-router-dom';
+import { useKeyboardShortcutsStore } from '../stores/use-keyboard-shortcuts-store';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import useCanvasUrlState from './use-canvas-url-state';
 
 const normalizeKey = (key: string): string => {
     const keyMap: Record<string, string> = {
@@ -22,7 +22,15 @@ const useKeyboardShortcuts = () => {
     const setLastTriggered = useKeyboardShortcutsStore((s) => s.setLastTriggered);
     const togglePanel = useKeyboardShortcutsStore((s) => s.togglePanel);
     const setShowPanel = useKeyboardShortcutsStore((s) => s.setShowPanel);
-    const [, setSearchParams] = useSearchParams();
+    const {
+        showWidgets,
+        showGrid,
+        settingsKey,
+        updateSearchParams,
+        setResultsSlug,
+        setSettingsKey,
+        toggleModifier
+    } = useCanvasUrlState();
 
     const actionsRef = useRef<Record<string, () => void>>({});
 
@@ -91,11 +99,11 @@ const useKeyboardShortcuts = () => {
             },
 
             'toggle-grid': () => {
-                window.dispatchEvent(new CustomEvent('Volt:toggle-grid'));
+                updateSearchParams({ grid: showGrid ? 'false' : null }, { replace: true });
             },
 
             'toggle-widgets': () => {
-                window.dispatchEvent(new CustomEvent('Volt:toggle-widgets'));
+                updateSearchParams({ widgets: showWidgets ? 'false' : null }, { replace: true });
             },
 
             'reset-camera': () => {
@@ -105,15 +113,15 @@ const useKeyboardShortcuts = () => {
             },
 
             'color-coding': () => {
-                window.dispatchEvent(new CustomEvent('Volt:toggle-modifier', { detail: { modifier: 'color-coding' } }));
+                toggleModifier('color-coding');
             },
 
             'slice-plane': () => {
-                window.dispatchEvent(new CustomEvent('Volt:toggle-modifier', { detail: { modifier: 'slice-plane' } }));
+                toggleModifier('slice-plane');
             },
 
             'particle-filter': () => {
-                window.dispatchEvent(new CustomEvent('Volt:toggle-modifier', { detail: { modifier: 'particle-filter' } }));
+                toggleModifier('particle-filter');
             },
 
             'increase-point-size': () => {
@@ -133,10 +141,7 @@ const useKeyboardShortcuts = () => {
                     setShowPanel(false);
                     return;
                 }
-                setSearchParams((prev) => {
-                    prev.delete('results');
-                    return prev;
-                }, { replace: true });
+                setResultsSlug(undefined, { replace: true });
             },
 
             'toggle-opacity-settings': () => {
@@ -147,17 +152,24 @@ const useKeyboardShortcuts = () => {
                     ? `plugin:${activeScene.analysisId}:${activeScene.exposureId}`
                     : `${activeScene.source}:${activeScene.sceneType}`;
 
-                setSearchParams((prev) => {
-                    if (prev.get('settings') === key) {
-                        prev.delete('settings');
-                    } else {
-                        prev.set('settings', key);
-                    }
-                    return prev;
-                }, { replace: true });
+                if (settingsKey === key) {
+                    setSettingsKey(undefined, { replace: true });
+                } else {
+                    setSettingsKey(key, { replace: true });
+                }
             }
         };
-    }, [togglePanel, setShowPanel, setSearchParams]);
+    }, [
+        togglePanel,
+        setShowPanel,
+        showWidgets,
+        showGrid,
+        updateSearchParams,
+        setResultsSlug,
+        settingsKey,
+        setSettingsKey,
+        toggleModifier
+    ]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {

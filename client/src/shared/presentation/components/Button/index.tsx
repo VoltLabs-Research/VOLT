@@ -20,7 +20,7 @@ export interface ButtonProps extends HTMLMotionProps<'button'>{
      * Color theme/intent of the button
      * @default 'neutral'
      */
-    intent?: 'neutral' | 'brand' | 'danger' | 'success' | 'white';
+    intent?: 'neutral' | 'brand' | 'danger' | 'success' | 'white' | 'canvas';
 
     /**
      * Size of the button

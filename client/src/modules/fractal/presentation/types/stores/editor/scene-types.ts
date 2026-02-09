@@ -90,7 +90,6 @@ export interface PlaybackState {
     isPlaying: boolean;
     playSpeed: number;
     currentTimestep?: number;
-    intervalId: ReturnType<typeof setInterval> | null;
     isPreloading?: boolean;
     didPreload?: boolean;
     preloadProgress?: number;

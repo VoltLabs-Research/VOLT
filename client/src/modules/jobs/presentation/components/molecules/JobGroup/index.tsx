@@ -1,4 +1,4 @@
-import { useState, memo } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { TrajectoryJobGroup as TrajectoryJobGroupType, FrameJobGroup } from '@/modules/jobs/domain/entities/Job';
 import Container from '@/shared/presentation/components/Container';
@@ -14,7 +14,7 @@ interface JobGroupProps {
     defaultExpanded?: boolean;
     onRemoveTrajectoryGroup: (trajectoryId: string) => void;
 }
-const JobGroup: React.FC<JobGroupProps> = memo(({ group, defaultExpanded = false, onRemoveTrajectoryGroup }) => {
+const JobGroup: React.FC<JobGroupProps> = ({ group, defaultExpanded = false, onRemoveTrajectoryGroup }) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const statusClassName = statusConfig[group.overallStatus];
     const {
@@ -61,8 +61,6 @@ const JobGroup: React.FC<JobGroupProps> = memo(({ group, defaultExpanded = false
             </AnimatePresence>
         </Container>
     );
-});
-
-JobGroup.displayName = 'JobGroup';
+};
 
 export default JobGroup;

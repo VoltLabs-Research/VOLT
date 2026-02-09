@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoChevronForward } from 'react-icons/io5';
 import type { FrameJobGroup, Job } from '@/modules/jobs/domain/entities/Job';
@@ -11,7 +11,7 @@ interface FrameGroupProps {
     frame: FrameJobGroup;
 }
 
-const FrameGroup: React.FC<FrameGroupProps> = memo(({ frame }) => {
+const FrameGroup: React.FC<FrameGroupProps> = ({ frame }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const statusClassName = statusConfig[frame.overallStatus];
     const label = `Frame ${frame.timestep}`;
@@ -52,8 +52,6 @@ const FrameGroup: React.FC<FrameGroupProps> = memo(({ frame }) => {
             </AnimatePresence>
         </Container>
     );
-});
-
-FrameGroup.displayName = 'FrameGroup';
+};
 
 export default FrameGroup;

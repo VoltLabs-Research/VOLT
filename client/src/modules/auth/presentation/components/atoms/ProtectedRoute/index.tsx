@@ -4,6 +4,7 @@ import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store'
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import { setGetTeamId } from '@/app/core/http/VoltClient';
+import useTeamSocketSubscription from '@/modules/socket/presentation/hooks/use-team-socket-subscription';
 import Container from '@/shared/presentation/components/Container';
 import './ProtectedRoute.css';
 
@@ -28,6 +29,8 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     const teamsLoading = useTeamStore((state) => state.isLoading);
 
     const { fetchTeams } = useTeamData();
+
+    useTeamSocketSubscription();
 
     const isAuthenticated = !!user;
     const hasTeam = !!selectedTeam;

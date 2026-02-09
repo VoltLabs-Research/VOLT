@@ -1,14 +1,16 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useShallow } from 'zustand/react/shallow';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GoArrowRight } from 'react-icons/go';
 import FractalScene from '@/modules/fractal/presentation/components/organisms/FractalScene';
 import SingleModelViewer from '@/modules/fractal/presentation/components/molecules/SingleModelViewer';
-import useFractalSceneConfig from '@/modules/fractal/presentation/hooks/use-fractal-scene-config';
+import useFractalSceneConfig from '@/modules/canvas/presentation/hooks/use-fractal-scene-config';
 import useCanvasCoordinator from '@/modules/canvas/presentation/hooks/use-canvas-coordinator';
 import useGetTrajectories from '@/modules/trajectory/presentation/hooks/trajectory/use-get-trajectories';
 import JobsHistoryViewer from '@/modules/jobs/presentation/components/organisms/JobsHistoryViewer';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import { DEFAULT_SCENE } from '@/modules/fractal/presentation/utilities/sceneUtils';
 import { formatNumber } from '@/shared/utils/format';
 import Container from '@/shared/presentation/components/Container';
@@ -24,6 +26,22 @@ const DashboardModelPreview: React.FC = () => {
     const getTrajectories = useGetTrajectories();
     const [completedTrajectory, setCompletedTrajectory] = useState<Trajectory | null>(null);
     const [isLoadingTrajectories, setIsLoadingTrajectories] = useState(true);
+
+    const {
+        slicePlaneConfig,
+        pointSizeMultiplier,
+        sceneOpacities,
+        activeModelBounds,
+        setModelBounds,
+        setIsModelLoading
+    } = useEditorStore(useShallow((s) => ({
+        slicePlaneConfig: s.configuration.slicePlaneConfig,
+        pointSizeMultiplier: s.pointSizeMultiplier,
+        sceneOpacities: s.sceneOpacities,
+        activeModelBounds: s.activeModel?.modelBounds,
+        setModelBounds: s.setModelBounds,
+        setIsModelLoading: s.setIsModelLoading
+    })));
 
     useEffect(() => {
         if (!selectedTeam?._id) return;
@@ -140,6 +158,12 @@ const DashboardModelPreview: React.FC = () => {
                         trajectoryId={trajectory._id}
                         currentTimestep={currentTimestep}
                         sceneConfig={DEFAULT_SCENE}
+                        slicePlaneConfig={slicePlaneConfig}
+                        pointSizeMultiplier={pointSizeMultiplier}
+                        sceneOpacities={sceneOpacities}
+                        activeModelBounds={activeModelBounds}
+                        onModelBoundsChanged={setModelBounds}
+                        onLoadingStateChanged={setIsModelLoading}
                         autoFit={true}
                     />
                 )}
@@ -152,4 +176,4 @@ const DashboardModelPreview: React.FC = () => {
     );
 };
 
-export default React.memo(DashboardModelPreview);
+export default DashboardModelPreview;

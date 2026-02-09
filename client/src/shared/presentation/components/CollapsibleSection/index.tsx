@@ -9,7 +9,18 @@ interface CollapsibleSectionProps {
     title: string;
     children: ReactNode;
     defaultExpanded?: boolean;
+    expanded?: boolean;
+    onExpandedChange?: (next: boolean) => void;
     className?: string;
+    headerClassName?: string;
+    titleClassName?: string;
+    iconClassName?: string;
+    bodyClassName?: string;
+    contentClassName?: string;
+    noSpacing?: boolean;
+    arrowSize?: number;
+    useDefaultHeaderStyles?: boolean;
+    useDefaultTitleStyles?: boolean;
     onDelete?: () => void;
     onAdd?: () => void;
     icon?: ReactNode;
@@ -19,7 +30,18 @@ const CollapsibleSection = ({
     title,
     children,
     defaultExpanded = false,
+    expanded,
+    onExpandedChange,
     className = '',
+    headerClassName = '',
+    titleClassName = '',
+    iconClassName = '',
+    bodyClassName = '',
+    contentClassName = '',
+    noSpacing = false,
+    arrowSize = 20,
+    useDefaultHeaderStyles = true,
+    useDefaultTitleStyles = true,
     onDelete,
     onAdd,
     icon
@@ -29,17 +51,21 @@ const CollapsibleSection = ({
     const [hasBeenExpanded, setHasBeenExpanded] = useState(defaultExpanded);
     const bodyRef = useRef<HTMLDivElement>(null);
     const [height, setHeight] = useState<number | 'auto'>(defaultExpanded ? 'auto' : 0);
+    const isControlled = typeof expanded === 'boolean';
+    const actualExpanded = isControlled ? expanded : isExpanded;
+    const headerBaseClass = useDefaultHeaderStyles ? 'collapsible-section-header' : '';
+    const titleBaseClass = useDefaultTitleStyles ? 'collapsible-section-title font-size-3 font-weight-6 color-primary' : 'collapsible-section-title';
 
     useEffect(() => {
-        if (isExpanded && !hasBeenExpanded) {
+        if (actualExpanded && !hasBeenExpanded) {
             setHasBeenExpanded(true);
         }
-    }, [isExpanded, hasBeenExpanded]);
+    }, [actualExpanded, hasBeenExpanded]);
 
     useEffect(() => {
         if (!bodyRef.current) return;
 
-        if (isExpanded) {
+        if (actualExpanded) {
             const scrollHeight = bodyRef.current.scrollHeight;
             setHeight(scrollHeight);
             const timer = setTimeout(() => setHeight('auto'), 250);
@@ -51,9 +77,16 @@ const CollapsibleSection = ({
                 setHeight(0);
             });
         }
-    }, [isExpanded]);
+    }, [actualExpanded]);
 
-    const handleToggle = () => setIsExpanded(!isExpanded);
+    const handleToggle = () => {
+        const next = !actualExpanded;
+        if (isControlled) {
+            onExpandedChange?.(next);
+            return;
+        }
+        setIsExpanded(next);
+    };
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -66,16 +99,16 @@ const CollapsibleSection = ({
     };
 
     return (
-        <Container className={`d-flex column mb-1-5 ${className}`}>
+        <Container className={`d-flex column ${noSpacing ? '' : 'mb-1-5'} ${className}`}>
             <Container
-                className='collapsible-section-header d-flex content-between items-center cursor-pointer u-select-none'
+                className={`${headerBaseClass} d-flex content-between items-center cursor-pointer u-select-none ${headerClassName}`}
                 onClick={handleToggle}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
                 <Container className='d-flex items-center gap-05'>
-                    {icon && <span className='d-flex items-center'>{icon}</span>}
-                    <Title className='font-size-3 font-weight-6 color-primary'>{title}</Title>
+                    {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
+                    <Title className={`${titleBaseClass} ${titleClassName}`}>{title}</Title>
                 </Container>
                 <Container className='d-flex items-center gap-025'>
                     {onAdd && (
@@ -99,18 +132,18 @@ const CollapsibleSection = ({
                         </IconButton>
                     )}
                     <Container
-                        className={`collapsible-section-arrow d-flex flex-center color-muted ${!isExpanded ? 'collapsible-section-arrow--collapsed' : ''}`}
+                        className={`collapsible-section-arrow d-flex flex-center color-muted ${!actualExpanded ? 'collapsible-section-arrow--collapsed' : ''}`}
                     >
-                        <ChevronDown size={20} />
+                        <ChevronDown size={arrowSize} />
                     </Container>
                 </Container>
             </Container>
             <div
                 ref={bodyRef}
-                className='collapsible-section-body'
+                className={`collapsible-section-body ${bodyClassName}`}
                 style={{ height }}
             >
-                <Container className='collapsible-section-content d-flex column gap-1'>
+                <Container className={`collapsible-section-content d-flex column ${contentClassName}`}>
                     {hasBeenExpanded ? children : null}
                 </Container>
             </div>

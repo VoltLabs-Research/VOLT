@@ -102,6 +102,71 @@
     min-height: 80px;
 }
 
+/* Canvas variant (compact inline inputs) */
+.form-field-canvas {
+    min-height: 2rem;
+}
+
+.form-field-canvas-input,
+.form-field-canvas-select {
+    flex: 1;
+    min-width: 0;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-1);
+    color: var(--color-text-primary);
+    font-size: 0.75rem;
+}
+
+.form-field-canvas-input:focus,
+.form-field-canvas-select:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+
+.form-field-canvas-input::placeholder {
+    color: var(--color-text-muted);
+}
+
+.form-field-canvas-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+
+.form-field-canvas-field.is-active {
+    border-color: var(--accent-blue);
+}
+
+
+.form-field-canvas-input--compact {
+    width: 65px;
+    text-align: center;
+}
+
+.form-field-canvas-dropdown {
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    max-height: 180px;
+    overflow: auto;
+}
+
+.form-field-canvas-option {
+    padding: 4px 6px;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+.form-field-canvas-option.is-selected,
+.form-field-canvas-option:hover {
+    background: var(--hover-bg);
+    color: var(--color-text-primary);
+}
+
 .form-field-inline-checkbox {
     width: 1.25rem;
     height: 1.25rem;

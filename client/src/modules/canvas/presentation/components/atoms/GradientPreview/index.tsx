@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import useToast from '@/shared/presentation/hooks/use-toast';
-import '@/modules/canvas/presentation/components/atoms/GradientPreview/GradientPreview.css';
+import './GradientPreview.css';
 
 const GRADIENT_CSS: Record<string, string> = {
     Viridis: 'linear-gradient(to right, #440154, #482878, #3e4a89, #31688e, #26838f, #1f9e89, #35b779, #6ece58, #b5de2b, #fde725)',
@@ -55,7 +55,7 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
     const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
         const result = calculateValue(e);
         if (!result) return;
-        
+
         const textArea = document.createElement('textarea');
         textArea.value = result.value;
         textArea.style.position = 'fixed';
@@ -64,32 +64,29 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
         textArea.select();
         document.execCommand('copy');
         document.body.removeChild(textArea);
-        
+
         showInfo(`Value ${result.value} copied to clipboard`);
     };
 
-    const gradientStyle = GRADIENT_CSS[gradient] || GRADIENT_CSS.Viridis;
+    const gradientStyle = GRADIENT_CSS[gradient];
 
     return (
-        <Container className='gradient-preview-container w-max mt-025'>
+        <Container className="canvas-gradient-preview w-max">
             <Container
                 ref={barRef}
-                className='gradient-preview-bar p-relative'
+                className="canvas-gradient-bar radius-sm p-relative cursor-pointer"
                 style={{ background: gradientStyle }}
                 onMouseMove={handleMouseMove}
                 onMouseLeave={handleMouseLeave}
                 onClick={handleClick}
             >
                 {tooltipValue !== null && (
-                    <Container
-                        className='gradient-preview-tooltip p-absolute z-10'
-                        style={{ left: tooltipX }}
-                    >
+                    <Container className="canvas-gradient-tooltip p-absolute radius-sm" style={{ left: tooltipX }}>
                         {tooltipValue}
                     </Container>
                 )}
             </Container>
-            <Container className='gradient-preview-labels d-flex content-between mt-025'>
+            <Container className="canvas-gradient-labels d-flex content-between">
                 <span>{formatValue(startValue)}</span>
                 <span>{formatValue(endValue)}</span>
             </Container>

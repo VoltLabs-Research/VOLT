@@ -9,8 +9,8 @@ import useToast from '@/shared/presentation/hooks/use-toast';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
+import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import ContainerTerminal from '../../organisms/ContainerTerminal';
-import PortDisplay from '../../atoms/PortDisplay';
 import type { Container as ContainerEntity } from '@/modules/container/domain/entities';
 
 const STATUS_MAP: Record<string, string> = {
@@ -21,7 +21,8 @@ const STATUS_MAP: Record<string, string> = {
     restarting: 'processing',
     paused: 'processing',
     dead: 'failed',
-    removing: 'processing'
+    removing: 'processing',
+    unknown: 'processing'
 };
 
 const COLUMNS: ColumnConfig[] = [
@@ -38,7 +39,7 @@ const COLUMNS: ColumnConfig[] = [
                     </Container>
                     <Container className='d-flex column gap-025 overflow-hidden'>
                         <span className='font-weight-6 color-primary'>{value as string}</span>
-                        <span className='font-size-1 color-muted'>{container.containerId?.substring(0, 12)}</span>
+                        <span className='font-size-1 color-muted'>{container.containerId.substring(0, 12)}</span>
                     </Container>
                 </Container>
             );
@@ -50,8 +51,8 @@ const COLUMNS: ColumnConfig[] = [
         title: 'Status',
         sortable: true,
         render: (value) => {
-            const statusLower = String(value || 'unknown').toLowerCase();
-            return <StatusBadge status={STATUS_MAP[statusLower] || 'processing'} />;
+            const statusLower = String(value).toLowerCase();
+            return <StatusBadge status={STATUS_MAP[statusLower]} />;
         },
         skeleton: { variant: 'rounded', width: 80, height: 24 }
     },
@@ -71,7 +72,14 @@ const COLUMNS: ColumnConfig[] = [
     {
         key: 'ports',
         title: 'Ports',
-        render: (_, row) => <PortDisplay ports={(row as ContainerEntity).ports} />,
+        render: (_, row) => {
+            const port = (row as ContainerEntity).ports[0];
+            return (
+                <span className='font-size-2 font-weight-5'>
+                    {port.private} {'->'} {port.public}
+                </span>
+            );
+        },
         skeleton: { variant: 'text', width: 100 }
     },
     {
@@ -94,8 +102,12 @@ const ContainersListing = () => {
 
     const { containerRepository } = useContainerUseCases();
 
-    const fetchData = useCallback(async (params: { page: number; limit: number }) => {
-        return await containerRepository.getAll(params);
+    const fetchData = useCallback(async (params: PaginationParams) => {
+        return await containerRepository.getAll({
+            page: params.page,
+            limit: params.limit,
+            search: params.search
+        });
     }, [containerRepository]);
 
     const controlContainer = useCallback(async (containerId: string, action: 'start' | 'stop' | 'restart') => {

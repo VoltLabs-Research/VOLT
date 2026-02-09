@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PiAtomThin } from 'react-icons/pi';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
@@ -17,7 +17,7 @@ interface SimulationCardProps{
     onSelect: (id: string) => void;
 };
 
-const SimulationCard = memo(({ trajectory, isSelected, onSelect }: SimulationCardProps) => {
+const SimulationCard = ({ trajectory, isSelected, onSelect }: SimulationCardProps) => {
     const navigate = useNavigate();
 
     const { previewBlobUrl, isLoading: previewLoading, error: previewError, retry: retryPreview } = useTrajectoryPreview({
@@ -79,8 +79,6 @@ const SimulationCard = memo(({ trajectory, isSelected, onSelect }: SimulationCar
             <SimulationCardUsers trajectoryId={trajectory._id} />
         </Container>
     );
-});
-
-SimulationCard.displayName = 'SimulationCard';
+};
 
 export default SimulationCard;

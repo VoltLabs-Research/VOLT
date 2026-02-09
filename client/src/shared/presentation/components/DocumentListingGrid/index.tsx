@@ -1,7 +1,9 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import { FileText } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
+import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
 import './DocumentListingGrid.css';
 
 interface DocumentListingGridProps<T = unknown> {
@@ -38,37 +40,14 @@ const DocumentListingGrid = <T,>({
     className = ''
 }: DocumentListingGridProps<T>) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const sentinelRef = useRef<HTMLDivElement>(null);
-    const hasMountedRef = useRef(false);
+    const { sentinelRef } = useInfiniteScroll({
+        rootRef: containerRef,
+        hasMore,
+        isFetchingMore,
+        onLoadMore
+    });
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            hasMountedRef.current = true;
-        }, 100);
-        return () => clearTimeout(timer);
-    }, []);
-
-    useEffect(() => {
-        const root = containerRef.current;
-        const sentinel = sentinelRef.current;
-        if (!sentinel) return;
-
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const entry = entries[0];
-                if (entry?.isIntersecting && hasMore && !isFetchingMore && hasMountedRef.current) {
-                    onLoadMore?.();
-                }
-            },
-            { root, rootMargin: '0px 0px 200px 0px', threshold: 0 }
-        );
-
-        observer.observe(sentinel);
-        return () => observer.disconnect();
-    }, [hasMore, isFetchingMore, onLoadMore]);
-
-    const isInitialLoading = isLoading && data.length === 0;
-    const shouldShowEmptyState = data.length === 0 && !isLoading;
+    const { isInitialLoading, shouldShowEmptyState } = getListingDisplayState(data.length, isLoading);
 
     return (
         <Container
@@ -80,7 +59,7 @@ const DocumentListingGrid = <T,>({
             {shouldShowEmptyState && (
                 <Container className='document-listing-grid-empty'>
                     <EmptyState
-                        icon={emptyIcon || <FileText size={26} strokeWidth={1.5} />}
+                        icon={emptyIcon ? emptyIcon : <FileText size={26} strokeWidth={1.5} />}
                         title={emptyTitle}
                         description={emptyMessage}
                         buttonText={emptyButtonText}

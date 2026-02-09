@@ -1,10 +1,10 @@
-import { memo } from 'react';
+import React from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { NodeType, type IIfStatementData } from '@/modules/plugin/domain/entities';
 import BaseNode from '@/modules/plugin/presentation/components/atoms/BaseNode';
 import './IfStatementNode.css';
 
-const IfStatementNode = memo((props: NodeProps) => {
+const IfStatementNode = (props: NodeProps) => {
     const { data } = props;
     const ifData = data.ifStatement as IIfStatementData | undefined;
     const conditionCount = ifData?.conditions?.length || 0;
@@ -31,8 +31,6 @@ const IfStatementNode = memo((props: NodeProps) => {
             />
         </BaseNode>
     );
-});
-
-IfStatementNode.displayName = 'IfStatementNode';
+};
 
 export default IfStatementNode;

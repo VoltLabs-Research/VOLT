@@ -14,7 +14,7 @@ import logger from '@shared/infrastructure/logger';
  * Maps domain events to WebSocket events automatically without domain-specific knowledge.
  * Follows Clean Architecture by not coupling to specific modules.
  * 
- * Convention: Events with `teamId` in their data are broadcast to `team-{teamId}` rooms
+ * Convention: Events with `teamId` in their data are broadcast to `team:{teamId}` rooms
  */
 @singleton()
 export default class EventBroadcastSocketModule extends BaseSocketModule {
@@ -69,7 +69,7 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
                     eventName: event.name
                 };
 
-                const roomName = `team-${teamId}`;
+                const roomName = `team:${teamId}`;
                 logger.info(`[EventBroadcastSocketModule] Broadcasting ${event.name} to ${roomName}`);
                 this.emitToRoom(roomName, event.name, payload);
             }
@@ -84,13 +84,13 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
             logger.info(`[EventBroadcastSocketModule] Client ${conn.id} subscribing to team: ${payload.teamId}`);
 
             if (payload.previousTeamId) {
-                await this.leaveRoom(conn.id, `team-${payload.previousTeamId}`);
-                logger.info(`[EventBroadcastSocketModule] Client ${conn.id} left team-${payload.previousTeamId}`);
+                await this.leaveRoom(conn.id, `team:${payload.previousTeamId}`);
+                logger.info(`[EventBroadcastSocketModule] Client ${conn.id} left team:${payload.previousTeamId}`);
             }
 
             if (payload.teamId) {
-                await this.joinRoom(conn.id, `team-${payload.teamId}`);
-                logger.info(`[EventBroadcastSocketModule] Client ${conn.id} joined team-${payload.teamId}`);
+                await this.joinRoom(conn.id, `team:${payload.teamId}`);
+                logger.info(`[EventBroadcastSocketModule] Client ${conn.id} joined team:${payload.teamId}`);
             }
         });
     }

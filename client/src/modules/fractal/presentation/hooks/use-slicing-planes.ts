@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { Plane, Vector3 } from 'three';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
-import type { SliceAxis } from '@/modules/fractal/presentation/types/configuration';
+import type { SliceAxis, SlicePlaneConfig } from '@/modules/fractal/presentation/types/configuration';
 
 const AXIS_NORMALS: Record<SliceAxis, Vector3> = {
     x: new Vector3(1, 0, 0),
@@ -15,9 +14,7 @@ const ROTATION_AXES: Record<SliceAxis, Vector3> = {
     z: new Vector3(1, 0, 0),
 };
 
-const useSlicingPlanes = (enableSlice: boolean): Plane[] => {
-    const slicePlaneConfig = useEditorStore((s) => s.configuration.slicePlaneConfig);
-
+const useSlicingPlanes = (enableSlice: boolean, slicePlaneConfig: SlicePlaneConfig): Plane[] => {
     return useMemo(() => {
         if (!enableSlice) return [];
 

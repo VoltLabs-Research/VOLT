@@ -1,4 +1,4 @@
-import { memo, useEffect, useCallback, useState, useMemo } from 'react';
+import { useEffect, useCallback, useState, useMemo } from 'react';
 import { Download, Upload } from 'lucide-react';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import SimulationCard from '../SimulationCard';
@@ -7,6 +7,7 @@ import useTrajectoryStore from '../../../stores/use-trajectory-store';
 import useGetTrajectories from '../../../hooks/trajectory/use-get-trajectories';
 import useDeleteSelectedTrajectories from '../../../hooks/trajectory/use-delete-selected-trajectories';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
+import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import type { Trajectory } from '@/modules/trajectory/domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
@@ -15,10 +16,10 @@ interface SimulationGridContext {
     teamId?: string;
 };
 
-const SimulationGrid = memo(() => {
+const SimulationGrid = () => {
     const activeUploads = useTrajectoryStore((state) => state.activeUploads);
     
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const selectedTeam = useTeamStore((state) => state.selectedTeam)!;
     const getTrajectories = useGetTrajectories();
 
     const { selectedIds, isSelected, toggleSelection } = useSelectionParams();
@@ -28,6 +29,18 @@ const SimulationGrid = memo(() => {
     const [isDownloading, setIsDownloading] = useState(false);
 
     const activeUploadEntries = Object.entries(activeUploads);
+
+    const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
+        if(selectedIds.length === 0) return;
+
+        const hasModifierKey = [e.ctrlKey, e.metaKey].some(Boolean);
+        const isDeleteKey = ['Backspace', 'Delete'].includes(e.key);
+        const isDeleteShortcut = hasModifierKey && isDeleteKey;
+        if(isDeleteShortcut){
+            e.preventDefault();
+            await deleteSelectedTrajectories();
+        }
+    }, [selectedIds.length, deleteSelectedTrajectories]);
 
     const handleDownloadSamples = useCallback(async () => {
         setIsDownloading(true);
@@ -43,21 +56,11 @@ const SimulationGrid = memo(() => {
     }, []);
 
     useEffect(() => {
-        const handleKeyDown = async (e: KeyboardEvent) => {
-            if(selectedIds.length === 0) return;
-            
-            const isDeleteShortcut = (e.ctrlKey || e.metaKey) && (e.key === 'Backspace' || e.key === 'Delete');
-            if(isDeleteShortcut){
-                e.preventDefault();
-                await deleteSelectedTrajectories();
-            }
-        };
-
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedIds.length, deleteSelectedTrajectories]);
+    }, [handleKeyDown]);
 
-    const fetchData = useCallback(async (params: { page: number; limit: number } & SimulationGridContext): Promise<PaginatedResponse<Trajectory>> => {
+    const fetchData = useCallback(async (params: PaginationParams & SimulationGridContext): Promise<PaginatedResponse<Trajectory>> => {
         const result = await getTrajectories({ page: params.page, limit: params.limit });
         return {
             status: 'success',
@@ -109,8 +112,7 @@ const SimulationGrid = memo(() => {
             title='Simulations'
             view='grid'
             fetchData={fetchData}
-            context={{ teamId: selectedTeam?._id }}
-            enabled={!!selectedTeam?._id}
+            context={{ teamId: selectedTeam._id }}
             renderGridItem={renderGridItem}
             hideHeader={true}
             hideTabs={true}
@@ -123,8 +125,6 @@ const SimulationGrid = memo(() => {
             onEmptyButtonClick={emptyStateConfig.onButtonClick}
         />
     );
-});
-
-SimulationGrid.displayName = 'SimulationGrid';
+};
 
 export default SimulationGrid;

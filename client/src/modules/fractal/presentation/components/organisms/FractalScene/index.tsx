@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useState, useCallback, forwardRef, useImperativ
 import { Canvas } from '@react-three/fiber';
 import FractalScenePipeline from '@/modules/fractal/presentation/components/organisms/FractalScenePipeline';
 import type { FractalSceneConfig } from '@/modules/fractal/presentation/types/scene-config';
-import type { RendererStats } from '@/modules/fractal/presentation/stores/editor/visual-settings-slice';
 
 export interface FractalSceneRef {
     zoomTo: (zoomPercent: number) => void;
@@ -15,8 +14,6 @@ interface FractalSceneProps {
     showGizmo?: boolean;
     onControlsRef?: (ref: any) => void;
     onInteractionChange?: (isInteracting: boolean) => void;
-    onStats?: (stats: RendererStats) => void;
-    showPerformanceStats?: boolean;
     showGrid?: boolean;
 }
 
@@ -26,8 +23,6 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     showGizmo = true,
     onControlsRef,
     onInteractionChange,
-    onStats,
-    showPerformanceStats = false,
     showGrid
 }, ref) => {
     const orbitControlsRef = useRef<any>(null);
@@ -124,10 +119,8 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
                 orbitRef={orbitControlsRef}
                 orbitProps={orbitProps}
                 showGizmo={showGizmo}
-                showPerformanceStats={showPerformanceStats}
                 showGrid={showGrid}
                 onControlsRef={onControlsRef}
-                onStats={onStats}
                 markInteracting={markInteracting}
             >
                 {children}
@@ -137,6 +130,4 @@ const FractalScene = forwardRef<FractalSceneRef, FractalSceneProps>(({
     );
 });
 
-FractalScene.displayName = 'FractalScene';
-
-export default React.memo(FractalScene);
+export default FractalScene;

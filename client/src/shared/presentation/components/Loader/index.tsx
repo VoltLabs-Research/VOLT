@@ -20,7 +20,6 @@
 * SOFTWARE.
 **/
 
-import React from 'react';
 import Container from '@/shared/presentation/components/Container';
 import './Loader.css';
 

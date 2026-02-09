@@ -17,6 +17,7 @@ import useTeamRoleData from '@/modules/team/presentation/hooks/team-role/use-tea
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
 import useTeamMemberUseCases from '@/modules/team/presentation/hooks/team-member/use-team-member-use-cases';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
+import type { GetTeamMembersParams } from '@/modules/team/domain/ports/ITeamMemberRepository';
 import type { TeamMember } from '@/modules/team/domain/entities/TeamMember';
 import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/use-daily-activity-data';
 import ActivityHeatmap from '@/modules/daily-activity/presentation/components/molecules/ActivityHeatmap';
@@ -25,7 +26,7 @@ import './MyTeam.css';
 const MyTeamTemplate: React.FC = () => {
     const navigate = useNavigate();
 
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const selectedTeam = useTeamStore((state) => state.selectedTeam)!;
     const canInvite = useTeamStore((state) => state.canInvite);
     const updateTeamInList = useTeamStore((state) => state.updateTeamInList);
 
@@ -34,7 +35,7 @@ const MyTeamTemplate: React.FC = () => {
 
     const roles = useTeamRoleStore((state) => state.roles);
 
-    const user = useAuthStore((state) => state.user);
+    const user = useAuthStore((state) => state.user)!;
 
     const { checkCanInvite } = useTeamData();
     const { fetchRoles } = useTeamRoleData();
@@ -43,27 +44,16 @@ const MyTeamTemplate: React.FC = () => {
     const { activityData, fetchActivity } = useDailyActivityData();
 
     useEffect(() => {
-        if(selectedTeam){
-            fetchRoles(selectedTeam._id);
-            checkCanInvite(selectedTeam._id);
-            fetchActivity();
-        }
+        fetchRoles(selectedTeam._id);
+        checkCanInvite(selectedTeam._id);
+        fetchActivity();
     }, [selectedTeam, fetchRoles, checkCanInvite, fetchActivity]);
 
-    const fetchData = useCallback(async (params: { page: number; limit: number }) => {
-        if(!selectedTeam?._id){
-            return {
-                status: 'success' as const,
-                data: [],
-                pagination: { page: 1, limit: params.limit, total: 0, totalPages: 0, hasMore: false }
-            };
-        }
+    const fetchData = useCallback(async (params: GetTeamMembersParams) => {
         return await teamMemberRepository.getAll(selectedTeam._id, params);
-    }, [selectedTeam?._id, teamMemberRepository]);
+    }, [selectedTeam._id, teamMemberRepository]);
 
     const handleSaveTeamName = useCallback(async (newName: string) => {
-        if(!selectedTeam || !newName.trim() || newName === selectedTeam.name) return;
-
         try{
             await teamRepository.update(selectedTeam._id, { name: newName });
             updateTeamInList(selectedTeam._id, { name: newName });
@@ -73,19 +63,15 @@ const MyTeamTemplate: React.FC = () => {
     }, [selectedTeam, teamRepository, updateTeamInList]);
 
     const handleRoleChange = useCallback(async (memberId: string, roleId: string) => {
-        if(!selectedTeam?._id) return;
-
         try{
             const updated = await teamMemberRepository.update(selectedTeam._id, memberId, { role: roleId });
             updateMember(memberId, updated);
         }catch(err){
             console.error('Failed to update role:', err);
         }
-    }, [selectedTeam?._id, teamMemberRepository, updateMember]);
+    }, [selectedTeam._id, teamMemberRepository, updateMember]);
 
     const handleRemoveMember = useCallback(async (member: TeamMember) => {
-        if(!selectedTeam) return;
-
         const isConfirmed = await confirm(`Are you sure you want to remove ${member.user.firstName}?`);
         if(!isConfirmed) return;
 
@@ -95,7 +81,7 @@ const MyTeamTemplate: React.FC = () => {
         }catch(err){
             console.error('Failed to remove member:', err);
         }
-    }, [selectedTeam, teamMemberRepository, removeMemberFromStore]);
+    }, [selectedTeam._id, teamMemberRepository, removeMemberFromStore]);
 
     const roleOptions = useMemo(() => {
         return roles.map((role) => ({
@@ -106,8 +92,6 @@ const MyTeamTemplate: React.FC = () => {
     }, [roles]);
 
     const headerContent = useMemo(() => {
-        if(!selectedTeam) return null;
-
         return (
             <Container className='d-flex items-center gap-1'>
                 {canInvite ? (
@@ -131,7 +115,7 @@ const MyTeamTemplate: React.FC = () => {
             title: 'User',
             render: (_: unknown, row?: unknown) => {
                 const member = row as TeamMember;
-                const isCurrentUser = member.user._id === user?._id;
+                const isCurrentUser = member.user._id === user._id;
                 return (
                     <UserInfo
                         user={member.user}
@@ -145,17 +129,17 @@ const MyTeamTemplate: React.FC = () => {
             title: 'Role',
             render: (_: unknown, row?: unknown) => {
                 const member = row as TeamMember;
-                const isOwner = selectedTeam?.owner?._id === member.user._id;
+                const isOwner = selectedTeam.owner._id === member.user._id;
                 
                 if(isOwner){
                     return <span className='badge badge-primary'>Owner</span>;
                 }
                 
-                if(canInvite && member.user._id !== user?._id && roleOptions.length > 0){
+                if(canInvite && member.user._id !== user._id && roleOptions.length > 0){
                     return (
                         <Select
                             options={roleOptions}
-                            value={member.role?._id || ''}
+                            value={member.role._id}
                             onChange={(roleId) => handleRoleChange(member._id, roleId)}
                             placeholder='Select role...'
                             className='role-select-compact'
@@ -163,7 +147,7 @@ const MyTeamTemplate: React.FC = () => {
                     );
                 }
 
-                return <span className='badge badge-outline'>{member.role?.name || 'Member'}</span>;
+                return <span className='badge badge-outline'>{member.role.name}</span>;
             }
         },
         {
@@ -179,11 +163,9 @@ const MyTeamTemplate: React.FC = () => {
                         ) : (
                             <Container className='d-flex column'>
                                 <span className='color-secondary font-size-2'>Offline</span>
-                                {member.user.lastLoginAt && (
-                                    <span className='color-muted font-size-2'>
-                                        Seen {formatDistanceToNow(new Date(member.user.lastLoginAt))} ago
-                                    </span>
-                                )}
+                                <span className='color-muted font-size-2'>
+                                    Seen {formatDistanceToNow(new Date(member.user.lastLoginAt))} ago
+                                </span>
                             </Container>
                         )}
                     </>
@@ -193,19 +175,18 @@ const MyTeamTemplate: React.FC = () => {
         {
             key: 'trajectoriesCount',
             title: 'Trajectories',
-            render: (val: unknown) => <span className='color-secondary font-size-2'>{(val as number) || 0}</span>
+            render: (val: unknown) => <span className='color-secondary font-size-2'>{val as number}</span>
         },
         {
             key: 'analysesCount',
             title: 'Analyses',
-            render: (val: unknown) => <span className='color-secondary font-size-2'>{(val as number) || 0}</span>
+            render: (val: unknown) => <span className='color-secondary font-size-2'>{val as number}</span>
         },
         {
             key: 'timeSpentLast7Days',
             title: 'Time (7d)',
             render: (val: unknown) => {
                 const minutes = val as number;
-                if(!minutes) return <span className='color-secondary font-size-2'>0m</span>;
                 const hours = Math.floor(minutes / 60);
                 const mins = minutes % 60;
                 return (
@@ -220,7 +201,7 @@ const MyTeamTemplate: React.FC = () => {
             title: 'Joined',
             render: (val: unknown) => (
                 <span className='color-secondary font-size-2'>
-                    {val ? formatDistanceToNow(new Date(val as string), { addSuffix: true }) : '-'}
+                    {formatDistanceToNow(new Date(val as string), { addSuffix: true })}
                 </span>
             )
         }
@@ -247,17 +228,12 @@ const MyTeamTemplate: React.FC = () => {
         return options;
     }, [canInvite, navigate, handleRemoveMember]);
 
-    if(!selectedTeam){
-        return <Container className='p-3'>Please select a team.</Container>;
-    }
-
     return (
         <Container className='my-team-page h-max'>
             <DocumentListing<TeamMember>
-                title={headerContent || selectedTeam.name}
+                title={headerContent}
                 columns={columns}
                 fetchData={fetchData}
-                enabled={!!selectedTeam?._id}
                 getMenuOptions={getMenuOptions}
                 emptyMessage='No members found in this team.'
                 headerActions={<ActivityHeatmap data={activityData} />}

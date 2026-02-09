@@ -1,23 +1,21 @@
 import React, { useMemo, forwardRef } from 'react';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 import SingleModelViewer from '@/modules/fractal/presentation/components/molecules/SingleModelViewer';
 import { getRenderableScenes } from '@/modules/fractal/presentation/utilities/sceneUtils';
+import type { SlicePlaneConfig } from '@/modules/fractal/presentation/types/configuration';
+import type { SceneObjectType } from '@/modules/fractal/presentation/types/stores/editor/scene-types';
 
 interface TimestepViewerProps {
     trajectoryId: string;
     currentTimestep: number | undefined;
     analysisId?: string;
-    activeScene?: {
-        sceneType: string;
-        source: string;
-        analysisId?: string;
-        exposureId?: string;
-        property?: string;
-        startValue?: number;
-        endValue?: number;
-        gradient?: string;
-    };
+    activeScenes: SceneObjectType[];
+    slicePlaneConfig: SlicePlaneConfig;
+    pointSizeMultiplier: number;
+    sceneOpacities: Record<string, number>;
+    activeModelBounds?: any;
+    onModelBoundsChanged?: (bounds: any) => void;
+    onLoadingStateChanged?: (isLoading: boolean) => void;
     rotation?: { x?: number; y?: number; z?: number };
     position?: { x?: number; y?: number; z?: number };
     scale?: number;
@@ -38,6 +36,13 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     trajectoryId,
     currentTimestep,
     analysisId = 'default',
+    activeScenes: storeActiveScenes,
+    slicePlaneConfig,
+    pointSizeMultiplier,
+    sceneOpacities,
+    activeModelBounds,
+    onModelBoundsChanged,
+    onLoadingStateChanged,
     rotation = {},
     position = { x: 0, y: 0, z: 0 },
     scale = 1,
@@ -49,7 +54,6 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
     spacing = 0.5,
     forceDefaultScene = false
 }, _ref) => {
-    const storeActiveScenes = useEditorStore((state) => state.activeScenes);
     const plugins = usePluginStore((state) => state.plugins);
 
     const scenesToRender = useMemo(() => {
@@ -114,6 +118,12 @@ const TimestepViewer = forwardRef<TimestepViewerRef, TimestepViewerProps>(({
                         currentTimestep={currentTimestep}
                         analysisId={analysisId}
                         sceneConfig={scene as any}
+                        slicePlaneConfig={slicePlaneConfig}
+                        pointSizeMultiplier={pointSizeMultiplier}
+                        sceneOpacities={sceneOpacities}
+                        activeModelBounds={activeModelBounds}
+                        onModelBoundsChanged={onModelBoundsChanged}
+                        onLoadingStateChanged={onLoadingStateChanged}
                         rotation={rotation}
                         position={scenePosition}
                         scale={scale}

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Grid } from '@react-three/drei';
 import type { CanvasGridSettingsState } from '@/modules/fractal/presentation/types/stores/editor/visual-types';
 

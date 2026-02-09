@@ -22,15 +22,22 @@ const usePaginationParams = (options: UsePaginationParamsOptions = {}): UsePagin
     const { defaultPage = 1, defaultLimit = 20 } = options;
     const { searchParams, updateSearchParams } = useSearchParamsState();
     
-    const page = Number(searchParams.get('page')) || defaultPage;
-    const limit = Number(searchParams.get('limit')) || defaultLimit;
-    const search = searchParams.get('search') || '';
+    const pageParam = searchParams.get('page');
+    const limitParam = searchParams.get('limit');
+    const searchParam = searchParams.get('search');
+
+    const parsedPage = pageParam === null ? NaN : Number(pageParam);
+    const parsedLimit = limitParam === null ? NaN : Number(limitParam);
+
+    const page = Number.isNaN(parsedPage) ? defaultPage : parsedPage;
+    const limit = Number.isNaN(parsedLimit) ? defaultLimit : parsedLimit;
+    const search = searchParam === null ? '' : searchParam;
     
     const updateParams = useCallback((updates: Partial<PaginationParams>) => {
         updateSearchParams({
             ...(updates.page !== undefined ? { page: updates.page } : {}),
             ...(updates.limit !== undefined ? { limit: updates.limit } : {}),
-            ...(updates.search !== undefined ? { search: updates.search || null } : {})
+            ...(updates.search !== undefined ? { search: updates.search === '' ? null : updates.search } : {})
         });
     }, [updateSearchParams]);
     

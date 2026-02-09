@@ -41,9 +41,9 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
         setIsFetchingStats(true);
         try {
             const stats = await colorCodingRepository.getStats({
-                trajectoryId, analysisId, timestep: currentTimestep,
-                property, type, exposureId: selectedOption?.exposureId || undefined
-            });
+                    trajectoryId, analysisId, timestep: currentTimestep,
+                    property, type, exposureId: selectedOption?.exposureId
+                });
             setStartValue(stats.min);
             setEndValue(stats.max);
         } catch (error) {
@@ -61,11 +61,11 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
         try {
             await colorCodingRepository.apply({
                 trajectoryId, analysisId, timestep: currentTimestep,
-                payload: { property, startValue, endValue, gradient, exposureId: exposureId || undefined }
+                payload: { property, startValue, endValue, gradient, exposureId }
             });
 
             setActiveScene({
-                analysisId, endValue: String(endValue), exposureId: exposureId || undefined,
+                analysisId, endValue: String(endValue), exposureId,
                 gradient, property, source: 'color-coding', startValue: String(startValue),
                 sceneType: 'color-coding'
             } as any);

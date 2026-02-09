@@ -1,7 +1,21 @@
-.shortcut-feedback {
+.canvas-shortcut-feedback {
+    left: 50%;
     bottom: 7rem;
-    left: 46%;
     transform: translateX(-50%);
-    z-index: 10001;
-    pointer-events: none;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    padding: 6px 10px;
+    z-index: 1001;
+}
+
+.canvas-shortcut-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-soft);
+    border-radius: 5px;
+    font-size: 11px;
 }

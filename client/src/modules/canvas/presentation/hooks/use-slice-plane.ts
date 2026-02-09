@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import type { SliceAxis } from '@/modules/fractal/presentation/types/configuration';
 
 export const AXES: SliceAxis[] = ['x', 'y', 'z'];

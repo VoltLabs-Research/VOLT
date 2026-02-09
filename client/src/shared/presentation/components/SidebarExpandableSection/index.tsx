@@ -2,8 +2,14 @@ import { useState } from 'react';
 import { IoChevronDown } from 'react-icons/io5';
 import type { IconType } from 'react-icons';
 import Container from '@/shared/presentation/components/Container';
-import SidebarSubItems, { type SubItem } from '@/shared/presentation/components/SidebarSubItems';
+import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
 import './SidebarExpandableSection.css';
+
+export interface SubItem {
+    label: string;
+    isSelected?: boolean;
+    onClick?: () => void;
+};
 
 interface SidebarExpandableSectionProps {
     label: string;
@@ -54,7 +60,19 @@ const SidebarExpandableSection = ({
                 />
             </button>
 
-            {expanded && <SidebarSubItems items={subItems} />}
+            {expanded && (
+                <Container className='sidebar-sub-items'>
+                    {subItems.map((item, index) => (
+                        <button
+                            key={index}
+                            className={`sidebar-sub-item ${item.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
+                            onClick={item.onClick}
+                        >
+                            {item.label}
+                        </button>
+                    ))}
+                </Container>
+            )}
         </>
     );
 };

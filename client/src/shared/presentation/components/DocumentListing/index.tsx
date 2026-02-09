@@ -128,6 +128,7 @@ const DocumentListing = <T, TContext = Record<string, never>>({
     }, [sortConfig]);
 
     const renderContent = () => {
+        const emptyMessageText = error ? error : emptyMessage;
         if(view === 'grid'){
             if(!renderGridItem) return null;
 
@@ -142,7 +143,7 @@ const DocumentListing = <T, TContext = Record<string, never>>({
                     renderSkeleton={renderGridSkeleton}
                     emptyIcon={emptyIcon}
                     emptyTitle={emptyTitle}
-                    emptyMessage={error || emptyMessage}
+                    emptyMessage={emptyMessageText}
                     emptyButtonText={emptyButtonText}
                     emptyButtonIsLoading={emptyButtonIsLoading}
                     onEmptyButtonClick={onEmptyButtonClick}
@@ -166,7 +167,7 @@ const DocumentListing = <T, TContext = Record<string, never>>({
                         getCellTitle={(col) => <>{col.title} {getSortIndicator(col)}</>}
                         isLoading={isLoading}
                         getMenuOptions={wrappedGetMenuOptions}
-                        emptyMessage={error || emptyMessage}
+                        emptyMessage={emptyMessageText}
                         hasMore={hasMore}
                         isFetchingMore={isFetchingMore}
                         onLoadMore={handleLoadMore}
