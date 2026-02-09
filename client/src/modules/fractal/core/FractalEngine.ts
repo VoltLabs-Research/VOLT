@@ -169,11 +169,10 @@ export class FractalEngine {
             });
 
             if (this.state.model) {
-                this.surface.scene.remove(this.state.model);
+                this.state.model.removeFromParent();
             }
 
             this.state.model = loadedModel;
-            this.surface.scene.add(loadedModel);
             this.state.bounds = bounds;
             this.state.lastLoadedUrl = url;
 
@@ -187,6 +186,10 @@ export class FractalEngine {
         } finally {
             this.state.isLoading = false;
             this.surface.invalidate();
+            const latestUrl = this.params.url ?? null;
+            if (latestUrl && latestUrl !== this.state.lastLoadedUrl) {
+                this.loadIfNeeded();
+            }
         }
     }
 
@@ -337,7 +340,7 @@ export class FractalEngine {
 
     dispose() {
         if (this.state.model) {
-            this.surface.scene.remove(this.state.model);
+            this.state.model.removeFromParent();
             this.state.model = null;
         }
         this.disposeSelection();
