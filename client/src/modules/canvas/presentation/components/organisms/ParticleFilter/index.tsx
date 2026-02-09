@@ -43,8 +43,8 @@ const PreviewResultView = ({
     onApply,
     onCancel
 }: PreviewResultViewProps) => (
-    <Container className="canvas-filter-panel d-flex column gap-1">
-        <Container className="d-flex column gap-1">
+    <Container className="canvas-filter-panel d-flex column gap-05">
+        <Container className="d-flex column gap-05">
             <PreviewStats percentage={percentage} />
 
             <FormField
@@ -54,12 +54,13 @@ const PreviewResultView = ({
                 fieldValue={action}
                 onFieldChange={(_, value) => setAction(value as FilterAction)}
                 options={ACTIONS}
+                variant="canvas"
             />
 
             {error && <ErrorMessage error={error} />}
         </Container>
 
-        <Container className="d-flex column gap-05">
+        <Container className="d-flex column gap-025">
             <Button
                 isLoading={isApplying}
                 variant="solid"
@@ -68,7 +69,8 @@ const PreviewResultView = ({
                 onClick={onApply}
                 disabled={isApplying}
                 shape="rounded"
-                className="font-size-1"
+                size="sm"
+                className="font-size-05"
             >
                 {action === 'delete' ? 'Delete Selection' : 'Apply Color'}
             </Button>
@@ -76,10 +78,11 @@ const PreviewResultView = ({
                 variant="ghost"
                 intent="canvas"
                 shape="rounded"
+                size="sm"
                 block
                 onClick={onCancel}
                 disabled={isApplying}
-                className="font-size-1"
+                className="font-size-05"
             >
                 Cancel
             </Button>
@@ -124,8 +127,8 @@ const FilterFormView = ({
     ];
 
     return (
-        <Container className="canvas-filter-panel d-flex column gap-1">
-            <Container className="d-flex column gap-1">
+        <Container className="canvas-filter-panel d-flex column gap-05">
+            <Container className="d-flex column gap-05">
                 {selectFields.map((f) => (
                     <FormField
                         key={f.key}
@@ -135,6 +138,7 @@ const FilterFormView = ({
                         fieldValue={f.value}
                         onFieldChange={(_, val) => f.onChange(String(val))}
                         options={f.options}
+                        variant="canvas"
                     />
                 ))}
 
@@ -146,6 +150,7 @@ const FilterFormView = ({
                     label="Value"
                     suggestions={valueSuggestions}
                     onFetchSuggestions={onFetchSuggestions}
+                    variant="canvas"
                 />
 
                 {error && <ErrorMessage error={error} />}
@@ -157,10 +162,11 @@ const FilterFormView = ({
                     variant="soft"
                     intent="canvas"
                     shape="rounded"
+                    size="sm"
                     block
                     onClick={onPreview}
                     disabled={!canPreview}
-                    className="font-size-1"
+                    className="font-size-05"
                 >
                     Preview
                 </Button>

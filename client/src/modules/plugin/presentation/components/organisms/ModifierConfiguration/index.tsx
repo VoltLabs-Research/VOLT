@@ -213,9 +213,9 @@ const ModifierConfiguration = ({
                 {icon}
             </Container>
 
-            <Container className='d-flex column gap-1 modifier-configuration-body-container y-scroll'>
+            <Container className='d-flex column gap-05 modifier-configuration-body-container y-scroll'>
                 {configFields.length === 0 ? (
-                    <Paragraph className='color-muted font-size-2 text-center no-fields-text'>
+                    <Paragraph className='color-muted font-size-05 text-center no-fields-text'>
                         This modifier has no configurable parameters.
                     </Paragraph>
                 ) : (
@@ -229,6 +229,7 @@ const ModifierConfiguration = ({
                             inputProps={field.type === 'input' ? field.inputProps : undefined}
                             fieldValue={config[field.key]}
                             onFieldChange={handleFieldChange}
+                            variant="canvas"
                         />
                     ))
                 )}
@@ -239,15 +240,17 @@ const ModifierConfiguration = ({
                     fieldType='checkbox'
                     fieldValue={selectedFrameOnly}
                     onFieldChange={(_, value) => setSelectedFrameOnly(Boolean(value))}
+                    variant="canvas"
                 />
             </Container>
 
-            <Container className='d-flex column gap-1'>
+            <Container className='d-flex column gap-05'>
                 <Button
                     className='start-analysis-btn'
                     isLoading={isLoading}
                     variant='outline'
                     intent='white'
+                    size='sm'
                     block
                     onClick={startAnalysis}
                     disabled={isLoading}

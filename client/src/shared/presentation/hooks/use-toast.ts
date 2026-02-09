@@ -1,21 +1,22 @@
+import { useCallback } from 'react';
 import { toast } from 'sonner';
 
 const useToast = () => {
-    const showSuccess = (message: string) => {
+    const showSuccess = useCallback((message: string) => {
         toast.success(message);
-    };
+    }, []);
 
-    const showError = (message: string) => {
+    const showError = useCallback((message: string) => {
         toast.error(message);
-    };
+    }, []);
 
-    const showInfo = (message: string) => {
+    const showInfo = useCallback((message: string) => {
         toast.info(message);
-    };
+    }, []);
 
-    const showWarning = (message: string) => {
+    const showWarning = useCallback((message: string) => {
         toast.warning(message);
-    };
+    }, []);
 
     return { showSuccess, showError, showInfo, showWarning };
 };

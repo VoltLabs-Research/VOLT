@@ -96,7 +96,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
             const args = getPluginArguments(option.pluginModifierId).filter((a) => a.value === undefined);
             if(args.length > 0){
                 content = (
-                    <Container className="d-flex column gap-02">
+                    <Container className="d-flex column gap-05">
                         {args.map((arg, i) => (
                             <ArgumentField key={`${arg.argument}-${i}`} arg={arg} index={i} />
                         ))}

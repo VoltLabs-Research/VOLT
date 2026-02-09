@@ -41,7 +41,7 @@ const ModifierItem = ({
         titleClassName="font-size-1 color-secondary"
         iconClassName="color-muted"
         bodyClassName="canvas-section-body"
-        contentClassName="p-1"
+        contentClassName="canvas-render-section-body"
         noSpacing
         arrowSize={13}
         useDefaultTitleStyles={false}

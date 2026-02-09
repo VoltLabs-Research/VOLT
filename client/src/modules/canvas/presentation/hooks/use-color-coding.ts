@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
 import useColorCodingUseCases from '@/modules/trajectory/presentation/hooks/color-coding/use-color-coding-use-cases';
 import useToast from '@/shared/presentation/hooks/use-toast';
@@ -30,10 +30,14 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
     const [isFetchingStats, setIsFetchingStats] = useState(false);
     const [isApplying, setIsApplying] = useState(false);
 
+    // Refs for values used inside fetchStats but that should NOT trigger re-fetches
+    const propertyOptionsRef = useRef(propertyOptions);
+    propertyOptionsRef.current = propertyOptions;
+
     const fetchStats = useCallback(async () => {
         if (!property || !trajectoryId) return;
 
-        const selectedOption = propertyOptions.find((opt) => opt.value === property);
+        const selectedOption = propertyOptionsRef.current.find((opt) => opt.value === property);
         const type = selectedOption?.exposureId ? 'modifier' : 'base';
 
         if (type === 'modifier' && !analysisId) return;
@@ -52,7 +56,7 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
         } finally {
             setIsFetchingStats(false);
         }
-    }, [trajectoryId, analysisId, currentTimestep, property, propertyOptions, colorCodingRepository, showError]);
+    }, [trajectoryId, analysisId, currentTimestep, property, colorCodingRepository, showError]);
 
     const applyColorCoding = useCallback(async () => {
         if (!trajectoryId || currentTimestep === undefined || !property) return;

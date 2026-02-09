@@ -13,6 +13,7 @@ interface UseResizableOptions {
 
 interface UseResizableReturn {
     size: number;
+    setSize: (size: number) => void;
     isDragging: boolean;
     handleProps: {
         onPointerDown: (e: React.PointerEvent) => void;
@@ -72,6 +73,7 @@ const useResizable = ({
 
     return {
         size,
+        setSize: (next: number) => setSize(clamp(next)),
         isDragging,
         handleProps: { onPointerDown }
     };

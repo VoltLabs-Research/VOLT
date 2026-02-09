@@ -33,7 +33,7 @@
     width: 2px;
     height: 12px;
     border-radius: 1px;
-    background: #a78bfa;
+    background: rgba(255, 255, 255, 0.85);
 }
 
 .canvas-tree-toggle {
