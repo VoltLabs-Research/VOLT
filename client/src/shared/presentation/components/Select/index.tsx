@@ -162,7 +162,7 @@ const Select = ({
     const dropdown = isOpen ? createPortal(
         <div
             ref={dropdownRef}
-            className='select-dropdown y-auto'
+            className='select-dropdown y-auto glass-bg'
             style={dropdownStyle}
             onScroll={handleScroll}
         >

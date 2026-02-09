@@ -503,19 +503,15 @@ export class FractalEngine {
         return cur;
     }
 
-    private ensureSelectionGroup() {
+    private updateSelectionGeometry(_size: THREE.Vector3, _hover: boolean) {
         return;
     }
 
-    private updateSelectionGeometry(size: THREE.Vector3, hover: boolean) {
+    private updateSelectionPulse(_position: THREE.Vector3, _targetScale: number, _hover: boolean, _pulseOpacity: number) {
         return;
     }
 
-    private updateSelectionPulse(position: THREE.Vector3, targetScale: number, hover: boolean, pulseOpacity: number) {
-        return;
-    }
-
-    private showSelection(size: THREE.Vector3, hover: boolean) {
+    private showSelection(_size: THREE.Vector3, _hover: boolean) {
         return;
     }
 

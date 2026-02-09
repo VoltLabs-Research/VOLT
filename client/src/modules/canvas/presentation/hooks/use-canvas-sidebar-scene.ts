@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
-import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
+import useCanvasUrlState from './use-canvas-url-state';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import usePluginStore, { type ResolvedModifier } from '@/modules/plugin/presentation/stores/use-plugin-store';
 import useAnalysisUseCases from '@/modules/analysis/presentation/hooks/use-analysis-use-cases';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
-import useAnalysisStatus from '@/modules/canvas/presentation/hooks/use-analysis-status';
-import useExposureManager, { type ExposureEntry, DEFAULT_ENTRY } from '@/modules/canvas/presentation/hooks/use-exposure-manager';
+import useAnalysisStatus from './use-analysis-status';
+import useExposureManager, { type ExposureEntry, DEFAULT_ENTRY } from './use-exposure-manager';
 import useToast from '@/shared/presentation/hooks/use-toast';
 
 import type { Analysis } from '@/modules/analysis/domain/entities/Analysis';
 import type { Plugin } from '@/modules/plugin/domain/entities';
-import { computeDifferingConfigFields } from '@/modules/canvas/presentation/components/molecules/CanvasSidebarScene/utils';
+import { computeDifferingConfigFields } from '../utils/canvas-sidebar-scene.ts';
 
 export interface AnalysisSectionData {
     analysis: Analysis;
@@ -84,6 +84,14 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         setAnalyses([]);
     }, [trajectoryId, resetEntries]);
 
+    useEffect(() => {
+        const snapshot = usePluginStore.getState() as any;
+        if (snapshot.modifiers?.length > 0 && !snapshot.loading && !snapshot.isFetchingMore) return;
+        snapshot.fetchAllPlugins?.({ limit: 200, force: true }).catch((error: any) => {
+            console.error('[useCanvasSidebarScene] plugin bootstrap failed', error);
+        });
+    }, []);
+
     // Bootstrap: fetch analyses
     useEffect(() => {
         let cancelled = false;
@@ -102,7 +110,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                     page: 1,
                     limit: 100
                 });
-                const fetchedRaw = response.data || [];
+                const fetchedRaw = response.data;
 
                 if (cancelled) return;
 
@@ -110,8 +118,8 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                 const normalizedAnalyses: Analysis[] = [];
 
                 fetchedRaw.forEach((item: any) => {
-                    const props = item?.props ? item.props : item;
-                    const id = item?.id || item?._id;
+                    const props = item.props ?? item;
+                    const id = item._id;
 
                     let pluginSlug = '';
 
@@ -126,7 +134,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                         ...props,
                         _id: id,
                         plugin: pluginSlug,
-                        config: props.config || {}
+                        config: props.config
                     });
                 });
 
@@ -156,11 +164,11 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             const newAnalysis: Analysis = {
                 _id: data.analysisId,
                 plugin: data.pluginSlug,
-                config: data.config || {},
+                config: data.config,
                 trajectory: data.trajectoryId,
-                totalFrames: data.totalFrames ?? 0,
-                completedFrames: data.completedFrames ?? 0,
-                status: data.status || 'pending',
+                totalFrames: data.totalFrames,
+                completedFrames: data.completedFrames,
+                status: data.status,
                 createdAt: data.createdAt,
                 updatedAt: data.createdAt
             } as any;
@@ -285,7 +293,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                 pluginDisplayName: modifier.name,
                 entry,
                 isCurrentAnalysis: analysis._id === analysisConfigId,
-                config: analysis.config || {}
+                config: analysis.config
             };
         });
 

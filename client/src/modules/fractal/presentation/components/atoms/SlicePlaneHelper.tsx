@@ -23,7 +23,7 @@ interface SinglePlaneProps {
     angle: number;
 }
 
-const SinglePlane: React.FC<SinglePlaneProps> = React.memo(({ axis, position, angle }) => {
+const SinglePlane: React.FC<SinglePlaneProps> = ({ axis, position, angle }) => {
     const { planePosition, rotation } = useMemo(() => {
         const positionVec = AXIS_NORMALS[axis].clone().multiplyScalar(position);
         const baseRotation = AXIS_ROTATIONS[axis].clone();
@@ -74,9 +74,7 @@ const SinglePlane: React.FC<SinglePlaneProps> = React.memo(({ axis, position, an
             </line>
         </group>
     );
-});
-
-SinglePlane.displayName = 'SinglePlane';
+};
 
 interface SlicePlaneHelperProps {
     config: SlicePlaneConfig;
@@ -141,4 +139,4 @@ const SlicePlaneHelper: React.FC<SlicePlaneHelperProps> = ({ config }) => {
     );
 };
 
-export default React.memo(SlicePlaneHelper);
+export default SlicePlaneHelper;

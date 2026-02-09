@@ -1,0 +1,48 @@
+.canvas-render-section-body {
+    padding: 8px 12px 12px;
+}
+
+.canvas-section {
+    border-top: 1px solid var(--color-border-soft);
+}
+
+.canvas-render-grid {
+    display: grid;
+    gap: 8px;
+}
+
+.canvas-render-grid--md {
+    gap: 12px;
+}
+
+.canvas-render-warning {
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: rgba(248, 113, 113, 0.08);
+    color: #f87171;
+}
+
+.canvas-form-section {
+    padding: 6px 0;
+}
+
+.canvas-form-section-header {
+    gap: 8px;
+}
+
+.canvas-form-section-title {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+}
+
+.canvas-form-label {
+    font-size: 11px;
+    color: var(--color-text-muted);
+}
+
+.canvas-form-value {
+    font-size: 11px;
+    color: var(--color-text-secondary);
+    min-width: 40px;
+    text-align: right;
+}

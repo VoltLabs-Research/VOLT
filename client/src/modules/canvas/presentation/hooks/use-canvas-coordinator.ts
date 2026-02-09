@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import useGetTrajectoryById from '@/modules/trajectory/presentation/hooks/trajectory/use-get-trajectory-by-id';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
 

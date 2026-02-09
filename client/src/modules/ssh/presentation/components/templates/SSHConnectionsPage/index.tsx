@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useToast from '@/shared/presentation/hooks/use-toast';
+import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { useSSHUseCases } from '@/modules/ssh/presentation/hooks';
 import SSHConnectionModal, { SSH_CONNECTION_MODAL_ID } from '../../molecules/SSHConnectionModal';
 import { openModal } from '@/shared/presentation/components/Modal';
@@ -20,8 +21,11 @@ const SSHConnectionsPage = () => {
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
     const [refreshKey, setRefreshKey] = useState(0);
 
-    const fetchData = useCallback(async (params: { page: number; limit: number }) => {
-        return await sshRepository.getConnections(params);
+    const fetchData = useCallback(async (params: PaginationParams) => {
+        return await sshRepository.getConnections({
+            page: params.page,
+            limit: params.limit
+        });
     }, [sshRepository]);
 
     const handleOpenFileExplorer = useCallback((connection: SSHConnection) => {
@@ -33,12 +37,12 @@ const SSHConnectionsPage = () => {
             const result = await sshRepository.testConnection(connection._id);
             if (result.valid) {
                 showSuccess(`Connection to "${connection.name}" successful!`);
-            } else {
-                showError(result.error || `Connection to "${connection.name}" failed`);
+                return;
             }
+            showError(result.error);
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Connection test failed';
-            showError(message);
+            const error = err as Error;
+            showError(error.message);
         }
     }, [sshRepository, showSuccess, showError]);
 

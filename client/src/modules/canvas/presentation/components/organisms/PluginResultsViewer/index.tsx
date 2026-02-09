@@ -1,161 +1,94 @@
-import { useState, useMemo, useCallback } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { RiCloseLine, RiDownloadLine } from 'react-icons/ri';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
-import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
-import { usePluginStore } from '@/modules/plugin';
-import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import Loader from '@/shared/presentation/components/Loader';
-import useToast from '@/shared/presentation/hooks/use-toast';
-import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
+import IconButton from '@/shared/presentation/components/IconButton';
+import Button from '@/shared/presentation/components/Button';
 import PluginExposureTable from '@/modules/plugin/presentation/components/organisms/PluginExposureTable';
 import PluginAtomsTable from '@/modules/plugin/presentation/components/organisms/PluginAtomsTable';
-import { triggerBrowserDownload } from '@/shared/utils/file';
-import '@/modules/canvas/presentation/components/organisms/PluginResultsViewer/PluginResultsViewer.css';
+import usePluginResults from '../../../hooks/use-plugin-results';
+import './PluginResultsViewer.css';
 
 interface PluginResultsViewerProps {
     pluginSlug: string;
     analysisId: string;
 }
 
-const PluginResultsViewer = ({
-    pluginSlug,
-    analysisId
-}: PluginResultsViewerProps) => {
-    const { setResultsSlug } = useCanvasUrlState();
-    const closeResults = () => {
-        setResultsSlug(undefined, { replace: true });
-    };
-    const plugin = usePluginStore((state) => state.pluginsBySlug[pluginSlug]);
-    const trajectory = useTrajectoryStore((state) => state.trajectory);
-    const team = useTeamStore(useShallow((state) => state.selectedTeam));
-    const { pluginRepository } = usePluginUseCases();
-
-    const [isDownloading, setIsDownloading] = useState(false);
-    const { showSuccess } = useToast();
-
-    const [activeTab, setActiveTab] = useState(0);
-
-    const exposures = plugin?.exposures ?? [];
-
-    const listingExposures = useMemo(() => {
-        return exposures.filter((exp) => Boolean(exp.name));
-    }, [exposures]);
-
-    const perAtomProperties = useMemo(() => {
-        const properties = new Set<string>();
-        exposures.forEach((exp) => {
-            if (exp.perAtomProperties) {
-                exp.perAtomProperties.forEach((p) => properties.add(p));
-            }
-        });
-        return Array.from(properties);
-    }, [exposures]);
-
-    const hasAtomsTab = perAtomProperties.length > 0;
-    const atomsTabIndex = listingExposures.length;
-
-    const activeExposure = activeTab < listingExposures.length ? listingExposures[activeTab] : null;
-    const isAtomsTabActive = hasAtomsTab && activeTab === atomsTabIndex;
-
-    const atomExposureId = useMemo(() => {
-        if (!exposures.length) return undefined;
-
-        const atomExposure = exposures.find((e) =>
-            e.perAtomProperties && e.perAtomProperties.length > 0
-        );
-        return atomExposure?._id || exposures[0]?._id;
-    }, [exposures]);
-
-    const handleDownload = useCallback(async () => {
-        try {
-            setIsDownloading(true);
-            const blob = await pluginRepository.exportAnalysisResults(pluginSlug, analysisId);
-            triggerBrowserDownload(blob, `${pluginSlug}_analysis_${analysisId}.zip`);
-            showSuccess('Analysis results downloaded successfully');
-        } catch (error) {
-            console.error('Failed to download results:', error);
-        } finally {
-            setIsDownloading(false);
-        }
-    }, [pluginSlug, analysisId, showSuccess, pluginRepository]);
-
-    if (listingExposures.length === 0 && !hasAtomsTab) {
-        return (
-            <Container className='plugin-results-viewer-container d-flex column p-absolute h-max overflow-hidden right-1 bottom-1 radius-lg color-secondary'>
-<Container className='plugin-results-header d-flex items-center content-between f-shrink-0'>
-                    <Title className='font-size-3 font-weight-5'>{plugin?.modifier?.name || plugin?.slug || pluginSlug}</Title>
-                    <i className='plugin-results-close cursor-pointer p-025 radius-xs transition-fast' onClick={closeResults}>
-                        <RiCloseLine size={20} />
-                    </i>
-                </Container>
-                <Container className='plugin-results-empty d-flex items-center content-center flex-1 p-1 text-center font-size-1 color-muted'>
-                    <span className='color-muted font-size-2'>No listings available for this analysis</span>
-                </Container>
-            </Container>
-        );
-    }
+const PluginResultsViewer = ({ pluginSlug, analysisId }: PluginResultsViewerProps) => {
+    const {
+        title, tabs, activeTab, setActiveTab,
+        activeListingSlug, isAtomsTab, atomExposureId,
+        trajectoryId, teamId,
+        isDownloading, isEmpty, close, download
+    } = usePluginResults({ pluginSlug, analysisId });
 
     return (
-        <Container className='plugin-results-viewer-container d-flex column p-absolute h-max overflow-hidden right-1 bottom-1 radius-lg color-secondary'>
-            <Container className='plugin-results-header d-flex items-center content-between f-shrink-0'>
-                <Title className='font-size-3 font-weight-5'>{plugin?.modifier?.name || plugin?.slug || pluginSlug}</Title>
-                <Container className='d-flex items-center gap-05'>
-                    <i
-                        className='plugin-results-download cursor-pointer p-025 radius-xs transition-fast'
-                        onClick={handleDownload}
-                        title='Download as XLSX'
-                    >
-                        {isDownloading ? <Loader scale={0.4} /> : <RiDownloadLine size={18} />}
-                    </i>
-                    <i className='plugin-results-close cursor-pointer p-025 radius-xs transition-fast' onClick={closeResults}>
-                        <RiCloseLine size={20} />
-                    </i>
+        <Container className="canvas-results-viewer d-flex column p-absolute right-1 bottom-1 w-max overflow-hidden">
+            <Container className="canvas-results-header d-flex items-center content-between panel-header-bordered">
+                <Title className="font-size-1">{title}</Title>
+                <Container className="d-flex items-center gap-05">
+                    {!isEmpty && (
+                        <Button
+                            variant="ghost"
+                            intent="canvas"
+                            shape="square"
+                            size="sm"
+                            onClick={download}
+                            title="Download as XLSX"
+                            isLoading={isDownloading}
+                        >
+                            Download
+                        </Button>
+                    )}
+                    <IconButton variant="ghost" size="sm" onClick={close} aria-label="Close results">
+                        ×
+                    </IconButton>
                 </Container>
             </Container>
 
-            <Container className='plugin-results-tabs-container d-flex gap-05 f-shrink-0 w-max'>
-                {listingExposures.map((exposure, index) => (
-                    <button
-                        key={`${exposure.exposureId}-${index}`}
-                        className={`plugin-results-tab ${activeTab === index ? 'active' : ''} font-size-1 font-weight-4 cursor-pointer`}
-                        onClick={() => setActiveTab(index)}
-                    >
-                        <span className='plugin-results-tab-name overflow-hidden'>{exposure.name}</span>
-                    </button>
-                ))}
-                {hasAtomsTab && (
-                    <button
-                        className={`plugin-results-tab ${isAtomsTabActive ? 'active' : ''} font-size-1 font-weight-4 cursor-pointer`}
-                        onClick={() => setActiveTab(atomsTabIndex)}
-                    >
-                        <span className='plugin-results-tab-name overflow-hidden'>Atoms</span>
-                    </button>
-                )}
-            </Container>
+            {isEmpty ? (
+                <Container className="d-flex items-center content-center p-05">
+                    <span className="color-muted font-size-1">No listings available for this analysis</span>
+                </Container>
+            ) : (
+                <>
+                    <Container className="canvas-results-tabs d-flex items-center gap-025 overflow-auto" role="tablist">
+                        {tabs.map((label, index) => (
+                            <Button
+                                key={label}
+                                role="tab"
+                                aria-selected={activeTab === index}
+                                variant={activeTab === index ? 'solid' : 'ghost'}
+                                intent="canvas"
+                                shape="square"
+                                size="sm"
+                                onClick={() => setActiveTab(index)}
+                            >
+                                {label}
+                            </Button>
+                        ))}
+                    </Container>
 
-            <Container className='plugin-results-content flex-1 y-auto'>
-                {activeExposure && (
-                    <PluginExposureTable
-                        key={`${activeExposure._id}-${analysisId}`}
-                        pluginSlug={pluginSlug}
-                        listingSlug={activeExposure.name}
-                        trajectoryId={trajectory?._id}
-                        analysisId={analysisId}
-                        teamId={team?._id}
-                        compact
-                    />
-                )}
-                {isAtomsTabActive && atomExposureId && trajectory && (
-                    <PluginAtomsTable
-                        trajectoryId={trajectory._id}
-                        analysisId={analysisId}
-                        exposureId={atomExposureId}
-                    />
-                )}
-            </Container>
+                    <Container className="canvas-results-content overflow-auto">
+                        {activeListingSlug && (
+                            <PluginExposureTable
+                                key={`${activeListingSlug}-${analysisId}`}
+                                pluginSlug={pluginSlug}
+                                listingSlug={activeListingSlug}
+                                trajectoryId={trajectoryId}
+                                analysisId={analysisId}
+                                teamId={teamId}
+                                compact
+                            />
+                        )}
+                        {isAtomsTab && atomExposureId && trajectoryId && (
+                            <PluginAtomsTable
+                                trajectoryId={trajectoryId}
+                                analysisId={analysisId}
+                                exposureId={atomExposureId}
+                            />
+                        )}
+                    </Container>
+                </>
+            )}
         </Container>
     );
 };

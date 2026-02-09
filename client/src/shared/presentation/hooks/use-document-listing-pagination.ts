@@ -78,8 +78,11 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
             
             setHasMore(result.pagination.hasMore);
         }catch(err){
-            const message = err instanceof Error ? err.message : 'Failed to fetch data';
-            setError(message);
+            if(err instanceof Error){
+                setError(err.message);
+            } else {
+                setError('Failed to fetch data');
+            }
             console.error('[useDocumentListingPagination] Error:', err);
         }finally{
             setIsLoading(false);
@@ -87,7 +90,7 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
     }, [page, limit, search, context]);
 
     // Fetch data when pagination params or context changes
-    const contextSignature = useMemo(() => JSON.stringify(context ?? {}), [context]);
+    const contextSignature = useMemo(() => JSON.stringify(context ? context : {}), [context]);
 
     // Memoize callbacks to prevent infinite loops in useListingLifecycle
     const stableFetchData = useCallback(() => fetchDataAsync(), [fetchDataAsync]);

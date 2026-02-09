@@ -19,7 +19,7 @@ const useTrajectoryUpload = (): UseTrajectoryUploadResult => {
 
         try {
             const formData = buildFileFormData(
-                files.map(({ file }) => ({ name: 'files', file })),
+                files.map(({ file }) => ({ name: 'trajectoryFiles', file })),
                 { name: folderName }
             );
 

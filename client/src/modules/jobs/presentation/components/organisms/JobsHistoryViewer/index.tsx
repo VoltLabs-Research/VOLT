@@ -1,9 +1,9 @@
-import { memo, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import JobsHistory from '@/modules/jobs/presentation/components/organisms/JobsHistory';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import useGetTrajectoryById from '@/modules/trajectory/presentation/hooks/trajectory/use-get-trajectory-by-id';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import useToast from '@/shared/presentation/hooks/use-toast';
 import useTeamJobs from '@/modules/jobs/presentation/hooks/use-team-jobs';
 import useJobsHistoryFilters from '@/modules/jobs/presentation/hooks/use-jobs-history-filters';
@@ -16,13 +16,17 @@ interface JobsHistoryViewerProps {
     showHeader?: boolean;
     hideAfterComplete?: boolean;
     queueFilter?: string;
+    variant?: 'floating' | 'embedded';
+    displayMode?: 'full' | 'children-only';
 }
 
-const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo((props) => {
+const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = (props) => {
     const {
         trajectoryId,
         hideAfterComplete = true,
-        queueFilter
+        queueFilter,
+        variant = 'floating',
+        displayMode
     } = props;
     const { groups, isConnected, isLoading, removeTrajectoryGroup } = useTeamJobs();
     const { updateSearchParams } = useSearchParamsState();
@@ -75,6 +79,24 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo((props) => {
         }
     };
 
+    const resolvedDisplayMode = displayMode ?? (variant === 'embedded' ? 'children-only' : 'full');
+
+    if (variant === 'embedded') {
+        return (
+            <div className='jobs-history-viewer-embedded'>
+                <JobsHistory
+                    trajectoryId={trajectoryId}
+                    queueFilter={queueFilter}
+                    groups={groups}
+                    isConnected={isConnected}
+                    isLoading={isLoading}
+                    displayMode={resolvedDisplayMode}
+                    onRemoveTrajectoryGroup={removeTrajectoryGroup}
+                />
+            </div>
+        );
+    }
+
     return (
         <AnimatePresence mode='wait'>
             {shouldShowPanel && (
@@ -94,6 +116,7 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo((props) => {
                                 groups={groups}
                                 isConnected={isConnected}
                                 isLoading={isLoading}
+                                displayMode={resolvedDisplayMode}
                                 onRemoveTrajectoryGroup={removeTrajectoryGroup}
                             />
                         </div>
@@ -102,8 +125,6 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = memo((props) => {
             )}
         </AnimatePresence>
     );
-});
-
-JobsHistoryViewer.displayName = 'JobsHistoryViewer';
+};
 
 export default JobsHistoryViewer;

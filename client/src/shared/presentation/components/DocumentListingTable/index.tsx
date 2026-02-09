@@ -1,10 +1,12 @@
-import React, { useRef, useMemo, useEffect } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { FileText } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import TableRow from '@/shared/presentation/components/TableRow';
 import TableSkeletonRow from '@/shared/presentation/components/TableSkeletonRow';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import useInfiniteScroll from '@/shared/presentation/hooks/use-infinite-scroll';
+import getListingDisplayState from '@/shared/presentation/components/DocumentListing/listing-state';
 import './DocumentListingTable.css';
 
 const MIN_COLUMN_WIDTH = 180;
@@ -48,7 +50,7 @@ interface DocumentListingTableProps<T extends Identifiable> {
 };
 
 const getColumnWidth = (col: ColumnConfig): number => {
-    const titleLength = col.title?.length ?? 10;
+    const titleLength = typeof col.title === 'string' ? col.title.length : 10;
     return Math.max(MIN_COLUMN_WIDTH, Math.min(titleLength * 14, MAX_COLUMN_WIDTH));
 };
 
@@ -68,17 +70,7 @@ const DocumentListingTable = <T extends Identifiable>({
     emptyButtonText,
     onEmptyButtonClick
 }: DocumentListingTableProps<T>) => {
-    const sentinelRef = useRef<HTMLDivElement | null>(null);
     const bodyRef = useRef<HTMLDivElement | null>(null);
-    const hasMountedRef = useRef(false);
-
-    // Prevent auto-load on mount - wait for initial content to render
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            hasMountedRef.current = true;
-        }, 100);
-        return () => clearTimeout(timer);
-    }, []);
 
     const columnWidths = useMemo(() => columns.map(getColumnWidth), [columns]);
     const minContentWidth = useMemo(() => {
@@ -87,35 +79,24 @@ const DocumentListingTable = <T extends Identifiable>({
     }, [columnWidths, columns.length]);
 
     const useFlexDistribution = useMemo(() => {
-        const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-        const availableWidth = viewportWidth - 350;
+        if (typeof window === 'undefined') {
+            return false;
+        }
+        const availableWidth = window.innerWidth - 350;
         return availableWidth >= minContentWidth;
     }, [minContentWidth]);
 
     const effectiveWidth = useFlexDistribution ? '100%' : `${minContentWidth}px`;
 
-    useEffect(() => {
-        const root = scrollContainerRef && 'current' in scrollContainerRef ? scrollContainerRef.current : null;
-        const sentinel = sentinelRef.current;
-        if(!sentinel) return;
+    const rootRef = scrollContainerRef && 'current' in scrollContainerRef ? scrollContainerRef : null;
+    const { sentinelRef } = useInfiniteScroll({
+        rootRef,
+        hasMore,
+        isFetchingMore,
+        onLoadMore
+    });
 
-        const observer = new IntersectionObserver(
-            (entries) => {
-                const entry = entries[0];
-                if(entry?.isIntersecting && hasMore && !isFetchingMore && hasMountedRef.current) {
-                    onLoadMore?.();
-                }
-            },
-            { root: root ?? null, rootMargin: '0px 0px 200px 0px', threshold: 0 }
-        );
-
-        observer.observe(sentinel);
-        return () => observer.disconnect();
-    }, [scrollContainerRef, hasMore, isFetchingMore, onLoadMore]);
-
-    const isInitialLoading = isLoading && data.length === 0;
-    const hasNoData = data.length === 0;
-    const shouldShowEmptyState = hasNoData && !isLoading;
+    const { isInitialLoading, hasNoData, shouldShowEmptyState } = getListingDisplayState(data.length, isLoading);
 
     return (
         <Container className='d-flex column document-listing-table-container h-max'>

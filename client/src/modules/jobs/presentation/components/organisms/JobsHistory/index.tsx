@@ -1,6 +1,7 @@
-import { memo, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import JobSkeleton from '@/modules/jobs/presentation/components/atoms/JobSkeleton';
 import JobGroup from '@/modules/jobs/presentation/components/molecules/JobGroup';
+import FrameGroup from '@/modules/jobs/presentation/components/molecules/JobGroup/FrameGroup';
 import Container from '@/shared/presentation/components/Container';
 import type { TrajectoryJobGroup as TJG, Job } from '@/modules/jobs/domain/entities/Job';
 
@@ -11,15 +12,17 @@ interface JobsHistoryProps {
     isConnected: boolean;
     isLoading: boolean;
     onRemoveTrajectoryGroup: (trajectoryId: string) => void;
+    displayMode?: 'full' | 'children-only';
 }
 
-const JobsHistory = memo(({
+const JobsHistory = ({
     trajectoryId,
     queueFilter,
     groups,
     isConnected,
     isLoading,
-    onRemoveTrajectoryGroup
+    onRemoveTrajectoryGroup,
+    displayMode = 'full'
 }: JobsHistoryProps) => {
 
     const filteredGroups = useMemo(() => {
@@ -46,19 +49,25 @@ const JobsHistory = memo(({
             {shouldShowSkeleton ? (
                 <JobSkeleton />
             ) : (
-                filteredGroups.map((group: TJG, index: number) => (
-                    <JobGroup
-                        key={group.trajectoryId}
-                        group={group}
-                        defaultExpanded={index === 0}
-                        onRemoveTrajectoryGroup={onRemoveTrajectoryGroup}
-                    />
-                ))
+                filteredGroups.map((group: TJG, index: number) =>
+                    displayMode === 'children-only' ? (
+                        group.frameGroups.map((frame) => (
+                            <div key={`${group.trajectoryId}-${frame.timestep}`} className='job-group-children'>
+                                <FrameGroup frame={frame} />
+                            </div>
+                        ))
+                    ) : (
+                        <JobGroup
+                            key={group.trajectoryId}
+                            group={group}
+                            defaultExpanded={index === 0}
+                            onRemoveTrajectoryGroup={onRemoveTrajectoryGroup}
+                        />
+                    )
+                )
             )}
         </Container>
     );
-});
-
-JobsHistory.displayName = 'JobsHistory';
+};
 
 export default JobsHistory;

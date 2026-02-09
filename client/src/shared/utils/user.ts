@@ -18,20 +18,6 @@ export const getInitialsFromUser = (user: User | string | null | undefined): str
     return '?';
 };
 
-export const getUserDisplayName = (user: User | string | null | undefined): string => {
-    if(!user || typeof user === 'string') return 'Unknown';
-    
-    if(user.firstName && user.lastName){
-        return `${user.firstName} ${user.lastName}`;
-    }
-    
-    if(user.email){
-        return user.email.split('@')[0];
-    }
-    
-    return 'Unknown';
-};
-
 export const getInitialsFromEmail = (email: string): string => {
     if(!email) return '?';
     return email.split('@')[0].charAt(0).toUpperCase();

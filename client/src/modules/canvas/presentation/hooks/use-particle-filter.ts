@@ -71,7 +71,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         try {
             const result = await particleFilterRepository.getUniqueValues({
                 trajectoryId, analysisId, timestep: currentTimestep,
-                property, exposureId: exposureId || undefined, maxValues: 50
+                property, exposureId, maxValues: 50
             });
             setValueSuggestions(result.values);
         } catch (err) {
@@ -100,16 +100,16 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 trajectoryId, analysisId, timestep: currentTimestep,
                 conditions: [{
                     property, operator: OPERATOR_MAP[operator],
-                    value, exposureId: exposureId || undefined
+                    value, exposureId
                 }]
             });
             setPreviewResult({
                 matchCount: result.matchCount,
                 totalCount: result.totalCount,
-                filterParams: { property, operator, value, exposureId: exposureId || undefined }
+                filterParams: { property, operator, value, exposureId }
             });
         } catch (err: any) {
-            setError(err.message || 'Preview failed');
+            setError(err.message);
         } finally {
             setIsLoadingPreview(false);
         }
@@ -150,7 +150,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
 
             setPreviewResult(null);
         } catch (err: any) {
-            setError(err.message || 'Action failed');
+            setError(err.message);
         } finally {
             setIsApplying(false);
         }

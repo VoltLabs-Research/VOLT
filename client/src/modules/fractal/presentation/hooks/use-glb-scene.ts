@@ -21,11 +21,9 @@
  **/
 
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
 import type { UseGlbSceneParams } from '@/modules/fractal/presentation/types';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import useThrottledCallback from '@/shared/presentation/hooks/use-throttled-callback';
 import { FractalEngine } from '@/modules/fractal/core/FractalEngine';
 
@@ -36,18 +34,12 @@ export default function useGlbScene(params: UseGlbSceneParams) {
     const [modelBounds, setLocalModelBounds] = useState<any>(null);
 
     const {
-        activeModel,
-        setModelBounds,
-        setIsModelLoading,
         pointSizeMultiplier,
-        sceneOpacities
-    } = useEditorStore(useShallow((s) => ({
-        activeModel: s.activeModel,
-        setModelBounds: s.setModelBounds,
-        setIsModelLoading: s.setIsModelLoading,
-        pointSizeMultiplier: s.pointSizeMultiplier,
-        sceneOpacities: s.sceneOpacities
-    })));
+        sceneOpacities,
+        activeModelBounds,
+        onModelBoundsChanged,
+        onLoadingStateChanged
+    } = params;
 
     const engineRef = useRef<FractalEngine | null>(null);
 
@@ -64,11 +56,11 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             {
                 onModelLoaded: (bounds) => {
                     setLocalModelBounds(bounds as any);
-                    setModelBounds(bounds as any);
+                    onModelBoundsChanged?.(bounds as any);
                 },
                 onLoadingState: (state) => {
                     setLoadingState(state);
-                    setIsModelLoading(state.isLoading);
+                    onLoadingStateChanged?.(state.isLoading);
                 },
                 onModelAvailable: (modelObj) => setModel(modelObj)
             }
@@ -78,7 +70,7 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             engineRef.current?.dispose();
             engineRef.current = null;
         };
-    }, [scene, camera, gl, invalidate, setModelBounds, setIsModelLoading]);
+    }, [scene, camera, gl, invalidate, onModelBoundsChanged, onLoadingStateChanged]);
 
     useEffect(() => {
         if (!engineRef.current) return;
@@ -117,7 +109,7 @@ export default function useGlbScene(params: UseGlbSceneParams) {
 
     return {
         model,
-        modelBounds: modelBounds ?? activeModel?.modelBounds,
+        modelBounds: modelBounds ?? activeModelBounds,
         isLoading: loadingState.isLoading,
         loadProgress: loadingState.progress,
         loadError: loadingState.error,

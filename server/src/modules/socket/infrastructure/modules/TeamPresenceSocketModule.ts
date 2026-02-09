@@ -42,7 +42,7 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
             }
 
             const { teamId } = payload;
-            const roomName = `team-${teamId}`;
+            const roomName = `team:${teamId}`;
 
             // Join room
             await this.joinRoom(conn.id, roomName);
@@ -75,7 +75,7 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
             if (this.activeSessions.has(conn.id) && this.activeSessions.get(conn.id)?.teamId === payload.teamId) {
                 this.handleDisconnection(conn.id);
             }
-            await this.leaveRoom(conn.id, `team-${payload.teamId}`);
+            await this.leaveRoom(conn.id, `team:${payload.teamId}`);
         });
     }
 
@@ -100,7 +100,7 @@ export default class TeamPresenceSocketModule extends BaseSocketModule {
         const sessionDurationMs = Date.now() - startTime;
         const sessionDurationMinutes = Math.floor(sessionDurationMs / 1000 / 60);
 
-        const roomName = `team-${teamId}`;
+        const roomName = `team:${teamId}`;
 
         // Broadcast offline status
         this.emitToRoom(roomName, 'user:offline', { teamId: teamId, userId });

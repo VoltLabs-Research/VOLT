@@ -1,9 +1,9 @@
-import { memo } from 'react';
+import React from 'react';
 import type { NodeProps } from '@xyflow/react';
 import { NodeType, type IModifierData } from '@/modules/plugin/domain/entities';
 import BaseNode from '@/modules/plugin/presentation/components/atoms/BaseNode';
 
-const ModifierNode = memo((props: NodeProps) => {
+const ModifierNode = (props: NodeProps) => {
     const { data } = props;
     const modifier = (data.modifier as IModifierData) || {};
 
@@ -15,8 +15,6 @@ const ModifierNode = memo((props: NodeProps) => {
             description={modifier.description}
         />
     );
-});
-
-ModifierNode.displayName = 'ModifierNode';
+};
 
 export default ModifierNode;

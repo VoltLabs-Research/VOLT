@@ -1,43 +1,36 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
-import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
-import useKeyboardShortcuts from '@/modules/canvas/presentation/hooks/use-keyboard-shortcuts';
-import { useKeyboardShortcutsStore } from '@/modules/canvas/presentation/stores/use-keyboard-shortcuts-store';
-import FractalScene, { type FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
-import TimestepViewer from '@/modules/fractal/presentation/components/organisms/TimestepViewer';
-import useCanvasCoordinator from '@/modules/canvas/presentation/hooks/use-canvas-coordinator';
-import useCanvasPresence from '@/modules/canvas/presentation/hooks/use-canvas-presence';
-import CanvasWidgets from '@/modules/canvas/presentation/components/atoms/CanvasWidgets';
-import CanvasPresenceAvatars from '@/modules/canvas/presentation/components/atoms/CanvasPresenceAvatars';
-import PreloadingOverlay from '@/modules/canvas/presentation/components/atoms/PreloadingOverlay';
-import KeyboardShortcutsPanel from '@/modules/canvas/presentation/components/organisms/KeyboardShortcutsPanel';
-import ShortcutFeedback from '@/modules/canvas/presentation/components/molecules/ShortcutFeedback';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import { useShallow } from 'zustand/react/shallow';
-import useFractalSceneConfig from '@/modules/fractal/presentation/hooks/use-fractal-scene-config';
-import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
-import useCanvasShortcuts from '@/modules/canvas/presentation/hooks/use-canvas-shortcuts';
-import Loader from '@/shared/presentation/components/Loader';
+import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import Container from '@/shared/presentation/components/Container';
-import ExposureSettingsWidget from '@/modules/canvas/presentation/components/molecules/ExposureSettingsWidget';
-import JobsHistoryViewer from '@/modules/jobs/presentation/components/organisms/JobsHistoryViewer';
-import { setSceneInteracting } from '@/modules/canvas/presentation/hooks/use-scene-interaction';
-import '@/modules/canvas/presentation/components/templates/CanvasPage/CanvasPage.css';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import useFractalSceneConfig from '@/modules/canvas/presentation/hooks/use-fractal-scene-config';
+import type { FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
+import useCanvasCoordinator from '../../../hooks/use-canvas-coordinator';
+import useCanvasPresence from '../../../hooks/use-canvas-presence';
+import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
+import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
+import { useKeyboardShortcutsStore } from '../../../stores/use-keyboard-shortcuts-store';
+import './CanvasPage.css';
+import ResizeHandle from '../../atoms/ResizeHandle';
+import CanvasPresence from '../../atoms/CanvasPresence';
+import PreloadingOverlay from '../../atoms/PreloadingOverlay';
+import ShortcutFeedback from '../../molecules/ShortcutFeedback';
+import ExposureSettingsWidget from '../../molecules/ExposureSettingsWidget';
+import TopToolbar from '../../organisms/TopToolbar';
+import ObjectsPanel from '../../organisms/ObjectsPanel';
+import TexturesPanel from '../../organisms/TexturesPanel';
+import Viewport from '../../organisms/Viewport';
+import RightPanel from '../../organisms/RightPanel';
+import Timeline from '../../organisms/Timeline';
+import StatusBar from '../../organisms/StatusBar';
+import PluginResultsViewer from '../../organisms/PluginResultsViewer';
+import KeyboardShortcutsPanel from '../../organisms/KeyboardShortcutsPanel';
+import useResizable from '../../../hooks/use-resizable';
 
-const CANVAS_CONFIG = {
-    autoSaveDelay: 2000,
-    timestepViewerDefaults: {
-        scale: 1,
-        rotation: { x: 0, y: 0, z: 0 },
-        position: { x: 0, y: 0, z: 0 }
-    }
-} as const;
-
-const CanvasPage: React.FC = () => {
+const CanvasPage = () => {
     usePageTitle('Canvas');
     const { trajectoryId: rawTrajectoryId } = useParams<{ trajectoryId?: string }>();
-    const scene3DRef = useRef<FractalSceneRef>(null);
     const trajectoryId = rawTrajectoryId ?? '';
 
     const { trajectory, currentTimestep, isLoading: trajectoryLoading } = useCanvasCoordinator({ trajectoryId });
@@ -51,25 +44,16 @@ const CanvasPage: React.FC = () => {
         return () => setCurrentScope('global');
     }, [setCurrentScope]);
 
-    const { isModelLoading, didPreload, isPlaying, setRendererStats } = useEditorStore(useShallow((s) => ({
+    const { isModelLoading, didPreload, isPlaying } = useEditorStore(useShallow((s) => ({
         isModelLoading: s.isModelLoading,
-        didPreload: s.didPreload ?? false,
-        isPlaying: s.isPlaying,
-        setRendererStats: s.setRendererStats
+        didPreload: s.didPreload,
+        isPlaying: s.isPlaying
     })));
+
     const sceneConfig = useFractalSceneConfig();
-    const { analysisId, setAnalysisId, showGrid, activeModifiers } = useCanvasUrlState();
-
-    useEffect(() => {
-        if (!trajectory?.analysis?.length || analysisId) return;
-        const latest = trajectory.analysis[trajectory.analysis.length - 1] as any;
-        if (!latest?._id) return;
-        setAnalysisId(latest._id, { replace: true });
-    }, [trajectory, analysisId, setAnalysisId]);
-
-    useCanvasShortcuts();
-
-    const showPerformanceStats = activeModifiers.includes('performance-monitor');
+    const sceneRef = useRef<FractalSceneRef>(null);
+    const { analysisId, showGrid, resultsSlug, showWidgets, searchParams } = useCanvasUrlState({ trajectory });
+    const showStatusBar = searchParams.get('statusBar') !== 'false';
 
     useEffect(() => {
         return () => {
@@ -83,49 +67,110 @@ const CanvasPage: React.FC = () => {
         [isModelLoading, didPreload, isPlaying, trajectory, currentTimestep, trajectoryLoading]
     );
 
+    const leftPanel = useResizable({
+        direction: 'horizontal',
+        initialSize: 250,
+        minSize: 180,
+        maxSize: 420
+    });
+
+    const rightPanel = useResizable({
+        direction: 'horizontal',
+        initialSize: 268,
+        minSize: 200,
+        maxSize: 420,
+        growPositive: false
+    });
+
+    const timeline = useResizable({
+        direction: 'vertical',
+        initialSize: 120,
+        minSize: 60,
+        maxSize: 360,
+        growPositive: false
+    });
+
+    const leftSplit = useResizable({
+        direction: 'vertical',
+        initialSize: 56,
+        minSize: 20,
+        maxSize: 80
+    });
+
     return (
-        <Container className='w-max vh-max p-relative u-select-none editor-container'>
-            <AnimatePresence>
-                <PreloadingOverlay key='preloading-overlay' />
+        <Container className="canvas-editor-root d-flex column vh-max wh-max overflow-hidden p-relative">
+            <TopToolbar />
+            <PreloadingOverlay />
+            <CanvasPresence users={canvasUsers} />
 
-                {showLoading && (
-                    <Container key='model-loading' className='d-flex flex-center w-max h-max p-absolute model-loading-container'>
-                        <Loader scale={0.7} />
+            <Container className="canvas-editor-main d-flex flex-1 overflow-hidden p-relative min-h-0">
+                <Container className="canvas-left-panel d-flex column f-shrink-0" style={{ width: leftPanel.size }}>
+                    <Container className="canvas-left-panel-top d-flex column min-h-0" style={{ flex: `1 1 ${100 - leftSplit.size}%` }}>
+                        <ObjectsPanel trajectory={trajectory} />
                     </Container>
-                )}
-            </AnimatePresence>
+                    <ResizeHandle
+                        direction="vertical"
+                        isDragging={leftSplit.isDragging}
+                        {...leftSplit.handleProps}
+                    />
+                    <Container className="canvas-left-panel-bottom d-flex column min-h-0" style={{ flex: `0 0 ${leftSplit.size}%` }}>
+                        <TexturesPanel trajectory={trajectory} />
+                    </Container>
+                </Container>
 
-            <CanvasWidgets trajectory={trajectory} currentTimestep={currentTimestep} scene3DRef={scene3DRef} />
-            <CanvasPresenceAvatars users={canvasUsers} />
+                <ResizeHandle
+                    direction="horizontal"
+                    isDragging={leftPanel.isDragging}
+                    {...leftPanel.handleProps}
+                />
 
-            <Container className='canvas-jobs-panel p-absolute right-1 bottom-1 z-10'>
-                <JobsHistoryViewer trajectoryId={trajectoryId} showHeader={false} queueFilter='analysis' />
+                <Container className="canvas-center-panel d-flex column flex-1 overflow-hidden">
+                    <Container className="canvas-center-viewport d-flex column flex-1 overflow-hidden">
+                        <Viewport
+                            trajectory={trajectory}
+                            currentTimestep={currentTimestep}
+                            sceneConfig={sceneConfig}
+                            analysisId={analysisId}
+                            showGrid={showGrid}
+                            isLoading={showLoading}
+                            sceneRef={sceneRef}
+                        />
+                    </Container>
+                    <ResizeHandle
+                        direction="vertical"
+                        isDragging={timeline.isDragging}
+                        {...timeline.handleProps}
+                    />
+                    <Container className="canvas-center-timeline d-flex column f-shrink-0" style={{ height: timeline.size }}>
+                        <Timeline sceneRef={sceneRef} trajectory={trajectory} analysisId={analysisId} />
+                    </Container>
+                </Container>
+
+                <ResizeHandle
+                    direction="horizontal"
+                    isDragging={rightPanel.isDragging}
+                    {...rightPanel.handleProps}
+                />
+
+                <Container className="canvas-right-panel-container d-flex column f-shrink-0" style={{ width: rightPanel.size }}>
+                    <RightPanel trajectoryId={trajectoryId} analysisId={analysisId} currentTimestep={currentTimestep} />
+                </Container>
             </Container>
 
-            <FractalScene
-                ref={scene3DRef}
-                config={sceneConfig}
-                onInteractionChange={setSceneInteracting}
-                onStats={setRendererStats}
-                showPerformanceStats={showPerformanceStats}
-                showGrid={showGrid}
-            >
-                <TimestepViewer
-                    trajectoryId={trajectory?._id || ''}
-                    currentTimestep={currentTimestep}
-                    analysisId={analysisId || 'default'}
-                    scale={CANVAS_CONFIG.timestepViewerDefaults.scale}
-                    rotation={CANVAS_CONFIG.timestepViewerDefaults.rotation}
-                    position={CANVAS_CONFIG.timestepViewerDefaults.position}
+            {showStatusBar && trajectory && currentTimestep !== undefined && (
+                <StatusBar trajectory={trajectory} currentTimestep={currentTimestep} />
+            )}
+            {showWidgets && resultsSlug && (
+                <PluginResultsViewer
+                    pluginSlug={resultsSlug}
+                    analysisId={analysisId}
                 />
-            </FractalScene>
-
+            )}
             <KeyboardShortcutsPanel />
             <ShortcutFeedback />
-
             <ExposureSettingsWidget />
         </Container>
     );
 };
 
-export default React.memo(CanvasPage);
+export default CanvasPage;

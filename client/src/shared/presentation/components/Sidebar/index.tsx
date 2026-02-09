@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useRef, useCallback, useMemo, type ReactNode, type ComponentType, memo } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo, type ReactNode, type ComponentType } from 'react';
 import { motion } from 'framer-motion';
 import SidebarHeader from '@/shared/presentation/components/SidebarHeader';
 import SidebarBottom from '@/shared/presentation/components/SidebarBottom';
-import SidebarTab from '@/shared/presentation/components/SidebarTab';
 import Container from '@/shared/presentation/components/Container';
+import Title from '@/shared/presentation/components/Title';
+import '@/shared/presentation/components/SidebarTab/SidebarTab.css';
 import './Sidebar.css';
 
 const MOBILE_BREAKPOINT = 768;
@@ -87,7 +88,7 @@ const Sidebar = ({
     );
 
     const headerElement = header
-        ? React.cloneElement(header as React.ReactElement<{ collapsed?: boolean; onToggle?: () => void }>, {
+        ? React.cloneElement(header as React.ReactElement, {
             collapsed,
             onToggle: toggleCollapsed
         })
@@ -120,19 +121,22 @@ const Sidebar = ({
                                         {canScrollLeft && (
                                             <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--left' />
                                         )}
-                                        <Container 
-                                            ref={tabsContainerRef}
-                                            className='d-flex p-05 content-between editor-sidebar-options-container'
-                                        >
-                                            {tags.map((tag) => (
-                                                <SidebarTab
-                                                    key={tag.id}
-                                                    label={tag.name}
-                                                    isActive={tag.id === activeTagId}
-                                                    onClick={() => onTagChange?.(tag.id)}
-                                                />
-                                            ))}
-                                        </Container>
+                                            <Container 
+                                                ref={tabsContainerRef}
+                                                className='d-flex p-05 content-between editor-sidebar-options-container'
+                                            >
+                                                {tags.map((tag) => (
+                                                    <Container
+                                                        key={tag.id}
+                                                        className={`d-flex content-center items-center editor-sidebar-option-container ${tag.id === activeTagId ? 'selected' : ''}`}
+                                                        onClick={() => onTagChange?.(tag.id)}
+                                                    >
+                                                        <Title className='font-size-3 editor-sidebar-option-title font-weight-5'>
+                                                            {tag.name}
+                                                        </Title>
+                                                    </Container>
+                                                ))}
+                                            </Container>
                                         {canScrollRight && (
                                             <div className='editor-sidebar-tabs-fade editor-sidebar-tabs-fade--right' />
                                         )}
@@ -169,12 +173,8 @@ const Sidebar = ({
     );
 };
 
-const MemoizedSidebar = memo(Sidebar) as React.MemoExoticComponent<typeof Sidebar> & {
-    Header: typeof SidebarHeader;
-    Bottom: typeof SidebarBottom;
-};
+const SidebarWithSlots = Sidebar as typeof Sidebar & Record<'Header' | 'Bottom', typeof SidebarHeader | typeof SidebarBottom>;
+SidebarWithSlots.Header = SidebarHeader;
+SidebarWithSlots.Bottom = SidebarBottom;
 
-MemoizedSidebar.Header = SidebarHeader;
-MemoizedSidebar.Bottom = SidebarBottom;
-
-export default MemoizedSidebar;
+export default SidebarWithSlots;

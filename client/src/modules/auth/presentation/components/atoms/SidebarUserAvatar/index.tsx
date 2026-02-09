@@ -16,7 +16,7 @@ interface SidebarUserAvatarProps {
 
 const SidebarUserAvatar = ({
     avatarrounded = false,
-    hideEmail = true,
+    hideEmail: _hideEmail = true,
     hideUsername = false,
     onClick = () => {}
 }: SidebarUserAvatarProps) => {

@@ -7,6 +7,12 @@
     font-size: 0.65rem !important;
 }
 
+.status-badge.size-compact {
+    padding: 0;
+    border: none !important;
+    border-radius: 0;
+}
+
 .status-badge.variant-active,
 .status-badge.variant-success {
     color: var(--status-success);

@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import useTrajectoryStore from '../../stores/use-trajectory-store';
 import useTrajectoryUseCases from './use-trajectory-use-cases';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
+import { v4 } from 'uuid';
 
 const useCreateTrajectory = () => {
     const { trajectoryRepository } = useTrajectoryUseCases();
@@ -14,7 +15,7 @@ const useCreateTrajectory = () => {
         formData: FormData,
         onProgress?: (progress: number) => void
     ): Promise<Trajectory | null> => {
-        const uploadId = crypto.randomUUID();
+        const uploadId = v4();
         setUploadProgress(uploadId, 0);
 
         try{

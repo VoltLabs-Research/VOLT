@@ -9,19 +9,15 @@ import DynamicEffects from '@/modules/fractal/presentation/components/molecules/
 import CameraRig from '@/modules/fractal/presentation/components/atoms/CameraRig';
 import CanvasGrid from '@/modules/fractal/presentation/components/atoms/CanvasGrid';
 import SlicePlaneHelper from '@/modules/fractal/presentation/components/atoms/SlicePlaneHelper';
-import PerformanceStatsCollector from '@/modules/fractal/presentation/components/atoms/PerformanceStatsCollector';
 import type { FractalSceneConfig } from '@/modules/fractal/presentation/types/scene-config';
-import type { RendererStats } from '@/modules/fractal/presentation/stores/editor/visual-settings-slice';
 
 interface FractalScenePipelineProps {
     config: FractalSceneConfig;
     orbitRef: React.MutableRefObject<any>;
     orbitProps: Record<string, unknown>;
     showGizmo: boolean;
-    showPerformanceStats: boolean;
     showGrid?: boolean;
     onControlsRef?: (ref: any) => void;
-    onStats?: (stats: RendererStats) => void;
     markInteracting: (active: boolean) => void;
     children?: React.ReactNode;
 }
@@ -31,10 +27,8 @@ const FractalScenePipeline = ({
     orbitRef,
     orbitProps,
     showGizmo,
-    showPerformanceStats,
     showGrid,
     onControlsRef,
-    onStats,
     markInteracting,
     children
 }: FractalScenePipelineProps) => {
@@ -45,9 +39,6 @@ const FractalScenePipeline = ({
         <>
             <DynamicRenderer settings={config.rendererRuntime} />
             <CameraRig orbitRef={orbitRef} camera={config.camera} />
-            {onStats && showPerformanceStats && (
-                <PerformanceStatsCollector enabled onStats={onStats} />
-            )}
             <Preload all />
             {config.dpr.mode === 'adaptive' && <AdaptiveDpr pixelated={config.dpr.pixelated} />}
             {config.adaptiveEventsEnabled && <AdaptiveEvents />}

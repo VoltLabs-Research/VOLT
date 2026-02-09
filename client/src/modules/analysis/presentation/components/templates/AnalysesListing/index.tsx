@@ -21,9 +21,7 @@ const AnalysesListing = () => {
             view: {
                 label: 'View Scene',
                 handler: (analysis) => {
-                    if(analysis.trajectory?._id) {
-                        navigate(`/canvas/${analysis.trajectory._id}`);
-                    }
+                    navigate(`/canvas/${analysis.trajectory._id}`);
                 }
             },
             retry: {
@@ -47,35 +45,35 @@ const AnalysesListing = () => {
             key: 'trajectory.name',
             title: 'Trajectory',
             sortable: true,
-            render: (_, row) => (row as Analysis).trajectory?.name ?? '-',
+            render: (_, row) => (row as Analysis).trajectory.name,
             skeleton: { variant: 'text', width: 140 }
         },
         {
             key: 'plugin',
             title: 'Plugin',
             sortable: true,
-            render: (value) => value ? String(value) : '-',
+            render: (value) => String(value),
             skeleton: { variant: 'text', width: 110 }
         },
         {
             key: 'totalFrames',
             title: 'Total Frames',
             sortable: true,
-            render: (value) => typeof value === 'number' ? value.toLocaleString() : '-',
+            render: (value) => (value as number).toLocaleString(),
             skeleton: { variant: 'text', width: 90 }
         },
         {
             key: 'startedAt',
             title: 'Started At',
             sortable: true,
-            render: (value) => value ? formatDistanceToNow(new Date(value as string), { addSuffix: true }) : '-',
+            render: (value) => formatDistanceToNow(new Date(value as string), { addSuffix: true }),
             skeleton: { variant: 'text', width: 100 }
         },
         {
             key: 'finishedAt',
             title: 'Finished At',
             sortable: true,
-            render: (value) => value ? formatDistanceToNow(new Date(value as string), { addSuffix: true }) : '-',
+            render: (value) => formatDistanceToNow(new Date(value as string), { addSuffix: true }),
             skeleton: { variant: 'text', width: 100 }
         },
         {

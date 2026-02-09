@@ -53,7 +53,7 @@
 }
 
 .button.shape-square {
-    border-radius: var(--radius-xs);
+    border-radius: 0;
 }
 
 .button.shape-circle {
@@ -334,6 +334,50 @@
 
 .button.intent-success.variant-ghost:hover:not(:disabled) {
     background-color: rgba(34, 197, 94, 0.1);
+}
+
+/* Intent: Canvas (subtle white for canvas UI) */
+.button.intent-canvas.variant-solid {
+    background-color: rgba(185, 185, 185, 0.1);
+    color: var(--color-text-primary, #ffffff);
+    border-color: transparent;
+}
+
+.button.intent-canvas.variant-solid:hover:not(:disabled) {
+    background-color: rgba(185, 185, 185, 0.15);
+}
+
+.button.intent-canvas.variant-soft {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.7));
+    border-color: transparent;
+}
+
+.button.intent-canvas.variant-soft:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-primary, #ffffff);
+}
+
+.button.intent-canvas.variant-outline {
+    background-color: transparent;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.button.intent-canvas.variant-outline:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--color-text-primary, #ffffff);
+}
+
+.button.intent-canvas.variant-ghost {
+    background-color: transparent;
+    color: var(--color-text-secondary, rgba(255, 255, 255, 0.7));
+}
+
+.button.intent-canvas.variant-ghost:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--color-text-primary, #ffffff);
 }
 
 /* --- Icon Only --- */

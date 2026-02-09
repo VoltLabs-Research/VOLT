@@ -1,128 +1,80 @@
 import { create } from 'zustand';
 
+export type ShortcutScope = 'global' | 'canvas';
+
 export interface Shortcut {
     id: string;
-    keys: string[];
     description: string;
-    category: 'playback' | 'navigation' | 'view' | 'tools' | 'general';
-    action: () => void;
+    keys: string[];
+    scope?: ShortcutScope;
+    category?: string;
     enabled?: boolean;
-    scope?: 'global' | 'canvas' | 'sidebar';
 }
 
-interface ShortcutsState {
+interface ShortcutTriggered {
+    id: string;
+    description: string;
+}
+
+interface KeyboardShortcutsState {
     shortcuts: Map<string, Shortcut>;
     showPanel: boolean;
-    lastTriggered: { id: string; description: string } | null;
-    currentScope: 'global' | 'canvas' | 'sidebar';
+    currentScope: ShortcutScope;
+    lastTriggered: ShortcutTriggered | null;
 }
 
-interface ShortcutsActions {
-    registerShortcut: (shortcut: Shortcut) => void;
-    unregisterShortcut: (id: string) => void;
-    updateShortcutAction: (id: string, action: () => void) => void;
-    setShowPanel: (show: boolean) => void;
+interface KeyboardShortcutsActions {
     togglePanel: () => void;
-    setLastTriggered: (shortcut: { id: string; description: string } | null) => void;
-    setCurrentScope: (scope: 'global' | 'canvas' | 'sidebar') => void;
+    setShowPanel: (value: boolean) => void;
+    setCurrentScope: (scope: ShortcutScope) => void;
+    setLastTriggered: (trigger: ShortcutTriggered | null) => void;
     getShortcutsByCategory: () => Record<string, Shortcut[]>;
-    triggerShortcut: (id: string) => void;
 }
-
-type ShortcutsStore = ShortcutsState & ShortcutsActions;
 
 const DEFAULT_SHORTCUTS: Shortcut[] = [
-    { id: 'play-pause', keys: ['space'], description: 'Play/Pause', category: 'playback', action: () => {}, scope: 'canvas' },
-    { id: 'frame-prev', keys: ['arrowleft'], description: 'Previous frame', category: 'playback', action: () => {}, scope: 'canvas' },
-    { id: 'frame-next', keys: ['arrowright'], description: 'Next frame', category: 'playback', action: () => {}, scope: 'canvas' },
-    { id: 'frame-prev-10', keys: ['shift', 'arrowleft'], description: 'Back 10 frames', category: 'playback', action: () => {}, scope: 'canvas' },
-    { id: 'frame-next-10', keys: ['shift', 'arrowright'], description: 'Forward 10 frames', category: 'playback', action: () => {}, scope: 'canvas' },
-    { id: 'frame-first', keys: ['home'], description: 'First frame', category: 'playback', action: () => {}, scope: 'canvas' },
-    { id: 'frame-last', keys: ['end'], description: 'Last frame', category: 'playback', action: () => {}, scope: 'canvas' },
-    { id: 'speed-up', keys: [']'], description: 'Increase speed', category: 'playback', action: () => {}, scope: 'canvas' },
-    { id: 'speed-down', keys: ['['], description: 'Decrease speed', category: 'playback', action: () => {}, scope: 'canvas' },
-
-    { id: 'toggle-grid', keys: ['g'], description: 'Toggle grid', category: 'view', action: () => {}, scope: 'canvas' },
-    { id: 'toggle-widgets', keys: ['w'], description: 'Toggle widgets', category: 'view', action: () => {}, scope: 'canvas' },
-    { id: 'reset-camera', keys: ['r'], description: 'Reset camera', category: 'view', action: () => {}, scope: 'canvas' },
-
-    { id: 'color-coding', keys: ['c'], description: 'Color coding', category: 'tools', action: () => {}, scope: 'canvas' },
-    { id: 'slice-plane', keys: ['x'], description: 'Slice plane', category: 'tools', action: () => {}, scope: 'canvas' },
-    { id: 'particle-filter', keys: ['p'], description: 'Particle filter', category: 'tools', action: () => {}, scope: 'canvas' },
-
-    { id: 'increase-point-size', keys: ['+'], description: 'Increase atom size', category: 'view', action: () => {}, scope: 'canvas' },
-    { id: 'decrease-point-size', keys: ['-'], description: 'Decrease atom size', category: 'view', action: () => {}, scope: 'canvas' },
-
-    { id: 'toggle-opacity-settings', keys: ['ctrl', 'o'], description: 'Toggle opacity settings', category: 'view', action: () => {}, scope: 'canvas' },
-
-    { id: 'show-shortcuts', keys: ['ctrl', 'k'], description: 'Show keyboard shortcuts', category: 'general', action: () => {}, scope: 'global' },
-    { id: 'escape', keys: ['escape'], description: 'Close active panel', category: 'general', action: () => {}, scope: 'global' }
+    { id: 'play-pause', description: 'Play / Pause', keys: ['space'], scope: 'canvas', category: 'playback' },
+    { id: 'frame-prev', description: 'Previous frame', keys: ['arrowleft'], scope: 'canvas', category: 'playback' },
+    { id: 'frame-next', description: 'Next frame', keys: ['arrowright'], scope: 'canvas', category: 'playback' },
+    { id: 'frame-prev-10', description: 'Back 10 frames', keys: ['shift', 'arrowleft'], scope: 'canvas', category: 'playback' },
+    { id: 'frame-next-10', description: 'Forward 10 frames', keys: ['shift', 'arrowright'], scope: 'canvas', category: 'playback' },
+    { id: 'frame-first', description: 'First frame', keys: ['home'], scope: 'canvas', category: 'playback' },
+    { id: 'frame-last', description: 'Last frame', keys: ['end'], scope: 'canvas', category: 'playback' },
+    { id: 'speed-up', description: 'Increase speed', keys: ['='], scope: 'canvas', category: 'playback' },
+    { id: 'speed-down', description: 'Decrease speed', keys: ['-'], scope: 'canvas', category: 'playback' },
+    { id: 'toggle-grid', description: 'Toggle grid', keys: ['g'], scope: 'canvas', category: 'view' },
+    { id: 'toggle-widgets', description: 'Toggle widgets', keys: ['w'], scope: 'canvas', category: 'view' },
+    { id: 'reset-camera', description: 'Reset camera', keys: ['r'], scope: 'canvas', category: 'view' },
+    { id: 'color-coding', description: 'Toggle color coding', keys: ['c'], scope: 'canvas', category: 'tools' },
+    { id: 'slice-plane', description: 'Toggle slice plane', keys: ['x'], scope: 'canvas', category: 'tools' },
+    { id: 'particle-filter', description: 'Toggle particle filter', keys: ['p'], scope: 'canvas', category: 'tools' },
+    { id: 'increase-point-size', description: 'Increase point size', keys: ['ctrl', '='], scope: 'canvas', category: 'view' },
+    { id: 'decrease-point-size', description: 'Decrease point size', keys: ['ctrl', '-'], scope: 'canvas', category: 'view' },
+    { id: 'show-shortcuts', description: 'Show shortcuts', keys: ['?'], scope: 'global', category: 'general' },
+    { id: 'toggle-opacity-settings', description: 'Opacity settings', keys: ['o'], scope: 'canvas', category: 'tools' },
+    { id: 'escape', description: 'Close panels', keys: ['escape'], scope: 'global', category: 'general' }
 ];
 
-export const useKeyboardShortcutsStore = create<ShortcutsStore>((set, get) => ({
-    shortcuts: new Map(DEFAULT_SHORTCUTS.map((s) => [s.id, s])),
+const DEFAULT_SHORTCUTS_MAP = new Map(DEFAULT_SHORTCUTS.map((shortcut) => [shortcut.id, shortcut] as const));
+
+const groupShortcuts = (shortcuts: Map<string, Shortcut>) => {
+    const groups: Record<string, Shortcut[]> = {};
+    shortcuts.forEach((shortcut) => {
+        const category = shortcut.category ?? 'general';
+        if (!groups[category]) groups[category] = [];
+        groups[category].push(shortcut);
+    });
+    return groups;
+};
+
+export const useKeyboardShortcutsStore = create<KeyboardShortcutsState & KeyboardShortcutsActions>((set, get) => ({
+    shortcuts: DEFAULT_SHORTCUTS_MAP,
     showPanel: false,
-    lastTriggered: null,
     currentScope: 'global',
-
-    registerShortcut: (shortcut) => {
-        set((state) => {
-            const newShortcuts = new Map(state.shortcuts);
-            newShortcuts.set(shortcut.id, shortcut);
-            return { shortcuts: newShortcuts };
-        });
-    },
-
-    unregisterShortcut: (id) => {
-        set((state) => {
-            const newShortcuts = new Map(state.shortcuts);
-            newShortcuts.delete(id);
-            return { shortcuts: newShortcuts };
-        });
-    },
-
-    updateShortcutAction: (id, action) => {
-        set((state) => {
-            const newShortcuts = new Map(state.shortcuts);
-            const existing = newShortcuts.get(id);
-            if (existing) {
-                newShortcuts.set(id, { ...existing, action });
-            }
-            return { shortcuts: newShortcuts };
-        });
-    },
-
-    setShowPanel: (show) => set({ showPanel: show }),
+    lastTriggered: null,
 
     togglePanel: () => set((state) => ({ showPanel: !state.showPanel })),
-
-    setLastTriggered: (shortcut) => set({ lastTriggered: shortcut }),
-
+    setShowPanel: (value) => set({ showPanel: value }),
     setCurrentScope: (scope) => set({ currentScope: scope }),
-
-    getShortcutsByCategory: () => {
-        const { shortcuts } = get();
-        const groups: Record<string, Shortcut[]> = {};
-
-        for (const shortcut of shortcuts.values()) {
-            if (!groups[shortcut.category]) {
-                groups[shortcut.category] = [];
-            }
-            groups[shortcut.category].push(shortcut);
-        }
-
-        return groups;
-    },
-
-    triggerShortcut: (id) => {
-        const { shortcuts, setLastTriggered } = get();
-        const shortcut = shortcuts.get(id);
-
-        if (shortcut && (shortcut.enabled !== false)) {
-            shortcut.action();
-            setLastTriggered({ id, description: shortcut.description });
-
-            setTimeout(() => setLastTriggered(null), 1500);
-        }
-    }
+    setLastTriggered: (trigger) => set({ lastTriggered: trigger }),
+    getShortcutsByCategory: () => groupShortcuts(get().shortcuts)
 }));

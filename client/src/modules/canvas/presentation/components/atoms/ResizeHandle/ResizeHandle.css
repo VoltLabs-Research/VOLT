@@ -1,0 +1,17 @@
+.canvas-resize-handle {
+    background: var(--color-border-soft);
+}
+
+.canvas-resize-handle--horizontal{
+    width: 1px;
+    cursor: col-resize;
+}
+
+.canvas-resize-handle--vertical{
+    height: 1px;
+    cursor: row-resize;
+}
+
+.canvas-resize-handle--active {
+    background: var(--accent-blue);
+}

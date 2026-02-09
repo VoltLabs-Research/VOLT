@@ -60,6 +60,7 @@ interface PluginActions {
         append?: boolean;
         force?: boolean;
     }) => Promise<void>;
+    fetchAllPlugins: (opts?: { limit?: number; force?: boolean }) => Promise<void>;
     fetchPlugin: (slug: string) => Promise<void>;
     getModifiers: () => ResolvedModifier[];
     getPluginArguments: (pluginSlug: string) => PluginArgument[];
@@ -245,6 +246,18 @@ const usePluginStore = create<PluginStore>((set, get) => ({
         } catch (error) {
             console.error(`Failed to fetch plugin ${slug}:`, error);
             set({ loading: false });
+        }
+    },
+
+    async fetchAllPlugins({ limit = 200, force = true } = {}) {
+        await get().fetchPlugins({ page: 1, limit, force });
+        let meta = get().listingMeta;
+        let page = meta.page;
+
+        while (meta.hasMore) {
+            page += 1;
+            await get().fetchPlugins({ page, limit, append: true, force });
+            meta = get().listingMeta;
         }
     },
 

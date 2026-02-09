@@ -1,47 +1,30 @@
-import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { motion } from 'framer-motion';
-import { Canvas } from '@react-three/fiber';
-import TetrahedronLoader from '@/modules/canvas/presentation/components/atoms/TetrahedronLoader';
-import { useEditorStore } from '@/modules/fractal/presentation/stores/editor';
 import Container from '@/shared/presentation/components/Container';
+import Loader from '@/shared/presentation/components/Loader';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import './PreloadingOverlay.css';
 
-const PreloadingOverlay: React.FC = () => {
+const PreloadingOverlay = () => {
     const { isPreloading, preloadProgress } = useEditorStore(useShallow((state) => ({
-        isPreloading: state.isPreloading ?? false,
-        preloadProgress: state.preloadProgress ?? 0
+        isPreloading: state.isPreloading,
+        preloadProgress: state.preloadProgress
     })));
 
     if (!isPreloading) return null;
 
-    const ringVars = {
-        ['--p' as any]: preloadProgress,
-        ['--stroke' as any]: '1px'
-    };
-
     return (
-        <motion.div
-            className="d-flex flex-center editor-model-loading-wrapper p-absolute w-max h-max"
-            initial={{ opacity: 0, scale: 1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-        >
-            <Container className="w-max text-center p-relative overflow-hidden d-flex column gap-3 radius-2xl p-3 editor-model-loading-container" style={ringVars}>
-                <Canvas>
-                    <TetrahedronLoader />
-                </Canvas>
-                <Container className="d-flex column gap-2">
-                    <Title className="font-size-5-5 font-weight-6 editor-model-loading-title">Setting up your scene...</Title>
-                    <Paragraph className="font-weight-4 font-size-4 line-height-5 mx-auto editor-model-loading-description">
-                        For quick analysis and visualizations you may prefer to rasterize your simulation.
-                    </Paragraph>
-                </Container>
+        <Container className="canvas-preload-overlay d-flex items-center content-center p-absolute inset-0">
+            <Container className="canvas-preload-card d-flex column items-center gap-05 radius-lg">
+                <Loader scale={0.7} />
+                <Title className="font-size-2">Setting up your scene...</Title>
+                <Paragraph className="font-size-1 color-secondary">
+                    {Math.round(preloadProgress * 100)}% loaded
+                </Paragraph>
             </Container>
-        </motion.div>
+        </Container>
     );
 };
 
-export default React.memo(PreloadingOverlay);
+export default PreloadingOverlay;

@@ -63,7 +63,7 @@ const CodeEditor = ({
         onChange(newValue ?? '');
     }, [onChange]);
 
-    // Support rows prop for backwards compatibility (convert rows to height)
+    // Convert rows to height
     const editorHeight = height 
         ? (typeof height === 'number' ? `${height}px` : height)
         : rows 

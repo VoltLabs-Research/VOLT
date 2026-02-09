@@ -14,6 +14,12 @@ export interface StatusBadgeProps{
     variant?: 'active' | 'inactive' | 'danger' | 'neutral' | 'success' | 'warning';
 
     /**
+     * Size variant
+     * @default 'default'
+     */
+    size?: 'default' | 'compact';
+
+    /**
      * Badge content (alternative to status)
      */
     children?: React.ReactNode;
@@ -51,7 +57,7 @@ const statusToVariant = (status: string): string => {
     }
 };
 
-const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant, children, className = '' }) => {
+const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant, size = 'default', children, className = '' }) => {
     const computedVariant = variant ?? (status ? statusToVariant(status) : 'neutral');
     const content = children ?? status;
 
@@ -59,6 +65,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ status, variant, children, cl
         'status-badge',
         'radius-full',
         `variant-${computedVariant}`,
+        size !== 'default' && `size-${size}`,
         'gap-025',
         'font-size-1',
         'font-weight-5',

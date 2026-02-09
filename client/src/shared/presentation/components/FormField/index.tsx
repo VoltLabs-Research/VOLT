@@ -1,7 +1,6 @@
 import { forwardRef, ReactNode, ChangeEvent } from 'react';
 import { AlertCircle } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
 import Select, { type SelectOption } from '@/shared/presentation/components/Select';
 import LiquidToggle from '@/shared/presentation/components/LiquidToggle';
 import { cn } from '@/shared/utils';
@@ -19,7 +18,7 @@ export interface FormFieldProps extends Omit<React.InputHTMLAttributes<HTMLInput
     options?: SelectOption[];
     rows?: number;
     inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
-    variant?: 'default' | 'inline';
+    variant?: 'default' | 'inline' | 'canvas';
     // Canvas-style API (alternative)
     fieldKey?: string;
     fieldValue?: string | number | boolean;
@@ -75,14 +74,6 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({
         }
     };
 
-    const handleCheckboxChange = (e: ChangeEvent<HTMLInputElement>) => {
-        if (isCanvasStyle && fieldKey) {
-            onFieldChange!(fieldKey, e.target.checked);
-        } else {
-            onChange?.(e);
-        }
-    };
-
     const handleColorChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (isCanvasStyle && fieldKey) {
             onFieldChange!(fieldKey, e.target.value);
@@ -91,9 +82,14 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({
         }
     };
 
-    // Inline variant (for canvas/workflow editors)
-    if (variant === 'inline' || isCanvasStyle) {
+    // Inline/canvas variants (for workflow editors)
+    if (variant === 'inline' || variant === 'canvas' || isCanvasStyle) {
         const datalistId = suggestions?.length ? `${effectiveName}-suggestions` : undefined;
+        const isCanvasVariant = variant === 'canvas' || isCanvasStyle;
+        const fieldClass = isCanvasVariant ? 'form-field-canvas-input' : 'form-field-inline-input';
+        const selectClass = isCanvasVariant ? 'form-field-canvas-select' : 'form-field-inline-select';
+        const textareaClass = isCanvasVariant ? 'form-field-canvas-textarea' : 'form-field-inline-textarea';
+        const containerBaseClass = isCanvasVariant ? 'form-field-canvas' : 'form-field-inline';
 
         const renderInlineField = () => {
             switch (fieldType) {
@@ -104,7 +100,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({
                             value={String(effectiveValue ?? '')}
                             onChange={handleSelectChange}
                             placeholder={placeholder}
-                            className='form-field-inline-select labeled-input'
+                            className={`${selectClass} labeled-input`}
                         />
                     );
 
@@ -140,7 +136,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({
                     return (
                         <textarea
                             name={effectiveName as string}
-                            className='form-field-inline-input form-field-inline-textarea'
+                            className={`${fieldClass} ${textareaClass}`}
                             value={String(effectiveValue ?? '')}
                             onChange={handleInputChange}
                             placeholder={placeholder}
@@ -156,7 +152,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({
                                 ref={ref}
                                 name={effectiveName as string}
                                 {...inputProps}
-                                className='form-field-inline-input labeled-input'
+                                className={`${fieldClass} labeled-input`}
                                 value={String(effectiveValue ?? '')}
                                 onChange={handleInputChange}
                                 placeholder={placeholder}
@@ -177,14 +173,16 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({
 
         const isCheckbox = fieldType === 'checkbox';
         const containerClass = isCheckbox
-            ? 'form-field-inline form-field-inline-checkbox-container d-flex content-between items-center checkbox-container'
-            : 'form-field-inline d-flex content-between items-center gap-1';
+            ? `${containerBaseClass} form-field-inline-checkbox-container d-flex content-between items-center checkbox-container`
+            : `${containerBaseClass} d-flex content-between items-center gap-1`;
+
+        const labelClass = isCanvasVariant
+            ? 'canvas-form-label'
+            : 'form-field-inline-label font-size-2-5 font-weight-4 labeled-input-label';
 
         return (
             <Container className={`${containerClass} ${isLoading ? 'is-loading form-field-loading' : ''}`}>
-                <Title className='form-field-inline-label font-size-2-5 font-weight-4 labeled-input-label'>
-                    {label}
-                </Title>
+                <span className={labelClass}>{label}</span>
                 <Container className='d-flex items-center render-input-container' style={{ flex: isCheckbox ? undefined : 1 }}>
                     {renderInlineField()}
                 </Container>

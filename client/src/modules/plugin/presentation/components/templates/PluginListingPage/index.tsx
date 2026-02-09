@@ -2,38 +2,53 @@ import { useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import PluginExposureTable from '../../organisms/PluginExposureTable';
-import TrajectorySelector from '@/modules/trajectory/presentation/components/molecules/TrajectorySelector';
+import Select from '@/shared/presentation/components/Select';
+import useTrajectorySelector from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-selector';
 import './PluginListingPage.css';
 
 const PluginListingPage = () => {
-    const { pluginSlug, listingSlug, trajectoryId } = useParams();
+    const params = useParams();
+    const pluginSlug = params.pluginSlug as string;
+    const listingSlug = params.listingSlug as string;
+    const trajectoryId = params.trajectoryId as string | null;
     const navigate = useNavigate();
-    const team = useTeamStore((s) => s.selectedTeam);
+    const team = useTeamStore((s) => s.selectedTeam)!;
+    const { options, isLoading, loadMore } = useTrajectorySelector({
+        allowEmpty: true,
+        emptyLabel: 'All Trajectories'
+    });
 
     const handleTrajectoryChange = useCallback((value: string | null) => {
         if (value) {
             navigate(`/dashboard/trajectory/${value}/plugins/${pluginSlug}/listing/${listingSlug}`);
-        } else {
-            navigate(`/dashboard/plugins/${pluginSlug}/listing/${listingSlug}`);
+            return;
         }
+        navigate(`/dashboard/plugins/${pluginSlug}/listing/${listingSlug}`);
     }, [navigate, pluginSlug, listingSlug]);
 
-    if (!pluginSlug || !listingSlug) return null;
+    const handleTrajectorySelect = useCallback((value: string) => {
+        if (value === '') {
+            handleTrajectoryChange(null);
+            return;
+        }
+        handleTrajectoryChange(value);
+    }, [handleTrajectoryChange]);
 
     return (
         <PluginExposureTable
             pluginSlug={pluginSlug}
             listingSlug={listingSlug}
             trajectoryId={trajectoryId}
-            teamId={team?._id}
+            teamId={team._id}
             showTrajectoryColumn={!trajectoryId}
             headerActions={
-                <TrajectorySelector
-                    value={trajectoryId || null}
-                    onChange={handleTrajectoryChange}
+                <Select
+                    options={options}
+                    value={trajectoryId}
+                    onChange={handleTrajectorySelect}
                     placeholder='All Trajectories'
-                    allowEmpty
-                    emptyLabel='All Trajectories'
+                    isLoading={isLoading}
+                    onScrollEnd={loadMore}
                 />
             }
         />

@@ -1,13 +1,9 @@
-import { memo } from 'react';
-import useColorCoding, { ColorGradient } from '@/modules/canvas/presentation/hooks/use-color-coding';
-import WidgetContainer from '@/modules/canvas/presentation/components/atoms/WidgetContainer';
-import ModifierHeader from '@/modules/canvas/presentation/components/atoms/ModifierHeader';
+import React from 'react';
+import useColorCoding, { ColorGradient } from '../../../hooks/use-color-coding';
+import GradientPreview from '../../atoms/GradientPreview';
 import Button from '@/shared/presentation/components/Button';
 import FormField from '@/shared/presentation/components/FormField';
-import Loader from '@/shared/presentation/components/Loader';
 import Container from '@/shared/presentation/components/Container';
-import GradientPreview from '@/modules/canvas/presentation/components/atoms/GradientPreview';
-import '@/modules/canvas/presentation/components/organisms/ColorCoding/ColorCoding.css';
 
 interface ColorCodingProps {
     trajectoryId?: string;
@@ -30,13 +26,12 @@ interface ColorCodingFormProps {
     setAutomaticRange: (v: boolean) => void;
     symmetricRange: boolean;
     setSymmetricRange: (v: boolean) => void;
-    isFetchingStats: boolean;
     isApplying: boolean;
     canApply: boolean;
     onApply: () => void;
 }
 
-const ColorCodingForm = memo(({
+const ColorCodingForm = ({
     property,
     propertyOptions,
     onPropertyChange,
@@ -51,94 +46,87 @@ const ColorCodingForm = memo(({
     setAutomaticRange,
     symmetricRange,
     setSymmetricRange,
-    isFetchingStats,
     isApplying,
     canApply,
     onApply
-}: ColorCodingFormProps) => (
-    <WidgetContainer className='color-coding-container p-1 overflow-hidden d-flex column gap-1'>
-        <ModifierHeader title='Color Coding' modifierId='color-coding'>
-            {isFetchingStats && <Loader scale={0.5} isFixed={false} />}
-        </ModifierHeader>
+}: ColorCodingFormProps) => {
+    const selectFields: { key: string; label: string; value: string; onChange: (v: string) => void; options: { value: string; title: string }[] }[] = [
+        { key: 'property', label: 'Property', value: property, onChange: onPropertyChange, options: propertyOptions },
+        { key: 'gradient', label: 'Color Gradient', value: gradient, onChange: (v) => setGradient(v as ColorGradient), options: gradientOptions }
+    ];
 
-        <Container className='d-flex column gap-1'>
-            <FormField
-                fieldKey='property'
-                fieldType='select'
-                label='Property'
-                fieldValue={property}
-                onFieldChange={(_, value) => onPropertyChange(String(value))}
-                options={propertyOptions}
-            />
+    const inputFields: { key: string; label: string; value: number; onChange: (v: number) => void }[] = [
+        { key: 'startValue', label: 'Start value', value: startValue, onChange: setStartValue },
+        { key: 'endValue', label: 'End value', value: endValue, onChange: setEndValue }
+    ];
 
-            <FormField
-                fieldKey='gradient'
-                fieldType='select'
-                label='Color Gradient'
-                fieldValue={gradient}
-                onFieldChange={(_, value) => setGradient(value as ColorGradient)}
-                options={gradientOptions}
-            />
+    const checkboxFields: { key: string; label: string; value: boolean; onChange: (v: boolean) => void }[] = [
+        { key: 'automaticRange', label: 'Automatic Range', value: automaticRange, onChange: setAutomaticRange },
+        { key: 'symmetricRange', label: 'Symmetric Range', value: symmetricRange, onChange: setSymmetricRange }
+    ];
 
-            <GradientPreview
-                gradient={gradient}
-                startValue={startValue}
-                endValue={endValue}
-            />
+    return (
+        <Container className="canvas-color-coding d-flex column gap-1">
+            <Container className="d-flex column gap-1">
+                {selectFields.map((f) => (
+                    <FormField
+                        key={f.key}
+                        fieldKey={f.key}
+                        fieldType="select"
+                        label={f.label}
+                        fieldValue={f.value}
+                        onFieldChange={(_, value) => f.onChange(String(value))}
+                        options={f.options}
+                    />
+                ))}
 
-            <FormField
-                fieldKey='startValue'
-                fieldType='input'
-                onFieldChange={(_, value) => setStartValue(Number(value))}
-                fieldValue={startValue}
-                label='Start value'
-            />
+                <GradientPreview
+                    gradient={gradient}
+                    startValue={startValue}
+                    endValue={endValue}
+                />
 
-            <FormField
-                fieldKey='endValue'
-                onFieldChange={(_, value) => setEndValue(Number(value))}
-                fieldValue={endValue}
-                fieldType='input'
-                label='End value'
-            />
+                {inputFields.map((f) => (
+                    <FormField
+                        key={f.key}
+                        fieldKey={f.key}
+                        fieldType="input"
+                        label={f.label}
+                        fieldValue={f.value}
+                        onFieldChange={(_, value) => f.onChange(Number(value))}
+                    />
+                ))}
 
-            <FormField
-                fieldKey='automaticRange'
-                fieldType='checkbox'
-                label='Automatic Range'
-                fieldValue={automaticRange}
-                onFieldChange={(_, value) => setAutomaticRange(Boolean(value))}
-            />
-            <FormField
-                fieldKey='symmetricRange'
-                fieldType='checkbox'
-                label='Symmetric Range'
-                fieldValue={symmetricRange}
-                onFieldChange={(_, value) => setSymmetricRange(Boolean(value))}
-            />
+                {checkboxFields.map((f) => (
+                    <FormField
+                        key={f.key}
+                        fieldKey={f.key}
+                        fieldType="checkbox"
+                        label={f.label}
+                        fieldValue={f.value}
+                        onFieldChange={(_, value) => f.onChange(Boolean(value))}
+                    />
+                ))}
+            </Container>
+
+            <Container>
+                <Button
+                    isLoading={isApplying}
+                    variant="solid"
+                    intent="canvas"
+                    shape="square"
+                    block
+                    onClick={onApply}
+                    disabled={!canApply}
+                >
+                    Apply
+                </Button>
+            </Container>
         </Container>
+    );
+};
 
-        <Container className='color-coding-footer-container'>
-            <Button
-                isLoading={isApplying}
-                variant='solid'
-                intent='brand'
-                block
-                onClick={onApply}
-                disabled={!canApply}
-            >
-                Apply
-            </Button>
-        </Container>
-    </WidgetContainer>
-));
-ColorCodingForm.displayName = 'ColorCodingForm';
-
-const ColorCoding = memo(({
-    trajectoryId,
-    analysisId,
-    currentTimestep
-}: ColorCodingProps) => {
+const ColorCoding = ({ trajectoryId, analysisId, currentTimestep }: ColorCodingProps) => {
     const {
         property,
         propertyOptions,
@@ -154,7 +142,6 @@ const ColorCoding = memo(({
         setAutomaticRange,
         symmetricRange,
         setSymmetricRange,
-        isFetchingStats,
         isApplying,
         canApply,
         applyColorCoding
@@ -176,14 +163,11 @@ const ColorCoding = memo(({
             setAutomaticRange={setAutomaticRange}
             symmetricRange={symmetricRange}
             setSymmetricRange={setSymmetricRange}
-            isFetchingStats={isFetchingStats}
             isApplying={isApplying}
             canApply={canApply}
             onApply={applyColorCoding}
         />
     );
-});
-
-ColorCoding.displayName = 'ColorCoding';
+};
 
 export default ColorCoding;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { createExternalStore, useExternalStore } from '@/modules/canvas/presentation/utils/external-store';
+import { createExternalStore, useExternalStore } from '../utils/external-store';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 
 export interface CanvasPresenceUser {
@@ -69,8 +69,8 @@ const useCanvasPresence = ({ trajectoryId, enabled = true }: UseCanvasPresencePr
             subscribeToPresence();
         }
 
-        const unsubscribeCanvas = socketService.on('canvas_users_update', (users) => setUsers('canvasUsers', users));
-        const unsubscribeRaster = socketService.on('raster_users_update', (users) => setUsers('rasterUsers', users));
+        const unsubscribeCanvas = socketService.on('canvas_users_update', (users) => setUsers('canvasUsers', users as CanvasPresenceUser[]));
+        const unsubscribeRaster = socketService.on('raster_users_update', (users) => setUsers('rasterUsers', users as CanvasPresenceUser[]));
 
         return () => {
             subscribedRef.current = false;

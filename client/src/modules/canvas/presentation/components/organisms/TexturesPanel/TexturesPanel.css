@@ -1,0 +1,13 @@
+.canvas-events-body .job-group-children{
+    padding-left: 0;
+}
+
+.canvas-events-body .frame-job-group,
+.canvas-events-body .job-group-children .job-container{
+    margin-left: unset;
+    border-left: unset;
+}
+
+.canvas-events-body .job-group-children .job-container{
+    padding: 0.35rem .5rem;
+}

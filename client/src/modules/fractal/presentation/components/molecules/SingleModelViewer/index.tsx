@@ -7,6 +7,7 @@ import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-tra
 import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset, getTrajectoryBoxBounds } from '@/modules/fractal/presentation/utilities/boxUtils';
 import { getSceneKey, normalizeVec3 } from '@/modules/fractal/presentation/utilities/sceneUtils';
 import { computeGlbUrl, type ActiveScene } from '@/modules/fractal/core/glb-url';
+import type { SlicePlaneConfig } from '@/modules/fractal/presentation/types/configuration';
 
 interface SingleModelViewerProps {
     trajectoryId: string;
@@ -22,6 +23,12 @@ interface SingleModelViewerProps {
         endValue?: number;
         gradient?: string;
     };
+    slicePlaneConfig: SlicePlaneConfig;
+    pointSizeMultiplier: number;
+    sceneOpacities: Record<string, number>;
+    activeModelBounds?: any;
+    onModelBoundsChanged?: (bounds: any) => void;
+    onLoadingStateChanged?: (isLoading: boolean) => void;
     rotation?: { x?: number; y?: number; z?: number };
     position?: { x?: number; y?: number; z?: number };
     scale?: number;
@@ -41,20 +48,26 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     currentTimestep,
     analysisId = 'default',
     sceneConfig,
+    slicePlaneConfig,
+    pointSizeMultiplier,
+    sceneOpacities,
+    activeModelBounds,
+    onModelBoundsChanged,
+    onLoadingStateChanged,
     rotation = {},
     position = { x: 0, y: 0, z: 0 },
     scale = 1,
-    autoFit = true,
+    autoFit: _autoFit = true,
     orbitControlsRef,
     enableSlice = true,
     enableInstancing = true,
     updateThrottle = 16,
-    isPrimary = false,
+    isPrimary: _isPrimary = false,
     onModelLoaded,
     onSelect,
     isSelected = false
 }) => {
-    const sliceClippingPlanes = useSlicingPlanes(enableSlice);
+    const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig);
 
     const teamId = useTeamStore(state => state.selectedTeam?._id);
 
@@ -102,7 +115,12 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         disableAutoTransform: Boolean(boxBounds),
         sceneKey,
         boxBounds,
-        normalizationScale: cellBoxTransforms?.scale
+        normalizationScale: cellBoxTransforms?.scale,
+        pointSizeMultiplier,
+        sceneOpacities,
+        activeModelBounds,
+        onModelBoundsChanged,
+        onLoadingStateChanged
     });
 
     React.useEffect(() => {
@@ -128,4 +146,4 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     );
 };
 
-export default React.memo(SingleModelViewer);
+export default SingleModelViewer;

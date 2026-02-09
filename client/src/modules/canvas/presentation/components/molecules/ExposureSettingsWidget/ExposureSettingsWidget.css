@@ -1,27 +1,6 @@
-.exposure-settings-widget {
-    min-width: 280px;
-    max-width: 320px;
-    z-index: 999999;
-}
-
-.exposure-settings-widget-header {
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.exposure-settings-widget-title {
-    font-size: 0.85rem;
-    color: #e0e0e0;
-}
-
-.exposure-settings-widget-close {
-    background: transparent;
-    color: #888;
-    border-radius: 4px;
-}
-
-.exposure-settings-widget-close:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
+.canvas-exposure-widget {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    padding: 10px 12px;
+    min-width: 220px;
 }

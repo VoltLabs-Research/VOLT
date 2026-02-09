@@ -1,8 +1,0 @@
-.modifier-header-close-btn {
-    opacity: 0.6;
-    transition: opacity 0.15s ease;
-}
-
-.modifier-header-close-btn:hover {
-    opacity: 1;
-}

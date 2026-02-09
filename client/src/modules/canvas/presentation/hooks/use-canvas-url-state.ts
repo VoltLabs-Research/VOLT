@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 
@@ -6,8 +6,12 @@ interface UpdateOptions {
     replace?: boolean;
 }
 
-const useCanvasUrlState = () => {
-    const { searchParams, updateSearchParams, setParam, removeParam } = useSearchParamsState();
+interface CanvasUrlStateOptions {
+    trajectory?: { analysis?: Array<{ _id?: string }> } | null;
+}
+
+const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
+    const { searchParams, updateSearchParams } = useSearchParamsState();
     const {
         selectedIds: activeModifiers,
         toggleSelection,
@@ -21,6 +25,7 @@ const useCanvasUrlState = () => {
     const showWidgets = searchParams.get('widgets') !== 'false';
     const showGrid = searchParams.get('grid') !== 'false';
     const renderConfigOpen = searchParams.get('renderConfig') === 'true';
+    const activeWorkspace = searchParams.get('workspace') || 'modeling';
 
     const setAnalysisId = useCallback((id?: string, options?: UpdateOptions) => {
         updateSearchParams({ analysis: id ?? null }, options);
@@ -42,6 +47,10 @@ const useCanvasUrlState = () => {
         updateSearchParams({ renderConfig: open ? 'true' : null }, options);
     }, [updateSearchParams]);
 
+    const setActiveWorkspace = useCallback((id: string, options?: UpdateOptions) => {
+        updateSearchParams({ workspace: id === 'modeling' ? null : id }, options);
+    }, [updateSearchParams]);
+
     const setModifiers = useCallback((ids: string[], options?: UpdateOptions) => {
         updateSearchParams({ modifiers: ids.length ? ids.join(',') : null }, options);
     }, [updateSearchParams]);
@@ -57,14 +66,21 @@ const useCanvasUrlState = () => {
     const pluginSelection = useMemo(() => {
         if (!pluginParam) return null;
         const [pluginId, modifierSlug] = pluginParam.split(':');
-        return pluginId && modifierSlug ? { pluginId, modifierSlug } : null;
+        return { pluginId, modifierSlug };
     }, [pluginParam]);
+
+    const trajectory = options?.trajectory;
+
+    useEffect(() => {
+        if (!trajectory?.analysis?.length || analysisId) return;
+        const latest = trajectory.analysis[trajectory.analysis.length - 1];
+        if (!latest?._id) return;
+        setAnalysisId(latest._id, { replace: true });
+    }, [trajectory, analysisId, setAnalysisId]);
 
     return {
         searchParams,
         updateSearchParams,
-        setParam,
-        removeParam,
         analysisId,
         resultsSlug,
         pluginParam,
@@ -74,6 +90,7 @@ const useCanvasUrlState = () => {
         showGrid,
         renderConfigOpen,
         activeModifiers,
+        activeWorkspace,
         toggleModifier,
         isModifierSelected,
         setAnalysisId,
@@ -81,6 +98,7 @@ const useCanvasUrlState = () => {
         setPluginParam,
         setSettingsKey,
         setRenderConfigOpen,
+        setActiveWorkspace,
         setModifiers
     };
 };

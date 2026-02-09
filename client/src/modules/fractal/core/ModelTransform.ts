@@ -10,7 +10,6 @@ export type BoundsInfo = {
 
 export class ModelTransform {
     private referenceScaleFactor?: number;
-    private useFixedReference = false;
 
     static boundsFromObject(obj: any): BoundsInfo {
         const box = new Box3().setFromObject(obj.scene ?? obj);
@@ -99,7 +98,6 @@ export class ModelTransform {
             model.scale.setScalar(params.scale * (this.referenceScaleFactor || 1));
             model.position.set(params.position.x, params.position.y, params.position.z);
             model.rotation.set(params.rotation.x, params.rotation.y, params.rotation.z);
-            this.useFixedReference = true;
         }
 
         model.updateMatrixWorld(true);

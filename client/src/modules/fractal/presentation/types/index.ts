@@ -3,7 +3,6 @@ import type {
     Group,
     Mesh,
     Points,
-    ShaderMaterial,
     Box3,
     Vector3,
     MeshBasicMaterial,
@@ -101,4 +100,9 @@ export type UseGlbSceneParams = {
     sceneKey?: string;
     boxBounds?: BoxBounds;
     normalizationScale?: number;
+    pointSizeMultiplier: number;
+    sceneOpacities: Record<string, number>;
+    activeModelBounds?: any;
+    onModelBoundsChanged?: (bounds: any) => void;
+    onLoadingStateChanged?: (isLoading: boolean) => void;
 };

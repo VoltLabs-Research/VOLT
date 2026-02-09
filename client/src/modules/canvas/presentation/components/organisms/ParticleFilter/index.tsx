@@ -1,11 +1,9 @@
-import { memo } from 'react';
-import useParticleFilter, { OPERATORS, ACTIONS, FilterOperator, FilterAction } from '@/modules/canvas/presentation/hooks/use-particle-filter';
-import WidgetContainer from '@/modules/canvas/presentation/components/atoms/WidgetContainer';
-import ModifierHeader from '@/modules/canvas/presentation/components/atoms/ModifierHeader';
+import React from 'react';
+import useParticleFilter, { OPERATORS, ACTIONS, type FilterOperator, type FilterAction } from '../../../hooks/use-particle-filter';
 import Button from '@/shared/presentation/components/Button';
 import FormField from '@/shared/presentation/components/FormField';
 import Container from '@/shared/presentation/components/Container';
-import '@/modules/canvas/presentation/components/organisms/ParticleFilter/ParticleFilter.css';
+import './ParticleFilter.css';
 
 interface ParticleFilterProps {
     trajectoryId?: string;
@@ -13,23 +11,20 @@ interface ParticleFilterProps {
     currentTimestep?: number;
 }
 
-const PreviewStats = memo(({ percentage }: { percentage: string }) => (
-    <Container className='particle-filter-preview d-flex column gap-05 p-075 radius-md'>
-        <Container className='preview-stats d-flex content-between font-size-1'>
+const PreviewStats = ({ percentage }: { percentage: string }) => (
+    <Container className="canvas-filter-preview d-flex column gap-05">
+        <Container className="d-flex content-between">
             <span>Selection</span>
-            <span className='stat-value'>{percentage}% of total</span>
+            <span className="color-primary">{percentage}% of total</span>
         </Container>
     </Container>
-));
-PreviewStats.displayName = 'PreviewStats';
+);
 
-const ErrorMessage = memo(({ error }: { error: string }) => (
-    <Container className='particle-filter-error p-05 radius-md font-size-1'>{error}</Container>
-));
-ErrorMessage.displayName = 'ErrorMessage';
+const ErrorMessage = ({ error }: { error: string }) => (
+    <Container className="canvas-filter-error font-size-05">{error}</Container>
+);
 
 interface PreviewResultViewProps {
-    matchCount: number;
     percentage: string;
     action: FilterAction;
     setAction: (action: FilterAction) => void;
@@ -39,8 +34,7 @@ interface PreviewResultViewProps {
     onCancel: () => void;
 }
 
-const PreviewResultView = memo(({
-    matchCount,
+const PreviewResultView = ({
     percentage,
     action,
     setAction,
@@ -49,16 +43,14 @@ const PreviewResultView = memo(({
     onApply,
     onCancel
 }: PreviewResultViewProps) => (
-    <WidgetContainer className='particle-filter-action-panel p-1 overflow-hidden d-flex column gap-1 p-absolute right-1 bottom-1'>
-        <ModifierHeader title={`${matchCount.toLocaleString()} Particles Selected`} modifierId='particle-filter' />
-
-        <Container className='d-flex column gap-1'>
+    <Container className="canvas-filter-panel d-flex column gap-1">
+        <Container className="d-flex column gap-1">
             <PreviewStats percentage={percentage} />
 
             <FormField
-                fieldKey='action'
-                fieldType='select'
-                label='Action'
+                fieldKey="action"
+                fieldType="select"
+                label="Action"
                 fieldValue={action}
                 onFieldChange={(_, value) => setAction(value as FilterAction)}
                 options={ACTIONS}
@@ -67,19 +59,22 @@ const PreviewResultView = memo(({
             {error && <ErrorMessage error={error} />}
         </Container>
 
-        <Container className='d-flex column gap-05'>
+        <Container className="d-flex column gap-05">
             <Button
                 isLoading={isApplying}
-                variant='solid'
-                intent={action === 'delete' ? 'danger' : 'brand'}
+                variant="solid"
+                intent={action === 'delete' ? 'danger' : 'canvas'}
                 block
                 onClick={onApply}
                 disabled={isApplying}
+                shape="square"
             >
                 {action === 'delete' ? 'Delete Selection' : 'Apply Color'}
             </Button>
             <Button
-                variant='ghost'
+                variant="ghost"
+                intent="canvas"
+                shape="square"
                 block
                 onClick={onCancel}
                 disabled={isApplying}
@@ -87,9 +82,8 @@ const PreviewResultView = memo(({
                 Cancel
             </Button>
         </Container>
-    </WidgetContainer>
-));
-PreviewResultView.displayName = 'PreviewResultView';
+    </Container>
+);
 
 interface FilterFormViewProps {
     property: string;
@@ -107,7 +101,7 @@ interface FilterFormViewProps {
     onPreview: () => void;
 }
 
-const FilterFormView = memo(({
+const FilterFormView = ({
     property,
     propertyOptions,
     onPropertyChange,
@@ -121,61 +115,58 @@ const FilterFormView = memo(({
     isLoadingPreview,
     canPreview,
     onPreview
-}: FilterFormViewProps) => (
-    <WidgetContainer className='particle-filter-container p-1 overflow-hidden d-flex column gap-1 p-absolute right-1 bottom-1'>
-        <ModifierHeader title='Particle Filter' modifierId='particle-filter' />
+}: FilterFormViewProps) => {
+    const selectFields: { key: string; label: string; value: string; onChange: (v: string) => void; options: { value: string; title: string }[] }[] = [
+        { key: 'property', label: 'Property', value: property, onChange: onPropertyChange, options: propertyOptions },
+        { key: 'operator', label: 'Operator', value: operator, onChange: (v) => setOperator(v as FilterOperator), options: OPERATORS }
+    ];
 
-        <Container className='d-flex column gap-1'>
-            <FormField
-                fieldKey='property'
-                fieldType='select'
-                label='Property'
-                fieldValue={property}
-                onFieldChange={(_, val) => onPropertyChange(String(val))}
-                options={propertyOptions}
-            />
+    return (
+        <Container className="canvas-filter-panel d-flex column gap-1">
+            <Container className="d-flex column gap-1">
+                {selectFields.map((f) => (
+                    <FormField
+                        key={f.key}
+                        fieldKey={f.key}
+                        fieldType="select"
+                        label={f.label}
+                        fieldValue={f.value}
+                        onFieldChange={(_, val) => f.onChange(String(val))}
+                        options={f.options}
+                    />
+                ))}
 
-            <FormField
-                fieldKey='operator'
-                fieldType='select'
-                label='Operator'
-                fieldValue={operator}
-                onFieldChange={(_, val) => setOperator(val as FilterOperator)}
-                options={OPERATORS}
-            />
+                <FormField
+                    fieldKey="value"
+                    fieldType="input"
+                    onFieldChange={(_, val) => setValue(Number(val))}
+                    fieldValue={value}
+                    label="Value"
+                    suggestions={valueSuggestions}
+                    onFetchSuggestions={onFetchSuggestions}
+                />
 
-            <FormField
-                fieldKey='value'
-                fieldType='input'
-                onFieldChange={(_, val) => setValue(Number(val))}
-                fieldValue={value}
-                label='Value'
-                suggestions={valueSuggestions}
-                onFetchSuggestions={onFetchSuggestions}
-            />
+                {error && <ErrorMessage error={error} />}
+            </Container>
 
-            {error && <ErrorMessage error={error} />}
+            <Container>
+                <Button
+                    isLoading={isLoadingPreview}
+                    variant="soft"
+                    intent="canvas"
+                    shape="square"
+                    block
+                    onClick={onPreview}
+                    disabled={!canPreview}
+                >
+                    Preview
+                </Button>
+            </Container>
         </Container>
+    );
+};
 
-        <Button
-            isLoading={isLoadingPreview}
-            variant='solid'
-            intent='brand'
-            block
-            onClick={onPreview}
-            disabled={!canPreview}
-        >
-            Preview Selection
-        </Button>
-    </WidgetContainer>
-));
-FilterFormView.displayName = 'FilterFormView';
-
-const ParticleFilter = memo(({ 
-    trajectoryId,
-    analysisId,
-    currentTimestep 
-}: ParticleFilterProps) => {
+const ParticleFilter = ({ trajectoryId, analysisId, currentTimestep }: ParticleFilterProps) => {
     const {
         property,
         propertyOptions,
@@ -202,7 +193,6 @@ const ParticleFilter = memo(({
     if (previewResult) {
         return (
             <PreviewResultView
-                matchCount={previewResult.matchCount}
                 percentage={percentage}
                 action={action}
                 setAction={setAction}
@@ -231,8 +221,6 @@ const ParticleFilter = memo(({
             onPreview={handlePreview}
         />
     );
-});
-
-ParticleFilter.displayName = 'ParticleFilter';
+};
 
 export default ParticleFilter;
