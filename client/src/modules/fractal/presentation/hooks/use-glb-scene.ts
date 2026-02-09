@@ -43,6 +43,12 @@ export default function useGlbScene(params: UseGlbSceneParams) {
 
     const engineRef = useRef<FractalEngine | null>(null);
 
+    const onModelBoundsChangedRef = useRef(onModelBoundsChanged);
+    onModelBoundsChangedRef.current = onModelBoundsChanged;
+
+    const onLoadingStateChangedRef = useRef(onLoadingStateChanged);
+    onLoadingStateChangedRef.current = onLoadingStateChanged;
+
     const [loadingState, setLoadingState] = useState({
         isLoading: false,
         progress: 0,
@@ -56,11 +62,11 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             {
                 onModelLoaded: (bounds) => {
                     setLocalModelBounds(bounds as any);
-                    onModelBoundsChanged?.(bounds as any);
+                    onModelBoundsChangedRef.current?.(bounds as any);
                 },
                 onLoadingState: (state) => {
                     setLoadingState(state);
-                    onLoadingStateChanged?.(state.isLoading);
+                    onLoadingStateChangedRef.current?.(state.isLoading);
                 },
                 onModelAvailable: (modelObj) => setModel(modelObj)
             }
@@ -70,7 +76,7 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             engineRef.current?.dispose();
             engineRef.current = null;
         };
-    }, [scene, camera, gl, invalidate, onModelBoundsChanged, onLoadingStateChanged]);
+    }, [scene, camera, gl, invalidate]);
 
     useEffect(() => {
         if (!engineRef.current) return;

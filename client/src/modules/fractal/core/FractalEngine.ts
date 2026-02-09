@@ -168,10 +168,6 @@ export class FractalEngine {
                 useFixedReference: this.params.useFixedReference
             });
 
-            if (this.state.model) {
-                this.state.model.removeFromParent();
-            }
-
             this.state.model = loadedModel;
             this.state.bounds = bounds;
             this.state.lastLoadedUrl = url;
@@ -340,8 +336,8 @@ export class FractalEngine {
 
     dispose() {
         if (this.state.model) {
-            this.state.model.removeFromParent();
             this.state.model = null;
+            this.callbacks.onModelAvailable?.(null!);
         }
         this.disposeSelection();
         this.simulationBox.mesh = null;
