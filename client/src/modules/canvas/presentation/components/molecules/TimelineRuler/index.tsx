@@ -10,6 +10,7 @@ interface TimelineRulerProps {
     onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
     onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
     onPointerUp: (event: React.PointerEvent<HTMLDivElement>) => void;
+    onWheel: (event: React.WheelEvent<HTMLDivElement>) => void;
 }
 
 const TimelineRuler = ({
@@ -20,9 +21,10 @@ const TimelineRuler = ({
     onClick,
     onPointerDown,
     onPointerMove,
-    onPointerUp
+    onPointerUp,
+    onWheel
 }: TimelineRulerProps) => (
-    <Container className="canvas-timeline-body flex-1 p-relative overflow-hidden min-h-0">
+    <Container className="canvas-timeline-body flex-1 p-relative min-h-0">
         <Container
             className="canvas-timeline-ruler d-flex items-end"
             ref={rulerRef}
@@ -31,6 +33,7 @@ const TimelineRuler = ({
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerLeave={onPointerUp}
+            onWheel={onWheel}
             role="slider"
             aria-valuenow={currentFrame}
         >

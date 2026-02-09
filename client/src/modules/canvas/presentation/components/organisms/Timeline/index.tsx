@@ -70,6 +70,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId }: TimelineProps) => {
     const rulerRef = useRef<HTMLDivElement>(null);
     const [playheadLeft, setPlayheadLeft] = useState<number>(0);
     const [isDragging, setIsDragging] = useState(false);
+    const isDraggingRef = useRef(false);
 
     const [zoomPercent, setZoomPercent] = useState(100);
     const lastZoomRef = useRef(100);
@@ -98,6 +99,18 @@ const Timeline = ({ sceneRef, trajectory, analysisId }: TimelineProps) => {
         }
     }, [sceneRef]);
 
+    const scrollToTick = useCallback((tickEl: HTMLDivElement, smooth: boolean) => {
+        const ruler = rulerRef.current;
+        if (!ruler) return;
+        const tickCenter = tickEl.offsetLeft + tickEl.offsetWidth / 2;
+        const rulerWidth = ruler.clientWidth;
+        const targetScroll = tickCenter - rulerWidth / 2;
+        ruler.scrollTo({
+            left: targetScroll,
+            behavior: smooth ? 'smooth' : 'auto'
+        });
+    }, []);
+
     const updatePlayheadPosition = useCallback(() => {
         const ruler = rulerRef.current;
         if (!ruler || availableTimesteps.length === 0) return;
@@ -107,7 +120,16 @@ const Timeline = ({ sceneRef, trajectory, analysisId }: TimelineProps) => {
         const tickCenter = tickEl.offsetLeft + tickEl.offsetWidth / 2;
         const scrollOffset = ruler.scrollLeft;
         setPlayheadLeft(tickCenter - scrollOffset);
-    }, [safeCurrentIndex, availableTimesteps.length]);
+
+        // Auto-scroll: if the active tick is outside the visible region, scroll to it
+        const rulerWidth = ruler.clientWidth;
+        const visibleLeft = scrollOffset;
+        const visibleRight = scrollOffset + rulerWidth;
+        const margin = 40;
+        if (tickCenter < visibleLeft + margin || tickCenter > visibleRight - margin) {
+            scrollToTick(tickEl, !isDraggingRef.current);
+        }
+    }, [safeCurrentIndex, availableTimesteps.length, scrollToTick]);
 
     useEffect(() => {
         updatePlayheadPosition();
@@ -154,6 +176,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId }: TimelineProps) => {
     const handleRulerPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
         if (event.button !== 0) return;
         setIsDragging(true);
+        isDraggingRef.current = true;
         event.currentTarget.setPointerCapture(event.pointerId);
         pickNearestTimestep(event.clientX);
     }, [pickNearestTimestep]);
@@ -166,8 +189,17 @@ const Timeline = ({ sceneRef, trajectory, analysisId }: TimelineProps) => {
     const handleRulerPointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
         if (!isDragging) return;
         setIsDragging(false);
+        isDraggingRef.current = false;
         event.currentTarget.releasePointerCapture(event.pointerId);
     }, [isDragging]);
+
+    const handleRulerWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
+        const ruler = rulerRef.current;
+        if (!ruler) return;
+        // Translate vertical wheel into horizontal scroll
+        const delta = event.deltaY !== 0 ? event.deltaY : event.deltaX;
+        ruler.scrollLeft += delta;
+    }, []);
 
     return (
         <Container className="canvas-timeline d-flex column overflow-hidden min-h-0">
@@ -195,6 +227,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId }: TimelineProps) => {
                     onPointerDown={handleRulerPointerDown}
                     onPointerMove={handleRulerPointerMove}
                     onPointerUp={handleRulerPointerUp}
+                    onWheel={handleRulerWheel}
                 />
             )}
 

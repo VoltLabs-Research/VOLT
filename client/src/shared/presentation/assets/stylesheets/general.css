@@ -231,9 +231,17 @@
     align-items: start;
 }
 
+.items-end {
+    align-items: flex-end;
+}
+
 .items-center,
 .flex-center {
     align-items: center;
+}
+
+.min-h-0 {
+    min-height: 0;
 }
 
 .content-center,
