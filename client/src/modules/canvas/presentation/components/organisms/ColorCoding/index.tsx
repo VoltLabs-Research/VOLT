@@ -1,14 +1,20 @@
-import React from 'react';
+import { memo, useEffect, type MutableRefObject } from 'react';
 import useColorCoding, { ColorGradient } from '../../../hooks/use-color-coding';
 import GradientPreview from '../../atoms/GradientPreview';
-import Button from '@/shared/presentation/components/Button';
 import FormField from '@/shared/presentation/components/FormField';
 import Container from '@/shared/presentation/components/Container';
+import type { ExecState } from '../../../hooks/usePluginExecution';
+
+export interface LegacyActionRef {
+    actions: MutableRefObject<Map<string, () => void>>;
+    notifyExecState: (id: string, state: ExecState) => void;
+}
 
 interface ColorCodingProps {
     trajectoryId?: string;
     analysisId?: string;
     currentTimestep?: number;
+    legacyRef?: LegacyActionRef;
 }
 
 interface ColorCodingFormProps {
@@ -26,9 +32,6 @@ interface ColorCodingFormProps {
     setAutomaticRange: (v: boolean) => void;
     symmetricRange: boolean;
     setSymmetricRange: (v: boolean) => void;
-    isApplying: boolean;
-    canApply: boolean;
-    onApply: () => void;
 }
 
 const ColorCodingForm = ({
@@ -45,10 +48,7 @@ const ColorCodingForm = ({
     automaticRange,
     setAutomaticRange,
     symmetricRange,
-    setSymmetricRange,
-    isApplying,
-    canApply,
-    onApply
+    setSymmetricRange
 }: ColorCodingFormProps) => {
     const selectFields: { key: string; label: string; value: string; onChange: (v: string) => void; options: { value: string; title: string }[] }[] = [
         { key: 'property', label: 'Property', value: property, onChange: onPropertyChange, options: propertyOptions },
@@ -111,27 +111,11 @@ const ColorCodingForm = ({
                     />
                 ))}
             </Container>
-
-            <Container>
-                <Button
-                    isLoading={isApplying}
-                    variant="solid"
-                    intent="canvas"
-                    shape="rounded"
-                    size="sm"
-                    block
-                    onClick={onApply}
-                    disabled={!canApply}
-                    className="font-size-05"
-                >
-                    Apply
-                </Button>
-            </Container>
         </Container>
     );
 };
 
-const ColorCoding = ({ trajectoryId, analysisId, currentTimestep }: ColorCodingProps) => {
+const ColorCoding = ({ trajectoryId, analysisId, currentTimestep, legacyRef }: ColorCodingProps) => {
     const {
         property,
         propertyOptions,
@@ -152,6 +136,17 @@ const ColorCoding = ({ trajectoryId, analysisId, currentTimestep }: ColorCodingP
         applyColorCoding
     } = useColorCoding({ trajectoryId, analysisId, currentTimestep });
 
+    useEffect(() => {
+        if (!legacyRef) return;
+        legacyRef.actions.current.set('color-coding', canApply ? applyColorCoding : () => {});
+        return () => { legacyRef.actions.current.delete('color-coding'); };
+    }, [legacyRef, applyColorCoding, canApply]);
+
+    useEffect(() => {
+        if (!legacyRef) return;
+        legacyRef.notifyExecState('color-coding', isApplying ? 'loading' : 'idle');
+    }, [legacyRef, isApplying]);
+
     return (
         <ColorCodingForm
             property={property}
@@ -168,11 +163,8 @@ const ColorCoding = ({ trajectoryId, analysisId, currentTimestep }: ColorCodingP
             setAutomaticRange={setAutomaticRange}
             symmetricRange={symmetricRange}
             setSymmetricRange={setSymmetricRange}
-            isApplying={isApplying}
-            canApply={canApply}
-            onApply={applyColorCoding}
         />
     );
 };
 
-export default ColorCoding;
+export default memo(ColorCoding);

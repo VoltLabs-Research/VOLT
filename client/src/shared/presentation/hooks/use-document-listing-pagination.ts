@@ -44,7 +44,7 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
     
     const [data, setData] = useState<T[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [hasMore, setHasMore] = useState(true);
+    const [hasMore, setHasMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const fetchDataRef = useRef(fetchData);
@@ -68,13 +68,13 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
             }
 
             const result = await fetchDataRef.current(params);
-            const isFirstPage = page === 1;
-            
-            if(isFirstPage || isRefresh){
-                setData(result.data);
-            }else{
-                setData((prev) => [...prev, ...result.data]);
-            }
+
+            setData((prev) => {
+                if(page === 1 || isRefresh || prev.length === 0){
+                    return result.data;
+                }
+                return [...prev, ...result.data];
+            });
             
             setHasMore(result.pagination.hasMore);
         }catch(err){

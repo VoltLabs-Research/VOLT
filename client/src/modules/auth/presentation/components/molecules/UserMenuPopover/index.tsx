@@ -11,23 +11,26 @@ interface UserMenuPopoverProps {
     onSettingsClick: () => void;
     onSignOut: () => void;
     isSigningOut?: boolean;
+    trigger?: React.ReactNode;
 };
 
-const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false }: UserMenuPopoverProps) => {
+const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, trigger }: UserMenuPopoverProps) => {
     const user = useAuthStore((state) => state.user);
+
+    const defaultTrigger = (
+        <button className='user-menu-trigger cursor-pointer'>
+            <UserInfo user={user} className='f-grow-1' />
+            <Container className='user-menu-icon color-muted'>
+                <HiOutlineDotsVertical size={16} />
+            </Container>
+        </button>
+    );
 
     return (
         <Popover
             id='user-menu-popover'
             className='gap-1'
-            trigger={
-                <button className='user-menu-trigger cursor-pointer'>
-                    <UserInfo user={user} className='f-grow-1' />
-                    <Container className='user-menu-icon color-muted'>
-                        <HiOutlineDotsVertical size={16} />
-                    </Container>
-                </button>
-            }
+            trigger={trigger ?? defaultTrigger}
         >
             <PopoverMenuItem icon={<IoSettingsOutline />} onClick={onSettingsClick}>
                 Account Settings

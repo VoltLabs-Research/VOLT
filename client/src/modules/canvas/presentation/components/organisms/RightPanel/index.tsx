@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from 'react';
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { Wrench, Monitor } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
@@ -15,6 +15,7 @@ import ModifiersSection from '../../molecules/ModifiersSection';
 import ModifierConfig, { ArgumentField } from '../../molecules/ModifierConfig';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import usePluginExecution, { type ExecState } from '../../../hooks/usePluginExecution';
+import type { LegacyActionRef } from '../ColorCoding';
 import './RightPanel.css';
 
 const LEGACY_COMPONENT_MAP = new Map<string, ComponentType<any> | undefined>(
@@ -36,6 +37,22 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
     const [openModifierIds, setOpenModifierIds] = useState<Set<string>>(new Set());
     const [modifiersOpen, setModifiersOpen] = useState(true);
     const [renderOpen, setRenderOpen] = useState(false);
+    const [legacyExecStates, setLegacyExecStates] = useState<Map<string, ExecState>>(new Map());
+    const legacyActionRef = useRef<Map<string, () => void>>(new Map());
+
+    const updateLegacyExecState = useCallback((id: string, state: ExecState) => {
+        setLegacyExecStates((prev) => {
+            if (prev.get(id) === state) return prev;
+            const next = new Map(prev);
+            next.set(id, state);
+            return next;
+        });
+    }, []);
+
+    const legacyRef = useMemo<LegacyActionRef>(() => ({
+        actions: legacyActionRef,
+        notifyExecState: updateLegacyExecState
+    }), [updateLegacyExecState]);
     const { execStates, handleExecutePlugin } = usePluginExecution({
         trajectoryId,
         currentTimestep,
@@ -68,8 +85,10 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
     }, [toggleModifier]);
 
     const getExecState = useCallback((option: ModifierOption): ExecState => {
-        return execStates.get(option.modifierId) ?? 'idle';
-    }, [execStates]);
+        return legacyExecStates.get(option.modifierId)
+            ?? execStates.get(option.modifierId)
+            ?? 'idle';
+    }, [execStates, legacyExecStates]);
 
     const shouldShowAction = useCallback((option: ModifierOption): boolean => {
         return option.modifierId !== 'slice-plane';
@@ -86,7 +105,12 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
         if (option.isPlugin) {
             handleExecutePlugin(option);
         } else {
-            handleToggleLegacyModifier(option);
+            const action = legacyActionRef.current.get(option.modifierId);
+            if (action) {
+                action();
+            } else {
+                handleToggleLegacyModifier(option);
+            }
         }
     }, [handleExecutePlugin, handleToggleLegacyModifier]);
 
@@ -111,6 +135,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                         trajectoryId={trajectoryId}
                         analysisId={analysisId}
                         currentTimestep={currentTimestep}
+                        legacyRef={legacyRef}
                     />
                 );
             }
@@ -121,7 +146,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                 {content}
             </ModifierConfig>
         );
-    }, [getPluginArguments, trajectoryId, analysisId, currentTimestep]);
+    }, [getPluginArguments, trajectoryId, analysisId, currentTimestep, legacyRef]);
 
     return (
         <Container className="d-flex h-max overflow-hidden">
@@ -179,4 +204,4 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
     );
 };
 
-export default RightPanel;
+export default memo(RightPanel);

@@ -13,6 +13,7 @@ export default class SocketIOAdapter implements ISocketService{
     private manualDisconnect: boolean = false;
     private connectionListeners: Array<(connected: boolean) => void> = [];
     private currentTeamId: string | null = null;
+    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
     constructor(baseUrl: string, options: SocketOptions = {}){
         this.connectionUrl = options.url ?? baseUrl;
@@ -38,6 +39,7 @@ export default class SocketIOAdapter implements ISocketService{
             return Promise.resolve();
         }
 
+        this.clearReconnectTimer();
         this.connecting = true;
         this.manualDisconnect = false;
 
@@ -73,6 +75,7 @@ export default class SocketIOAdapter implements ISocketService{
     disconnect(): void{
         if(!this.socket) return;
         this.manualDisconnect = true;
+        this.clearReconnectTimer();
         this.socket.disconnect();
         this.notifyConnectionListeners(false);
     }
@@ -165,12 +168,12 @@ export default class SocketIOAdapter implements ISocketService{
     }
 
     subscribeToTeam(teamId: string, previousTeamId?: string): void{
+        this.currentTeamId = teamId;
+
         if(!this.socket?.connected){
-            console.error('Cannot subscribe to team: Socket not connected');
             return;
         }
 
-        this.currentTeamId = teamId;
         this.socket.emit('subscribe_to_team', { teamId, previousTeamId });
     }
 
@@ -186,21 +189,43 @@ export default class SocketIOAdapter implements ISocketService{
     }
 
     private handleDisconnect(reason: string): void{
+        this.connecting = false;
         this.notifyConnectionListeners(false);
 
         if(reason !== 'io client disconnect' && !this.manualDisconnect && this.autoReconnect){
-            this.connect().catch(console.error);
+            this.scheduleReconnect();
         }
     }
 
     private handleConnectError(error: Error, reject?: (reason?: unknown) => void): void{
         this.connectionAttempts += 1;
+        this.connecting = false;
 
         if(this.connectionAttempts >= this.maxReconnectionAttempts){
-            this.connecting = false;
             if(reject){
                 reject(new Error(`Failed to connect after ${this.maxReconnectionAttempts} attempts: ${error.message}`));
             }
+        }else if(this.autoReconnect && !this.manualDisconnect){
+            this.scheduleReconnect();
+        }
+    }
+
+    private scheduleReconnect(): void{
+        this.clearReconnectTimer();
+        const baseDelay = this.options.reconnectionDelay ?? 1000;
+        const delay = Math.min(baseDelay * Math.pow(2, this.connectionAttempts), 30000);
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = null;
+            if(!this.manualDisconnect && !this.socket?.connected){
+                this.connect().catch(() => {});
+            }
+        }, delay);
+    }
+
+    private clearReconnectTimer(): void{
+        if(this.reconnectTimer !== null){
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
         }
     }
 

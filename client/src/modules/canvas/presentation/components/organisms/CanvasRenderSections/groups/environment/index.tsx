@@ -14,7 +14,7 @@ const useEnvironmentGroup = (): RenderGroup => {
             background: {
                 key: 'background', title: 'Background & Environment', enabled: true,
                 rows: [
-                    row({ label: 'Tone Mapping Exposure', min: 0, max: 10, step: 0.1, decimals: 1 }, () => s.toneMappingExposure, (v: number) => s.setToneMappingExposure(v))
+                    row({ label: 'Exposure', min: 0, max: 10, step: 0.1, decimals: 1 }, () => s.toneMappingExposure, (v: number) => s.setToneMappingExposure(v))
                 ],
                 extras: (
                     <>

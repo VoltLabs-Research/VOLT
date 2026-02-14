@@ -62,9 +62,10 @@ const CanvasPage = () => {
         };
     }, []);
 
+    const hasFrames = !!(trajectory?.frames && trajectory.frames.length > 0);
     const showLoading = useMemo(() =>
-        (isModelLoading && !(didPreload && isPlaying)) || !trajectory || currentTimestep === undefined || trajectoryLoading,
-        [isModelLoading, didPreload, isPlaying, trajectory, currentTimestep, trajectoryLoading]
+        trajectoryLoading || !trajectory || (hasFrames && ((isModelLoading && !(didPreload && isPlaying)) || currentTimestep === undefined)),
+        [isModelLoading, didPreload, isPlaying, trajectory, hasFrames, currentTimestep, trajectoryLoading]
     );
 
     const leftPanel = useResizable({
