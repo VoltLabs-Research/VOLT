@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { Inbox } from 'lucide-react';
 import JobSkeleton from '@/modules/jobs/presentation/components/atoms/JobSkeleton';
 import JobGroup from '@/modules/jobs/presentation/components/molecules/JobGroup';
 import FrameGroup from '@/modules/jobs/presentation/components/molecules/JobGroup/FrameGroup';
@@ -45,9 +46,14 @@ const JobsHistory = ({
     const shouldShowSkeleton = !isConnected || isLoading;
 
     return (
-        <Container className='d-flex column gap-05'>
+        <Container className='d-flex column gap-05 h-max'>
             {shouldShowSkeleton ? (
                 <JobSkeleton />
+            ) : filteredGroups.length === 0 ? (
+                <Container className="d-flex column items-center content-center gap-05 flex-1 h-max">
+                    <Inbox size={24} strokeWidth={1} className="color-muted" />
+                    <span className="font-size-05 color-muted">No events to display</span>
+                </Container>
             ) : (
                 filteredGroups.map((group: TJG, index: number) =>
                     displayMode === 'children-only' ? (

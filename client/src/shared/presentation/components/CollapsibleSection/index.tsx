@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode, memo } from 'react';
+import { useState, useEffect, type ReactNode, memo } from 'react';
 import { ChevronDown, Trash2, Plus } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
@@ -53,7 +53,6 @@ const CollapsibleSection = ({
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [isHovered, setIsHovered] = useState(false);
     const [hasBeenExpanded, setHasBeenExpanded] = useState(defaultExpanded);
-    const bodyRef = useRef<HTMLDivElement>(null);
     const [height, setHeight] = useState<number | 'auto'>(defaultExpanded ? 'auto' : 0);
     const isControlled = typeof expanded === 'boolean';
     const actualExpanded = isControlled ? expanded : isExpanded;
@@ -67,20 +66,7 @@ const CollapsibleSection = ({
     }, [actualExpanded, hasBeenExpanded]);
 
     useEffect(() => {
-        if (!bodyRef.current) return;
-
-        if (actualExpanded) {
-            const scrollHeight = bodyRef.current.scrollHeight;
-            setHeight(scrollHeight);
-            const timer = setTimeout(() => setHeight('auto'), 250);
-            return () => clearTimeout(timer);
-        } else {
-            const scrollHeight = bodyRef.current.scrollHeight;
-            setHeight(scrollHeight);
-            requestAnimationFrame(() => {
-                setHeight(0);
-            });
-        }
+        setHeight(actualExpanded ? 'auto' : 0);
     }, [actualExpanded]);
 
     const handleToggle = () => {
@@ -148,7 +134,6 @@ const CollapsibleSection = ({
             </Container>
             {collapsible && (
                 <div
-                    ref={bodyRef}
                     className={`collapsible-section-body ${bodyClassName}`}
                     style={{ height }}
                 >

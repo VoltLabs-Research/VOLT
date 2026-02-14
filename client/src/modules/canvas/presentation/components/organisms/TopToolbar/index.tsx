@@ -1,5 +1,9 @@
-import { Fragment, useState, useCallback } from 'react';
+import { memo, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Container from '@/shared/presentation/components/Container';
+import Avatar from '@/shared/presentation/components/Avatar';
+import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
+import UserMenuPopover from '@/modules/auth/presentation/components/molecules/UserMenuPopover';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import MenuPopover from '../../molecules/MenuPopover';
 import { buildMenus } from '../../molecules/TopToolbarMenus';
@@ -8,9 +12,27 @@ import './TopToolbar.css';
 
 const TopToolbar = () => {
     const [openMenu, setOpenMenu] = useState<string | null>(null);
-    const { searchParams, updateSearchParams, activeWorkspace, setActiveWorkspace } = useCanvasUrlState();
+    const [isSigningOut, setIsSigningOut] = useState(false);
+    const navigate = useNavigate();
+    const user = useAuthStore((state) => state.user);
+    const { searchParams, updateSearchParams } = useCanvasUrlState();
     const showStatusBar = searchParams.get('statusBar') !== 'false';
     const setShowStatusBar = (value: boolean) => updateSearchParams({ statusBar: value ? 'true' : 'false' });
+
+    const handleSignOut = () => {
+        try {
+            setIsSigningOut(true);
+            useAuthStore.getState().signOut();
+        } catch (error) {
+            console.error('Sign out failed', error);
+        } finally {
+            setIsSigningOut(false);
+        }
+    };
+
+    const handleSettingsClick = () => {
+        navigate('/dashboard/settings/general');
+    };
 
     const handleToggleFullscreen = useCallback(() => {
         if (document.fullscreenElement) {
@@ -42,7 +64,7 @@ const TopToolbar = () => {
                 <h1 className="canvas-volt font-size-05 color-secondary">VOLT</h1>
             </Container>
 
-            <nav className="canvas-toolbar-menus px-025 d-flex gap-025 items-center" aria-label="Main menu">
+            <nav className="canvas-toolbar-menus px-1 d-flex gap-025 items-center" aria-label="Main menu">
                 {menus.map((menu) => (
                     <MenuPopover
                         key={menu.label}
@@ -53,18 +75,22 @@ const TopToolbar = () => {
                 ))}
             </nav>
 
-            <WorkspaceTabs activeWorkspace={activeWorkspace} onSelect={setActiveWorkspace} />
+            <WorkspaceTabs />
 
-            <Container className="canvas-toolbar-info d-flex items-center gap-05 content-end w-max  ">
-                {['Scene', 'ViewLayer'].map((label, i) => (
-                    <Fragment key={label}>
-                        {i > 0 && <Container className="canvas-toolbar-divider-v" />}
-                        <span className="canvas-toolbar-info-text font-size-05 color-muted">{label}</span>
-                    </Fragment>
-                ))}
+            <Container className="canvas-toolbar-info d-flex items-center content-end w-max">
+                <UserMenuPopover
+                    onSettingsClick={handleSettingsClick}
+                    onSignOut={handleSignOut}
+                    isSigningOut={isSigningOut}
+                    trigger={
+                        <button className="cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
+                            <Avatar user={user} size="xs" />
+                        </button>
+                    }
+                />
             </Container>
         </header>
     );
 };
 
-export default TopToolbar;
+export default memo(TopToolbar);

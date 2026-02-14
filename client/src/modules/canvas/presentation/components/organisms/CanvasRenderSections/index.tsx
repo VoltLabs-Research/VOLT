@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import Container from '@/shared/presentation/components/Container';
 import FormField from '@/shared/presentation/components/FormField';
@@ -28,33 +28,14 @@ const CanvasRenderSections = () => {
     const gridGroup = useGridGroup();
 
     const groups = useMemo<RenderGroup[]>(
-        () => [
-            lightsGroup,
-            effectsGroup,
-            performanceGroup,
-            environmentGroup,
-            cameraGroup,
-            orbitGroup,
-            rendererGroup,
-            gridGroup
-        ],
-        [
-            lightsGroup,
-            effectsGroup,
-            performanceGroup,
-            environmentGroup,
-            cameraGroup,
-            orbitGroup,
-            rendererGroup,
-            gridGroup
-        ]
+        () => [lightsGroup, effectsGroup, performanceGroup, environmentGroup, cameraGroup, orbitGroup, rendererGroup, gridGroup],
+        [lightsGroup, effectsGroup, performanceGroup, environmentGroup, cameraGroup, orbitGroup, rendererGroup, gridGroup]
     );
 
     return (
         <>
             {groups.map((group) => {
                 const isOpen = openGroupId === group.id;
-
                 const visibleSubsections = group.subsections.filter((sub) => sub.visible !== false);
                 const hasSubsections = visibleSubsections.length > 1;
                 const openIndices = openSubsectionByGroup[group.id] ?? [];
@@ -66,12 +47,12 @@ const CanvasRenderSections = () => {
                         icon={group.icon}
                         expanded={isOpen}
                         onExpandedChange={() => setOpenGroupId((prev) => prev === group.id ? null : group.id)}
-                        className="canvas-section"
-                        headerClassName="d-flex items-center gap-05 p-05"
-                        titleClassName="font-size-1 color-secondary"
-                        iconClassName="canvas-section-icon color-muted"
-                        bodyClassName="p-0"
-                        contentClassName="canvas-render-section-body d-flex column"
+                        className="canvas-right-dropdown"
+                        headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
+                        titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
+                        iconClassName="canvas-right-dropdown-icon"
+                        bodyClassName="canvas-right-dropdown-body"
+                        contentClassName="d-flex column"
                         noSpacing
                         arrowSize={13}
                         useDefaultHeaderStyles={false}
@@ -94,17 +75,16 @@ const CanvasRenderSections = () => {
                                                 const next = exists
                                                     ? current.filter((value) => value !== idx)
                                                     : [...current, idx];
-                                                return {
-                                                    ...prev,
-                                                    [group.id]: next
-                                                };
+                                                return { ...prev, [group.id]: next };
                                             })
                                         : undefined
                                     }
-                                    headerClassName="d-flex items-center gap-05"
-                                    titleClassName="font-size-1 color-secondary"
-                                    iconClassName="canvas-section-icon color-muted"
-                                    contentClassName="d-flex column"
+                                    className="canvas-right-dropdown"
+                                    headerClassName="canvas-right-dropdown-header d-flex items-center gap-05"
+                                    titleClassName="canvas-right-dropdown-title font-size-05 color-muted"
+                                    iconClassName="canvas-right-dropdown-icon"
+                                    bodyClassName="canvas-right-dropdown-body"
+                                    contentClassName="d-flex column canvas-render-subsection-body"
                                     noSpacing
                                     arrowSize={13}
                                     useDefaultHeaderStyles={false}
@@ -126,25 +106,25 @@ const CanvasRenderSections = () => {
                                                     </Container>
                                                 )}
                                                 <Container className="d-flex column gap-05">
-                                                    {section.rows.map((row) => {
-                                                        const value = 'get' in row ? row.get() : row.value;
-                                                        const onChange = 'set' in row ? row.set : row.onChange;
+                                                    {section.rows.map((r) => {
+                                                        const value = 'get' in r ? r.get() : r.value;
+                                                        const onChange = 'set' in r ? r.set : r.onChange;
                                                         return (
                                                             <Container
-                                                                key={`${section.key}-${row.label}`}
-                                                                className={`canvas-form-row d-flex items-center content-between gap-05 ${row.className}`}
+                                                                key={`${section.key}-${r.label}`}
+                                                                className={`canvas-form-row d-flex items-center content-between gap-05 ${r.className ?? ''}`}
                                                             >
-                                                                <label className="canvas-form-label font-size-05">{row.label}</label>
+                                                                <label className="canvas-form-label font-size-05">{r.label}</label>
                                                                 <Container className="canvas-form-control d-flex items-center gap-02">
                                                                     <Slider
-                                                                        min={row.min}
-                                                                        max={row.max}
-                                                                        step={row.step}
+                                                                        min={r.min}
+                                                                        max={r.max}
+                                                                        step={r.step}
                                                                         value={value}
                                                                         onChange={onChange}
                                                                     />
                                                                     <span className="canvas-form-value font-size-05">
-                                                                        {row.format(value)}
+                                                                        {r.format?.(value) ?? value}
                                                                     </span>
                                                                 </Container>
                                                             </Container>
@@ -165,4 +145,4 @@ const CanvasRenderSections = () => {
     );
 };
 
-export default CanvasRenderSections;
+export default memo(CanvasRenderSections);

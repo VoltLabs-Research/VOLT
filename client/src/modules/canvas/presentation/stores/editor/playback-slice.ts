@@ -11,7 +11,8 @@ const initialState: PlaybackState = {
     currentTimestep: undefined,
 } as PlaybackState & { isPreloading?: boolean; didPreload?: boolean; preloadProgress?: number };
 
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+let _rafId: number | null = null;
+let _lastFrameTime: number = 0;
 
 export const createPlaybackSlice: StateCreator<any, [], [], PlaybackStore> = (set, get) => ({
     ...initialState,
@@ -20,6 +21,10 @@ export const createPlaybackSlice: StateCreator<any, [], [], PlaybackStore> = (se
     preloadProgress: 0,
 
     stopPlayback() {
+        if (_rafId !== null) {
+            cancelAnimationFrame(_rafId);
+            _rafId = null;
+        }
         set({ isPlaying: false });
     },
 
@@ -56,35 +61,56 @@ export const createPlaybackSlice: StateCreator<any, [], [], PlaybackStore> = (se
 
                 set({ isPlaying: true });
 
-                while (get().isPlaying) {
-                    const { currentTimestep } = get();
-                    if (currentTimestep === undefined) {
-                        set({ currentTimestep: timesteps[0] });
-                        while (get().isModelLoading && get().isPlaying) {
-                            await delay(50);
-                        }
-                        const frameDelay = 1000 / get().playSpeed;
-                        await delay(frameDelay);
-                        continue;
-                    }
+                if (get().currentTimestep === undefined) {
+                    set({ currentTimestep: timesteps[0] });
+                }
 
-                    const index = timesteps.indexOf(currentTimestep);
-                    if (index === -1) {
-                        get().stopPlayback();
+                _lastFrameTime = 0;
+
+                const tick = (timestamp: number) => {
+                    if (!get().isPlaying) {
+                        _rafId = null;
                         return;
                     }
 
-                    const nextIndex = (index + 1) % timesteps.length;
-                    const nextTimestep = timesteps[nextIndex];
-                    set({ currentTimestep: nextTimestep });
-
-                    while (get().isModelLoading && get().isPlaying) {
-                        await delay(50);
+                    if (get().isModelLoading) {
+                        _lastFrameTime = 0;
+                        _rafId = requestAnimationFrame(tick);
+                        return;
                     }
 
+                    if (_lastFrameTime === 0) {
+                        _lastFrameTime = timestamp;
+                        _rafId = requestAnimationFrame(tick);
+                        return;
+                    }
+
+                    const elapsed = timestamp - _lastFrameTime;
                     const frameDelay = 1000 / get().playSpeed;
-                    await delay(frameDelay);
-                }
+
+                    if (elapsed >= frameDelay) {
+                        _lastFrameTime = timestamp;
+
+                        const { currentTimestep } = get();
+                        const { timesteps: ts } = get().timestepData;
+
+                        if (currentTimestep === undefined) {
+                            set({ currentTimestep: ts[0] });
+                        } else {
+                            const index = ts.indexOf(currentTimestep);
+                            if (index === -1) {
+                                get().stopPlayback();
+                                return;
+                            }
+                            const nextIndex = (index + 1) % ts.length;
+                            set({ currentTimestep: ts[nextIndex] });
+                        }
+                    }
+
+                    _rafId = requestAnimationFrame(tick);
+                };
+
+                _rafId = requestAnimationFrame(tick);
             })();
         }
     },
@@ -120,6 +146,10 @@ export const createPlaybackSlice: StateCreator<any, [], [], PlaybackStore> = (se
     },
 
     resetPlayback() {
+        if (_rafId !== null) {
+            cancelAnimationFrame(_rafId);
+            _rafId = null;
+        }
         get().stopPlayback();
         set({
             ...initialState,

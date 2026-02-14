@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import useDailyActivityUseCases from './use-daily-activity-use-cases';
 import type { DailyActivity } from '@/modules/daily-activity/domain/entities';
 
@@ -8,12 +8,14 @@ const useDailyActivityData = () => {
     const [activityData, setActivityData] = useState<DailyActivity[]>([]);
     const [isLoading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const isLoadingRef = useRef(false);
 
     const { dailyActivityRepository } = useDailyActivityUseCases();
 
     const fetchActivity = useCallback(async (range: number = DEFAULT_RANGE) => {
-        if(isLoading) return;
+        if(isLoadingRef.current) return;
 
+        isLoadingRef.current = true;
         setLoading(true);
         setError(null);
 
@@ -25,9 +27,10 @@ const useDailyActivityData = () => {
             console.error('Failed to fetch activity:', err);
             setError(message);
         } finally {
+            isLoadingRef.current = false;
             setLoading(false);
         }
-    }, [isLoading, dailyActivityRepository]);
+    }, [dailyActivityRepository]);
 
     return {
         activityData,

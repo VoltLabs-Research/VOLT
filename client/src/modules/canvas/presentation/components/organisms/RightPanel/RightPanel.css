@@ -7,11 +7,6 @@
     padding: 0 8px;
 }
 
-.canvas-right-dropdown-title {
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-}
-
 .canvas-right-dropdown-icon {
     width: 13px;
     height: 13px;
@@ -35,4 +30,8 @@
     --width: 64;
     --height: 22;
     --border: 2px;
+}
+
+.canvas-render-subsection-body {
+    padding: 8px;
 }

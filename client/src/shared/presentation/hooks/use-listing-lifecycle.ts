@@ -54,19 +54,22 @@ const useListingLifecycle = <T = any>({
         [initialFetchParams]
     );
 
+    const isFetchingRef = useRef(false);
+
     useEffect(() => {
         if (skipInitialFetch) return;
+        if (isFetchingRef.current) return;
 
-        const hasDependencies = dependencies.length > 0;
-        const shouldFetch = data.length === 0 || hasDependencies;
+        isFetchingRef.current = true;
+        fetchDataRef.current({
+            ...initialFetchParamsRef.current
+        });
 
-        if (shouldFetch) {
-            fetchDataRef.current({
-                ...initialFetchParamsRef.current,
-                force: hasDependencies && data.length > 0
-            });
-        }
-    }, [skipInitialFetch, data.length, initialFetchParamsSignature, ...dependencies]);
+        // Allow next fetch when dependencies change
+        return () => {
+            isFetchingRef.current = false;
+        };
+    }, [skipInitialFetch, initialFetchParamsSignature, ...dependencies]);
 
     const resetDeps = resetDependencies ?? dependencies;
     const didResetRef = useRef(false);

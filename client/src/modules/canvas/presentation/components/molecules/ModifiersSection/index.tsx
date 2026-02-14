@@ -40,8 +40,8 @@ const ModifierItem = ({
         headerClassName="d-flex items-center gap-05 p-05"
         titleClassName="font-size-1 color-secondary"
         iconClassName="color-muted"
-        bodyClassName="canvas-section-body"
-        contentClassName="canvas-render-section-body"
+        bodyClassName=""
+        contentClassName="canvas-render-subsection-body"
         noSpacing
         arrowSize={13}
         useDefaultTitleStyles={false}

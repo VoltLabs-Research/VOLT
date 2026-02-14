@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import { useShallow } from 'zustand/react/shallow';
@@ -82,8 +82,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange }: TimelinePro
     const lastZoomRef = useRef(100);
 
     useEffect(() => {
-        let rafId: number | null = null;
-        const updateZoom = () => {
+        const id = setInterval(() => {
             if (sceneRef.current?.getCurrentZoom) {
                 const newZoom = sceneRef.current.getCurrentZoom();
                 if (Math.abs(newZoom - lastZoomRef.current) > 1) {
@@ -91,10 +90,8 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange }: TimelinePro
                     setZoomPercent(newZoom);
                 }
             }
-            rafId = requestAnimationFrame(updateZoom);
-        };
-        rafId = requestAnimationFrame(updateZoom);
-        return () => { if (rafId !== null) cancelAnimationFrame(rafId); };
+        }, 500);
+        return () => clearInterval(id);
     }, [sceneRef]);
 
     const handleZoomPreset = useCallback((preset: number) => {
@@ -256,4 +253,4 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange }: TimelinePro
     );
 };
 
-export default Timeline;
+export default memo(Timeline);

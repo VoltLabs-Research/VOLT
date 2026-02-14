@@ -29,9 +29,7 @@ const useLightsGroup = (): RenderGroup => {
                 key: 'global', title: 'Global IBL', enabled: true,
                 rows: [
                     row(PRESETS.intensity(), () => st.global.envIntensity, (v: number) => setGlobal({ envIntensity: v })),
-                    row({ label: 'Yaw (rad)', min: -Math.PI, max: Math.PI, step: 0.01 }, () => st.global.envRotationYaw, (v: number) => setGlobal({ envRotationYaw: v })),
-                    row({ label: 'Pitch (rad)', min: -Math.PI / 2, max: Math.PI / 2, step: 0.01 }, () => st.global.envRotationPitch, (v: number) => setGlobal({ envRotationPitch: v })),
-                    row({ label: 'Blur', min: 0, max: 1, step: 0.01 }, () => st.global.envBlur, (v: number) => setGlobal({ envBlur: v }))
+                    row({ label: 'Blur', min: 0, max: 1, step: 0.01, decimals: 2 }, () => st.global.envBlur, (v: number) => setGlobal({ envBlur: v }))
                 ]
             },
             directional: {
@@ -39,15 +37,7 @@ const useLightsGroup = (): RenderGroup => {
                 onToggle: (enabled: boolean) => setDirectional({ enabled }),
                 rows: [
                     row(PRESETS.intensity(20), () => st.directional.intensity, (v: number) => setDirectional({ intensity: v })),
-                    ...positionRows(() => st.directional.position, (i: number, v: number) => setVec3<DirLight>(setDirectional, st.directional.position, i, v)),
-                    row({ label: 'Shadow Bias', min: -0.01, max: 0.01, step: 0.0001, decimals: 4 }, () => st.directional.shadowBias, (v: number) => setDirectional({ shadowBias: v })),
-                    row({ label: 'Normal Bias', min: 0, max: 1, step: 0.001, decimals: 3 }, () => st.directional.shadowNormalBias, (v: number) => setDirectional({ shadowNormalBias: v })),
-                    row({ label: 'Cam Near', min: 0.01, max: 1000, step: 0.01 }, () => st.directional.camNear, (v: number) => setDirectional({ camNear: v })),
-                    row({ label: 'Cam Far', min: 0.1, max: 5000, step: 0.1, decimals: 1 }, () => st.directional.camFar, (v: number) => setDirectional({ camFar: v })),
-                    row({ label: 'Cam Left', min: -1000, max: 0, step: 0.1, decimals: 1 }, () => st.directional.camLeft, (v: number) => setDirectional({ camLeft: v })),
-                    row({ label: 'Cam Right', min: 0, max: 1000, step: 0.1, decimals: 1 }, () => st.directional.camRight, (v: number) => setDirectional({ camRight: v })),
-                    row({ label: 'Cam Top', min: 0, max: 1000, step: 0.1, decimals: 1 }, () => st.directional.camTop, (v: number) => setDirectional({ camTop: v })),
-                    row({ label: 'Cam Bottom', min: -1000, max: 0, step: 0.1, decimals: 1 }, () => st.directional.camBottom, (v: number) => setDirectional({ camBottom: v }))
+                    ...positionRows(() => st.directional.position, (i: number, v: number) => setVec3<DirLight>(setDirectional, st.directional.position, i, v))
                 ],
                 extras: colorExtras(
                     { key: 'dirColor', label: 'Color', value: st.directional.color, onChange: (v: string) => setDirectional({ color: v }) },
@@ -82,7 +72,6 @@ const useLightsGroup = (): RenderGroup => {
                     row(PRESETS.angle, () => st.spot.angle, (v: number) => setSpot({ angle: v })),
                     row(PRESETS.penumbra, () => st.spot.penumbra, (v: number) => setSpot({ penumbra: v })),
                     row(PRESETS.distance, () => st.spot.distance, (v: number) => setSpot({ distance: v })),
-                    row(PRESETS.decay, () => st.spot.decay, (v: number) => setSpot({ decay: v })),
                     ...positionRows(() => st.spot.position, (i: number, v: number) => setVec3<SpotLight>(setSpot, st.spot.position, i, v)),
                     ...vec3Rows('Target', () => st.spot.target, (i: number, v: number) => {
                         const next = [...st.spot.target] as Vec3;
@@ -109,7 +98,7 @@ const useLightsGroup = (): RenderGroup => {
                     <div className="canvas-render-grid">
                         {colorExtras(
                             { key: 'hSky', label: 'Sky Color', value: st.hemisphere.skyColor, onChange: (v: string) => setHemisphere({ skyColor: v }) },
-                            [{ key: 'hHelper', label: 'Helper', value: st.hemisphere.helper, onChange: (v: boolean) => setHemisphere({ helper: v }) }]
+                            []
                         )}
                         {colorExtras(
                             { key: 'hGroundColor', label: 'Ground Color', value: st.hemisphere.groundColor, onChange: (v: string) => setHemisphere({ groundColor: v }) },
@@ -143,28 +132,15 @@ const useLightsGroup = (): RenderGroup => {
             id: 'lights', title: 'Lights',
             icon: <MdLightbulb size={12} />,
             subsections: [
-                { label: 'Global IBL (Image Based Lighting)', sections: [sections.global] },
-                { label: 'Directional Light (Sun-like)', sections: [sections.directional] },
-                { label: 'Point Light (Omnidirectional)', sections: [sections.point] },
-                { label: 'Spot Light (Cone-shaped)', sections: [sections.spot] },
-                { label: 'Hemisphere Light (Sky + Ground)', sections: [sections.hemisphere] },
-                { label: 'Rect Area Light (Rectangular)', sections: [sections.rectArea] }
+                { label: 'Global IBL', sections: [sections.global] },
+                { label: 'Directional Light', sections: [sections.directional] },
+                { label: 'Point Light', sections: [sections.point] },
+                { label: 'Spot Light', sections: [sections.spot] },
+                { label: 'Hemisphere Light', sections: [sections.hemisphere] },
+                { label: 'Rect Area Light', sections: [sections.rectArea] }
             ]
         };
-    }, [
-        st.global,
-        st.directional,
-        st.point,
-        st.spot,
-        st.hemisphere,
-        st.rectArea,
-        setGlobal,
-        setDirectional,
-        setPoint,
-        setSpot,
-        setHemisphere,
-        setRectArea
-    ]);
+    }, [st.global, st.directional, st.point, st.spot, st.hemisphere, st.rectArea]);
 };
 
 export default useLightsGroup;

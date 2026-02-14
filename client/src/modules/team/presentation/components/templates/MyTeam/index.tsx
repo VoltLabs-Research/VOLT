@@ -47,7 +47,7 @@ const MyTeamTemplate: React.FC = () => {
         fetchRoles(selectedTeam._id);
         checkCanInvite(selectedTeam._id);
         fetchActivity();
-    }, [selectedTeam, fetchRoles, checkCanInvite, fetchActivity]);
+    }, [selectedTeam._id, fetchRoles, checkCanInvite, fetchActivity]);
 
     const fetchData = useCallback(async (params: GetTeamMembersParams) => {
         return await teamMemberRepository.getAll(selectedTeam._id, params);
@@ -60,7 +60,7 @@ const MyTeamTemplate: React.FC = () => {
         }catch(err){
             console.error('Failed to update team name:', err);
         }
-    }, [selectedTeam, teamRepository, updateTeamInList]);
+    }, [selectedTeam._id, teamRepository, updateTeamInList]);
 
     const handleRoleChange = useCallback(async (memberId: string, roleId: string) => {
         try{

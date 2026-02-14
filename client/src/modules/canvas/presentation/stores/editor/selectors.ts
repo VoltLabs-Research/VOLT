@@ -1,11 +1,8 @@
 import type { EditorStore } from '.';
-import type { FractalSceneConfig } from '@/modules/fractal/presentation/types/scene-config';
 
-export const selectFractalSceneConfig = (state: EditorStore): FractalSceneConfig => ({
-    rendererCreate: {
-        ...state.rendererSettings.create,
-        powerPreference: state.performanceSettings.canvas.powerPreference
-    },
+export const selectFractalSceneConfig = (state: EditorStore) => ({
+    rendererCreate: state.rendererSettings.create,
+    powerPreference: state.performanceSettings.canvas.powerPreference,
     rendererRuntime: state.rendererSettings.runtime,
     camera: state.camera,
     orbitControls: state.orbitControls,
