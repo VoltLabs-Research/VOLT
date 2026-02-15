@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { Inbox } from 'lucide-react';
 import JobSkeleton from '@/modules/jobs/presentation/components/atoms/JobSkeleton';
 import JobGroup from '@/modules/jobs/presentation/components/molecules/JobGroup';

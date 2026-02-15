@@ -10,7 +10,7 @@ import { SYS_BUCKETS } from '@core/config/minio';
 
 const storageService = container.resolve<IStorageService>(SHARED_TOKENS.StorageService);
 
-export const uploadToStorage = async (req: Request, res: Response, next: NextFunction) => {
+export const uploadToStorage = async (req: Request, _res: Response, next: NextFunction) => {
     if(!req.file){
         throw ApplicationError.badRequest(
             ErrorCodes.FILE_READ_ERROR,

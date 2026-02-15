@@ -1,4 +1,3 @@
-import React from 'react';
 import Container from '@/shared/presentation/components/Container';
 import Slider from '@/shared/presentation/components/Slider';
 import type { SliceAxis } from '@/modules/fractal/presentation/types/configuration';

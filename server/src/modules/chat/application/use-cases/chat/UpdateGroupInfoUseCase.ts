@@ -17,7 +17,7 @@ export class UpdateGroupInfoUseCase implements IUseCase<UpdateGroupInfoInputDTO,
 
     async execute(input: UpdateGroupInfoInputDTO): Promise<Result<UpdateGroupInfoOutputDTO, ApplicationError>> {
         const { userId, chatId, groupName, groupDescription } = input;
-        const chat = await this.chatRepo.findById(input.chatId);
+        const chat = await this.chatRepo.findById(chatId);
 
         if (!chat) {
             return Result.fail(ApplicationError.notFound(
@@ -37,7 +37,7 @@ export class UpdateGroupInfoUseCase implements IUseCase<UpdateGroupInfoInputDTO,
         if (groupName) updateData.groupName = groupName;
         if (groupDescription) updateData.groupDescription = groupDescription;
 
-        const updatedChat = await this.chatRepo.updateById(input.chatId, updateData);
+        const updatedChat = await this.chatRepo.updateById(chatId, updateData);
         if (!updatedChat) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.RESOURCE_NOT_FOUND,

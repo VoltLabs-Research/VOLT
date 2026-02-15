@@ -1,5 +1,4 @@
 import { Schema } from 'mongoose';
-import { ValidationCodes } from '@core/constants/validation-codes';
 
 export const EntrypointDataSchema = new Schema({
     binary: {

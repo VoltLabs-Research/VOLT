@@ -19,7 +19,7 @@ export class RasterService implements IRasterService {
         private readonly storageService: IStorageService
     ){}
 
-    async triggerRasterization(trajectoryId: string, teamId: string, config?: any): Promise<boolean> {
+    async triggerRasterization(trajectoryId: string, teamId: string, _config?: any): Promise<boolean> {
         const prefix = `trajectory-${trajectoryId}/`;
         const glbFiles: string[] = [];
 
@@ -72,11 +72,11 @@ export class RasterService implements IRasterService {
         return false; // No jobs created
     }
 
-    async getRasterMetadata(trajectoryId: string): Promise<RasterMetadata | null> {
+    async getRasterMetadata(_trajectoryId: string): Promise<RasterMetadata | null> {
         return Promise.resolve(null);
     }
 
-    async getRasterFramePNG(trajectoryId: string, timestep: number): Promise<Buffer> {
+    async getRasterFramePNG(_trajectoryId: string, _timestep: number): Promise<Buffer> {
         throw new Error("Method not implemented.");
     }
 }

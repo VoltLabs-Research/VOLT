@@ -1,5 +1,3 @@
-import Job from '@modules/jobs/domain/entities/Job';
-
 export interface IJobRepository {
     /**
      * Add jobs to the queue.

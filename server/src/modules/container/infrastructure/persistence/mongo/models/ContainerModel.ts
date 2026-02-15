@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 import { DockerNetwork } from './DockerNetworkModel';
 import { DockerVolume } from './DockerVolumeModel';
 import { ValidationCodes } from '@shared/domain/constants/ValidationCodes';

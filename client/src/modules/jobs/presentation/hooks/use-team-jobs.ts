@@ -9,9 +9,6 @@ import type ISocketService from '@/modules/socket/domain/ports/ISocketService';
 type JobUpdateEvent = Job & { type?: string; sessionId?: string };
 
 let socketServiceRef: ISocketService | null = null;
-let connectionUnsubscribe: (() => void) | null = null;
-let teamJobsUnsubscribe: (() => void) | null = null;
-let jobUpdateUnsubscribe: (() => void) | null = null;
 let isSocketInitialized = false;
 let pendingTeamSubscription: { teamId: string; previousTeamId?: string | null } | null = null;
 
@@ -78,9 +75,9 @@ const useTeamJobs = () => {
             return;
         }
 
-        connectionUnsubscribe = socketServiceRef.onConnectionChange(handleConnect);
-        teamJobsUnsubscribe = socketServiceRef.on('team.jobs.initial', handleTeamJobs);
-        jobUpdateUnsubscribe = socketServiceRef.on('team.job.updated', handleJobUpdate);
+        socketServiceRef.onConnectionChange(handleConnect);
+        socketServiceRef.on('team.jobs.initial', handleTeamJobs);
+        socketServiceRef.on('team.job.updated', handleJobUpdate);
         isSocketInitialized = true;
 
         if (!socketServiceRef.isConnected()) {

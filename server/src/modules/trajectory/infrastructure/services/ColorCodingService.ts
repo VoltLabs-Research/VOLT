@@ -12,7 +12,6 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
-import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
 import { formatValueForPath } from '@shared/infrastructure/utils/formatValue';
 import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
 

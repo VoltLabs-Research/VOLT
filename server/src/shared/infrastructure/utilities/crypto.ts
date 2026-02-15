@@ -55,7 +55,7 @@ export const decrypt = (encryptedText: string): string => {
             throw new Error('Invalid encrypted text format');
         }
         
-        const [saltB64, ivB64, encrypted, authTagB64] = parts;
+        const [_saltB64, ivB64, encrypted, authTagB64] = parts;
         const iv = Buffer.from(ivB64, 'base64');
         const authTag = Buffer.from(authTagB64, 'base64');
         const key = getEncryptionKey();

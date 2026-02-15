@@ -1,4 +1,3 @@
-import React from 'react';
 import Container from '@/shared/presentation/components/Container';
 import useSlicePlane, { AXES } from '../../../hooks/use-slice-plane';
 import AxisButtons from '../../atoms/AxisButtons';

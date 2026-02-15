@@ -58,8 +58,6 @@ const getColumnWidth = (col: ColumnConfig): number => {
     const titleLength = typeof title === 'string' ? title.length : 10;
     return Math.max(MIN_COLUMN_WIDTH, Math.min(titleLength * 14, MAX_COLUMN_WIDTH));
 };
-
-const getColumnKey = (col: ColumnConfig): string => String(col.key ?? col.path ?? '');
 const getColumnTitle = (col: ColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
 
 const DocumentListingTable = <T extends Identifiable>({

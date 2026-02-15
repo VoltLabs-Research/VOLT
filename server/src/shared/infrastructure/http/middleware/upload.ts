@@ -2,7 +2,7 @@ import multer from 'multer';
 
 const storage = multer.memoryStorage();
 
-const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
+const fileFilter = (_req: any, _file: Express.Multer.File, cb: any) => {
     cb(null, true);
 };
 

@@ -1,4 +1,4 @@
-import Docker, { Container } from 'dockerode';
+import Docker from 'dockerode';
 import { injectable } from 'tsyringe';
 import { IContainerService, ContainerStats } from '@modules/container/domain/ports/IContainerService';
 import logger from '@shared/infrastructure/logger';
@@ -156,7 +156,7 @@ export class DockerContainerService implements IContainerService {
 
                 try {
                     this.docker.modem.demuxStream(stream, { write: safeWrite } as any, { write: safeWrite } as any);
-                } catch (e) {
+                } catch {
                     stream.on('data', safeWrite);
                 }
 
@@ -176,7 +176,7 @@ export class DockerContainerService implements IContainerService {
         const pullPromise = new Promise<void>((resolve, reject) => {
             this.docker.pull(imageName, (err: any, stream: any) => {
                 if (err) return reject(err);
-                this.docker.modem.followProgress(stream, (err: any, output: any) => {
+                this.docker.modem.followProgress(stream, (err: any, _output: any) => {
                     if (err) reject(err);
                     else resolve();
                 });

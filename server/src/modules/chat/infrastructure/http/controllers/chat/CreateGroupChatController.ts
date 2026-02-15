@@ -14,7 +14,7 @@ export default class CreateGroupChatController extends BaseController<CreateGrou
     }
 
     protected getParams(req: AuthenticatedRequest): CreateGroupChatInputDTO {
-        const { teamId, chatId } = req.params; // Assuming chatId comes from req.params
+        const { teamId } = req.params;
         const { groupName, groupDescription, participantIds } = req.body;
         return {
             ownerId: req.userId!,

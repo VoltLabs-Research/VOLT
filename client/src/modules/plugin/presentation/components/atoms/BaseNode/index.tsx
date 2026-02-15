@@ -1,4 +1,4 @@
-import React, { type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { NodeType } from '@/modules/plugin/domain/entities';
 import { NODE_CONFIGS } from '@/modules/plugin/presentation/utilities/node-types';

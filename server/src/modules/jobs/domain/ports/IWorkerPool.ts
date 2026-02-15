@@ -1,5 +1,4 @@
 import { WorkerPoolItem } from '@modules/jobs/domain/entities/WorkerStatus';
-import { Worker } from 'worker_threads';
 
 export interface WorkerPoolConfig{
     workerPath: string;

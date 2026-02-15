@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState } from 'react';
-import useDraggable, { type DraggableOptions, type DraggableHandle } from '@/shared/presentation/hooks/drag-drop/use-draggable';
+import useDraggable, { type DraggableOptions, type DraggableHandle } from '@/shared/presentation/hooks/use-draggable';
 import './Draggable.css';
 
 export interface DraggableProps extends Omit<DraggableOptions, 'ondragStart' | 'onDrag' | 'onDragEnd'>{

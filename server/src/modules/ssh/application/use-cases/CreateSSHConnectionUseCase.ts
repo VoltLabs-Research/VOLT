@@ -6,7 +6,6 @@ import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTok
 import { ISSHConnectionRepository } from '@modules/ssh/domain/ports/ISSHConnectionRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
-import { v4 } from 'uuid';
 
 @injectable()
 export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionInputDTO, CreateSSHConnectionOutputDTO, ApplicationError> {
