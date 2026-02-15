@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import Container from '@/shared/presentation/components/Container';
-import Draggable from '@/shared/presentation/components/Draggable';
 import FormField from '@/shared/presentation/components/FormField';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import useSceneInteraction from '../../../hooks/use-scene-interaction';
@@ -47,12 +46,7 @@ const ExposureSettingsWidget = () => {
     if (!exposureSettingsScene) return null;
 
     return (
-        <Draggable
-            enabled
-            doubleClickToDrag
-            axis="both"
-            scaleWhileDragging={0.95}
-            bounds="parent"
+        <Container
             style={{ bottom: '1rem', right: '1rem', top: 'auto', left: 'auto' }}
             className={`canvas-widget canvas-exposure-widget ${isSceneInteracting ? 'is-dimmed' : ''}`}
         >
@@ -66,7 +60,7 @@ const ExposureSettingsWidget = () => {
                     inputProps={{ type: 'range', min: 0, max: 1, step: 0.01 }}
                 />
             </Container>
-        </Draggable>
+        </Container>
     );
 };
 
