@@ -17,6 +17,6 @@ export class ListContainersUseCase implements IUseCase<{ teamId: string, userId:
             limit: 100
         });
 
-        return Result.ok({ containers: result.data });
+        return Result.ok(result)
     }
 }

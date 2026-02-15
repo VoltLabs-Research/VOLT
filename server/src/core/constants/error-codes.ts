@@ -101,7 +101,7 @@ export const ErrorCodes = {
     CHAT_INVALID_ACTION: 'Chat::InvalidAction',
 
     MESSAGE_NOT_FOUND: 'Message::NotFound',
-    MESSAGE_FORBIDDEN: 'Message::Forbidden',
+    MESSAGE_FORBIDDEN: 'Message:Forbidden',
 
     FILE_NOT_FOUND: 'File::NotFound',
     FILE_READ_ERROR: 'File::ReadError',

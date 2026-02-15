@@ -38,7 +38,7 @@ export default class WorkflowValidator implements IWorkflowValidator{
         }
 
         if(!nodeTypes.includes(WorkflowNodeType.Entrypoint)){
-            errors.push('Workflow must have an Entrypoint node');
+            errors.push('Workflow mus thave an Entrypoint mode');
         }
 
         if(!nodeTypes.includes(WorkflowNodeType.Exposure)){

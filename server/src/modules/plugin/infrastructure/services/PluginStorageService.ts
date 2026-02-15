@@ -227,13 +227,10 @@ export default class PluginStorageService implements IPluginStorageService {
                 }
             );
 
-            const workflow = newPlugin.props.workflow;
-            const workflowEntity = workflow instanceof Workflow ? workflow : new Workflow(workflow.id || '', workflow as any);
-            workflowEntity.updateEntrypoint({
+            newPlugin.props.workflow.updateEntrypoint({
                 binaryObjectPath,
                 binaryFileName
             });
-            newPlugin.props.workflow = workflowEntity;
             
             await this.updateByIdUseCase.execute({ pluginId: newPlugin.id, workflow: newPlugin.props.workflow.props, regenerateSlug: false });
 

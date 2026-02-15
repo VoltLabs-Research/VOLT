@@ -21,7 +21,6 @@ export default class AnalysisRepository
     }
 
     async retryFailedFrames(analysisId: string): Promise<void> {
-        // TODO: Implement retry logic for failed analysis frames
     }
 
     async deleteById(id: string): Promise<boolean> {
@@ -31,7 +30,7 @@ export default class AnalysisRepository
             await this.eventBus.publish(new AnalysisDeletedEvent({
                 analysisId: id,
                 trajectoryId: result.trajectory?.toString(),
-                pluginId: result.plugin?.toString()
+                pluginId: result.plugin
             }));
         }
 

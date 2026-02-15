@@ -34,8 +34,8 @@ export default class IfStatementHandler implements INodeHandler{
             const right = this.resolveValue(condition.rightExpression, context);
 
             const isMatch = condition.handler === IfStatementConditionHandler.IsEqualTo
-                ? left === right
-                : left !== right;
+                ? left == right
+                : left != right;
             
             if(index === 0) return isMatch;
 

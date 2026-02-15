@@ -2,7 +2,7 @@ import mongoose, { Schema, Model, Document } from 'mongoose';
 import { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
-type AnalysisRelations = 'trajectory' | 'createdBy' | 'team' | 'plugin';
+type AnalysisRelations = 'trajectory' | 'createdBy' | 'team';
 
 export interface AnalysisDocument extends Persistable<AnalysisProps, AnalysisRelations>, Document { }
 
@@ -55,6 +55,8 @@ const AnalysisSchema: Schema<AnalysisDocument> = new Schema({
 }, {
     timestamps: true
 });
+
+AnalysisSchema.index({ plugin: 'text' });
 
 const AnalysisModel: Model<AnalysisDocument> = mongoose.model<AnalysisDocument>('Analysis', AnalysisSchema);
 

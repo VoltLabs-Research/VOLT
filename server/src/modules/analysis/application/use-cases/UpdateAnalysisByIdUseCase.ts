@@ -3,14 +3,13 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
 import { UpdateAnalysisInputDTO, UpdateAnalysisOutputDTO } from '@modules/analysis/application/dtos/UpdateAnalysisDTO';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
-import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export class UpdateAnalysisByIdUseCase implements IUseCase<UpdateAnalysisInputDTO, UpdateAnalysisOutputDTO> {
     constructor(
-        @inject(ANALYSIS_TOKENS.AnalysisRepository) private analysisRepository: IAnalysisRepository
+        @inject('IAnalysisRepository') private analysisRepository: IAnalysisRepository
     ){}
 
     async execute(input: UpdateAnalysisInputDTO): Promise<Result<UpdateAnalysisOutputDTO>> {

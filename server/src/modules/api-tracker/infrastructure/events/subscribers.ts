@@ -11,7 +11,7 @@ export const registerApiTrackerSubscribers = async (): Promise<void> => {
     const eventBus = container.resolve<IEventBus>(SHARED_TOKENS.EventBus);
     const userDeletedHandler = container.resolve(UserDeletedEventHandler);
 
-    await eventBus.subscribe('user.deleted', userDeletedHandler);
+    await eventBus.subscribe('user:deleted', userDeletedHandler);
 
     logger.info('@api-tracker: Event subscribers registered successfully');
 };

@@ -9,12 +9,12 @@ const KEY_LENGTH = 32;
  * Get encryption key from environment variable.
  * If not set, throw an error.
  */
-const getEncryptionKey = (salt: Buffer): Buffer => {
+const getEncryptionKey = (): Buffer => {
     const keyString = process.env.SSH_ENCRYPTION_KEY;
     if(!keyString){
         throw new Error('SSH_ENCRYPTION_KEY environment variable is required');
     }
-    return crypto.scryptSync(keyString, salt, KEY_LENGTH);
+    return crypto.scryptSync(keyString, 'Volt-ssh', KEY_LENGTH);
 };
 
 /**
@@ -25,7 +25,7 @@ export const encrypt = (text: string): string => {
     try{
         const salt = crypto.randomBytes(SALT_LENGTH);
         const iv = crypto.randomBytes(IV_LENGTH);
-        const key = getEncryptionKey(salt);
+        const key = getEncryptionKey();
 
         const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
 
@@ -56,10 +56,9 @@ export const decrypt = (encryptedText: string): string => {
         }
         
         const [saltB64, ivB64, encrypted, authTagB64] = parts;
-        const saltBuffer = Buffer.from(saltB64, 'base64');
         const iv = Buffer.from(ivB64, 'base64');
         const authTag = Buffer.from(authTagB64, 'base64');
-        const key = getEncryptionKey(saltBuffer);
+        const key = getEncryptionKey();
 
         const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
         decipher.setAuthTag(authTag);

@@ -9,7 +9,6 @@ import { IRasterService } from '@modules/raster/domain/ports/IRasterService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import TrajectoryUpdatedEvent from './TrajectoryUpdatedEvent';
-import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class SessionCompletedEventHandler implements IEventHandler<SessionCompletedEvent> {
@@ -31,11 +30,11 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
             const { trajectoryId } = metadata || {};
             // Safety check for trajectoryId
             if (!trajectoryId) {
-                logger.error('[SessionCompletedEventHandler] Missing trajectoryId in metadata');
+                console.error('[SessionCompletedEventHandler] Missing trajectoryId in metadata');
                 return;
             }
 
-            logger.info(`[SessionCompletedEventHandler] Trajectory processing completed for ${trajectoryId}. Triggering rasterization.`);
+            console.log(`[SessionCompletedEventHandler] Trajectory processing completed for ${trajectoryId}. Triggering rasterization.`);
 
             try {
                 // Trigger rasterization for previews - pass teamId so jobs have correct teamId
@@ -43,7 +42,7 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
 
                 if (!rasterizationTriggered) {
                     // No GLB files to rasterize, mark trajectory as completed immediately
-                    logger.info(`[SessionCompletedEventHandler] No rasterization needed for ${trajectoryId}. Marking as completed.`);
+                    console.log(`[SessionCompletedEventHandler] No rasterization needed for ${trajectoryId}. Marking as completed.`);
                     await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Completed });
 
                     await this.eventBus.publish(new TrajectoryUpdatedEvent({
@@ -57,7 +56,7 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
                 }
                 // If rasterization was triggered, status will be updated when rasterizer queue completes
             } catch (error) {
-                logger.error(`[SessionCompletedEventHandler] Failed to trigger rasterization for ${trajectoryId}:`, error);
+                console.error(`[SessionCompletedEventHandler] Failed to trigger rasterization for ${trajectoryId}:`, error);
                 await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Failed });
 
                 await this.eventBus.publish(new TrajectoryUpdatedEvent({
@@ -72,11 +71,11 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
         } else if (queueType === 'rasterizer') {
             const { trajectoryId } = metadata || {};
             if (!trajectoryId) {
-                logger.error('[SessionCompletedEventHandler] Missing trajectoryId in rasterizer metadata');
+                console.error('[SessionCompletedEventHandler] Missing trajectoryId in rasterizer metadata');
                 return;
             }
 
-            logger.info(`[SessionCompletedEventHandler] Rasterization completed for ${trajectoryId}. Marking as completed.`);
+            console.log(`[SessionCompletedEventHandler] Rasterization completed for ${trajectoryId}. Marking as completed.`);
 
             await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Completed });
 
@@ -91,11 +90,11 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
         } else if (queueType === 'analysis_processing') {
             const { trajectoryId } = metadata || {};
             if (!trajectoryId) {
-                logger.error('[SessionCompletedEventHandler] Missing trajectoryId in analysis metadata');
+                console.error('[SessionCompletedEventHandler] Missing trajectoryId in analysis metadata');
                 return;
             }
 
-            logger.info(`[SessionCompletedEventHandler] Analysis processing completed for ${trajectoryId}. Marking as completed.`);
+            console.log(`[SessionCompletedEventHandler] Analysis processing completed for ${trajectoryId}. Marking as completed.`);
 
             await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Completed });
 
@@ -108,7 +107,7 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
                 updatedAt: new Date()
             }));
         } else {
-            logger.debug(`[SessionCompletedEventHandler] Ignoring session completion for queueType: ${queueType}`);
+            console.log(`[SessionCompletedEventHandler] Ignoring session completion for queueType: ${queueType}`);
         }
     }
 }

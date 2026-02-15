@@ -51,26 +51,6 @@ const HTTP_MODULES: HttpModule[] = [
     ParticleFilterHttpModule
 ];
 
-// CORE-019: Only modules that use :teamId in basePath or route params need the param callback
-const TEAM_MODULES: Set<HttpModule> = new Set([
-    TeamHttpModule,
-    TeamMemberHttpModule,
-    TeamInvitationHttpModule,
-    TeamRoleHttpModule,
-    ChatHttpModule,
-    AnalysisHttpModule,
-    SshConnectionHttpModule,
-    ContainerHttpModule,
-    TrajectoryHttpModule,
-    ColorCodingHttpModule,
-    ParticleFilterHttpModule,
-    PluginHttpModule,
-    PluginListingHttpModule,
-    PluginExposureHttpModule,
-    SimulationCellHttpModule,
-    DailyActivityHttpModule
-]);
-
 /**
  * Mount all module routes on the Express app.
  */
@@ -78,9 +58,7 @@ const mountHttpRoutes = (): Router => {
     const router = Router();
 
     for (const module of HTTP_MODULES) {
-        if (TEAM_MODULES.has(module)) {
-            module.router.param('teamId', checkTeamMembership);
-        }
+        module.router.param('teamId', checkTeamMembership);
         router.use(module.basePath, module.router);
     }
 

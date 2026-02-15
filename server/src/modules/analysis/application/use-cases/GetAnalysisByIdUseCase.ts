@@ -5,6 +5,7 @@ import { injectable, inject } from 'tsyringe';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { DeleteAnalysisByIdInputDTO } from '@modules/analysis/application/dtos/DeleteAnalysisByIdDTO';
 import { GetAnalysisByIdInputDTO, GetAnalysisByIdOutputDTO } from '@modules/analysis/application/dtos/GetAnalysisByIdDTO';
 
 @injectable()

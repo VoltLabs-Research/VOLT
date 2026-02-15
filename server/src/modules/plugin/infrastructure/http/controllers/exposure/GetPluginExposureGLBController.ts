@@ -13,22 +13,18 @@ export default class GetPluginExposureGLBController{
     ){}
 
     public handle = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-        try{
-            const { trajectoryId, analysisId, exposureId, timestep } = req.params;
-            const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/${slugify(exposureId as string)}.glb`;
-            const [stat, stream] = await Promise.all([
-                this.storageService.getStat(SYS_BUCKETS.MODELS, objectName), 
-                this.storageService.getStream(SYS_BUCKETS.MODELS, objectName)
-            ]);
+        const { trajectoryId, analysisId, exposureId, timestep } = req.params;
+        const objectName = `trajectory-${trajectoryId}/analysis-${analysisId}/glb/${timestep}/${slugify(exposureId as string)}.glb`;
+        const [stat, stream] = await Promise.all([
+            this.storageService.getStat(SYS_BUCKETS.MODELS, objectName), 
+            this.storageService.getStream(SYS_BUCKETS.MODELS, objectName)
+        ]);
 
-            res.setHeader('Content-Type', 'model/gltf-binary');
-            res.setHeader('Content-Length', stat.size);
-            res.setHeader('Content-Disposition', `inline; filename="${objectName}"`);
-            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-            stream.pipe(res);
-        }catch(error){
-            next(error);
-        }
+        res.setHeader('Content-Type', 'model/gltf-binary');
+        res.setHeader('Content-Length', stat.size);
+        res.setHeader('Content-Disposition', `inline; filename="${objectName}"`);
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        stream.pipe(res);
     }
 }
 

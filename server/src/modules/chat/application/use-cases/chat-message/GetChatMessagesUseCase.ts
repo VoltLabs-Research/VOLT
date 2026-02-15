@@ -7,6 +7,7 @@ import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRe
 import { GetChatMessagesInputDTO, GetChatMessagesOutputDTO } from '@modules/chat/application/dtos/chat-message/GetChatMessagesDTO';
 
 @injectable()
+@injectable()
 export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO, GetChatMessagesOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)

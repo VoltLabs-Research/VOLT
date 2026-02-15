@@ -538,12 +538,7 @@ export class FractalEngine {
         if (event.button === 0 && simHits.length > 0) {
             if (!this.state.isSelectedPersistent) {
                 this.state.isSelectedPersistent = true;
-                const modelParent = this.state.model?.parent;
-                const selectionTarget = modelParent
-                    && modelParent !== this.surface.scene
-                    ? (modelParent as THREE.Group)
-                    : this.state.model;
-                this.state.selected = selectionTarget;
+                this.state.selected = (simBox.parent as THREE.Group) || simBox;
                 if (this.state.bounds) {
                     const size = this.state.bounds.size.clone().multiplyScalar(1.06);
                     this.showSelection(size, false);
@@ -556,10 +551,7 @@ export class FractalEngine {
                 this.state.dragging = true;
                 const intersection = this.raycaster.ray.intersectPlane(this.groundPlane, new THREE.Vector3());
                 if (intersection && this.state.selected) {
-                    this.state.selected.updateWorldMatrix(true, false);
-                    const selectedWorld = new Vector3();
-                    this.state.selected.getWorldPosition(selectedWorld);
-                    this.dragOffset.copy(selectedWorld).sub(intersection);
+                    this.dragOffset.copy(this.state.selected.position).sub(intersection);
                 }
                 this.setOrbitControlsEnabled(false);
             } else {
@@ -603,15 +595,8 @@ export class FractalEngine {
 
         const intersection = this.raycaster.ray.intersectPlane(this.groundPlane, new THREE.Vector3());
         if (this.state.dragging && this.state.selected && intersection) {
-            const targetWorld = intersection.clone().add(this.dragOffset);
-            targetWorld.z = Math.max(0, targetWorld.z);
-            const parent = this.state.selected.parent;
-            if (parent) {
-                parent.updateWorldMatrix(true, false);
-                this.state.targetPosition = parent.worldToLocal(targetWorld);
-            } else {
-                this.state.targetPosition = targetWorld;
-            }
+            const target = intersection.clone().add(this.dragOffset);
+            this.state.targetPosition = new THREE.Vector3(target.x, target.y, Math.max(0, target.z));
             this.surface.invalidate();
         }
     };

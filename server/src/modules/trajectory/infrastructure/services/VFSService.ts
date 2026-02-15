@@ -1,13 +1,10 @@
 import { injectable, inject } from 'tsyringe';
 import { IStorageService } from '@shared/domain/ports/IStorageService';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { RuntimeError } from '@core/exceptions/RuntimeError';
-import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export class VFSService {
     constructor(
-        @inject(SHARED_TOKENS.StorageService) private storage: IStorageService
+        @inject('IStorageService') private storage: IStorageService
     ){}
 
     async listDirectory(trajectoryId: string, path: string = ''): Promise<any[]> {
@@ -47,6 +44,6 @@ export class VFSService {
     }
 
     async downloadArchive(trajectoryId: string): Promise<any> {
-        throw new RuntimeError(ErrorCodes.TRAJECTORY_VFS_DOWNLOAD_ERROR, 501);
+        throw new Error("Method not implemented.");
     }
 }

@@ -13,14 +13,10 @@ export default class RedisEvent implements IEventBus{
   
     // Map for linking event names (strings) with their handlers
     private handlers: Map<string, IEventHandler<any>[]> = new Map();
-    private subscribedChannels: Set<string> = new Set();
 
     constructor(){
         this.publisher = createRedisClient();
         this.subscriber = createRedisClient();
-
-        this.publisher.on('error', (err) => logger.error('Redis publisher error:', err));
-        this.subscriber.on('error', (err) => logger.error('Redis subscriber error:', err));
 
         this.initializeSubscriberListener();
     }
@@ -41,18 +37,14 @@ export default class RedisEvent implements IEventBus{
         
         this.handlers.get(eventName)!.push(handler);
 
-        if(!this.subscribedChannels.has(eventName)){
-            this.subscribedChannels.add(eventName);
-            await this.subscriber.subscribe(eventName, (error) => {
-                if(error){
-                    logger.error(`@redis-event-bus: Failed to subscribe to ${eventName}: ${error.message}`);
-                    this.subscribedChannels.delete(eventName);
-                    return;
-                }
+        await this.subscriber.subscribe(eventName, (error) => {
+            if(error){
+                logger.error(`@redis-event-bus: Failed to subscribe to ${eventName}: ${error.message}`);
+                return;
+            }
 
-                logger.info(`@redis-event-bus: Subscribed to ${eventName}`);
-            });
-        }
+            logger.info(`@redis-event-bus: Subscribed to ${eventName}`);
+        });
     }
 
     /**
