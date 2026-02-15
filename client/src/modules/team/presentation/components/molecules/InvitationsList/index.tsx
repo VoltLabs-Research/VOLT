@@ -19,6 +19,8 @@ const InvitationsList: React.FC<InvitationsListProps> = ({
     cancelingId,
     onCancelInvitation
 }) => {
+    const safeInvitations = Array.isArray(invitations) ? invitations : [];
+
     if(isLoading) {
         return (
             <Container className='invitations-list-loading d-flex items-center content-center'>
@@ -29,7 +31,7 @@ const InvitationsList: React.FC<InvitationsListProps> = ({
         );
     }
 
-    if(invitations.length === 0) {
+    if(safeInvitations.length === 0) {
         return (
             <EmptyState
                 title='No Invitations'
@@ -41,7 +43,7 @@ const InvitationsList: React.FC<InvitationsListProps> = ({
     return (
         <Container className='invitations-list y-auto f-shrink-0'>
             <Container className='d-flex column gap-05'>
-                {invitations.map((invitation) => (
+                {safeInvitations.map((invitation) => (
                     <InvitationRow
                         key={invitation._id}
                         email={invitation.email}

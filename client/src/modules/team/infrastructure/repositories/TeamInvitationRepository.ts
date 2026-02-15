@@ -29,8 +29,8 @@ export default class TeamInvitationRepository extends BaseRepository implements 
     }
 
     async getPending(): Promise<TeamInvitation[]>{
-        const response = await this.rbacClient.get<PaginatedResponse<TeamInvitation>>('/pending');
-        return response.data;
+        const response = await this.rbacClient.get<ApiResponse<PaginatedResponse<TeamInvitation>>>('/pending');
+        return response.data.data;
     }
 
     async send(email: string, role?: string): Promise<void>{
