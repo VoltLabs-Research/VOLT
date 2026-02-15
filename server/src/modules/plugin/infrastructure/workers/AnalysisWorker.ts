@@ -11,6 +11,7 @@ import { IPluginWorkflowEngine } from '@modules/plugin/domain/ports/IPluginWorkf
 import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import AnalysisModel from '@modules/analysis/infrastructure/persistence/mongo/models/AnalysisModel';
 import { initializeNodeHandlers } from '@modules/plugin/infrastructure/di/container';
 import { ListingRowPrecomputationService } from '@modules/plugin/infrastructure/services/ListingRowPrecomputationService';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
@@ -138,8 +139,8 @@ export default class AnalysisWorker extends BaseWorker<Job> {
 
         const item = metadata.forEachItem;
         const fromItem = 
-            (typeof item?.timestep === 'number' && Number.isFinite(item.timestep) && item.timestep) ||
-            (typeof item?.frame === 'number' && Number.isFinite(item.frame) && item.frame);
+            (typeof item?.timestep === 'number' && Number.isFinite(item.timestep) ? item.timestep : null) ??
+            (typeof item?.frame === 'number' && Number.isFinite(item.frame) ? item.frame : null);
 
         if (typeof fromItem === 'number') return fromItem;
 
@@ -151,22 +152,19 @@ export default class AnalysisWorker extends BaseWorker<Job> {
 
     private async updateProgress(analysisId: string, totalItems: number): Promise<void> {
         try {
-            const analysis = await this.analysisRepository.findById(analysisId);
-            if (!analysis) return;
+            const updated = await AnalysisModel.findByIdAndUpdate(
+                analysisId,
+                { $inc: { completedFrames: 1 }, $set: { clusterId: process.env.CLUSTER_ID || 'default' } },
+                { new: true }
+            );
+            if (!updated) return;
 
-            const completedFrames = (analysis.props.completedFrames || 0) + 1;
-            
-            const updateData: any = {
-                completedFrames,
-                clusterId: process.env.CLUSTER_ID || 'default'
-            };
-
-            if (completedFrames >= totalItems) {
-                updateData.status = 'completed';
-                updateData.finishedAt = new Date();
+            if (updated.completedFrames >= totalItems) {
+                await this.analysisRepository.updateById(analysisId, {
+                    status: 'completed',
+                    finishedAt: new Date()
+                } as any);
             }
-
-            await this.analysisRepository.updateById(analysisId, updateData);
         } catch (error: any) {
             logger.warn(`@analysis-worker #${process.pid}] Failed to update progress: ${error.message}`);
         }

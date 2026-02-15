@@ -89,7 +89,7 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
             let processedBytes = 0;
             sourceStream.on('data', (chunk: Buffer | string) => {
                 processedBytes += chunk.length;
-                const percentage = Math.min(1, processedBytes / totalSize);
+                const percentage = totalSize > 0 ? Math.min(1, processedBytes / totalSize) : 1;
                 onProgress(percentage);
             });
         }
@@ -124,7 +124,7 @@ export default class TrajectoryDumpStorageService implements ITrajectoryDumpStor
         // Check valid cache on disk
         if(await this.isCacheValid(cachePath)){
             // Update access time
-            fs.utimes(cachePath, new Date(), new Date());
+            await fs.utimes(cachePath, new Date(), new Date());
             return cachePath;
         }
 

@@ -55,7 +55,7 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
     }
 
     async updateById(id: string, data: Partial<TProps>, options?: Pick<FindOptions<TProps>, 'populate' | 'select'>): Promise<TDomain | null> {
-        let query = this.model.findByIdAndUpdate(id, data as any, { new: true });
+        let query = this.model.findByIdAndUpdate(id, data as any, { new: true, runValidators: true });
         if (options?.populate) query = query.populate(options.populate as any);
         if (options?.select) query = query.select(options.select.join(' '));
         const doc = await query.exec();
@@ -68,15 +68,15 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
     }
 
     async count(filter?: Partial<TProps>): Promise<number> {
-        return this.model.countDocuments(filter);
+        return this.model.countDocuments(filter as any);
     }
 
     async updateMany(filter: Partial<TProps>, data: Partial<TProps>): Promise<number> {
-        const result = await this.model.updateMany(filter, data as any);
+        const result = await this.model.updateMany(filter, data as any, { runValidators: true });
         return result.modifiedCount;
     }
 
-    async insertMany(data: Partial<TProps>): Promise<void>{
+    async insertMany(data: Partial<TProps>[]): Promise<void>{
         await this.model.insertMany(data);
     }
 

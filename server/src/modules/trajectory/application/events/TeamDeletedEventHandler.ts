@@ -14,6 +14,7 @@ export default class TeamDeletedEventHandler implements IEventHandler<TeamDelete
     async handle(event: TeamDeletedEvent): Promise<void>{
         const { teamId } = event.payload;
 
-        await this.trajectoryRepository.deleteMany({ team: teamId });
+        const trajectories = await this.trajectoryRepository.findAll({ filter: { team: teamId } });
+        await Promise.all(trajectories.data.map(t => this.trajectoryRepository.deleteById(t.id)));
     }
 };

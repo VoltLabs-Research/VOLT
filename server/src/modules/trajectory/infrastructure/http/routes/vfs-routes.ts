@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { container } from 'tsyringe';
 import multer from 'multer';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
 import ListVFSDirectoryController from '@modules/trajectory/infrastructure/http/controllers/vfs/ListVFSDirectoryController';
 import GetVFSFileController from '@modules/trajectory/infrastructure/http/controllers/vfs/GetVFSFileController';
@@ -30,4 +31,9 @@ router.route('/:trajectoryId')
     .post(upload.single('file'), uploadVFSFileController.handle)
     .delete(deleteVFSFileController.handle);
 
-export default router;
+const module: HttpModule = {
+    basePath: '/api/trajectory-vfs',
+    router
+};
+
+export default module;

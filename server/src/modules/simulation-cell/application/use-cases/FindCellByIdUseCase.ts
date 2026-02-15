@@ -20,6 +20,10 @@ export default class FindCellByIdUseCase implements IUseCase<FindCellByIdInputDT
             return Result.fail(ApplicationError.notFound('SIMULATION_CELL_NOT_FOUND', 'SimulationCell not found'));
         }
 
+        if (cell.props.team !== input.teamId) {
+            return Result.fail(ApplicationError.forbidden('SIMULATION_CELL_FORBIDDEN', 'SimulationCell does not belong to this team'));
+        }
+
         return Result.ok(cell.props);
     }
 }

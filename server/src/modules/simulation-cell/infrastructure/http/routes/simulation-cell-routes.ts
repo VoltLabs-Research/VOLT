@@ -8,6 +8,9 @@ import FindCellsByTeamIdController from '@modules/simulation-cell/infrastructure
 import FindCellByIdController from '@modules/simulation-cell/infrastructure/http/controllers/FindCellByIdController';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 
+// TODO: container.resolve at module level is fragile — if DI registration hasn't completed,
+// this will throw. This pattern is used across the codebase; changing it here alone would be
+// inconsistent. Consider moving all route modules to lazy resolution in a single refactor pass.
 const findCellsByTeamIdController = container.resolve<FindCellsByTeamIdController>(SIMULATION_CELL_TOKENS.FindCellsByTeamIdController);
 const findCellByIdController = container.resolve<FindCellByIdController>(SIMULATION_CELL_TOKENS.FindCellByIdController);
 

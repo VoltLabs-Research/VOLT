@@ -11,7 +11,7 @@ if(process.env.GITHUB_CLIENT_ID){
     passport.use(new GithubStrategyWrapper(oauthLoginUseCase).getStrategy());
 }
 
-if(process.env.GOGLE_CLIENT_ID){
+if(process.env.GOOGLE_CLIENT_ID){
     passport.use(new GoogleStrategyWrapper(oauthLoginUseCase).getStrategy());
 }
 

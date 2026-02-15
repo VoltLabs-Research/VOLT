@@ -13,4 +13,4 @@ class ChatMessageMapper extends BaseMapper<ChatMessage, ChatMessageProps, ChatMe
     }
 };
 
-export default ChatMessageMapper;
+export default new ChatMessageMapper();

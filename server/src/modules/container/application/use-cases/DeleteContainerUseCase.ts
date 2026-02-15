@@ -20,9 +20,8 @@ export class DeleteContainerUseCase implements IUseCase<{ containerId: string },
             throw new ApplicationError(ErrorCodes.CONTAINER_NOT_FOUND, 'Container not found', 404);
         }
 
-        // Stop and Remove Docker Container
+        // Remove Docker Container (force: true handles stopping)
         try {
-            await this.containerService.stopContainer(container.containerId);
             await this.containerService.removeContainer(container.containerId);
         } catch (e) {
             // Ignore if already gone
@@ -30,21 +29,25 @@ export class DeleteContainerUseCase implements IUseCase<{ containerId: string },
 
         // Remove Network (if owned, see legacy logic)
         if (container.network) {
+            // TODO: Direct Mongoose model import violates clean architecture. Refactor to use
+            // INetworkRepository once that repository interface is created.
             const { DockerNetwork } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerNetworkModel');
             const netDoc = await DockerNetwork.findById(container.network);
             if (netDoc) {
                 await this.containerService.removeNetwork(netDoc.networkId);
-                // Cascade delete in Model handles Mongo Doc, but we should ensure consistency
             }
         }
 
-        // Remove Volume? Legacy logic says: "v: true removes associated anonymous volumes". 
-        // Named volumes were kept or removed depending on requirements? 
-        // Legacy "deleteContainer" calls "removeNetwork", but seemingly NOT "removeVolume" explicitly?
-        // Wait, legacy `ContainerSchema.plugin(useCascadeDelete);` and `onBeforeDelete` handling.
-        // I'll stick to removing the container entity which triggers cascade hooks in the model if I use mongoose middleware,
-        // but Clean Architecture usually avoids hooks.
-        // I will explicitly delete the repository entry.
+        // Remove Volume
+        if (container.volume) {
+            // TODO: Direct Mongoose model import violates clean architecture. Refactor to use
+            // IVolumeRepository once that repository interface is created.
+            const { DockerVolume } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerVolumeModel');
+            const volDoc = await DockerVolume.findById(container.volume);
+            if (volDoc) {
+                await this.containerService.removeVolume(volDoc.name);
+            }
+        }
 
         await this.repository.deleteById(input.containerId);
 

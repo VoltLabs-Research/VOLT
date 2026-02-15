@@ -17,12 +17,12 @@ export default abstract class BaseWorker<TJob> {
         process.on('uncaughtException', (error) => {
             logger.error(`@worker #${process.pid} - uncaught exception: ${error.message}`);
             logger.error(`@worker #${process.pid} - stack: ${error.stack}`);
-            process.exit(1);
+            parentPort?.close();
         });
 
         process.on('unhandledRejection', (reason, promise) => {
             logger.error(`@worker #${process.pid} - unhandler rejection at: ${promise} reason: ${reason}`);
-            process.exit(1);
+            parentPort?.close();
         });
     }
 
@@ -50,8 +50,9 @@ export default abstract class BaseWorker<TJob> {
         try {
             await mongoConnector();
             logger.info(`@worker #${process.pid} - connected to database`);
-        } catch (dbError: any) {
-            logger.error(`@worker #${process.pid} - failed to connect to database: ${dbError}`);
+        } catch (error: any) {
+            logger.error(`@worker #${process.pid} - failed to connect to database: ${error}`);
+            throw error;
         }
     }
 

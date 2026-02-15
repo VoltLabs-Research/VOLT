@@ -6,8 +6,11 @@ import { IContainerRepository } from '@modules/container/domain/ports/IContainer
 import { IContainerService } from '@modules/container/domain/ports/IContainerService';
 import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
 import { Container } from '@modules/container/domain/entities/Container';
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+
+const execAsync = promisify(exec);
 
 @injectable()
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
@@ -50,8 +53,8 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         if (mountDockerSocket) {
             HostConfig.Binds.push('/var/run/docker.sock:/var/run/docker.sock');
             try {
-                // This execSync is from legacy, risky in simplified env but needed for functionality
-                const dockerGid = execSync("getent group docker | cut -d: -f3").toString().trim();
+                const { stdout } = await execAsync("getent group docker | cut -d: -f3");
+                const dockerGid = stdout.trim();
                 if (dockerGid) HostConfig.GroupAdd = [dockerGid];
             } catch (e) {
                 // ignore
@@ -100,6 +103,8 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         // but Model expects ObjectIds.
         // I will import the Models directly to create them.
 
+        // TODO: Direct Mongoose model imports violate clean architecture. Refactor to use
+        // INetworkRepository and IVolumeRepository once those repository interfaces are created.
         const { DockerNetwork } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerNetworkModel');
         const { DockerVolume } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerVolumeModel');
 

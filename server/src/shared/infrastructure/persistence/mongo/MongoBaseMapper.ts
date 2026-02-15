@@ -32,6 +32,7 @@ export abstract class BaseMapper<TDomain, TProps, TDocument>
         });
 
         delete props.__v;
+        delete props._id;
 
         return new this.entityClass(id, props);
     }

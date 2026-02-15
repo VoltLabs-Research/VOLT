@@ -70,7 +70,7 @@ export interface IBaseRepository<T, TProps> {
         data: Partial<TProps>
     ): Promise<number>;
 
-    insertMany(data: Partial<TProps>): Promise<void>;
+    insertMany(data: Partial<TProps>[]): Promise<void>;
 
     /**
      * Delete an entity by ID.

@@ -4,6 +4,9 @@ import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/aut
 
 export default class GetMyAccountController{
     async handle(req: AuthenticatedRequest, res: Response): Promise<void>{
+        if(!req.user){
+            return res.status(401).json({ error: 'Not authenticated' }) as unknown as void;
+        }
         BaseResponse.success(res, {
             _id: req.userId,
             ...req.user.props

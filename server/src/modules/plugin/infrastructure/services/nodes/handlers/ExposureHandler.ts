@@ -74,8 +74,6 @@ export default class ExposureHandler implements INodeHandler{
         const visualizerNode = context.workflow.findDescendantByType(nodeId, WorkflowNodeType.Visualizers);
         const hasListing = !!(visualizerNode?.data?.visualizers?.listing && Object.keys(visualizerNode.data.visualizers.listing).length);
         
-        console.log(`[ExposureHandler] analyzeRequirements for exposure ${nodeId}: visualizerNode=${visualizerNode?.id || 'none'}, hasListing=${hasListing}, listing=${JSON.stringify(visualizerNode?.data?.visualizers?.listing || {})}`);
-        
         return {
             needsData: !!exportNode,
             needsMetadata: hasListing
@@ -111,14 +109,10 @@ export default class ExposureHandler implements INodeHandler{
 
         if(reqs.needsData || reqs.needsMetadata){
             payload = await readExposurePayload(localPath, config.iterable, reqs);
-            console.log(`[ExposureHandler] Payload extracted - needsMetadata: ${reqs.needsMetadata}, hasMetadata: ${!!payload.metadata}, metadataKeys: ${payload.metadata ? Object.keys(payload.metadata).length : 0}`);
         }
 
         // Persist metadata with upsert semantics
         if(payload.metadata && Object.keys(payload.metadata).length > 0){
-            console.log(`[ExposureHandler] Persisting metadata for exposure ${nodeId}, timestep ${timestep}, analysis ${context.analysisId}`);
-            console.log(`[ExposureHandler] Metadata keys: ${Object.keys(payload.metadata).join(', ')}`);
-            
             try {
                 // Find existing document
                 const existing = await this.exposureMetaRepository.findOne({
@@ -152,19 +146,13 @@ export default class ExposureHandler implements INodeHandler{
                 };
 
                 if(existing){
-                    console.log(`[ExposureHandler] Updating existing ExposureMeta document: ${existing.id}`);
                     await this.exposureMetaRepository.updateById(existing.id, metaData);
                 } else {
-                    console.log(`[ExposureHandler] Creating new ExposureMeta document`);
-                    const created = await this.exposureMetaRepository.create(metaData);
-                    console.log(`[ExposureHandler] Created ExposureMeta document: ${created.id}`);
+                    await this.exposureMetaRepository.create(metaData);
                 }
             } catch (error: any) {
-                console.error(`[ExposureHandler] Failed to persist metadata: ${error.message}`);
-                console.error(error.stack);
+                logger.error(`[ExposureHandler] Failed to persist metadata: ${error.message}`);
             }
-        } else {
-            console.log(`[ExposureHandler] Skipping metadata persistence - needsMetadata: ${reqs.needsMetadata}, hasMetadata: ${!!payload.metadata}, metadataKeyCount: ${payload.metadata ? Object.keys(payload.metadata).length : 0}`);
         }
 
         return {

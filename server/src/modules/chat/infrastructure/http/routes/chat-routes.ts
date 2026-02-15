@@ -12,7 +12,7 @@ const module: HttpModule = {
 router.use(protect);
 
 router.get('/', controllers.getUserChats.handle);
-router.get('/teams/:teamId/participants/:targetUserId', controllers.getOrCreate.handle),
+router.get('/teams/:teamId/participants/:targetUserId', controllers.getOrCreate.handle);
 router.post('/groups', controllers.createGroup.handle);
 router.post('/:chatId/groups/add-user', controllers.addUsersToGroup.handle);
 router.post('/:chatId/groups/remove-users', controllers.removeUsersFromGroup.handle);

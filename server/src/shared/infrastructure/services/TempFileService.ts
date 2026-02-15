@@ -8,10 +8,11 @@ import logger from '@shared/infrastructure/logger';
 @injectable()
 export default class TempFileService implements ITempFileService{
     private readonly TEMP_DIR: string;
+    private initPromise: Promise<void>;
     
     constructor(){
         this.TEMP_DIR = path.resolve(process.cwd(), 'storage/temp');
-        this.initialize();
+        this.initPromise = this.initialize();
     }
 
     private async initialize(){
@@ -36,7 +37,8 @@ export default class TempFileService implements ITempFileService{
         }
     }
 
-    generateFilePath(options: TempFileOptions): string{
+    async generateFilePath(options: TempFileOptions): Promise<string>{
+        await this.initPromise;
         const { prefix = 'temp_', extension = '', subdir } = options;
         const filename = `${prefix}${v4()}${extension}`;
         
@@ -48,11 +50,13 @@ export default class TempFileService implements ITempFileService{
         return path.join(dirPath, filename);
     }
 
-    getDirPath(subdir: string): string{
+    async getDirPath(subdir: string): Promise<string>{
+        await this.initPromise;
         return path.join(this.TEMP_DIR, subdir);
     }
 
     async delete(targetPath: string, options?: DeleteOptions): Promise<boolean>{
+        await this.initPromise;
         try{
             // Ensure path is within temp dir to prevent accidental deletions!
             const resolvedPath = path.resolve(targetPath);
@@ -61,7 +65,7 @@ export default class TempFileService implements ITempFileService{
                 return false;
             }
 
-            await fs.rm(targetPath, {
+            await fs.rm(resolvedPath, {
                 recursive: options?.recursive ?? false,
                 force: options?.force ?? true
             });

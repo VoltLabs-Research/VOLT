@@ -21,7 +21,6 @@ export const registerTeamSubscribers = async (): Promise<void> => {
     await eventBus.subscribe('team.deleted', teamDeletedHandler);
     await eventBus.subscribe('team.created', teamCreatedHandler);
     await eventBus.subscribe('user.deleted', userDeletedHandler);
-    await eventBus.subscribe('user.deleted', userDeletedHandler);
     await eventBus.subscribe('user.created', userCreatedHandler);
 
     const teamJobStatusHandler = container.resolve(JobStatusChangedEventHandler);

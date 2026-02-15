@@ -1,4 +1,5 @@
 import Docker, { Container } from 'dockerode';
+import path from 'path';
 import { injectable } from 'tsyringe';
 import { IContainerService, ContainerStats } from '@modules/container/domain/ports/IContainerService';
 import logger from '@shared/infrastructure/logger';
@@ -81,9 +82,10 @@ export class DockerContainerService implements IContainerService {
         }
     }
 
-    async getFiles(containerId: string, path: string = '/'): Promise<any[]> {
+    async getFiles(containerId: string, userPath: string = '/'): Promise<any[]> {
         try {
-            const output = await this.exec(containerId, ['ls', '-la', '--full-time', path]);
+            const sanitizedPath = path.posix.normalize(userPath).replace(/\.\./g, '');
+            const output = await this.exec(containerId, ['ls', '-la', '--full-time', sanitizedPath]);
             const lines = output.split('\n').slice(1);
             return lines.map(line => {
                 const parts = line.trim().split(/\s+/);
@@ -107,9 +109,10 @@ export class DockerContainerService implements IContainerService {
         }
     }
 
-    async readFile(containerId: string, path: string): Promise<string> {
+    async readFile(containerId: string, filePath: string): Promise<string> {
         try {
-            const output = await this.exec(containerId, ['cat', path]);
+            const sanitizedPath = path.posix.normalize(filePath).replace(/\.\./g, '');
+            const output = await this.exec(containerId, ['cat', sanitizedPath]);
             return output.replace(/[\x00-\x09\x0B-\x1F\x7F]/g, '');
         } catch (error: any) {
             throw new ApplicationError(ErrorCodes.CONTAINER_FILE_READ_FAILED, error.message, 500);

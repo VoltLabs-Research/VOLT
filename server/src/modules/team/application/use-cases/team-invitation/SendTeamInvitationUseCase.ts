@@ -104,7 +104,6 @@ export default class SendTeamInvitationUseCase implements IUseCase<SendTeamInvit
             token,
             role: role.id,
             expiresAt,
-            acceptedAt: new Date(),
             status: TeamInvitationStatus.Pending
         });
 

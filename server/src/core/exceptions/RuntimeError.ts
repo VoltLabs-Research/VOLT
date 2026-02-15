@@ -5,8 +5,8 @@ export class RuntimeError extends Error {
     public readonly statusCode: number;
     public readonly isOperational: boolean;
 
-    constructor(code: ErrorCode, statusCode: number = 500, isOperational = true) {
-        super(code);
+    constructor(code: ErrorCode, statusCode: number = 500, isOperational = true, message?: string) {
+        super(message || code);
         this.code = code;
         this.statusCode = statusCode;
         this.isOperational = isOperational;
