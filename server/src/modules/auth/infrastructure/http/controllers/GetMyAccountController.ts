@@ -4,9 +4,12 @@ import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/aut
 
 export default class GetMyAccountController{
     async handle(req: AuthenticatedRequest, res: Response): Promise<void>{
+        const fullName = `${req.user.props.firstName} ${req.user.props.lastName}`.trim();
+
         BaseResponse.success(res, {
             _id: req.userId,
-            ...req.user.props
+            ...req.user.props,
+            fullName
         });
     }
 };

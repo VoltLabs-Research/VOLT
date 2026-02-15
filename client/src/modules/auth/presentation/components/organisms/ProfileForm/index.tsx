@@ -19,9 +19,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
         schema: profileSchema,
         validateOnChange: false,
         validateOnBlur: true,
-        onAutoSave: async (data) => {
-            await onUpdate(data);
-        },
+        onAutoSave: onUpdate,
         autoSaveDelay: 1000,
         autoSaveOnlyIfChanged: true
     });
