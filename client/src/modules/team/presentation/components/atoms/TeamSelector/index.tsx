@@ -5,6 +5,7 @@ import Select, { type SelectOption } from '@/shared/presentation/components/Sele
 import IconButton from '@/shared/presentation/components/IconButton';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
+import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import './TeamSelector.css';
 
 interface TeamSelectorProps {
@@ -16,14 +17,16 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
     const teams = useTeamStore((state) => state.teams);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const { teamRepository } = useTeamUseCases();
+    const { checkCanInvite } = useTeamData();
 
     const handleTeamChange = useCallback((teamId: string) => {
         if (selectedTeam?._id === teamId) return;
 
         const teamStore = useTeamStore.getState();
         teamStore.selectTeamById(teamId);
+        checkCanInvite(teamId);
         updateSearchParams({ team: teamId }, { replace: true });
-    }, [selectedTeam?._id, updateSearchParams]);
+    }, [selectedTeam?._id, checkCanInvite, updateSearchParams]);
 
     const handleLeaveTeam = useCallback(async (e: React.MouseEvent, teamId: string) => {
         e.preventDefault();
@@ -39,12 +42,13 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
             if (currentSelected?._id === teamId && remainingTeams.length > 0) {
                 const newTeamId = remainingTeams[0]._id;
                 state.selectTeamById(newTeamId);
+                checkCanInvite(newTeamId);
                 updateSearchParams({ team: newTeamId }, { replace: true });
             }
         } catch (err: unknown) {
             console.error('Failed to leave team:', err);
         }
-    }, [teamRepository, updateSearchParams]);
+    }, [teamRepository, checkCanInvite, updateSearchParams]);
 
     const teamOptions = useMemo(() =>
         teams.map(team => ({
