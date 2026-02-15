@@ -2,14 +2,15 @@ import { injectable, inject } from 'tsyringe';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import PluginDeletedEvent from '@modules/plugin/domain/events/PluginDeletedEvent';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { IExposureMetaRepository } from '@modules/plugin/domain/ports/IExposureMetaRepository';
 import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
+import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 
 @injectable()
 export default class PluginDeletedEventHandler implements IEventHandler<PluginDeletedEvent> {
     constructor(
-        @inject(PLUGIN_TOKENS.ExposureMetaRepository)
-        private readonly exposureMetaRepository: IExposureMetaRepository,
+        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
+        private readonly sceneArtifactRepository: ISceneArtifactRepository,
 
         @inject(PLUGIN_TOKENS.ListingRowRepository)
         private readonly listingRowRepository: IListingRowRepository
@@ -20,7 +21,7 @@ export default class PluginDeletedEventHandler implements IEventHandler<PluginDe
         const query = { plugin: pluginId };
 
         await Promise.all([
-            this.exposureMetaRepository.deleteMany(query),
+            this.sceneArtifactRepository.deleteMany({ ...query, sourceType: 'plugin-exposure' }),
             this.listingRowRepository.deleteMany(query)
         ]);
     }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import usePluginStore, { type RenderableExposure } from '@/modules/plugin/presentation/stores/use-plugin-store';
+import useSceneArtifactUseCases from '@/modules/trajectory/presentation/hooks/generated-scenes/use-scene-artifact-use-cases';
+import type { RenderableExposure } from '@/modules/plugin/presentation/stores/use-plugin-store';
+import type { RenderableExposurePayload } from '@/modules/trajectory/application/dtos/scene-artifacts';
 
 export type ExposureLoadState = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -19,18 +20,14 @@ interface UseExposureManagerProps {
 interface UseExposureManagerReturn {
     exposureEntries: Map<string, ExposureEntry>;
     getEntry: (analysisId: string) => ExposureEntry;
-    loadExposuresForAnalysis: (analysisId: string, pluginSlug: string) => Promise<void>;
+    loadExposuresForAnalysis: (analysisId: string) => Promise<void>;
     resetEntries: () => void;
 }
 
 const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExposureManagerReturn => {
+    const { listSceneArtifactsUseCase } = useSceneArtifactUseCases();
     const [exposureEntries, setExposureEntries] = useState<Map<string, ExposureEntry>>(new Map());
     const exposureEntriesRef = useRef(exposureEntries);
-
-    const { getRenderableExposures, pluginsBySlug } = usePluginStore(useShallow((s) => ({
-        getRenderableExposures: s.getRenderableExposures,
-        pluginsBySlug: s.pluginsBySlug
-    })));
 
     // Keep ref in sync
     useEffect(() => {
@@ -53,24 +50,32 @@ const useExposureManager = ({ trajectoryId }: UseExposureManagerProps): UseExpos
         setExposureEntries(new Map());
     }, []);
 
-    const loadExposuresForAnalysis = useCallback(async (analysisId: string, pluginSlug: string) => {
+    const loadExposuresForAnalysis = useCallback(async (analysisId: string) => {
         if (!trajectoryId) return;
 
         const current = exposureEntriesRef.current.get(analysisId) ?? DEFAULT_ENTRY;
         if (current.state === 'loading' || current.state === 'loaded') return;
 
-        if (!pluginsBySlug[pluginSlug]) return;
-
         setEntry(analysisId, { state: 'loading', exposures: [] });
 
         try {
-            const exposures = await getRenderableExposures(trajectoryId, analysisId, 'canvas', pluginSlug);
-            setEntry(analysisId, { state: 'loaded', exposures });
+            const response = await listSceneArtifactsUseCase.execute({
+                trajectoryId,
+                analysisId,
+                sourceType: 'plugin-exposure',
+                projection: 'renderable-exposures',
+                page: 1,
+                limit: 1000
+            });
+
+            const exposures = response.data as RenderableExposurePayload[];
+
+            setEntry(analysisId, { state: 'loaded', exposures: exposures as RenderableExposure[] });
         } catch (error) {
             console.error('[useExposureManager] fetch failed', analysisId, error);
             setEntry(analysisId, { state: 'error', exposures: [], error });
         }
-    }, [trajectoryId, getRenderableExposures, pluginsBySlug, setEntry]);
+    }, [trajectoryId, listSceneArtifactsUseCase, setEntry]);
 
     return {
         exposureEntries,

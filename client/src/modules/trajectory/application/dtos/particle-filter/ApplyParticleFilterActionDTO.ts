@@ -1,16 +1,18 @@
-import type { FilterCondition } from './PreviewFilterDTO';
-
 export type FilterAction = 'delete' | 'highlight';
 
 export interface ApplyFilterInputDTO{
     trajectoryId: string;
     analysisId?: string;
     timestep: number;
-    conditions: FilterCondition[];
+    property: string;
+    operator: '==' | '!=' | '>' | '>=' | '<' | '<=';
+    value: number;
+    exposureId?: string;
     action: FilterAction;
-};
+}
 
 export interface ApplyFilterOutputDTO{
-    affectedCount: number;
-    success: boolean;
-};
+    fileId: string;
+    atomsResult: number;
+    action: string;
+}

@@ -12,7 +12,7 @@ export default class AnalysisCreatedEventHandler implements IEventHandler<Analys
     ){}
 
     async handle(event: AnalysisCreatedEvent): Promise<void> {
-        const { teamId, trajectoryId, analysisId, pluginSlug, config, status, createdAt } = event.payload;
+        const { teamId, trajectoryId, analysisId, pluginSlug, pluginDisplayName, config, status, createdAt } = event.payload;
 
         if (teamId) {
             await this.socketEmitter.emitToRoom(
@@ -22,6 +22,7 @@ export default class AnalysisCreatedEventHandler implements IEventHandler<Analys
                     analysisId,
                     trajectoryId,
                     pluginSlug,
+                    pluginDisplayName,
                     config,
                     status,
                     createdAt: createdAt instanceof Date ? createdAt.toISOString() : String(createdAt),

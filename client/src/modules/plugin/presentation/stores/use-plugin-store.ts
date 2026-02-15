@@ -63,17 +63,6 @@ interface PluginActions {
     fetchPlugin: (slug: string) => Promise<void>;
     getModifiers: () => ResolvedModifier[];
     getPluginArguments: (pluginSlug: string) => PluginArgument[];
-    getRenderableExposures: (
-        trajectoryId: string,
-        analysisId?: string,
-        context?: 'canvas' | 'raster',
-        pluginSlug?: string
-    ) => Promise<RenderableExposure[]>;
-    getAllExposures: (
-        trajectoryId: string,
-        analysisId?: string,
-        pluginSlug?: string
-    ) => Promise<RenderableExposure[]>;
     registerPlugins: (plugins: Plugin[]) => void;
     resetPlugins: () => void;
 }
@@ -92,25 +81,6 @@ const initialState: PluginState = {
 const buildPluginsBySlug = (plugins: Plugin[]): Record<string, Plugin> => {
     return Object.fromEntries(plugins.map((p) => [p.slug, p]));
 };
-
-const toRenderableExposure = (
-    plugin: Plugin,
-    exposure: IExposureComputed,
-    analysisId: string
-): RenderableExposure => ({
-    pluginId: plugin._id,
-    pluginSlug: plugin.slug,
-    analysisId,
-    exposureId: exposure._id,
-    modifierId: plugin.slug,
-    name: exposure.name,
-    icon: exposure.icon,
-    results: exposure.results,
-    canvas: exposure.canvas,
-    raster: exposure.raster,
-    perAtomProperties: exposure.perAtomProperties,
-    export: exposure.export || undefined
-});
 
 const usePluginStore = create<PluginStore>((set, get) => ({
     ...initialState,
@@ -254,27 +224,6 @@ const usePluginStore = create<PluginStore>((set, get) => ({
     getPluginArguments: (pluginSlug: string) => {
         const plugin = get().pluginsBySlug[pluginSlug];
         return (plugin?.arguments as PluginArgument[]) ?? [];
-    },
-
-    getRenderableExposures: async (_trajectoryId, analysisId, context, pluginSlug) => {
-        if (!analysisId) return [];
-        const state = get();
-        const plugin = pluginSlug ? state.pluginsBySlug[pluginSlug] : undefined;
-        if (!plugin?.exposures) return [];
-
-        const exposures = plugin.exposures
-            .filter((exp) => (context === 'raster' ? exp.raster : exp.canvas))
-            .map((exp) => toRenderableExposure(plugin, exp, analysisId));
-
-        return exposures;
-    },
-
-    getAllExposures: async (_trajectoryId, analysisId, pluginSlug) => {
-        if (!analysisId) return [];
-        const state = get();
-        const plugin = pluginSlug ? state.pluginsBySlug[pluginSlug] : undefined;
-        if (!plugin?.exposures) return [];
-        return plugin.exposures.map((exp) => toRenderableExposure(plugin, exp, analysisId));
     },
 
     registerPlugins(incomingPlugins: Plugin[]) {

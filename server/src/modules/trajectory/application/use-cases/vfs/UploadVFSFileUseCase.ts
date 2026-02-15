@@ -14,15 +14,18 @@ export class UploadVFSFileUseCase implements IUseCase<UploadVFSFileInputDTO, Upl
     ){}
 
     async execute(input: UploadVFSFileInputDTO): Promise<Result<UploadVFSFileOutputDTO>> {
-        const path = await this.vfsService.uploadFile(
+        const fileBuffer = input.file?.buffer || input.fileBuffer || Buffer.from([]);
+        const uploadPath = input.path || '';
+
+        const storedPath = await this.vfsService.uploadFile(
             input.trajectoryId,
-            input.path,
-            input.fileBuffer
+            uploadPath,
+            fileBuffer
         );
 
         return Result.ok({
             message: 'File uploaded successfully',
-            path
+            path: storedPath
         });
     }
 }

@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
-import { formatCellValue, normalizeRows, type ColumnDef } from '@/modules/plugin/presentation/utilities/expression-utils';
-import { usePluginStore } from '../../../stores';
 import PluginCompactTable from '@/modules/plugin/presentation/components/organisms/PluginCompactTable';
 import useListingLifecycle, { type ListingMeta } from '@/shared/presentation/hooks/use-listing-lifecycle';
-import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
 import usePluginListing from '@/modules/plugin/presentation/hooks/use-plugin-listing';
 import '@/modules/plugin/presentation/components/organisms/PluginExposureTable/PluginExposureTable.css';
 
@@ -21,43 +18,6 @@ export interface PluginExposureTableProps {
     onDataReady?: (columns: any[], data: any[]) => void;
 }
 
-const buildColumns = (columnDefs: ColumnDef[], showTrajectory = false): ColumnConfig[] => {
-    const cols: ColumnConfig[] = columnDefs.map(({ path, label }) => ({
-        key: label,
-        title: label,
-        sortable: true,
-        render: (_value: any, row: any) => {
-            const value = row[path];
-            return formatCellValue(value, path);
-        },
-        skeleton: { variant: 'text' as const, width: 120 }
-    }));
-
-    if (showTrajectory) {
-        cols.unshift({
-            key: 'trajectoryName',
-            title: 'Trajectory',
-            sortable: false,
-            render: (_value: any, row: any) => row.trajectoryName || '-',
-            skeleton: { variant: 'text' as const, width: 120 }
-        });
-    }
-
-    return cols;
-};
-
-const extractColumnsFromPlugin = (plugin: any, listingSlug: string): ColumnDef[] => {
-    if (!plugin?.exposures) return [];
-
-    const exposure = plugin.exposures.find((e: any) => e.name === listingSlug);
-    if (!exposure?.listing) return [];
-
-    return Object.entries(exposure.listing).map(([path, label]) => ({
-        path,
-        label: String(label)
-    }));
-};
-
 const PluginExposureTable = ({
     pluginSlug,
     listingSlug,
@@ -69,7 +29,6 @@ const PluginExposureTable = ({
     headerActions,
     onDataReady
 }: PluginExposureTableProps) => {
-    const { pluginListingRepository } = usePluginUseCases();
     const listingHook = usePluginListing({
         pluginSlug,
         listingSlug,
@@ -91,22 +50,6 @@ const PluginExposureTable = ({
     const [loading, setLoading] = useState(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    const pluginsBySlug = usePluginStore((s) => s.pluginsBySlug);
-    const fetchPlugins = usePluginStore((s) => s.fetchPlugins);
-
-    useEffect(() => {
-        if (Object.keys(pluginsBySlug).length === 0) {
-            fetchPlugins();
-        }
-    }, [pluginsBySlug, fetchPlugins]);
-
-    const columnDefs = useMemo(() => {
-        if (!pluginSlug || !listingSlug) return [];
-        const plugin = pluginsBySlug[pluginSlug];
-        if (!plugin) return [];
-        return extractColumnsFromPlugin(plugin, listingSlug);
-    }, [pluginsBySlug, pluginSlug, listingSlug]);
 
     const fetchBatch = useCallback(async (params: any) => {
         const { force, page } = params;
@@ -130,22 +73,14 @@ const PluginExposureTable = ({
         }
 
         try {
-            const payload = await pluginListingRepository.getListing({
-                pluginSlug,
-                listingSlug,
-                trajectoryId,
-                limit: pageSize,
-                page
+            const payload = await listingHook.fetchData({
+                ...listingHook.context,
+                page,
+                limit: pageSize
             }) as any;
 
-            const defs = payload?._meta?.columns && Array.isArray(payload._meta.columns) && payload._meta.columns.length > 0
-                ? payload._meta.columns as ColumnDef[]
-                : columnDefs;
-
-            const shouldShowTrajectory = showTrajectoryColumn ?? !trajectoryId;
-            setColumns(buildColumns(defs, shouldShowTrajectory));
-
-            const normalizedRows = normalizeRows(payload.data ?? [], defs);
+            const nextColumns = (payload?._meta?.columns as ColumnConfig[] | undefined) ?? listingHook.columns;
+            setColumns(nextColumns);
 
             setListingMeta(prev => ({
                 ...prev,
@@ -154,7 +89,7 @@ const PluginExposureTable = ({
                 nextCursor: null
             }));
 
-            setRows((prev) => (isInitial && !params.append ? normalizedRows : [...prev, ...normalizedRows]));
+            setRows((prev) => (isInitial && !params.append ? (payload.data ?? []) : [...prev, ...(payload.data ?? [])]));
         } catch (err: any) {
             const message = err?.response?.data?.message || err?.message || 'Failed to load listing.';
             setError(message);
@@ -162,7 +97,7 @@ const PluginExposureTable = ({
             setLoading(false);
             setIsFetchingMore(false);
         }
-    }, [listingSlug, pluginSlug, trajectoryId, teamId, columnDefs, pageSize, showTrajectoryColumn, pluginListingRepository]);
+    }, [listingSlug, pluginSlug, trajectoryId, teamId, pageSize, listingHook]);
 
     const { handleLoadMore } = useListingLifecycle({
         data: rows,
@@ -180,10 +115,7 @@ const PluginExposureTable = ({
         }
     });
 
-    const displayRows = useMemo(() => {
-        if (!analysisId) return rows;
-        return rows.filter((r) => r.analysisId === analysisId);
-    }, [rows, analysisId]);
+    const displayRows = useMemo(() => rows, [rows]);
 
     useEffect(() => {
         if (!onDataReady || !compact) return;

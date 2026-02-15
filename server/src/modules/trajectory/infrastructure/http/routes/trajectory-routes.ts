@@ -23,6 +23,7 @@ router.get('/metrics', controllers.getMetrics.handle);
 router.get('/:trajectoryId/preview', controllers.getPreview.handle);
 router.get('/:trajectoryId/atoms', controllers.getAtoms.handle);
 router.get('/:trajectoryId/atoms/:analysisId', controllers.getAtoms.handle);
+router.get('/:trajectoryId/scene-artifacts', controllers.getSceneArtifacts.handle);
 router.get('/:trajectoryId/:timestep/:analysisId', controllers.getGLB.handle);
 
 router.route('/:trajectoryId')

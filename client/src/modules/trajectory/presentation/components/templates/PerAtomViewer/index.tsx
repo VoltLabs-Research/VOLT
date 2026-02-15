@@ -27,7 +27,7 @@ const PerAtomViewer = () => {
     const fetchData = useCallback(async (params: { page: number; limit: number } & PerAtomViewerContext): Promise<PaginatedResponse<AtomData>> => {
         const result = await getAtoms({
             trajectoryId: params.trajectoryId,
-            analysisId: params.analysisId || 'default',
+            analysisId: params.analysisId,
             exposureId: params.exposureId,
             timestep: params.timestep,
             page: params.page,
@@ -90,7 +90,7 @@ const PerAtomViewer = () => {
 
     const context: PerAtomViewerContext = useMemo(() => ({
         trajectoryId: trajectoryId!,
-        analysisId: analysisId || 'default',
+        analysisId: analysisId!,
         exposureId,
         timestep
     }), [trajectoryId, analysisId, exposureId, timestep]);

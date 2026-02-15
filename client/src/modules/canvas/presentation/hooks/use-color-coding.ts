@@ -74,6 +74,10 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
                 sceneType: 'color-coding'
             } as any);
 
+            window.dispatchEvent(new CustomEvent('canvas:scene-artifacts:changed', {
+                detail: { sourceType: 'color-coding', trajectoryId }
+            }));
+
             showSuccess('Color coding applied successfully');
         } catch (error) {
             console.error(error);

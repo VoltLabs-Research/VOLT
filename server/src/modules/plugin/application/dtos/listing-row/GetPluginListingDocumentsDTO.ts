@@ -3,6 +3,7 @@ export interface GetPluginListingDocumentsInputDTO {
     listingSlug: string;
     teamId: string;
     trajectoryId?: string;
+    analysisId?: string;
     page?: number;
     limit?: number;
     sortAsc?: boolean;

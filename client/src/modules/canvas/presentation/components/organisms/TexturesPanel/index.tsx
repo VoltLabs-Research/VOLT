@@ -15,7 +15,7 @@ const TexturesPanel = ({ trajectory }: TexturesPanelProps) => {
     const statusCounts = useJobStatusCounts(trajectory?._id);
 
     return (
-        <Container className="canvas-textures-panel d-flex column h-max">
+        <Container className="canvas-textures-panel d-flex column min-h-0 overflow-hidden">
             <PanelHeader
                 icon={<Activity style={{ width: 13, height: 13, color: 'rgba(255,255,255,0.35)' }} />}
                 title="Events"

@@ -4,11 +4,9 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import AnalysisTreeNode from '../../molecules/AnalysisTreeNode';
-import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
 import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scene';
 
 interface SceneCollectionProps {
-    trajectory: Trajectory | null | undefined;
     filteredSections: AnalysisSectionData[];
     expandedSections: Set<string>;
     toggleSection: (id: string) => void;

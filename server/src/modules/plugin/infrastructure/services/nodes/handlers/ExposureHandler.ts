@@ -3,8 +3,6 @@ import { INodeHandler, ExecutionContext, NodeOutputSchema, T } from '@modules/pl
 import { SYS_BUCKETS } from '@core/config/minio';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IStorageService } from '@shared/domain/ports/IStorageService';
-import { IExposureMetaRepository } from '@modules/plugin/domain/ports/IExposureMetaRepository';
-import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import pLimit from '@shared/infrastructure/utilities/p-limit';
 import readExposurePayload from '@modules/plugin/infrastructure/utilities/read-exposure-payload';
 import { WorkflowNodeType, WorkflowNode } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
@@ -30,9 +28,7 @@ export default class ExposureHandler implements INodeHandler{
 
     constructor(
         @inject(SHARED_TOKENS.StorageService)
-        private storage: IStorageService,
-        @inject(PLUGIN_TOKENS.ExposureMetaRepository)
-        private exposureMetaRepository: IExposureMetaRepository
+        private storage: IStorageService
     ){}
 
     async execute(node: WorkflowNode, context: ExecutionContext): Promise<Record<string, any>>{
@@ -114,65 +110,25 @@ export default class ExposureHandler implements INodeHandler{
             console.log(`[ExposureHandler] Payload extracted - needsMetadata: ${reqs.needsMetadata}, hasMetadata: ${!!payload.metadata}, metadataKeys: ${payload.metadata ? Object.keys(payload.metadata).length : 0}`);
         }
 
-        // Persist metadata with upsert semantics
-        if(payload.metadata && Object.keys(payload.metadata).length > 0){
-            console.log(`[ExposureHandler] Persisting metadata for exposure ${nodeId}, timestep ${timestep}, analysis ${context.analysisId}`);
-            console.log(`[ExposureHandler] Metadata keys: ${Object.keys(payload.metadata).join(', ')}`);
-            
-            try {
-                // Find existing document
-                const existing = await this.exposureMetaRepository.findOne({
-                    analysis: context.analysisId,
-                    exposureId: nodeId,
-                    timestep
-                });
-
-                const metaData = {
-                    plugin: context.pluginId,
-                    trajectory: context.trajectoryId,
-                    analysis: context.analysisId,
-                    exposureId: nodeId,
-                    timestep,
-                    metadata: {
-                        ...payload.metadata,
-                        // Add resolved context for simple template resolution during precomputation
-                        _resolvedContext: {
-                            arguments: context.userConfig || {},
-                            timestep: timestep,
-                            analysis: {
-                                createdAt: new Date(), // Will be fetched during precomputation from Analysis entity
-                                _id: context.analysisId,
-                                trajectory: context.trajectoryId,
-                                plugin: context.pluginId
-                            }
-                        }
-                    },
-                    createdAt: existing?.props.createdAt || new Date(),
-                    updatedAt: new Date()
-                };
-
-                if(existing){
-                    console.log(`[ExposureHandler] Updating existing ExposureMeta document: ${existing.id}`);
-                    await this.exposureMetaRepository.updateById(existing.id, metaData);
-                } else {
-                    console.log(`[ExposureHandler] Creating new ExposureMeta document`);
-                    const created = await this.exposureMetaRepository.create(metaData);
-                    console.log(`[ExposureHandler] Created ExposureMeta document: ${created.id}`);
-                }
-            } catch (error: any) {
-                console.error(`[ExposureHandler] Failed to persist metadata: ${error.message}`);
-                console.error(error.stack);
-            }
-        } else {
-            console.log(`[ExposureHandler] Skipping metadata persistence - needsMetadata: ${reqs.needsMetadata}, hasMetadata: ${!!payload.metadata}, metadataKeyCount: ${payload.metadata ? Object.keys(payload.metadata).length : 0}`);
-        }
-
         return {
             index: item.index,
             frame: timestep,
             name: config.name,
             data: payload.data,
             count: payload.count,
+            metadata: payload.metadata ? {
+                ...payload.metadata,
+                _resolvedContext: {
+                    arguments: context.userConfig || {},
+                    timestep,
+                    analysis: {
+                        createdAt: new Date(),
+                        _id: context.analysisId,
+                        trajectory: context.trajectoryId,
+                        plugin: context.pluginId
+                    }
+                }
+            } : null,
             storageKey,
             localPath
         };

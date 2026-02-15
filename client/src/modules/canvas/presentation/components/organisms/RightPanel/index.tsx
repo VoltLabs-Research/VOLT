@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from 'react';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Wrench, Monitor } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
@@ -32,6 +32,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
     const { activeModifiers, toggleModifier, pluginParam } = useCanvasUrlState();
     const { pluginRepository } = usePluginUseCases();
     const plugins = usePluginStore((s) => s.plugins);
+    const fetchAllPlugins = usePluginStore((s) => s.fetchAllPlugins);
     const modifiers = useMemo(() =>
         plugins
             .filter(plugin => plugin.modifier)
@@ -70,6 +71,13 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
         getPluginArguments,
         pluginRepository
     });
+
+    useEffect(() => {
+        if (plugins.length > 0) return;
+        fetchAllPlugins({ limit: 200, force: true }).catch((error) => {
+            console.error('[RightPanel] failed to load plugins', error);
+        });
+    }, [plugins.length, fetchAllPlugins]);
 
     const allModifiers = useMemo<ModifierOption[]>(() => buildCanvasModifierOptions(modifiers), [modifiers]);
 

@@ -7,12 +7,16 @@ import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/I
 import { IColorCodingService } from '@modules/trajectory/domain/port/IColorCodingService';
 import { IAtomPropertiesService } from '@modules/trajectory/domain/port/IAtomPropertiesService';
 import { IAtomisticExporter } from '@modules/trajectory/domain/port/exporters/AtomisticExporter';
+import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
 import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
 import { formatValueForPath } from '@shared/infrastructure/utils/formatValue';
+import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
+
+const DEFAULT_ANALYSIS_ID = 'default';
 
 @injectable()
 export default class ColorCodingService implements IColorCodingService {
@@ -27,7 +31,10 @@ export default class ColorCodingService implements IColorCodingService {
         private readonly storageService: IStorageService,
 
         @inject(TRAJECTORY_TOKENS.AtomisticExporter)
-        private readonly atomisticExporter: IAtomisticExporter
+        private readonly atomisticExporter: IAtomisticExporter,
+
+        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
+        private readonly sceneArtifactRepository: ISceneArtifactRepository
     ) { }
 
     async getProperties(
@@ -35,6 +42,7 @@ export default class ColorCodingService implements IColorCodingService {
         timestep: string | number,
         analysisId?: string
     ): Promise<{ base: string[]; modifiers: Record<string, string[]> }> {
+        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
         const dumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
         if (!dumpPath) {
             throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
@@ -43,8 +51,8 @@ export default class ColorCodingService implements IColorCodingService {
         const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [] });
         const headers = parsed.metadata.headers || [];
 
-        const modifierProps = analysisId
-            ? await this.atomProps.getModifierPerAtomProps(String(analysisId))
+        const modifierProps = normalizedAnalysisId
+            ? await this.atomProps.getModifierPerAtomProps(String(normalizedAnalysisId))
             : {};
 
         return {
@@ -61,17 +69,18 @@ export default class ColorCodingService implements IColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<{ min: number; max: number }> {
+        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
         let min = Infinity;
         let max = -Infinity;
 
         if (type === 'modifier') {
-            if (!exposureId || !analysisId) {
+            if (!exposureId || !normalizedAnalysisId) {
                 throw new RuntimeError(ErrorCodes.COLOR_CODING_MISSING_PARAMS, 400);
             }
 
             const modifierData = await this.atomProps.getModifierAnalysis(
                 String(trajectoryId),
-                String(analysisId),
+                String(normalizedAnalysisId),
                 String(exposureId),
                 String(timestep)
             );
@@ -132,12 +141,32 @@ export default class ColorCodingService implements IColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<string> {
-        const analysisSegment = analysisId || 'no-analysis';
+        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
+        const analysisSegment = normalizedAnalysisId || DEFAULT_ANALYSIS_ID;
         const formattedStart = formatValueForPath(startValue);
         const formattedEnd = formatValueForPath(endValue);
         const objectName =
             `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/color-coding/${exposureId || 'base'}/${property}/${formattedStart}-${formattedEnd}/${gradient}.glb`;
         if (await this.storageService.exists(SYS_BUCKETS.MODELS, objectName)) {
+            await recordSceneArtifact(this.sceneArtifactRepository, {
+                trajectory: String(trajectoryId),
+                analysis: normalizedAnalysisId,
+                sourceType: 'color-coding',
+                timestep: Number(timestep),
+                objectName,
+                params: {
+                    property: String(property),
+                    startValue: Number(startValue),
+                    endValue: Number(endValue),
+                    gradient: String(gradient),
+                    exposureId
+                },
+                displayName: `CC · ${property} · [${startValue}, ${endValue}] · ${gradient} · t=${timestep}`,
+                metadata: {
+                    analysisId: normalizedAnalysisId || null,
+                    exposureId: exposureId || null
+                }
+            });
             return objectName;
         }
 
@@ -148,10 +177,10 @@ export default class ColorCodingService implements IColorCodingService {
 
         let externalValues: Float32Array | undefined;
 
-        if (exposureId && analysisId) {
+        if (exposureId && normalizedAnalysisId) {
             const modifierData = await this.atomProps.getModifierAnalysis(
                 String(trajectoryId),
-                String(analysisId),
+                String(normalizedAnalysisId),
                 String(exposureId),
                 String(timestep)
             );
@@ -170,6 +199,26 @@ export default class ColorCodingService implements IColorCodingService {
             externalValues
         );
 
+        await recordSceneArtifact(this.sceneArtifactRepository, {
+            trajectory: String(trajectoryId),
+            analysis: normalizedAnalysisId,
+            sourceType: 'color-coding',
+            timestep: Number(timestep),
+            objectName,
+            params: {
+                property: String(property),
+                startValue: Number(startValue),
+                endValue: Number(endValue),
+                gradient: String(gradient),
+                exposureId
+            },
+            displayName: `CC · ${property} · [${startValue}, ${endValue}] · ${gradient} · t=${timestep}`,
+            metadata: {
+                analysisId: normalizedAnalysisId || null,
+                exposureId: exposureId || null
+            }
+        });
+
         return objectName;
     }
 
@@ -183,7 +232,8 @@ export default class ColorCodingService implements IColorCodingService {
         analysisId?: string,
         exposureId?: string
     ): Promise<Readable> {
-        const analysisSegment = analysisId || 'no-analysis';
+        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
+        const analysisSegment = normalizedAnalysisId || DEFAULT_ANALYSIS_ID;
         const formattedStart = formatValueForPath(startValue);
         const formattedEnd = formatValueForPath(endValue);
         const objectName =

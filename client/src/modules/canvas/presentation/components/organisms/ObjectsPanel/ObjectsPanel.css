@@ -76,3 +76,35 @@
 .canvas-tree-status-dot--failed {
     color: var(--accent-red);
 }
+
+.canvas-tree-group {
+    margin-top: 4px;
+}
+
+.canvas-tree-group-header {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--color-text-secondary);
+    padding: 4px 6px;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    text-align: left;
+}
+
+.canvas-tree-group-header:hover {
+    background: var(--hover-bg);
+}
+
+.canvas-tree-group-chevron {
+    transition: transform 0.15s ease;
+}
+
+.canvas-tree-group-chevron.collapsed {
+    transform: rotate(-90deg);
+}
+
+.canvas-tree-group-count {
+    color: var(--color-text-muted);
+    font-size: 10px;
+}

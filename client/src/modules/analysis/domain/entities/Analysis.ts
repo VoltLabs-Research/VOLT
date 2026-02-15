@@ -6,6 +6,7 @@ export interface AnalysisTrajectory {
 export interface Analysis {
     _id: string;
     plugin: string;
+    pluginDisplayName?: string;
     config: Record<string, unknown>;
     trajectory: AnalysisTrajectory;
     totalFrames: number;

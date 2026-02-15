@@ -8,7 +8,6 @@ import type {
     PreviewFilterOutputDTO,
     ApplyFilterInputDTO,
     ApplyFilterOutputDTO,
-    GetFilteredGlbInputDTO,
     GetUniqueValuesInputDTO,
     GetUniqueValuesOutputDTO
 } from '../../application/dtos/particle-filter';
@@ -21,29 +20,35 @@ export default class ParticleFilterRepository extends BaseRepository implements 
 
     async getProperties(params: GetFilterPropertiesInputDTO): Promise<GetFilterPropertiesOutputDTO>{
         const { trajectoryId, analysisId, timestep } = params;
-        const response = await this.client.get<ApiResponse<GetFilterPropertiesOutputDTO>>('/properties', {
-            trajectoryId,
-            analysisId,
-            timestep
-        });
+        const path = analysisId
+            ? `/properties/${trajectoryId}/${analysisId}`
+            : `/properties/${trajectoryId}`;
+        const response = await this.client.get<ApiResponse<GetFilterPropertiesOutputDTO>>(path, { timestep });
         return this.unwrap(response);
     }
 
     async preview(params: PreviewFilterInputDTO): Promise<PreviewFilterOutputDTO>{
-        const response = await this.client.post<ApiResponse<PreviewFilterOutputDTO>>('/preview', params);
+        const { trajectoryId, analysisId, ...query } = params;
+        const path = analysisId
+            ? `/preview/${trajectoryId}/${analysisId}`
+            : `/preview/${trajectoryId}`;
+        const response = await this.client.get<ApiResponse<PreviewFilterOutputDTO>>(path, query);
         return this.unwrap(response);
     }
 
     async applyAction(params: ApplyFilterInputDTO): Promise<ApplyFilterOutputDTO>{
-        const response = await this.client.post<ApiResponse<ApplyFilterOutputDTO>>('/apply', params);
-        return this.unwrap(response);
-    }
+        const { trajectoryId, analysisId, timestep, action, property, operator, value, exposureId } = params;
+        const path = analysisId
+            ? `/${trajectoryId}/${analysisId}?timestep=${timestep}&action=${action}`
+            : `/${trajectoryId}?timestep=${timestep}&action=${action}`;
 
-    async getFilteredGlb(params: GetFilteredGlbInputDTO): Promise<Blob>{
-        const { trajectoryId, analysisId, fileId } = params;
-        return this.client.request<Blob>('GET', `/glb/${trajectoryId}/${analysisId}/${fileId}`, {
-            responseType: 'blob'
+        const response = await this.client.post<ApiResponse<ApplyFilterOutputDTO>>(path, {
+            property,
+            operator,
+            value,
+            exposureId
         });
+        return this.unwrap(response);
     }
 
     async getUniqueValues(params: GetUniqueValuesInputDTO): Promise<GetUniqueValuesOutputDTO>{
@@ -51,6 +56,7 @@ export default class ParticleFilterRepository extends BaseRepository implements 
         const path = analysisId
             ? `/unique-values/${trajectoryId}/${analysisId}`
             : `/unique-values/${trajectoryId}`;
-        return this.client.get<GetUniqueValuesOutputDTO>(path, query);
+        const response = await this.client.get<ApiResponse<GetUniqueValuesOutputDTO>>(path, query);
+        return this.unwrap(response);
     }
 };

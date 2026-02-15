@@ -23,6 +23,8 @@ const TableRow = <T extends Identifiable>({
 }: TableRowProps<T>) => {
     const menuOptions = getMenuOptions ? getMenuOptions(item) : [];
     const itemRecord = item as Record<string, unknown>;
+    const getColumnKey = (col: ColumnConfig): string => String(col.key ?? col.path ?? '');
+    const getColumnTitle = (col: ColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
 
     const rowStyle: React.CSSProperties = {
         display: 'flex',
@@ -39,14 +41,16 @@ const TableRow = <T extends Identifiable>({
             transition={{ duration: 0.1 }}
         >
             {columns.map((col, colIdx) => {
-                const cellValue = itemRecord?.[col.key];
+                const columnKey = getColumnKey(col);
+                const cellValue = itemRecord?.[columnKey];
                 const title = String(cellValue ?? '');
+                const columnTitle = getColumnTitle(col);
 
                 return (
                     <Container
                         className='document-listing-cell overflow-hidden d-flex items-center color-primary'
-                        data-label={col.title}
-                        key={`cell-${col.title}-${colIdx}`}
+                        data-label={columnTitle}
+                        key={`cell-${columnTitle}-${colIdx}`}
                         title={title}
                         style={
                             useFlexDistribution

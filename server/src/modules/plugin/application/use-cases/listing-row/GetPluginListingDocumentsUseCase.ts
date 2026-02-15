@@ -22,9 +22,10 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<GetPluginListi
             {
                 teamId: input.teamId,
                 trajectoryId: input.trajectoryId,
-                page: input.page || 1,
-                limit: input.limit || 50,
-                sortAsc: input.sortAsc || false
+                analysisId: input.analysisId,
+                page: input.page ?? 1,
+                limit: input.limit ?? 50,
+                sortAsc: input.sortAsc ?? false
             }
         );
 

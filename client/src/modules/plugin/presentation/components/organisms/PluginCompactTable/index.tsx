@@ -3,11 +3,16 @@ import { List } from 'react-window';
 import '@/modules/plugin/presentation/components/organisms/PluginExposureTable/PluginExposureTable.css';
 
 export interface ColumnConfig {
-    key: string;
-    title: string;
+    key?: string;
+    title?: string;
+    path?: string;
+    label?: string;
     width?: number;
     render?: (value: any, row: any) => React.ReactNode;
 }
+
+const getColumnKey = (col: ColumnConfig): string => String(col.key ?? col.path ?? '');
+const getColumnTitle = (col: ColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
 
 const TableRow = ({ index, style, data: rows, columns }: { index: number; style: React.CSSProperties; data: any[]; columns: ColumnConfig[] }) => {
     const row = rows[index];
@@ -17,14 +22,14 @@ const TableRow = ({ index, style, data: rows, columns }: { index: number; style:
         <div style={style} className='plugin-compact-table-row'>
             {columns.map((col) => (
                 <div
-                    key={col.key}
+                    key={getColumnKey(col)}
                     className='plugin-compact-table-cell overflow-hidden font-size-1 color-secondary'
                     style={{
                         width: col.width ? `${col.width}px` : 'auto',
                         flex: col.width ? '0 0 auto' : '1'
                     }}
                 >
-                    {col.render ? col.render((row as any)[col.key], row) : (row as any)[col.key]}
+                    {col.render ? col.render((row as any)[getColumnKey(col)], row) : (row as any)[getColumnKey(col)]}
                 </div>
             ))}
         </div>
@@ -131,14 +136,14 @@ const PluginCompactTable = ({
                 <div className='plugin-compact-table-header p-sticky'>
                     {columns.map((col) => (
                         <div
-                            key={col.key}
+                            key={getColumnKey(col)}
                             className='plugin-compact-table-header-cell overflow-hidden font-weight-5'
                             style={{
                                 width: col.width ? `${col.width}px` : 'auto',
                                 flex: col.width ? '0 0 auto' : '1'
                             }}
                         >
-                            {col.title}
+                            {getColumnTitle(col)}
                         </div>
                     ))}
                 </div>

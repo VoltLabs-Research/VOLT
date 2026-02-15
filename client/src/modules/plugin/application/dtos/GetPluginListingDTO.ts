@@ -6,6 +6,7 @@ export interface GetPluginListingInputDTO {
     pluginSlug: string;
     listingSlug: string;
     trajectoryId?: string;
+    analysisId?: string;
     page?: number;
     limit?: number;
 };

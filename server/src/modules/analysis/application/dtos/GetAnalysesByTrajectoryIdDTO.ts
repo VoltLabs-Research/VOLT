@@ -3,6 +3,14 @@ import { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 
 export interface GetAnalysesByTrajectoryIdInputDTO {
     trajectoryId: string;
+    page?: number;
+    limit?: number;
 }
 
-export interface GetAnalysesByTrajectoryIdOutputDTO extends PaginatedResult<AnalysisProps> {}
+export interface GetAnalysesByTrajectoryItemDTO extends Omit<AnalysisProps, 'plugin'> {
+    _id: string;
+    plugin: string;
+    pluginDisplayName?: string;
+}
+
+export interface GetAnalysesByTrajectoryIdOutputDTO extends PaginatedResult<GetAnalysesByTrajectoryItemDTO> {}

@@ -7,7 +7,6 @@ import { IChatMessageRepository } from '@modules/chat/domain/port/IChatMessageRe
 import { GetChatMessagesInputDTO, GetChatMessagesOutputDTO } from '@modules/chat/application/dtos/chat-message/GetChatMessagesDTO';
 
 @injectable()
-@injectable()
 export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO, GetChatMessagesOutputDTO, ApplicationError> {
     constructor(
         @inject(CHAT_TOKENS.ChatMessageRepository)
@@ -17,11 +16,14 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
     async execute(input: GetChatMessagesInputDTO): Promise<Result<GetChatMessagesOutputDTO, ApplicationError>> {
         // TODO: verify chat access
         const { chatId } = input;
+        const page = Number(input.page ?? 1);
+        const limit = Number(input.limit ?? 50);
         const messages = await this.messageRepo.findAll({
             filter: { chat: chatId },
-            limit: 100,
-            page: 1,
-            populate: 'sender'
+            limit,
+            page,
+            populate: 'sender',
+            sort: { createdAt: 1 }
         });
         return Result.ok({
             ...messages,

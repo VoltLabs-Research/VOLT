@@ -10,11 +10,13 @@ import { IChartExporter } from '@modules/trajectory/domain/port/exporters/ChartE
 import { IDislocationExporter } from '@modules/trajectory/domain/port/exporters/DislocationExporter';
 import { IMeshExporter } from '@modules/trajectory/domain/port/exporters/MeshExporter';
 import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { decodeMultiStreamFromFile } from '@shared/infrastructure/utilities/msgpack';
 import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
 import getNestedValue from '@shared/infrastructure/utilities/get-nested-value';
 import slugify from '@shared/infrastructure/utilities/slugify';
+import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
 
 @injectable()
 export default class ExportHandler implements INodeHandler{
@@ -37,7 +39,10 @@ export default class ExportHandler implements INodeHandler{
         private meshExporter: IMeshExporter,
 
         @inject(SHARED_TOKENS.StorageService)
-        private storageService: IStorageService
+        private storageService: IStorageService,
+
+        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
+        private sceneArtifactRepository: ISceneArtifactRepository
     ){}
 
     readonly outputSchema: NodeOutputSchema = {
@@ -54,6 +59,13 @@ export default class ExportHandler implements INodeHandler{
         const config = node.data.export!;
         const exposureNode = context.workflow.findAncestorByType(node.id, WorkflowNodeType.Exposure);
         if(!exposureNode) throw new Error('ExportHandler: Orphaned export node');
+        const exposureName = typeof exposureNode.data.exposure?.name === 'string'
+            ? exposureNode.data.exposure.name.trim()
+            : '';
+
+        if (!exposureName) {
+            throw new Error(`ExportHandler: exposure node name is required (${exposureNode.id})`);
+        }
 
         const exposureOutput = context.outputs.get(exposureNode.id);
         const results: any[] = [];
@@ -90,6 +102,32 @@ export default class ExportHandler implements INodeHandler{
             console.log('EXPORT HANDLER===', objectPath);
             try{
                 await this.runExporter(config.exporter, data, objectPath, options);
+
+                if (!isChart) {
+                    await recordSceneArtifact(this.sceneArtifactRepository, {
+                        trajectory: context.trajectoryId,
+                        analysis: context.analysisId,
+                        plugin: context.pluginId,
+                        sourceType: 'plugin-exposure',
+                        timestep: Number(item.frame),
+                        objectName: objectPath,
+                        storageBucket: SYS_BUCKETS.MODELS,
+                        params: {
+                            exposureId: exposureNode.id
+                        },
+                        displayName: exposureName,
+                        metadata: {
+                            pluginId: context.pluginId,
+                            pluginSlug: context.pluginSlug,
+                            exposureId: exposureNode.id,
+                            exposureName,
+                            exporter: config.exporter,
+                            exportType: config.type,
+                            listingMetadata: item.metadata || null
+                        }
+                    });
+                }
+
                 results.push({
                     index: item.index,
                     success: true,
