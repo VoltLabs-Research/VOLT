@@ -1,6 +1,7 @@
 .avatar{
     background: var(--color-bg-tertiary);
     color: var(--color-text-secondary);
+    overflow: hidden;
 }
 
 .avatar-image{

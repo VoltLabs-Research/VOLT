@@ -52,7 +52,8 @@
 }
 
 .dashboard-stat-analytic-container:has(.MuiChartsGrid-root) {
-    top: 2.5rem;
+    top: 3rem;
+    right: 0;
 }
 
 .dashboard-stat-last-month-icon-container {
