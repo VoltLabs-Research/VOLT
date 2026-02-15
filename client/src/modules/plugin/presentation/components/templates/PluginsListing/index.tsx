@@ -33,7 +33,7 @@ const PluginsListing = () => {
             pluginId: item._id,
             teamId: selectedTeam._id
         });
-        navigate(`/dashboard/plugins/builder?id=${clonedPlugin._id}`);
+        navigate(`/plugins/builder?id=${clonedPlugin._id}`);
     }, [clonePluginUseCase, selectedTeam._id, navigate]);
 
     const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +53,7 @@ const PluginsListing = () => {
             edit: {
                 label: 'Edit',
                 icon: RiEditLine,
-                handler: (item) => navigate(`/dashboard/plugins/builder?id=${item._id}`)
+                handler: (item) => navigate(`/plugins/builder?id=${item._id}`)
             },
             clone: {
                 label: 'Clone',
@@ -82,7 +82,7 @@ const PluginsListing = () => {
                 return (
                     <span
                         className='plugin-name-link font-size-2 font-weight-5 cursor-pointer'
-                        onClick={() => navigate(`/dashboard/plugins/builder?id=${plugin._id}`)}
+                        onClick={() => navigate(`/plugins/builder?id=${plugin._id}`)}
                     >
                         {plugin.modifier!.name}
                     </span>
@@ -144,7 +144,7 @@ const PluginsListing = () => {
             emptyMessage='No plugins found. Create your first plugin!'
             createNew={{
                 buttonTitle: 'New plugin',
-                onCreate: () => navigate('/dashboard/plugins/builder')
+                onCreate: () => navigate('/plugins/builder')
             }}
             headerActions={
                 <>

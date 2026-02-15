@@ -89,7 +89,7 @@ export const routesConfig: RouteGroup = {
             component: PluginsListing
         },
         {
-            path: '/dashboard/plugins/builder',
+            path: '/plugins/builder',
             component: PluginBuilderPage
         },
         {

@@ -1,5 +1,10 @@
 export type SliceAxis = 'x' | 'y' | 'z';
 
+export interface ModelWorldBounds {
+    min: { x: number; y: number; z: number };
+    max: { x: number; y: number; z: number };
+};
+
 export interface SlicePlaneConfig {
     activeAxes: SliceAxis[];
     positions: Record<SliceAxis, number>;

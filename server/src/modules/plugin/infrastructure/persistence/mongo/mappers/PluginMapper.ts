@@ -12,7 +12,6 @@ class PluginMapper extends BaseMapper<Plugin, PluginProps, PluginDocument> {
 
     toDomain(doc: PluginDocument): Plugin {
         const props = doc.toObject({ flattenMaps: true });
-
         const workflow = new Workflow(doc._id.toString(), props.workflow);
 
         return new Plugin(doc._id.toString(), {

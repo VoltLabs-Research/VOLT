@@ -60,7 +60,11 @@ const TopToolbar = () => {
 
     return (
         <header className="canvas-top-toolbar d-flex items-stretch u-select-none">
-            <Container className="canvas-toolbar-logo d-flex items-center">
+            <Container
+                className="canvas-toolbar-logo d-flex items-center cursor-pointer"
+                onClick={() => navigate('/dashboard')}
+                title="Back to Dashboard"
+            >
                 <h1 className="canvas-volt font-size-05 color-secondary">VOLT</h1>
             </Container>
 

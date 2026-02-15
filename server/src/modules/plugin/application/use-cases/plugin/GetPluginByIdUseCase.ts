@@ -26,6 +26,6 @@ export class GetPluginByIdUseCase implements IUseCase<GetPluginByIdInputDTO, Get
         return Result.ok({
             ...plugin.props,
             workflow: plugin.props.workflow.props
-        });
+        } as any);
     }
 }

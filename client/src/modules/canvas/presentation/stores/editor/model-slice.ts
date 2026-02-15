@@ -1,5 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { ModelStore, ModelState, SceneObjectType, ModelData } from '@/modules/fractal/presentation/types/stores/editor/scene-types';
+import type { ModelWorldBounds } from '@/modules/fractal/presentation/types/configuration';
 
 const initialState: ModelState = {
     activeModel: null,
@@ -7,7 +8,8 @@ const initialState: ModelState = {
     activeScenes: [{ sceneType: 'trajectory', source: 'default' }],
     isModelLoading: false,
     pointSizeMultiplier: 1.0,
-    sceneOpacities: {}
+    sceneOpacities: {},
+    modelWorldBounds: null
 };
 
 export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get) => ({
@@ -69,6 +71,10 @@ export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get
         });
     },
 
+    setModelWorldBounds(bounds: ModelWorldBounds | null) {
+        set({ modelWorldBounds: bounds });
+    },
+
     setIsModelLoading(loading: boolean) {
         set({ isModelLoading: loading });
     },
@@ -85,7 +91,8 @@ export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get
         set({
             activeModel: null,
             isModelLoading: false,
-            pointSizeMultiplier: 1.0
+            pointSizeMultiplier: 1.0,
+            modelWorldBounds: null
         });
     },
 

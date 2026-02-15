@@ -1,9 +1,14 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
 import * as THREE from 'three';
-import type { SliceAxis, SlicePlaneConfig } from '@/modules/fractal/presentation/types/configuration';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
+import type { SliceAxis, SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/presentation/types/configuration';
 
-const PLANE_SIZE = 10;
 const AUTO_HIDE_DELAY = 3000;
+
+const DEFAULT_BOUNDS: ModelWorldBounds = {
+    min: { x: -4, y: -4, z: -4 },
+    max: { x: 4, y: 4, z: 4 }
+};
 
 const AXIS_ROTATIONS: Record<SliceAxis, THREE.Euler> = {
     x: new THREE.Euler(0, Math.PI / 2, 0),
@@ -21,11 +26,16 @@ interface SinglePlaneProps {
     axis: SliceAxis;
     position: number;
     angle: number;
+    bounds: ModelWorldBounds;
 }
 
-const SinglePlane: React.FC<SinglePlaneProps> = ({ axis, position, angle }) => {
-    const { planePosition, rotation } = useMemo(() => {
-        const positionVec = AXIS_NORMALS[axis].clone().multiplyScalar(position);
+const SinglePlane: React.FC<SinglePlaneProps> = ({ axis, position, angle, bounds }) => {
+    const { planePosition, rotation, planeSize } = useMemo(() => {
+        const maxVal = bounds.max[axis];
+        const minVal = bounds.min[axis];
+        const worldPos = maxVal - position * (maxVal - minVal);
+
+        const positionVec = AXIS_NORMALS[axis].clone().multiplyScalar(worldPos);
         const baseRotation = AXIS_ROTATIONS[axis].clone();
         const angleRad = angle * (Math.PI / 180);
 
@@ -37,15 +47,32 @@ const SinglePlane: React.FC<SinglePlaneProps> = ({ axis, position, angle }) => {
             baseRotation.x += angleRad;
         }
 
+        const dims = {
+            x: bounds.max.x - bounds.min.x,
+            y: bounds.max.y - bounds.min.y,
+            z: bounds.max.z - bounds.min.z
+        };
+
+        let size: number;
+        if (axis === 'x') {
+            size = Math.max(dims.y, dims.z);
+        } else if (axis === 'y') {
+            size = Math.max(dims.x, dims.z);
+        } else {
+            size = Math.max(dims.x, dims.y);
+        }
+        size *= 1.2;
+
         return {
             planePosition: positionVec,
-            rotation: baseRotation
+            rotation: baseRotation,
+            planeSize: size
         };
-    }, [axis, position, angle]);
+    }, [axis, position, angle, bounds]);
 
     const edgeGeometry = useMemo(() => {
         const shape = new THREE.Shape();
-        const half = PLANE_SIZE / 2;
+        const half = planeSize / 2;
         const radius = 0.3;
 
         shape.moveTo(-half + radius, -half);
@@ -60,7 +87,7 @@ const SinglePlane: React.FC<SinglePlaneProps> = ({ axis, position, angle }) => {
 
         const points = shape.getPoints(64);
         return new THREE.BufferGeometry().setFromPoints(points);
-    }, []);
+    }, [planeSize]);
 
     return (
         <group position={planePosition} rotation={rotation}>
@@ -84,6 +111,9 @@ const SlicePlaneHelper: React.FC<SlicePlaneHelperProps> = ({ config }) => {
     const [isVisible, setIsVisible] = useState(false);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const prevConfigRef = useRef(config);
+
+    const modelWorldBounds = useEditorStore(state => state.modelWorldBounds);
+    const bounds = modelWorldBounds || DEFAULT_BOUNDS;
 
     useEffect(() => {
         const prev = prevConfigRef.current;
@@ -133,6 +163,7 @@ const SlicePlaneHelper: React.FC<SlicePlaneHelperProps> = ({ config }) => {
                     axis={axis}
                     position={config.positions[axis]}
                     angle={config.angles[axis]}
+                    bounds={bounds}
                 />
             ))}
         </>

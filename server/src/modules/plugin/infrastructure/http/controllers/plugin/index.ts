@@ -1,3 +1,4 @@
+import ClonePluginController from './ClonePluginController';
 import CreatePluginController from './CreatePluginController';
 import DeleteBinaryController from './DeleteBinaryController';
 import DeletePluginByIdController from './DeletePluginByIdController';
@@ -13,6 +14,7 @@ import ValidateWorkflowController from './ValidateWorkflowController';
 import { container } from 'tsyringe';
 
 export default {
+    clone: container.resolve(ClonePluginController),
     create: container.resolve(CreatePluginController),
     deleteBinary: container.resolve(DeleteBinaryController),
     deleteById: container.resolve(DeletePluginByIdController),

@@ -28,8 +28,10 @@ export class MaterialPipeline {
             blending: THREE.NormalBlending,
             alphaTest: 0.5,
             dithering: false,
-            premultipliedAlpha: false
+            premultipliedAlpha: false,
+            clipping: true
         });
+        mat.clippingPlanes = [];
 
         const numPoints = points.geometry.attributes.position.count;
 

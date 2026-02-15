@@ -31,7 +31,18 @@ interface RightPanelProps {
 const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelProps) => {
     const { activeModifiers, toggleModifier, pluginParam } = useCanvasUrlState();
     const { pluginRepository } = usePluginUseCases();
-    const modifiers = usePluginStore((s) => s.modifiers);
+    const plugins = usePluginStore((s) => s.plugins);
+    const modifiers = useMemo(() =>
+        plugins
+            .filter(plugin => plugin.modifier)
+            .map(plugin => ({
+                plugin,
+                pluginSlug: plugin.slug,
+                name: plugin.modifier?.name || plugin.slug,
+                icon: plugin.modifier?.icon
+            })),
+        [plugins]
+    );
     const pluginLoading = usePluginStore((s) => s.loading || s.isFetchingMore);
     const getPluginArguments = usePluginStore((s) => s.getPluginArguments);
     const [openModifierIds, setOpenModifierIds] = useState<Set<string>>(new Set());

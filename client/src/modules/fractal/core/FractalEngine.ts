@@ -380,15 +380,8 @@ export class FractalEngine {
             if (!obj.material) return;
             const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
             mats.forEach((material: THREE.Material) => {
-                if ((material as any).clippingPlanes !== undefined) {
-                    (material as any).clippingPlanes = planes;
-                    material.needsUpdate = true;
-                }
-
-                if (material instanceof THREE.ShaderMaterial && material.uniforms?.clippingPlanes) {
-                    material.uniforms.clippingPlanes.value = planes;
-                    material.uniformsNeedUpdate = true;
-                }
+                (material as any).clippingPlanes = planes;
+                material.needsUpdate = true;
             });
         });
         this.surface.invalidate();

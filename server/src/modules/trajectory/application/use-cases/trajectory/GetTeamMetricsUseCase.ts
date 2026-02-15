@@ -10,7 +10,6 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
 import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
 import { GetTeamMetricsInputDTO, GetTeamMetricsOutputDTO } from '@modules/trajectory/application/dtos/trajectory/GetTeamMetricsDTO';
-import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 
 type Pointer = {
     trajectoryId: string;
@@ -155,21 +154,15 @@ export default class GetTeamMetricsUseCase implements IUseCase<GetTeamMetricsInp
             const pointers = pointersByPlugin.get(pluginId) ?? [];
             if (!pointers.length) continue;
 
-            const workflow = plugin.props.workflow;
-            const exposureNodes = workflow?.props?.nodes?.filter(
-                (n: any) => n.type === WorkflowNodeType.Exposure
-            ) ?? [];
-            if (!exposureNodes.length) continue;
+            const pluginExposures = plugin.props.exposures ?? [];
+            if (!pluginExposures.length) continue;
 
-            const modifierNode = workflow?.props?.nodes?.find(
-                (n: any) => n.type === WorkflowNodeType.Modifier
-            );
-            const pluginName = modifierNode?.data?.modifier?.name || plugin.props.slug;
+            const pluginName = plugin.props.modifier?.name || plugin.props.slug;
 
             const analysisIds = pointers.map(p => p.analysisId);
 
-            for (const exposureNode of exposureNodes) {
-                const listingSlug = exposureNode.data?.exposure?.name;
+            for (const exposure of pluginExposures) {
+                const listingSlug = exposure.name;
                 if (!listingSlug) continue;
 
                 // Count listing rows
@@ -210,16 +203,9 @@ export default class GetTeamMetricsUseCase implements IUseCase<GetTeamMetricsInp
 
             if (teamPlugins.data.length > 0) {
                 const plugin = teamPlugins.data[0];
-                const workflow = plugin.props.workflow;
-                const modifierNode = workflow?.props?.nodes?.find(
-                    (n: any) => n.type === WorkflowNodeType.Modifier
-                );
-                const pluginName = modifierNode?.data?.modifier?.name || plugin.props.slug;
-
-                const exposureNode = workflow?.props?.nodes?.find(
-                    (n: any) => n.type === WorkflowNodeType.Exposure
-                );
-                const listingSlug = exposureNode?.data?.exposure?.name || plugin.props.slug;
+                const pluginName = plugin.props.modifier?.name || plugin.props.slug;
+                const firstExposure = plugin.props.exposures?.[0];
+                const listingSlug = firstExposure?.name || plugin.props.slug;
 
                 totals[listingSlug] = 0;
                 lastMonth[listingSlug] = 0;

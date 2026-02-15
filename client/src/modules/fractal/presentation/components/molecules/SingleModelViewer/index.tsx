@@ -2,12 +2,13 @@ import React, { useMemo } from 'react';
 import useSlicingPlanes from '@/modules/fractal/presentation/hooks/use-slicing-planes';
 import useGlbScene from '@/modules/fractal/presentation/hooks/use-glb-scene';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import SimulationCellBox from '@/modules/fractal/presentation/components/molecules/SimulationCellBox';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
 import { buildCellBoxTransforms, calculateBoxTransforms, getGroundOffset, getTrajectoryBoxBounds } from '@/modules/fractal/presentation/utilities/boxUtils';
 import { getSceneKey, normalizeVec3 } from '@/modules/fractal/presentation/utilities/sceneUtils';
 import { computeGlbUrl, type ActiveScene } from '@/modules/fractal/core/glb-url';
-import type { SlicePlaneConfig } from '@/modules/fractal/presentation/types/configuration';
+import type { SlicePlaneConfig, ModelWorldBounds } from '@/modules/fractal/presentation/types/configuration';
 
 interface SingleModelViewerProps {
     trajectoryId: string;
@@ -67,9 +68,39 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
     onSelect,
     isSelected = false
 }) => {
-    const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig);
-
     const teamId = useTeamStore(state => state.selectedTeam?._id);
+    const setModelWorldBounds = useEditorStore(state => state.setModelWorldBounds);
+
+    const trajectory = useTrajectoryStore(state => state.trajectory);
+    const boxBounds = useMemo(() => {
+        return getTrajectoryBoxBounds(trajectory, currentTimestep);
+    }, [trajectory, currentTimestep]);
+
+    const boxTransforms = useMemo(() => {
+        if (!boxBounds) return { scale: 1, position: { x: 0, y: 0, z: 0 }, maxDimension: 1, center: { x: 0, y: 0, z: 0 } };
+        return calculateBoxTransforms(boxBounds as any);
+    }, [boxBounds]);
+
+    const groundOffset = useMemo(() => getGroundOffset(boxBounds, boxTransforms), [boxBounds, boxTransforms]);
+    const cellBoxTransforms = useMemo(() => buildCellBoxTransforms(boxTransforms, groundOffset), [boxTransforms, groundOffset]);
+
+    const modelWorldBounds = useMemo<ModelWorldBounds>(() => {
+        if (boxBounds && cellBoxTransforms) {
+            const s = cellBoxTransforms.scale;
+            const gz = cellBoxTransforms.groundOffset || 0;
+            return {
+                min: { x: boxBounds.xlo * s, y: boxBounds.ylo * s, z: boxBounds.zlo * s + gz },
+                max: { x: boxBounds.xhi * s, y: boxBounds.yhi * s, z: boxBounds.zhi * s + gz }
+            };
+        }
+        return { min: { x: -4, y: -4, z: -4 }, max: { x: 4, y: 4, z: 4 } };
+    }, [boxBounds, cellBoxTransforms]);
+
+    React.useEffect(() => {
+        setModelWorldBounds(modelWorldBounds);
+    }, [modelWorldBounds, setModelWorldBounds]);
+
+    const sliceClippingPlanes = useSlicingPlanes(enableSlice, slicePlaneConfig, modelWorldBounds);
 
     const url = useMemo(() =>
         computeGlbUrl({
@@ -86,20 +117,7 @@ const SingleModelViewer: React.FC<SingleModelViewerProps> = ({
         return;
     }, []);
 
-    const trajectory = useTrajectoryStore(state => state.trajectory);
-    const boxBounds = useMemo(() => {
-        return getTrajectoryBoxBounds(trajectory, currentTimestep);
-    }, [trajectory, currentTimestep]);
-
-    const boxTransforms = useMemo(() => {
-        if (!boxBounds) return { scale: 1, position: { x: 0, y: 0, z: 0 }, maxDimension: 1, center: { x: 0, y: 0, z: 0 } };
-        return calculateBoxTransforms(boxBounds as any);
-    }, [boxBounds]);
-
     const sceneKey = useMemo(() => getSceneKey(sceneConfig), [sceneConfig]);
-
-    const groundOffset = useMemo(() => getGroundOffset(boxBounds, boxTransforms), [boxBounds, boxTransforms]);
-    const cellBoxTransforms = useMemo(() => buildCellBoxTransforms(boxTransforms, groundOffset), [boxTransforms, groundOffset]);
 
     const { modelBounds, deselect, model, setSimBoxMesh } = useGlbScene({
         url,

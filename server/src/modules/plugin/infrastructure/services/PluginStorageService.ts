@@ -15,6 +15,8 @@ import path from 'node:path';
 import logger from '@shared/infrastructure/logger';
 import archiver from 'archiver';
 import unzipper from 'unzipper';
+import WorkflowProjectionService from '@modules/plugin/domain/services/WorkflowProjectionService';
+import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
 
 @injectable()
 export default class PluginStorageService implements IPluginStorageService {
@@ -197,11 +199,15 @@ export default class PluginStorageService implements IPluginStorageService {
             }
         }
 
+        const workflowEntity = new Workflow('', workflow);
+        const projection = WorkflowProjectionService.project(workflowEntity, uniqueSlug);
+
         const newPlugin = await this.pluginRepo.create({
             slug: uniqueSlug,
             workflow,
             status: status ?? PluginStatus.Draft,
-            team: teamId
+            team: teamId,
+            ...projection
         });
 
         let binaryImported = false;

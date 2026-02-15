@@ -19,6 +19,7 @@ export default interface IPluginRepository {
     getById(params: GetPluginInputDTO): Promise<GetPluginOutputDTO>;
     create(data: CreatePluginInputDTO): Promise<CreatePluginOutputDTO>;
     update(params: UpdatePluginInputDTO): Promise<UpdatePluginOutputDTO>;
+    clone(pluginId: string, teamId: string): Promise<Plugin>;
     delete(id: string): Promise<void>;
     execute(params: ExecutePluginInputDTO): Promise<ExecutePluginOutputDTO>;
     exportPlugin(id: string): Promise<Blob>;
