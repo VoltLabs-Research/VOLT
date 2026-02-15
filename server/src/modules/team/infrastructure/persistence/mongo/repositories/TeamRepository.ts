@@ -9,7 +9,6 @@ import { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
-import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class TeamRepository
@@ -27,45 +26,45 @@ export default class TeamRepository
     }
 
     async addMemberToTeam(memberId: string, teamId: string): Promise<void> {
-        // TODO: TeamModel schema has no 'members' array field. Membership is tracked
-        // via the TeamMember collection. This method should delegate to TeamMemberRepository
-        // instead of performing a $push on a non-existent field.
-        logger.warn(`addMemberToTeam: no-op — TeamModel has no 'members' field (memberId=${memberId}, teamId=${teamId})`);
+        await this.model.updateOne({ _id: teamId }, {
+            $push: { members: memberId }
+        });
     }
 
     async addRoleToTeam(roleId: string, teamId: string): Promise<void> {
-        // TODO: TeamModel schema has no 'roles' array field. Roles are tracked
-        // via the TeamRole collection with a 'team' reference. This $push is a no-op
-        // against the current schema and should be removed or replaced with proper logic.
-        logger.warn(`addRoleToTeam: no-op — TeamModel has no 'roles' field (roleId=${roleId}, teamId=${teamId})`);
+        await this.model.updateOne({ _id: teamId }, {
+            $push: { roles: roleId }
+        });
     }
 
     async removeUserFromAllTeams(userId: string): Promise<void> {
+        // Find all team memberships for the user using repository
+        const memberships = await this.teamMemberRepository.findByUserId(userId);
+
         // Remove TeamMember records using repository
         await this.teamMemberRepository.deleteByUserId(userId);
 
-        // TODO: TeamModel schema has no 'admins' field. The $pull below was a no-op.
-        // If admin tracking is needed, it should be modeled via TeamMember roles or
-        // a dedicated field added to the schema.
-        // await this.model.updateMany(
-        //     { admins: userId },
-        //     { $pull: { admins: userId } }
-        // );
+        // Remove user from admins arrays (if they are stored as User IDs there)
+        await this.model.updateMany(
+            { admins: userId },
+            { $pull: { admins: userId } }
+        );
 
-        // TODO: TeamModel schema has no 'members' array field. The $pull below was a no-op.
-        // Membership is tracked via TeamMember documents which are already deleted above.
-        // for (const membership of memberships) {
-        //     await this.model.updateOne(
-        //         { _id: membership.props.team },
-        //         { $pull: { members: membership.id } }
-        //     );
-        // }
+        // For the members array in Team, they are TeamMember IDs, so we need to pull the specific member IDs
+        for (const membership of memberships) {
+            await this.model.updateOne(
+                { _id: membership.props.team },
+                { $pull: { members: membership.id } }
+            );
+        }
     }
 
     async removeUserFromTeam(memberId: string, teamId: string): Promise<void> {
-        // TODO: TeamModel schema has no 'members' array field. Membership removal
-        // should be handled via TeamMemberRepository.
-        logger.warn(`removeUserFromTeam: no-op — TeamModel has no 'members' field (memberId=${memberId}, teamId=${teamId})`);
+        await this.model.findByIdAndUpdate(teamId, {
+            $pull: {
+                members: memberId
+            }
+        });
     }
 
     async findUserTeams(userId: string): Promise<TeamProps[]> {

@@ -1,6 +1,7 @@
 import { injectable } from 'tsyringe';
 import { IFileExtractorService, ExtractedFile } from '@shared/domain/ports/IFileExtractorService';
 import fs from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import path from 'node:path';
 import unzipper from 'unzipper';
 
@@ -8,7 +9,6 @@ import unzipper from 'unzipper';
 export default class FileExtractorService implements IFileExtractorService {
     public async extractFiles(files: any[], workingDir: string): Promise<ExtractedFile[]> {
         const finalFiles: ExtractedFile[] = [];
-        const resolvedWorkingDir = path.resolve(workingDir) + path.sep;
 
         for (const file of files) {
             const isZip = file.mimetype === 'application/zip' || file.originalname?.endsWith('.zip');
@@ -21,25 +21,14 @@ export default class FileExtractorService implements IFileExtractorService {
                 }
 
                 if (zipPath) {
-                    const directory = await unzipper.Open.file(zipPath);
-                    for (const entry of directory.files) {
-                        const fullPath = path.resolve(workingDir, entry.path);
-                        if (!fullPath.startsWith(resolvedWorkingDir)) {
-                            continue; // Zip Slip prevention
-                        }
-                        if (entry.type === 'Directory') {
-                            await fs.mkdir(fullPath, { recursive: true });
-                            continue;
-                        }
-                        await fs.mkdir(path.dirname(fullPath), { recursive: true });
-                        const content = await entry.buffer();
-                        await fs.writeFile(fullPath, content);
-                    }
+                    await createReadStream(zipPath)
+                        .pipe(unzipper.Extract({ path: workingDir }))
+                        .promise();
 
                     const extracted = await this.getFilesRecursive(workingDir);
                     for (const fullPath of extracted) {
                         const filename = path.basename(fullPath);
-                        if (filename.endsWith('.zip') || filename.startsWith('.') || fullPath.includes('__MACOSX')) {
+                        if (filename.endsWith('.zip') || filename.startsWith('.') || filename === '__MACOSX') {
                             continue;
                         }
                         const stats = await fs.stat(fullPath);
@@ -75,7 +64,6 @@ export default class FileExtractorService implements IFileExtractorService {
     public async getFilesRecursive(dir: string): Promise<string[]> {
         const dirents = await fs.readdir(dir, { withFileTypes: true });
         const files = await Promise.all(dirents.map((dirent) => {
-            if (dirent.isSymbolicLink()) return [];
             const res = path.resolve(dir, dirent.name);
             return dirent.isDirectory() ? this.getFilesRecursive(res) : res;
         }));

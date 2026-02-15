@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
-import { canRead, canCreate, canUpdate, canDelete } from '@shared/infrastructure/http/middleware/authorization';
+import { canRead, canCreate, canUpdate } from '@shared/infrastructure/http/middleware/authorization';
 import { Resource } from '@core/constants/resources';
 import controllers from '@modules/container/infrastructure/http/controllers';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
@@ -19,8 +19,8 @@ router.route('/')
 
 router.route('/:containerId')
     .get(canRead(Resource.CONTAINER), controllers.getById.handle)
-    .patch(canUpdate(Resource.CONTAINER), controllers.updateById.handle)
-    .delete(canDelete(Resource.CONTAINER), controllers.deleteById.handle);
+    .patch(canUpdate(Resource.CONTAINER), controllers.create.handle)
+    .delete(canRead(Resource.CONTAINER), controllers.deleteById.handle);
 
 
 router.get(

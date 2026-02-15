@@ -11,41 +11,25 @@ import { registerContainerSubscribers } from '@modules/container/infrastructure/
 import { registerSimulationCellSubscribers } from '@modules/simulation-cell/infrastructure/events/subscribers';
 import logger from '@shared/infrastructure/logger';
 
-const SUBSCRIBERS: { name: string; register: () => Promise<void> }[] = [
-    { name: 'Team', register: registerTeamSubscribers },
-    { name: 'Notification', register: registerNotificationSubscribers },
-    { name: 'ApiTracker', register: registerApiTrackerSubscribers },
-    { name: 'Chat', register: registerChatSubscribers },
-    { name: 'Trajectory', register: registerTrajectorySubscribers },
-    { name: 'Analysis', register: registerAnalysisSubscribers },
-    { name: 'SSH', register: registerSSHSubscribers },
-    { name: 'Plugin', register: registerPluginSubscribers },
-    { name: 'DailyActivity', register: registerDailyActivitySubscribers },
-    { name: 'Container', register: registerContainerSubscribers },
-    { name: 'SimulationCell', register: registerSimulationCellSubscribers }
-];
-
 /**
  * Central registration point for all event subscribers across modules.
  */
 export const registerAllSubscribers = async (): Promise<void> => {
     logger.info('@event-bus: Registering all event subscribers...');
     
-    // CORE-023: Use Promise.allSettled instead of Promise.all
-    const results = await Promise.allSettled(
-        SUBSCRIBERS.map(s => s.register())
-    );
+    await Promise.all([
+        registerTeamSubscribers(),
+        registerNotificationSubscribers(),
+        registerApiTrackerSubscribers(),
+        registerChatSubscribers(),
+        registerTrajectorySubscribers(),
+        registerAnalysisSubscribers(),
+        registerSSHSubscribers(),
+        registerPluginSubscribers(),
+        registerDailyActivitySubscribers(),
+        registerContainerSubscribers(),
+        registerSimulationCellSubscribers()
+    ]);
 
-    results.forEach((result, index) => {
-        if (result.status === 'rejected') {
-            logger.error(`@event-bus: Failed to register ${SUBSCRIBERS[index].name} subscribers:`, result.reason);
-        }
-    });
-
-    const failedCount = results.filter(r => r.status === 'rejected').length;
-    if (failedCount > 0) {
-        logger.warn(`@event-bus: ${failedCount}/${SUBSCRIBERS.length} subscriber registrations failed`);
-    } else {
-        logger.info('@event-bus: All event subscribers registered successfully');
-    }
+    logger.info('@event-bus: All event subscribers registered successfully');
 };

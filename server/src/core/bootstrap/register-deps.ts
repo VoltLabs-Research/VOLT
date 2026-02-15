@@ -20,7 +20,7 @@ import { registerSSHDependencies } from '@modules/ssh/infrastructure/di/containe
 import { registerSocketModule } from '@modules/socket/infrastructure/di/SocketModule';
 import { registerSimulationCellDependencies } from '@modules/simulation-cell/infrastructure/di/container';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { createRedisConnection } from '@core/config/redis';
+import { createRedisClient } from '@core/config/redis';
 import { container } from 'tsyringe';
 
 /**
@@ -49,13 +49,8 @@ registerSSHDependencies();
 registerSocketModule();
 registerSimulationCellDependencies();
 
-// TODO(CORE-011): These Redis clients are created at import time as a side effect.
-// This is necessary because DI consumers (e.g. BullMQ queues, RedisEventBus) need
-// dedicated connections that are separate from the main `redis` singleton initialized
-// in initializeRedis(). Consider deferring creation to a lazy factory if startup
-// ordering issues arise.
-const redisClient = createRedisConnection();
-const redisBlockingClient = createRedisConnection();
+const redisClient = createRedisClient();
+const redisBlockingClient = createRedisClient();
 
 container.registerInstance(SHARED_TOKENS.RedisClient, redisClient);
 container.registerInstance(SHARED_TOKENS.RedisBlockingClient, redisBlockingClient);

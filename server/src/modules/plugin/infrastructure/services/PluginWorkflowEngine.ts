@@ -15,7 +15,7 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
     ){}
 
     /**
-     * Runs nodes sequentially until a ForEach node is encountered to determine parallelism.
+     * Runs nodes sequentially until a ForEach node is encountered to determine paralleism.
      */
     async planExecutionStrategy(request: WorkflowExecutionRequest): Promise<ExecutionPlanResult | null>{
         const context = this.createExecutionContext(request);

@@ -15,7 +15,7 @@ import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInputDTO, UpdatePasswordOutputDTO, ApplicationError> {
     constructor(
         @inject(AUTH_TOKENS.UserRepository)
-        private readonly userRepository: IUserRepository,
+        private readonly useRepository: IUserRepository,
         @inject(AUTH_TOKENS.BcryptPasswordHasher)
         private readonly passwordHasher: IPasswordHasher,
         @inject(AUTH_TOKENS.JwtTokenService)
@@ -25,7 +25,7 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
     ){}
 
     async execute(input: UpdatePasswordInputDTO): Promise<Result<UpdatePasswordOutputDTO, ApplicationError>> {
-        const user = await this.userRepository.findByIdWithPassword(input.userId);
+        const user = await this.useRepository.findByIdWithPassword(input.userId);
         if (!user) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.USER_NOT_FOUND,
@@ -46,9 +46,9 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
         }
 
         const hashedPassword = await this.passwordHasher.hash(input.password);
-        await this.userRepository.updatePassword(input.userId, hashedPassword);
+        await this.useRepository.updatePassword(input.userId, hashedPassword);
 
-        await this.userRepository.updateLastLogin(input.userId);
+        await this.useRepository.updateLastLogin(input.userId);
 
         const token = this.tokenService.sign(input.userId);
 
@@ -65,10 +65,10 @@ export default class UpdatePasswordUseCase implements IUseCase<UpdatePasswordInp
             updatedAt: new Date()
         });
 
-        const { password, ...userProps } = user.props;
+        // @ts-ignore
         return Result.ok({
             token,
-            user: userProps as UpdatePasswordOutputDTO['user']
+            user
         });
     }
 };

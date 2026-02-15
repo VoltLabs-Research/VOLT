@@ -5,7 +5,8 @@ import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/aut
 import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo/repositories/TeamMemberRepository';
 import logger from '@shared/infrastructure/logger';
 
-export const checkTeamMembership = async (req: AuthenticatedRequest, res: Response, next: NextFunction, teamId: string, _paramName: string) => {
+export const checkTeamMembership = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const teamId = req.params.teamId;
     const userId = req.userId!;
 
     logger.debug(`check-team-membership: teamId=${teamId} & userId=${userId}`);

@@ -36,3 +36,6 @@ export class AccessControlService implements IAccessControlService {
         }
     }
 }
+
+// Singleton instance for direct import
+export const accessControlService = new AccessControlService();

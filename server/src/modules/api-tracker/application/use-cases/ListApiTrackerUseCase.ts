@@ -3,12 +3,11 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
 import { IApiTrackerRepository } from '@modules/api-tracker/domain/ports/IApiTrackerRepository';
 import { ListApiTrackerInputDTO, ListApiTrackerOutputDTO } from '@modules/api-tracker/application/dtos/ListApiTrackerDTO';
-import { API_TRACKER_TOKENS } from '@modules/api-tracker/infrastructure/di/ApiTrackerTokens';
 
 @injectable()
 export class ListApiTrackerUseCase implements IUseCase<ListApiTrackerInputDTO, ListApiTrackerOutputDTO> {
     constructor(
-        @inject(API_TRACKER_TOKENS.ApiTrackerRepository) private repository: IApiTrackerRepository
+        @inject('IApiTrackerRepository') private repository: IApiTrackerRepository
     ){}
 
     async execute(input: ListApiTrackerInputDTO): Promise<Result<ListApiTrackerOutputDTO>> {

@@ -13,8 +13,8 @@ export interface ITempFileService{
     readonly rootPath: string;
 
     ensureDir(dirPath: string): Promise<void>;
-    generateFilePath(options?: TempFileOptions): Promise<string>;
-    getDirPath(subdir: string): Promise<string>;
+    generateFilePath(options?: TempFileOptions): string;
+    getDirPath(subdir: string): string;
 
     delete(
         targetPath: string,

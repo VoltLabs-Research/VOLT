@@ -2,7 +2,6 @@ import { SimulationCellProps } from '@modules/simulation-cell/domain/entities/Si
 
 export interface FindCellByIdInputDTO {
     id: string;
-    teamId: string;
 }
 
 export interface FindCellByIdOutputDTO extends SimulationCellProps { }

@@ -38,6 +38,7 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
             status: TrajectoryStatus.WaitingForProcess,
             frames: [],
             stats: { totalFiles: 0, totalSize: 0 },
+            analysis: [],
             rasterSceneViews: 0,
             isPublic: true,
             updatedAt: new Date(),

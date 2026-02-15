@@ -5,13 +5,13 @@ import { SimulationCellDocument } from '@modules/simulation-cell/infrastructure/
 class SimulationCellMapper implements IMapper<SimulationCell, SimulationCellProps, SimulationCellDocument> {
     toDomain(document: SimulationCellDocument): SimulationCell {
         const { _id, ...props } = document.toObject ? document.toObject() : document;
-        delete props.__v;
         return new SimulationCell(_id.toString(), props);
     }
 
     toPersistence(domain: SimulationCellProps): any {
-        const { createdAt, updatedAt, ...persistProps } = domain;
-        return persistProps;
+        return {
+            ...domain
+        };
     }
 }
 

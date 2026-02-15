@@ -1,4 +1,5 @@
 import { container } from 'tsyringe';
+import { ContainerModel } from '@modules/container/infrastructure/persistence/mongo/models/ContainerModel';
 import { ContainerRepository } from '@modules/container/infrastructure/persistence/mongo/repositories/ContainerRepository';
 import { DockerContainerService } from '@modules/container/infrastructure/services/DockerContainerService';
 import { TerminalService } from '@modules/container/infrastructure/services/TerminalService';
@@ -15,6 +16,7 @@ import { GetContainerProcessesUseCase } from '@modules/container/application/use
 import { GetContainerByIdUseCase } from '@modules/container/application/use-cases/GetContainerByIdUseCase';
 
 export const registerContainerDependencies = (): void => {
+    container.register('ContainerModel', { useValue: ContainerModel });
     container.register('IContainerRepository', { useClass: ContainerRepository });
     container.register('IContainerService', { useClass: DockerContainerService });
     container.register('ITerminalService', { useClass: TerminalService });

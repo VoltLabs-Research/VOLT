@@ -31,36 +31,27 @@ export const protect = async (
         return;
     }
 
-    if (!process.env.SECRET_KEY) {
-        res.status(401).json({ error: 'Invalid or expired token' });
-        return;
-    }
-
     /**
      * Token and user verification.
      */
-    try {
-        const decoded = jwt.verify(token, process.env.SECRET_KEY) as any;
+    const decoded = jwt.verify(token, process.env.SECRET_KEY!) as any;
 
-        // Resolve repository lazy
-        const userRepository = container.resolve<IUserRepository>(AUTH_TOKENS.UserRepository);
+    // Resolve repository lazy
+    const userRepository = container.resolve<IUserRepository>(AUTH_TOKENS.UserRepository);
 
-        const user = await userRepository.findById(decoded.id);
-        if (!user) {
-            res.status(401).json({
-                status: 'error',
-                message: ErrorCodes.USER_NOT_FOUND
-            });
-            return;
-        }
-
-        req.user = user;
-        req.userId = user.id;
-        req.token = token;
-
-        next();
-    } catch (error) {
-        res.status(401).json({ error: 'Invalid or expired token' });
+    const user = await userRepository.findById(decoded.id);
+    if (!user) {
+        res.status(401).json({
+            status: 'error',
+            message: ErrorCodes.USER_NOT_FOUND
+        });
         return;
     }
+
+
+    req.user = user;
+    req.userId = user.id;
+    req.token = token;
+
+    next();
 };

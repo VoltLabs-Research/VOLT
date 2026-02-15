@@ -95,7 +95,7 @@ export default class EntrypointHandler implements INodeHandler{
         const item = output?.currentValue;
         const index = output?.currentIndex ?? 0;
 
-        if(item == null) throw new Error('Entrypoint: No current item in loop iteration');
+        if(item === null) throw new Error('Entrypoint: No current item in loop iteration');
 
         // Create unique output directory for this job execution
         const dirName = `job-${context.analysisId}-${index}-${Date.now()}`;

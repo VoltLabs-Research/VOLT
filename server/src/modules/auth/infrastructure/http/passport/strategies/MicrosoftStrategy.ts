@@ -25,7 +25,7 @@ export default class MicrosoftStrategyWrapper extends BaseOAuthStrategy{
         return new MicrosoftStrategy({
             clientID: process.env.MICROSOFT_CLIENT_ID!,
             clientSecret: process.env.MICROSOFT_CLIENT_SECRET!,
-            callbackURL: process.env.MICROSOFT_CALLBACK_URL!,
+            callbackURL: process.env.MICROSOFT_CALLBACL_URL!,
             scope: ['user.read'],
             passReqToCallback: true
         }, this.verify.bind(this));

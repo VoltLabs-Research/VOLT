@@ -13,7 +13,6 @@ export default class TeamDeletedEventHandler implements IEventHandler<TeamDelete
 
     async handle(event: TeamDeletedEvent): Promise<void>{
         const { teamId } = event.payload;
-        const analyses = await this.analysisRepository.findAll({ filter: { team: teamId } });
-        await Promise.all(analyses.data.map(a => this.analysisRepository.deleteById(a.id)));
+        await this.analysisRepository.deleteMany({ team: teamId });
     }
 };

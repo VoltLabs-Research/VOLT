@@ -3,7 +3,6 @@ import { IEventHandler } from '@shared/application/events/IEventHandler';
 import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/TrajectoryDeletedEvent';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import { ISimulationCellRepository } from '@modules/simulation-cell/domain/ports/ISimulationCellRepository';
-import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class TrajectoryDeletedEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
@@ -14,10 +13,6 @@ export default class TrajectoryDeletedEventHandler implements IEventHandler<Traj
 
     async handle(event: TrajectoryDeletedEvent): Promise<void> {
         const { trajectoryId } = event.payload;
-        try {
-            await this.simulationCellRepository.deleteMany({ trajectory: trajectoryId });
-        } catch (error) {
-            logger.error('Failed to delete simulation cells for trajectory %s: %o', trajectoryId, error);
-        }
+        await this.simulationCellRepository.deleteMany({ trajectory: trajectoryId });
     }
 }
