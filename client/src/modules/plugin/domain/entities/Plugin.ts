@@ -13,5 +13,5 @@ export interface Plugin {
     modifier?: IModifierData | null;
     exposures?: IExposureComputed[];
     arguments?: IComputedArgumentDefinition[];
-    listingsWithExposures?: IListingsWithExposures | null;
+    listingExposures?: IListingsWithExposures | null;
 };

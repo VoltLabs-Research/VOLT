@@ -8,6 +8,8 @@ import { ErrorCodes } from '@core/constants/error-codes';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import { IWorkflowValidatorService } from './ValidateWorkflowUseCase';
+import WorkflowProjectionService from '@modules/plugin/domain/services/WorkflowProjectionService';
+import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import slugify from '@shared/infrastructure/utilities/slugify';
 
@@ -53,6 +55,12 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
             update.validated = isValid;
             update.validationErrors = errors;
             update.workflow = input.workflow;
+
+            // Pre-compute derived fields from the workflow.
+            const workflowEntity = new Workflow('', input.workflow as any);
+            const effectiveSlug = update.slug ?? plugin.props.slug;
+            const projection = WorkflowProjectionService.project(workflowEntity, effectiveSlug);
+            Object.assign(update, projection);
         }
 
         // If the user is trying publish this plugin and there are

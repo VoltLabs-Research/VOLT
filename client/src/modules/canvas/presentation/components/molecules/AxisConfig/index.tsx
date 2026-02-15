@@ -19,7 +19,7 @@ const AxisConfig = ({
     onAngleChange
 }: AxisConfigProps) => {
     const sliders: { key: string; label: string; min: number; max: number; step: number; value: number; onChange: (value: number) => void; format: string; visible?: boolean }[] = [
-        { key: 'position', label: 'Position', min: -10, max: 10, step: 0.01, value: position, onChange: (v) => onPositionChange(axis, v), format: position.toFixed(2) },
+        { key: 'position', label: 'Position', min: 0, max: 1, step: 0.01, value: position, onChange: (v) => onPositionChange(axis, v), format: `${(position * 100).toFixed(0)}%` },
         { key: 'angle', label: 'Angle', min: -90, max: 90, step: 1, value: angle, onChange: (v) => onAngleChange(axis, v), format: `${angle.toFixed(0)}\u00B0`, visible: axis !== 'x' }
     ];
 

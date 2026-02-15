@@ -37,7 +37,6 @@ export type PluginArgument = IArgumentDefinition;
 interface PluginState {
     plugins: Plugin[];
     pluginsBySlug: Record<string, Plugin>;
-    modifiers: ResolvedModifier[];
     loading: boolean;
     isFetchingMore: boolean;
     error: string | null;
@@ -84,7 +83,6 @@ type PluginStore = PluginState & PluginActions;
 const initialState: PluginState = {
     plugins: [],
     pluginsBySlug: {},
-    modifiers: [],
     loading: false,
     isFetchingMore: false,
     error: null,
@@ -93,17 +91,6 @@ const initialState: PluginState = {
 
 const buildPluginsBySlug = (plugins: Plugin[]): Record<string, Plugin> => {
     return Object.fromEntries(plugins.map((p) => [p.slug, p]));
-};
-
-const resolveModifiersFromPlugins = (plugins: Plugin[]): ResolvedModifier[] => {
-    return plugins
-        .filter(plugin => plugin.modifier)
-        .map(plugin => ({
-            plugin,
-            pluginSlug: plugin.slug,
-            name: plugin.modifier?.name || plugin.slug,
-            icon: plugin.modifier?.icon
-        }));
 };
 
 const toRenderableExposure = (
@@ -130,8 +117,7 @@ const usePluginStore = create<PluginStore>((set, get) => ({
 
     setPlugins: (items) => set({
         plugins: items,
-        pluginsBySlug: buildPluginsBySlug(items),
-        modifiers: resolveModifiersFromPlugins(items)
+        pluginsBySlug: buildPluginsBySlug(items)
     }),
 
     appendPlugins: (items) => set((state) => {
@@ -140,8 +126,7 @@ const usePluginStore = create<PluginStore>((set, get) => ({
         const newPlugins = [...state.plugins, ...uniqueNewItems];
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins),
-            modifiers: resolveModifiersFromPlugins(newPlugins)
+            pluginsBySlug: buildPluginsBySlug(newPlugins)
         };
     }),
 
@@ -149,8 +134,7 @@ const usePluginStore = create<PluginStore>((set, get) => ({
         const newPlugins = [item, ...state.plugins];
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins),
-            modifiers: resolveModifiersFromPlugins(newPlugins)
+            pluginsBySlug: buildPluginsBySlug(newPlugins)
         };
     }),
 
@@ -158,8 +142,7 @@ const usePluginStore = create<PluginStore>((set, get) => ({
         const newPlugins = state.plugins.filter((p) => p._id !== id);
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins),
-            modifiers: resolveModifiersFromPlugins(newPlugins)
+            pluginsBySlug: buildPluginsBySlug(newPlugins)
         };
     }),
 
@@ -169,8 +152,7 @@ const usePluginStore = create<PluginStore>((set, get) => ({
         );
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins),
-            modifiers: resolveModifiersFromPlugins(newPlugins)
+            pluginsBySlug: buildPluginsBySlug(newPlugins)
         };
     }),
 
@@ -206,12 +188,10 @@ const usePluginStore = create<PluginStore>((set, get) => ({
 
             const nextPlugins = append ? [...state.plugins, ...data] : data;
             const pluginsBySlug = buildPluginsBySlug(nextPlugins);
-            const modifiers = resolveModifiersFromPlugins(nextPlugins);
 
             set({
                 plugins: nextPlugins,
                 pluginsBySlug,
-                modifiers,
                 listingMeta: {
                     page: pagination.page,
                     limit: pagination.limit,
@@ -240,7 +220,6 @@ const usePluginStore = create<PluginStore>((set, get) => ({
             set({
                 plugins: nextPlugins,
                 pluginsBySlug: nextPluginsBySlug,
-                modifiers: resolveModifiersFromPlugins(nextPlugins),
                 loading: false
             });
         } catch (error) {
@@ -261,7 +240,16 @@ const usePluginStore = create<PluginStore>((set, get) => ({
         }
     },
 
-    getModifiers: () => get().modifiers,
+    getModifiers: () => {
+        return get().plugins
+            .filter(plugin => plugin.modifier)
+            .map(plugin => ({
+                plugin,
+                pluginSlug: plugin.slug,
+                name: plugin.modifier?.name || plugin.slug,
+                icon: plugin.modifier?.icon
+            }));
+    },
 
     getPluginArguments: (pluginSlug: string) => {
         const plugin = get().pluginsBySlug[pluginSlug];
@@ -310,8 +298,7 @@ const usePluginStore = create<PluginStore>((set, get) => ({
         if (changed) {
             set({
                 plugins: nextPlugins,
-                pluginsBySlug: nextPluginsBySlug,
-                modifiers: resolveModifiersFromPlugins(nextPlugins)
+                pluginsBySlug: nextPluginsBySlug
             });
         }
     },

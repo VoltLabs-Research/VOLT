@@ -32,6 +32,8 @@ router.route('/:pluginId/binary')
     .patch(upload.single('file'), controllers.uploadBinary.handle)
     .delete(controllers.deleteBinary.handle);
 
+router.post('/:pluginId/clone', controllers.clone.handle);
+
 router.route('/:pluginId')
     .get(controllers.getPluginById.handle)
     .patch(controllers.updatePluginById.handle)

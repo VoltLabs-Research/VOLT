@@ -1,4 +1,5 @@
 import type { Trajectory } from '@/modules/trajectory/domain/entities';
+import type { ModelWorldBounds } from '@/modules/fractal/presentation/types/configuration';
 
 // =============================================================================
 // Model Types
@@ -62,6 +63,7 @@ export interface ModelState {
     isModelLoading: boolean;
     pointSizeMultiplier: number;
     sceneOpacities: Record<string, number>;
+    modelWorldBounds: ModelWorldBounds | null;
 }
 
 export interface ModelActions {
@@ -70,6 +72,7 @@ export interface ModelActions {
     resetModel: () => void;
     setIsModelLoading: (loading: boolean) => void;
     setModelBounds: (modelBounds: any) => void;
+    setModelWorldBounds: (bounds: ModelWorldBounds | null) => void;
     setActiveScene: (scene: SceneObjectType) => void;
     addScene: (scene: SceneObjectType) => void;
     removeScene: (scene: SceneObjectType) => void;

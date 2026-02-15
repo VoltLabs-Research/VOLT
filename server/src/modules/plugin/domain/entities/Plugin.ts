@@ -1,4 +1,5 @@
 import Workflow from './workflow/Workflow';
+import type { PluginProjection } from '../services/WorkflowProjectionService';
 
 export enum PluginStatus {
     Draft = 'draft',
@@ -6,7 +7,7 @@ export enum PluginStatus {
     Disabled = 'disabled'
 };
 
-export interface PluginProps {
+export interface PluginProps extends Partial<PluginProjection> {
     team: string;
     slug: string;
     workflow: Workflow,

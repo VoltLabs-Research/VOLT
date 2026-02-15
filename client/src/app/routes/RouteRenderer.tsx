@@ -60,7 +60,7 @@ export const renderProtectedRoutes = () => {
     const DashboardLayout = routesConfig.dashboardLayout;
 
     // Separate dashboard routes from non-dashboard routes
-    const dashboardRoutes = routesConfig.protected.filter((route) => 
+    const dashboardRoutes = routesConfig.protected.filter((route) =>
         route.path.startsWith('/dashboard')
     );
     const nonDashboardRoutes = routesConfig.protected.filter((route) =>

@@ -44,6 +44,11 @@ export default class PluginRepository extends BaseRepository implements IPluginR
         return this.unwrap(response);
     }
 
+    async clone(pluginId: string, teamId: string): Promise<Plugin> {
+        const response = await this.client.post<ApiResponse<{ plugin: Plugin }>>(`/${pluginId}/clone`, { teamId });
+        return this.unwrap(response).plugin;
+    }
+
     async delete(id: string): Promise<void> {
         await this.client.delete<ApiResponse<void>>(`/${id}`);
     }

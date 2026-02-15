@@ -5,6 +5,7 @@ import DynamicIcon from '@/shared/presentation/components/DynamicIcon';
 import SlicePlane from '../components/organisms/SlicePlane';
 import ParticleFilter from '../components/organisms/ParticleFilter';
 import ColorCoding from '../components/organisms/ColorCoding';
+import type { ResolvedModifier } from '@/modules/plugin/presentation/stores/use-plugin-store';
 
 export interface LegacyModifierDefinition {
     id: string;
@@ -47,13 +48,6 @@ export interface ModifierOption {
     pluginModifierId?: string;
 }
 
-interface PluginModifierInput {
-    plugin?: { _id?: string };
-    pluginSlug?: string;
-    name?: string;
-    icon?: string;
-}
-
 const fallbackIcon = Wrench;
 
 const resolveIcon = (icon?: string): ComponentType<any> => {
@@ -64,7 +58,7 @@ const resolveIcon = (icon?: string): ComponentType<any> => {
     return IconWrapper;
 };
 
-export const buildCanvasModifierOptions = (pluginModifiers: PluginModifierInput[]): ModifierOption[] => {
+export const buildCanvasModifierOptions = (pluginModifiers: ResolvedModifier[]): ModifierOption[] => {
     const legacyOptions: ModifierOption[] = LEGACY_MODIFIERS.map((m) => ({
         modifierId: m.id,
         title: m.title,

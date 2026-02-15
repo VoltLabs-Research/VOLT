@@ -1,4 +1,5 @@
 import { useShallow } from 'zustand/react/shallow';
+import { useNavigate } from 'react-router-dom';
 import { Box, Gauge } from 'lucide-react';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
@@ -49,6 +50,7 @@ const Viewport = ({
     isLoading,
     sceneRef
 }: ViewportProps) => {
+    const navigate = useNavigate();
     const {
         activeScenes,
         slicePlaneConfig,
@@ -74,7 +76,13 @@ const Viewport = ({
     return (
         <Container className="canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">
             <Container className="canvas-viewport-header d-flex items-center f-shrink-0">
-                <IconButton variant="ghost" size="sm" aria-label="3D Viewport">
+                <IconButton
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Back to Dashboard"
+                    title="Back to Dashboard"
+                    onClick={() => navigate('/dashboard')}
+                >
                     <Box size={14} />
                 </IconButton>
 

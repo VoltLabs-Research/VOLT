@@ -13,16 +13,7 @@ let connectionUnsubscribe: (() => void) | null = null;
 let teamJobsUnsubscribe: (() => void) | null = null;
 let jobUpdateUnsubscribe: (() => void) | null = null;
 let isSocketInitialized = false;
-let activeSubscribers = 0;
 let pendingTeamSubscription: { teamId: string; previousTeamId?: string | null } | null = null;
-
-const resetSocketState = () => {
-    if (connectionUnsubscribe) { connectionUnsubscribe(); connectionUnsubscribe = null; }
-    if (teamJobsUnsubscribe) { teamJobsUnsubscribe(); teamJobsUnsubscribe = null; }
-    if (jobUpdateUnsubscribe) { jobUpdateUnsubscribe(); jobUpdateUnsubscribe = null; }
-    isSocketInitialized = false;
-    pendingTeamSubscription = null;
-};
 
 const useTeamJobs = () => {
     const currentTeam = useTeamStore((state) => state.selectedTeam);
@@ -38,7 +29,6 @@ const useTeamJobs = () => {
     const setExpiredSessions = useTeamJobsStore((state) => state.setExpiredSessions);
     const setCurrentTeamId = useTeamJobsStore((state) => state.setCurrentTeamId);
     const removeTrajectoryGroup = useTeamJobsStore((state) => state.removeTrajectoryGroup);
-    const reset = useTeamJobsStore((state) => state.reset);
 
     const handleConnect = useCallback((connected: boolean) => {
         setConnected(connected);
@@ -124,12 +114,6 @@ const useTeamJobs = () => {
         setLoading(true);
     }, [setCurrentTeamId, setGroups, setExpiredSessions, setLoading]);
 
-    const disconnect = useCallback(() => {
-        resetSocketState();
-        socketServiceRef?.disconnect();
-        reset();
-    }, [reset]);
-
     useEffect(() => {
         if (!socketService) return;
         socketServiceRef = socketService;
@@ -146,22 +130,11 @@ const useTeamJobs = () => {
         unsubscribeFromTeam();
     }, [currentTeam?._id, subscribeToTeam, unsubscribeFromTeam]);
 
-    const handleSubscriberCleanup = useCallback(() => {
-        activeSubscribers -= 1;
-        if (activeSubscribers <= 0) disconnect();
-    }, [disconnect]);
-
-    useEffect(() => {
-        activeSubscribers += 1;
-        return handleSubscriberCleanup;
-    }, [handleSubscriberCleanup]);
-
     return {
         groups,
         isConnected,
         isLoading,
-        removeTrajectoryGroup,
-        disconnect
+        removeTrajectoryGroup
     };
 };
 
