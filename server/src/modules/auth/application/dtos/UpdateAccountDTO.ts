@@ -1,12 +1,17 @@
-import User from '@modules/auth/domain/entities/User';
+import { UserProps } from '@modules/auth/domain/entities/User';
+import { Multer } from 'multer';
 
 export interface UpdateAccountInputDTO{
     userId: string;
     firstName?: string;
     lastName?: string;
+    fullName?: string;
+    email?: string;
     avatar?: any;
+    file?: Multer.File;
 };
 
-export interface UpdateAccountOutputDTO{
-    user: User
-};
+export type UpdateAccountOutputDTO = {
+    _id: string;
+    fullName: string;
+} & UserProps;

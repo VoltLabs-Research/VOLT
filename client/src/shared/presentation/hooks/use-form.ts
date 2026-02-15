@@ -57,6 +57,11 @@ const useForm = <T extends Record<string, any>>(opts: UseFormOptions<T>) => {
     const validation = useFormValidation<T>(schema ?? {});
     const autoSaveTimeoutRef = useRef<number | null>(null);
     const initialValuesRef = useRef<T>(initialValues);
+    const onAutoSaveRef = useRef(onAutoSave);
+
+    useEffect(() => {
+        onAutoSaveRef.current = onAutoSave;
+    }, [onAutoSave]);
 
     const hasValuesChanged = useCallback(() => {
         if(!autoSaveOnlyIfChanged) return true;
@@ -67,7 +72,7 @@ const useForm = <T extends Record<string, any>>(opts: UseFormOptions<T>) => {
     }, [values, autoSaveOnlyIfChanged]);
 
     const performAutoSave = useCallback(async () => {
-        if(!onAutoSave || !hasValuesChanged()){
+        if(!onAutoSaveRef.current || !hasValuesChanged()){
             return;
         }
 
@@ -78,16 +83,17 @@ const useForm = <T extends Record<string, any>>(opts: UseFormOptions<T>) => {
 
         try{
             setIsAutoSaving(true);
-            await onAutoSave(values);
+            await onAutoSaveRef.current(values);
+            initialValuesRef.current = values;
         }catch(error){
             console.error('Auto-save failed:', error);
         }finally{
             setIsAutoSaving(false);
         }
-    }, [onAutoSave, schema, validation, values, hasValuesChanged]);
+    }, [schema, validation, values, hasValuesChanged]);
 
     useEffect(() => {
-        if(!onAutoSave) return;
+        if(!onAutoSaveRef.current) return;
 
         if(autoSaveTimeoutRef.current){
             clearTimeout(autoSaveTimeoutRef.current);
@@ -105,7 +111,7 @@ const useForm = <T extends Record<string, any>>(opts: UseFormOptions<T>) => {
                 clearTimeout(autoSaveTimeoutRef.current);
             }
         };
-    }, [values, onAutoSave, autoSaveDelay, hasValuesChanged, performAutoSave]);
+    }, [values, autoSaveDelay, hasValuesChanged, performAutoSave]);
 
     useEffect(() => {
         initialValuesRef.current = initialValues;

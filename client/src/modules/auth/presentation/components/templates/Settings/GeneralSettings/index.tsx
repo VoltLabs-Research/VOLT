@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import SettingsSection from '@/modules/auth/presentation/components/atoms/SettingsSection';
@@ -19,7 +19,7 @@ const GeneralSettings: React.FC = () => {
 
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
-    const handleAvatarUpload = async (file: File) => {
+    const handleAvatarUpload = useCallback(async (file: File) => {
         setIsUploadingAvatar(true);
 
         try{
@@ -34,15 +34,20 @@ const GeneralSettings: React.FC = () => {
         }finally{
             setIsUploadingAvatar(false);
         }
-    };
+    }, [authRepository, setUser]);
 
-    const handleProfileUpdate = async (data: ProfileFormType) => {
+    const handleProfileUpdate = useCallback(async (data: ProfileFormType) => {
         const updatedUser = await authRepository.updateMe({
             fullName: data.fullName,
             email: data.email
         });
         setUser(updatedUser);
-    };
+    }, [authRepository, setUser]);
+
+    const profileInitialValues = useMemo(() => ({
+        fullName: user?.fullName || '',
+        email: user?.email || ''
+    }), [user?.fullName, user?.email]);
 
     const handleDeleteAccount = () => {
         if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
@@ -68,10 +73,7 @@ const GeneralSettings: React.FC = () => {
                         onUpload={handleAvatarUpload} />
 
                     <ProfileForm
-                        initialValues={{
-                            fullName: user?.fullName || '',
-                            email: user?.email || ''
-                        }}
+                        initialValues={profileInitialValues}
                         onUpdate={handleProfileUpdate} />
                 </Container>
             </SettingsSection>
