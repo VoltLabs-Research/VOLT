@@ -20,6 +20,15 @@
     border-radius: var(--radius-xs);
 }
 
+.canvas-tree-item.is-disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.canvas-tree-item.is-disabled:hover {
+    background: transparent;
+}
+
 .canvas-tree-item.selected {
     border-radius: var(--radius-xs);
 }
