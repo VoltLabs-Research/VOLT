@@ -1,30 +1,8 @@
-interface PluginScene {
-    source: 'plugin';
-    analysisId: string;
-    exposureId: string;
-}
+import type { ActiveScene } from '@/modules/fractal/presentation/types/stores/editor/scene-types';
 
-interface ColorCodingScene {
-    source: 'color-coding';
-    property: string;
-    startValue: number;
-    endValue: number;
-    gradient: string;
-    analysisId: string;
-    exposureId?: string;
-}
-
-interface ParticleFilterScene {
-    source: 'particle-filter';
-    property: string;
-    operator: string;
-    value: number;
-    analysisId?: string;
-    exposureId?: string;
-    action?: string;
-}
-
-export type ActiveScene = PluginScene | ColorCodingScene | ParticleFilterScene;
+type PluginScene = Extract<ActiveScene, { source: 'plugin' }>;
+type ColorCodingScene = Extract<ActiveScene, { source: 'color-coding' }>;
+type ParticleFilterScene = Extract<ActiveScene, { source: 'particle-filter' }>;
 
 interface ComputeGlbUrlParams {
     teamId: string;
@@ -33,6 +11,8 @@ interface ComputeGlbUrlParams {
     analysisId: string;
     activeScene?: ActiveScene;
 }
+
+const DEFAULT_ANALYSIS_ID = 'default';
 
 const buildPluginUrl = (
     teamId: string,
@@ -52,6 +32,7 @@ const buildColorCodingUrl = (
     timestep: number
 ): string => {
     const { property, startValue, endValue, gradient, analysisId, exposureId } = scene;
+    const effectiveAnalysisId = analysisId || DEFAULT_ANALYSIS_ID;
     const params = new URLSearchParams({
         property,
         startValue: String(startValue),
@@ -60,7 +41,7 @@ const buildColorCodingUrl = (
         timestep: String(timestep)
     });
     if (exposureId) params.set('exposureId', exposureId);
-    return `/color-coding/${teamId}/${trajectoryId}/${analysisId}/?${params.toString()}`;
+    return `/color-coding/${teamId}/${trajectoryId}/${effectiveAnalysisId}/?${params.toString()}`;
 };
 
 const buildParticleFilterUrl = (
@@ -70,15 +51,15 @@ const buildParticleFilterUrl = (
     timestep: number
 ): string | null => {
     const { property, operator, value, analysisId, exposureId, action } = scene;
-    if (!property || !operator || value === undefined) return null;
+    if (!property || !operator || value === undefined || !action) return null;
 
-    const effectiveAnalysisId = analysisId || 'no-analysis';
+    const effectiveAnalysisId = analysisId || DEFAULT_ANALYSIS_ID;
     const params = new URLSearchParams({
         property,
         operator,
         value: String(value),
         timestep: String(timestep),
-        action: action || 'delete'
+        action
     });
     if (exposureId) params.set('exposureId', exposureId);
     return `/particle-filter/${teamId}/${trajectoryId}/${effectiveAnalysisId}?${params.toString()}`;

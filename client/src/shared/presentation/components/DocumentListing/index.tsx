@@ -76,6 +76,10 @@ const DocumentListing = <T, TContext = Record<string, never>>({
     hideHeader = false,
     hideTabs = false
 }: DocumentListingProps<T, TContext>) => {
+    const getColumnSortKey = useCallback((col: ColumnConfig): string => {
+        return String(col.key ?? (col as any).path ?? '');
+    }, []);
+
     const {
         data,
         isLoading,
@@ -113,19 +117,22 @@ const DocumentListing = <T, TContext = Record<string, never>>({
 
     const handleSort = useCallback((col: ColumnConfig) => {
         if(!col.sortable) return;
+        const columnKey = getColumnSortKey(col);
+        if (!columnKey) return;
         setSortConfig((prev) => {
-            if(prev && prev.key === col.key){
-                return { key: col.key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+            if(prev && prev.key === columnKey){
+                return { key: columnKey, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
             }
-            return { key: col.key, direction: 'asc' };
+            return { key: columnKey, direction: 'asc' };
         });
-    }, []);
+    }, [getColumnSortKey]);
 
     const getSortIndicator = useCallback((col: ColumnConfig) => {
         if(!col.sortable) return null;
-        if(!sortConfig || sortConfig.key !== col.key) return <span className='sort-indicator'>⇅</span>;
+        const columnKey = getColumnSortKey(col);
+        if(!sortConfig || sortConfig.key !== columnKey) return <span className='sort-indicator'>⇅</span>;
         return sortConfig.direction === 'asc' ? <span className='sort-indicator'>↑</span> : <span className='sort-indicator'>↓</span>;
-    }, [sortConfig]);
+    }, [sortConfig, getColumnSortKey]);
 
     const renderContent = () => {
         const emptyMessageText = error ? error : emptyMessage;

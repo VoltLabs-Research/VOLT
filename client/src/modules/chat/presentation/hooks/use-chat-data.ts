@@ -67,9 +67,9 @@ const useChatData = () => {
             const response = await chatMessageRepository.getMessages(chatId, { page, limit: 50 });
             
             if (page === 1) {
-                setMessages(response.data.reverse());
+                setMessages(response.data);
             } else {
-                appendMessages(response.data.reverse());
+                appendMessages(response.data);
             }
             
             setHasMore(response.pagination.hasMore);

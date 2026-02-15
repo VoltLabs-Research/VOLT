@@ -2,6 +2,7 @@ import { container } from 'tsyringe';
 import { VFSService } from '@modules/trajectory/infrastructure/services/VFSService';
 import { TRAJECTORY_TOKENS } from './TrajectoryTokens';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/TrajectoryRepository';
+import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/SceneArtifactRepository';
 import TrajectoryProcessingQueue from '@modules/trajectory/infrastructure/queues/TrajectoryProcessingQueue';
 import CloudUploadQueue from '@modules/trajectory/infrastructure/queues/CloudUploadQueue';
 import TrajectoryDumpStorageService from '@modules/trajectory/infrastructure/services/TrajectoryDumpStorageService';
@@ -28,6 +29,8 @@ import { GetParticleFilterPropertiesUseCase } from '@modules/trajectory/applicat
 import { PreviewParticleFilterUseCase } from '@modules/trajectory/application/use-cases/particle-filter/PreviewParticleFilterUseCase';
 import { ApplyParticleFilterActionUseCase } from '@modules/trajectory/application/use-cases/particle-filter/ApplyParticleFilterActionUseCase';
 import { GetFilteredModelStreamUseCase } from '@modules/trajectory/application/use-cases/particle-filter/GetFilteredModelStreamUseCase';
+import { GetParticleFilterUniqueValuesUseCase } from '@modules/trajectory/application/use-cases/particle-filter/GetParticleFilterUniqueValuesUseCase';
+import { ListTrajectorySceneArtifactsUseCase } from '@modules/trajectory/application/use-cases/scene-artifacts/ListTrajectorySceneArtifactsUseCase';
 
 export const registerTrajectoryDependencies = (): void => {
     // VFS Use Dependencies
@@ -41,6 +44,7 @@ export const registerTrajectoryDependencies = (): void => {
     container.registerSingleton(DownloadVFSArchiveUseCase);
 
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryRepository, TrajectoryRepository);
+    container.registerSingleton(TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryProcessingQueue, TrajectoryProcessingQueue);
     container.registerSingleton(TRAJECTORY_TOKENS.CloudUploadQueue, CloudUploadQueue);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryDumpStorageService, TrajectoryDumpStorageService);
@@ -68,6 +72,10 @@ export const registerTrajectoryDependencies = (): void => {
     container.registerSingleton(PreviewParticleFilterUseCase);
     container.registerSingleton(ApplyParticleFilterActionUseCase);
     container.registerSingleton(GetFilteredModelStreamUseCase);
+    container.registerSingleton(GetParticleFilterUniqueValuesUseCase);
+
+    // Scene Artifacts Use Cases
+    container.registerSingleton(ListTrajectorySceneArtifactsUseCase);
 
     container.registerSingleton(SessionCompletedEventHandler);
     container.registerSingleton(JobStatusChangedEventHandler);

@@ -37,7 +37,7 @@ export const useChatMessageStore = create<ChatMessageStore>((set) => ({
     appendMessages: (newMessages) => set((state) => {
         const existingIds = new Set(state.messages.map((m) => m._id));
         const uniqueNew = newMessages.filter((m) => !existingIds.has(m._id));
-        return { messages: [...uniqueNew, ...state.messages] };
+        return { messages: [...state.messages, ...uniqueNew] };
     }),
 
     addMessage: (message) => set((state) => {

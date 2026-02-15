@@ -16,7 +16,10 @@ export interface GetVFSFileInputDTO {
 export interface UploadVFSFileInputDTO {
     trajectoryId: string;
     path: string;
-    fileBuffer: Buffer;
+    fileBuffer?: Buffer;
+    file?: {
+        buffer: Buffer;
+    };
 }
 
 export interface UploadVFSFileOutputDTO {

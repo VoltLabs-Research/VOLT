@@ -1,6 +1,7 @@
 import type { StateCreator } from 'zustand';
 import type { ModelStore, ModelState, SceneObjectType, ModelData } from '@/modules/fractal/presentation/types/stores/editor/scene-types';
 import type { ModelWorldBounds } from '@/modules/fractal/presentation/types/configuration';
+import { isSameScene } from '@/modules/canvas/presentation/utils/scene-identity';
 
 const initialState: ModelState = {
     activeModel: null,
@@ -24,12 +25,7 @@ export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get
 
     addScene(scene: SceneObjectType) {
         set((state: ModelState) => {
-            const exists = state.activeScenes.some(s =>
-                s.sceneType === scene.sceneType &&
-                s.source === scene.source &&
-                (s as any).analysisId === (scene as any).analysisId &&
-                (s as any).exposureId === (scene as any).exposureId
-            );
+            const exists = state.activeScenes.some(s => isSameScene(s, scene));
             if (exists) return state;
             return { activeScenes: [...state.activeScenes, scene] };
         });
@@ -37,23 +33,13 @@ export const createModelSlice: StateCreator<any, [], [], ModelStore> = (set, get
 
     removeScene(scene: SceneObjectType) {
         set((state: ModelState) => ({
-            activeScenes: state.activeScenes.filter(s =>
-                !(s.sceneType === scene.sceneType &&
-                    s.source === scene.source &&
-                    (s as any).analysisId === (scene as any).analysisId &&
-                    (s as any).exposureId === (scene as any).exposureId)
-            )
+            activeScenes: state.activeScenes.filter(s => !isSameScene(s, scene))
         }));
     },
 
     toggleScene(scene: SceneObjectType) {
         const state = get() as ModelState;
-        const exists = state.activeScenes.some((s: SceneObjectType) =>
-            s.sceneType === scene.sceneType &&
-            s.source === scene.source &&
-            (s as any).analysisId === (scene as any).analysisId &&
-            (s as any).exposureId === (scene as any).exposureId
-        );
+        const exists = state.activeScenes.some((s: SceneObjectType) => isSameScene(s, scene));
 
         if (exists) {
             get().removeScene(scene);

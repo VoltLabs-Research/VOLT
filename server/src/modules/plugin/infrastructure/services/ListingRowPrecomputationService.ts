@@ -1,9 +1,10 @@
 import { injectable, inject } from 'tsyringe';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/TrajectoryTokens';
 import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
 import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
-import { IExposureMetaRepository } from '@modules/plugin/domain/ports/IExposureMetaRepository';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 import { resolveRow, Column } from '@modules/plugin/infrastructure/utilities/listing-resolver';
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import logger from '@shared/infrastructure/logger';
@@ -25,8 +26,8 @@ export class ListingRowPrecomputationService {
         private pluginRepo: IPluginRepository,
         @inject(PLUGIN_TOKENS.ListingRowRepository)
         private listingRowRepo: IListingRowRepository,
-        @inject(PLUGIN_TOKENS.ExposureMetaRepository)
-        private exposureMetaRepo: IExposureMetaRepository,
+        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
+        private sceneArtifactRepo: ISceneArtifactRepository,
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
         private analysisRepo: IAnalysisRepository
     ) {}
@@ -71,24 +72,27 @@ export class ListingRowPrecomputationService {
         // Process each timestep
         for (const timestep of timesteps) {
             // Fetch exposure metadata
-            const exposureMeta = await this.exposureMetaRepo.findOne({
+            const exposureArtifact = await this.sceneArtifactRepo.findOne({
                 analysis: analysisId,
-                exposureId: primaryExposureId,
-                timestep
-            });
+                sourceType: 'plugin-exposure',
+                timestep,
+                params: {
+                    exposureId: primaryExposureId
+                }
+            } as any);
 
-            if (!exposureMeta || !exposureMeta.props.metadata) {
+            if (!exposureArtifact || !exposureArtifact.props.metadata) {
                 logger.warn(`No metadata found for exposure ${primaryExposureId}, timestep ${timestep}`);
                 continue;
             }
 
             // Simple resolution using metadata._resolvedContext
-            const row = resolveRow(columns, exposureMeta.props.metadata, analysis.props.createdAt ?? new Date());
+            const row = resolveRow(columns, exposureArtifact.props.metadata, analysis.props.createdAt ?? new Date());
             
             logger.info(`[ListingRowPrecomputation] listingSlug=${listingSlug}, timestep=${timestep}`);
             logger.info(`[ListingRowPrecomputation] columns=${JSON.stringify(columns.map(c => c.label))}`);
             logger.info(`[ListingRowPrecomputation] row=${JSON.stringify(row)}`);
-            logger.info(`[ListingRowPrecomputation] metadata._resolvedContext=${JSON.stringify(exposureMeta.props.metadata._resolvedContext)}`);
+            logger.info(`[ListingRowPrecomputation] metadata._resolvedContext=${JSON.stringify(exposureArtifact.props.metadata._resolvedContext)}`);
 
             // Upsert listing row
             const existing = await this.listingRowRepo.findOne({

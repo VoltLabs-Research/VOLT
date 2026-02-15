@@ -8,15 +8,17 @@ import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
 interface ListingOptions {
     teamId?: string;
     trajectoryId?: string;
+    analysisId?: string;
     page?: number;
     limit?: number;
     sortAsc?: boolean;
 };
 
 interface ColumnConfig {
-    key: string;
-    title: string;
+    path: string;
+    label: string;
     sortable: boolean;
+    width?: number;
 };
 
 interface ListingRowData {
@@ -82,6 +84,10 @@ export class PluginListingService {
             throw new Error('Team::IdRequired');
         }
 
+        if (options.analysisId) {
+            baseQuery.analysis = options.analysisId;
+        }
+
         // Query database with pagination
         const result: PaginatedResult<ListingRow> = await this.listingRowRepository.findAll({
             filter: baseQuery as any,
@@ -144,7 +150,7 @@ export class PluginListingService {
 
         const columns: ColumnConfig[] = ordered
             .filter((k) => nonNull.has(k))
-            .map((k) => ({ key: k, title: k, sortable: true }));
+            .map((k) => ({ path: k, label: k, sortable: true }));
 
         return {
             data: rows,

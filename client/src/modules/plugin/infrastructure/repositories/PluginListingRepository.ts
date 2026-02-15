@@ -13,7 +13,7 @@ export default class PluginListingRepository extends BaseRepository implements I
     }
 
     async getListing(params: GetPluginListingInputDTO): Promise<GetPluginListingOutputDTO> {
-        const { pluginSlug, listingSlug, trajectoryId, limit, page } = params;
+        const { pluginSlug, listingSlug, trajectoryId, analysisId, limit, page } = params;
 
         const path = trajectoryId
             ? `/listing/${pluginSlug}/${listingSlug}/${trajectoryId}`
@@ -27,6 +27,10 @@ export default class PluginListingRepository extends BaseRepository implements I
 
         if (page) {
             query.page = page;
+        }
+
+        if (analysisId) {
+            query.analysisId = analysisId;
         }
 
         return this.client.get<GetPluginListingOutputDTO>(path, query);

@@ -6,6 +6,7 @@ import { TRAJECTORY_TOKENS } from '@modules/trajectory/infrastructure/di/Traject
 import { ITrajectoryDumpStorageService } from '@modules/trajectory/domain/port/ITrajectoryDumpStorageService';
 import { IParticleFilterService } from '@modules/trajectory/domain/port/IParticleFilterService';
 import { IAtomPropertiesService, FilterExpression } from '@modules/trajectory/domain/port/IAtomPropertiesService';
+import { ISceneArtifactRepository } from '@modules/trajectory/domain/port/ISceneArtifactRepository';
 import { SYS_BUCKETS } from '@core/config/minio';
 import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
@@ -13,9 +14,11 @@ import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/
 import nativeExporter from '@modules/trajectory/infrastructure/native/NativeExporter';
 import nativeStats from '@modules/trajectory/infrastructure/native/NativeStats';
 import { formatValueForPath } from '@shared/infrastructure/utils/formatValue';
+import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
 
 const HIGHLIGHT_COLOR = [1.0, 0.2, 0.6];
 const DEFAULT_COLOR = [0.8, 0.8, 0.8];
+const DEFAULT_ANALYSIS_ID = 'default';
 
 @injectable()
 export default class ParticleFilterService implements IParticleFilterService {
@@ -27,7 +30,10 @@ export default class ParticleFilterService implements IParticleFilterService {
         private readonly dumpStorage: ITrajectoryDumpStorageService,
 
         @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
+        private readonly storageService: IStorageService,
+
+        @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
+        private readonly sceneArtifactRepository: ISceneArtifactRepository
     ) { }
 
     async getProperties(
@@ -35,6 +41,7 @@ export default class ParticleFilterService implements IParticleFilterService {
         timestep: string | number,
         analysisId?: string
     ): Promise<{ dump: string[]; perAtom: Record<string, string[]> }> {
+        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
         const dumpPath = await this.dumpStorage.getDump(trajectoryId, String(timestep));
         if (!dumpPath) {
             throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
@@ -43,8 +50,8 @@ export default class ParticleFilterService implements IParticleFilterService {
         const parsed = await TrajectoryParserFactory.parse(dumpPath, { properties: [] });
         const dumpHeaders = parsed.metadata.headers || [];
 
-        const modifierProps = analysisId
-            ? await this.atomProps.getModifierPerAtomProps(String(analysisId))
+        const modifierProps = normalizedAnalysisId
+            ? await this.atomProps.getModifierPerAtomProps(String(normalizedAnalysisId))
             : {};
 
         return {
@@ -61,10 +68,12 @@ export default class ParticleFilterService implements IParticleFilterService {
         analysisId?: string,
         exposureId?: string
     ): Promise<number[]> {
-        if (exposureId && analysisId) {
+        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
+
+        if (exposureId && normalizedAnalysisId) {
             const modifierData = await this.atomProps.getModifierAnalysis(
                 String(trajectoryId),
-                String(analysisId),
+                String(normalizedAnalysisId),
                 String(exposureId),
                 String(timestep)
             );
@@ -101,9 +110,10 @@ export default class ParticleFilterService implements IParticleFilterService {
         analysisId?: string,
         exposureId?: string
     ): Promise<{ matchCount: number; totalAtoms: number }> {
+        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
         const result = await this.atomProps.evaluateFilterExpression(
             trajectoryId,
-            analysisId ? String(analysisId) : undefined,
+            normalizedAnalysisId,
             exposureId ? String(exposureId) : null,
             String(timestep),
             expression
@@ -123,9 +133,10 @@ export default class ParticleFilterService implements IParticleFilterService {
         analysisId?: string,
         exposureId?: string
     ): Promise<{ fileId: string; atomsResult: number; action: string }> {
+        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
         const filterResult = await this.atomProps.evaluateFilterExpression(
             trajectoryId,
-            analysisId ? String(analysisId) : undefined,
+            normalizedAnalysisId,
             exposureId ? String(exposureId) : null,
             String(timestep),
             expression
@@ -138,7 +149,7 @@ export default class ParticleFilterService implements IParticleFilterService {
 
         const parsed = await TrajectoryParserFactory.parse(dumpPath);
         const exposurePart = exposureId ? String(exposureId) : 'dump';
-        const analysisSegment = analysisId || 'no-analysis';
+        const analysisSegment = normalizedAnalysisId || DEFAULT_ANALYSIS_ID;
         const formattedValue = formatValueForPath(Number(expression.value));
         const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${expression.property}-${expression.operator}-${formattedValue}-${action}.glb`;
 
@@ -188,6 +199,28 @@ export default class ParticleFilterService implements IParticleFilterService {
         console.log('UPLOAD TO STORAGE SERVER:', objectName)
         await this.storageService.upload(SYS_BUCKETS.MODELS, objectName, buffer, { 'Content-Type': 'model/gltf-binary' });
 
+        await recordSceneArtifact(this.sceneArtifactRepository, {
+            trajectory: String(trajectoryId),
+            analysis: normalizedAnalysisId,
+            sourceType: 'particle-filter',
+            timestep: Number(timestep),
+            objectName,
+            params: {
+                property: String(expression.property),
+                operator: String(expression.operator),
+                value: Number(expression.value),
+                action,
+                exposureId
+            },
+            displayName: `PF · ${expression.property} ${expression.operator} ${expression.value} · ${action} · t=${timestep}`,
+            metadata: {
+                analysisId: normalizedAnalysisId || null,
+                exposureId: exposureId || null,
+                atomsResult,
+                totalAtoms: filterResult.mask.length
+            }
+        });
+
         return {
             fileId: objectName,
             atomsResult,
@@ -207,7 +240,8 @@ export default class ParticleFilterService implements IParticleFilterService {
     ): Promise<Readable> {
         const exposurePart = exposureId ? String(exposureId) : 'dump';
         const actionPart = action || 'delete';
-        const analysisSegment = analysisId || 'no-analysis';
+        const normalizedAnalysisId = analysisId && analysisId !== DEFAULT_ANALYSIS_ID ? analysisId : undefined;
+        const analysisSegment = normalizedAnalysisId || DEFAULT_ANALYSIS_ID;
         const formattedValue = typeof value === 'number' ? formatValueForPath(value) : String(value);
         const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${formattedValue}-${actionPart}.glb`;
 

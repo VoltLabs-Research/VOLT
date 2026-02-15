@@ -28,7 +28,7 @@ export type PluginScene = {
 export type ColorCodingScene = {
     sceneType: string;
     source: 'color-coding';
-    analysisId: string;
+    analysisId?: string;
     exposureId: string;
     property: string;
     startValue: string;

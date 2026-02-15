@@ -110,7 +110,7 @@ const CanvasPage = () => {
 
             <Container className="canvas-editor-main d-flex flex-1 overflow-hidden p-relative min-h-0">
                 <Container className="canvas-left-panel d-flex column f-shrink-0" style={{ width: leftPanel.size }}>
-                    <Container className="canvas-left-panel-top d-flex column min-h-0" style={{ flex: `1 1 ${100 - leftSplit.size}%` }}>
+                    <Container className="canvas-left-panel-top d-flex column min-h-0 overflow-hidden" style={{ flex: `1 1 ${100 - leftSplit.size}%` }}>
                         <ObjectsPanel trajectory={trajectory} />
                     </Container>
                     <ResizeHandle
@@ -118,7 +118,7 @@ const CanvasPage = () => {
                         isDragging={leftSplit.isDragging}
                         {...leftSplit.handleProps}
                     />
-                    <Container className="canvas-left-panel-bottom d-flex column min-h-0" style={{ flex: `0 0 ${leftSplit.size}%` }}>
+                    <Container className="canvas-left-panel-bottom d-flex column min-h-0 overflow-hidden" style={{ flex: `0 0 ${leftSplit.size}%` }}>
                         <TexturesPanel trajectory={trajectory} />
                     </Container>
                 </Container>

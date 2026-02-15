@@ -19,10 +19,6 @@ export const ACTIONS: { value: FilterAction; title: string }[] = [
     { value: 'highlight', title: 'Color Selection' }
 ];
 
-const OPERATOR_MAP: Record<FilterOperator, 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte'> = {
-    '==': 'eq', '!=': 'ne', '>': 'gt', '>=': 'gte', '<': 'lt', '<=': 'lte'
-};
-
 export interface PreviewResult {
     matchCount: number;
     totalCount: number;
@@ -67,11 +63,12 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
 
     const fetchValueSuggestions = useCallback(async () => {
         if (!property || !trajectoryId || currentTimestep === undefined) return;
+        const normalizedExposureId = exposureId ?? undefined;
 
         try {
             const result = await particleFilterRepository.getUniqueValues({
                 trajectoryId, analysisId, timestep: currentTimestep,
-                property, exposureId, maxValues: 50
+                property, exposureId: normalizedExposureId, maxValues: 50
             });
             setValueSuggestions(result.values);
         } catch (err) {
@@ -94,19 +91,20 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         setIsLoadingPreview(true);
         setError(null);
         setPreviewResult(null);
+        const normalizedExposureId = exposureId ?? undefined;
 
         try {
             const result = await particleFilterRepository.preview({
                 trajectoryId, analysisId, timestep: currentTimestep,
-                conditions: [{
-                    property, operator: OPERATOR_MAP[operator],
-                    value, exposureId
-                }]
+                property,
+                operator,
+                value,
+                exposureId: normalizedExposureId
             });
             setPreviewResult({
                 matchCount: result.matchCount,
-                totalCount: result.totalCount,
-                filterParams: { property, operator, value, exposureId }
+                totalCount: result.totalAtoms,
+                filterParams: { property, operator, value, exposureId: normalizedExposureId }
             });
         } catch (err: any) {
             setError(err.message);
@@ -128,12 +126,10 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
             const { filterParams } = previewResult;
             await particleFilterRepository.applyAction({
                 trajectoryId, analysisId, timestep: currentTimestep,
-                conditions: [{
-                    property: filterParams.property,
-                    operator: OPERATOR_MAP[filterParams.operator],
-                    value: filterParams.value,
-                    exposureId: filterParams.exposureId
-                }],
+                property: filterParams.property,
+                operator: filterParams.operator,
+                value: filterParams.value,
+                exposureId: filterParams.exposureId,
                 action
             });
 
@@ -147,6 +143,10 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 action,
                 exposureId: filterParams.exposureId
             } as any);
+
+            window.dispatchEvent(new CustomEvent('canvas:scene-artifacts:changed', {
+                detail: { sourceType: 'particle-filter', trajectoryId }
+            }));
 
             setPreviewResult(null);
         } catch (err: any) {

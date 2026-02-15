@@ -5,7 +5,6 @@ import { ListingRowPrecomputationService } from '@modules/plugin/infrastructure/
 import { PLUGIN_TOKENS } from './PluginTokens';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/PluginRepository';
 import ListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/ListingRowRepository';
-import ExposureMetaRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/ExposureMetaRepository';
 import PluginWorkflowEngine from '@modules/plugin/infrastructure/services/PluginWorkflowEngine';
 import NodeRegistry from '@modules/plugin/infrastructure/services/nodes/NodeRegistry';
 
@@ -54,7 +53,6 @@ export const registerPluginDependencies = (): void => {
     // Repositories - register with both Symbol and string tokens
     container.registerSingleton(PLUGIN_TOKENS.PluginRepository, PluginRepository);
     container.registerSingleton(PLUGIN_TOKENS.ListingRowRepository, ListingRowRepository);
-    container.registerSingleton(PLUGIN_TOKENS.ExposureMetaRepository, ExposureMetaRepository);
 
     // Node Registry
     container.registerSingleton(PLUGIN_TOKENS.NodeRegistry, NodeRegistry);

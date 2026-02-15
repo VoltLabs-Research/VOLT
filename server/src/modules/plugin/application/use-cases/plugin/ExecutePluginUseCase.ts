@@ -18,6 +18,7 @@ import PluginExecutionRequestEvent from '@modules/plugin/domain/events/PluginExe
 import AnalysisCreatedEvent from '@modules/analysis/domain/events/AnalysisCreatedEvent';
 import { IAnalysisJobFactory } from '@modules/plugin/domain/ports/IAnalysisJobFactory';
 import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
+import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 
 @injectable()
 export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { analysisId: string }, ApplicationError> {
@@ -91,11 +92,26 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
             startedAt: new Date()
         });
 
+        const modifierNode = plugin.props.workflow?.props?.nodes?.find(
+            (node: any) => node?.type === WorkflowNodeType.Modifier
+        );
+        const pluginDisplayName = typeof modifierNode?.data?.modifier?.name === 'string'
+            ? modifierNode.data.modifier.name.trim()
+            : '';
+
+        if (!pluginDisplayName) {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_NOT_VALID_CANNOT_EXECUTE,
+                'Modifier node must define a non-empty name'
+            ));
+        }
+
         await this.eventBus.publish(new AnalysisCreatedEvent({
             analysisId: analysis.id,
             trajectoryId: input.trajectoryId,
             pluginId: plugin.id,
             pluginSlug: plugin.props.slug,
+            pluginDisplayName,
             teamId: input.teamId,
             config: input.config,
             status: 'pending',

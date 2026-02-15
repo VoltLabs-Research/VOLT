@@ -3,7 +3,6 @@ import { useShallow } from 'zustand/react/shallow';
 
 import useCanvasUrlState from './use-canvas-url-state';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
-import usePluginStore, { type ResolvedModifier } from '@/modules/plugin/presentation/stores/use-plugin-store';
 import useAnalysisUseCases from '@/modules/analysis/presentation/hooks/use-analysis-use-cases';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 import useAnalysisStatus from './use-analysis-status';
@@ -11,13 +10,12 @@ import useExposureManager, { type ExposureEntry, DEFAULT_ENTRY } from './use-exp
 import useToast from '@/shared/presentation/hooks/use-toast';
 
 import type { Analysis } from '@/modules/analysis/domain/entities/Analysis';
-import type { Plugin } from '@/modules/plugin/domain/entities';
 import { computeDifferingConfigFields } from '../utils/canvas-sidebar-scene.ts';
+import { isSameScene } from '../utils/scene-identity';
 
 export interface AnalysisSectionData {
     analysis: Analysis;
     pluginSlug: string;
-    plugin: ResolvedModifier;
     pluginDisplayName: string;
     entry: ExposureEntry;
     isCurrentAnalysis: boolean;
@@ -43,11 +41,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         addScene: s.addScene,
         removeScene: s.removeScene,
         activeScenes: s.activeScenes
-    })));
-
-    // Plugin store
-    const { getModifiers } = usePluginStore(useShallow((s) => ({
-        getModifiers: s.getModifiers
     })));
 
     // Search params
@@ -84,14 +77,6 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         setAnalyses([]);
     }, [trajectoryId, resetEntries]);
 
-    useEffect(() => {
-        const snapshot = usePluginStore.getState() as any;
-        if (snapshot.modifiers?.length > 0 && !snapshot.loading && !snapshot.isFetchingMore) return;
-        snapshot.fetchAllPlugins?.({ limit: 200, force: true }).catch((error: any) => {
-            console.error('[useCanvasSidebarScene] plugin bootstrap failed', error);
-        });
-    }, []);
-
     // Bootstrap: fetch analyses
     useEffect(() => {
         let cancelled = false;
@@ -110,39 +95,9 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                     page: 1,
                     limit: 100
                 });
-                const fetchedRaw = response.data;
 
                 if (cancelled) return;
-
-                const pluginsToRegister: Plugin[] = [];
-                const normalizedAnalyses: Analysis[] = [];
-
-                fetchedRaw.forEach((item: any) => {
-                    const props = item.props ?? item;
-                    const id = item._id;
-
-                    let pluginSlug = '';
-
-                    if (props.plugin && typeof props.plugin === 'object') {
-                        pluginsToRegister.push(props.plugin as Plugin);
-                        pluginSlug = props.plugin.slug;
-                    } else if (typeof props.plugin === 'string') {
-                        pluginSlug = props.plugin;
-                    }
-
-                    normalizedAnalyses.push({
-                        ...props,
-                        _id: id,
-                        plugin: pluginSlug,
-                        config: props.config
-                    });
-                });
-
-                if (pluginsToRegister.length > 0) {
-                    usePluginStore.getState().registerPlugins(pluginsToRegister);
-                }
-
-                setAnalyses(normalizedAnalyses);
+                setAnalyses(response.data);
             } catch (error) {
                 console.error('[useCanvasSidebarScene] bootstrap failed', error);
             } finally {
@@ -164,6 +119,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             const newAnalysis: Analysis = {
                 _id: data.analysisId,
                 plugin: data.pluginSlug,
+                pluginDisplayName: data.pluginDisplayName,
                 config: data.config,
                 trajectory: data.trajectoryId,
                 totalFrames: data.totalFrames,
@@ -198,7 +154,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         if (!analysisConfigId || analyses.length === 0) return;
         const analysis = analyses.find((x) => x._id === analysisConfigId);
         if (!analysis) return;
-        loadExposuresForAnalysis(analysis._id, analysis.plugin as string);
+        loadExposuresForAnalysis(analysis._id);
     }, [analysisConfigId, analyses, loadExposuresForAnalysis]);
 
     // Load exposures for expanded sections
@@ -209,7 +165,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
             if (!analysis) return;
             const entry = getEntry(analysisId);
             if (entry.state === 'idle' || entry.state === 'error') {
-                loadExposuresForAnalysis(analysisId, analysis.plugin as string);
+                loadExposuresForAnalysis(analysisId);
             }
         });
     }, [expandedSections, analyses, getEntry, loadExposuresForAnalysis]);
@@ -271,26 +227,13 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     const allAnalysisSections = useMemo((): AnalysisSectionData[] => {
         if (analyses.length === 0) return [];
 
-        const modifiers = getModifiers();
-        const neededSlugs = new Set(analyses.map((analysis) => analysis.plugin as string));
-        const modifierBySlug = new Map(modifiers.map((modifier) => [modifier.pluginSlug, modifier]));
-
-        for (const slug of neededSlugs) {
-            const modifier = modifierBySlug.get(slug);
-            if (!modifier || !modifier.name || modifier.name === slug) {
-                return [];
-            }
-        }
-
         const sections = analyses.map((analysis) => {
-            const modifier = modifierBySlug.get(analysis.plugin as string)!;
             const entry = exposureEntries.get(analysis._id) ?? DEFAULT_ENTRY;
 
             return {
                 analysis,
-                pluginSlug: analysis.plugin as string,
-                plugin: modifier,
-                pluginDisplayName: modifier.name,
+                pluginSlug: analysis.plugin,
+                pluginDisplayName: analysis.pluginDisplayName || '',
                 entry,
                 isCurrentAnalysis: analysis._id === analysisConfigId,
                 config: analysis.config
@@ -298,7 +241,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
         });
 
         return sections;
-    }, [analyses, getModifiers, exposureEntries, analysisConfigId]);
+    }, [analyses, exposureEntries, analysisConfigId]);
 
     // Computed: filtered sections
     const filteredSections = useMemo(() => {
@@ -318,12 +261,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     }, []);
 
     const isSceneInActiveScenes = useCallback((scene: any) => {
-        return activeScenes.some((s) =>
-            s.sceneType === scene.sceneType &&
-            s.source === scene.source &&
-            (s as any).analysisId === (scene as any).analysisId &&
-            (s as any).exposureId === (scene as any).exposureId
-        );
+        return activeScenes.some((s) => isSameScene(s, scene));
     }, [activeScenes]);
 
     const onSelectScene = useCallback((scene: any, analysis?: any) => {

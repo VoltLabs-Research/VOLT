@@ -22,6 +22,7 @@ interface PluginListingContext {
     pluginSlug: string;
     listingSlug: string;
     trajectoryId?: string;
+    analysisId?: string;
     teamId?: string;
 };
 
@@ -67,8 +68,9 @@ const usePluginListing = ({
         pluginSlug,
         listingSlug,
         trajectoryId,
+        analysisId,
         teamId
-    }), [pluginSlug, listingSlug, trajectoryId, teamId]);
+    }), [pluginSlug, listingSlug, trajectoryId, analysisId, teamId]);
 
     const fetchData = useCallback(async (
         params: { page: number; limit: number } & PluginListingContext
@@ -77,6 +79,7 @@ const usePluginListing = ({
             pluginSlug: params.pluginSlug,
             listingSlug: params.listingSlug,
             trajectoryId: params.trajectoryId,
+            analysisId: params.analysisId,
             page: params.page,
             limit: params.limit
         });
@@ -87,19 +90,13 @@ const usePluginListing = ({
             setColumns(cols);
         }
 
-        // Filter by analysisId if provided
-        let filteredData = response.data;
-        if (analysisId) {
-            filteredData = response.data.filter((r) => r.analysisId === analysisId);
-        }
-
         return {
             status: 'success',
-            data: filteredData,
+            data: response.data,
             pagination: response.pagination,
             _meta: response._meta
         };
-    }, [pluginListingRepository, analysisId, setColumns]);
+    }, [pluginListingRepository, setColumns]);
 
     const handleDelete = useCallback(async (item: ListingRow) => {
         const analysisToDelete = item?.analysisId;

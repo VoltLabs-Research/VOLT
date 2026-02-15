@@ -18,8 +18,11 @@ export interface Identifiable {
 }
 
 export interface ColumnConfig {
-    key: string;
-    title: string;
+    key?: string;
+    title?: string;
+    path?: string;
+    label?: string;
+    width?: number;
     render?: (value: unknown, row?: unknown) => React.ReactNode;
     skeleton?: { variant: 'text' | 'rounded'; width: number; height?: number };
     sortable?: boolean;
@@ -50,9 +53,14 @@ interface DocumentListingTableProps<T extends Identifiable> {
 };
 
 const getColumnWidth = (col: ColumnConfig): number => {
-    const titleLength = typeof col.title === 'string' ? col.title.length : 10;
+    if (typeof col.width === 'number' && col.width > 0) return col.width;
+    const title = typeof col.title === 'string' ? col.title : col.label;
+    const titleLength = typeof title === 'string' ? title.length : 10;
     return Math.max(MIN_COLUMN_WIDTH, Math.min(titleLength * 14, MAX_COLUMN_WIDTH));
 };
+
+const getColumnKey = (col: ColumnConfig): string => String(col.key ?? col.path ?? '');
+const getColumnTitle = (col: ColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
 
 const DocumentListingTable = <T extends Identifiable>({
     columns,
@@ -112,7 +120,7 @@ const DocumentListingTable = <T extends Identifiable>({
                     {columns.map((col, colIdx) => (
                         <Container
                             className={`document-listing-cell header-cell ${col.sortable ? 'sortable cursor-pointer' : ''} overflow-hidden d-flex items-center color-primary`}
-                            key={`header-${col.title}-${colIdx}`}
+                            key={`header-${getColumnTitle(col)}-${colIdx}`}
                             onClick={() => onCellClick(col)}
                             style={
                                 useFlexDistribution

@@ -5,7 +5,6 @@ export const PLUGIN_TOKENS = {
     ListingRowPrecomputationService: Symbol.for('ListingRowPrecomputationService'),
     ListingRowRepository: Symbol.for('ListingRowRepository'),
     NodeRegistry: Symbol.for('NodeRegistry'),
-    ExposureMetaRepository: Symbol.for('ExposureMetaRepository'),
     PluginStorageService: Symbol.for('PluginStorageService'),
     PluginBinaryCacheService: Symbol.for('PluginBinaryCacheService'),
     PluginWorkflowEngine: Symbol.for('WorkflowEngine'),
