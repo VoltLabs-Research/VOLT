@@ -1,7 +1,11 @@
 .team-invite-panel{
-    height: 100%;
+    height: auto;
     background-color: var(--color-surface-1);
     border-left: 1px solid var(--color-border-soft);
+}
+
+.team-invite-panel-popover{
+    max-height: 420px;
 }
 
 .team-invite-content{

@@ -24,7 +24,7 @@ const Popover: React.FC<PopoverProps> = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [style, setStyle] = useState<React.CSSProperties>({});
-    const triggerRef = useRef<HTMLElement | null>(null);
+    const triggerRef = useRef<HTMLDivElement | null>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
     const cursorPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -129,22 +129,25 @@ const Popover: React.FC<PopoverProps> = ({
     }, [triggerAction, toggle]);
 
     const triggerElement = trigger && React.isValidElement(trigger)
-        ? React.cloneElement(trigger as React.ReactElement<any>, {
-            ref: (el: HTMLElement) => {
-                triggerRef.current = el;
-            },
-            onClick: (e: React.MouseEvent) => {
-                const originalOnClick = (trigger as React.ReactElement<any>).props.onClick;
-                originalOnClick?.(e);
-                handleTriggerClick(e);
-            },
-            onContextMenu: (e: React.MouseEvent) => {
-                const originalOnContextMenu = (trigger as React.ReactElement<any>).props.onContextMenu;
-                originalOnContextMenu?.(e);
-                handleContextMenu(e);
-            },
-            'data-popover-trigger': id
-        })
+        ? (
+            <Container
+                ref={triggerRef}
+                data-popover-trigger={id}
+                style={{ display: 'contents' }}
+                onClick={(e) => {
+                    const originalOnClick = (trigger as React.ReactElement<any>).props.onClick;
+                    originalOnClick?.(e);
+                    handleTriggerClick(e);
+                }}
+                onContextMenu={(e) => {
+                    const originalOnContextMenu = (trigger as React.ReactElement<any>).props.onContextMenu;
+                    originalOnContextMenu?.(e);
+                    handleContextMenu(e);
+                }}
+            >
+                {trigger}
+            </Container>
+        )
         : null;
 
     const renderChildren = () => {
