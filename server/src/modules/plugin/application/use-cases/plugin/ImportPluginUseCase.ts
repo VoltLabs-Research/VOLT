@@ -4,7 +4,6 @@ import { Result } from '@shared/domain/ports/Result';
 import { ImportPluginInputDTO, ImportPluginOutputDTO } from '@modules/plugin/application/dtos/plugin/ImportPluginDTO';
 import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
 import { IPluginStorageService } from '@modules/plugin/domain/ports/IPluginStorageService';
-import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 

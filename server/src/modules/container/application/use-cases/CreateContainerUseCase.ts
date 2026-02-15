@@ -4,10 +4,7 @@ import { Result } from '@shared/domain/ports/Result';
 import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
 import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/ports/IContainerService';
-import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
-import { Container } from '@modules/container/domain/entities/Container';
 import { execSync } from 'child_process';
-import ApplicationError from '@shared/application/errors/ApplicationErrors';
 
 @injectable()
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
@@ -53,7 +50,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
                 // This execSync is from legacy, risky in simplified env but needed for functionality
                 const dockerGid = execSync("getent group docker | cut -d: -f3").toString().trim();
                 if (dockerGid) HostConfig.GroupAdd = [dockerGid];
-            } catch (e) {
+            } catch {
                 // ignore
             }
         }
@@ -79,7 +76,7 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         const { id: networkId, name: networkName } = await this.containerService.createNetwork(name);
         await this.containerService.connectNetwork(networkId, dockerId);
 
-        const updatedInfo = await this.containerService.getStats(dockerId).catch(() => null); // Just to check connectivity or re-inspect
+        await this.containerService.getStats(dockerId).catch(() => null);
 
         // Verify/Get IP logic usually requires re-inspecting
         // We'll skip precise IP extraction for now as it requires specific object traversing, 

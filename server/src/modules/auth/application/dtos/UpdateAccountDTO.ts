@@ -1,5 +1,4 @@
-import { UserProps } from '@modules/auth/domain/entities/User';
-import { Multer } from 'multer';
+import type { UserProps } from '@modules/auth/domain/entities/User';
 
 export interface UpdateAccountInputDTO{
     userId: string;
@@ -8,7 +7,7 @@ export interface UpdateAccountInputDTO{
     fullName?: string;
     email?: string;
     avatar?: any;
-    file?: Multer.File;
+    file?: Express.Multer.File;
 };
 
 export type UpdateAccountOutputDTO = {

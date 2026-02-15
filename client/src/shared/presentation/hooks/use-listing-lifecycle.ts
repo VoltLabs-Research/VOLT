@@ -25,7 +25,6 @@ interface UseListingLifecycleOptions<T> {
 }
 
 const useListingLifecycle = <T = any>({
-    data,
     isLoading,
     isFetchingMore,
     listingMeta,

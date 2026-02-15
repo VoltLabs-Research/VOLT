@@ -1,5 +1,3 @@
-import { Readable } from 'node:stream';
-
 export interface FilterExpression {
     property: string;
     operator: '==' | '!=' | '>' | '>=' | '<' | '<=';

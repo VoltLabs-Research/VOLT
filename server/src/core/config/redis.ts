@@ -15,14 +15,10 @@ const getRedisConfig = () => {
     return redisConfig;
 };
 
-export const createRedisConnection = () => {
-    return new Redis(getRedisConfig());
-};
-
 export let redis: Redis | null = null;
 
 export const initializeRedis = (): Promise<void> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         if(redis){
             resolve();
             return;

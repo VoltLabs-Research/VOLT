@@ -41,9 +41,9 @@ export class UpdateGroupAdminsUseCase implements IUseCase<UpdateGroupAdminsInput
         }
 
         let updatedAdmins = [...chat.props.admins];
-        if (input.action === GroupAdminAction.Add) {
+        if (action === GroupAdminAction.Add) {
             updatedAdmins = [...new Set([...updatedAdmins, ...validUsers])];
-        } else if (input.action === GroupAdminAction.Remove) {
+        } else if (action === GroupAdminAction.Remove) {
             updatedAdmins = updatedAdmins.filter((admin) => !validUsers.includes(admin));
             if (updatedAdmins.length === 0) {
                 return Result.fail(ApplicationError.badRequest(

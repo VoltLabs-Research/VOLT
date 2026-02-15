@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { container } from 'tsyringe';
 import type { Plugin } from '../../domain/entities';
-import type { IExposureComputed, IArgumentDefinition } from '../../domain/entities';
+import type { IArgumentDefinition } from '../../domain/entities';
 import type IPluginRepository from '../../domain/ports/IPluginRepository';
 import { PLUGIN_TOKENS } from '../../infrastructure/di/tokens';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';

@@ -81,11 +81,10 @@ export default class JobHandlerService implements IJobHandlerService {
 
     async handleJobFailure(
         job: Job,
-        error: string,
-        rawData: string,
-        queueKey: string
+        _error: string,
+        _rawData: string,
+        _queueKey: string
     ): Promise<boolean> {
-        const maxAttempts = job.props.maxRetries || 1;
         const retryCountKey = `job:retries:${job.props.jobId}`;
 
         await this.jobRepository.incrementRetryCounter(
@@ -140,7 +139,7 @@ export default class JobHandlerService implements IJobHandlerService {
         console.log(`Cancelling job ${jobId} for trajectory ${trajectoryId}`);
     }
 
-    async retryFailedJobs(trajectoryId: string): Promise<number> {
+    async retryFailedJobs(_trajectoryId: string): Promise<number> {
         // Retry logic placeholder
         return 0;
     }

@@ -1,5 +1,5 @@
 import { injectable, inject } from 'tsyringe';
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { CreateAnalysisUseCase } from '@modules/analysis/application/use-cases/CreateAnalysisUseCase';
 
 import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';

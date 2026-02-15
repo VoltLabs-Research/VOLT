@@ -63,5 +63,3 @@ export const SystemRoles = {
         isSystem: true
     }
 } as const;
-
-export const DEFAULT_MEMBER_ROLE = SystemRoleNames.MEMBER;

@@ -87,8 +87,6 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
 
         this.maxConcurrentJobs = options.maxConcurrentJobs || Math.max(2, Math.floor(os.cpus().length * 0.75));
 
-        const clusterId = process.env.CLUSTER_ID ?? os.hostname();
-
         // Register this queue in the queue registry
         this.queueRegistry.registerQueue({
             queueName: this.queueName,
@@ -145,7 +143,7 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
         return new Job(data.props || data) as unknown as T;
     }
 
-    protected async onBeforeDecrement(job: T): Promise<number> {
+    protected async onBeforeDecrement(_job: T): Promise<number> {
         return 0;
     }
 

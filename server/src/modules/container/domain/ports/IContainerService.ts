@@ -1,5 +1,3 @@
-import { Readable } from 'stream';
-
 export interface ContainerStats {
     read: string;
     precpu_stats: any;

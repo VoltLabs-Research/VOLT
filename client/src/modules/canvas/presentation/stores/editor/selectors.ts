@@ -18,22 +18,3 @@ export const selectFractalSceneConfig = (state: EditorStore) => ({
     interactionDegradeEnabled: state.performanceSettings.interactionDegrade.enabled,
     activeScene: state.activeScene
 });
-
-export const selectFractalSceneConfigSignature = (state: EditorStore): string => [
-    state.rendererSettings.create,
-    state.performanceSettings.canvas.powerPreference,
-    state.rendererSettings.runtime,
-    state.camera,
-    state.orbitControls,
-    state.grid,
-    state.environment,
-    state.effects,
-    state.lights,
-    state.renderConfig,
-    state.configuration.slicePlaneConfig,
-    state.performanceSettings.dpr,
-    state.performanceSettings.performance,
-    state.performanceSettings.adaptiveEvents.enabled,
-    state.performanceSettings.interactionDegrade.enabled,
-    state.activeScene
-].map((item) => (typeof item === 'object' ? JSON.stringify(item) : String(item))).join('|');

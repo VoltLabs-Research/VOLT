@@ -20,7 +20,7 @@ export class VFSService {
                     type: 'file', // Can't easily determine directory without suffix
                     size: metadata.size
                 });
-            } catch (e) {
+            } catch {
                 // ignore missing files
             }
         }
@@ -43,7 +43,7 @@ export class VFSService {
         await this.storage.delete('trajectories', filePath);
     }
 
-    async downloadArchive(trajectoryId: string): Promise<any> {
+    async downloadArchive(_trajectoryId: string): Promise<any> {
         throw new Error("Method not implemented.");
     }
 }

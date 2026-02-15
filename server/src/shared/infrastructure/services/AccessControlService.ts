@@ -1,4 +1,4 @@
-import { injectable, inject } from 'tsyringe';
+import { injectable } from 'tsyringe';
 import { IAccessControlService, IAccessControlSubject, IPermissionStrategy } from '@shared/domain/ports/IAccessControlService';
 import { UserStrategy } from './strategies/UserStrategy';
 import { ErrorCodes } from '@core/constants/error-codes';

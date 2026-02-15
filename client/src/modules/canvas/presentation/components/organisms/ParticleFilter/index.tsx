@@ -1,4 +1,3 @@
-import React from 'react';
 import useParticleFilter, { OPERATORS, ACTIONS, type FilterOperator, type FilterAction } from '../../../hooks/use-particle-filter';
 import Button from '@/shared/presentation/components/Button';
 import FormField from '@/shared/presentation/components/FormField';

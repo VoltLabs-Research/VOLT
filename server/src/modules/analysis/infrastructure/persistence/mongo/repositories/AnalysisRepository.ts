@@ -20,7 +20,7 @@ export default class AnalysisRepository
         super(AnalysisModel, analysisMapper);
     }
 
-    async retryFailedFrames(analysisId: string): Promise<void> {
+    async retryFailedFrames(_analysisId: string): Promise<void> {
     }
 
     async deleteById(id: string): Promise<boolean> {
