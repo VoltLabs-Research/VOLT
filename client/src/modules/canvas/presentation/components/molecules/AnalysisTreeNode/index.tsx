@@ -2,6 +2,7 @@ import { ChevronDown, ChevronRight, FlaskConical, Atom } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import type { AnalysisSectionData } from '../../../hooks/use-canvas-sidebar-scene';
 
 interface AnalysisTreeNodeProps {
@@ -28,44 +29,51 @@ const AnalysisTreeNode = ({
     const { analysis, pluginDisplayName, entry, isCurrentAnalysis } = section;
     const hasExposures = entry.state === 'loaded' && entry.exposures.length > 0;
     const isLoading = entry.state === 'loading';
+    const isAnalysisInProgress = effectiveStatus === 'running' || effectiveStatus === 'pending';
 
     return (
         <>
-            <Container
-                className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary cursor-pointer u-select-none canvas-tree-item--indent ${isCurrentAnalysis ? 'selected' : ''}`}
-                onClick={() => {
-                    onToggle(analysis._id);
-                    onSelectScene({ sceneType: 'trajectory', source: 'default' as const }, analysis);
-                }}
-                role="treeitem"
-                aria-selected={isCurrentAnalysis}
-                tabIndex={0}
-            >
-                <button
-                    type="button"
-                    onClick={(e) => {
-                        e.stopPropagation();
+            <Tooltip content='Analysis still running. Options will be available when it finishes.' disabled={!isAnalysisInProgress} placement='bottom'>
+                <Container
+                    className={`canvas-tree-item font-size-1 d-flex items-center gap-05 color-secondary u-select-none canvas-tree-item--indent ${isCurrentAnalysis ? 'selected' : ''} ${isAnalysisInProgress ? 'is-disabled' : 'cursor-pointer'}`}
+                    onClick={() => {
+                        if (isAnalysisInProgress) return;
                         onToggle(analysis._id);
+                        onSelectScene({ sceneType: 'trajectory', source: 'default' as const }, analysis);
                     }}
-                    className="canvas-tree-toggle b-none p-0"
-                    aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                    role="treeitem"
+                    aria-selected={isCurrentAnalysis}
+                    aria-disabled={isAnalysisInProgress}
+                    tabIndex={isAnalysisInProgress ? -1 : 0}
                 >
-                    {isExpanded
-                        ? <ChevronDown style={{ width: 13, height: 13 }} />
-                        : <ChevronRight style={{ width: 13, height: 13 }} />
-                    }
-                </button>
-                <FlaskConical style={{ width: 13, height: 13, color: isCurrentAnalysis ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.3)' }} />
-                <span className={`${isCurrentAnalysis ? 'color-primary' : 'color-secondary'}`}>
-                    {pluginDisplayName}
-                </span>
-                <span className="flex-1" />
-                {effectiveStatus && effectiveStatus !== 'idle' && (
-                    <span className={`canvas-tree-status-dot canvas-tree-status-dot--${effectiveStatus} font-size-05`}>
-                        ●
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            if (isAnalysisInProgress) return;
+                            e.stopPropagation();
+                            onToggle(analysis._id);
+                        }}
+                        className="canvas-tree-toggle b-none p-0"
+                        aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                        disabled={isAnalysisInProgress}
+                    >
+                        {isExpanded
+                            ? <ChevronDown style={{ width: 13, height: 13 }} />
+                            : <ChevronRight style={{ width: 13, height: 13 }} />
+                        }
+                    </button>
+                    <FlaskConical style={{ width: 13, height: 13, color: isCurrentAnalysis ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.3)' }} />
+                    <span className={`${isCurrentAnalysis ? 'color-primary' : 'color-secondary'}`}>
+                        {pluginDisplayName}
                     </span>
-                )}
-            </Container>
+                    <span className="flex-1" />
+                    {effectiveStatus && effectiveStatus !== 'idle' && (
+                        <span className={`canvas-tree-status-dot canvas-tree-status-dot--${effectiveStatus} font-size-05`}>
+                            ●
+                        </span>
+                    )}
+                </Container>
+            </Tooltip>
 
             {isExpanded && isLoading && (
                 <Container className="canvas-tree-item d-flex items-center gap-05 color-secondary canvas-tree-item--indent-lg">
