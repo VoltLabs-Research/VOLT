@@ -33,6 +33,7 @@ interface SSH2Connection {
 export default class SSHConnectionService implements ISSHConnectionService {
     private connections: Map<string, CachedConnection> = new Map();
     private connectionPromises: Map<string, Promise<SSH2Connection>> = new Map();
+    private cleanupInterval: NodeJS.Timeout;
 
     // 5 minutes
     private readonly IDLE_TIMEOUT = 1000 * 60 * 5;
@@ -45,7 +46,11 @@ export default class SSHConnectionService implements ISSHConnectionService {
 
     constructor() {
         // TODO: implement scheduler/job service
-        setInterval(() => this.cleanupIdleConnections(), 1000 * 60);
+        this.cleanupInterval = setInterval(() => this.cleanupIdleConnections(), 1000 * 60);
+    }
+
+    public destroy(): void {
+        clearInterval(this.cleanupInterval);
     }
 
     async testConnection(connection: SSHConnection): Promise<boolean> {

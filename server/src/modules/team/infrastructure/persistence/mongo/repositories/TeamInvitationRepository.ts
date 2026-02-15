@@ -21,7 +21,7 @@ export default class TeamInvitationRepository
 
     async findPendingByTeam(teamId: string): Promise<TeamInvitation[]>{
         const docs = await this.model.find({ team: teamId, status: TeamInvitationStatus.Pending });
-        return docs.map(this.mapper.toDomain);
+        return docs.map((doc) => this.mapper.toDomain(doc as any));
     }
 
     async updateStatus(token: string, status: TeamInvitationStatus): Promise<void>{

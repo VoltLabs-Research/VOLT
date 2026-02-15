@@ -1,6 +1,6 @@
 export interface AnalysisProps {
     plugin: string;
-    clusterId: string;
+    clusterId?: string;
     config: any;
     trajectory: string;
     createdBy: string;

@@ -27,8 +27,9 @@ export const getMinioConfig = () => {
 const createClient = (): Client => {
     const { endPoint, accessKey, port, secretKey, useSSL } = getMinioConfig();
 
+    // CORE-007: Validate credentials early with clear English error message
     if (!accessKey || !secretKey) {
-        throw new Error('[MinIO] MINIO_ACCESS_KEY o MINIO_SECRET_KEY not in .env');
+        throw new Error('[MinIO] MINIO_ACCESS_KEY and MINIO_SECRET_KEY must be set in environment variables');
     }
 
     return new Client({
@@ -48,7 +49,11 @@ export const getMinioClient = (): Client => {
 };
 
 export const ensureBucketExists = async (client: Client, bucket: string): Promise<void> => {
-    const exists = await client.bucketExists(bucket).catch(() => false);
+    // CORE-017: Don't swallow errors silently, log them
+    const exists = await client.bucketExists(bucket).catch((err) => {
+        logger.warn('Error checking bucket existence:', err);
+        return false;
+    });
     if (!exists) {
         await client.makeBucket(bucket, '');
         // Set public policy for avatars bucket
@@ -68,11 +73,17 @@ export const ensureBucketExists = async (client: Client, bucket: string): Promis
     }
 };
 
+// CORE-006: Wrap bucket creation loop in try/catch per bucket
 export const initializeMinio = async (): Promise<void> => {
     const client = getMinioClient();
     const buckets = Object.values(SYS_BUCKETS);
     for (const bucket of buckets) {
-        await ensureBucketExists(client, bucket);
+        try {
+            await ensureBucketExists(client, bucket);
+        } catch (error) {
+            logger.error(`Failed to ensure bucket ${bucket}:`, error);
+            throw error;
+        }
     }
     logger.info('[MinIO] Complete initialization');
 };

@@ -22,9 +22,7 @@ export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByT
         });
 
         const data = analyses.data.map((analysis: any) => {
-            const props = { ...analysis.props };
-            props._id = analysis.id;
-            return props;
+            return { id: analysis.id, ...analysis.props };
         });
 
         return Result.ok({

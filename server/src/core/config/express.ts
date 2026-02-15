@@ -8,15 +8,23 @@ import logger from '@shared/infrastructure/logger';
 
 const app = express();
 
+// CORE-009: Validate environment variables for CORS origins
+const clientHost = process.env.CLIENT_HOST;
+const clientDevHost = process.env.CLIENT_DEV_HOST;
+
+if (process.env.NODE_ENV === 'production' && !clientHost) {
+    logger.warn('CLIENT_HOST not set, CORS will block all cross-origin requests');
+}
+
 const corsOptions = {
     origin: function (origin: string | undefined, callback: Function) {
         if (!origin) return callback(null, true);
 
-        const allowedOrigins = process.env.NODE_ENV === 'production'
-            ? [process.env.CLIENT_HOST as string]
-            : [
-                process.env.CLIENT_DEV_HOST as string
-            ];
+        // Filter out undefined values from allowed origins
+        const allowedOrigins = (process.env.NODE_ENV === 'production'
+            ? [clientHost]
+            : [clientDevHost]
+        ).filter((o): o is string => !!o);
 
         if (allowedOrigins.includes(origin)) {
             callback(null, true);
@@ -53,6 +61,7 @@ const corsOptions = {
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(compression());
+// TODO: Add rate limiting middleware (express-rate-limit) for auth endpoints
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 

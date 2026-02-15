@@ -1,5 +1,6 @@
 import { injectable } from 'tsyringe';
 import { IPermissionStrategy, IAccessControlSubject } from '@shared/domain/ports/IAccessControlService';
+// TODO: Replace direct Mongoose model imports with repository injection via DI
 import TeamModel from '@modules/team/infrastructure/persistence/mongo/models/TeamModel';
 import TeamMemberModel from '@modules/team/infrastructure/persistence/mongo/models/TeamMemberModel';
 

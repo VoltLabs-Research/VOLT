@@ -5,14 +5,7 @@ import { BaseMapper } from '@shared/infrastructure/persistence/mongo/MongoBaseMa
 class TeamMapper extends BaseMapper<Team, TeamProps, TeamDocument>{
     constructor(){
         super(Team, [
-            'owner',
-            'admins',
-            'members',
-            'invitations',
-            'containers',
-            'trajectories',
-            'chats',
-            'plugins'
+            'owner'
         ]);
     }
 };

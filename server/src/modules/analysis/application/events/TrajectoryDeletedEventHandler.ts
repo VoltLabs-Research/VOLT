@@ -13,6 +13,7 @@ export default class TrajectoryDeletedEventHandler implements IEventHandler<Traj
 
     async handle(event: TrajectoryDeletedEvent): Promise<void>{
         const { trajectoryId } = event.payload;
-        await this.analysisRepository.deleteMany({ trajectory: trajectoryId });
+        const analyses = await this.analysisRepository.findAll({ filter: { trajectory: trajectoryId } });
+        await Promise.all(analyses.data.map(a => this.analysisRepository.deleteById(a.id)));
     }
 };

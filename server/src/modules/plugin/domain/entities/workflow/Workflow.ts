@@ -137,13 +137,18 @@ export default class Workflow{
      * Find immediate parent node of specified type.
      */
     findParentByType(nodeId: string, type: WorkflowNodeType): WorkflowNode | null{
-        const parentEdge = this.props.edges.find((edge) => edge.target === nodeId);
-        if(!parentEdge) return null;
+        const parentEdges = this.props.edges.filter((edge) => edge.target === nodeId);
+        if(parentEdges.length === 0) return null;
 
-        const parentNode = this.props.nodes.find((node) => node.id === parentEdge.source);
-        if(parentNode?.type === type) return parentNode;
+        for(const parentEdge of parentEdges){
+            const parentNode = this.props.nodes.find((node) => node.id === parentEdge.source);
+            if(parentNode?.type === type) return parentNode;
 
-        return this.findParentByType(parentEdge.source, type);
+            const ancestor = this.findParentByType(parentEdge.source, type);
+            if(ancestor) return ancestor;
+        }
+
+        return null;
     }
 
     /**

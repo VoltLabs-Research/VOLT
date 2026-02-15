@@ -3,11 +3,12 @@ import { Model } from 'mongoose';
 import { IApiTrackerRepository } from '@modules/api-tracker/domain/ports/IApiTrackerRepository';
 import { ApiTrackerEntity } from '@modules/api-tracker/domain/entities/ApiTracker';
 import { IApiTrackerDocument } from '@modules/api-tracker/infrastructure/persistence/mongo/models/ApiTrackerModel';
+import { API_TRACKER_TOKENS } from '@modules/api-tracker/infrastructure/di/ApiTrackerTokens';
 
 @injectable()
 export class ApiTrackerRepository implements IApiTrackerRepository {
     constructor(
-        @inject('ApiTrackerModel') private model: Model<IApiTrackerDocument>
+        @inject(API_TRACKER_TOKENS.ApiTrackerModel) private model: Model<IApiTrackerDocument>
     ){}
 
     async findByUserId(userId: string, page: number, limit: number): Promise<{ items: ApiTrackerEntity[]; total: number }> {

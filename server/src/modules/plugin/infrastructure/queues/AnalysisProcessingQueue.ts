@@ -38,7 +38,7 @@ export default class AnalysisProcessingQueue extends BaseProcessingQueue {
         @inject(JOBS_TOKENS.QueueRegistry)
         queueRegistry: IQueueRegistry
     ) {
-        const workerPath = path.join(__dirname, '../workers/AnalysisWorker.ts');
+        const workerPath = path.resolve(__dirname, '../workers/AnalysisWorker' + (path.extname(__filename) || '.js'));
         console.log(`[AnalysisProcessingQueue] Initializing with worker path: ${workerPath}`);
         super(
             {

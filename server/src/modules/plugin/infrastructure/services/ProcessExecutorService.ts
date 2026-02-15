@@ -17,7 +17,7 @@ export default class ProcessExecutorService implements IProcessExecutorService{
 
     private async ensureExecutable(path: string): Promise<void>{
         try{
-            fs.access(path, fs.constants.X_OK);
+            await fs.access(path, fs.constants.X_OK);
         }catch{
             throw new Error(`Binary not accessible or executable: ${path}`);
         }

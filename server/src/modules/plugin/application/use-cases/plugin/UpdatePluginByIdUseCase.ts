@@ -72,8 +72,8 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
             ));
         }
 
-        await this.pluginRepository.updateById(input.pluginId, update);
+        const updated = await this.pluginRepository.updateById(input.pluginId, update);
 
-        return Result.ok(plugin.props);
+        return Result.ok(updated ? updated.props : plugin.props);
     }
 }

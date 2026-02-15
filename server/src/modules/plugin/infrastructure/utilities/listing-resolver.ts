@@ -71,9 +71,18 @@ export const resolve = (path: string, metadata: any): any => {
 export const resolveRow = (columns: Column[], metadata: any, analysisCreatedAt: Date): Record<string, any> => {
     const row: Record<string, any> = {};
 
-    // Override analysis.createdAt with actual value
+    // Override analysis.createdAt with actual value (using a shallow copy to avoid mutating shared metadata)
     if (metadata._resolvedContext?.analysis) {
-        metadata._resolvedContext.analysis.createdAt = analysisCreatedAt;
+        metadata = {
+            ...metadata,
+            _resolvedContext: {
+                ...metadata._resolvedContext,
+                analysis: {
+                    ...metadata._resolvedContext.analysis,
+                    createdAt: analysisCreatedAt
+                }
+            }
+        };
     }
 
     for (const col of columns) {

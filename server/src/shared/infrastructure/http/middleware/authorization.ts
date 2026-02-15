@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { Resource } from '@core/constants/resources';
 import { Action, getPermission } from '@core/constants/permissions';
-import { accessControlService } from '@shared/infrastructure/services/AccessControlService';
+import { container } from 'tsyringe';
+import { AccessControlService } from '@shared/infrastructure/services/AccessControlService';
 import { IAccessControlSubject } from '@shared/domain/ports/IAccessControlService';
 
 /**
@@ -42,6 +43,7 @@ export const authorize = (resource: Resource, action: Action) => {
             };
 
             const permission = getPermission(resource, action);
+            const accessControlService = container.resolve(AccessControlService);
             await accessControlService.enforce(subject, teamId as string, permission);
 
             next();

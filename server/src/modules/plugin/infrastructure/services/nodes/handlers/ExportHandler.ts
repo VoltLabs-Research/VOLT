@@ -87,7 +87,6 @@ export default class ExportHandler implements INodeHandler{
             const objectPath = `trajectory-${context.trajectoryId}/analysis-${context.analysisId}/${folder}/${item.frame}/${slugify(exposureNode.id)}.${extension}`;
             const options = this.resolveOptionsRecursive(config.options || {}, context);
 
-            console.log('EXPORT HANDLER===', objectPath);
             try{
                 await this.runExporter(config.exporter, data, objectPath, options);
                 results.push({
@@ -97,7 +96,6 @@ export default class ExportHandler implements INodeHandler{
                     exporter: config.exporter
                 });
             }catch(err: any){
-                console.log('ERROR:', err)
                 results.push({
                     index: item.index,
                     success: false,

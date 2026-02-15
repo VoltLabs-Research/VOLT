@@ -3,6 +3,7 @@ import { IEventHandler } from '@shared/application/events/IEventHandler';
 import TeamDeletedEvent from '@modules/team/domain/events/TeamDeletedEvent';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import { ISimulationCellRepository } from '@modules/simulation-cell/domain/ports/ISimulationCellRepository';
+import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class TeamDeletedEventHandler implements IEventHandler<TeamDeletedEvent> {
@@ -13,6 +14,10 @@ export default class TeamDeletedEventHandler implements IEventHandler<TeamDelete
 
     async handle(event: TeamDeletedEvent): Promise<void> {
         const { teamId } = event.payload;
-        await this.simulationCellRepository.deleteMany({ team: teamId });
+        try {
+            await this.simulationCellRepository.deleteMany({ team: teamId });
+        } catch (error) {
+            logger.error('Failed to delete simulation cells for team %s: %o', teamId, error);
+        }
     }
 }

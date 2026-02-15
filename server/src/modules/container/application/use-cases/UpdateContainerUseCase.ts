@@ -96,6 +96,8 @@ export class UpdateContainerUseCase implements IUseCase<UpdateContainerInputDTO,
             // We assume network name standard or fetch via ID? 
             // Ideally we fetch the Network Doc.
             // For now, use standard name construction as fallback or query.
+            // TODO: Direct Mongoose model import violates clean architecture. Refactor to use
+            // INetworkRepository once that repository interface is created.
             const { DockerNetwork } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerNetworkModel');
             const netDoc = await DockerNetwork.findById(container.network);
             if (netDoc) {

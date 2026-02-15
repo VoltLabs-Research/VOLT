@@ -1,3 +1,7 @@
+// TODO: Controllers are resolved and routes are wired below, but the underlying
+// use-cases (Create, Update) still have DI and data-mapping bugs that must be
+// fixed before this module is safe to mount. Do not register this module until
+// all ANALYSIS-* issues are resolved.
 import { Router } from 'express';
 import { container } from 'tsyringe';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';

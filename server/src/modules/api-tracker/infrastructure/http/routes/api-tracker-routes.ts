@@ -14,6 +14,6 @@ const listApiTrackerController = container.resolve(ListApiTrackerController);
 
 router.use(protect);
 
-router.get('/', listApiTrackerController.handle);
+router.get('/', (req, res, next) => listApiTrackerController.handle(req, res, next));
 
 export default module;

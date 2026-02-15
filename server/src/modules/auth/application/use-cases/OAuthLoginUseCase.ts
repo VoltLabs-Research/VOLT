@@ -29,7 +29,7 @@ export default class OAuthLoginUseCase implements IUseCase<OAuthLoginInputDTO, O
         });
 
         if(!user){
-            // Check if user exists with this emaill
+            // Check if user exists with this email
             user = await this.userRepository.findByEmail(input.email);
             
             if(user){
