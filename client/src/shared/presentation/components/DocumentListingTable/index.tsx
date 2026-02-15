@@ -136,7 +136,7 @@ const DocumentListingTable = <T extends Identifiable>({
 
             <Container
                 ref={bodyRef as React.RefObject<HTMLDivElement>}
-                className='d-flex column p-relative document-listing-table-body-container flex-1 overflow-hidden'
+                className='d-flex column p-relative document-listing-table-body-container flex-1'
                 style={{ minWidth: useFlexDistribution ? undefined : `${minContentWidth}px` }}
             >
                 {!hasNoData && data.map((item) => (
