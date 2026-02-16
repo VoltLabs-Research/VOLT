@@ -8,7 +8,7 @@ interface InvitationEmailInputProps {
     value: string;
     onChange: (e: ChangeEvent<HTMLInputElement>) => void;
     onBlur: () => void;
-    onSubmit: () => void;
+    onSubmit: () => Promise<void>;
     error?: string;
     isSubmitting: boolean;
     buttonState: InviteButtonState;
@@ -28,7 +28,7 @@ const InvitationEmailInput: React.FC<InvitationEmailInputProps> = ({
     const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
         if(e.key === 'Enter'){
             e.preventDefault();
-            onSubmit();
+            void onSubmit();
         }
     };
 
@@ -49,7 +49,9 @@ const InvitationEmailInput: React.FC<InvitationEmailInputProps> = ({
             <InviteButton
                 state={buttonState}
                 isLoading={isSubmitting}
-                onClick={onSubmit}
+                onClick={() => {
+                    void onSubmit();
+                }}
                 disabled={disabled}
             />
         </Container>

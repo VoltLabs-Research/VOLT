@@ -23,7 +23,8 @@ export abstract class BaseStreamController<TUseCase extends IUseCase<any, Readab
                 return BaseResponse.error(
                     res,
                     result.error.message,
-                    result.error.statusCode
+                    result.error.statusCode,
+                    result.error.code
                 );
             }
 
@@ -35,7 +36,12 @@ export abstract class BaseStreamController<TUseCase extends IUseCase<any, Readab
             result.value.pipe(res);
         } catch (error) {
             console.error(error);
-            return BaseResponse.error(res, 'Internal Server Error', HttpStatus.InternalServerError);
+            return BaseResponse.error(
+                res,
+                'Internal Server Error',
+                HttpStatus.InternalServerError,
+                'Internal::Server::Error'
+            );
         }
     };
 }
