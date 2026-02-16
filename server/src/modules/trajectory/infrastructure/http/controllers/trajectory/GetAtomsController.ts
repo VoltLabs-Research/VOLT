@@ -54,32 +54,39 @@ export default class GetAtomsController {
             let perAtomProperties: string[] = [];
 
             const isDefaultAnalysis = !analysisId || analysisId === 'default';
+            let resolvedExposureId = exposureId;
 
-            if (!isDefaultAnalysis && exposureId) {
-                try {
-                    const config = await this.atomProps.getExposureAtomConfig(analysisId, exposureId);
-                    perAtomProperties = config.perAtomProperties;
+            if (!isDefaultAnalysis && !resolvedExposureId) {
+                const exposurePropsMap = await this.atomProps.getModifierPerAtomProps(analysisId);
+                const candidateExposureIds = Object.entries(exposurePropsMap)
+                    .filter(([, properties]) => Array.isArray(properties) && properties.length > 0)
+                    .map(([candidateId]) => candidateId);
 
-                    if (perAtomProperties.length > 0) {
-                        const modifierData = await this.atomProps.getModifierAnalysis(
-                            trajectoryId,
-                            analysisId,
-                            exposureId,
-                            timestep
-                        );
+                if (candidateExposureIds.length > 0) {
+                    resolvedExposureId = candidateExposureIds[0];
+                }
+            }
 
-                        if (Array.isArray(modifierData)) {
-                            perAtomData = new Map();
-                            for (const item of modifierData) {
-                                if (item?.id !== undefined) {
-                                    perAtomData.set(item.id, item);
-                                }
+            if (!isDefaultAnalysis && resolvedExposureId) {
+                const config = await this.atomProps.getExposureAtomConfig(analysisId, resolvedExposureId);
+                perAtomProperties = config.perAtomProperties;
+
+                if (perAtomProperties.length > 0) {
+                    const modifierData = await this.atomProps.getModifierAnalysis(
+                        trajectoryId,
+                        analysisId,
+                        resolvedExposureId,
+                        timestep
+                    );
+
+                    if (Array.isArray(modifierData)) {
+                        perAtomData = new Map();
+                        for (const item of modifierData) {
+                            if (item?.id !== undefined) {
+                                perAtomData.set(item.id, item);
                             }
                         }
                     }
-                } catch {
-                    perAtomProperties = [];
-                    perAtomData = null;
                 }
             }
 

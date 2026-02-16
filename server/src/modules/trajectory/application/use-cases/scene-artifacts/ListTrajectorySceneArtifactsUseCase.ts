@@ -6,6 +6,7 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import type { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import normalizePerAtomProperties from '@shared/infrastructure/utilities/normalize-per-atom-properties';
 
 export interface ListTrajectorySceneArtifactsInput {
     trajectoryId: string;
@@ -85,6 +86,7 @@ export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTraject
                     const exposureName = typeof metadata?.exposureName === 'string'
                         ? metadata.exposureName.trim()
                         : '';
+                    const perAtomProperties = normalizePerAtomProperties(metadata?.perAtomProperties);
 
                     if (!exposureName) return null;
 
@@ -98,7 +100,7 @@ export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTraject
                         results: 'glb',
                         canvas: true,
                         raster: false,
-                        perAtomProperties: [],
+                        perAtomProperties,
                         export: {
                             exporter: typeof metadata?.exporter === 'string' ? metadata.exporter : undefined,
                             type: typeof metadata?.exportType === 'string' ? metadata.exportType : undefined,
