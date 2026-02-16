@@ -13,6 +13,7 @@ export interface ColumnConfig {
 
 const getColumnKey = (col: ColumnConfig): string => String(col.key ?? col.path ?? '');
 const getColumnTitle = (col: ColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
+const getColumnMinWidth = (col: ColumnConfig): number => Number(col.width ?? 120);
 
 const TableRow = ({ index, style, data: rows, columns }: { index: number; style: React.CSSProperties; data: any[]; columns: ColumnConfig[] }) => {
     const row = rows[index];
@@ -25,8 +26,8 @@ const TableRow = ({ index, style, data: rows, columns }: { index: number; style:
                     key={getColumnKey(col)}
                     className='plugin-compact-table-cell overflow-hidden font-size-1 color-secondary'
                     style={{
-                        width: col.width ? `${col.width}px` : 'auto',
-                        flex: col.width ? '0 0 auto' : '1'
+                        minWidth: `${getColumnMinWidth(col)}px`,
+                        flex: `1 1 ${getColumnMinWidth(col)}px`
                     }}
                 >
                     {col.render ? col.render((row as any)[getColumnKey(col)], row) : (row as any)[getColumnKey(col)]}
@@ -66,14 +67,17 @@ const PluginCompactTable = ({
 }: PluginCompactTableProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [height, setHeight] = useState(400);
+    const [containerWidth, setContainerWidth] = useState(0);
 
-    const totalWidth = columns.reduce((sum, col) => sum + (col.width || 150), 0);
+    const minimumColumnsWidth = columns.reduce((sum, col) => sum + getColumnMinWidth(col), 0);
+    const effectiveWidth = Math.max(minimumColumnsWidth, containerWidth);
 
     useEffect(() => {
         if (!containerRef.current) return;
         const observer = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 setHeight(entry.contentRect.height - 32);
+                setContainerWidth(entry.contentRect.width);
             }
         });
         observer.observe(containerRef.current);
@@ -122,25 +126,25 @@ const PluginCompactTable = ({
 
     return (
         <div
-            className='plugin-exposure-table-compact w-max h-max overflow-hidden'
+            className='plugin-exposure-table-compact w-full h-full overflow-hidden'
             ref={containerRef}
             style={{
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 overflowX: 'auto',
-                overflowY: 'auto'
+                overflowY: 'hidden'
             }}
         >
-            <div style={{ minWidth: `${totalWidth}px`, display: 'flex', flexDirection: 'column', flex: 1 }}>
+            <div style={{ minWidth: `${effectiveWidth}px`, display: 'flex', flexDirection: 'column', flex: 1 }}>
                 <div className='plugin-compact-table-header p-sticky'>
                     {columns.map((col) => (
                         <div
                             key={getColumnKey(col)}
                             className='plugin-compact-table-header-cell overflow-hidden font-weight-5'
                             style={{
-                                width: col.width ? `${col.width}px` : 'auto',
-                                flex: col.width ? '0 0 auto' : '1'
+                                minWidth: `${getColumnMinWidth(col)}px`,
+                                flex: `1 1 ${getColumnMinWidth(col)}px`
                             }}
                         >
                             {getColumnTitle(col)}
@@ -157,7 +161,7 @@ const PluginCompactTable = ({
                             data,
                             columns
                         }}
-                        style={{ height: Math.max(0, height), width: totalWidth, overflowX: 'hidden' }}
+                        style={{ height: Math.max(0, height), width: '100%', overflowX: 'hidden' }}
                     />
                 </div>
             </div>

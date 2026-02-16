@@ -20,6 +20,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
 
     const analysisId = searchParams.get('analysis') || undefined;
     const resultsSlug = searchParams.get('results') || undefined;
+    const timelineExposureId = searchParams.get('timelineExposure') || undefined;
     const pluginParam = searchParams.get('plugin') || undefined;
     const settingsKey = searchParams.get('settings') || undefined;
     const showWidgets = searchParams.get('widgets') !== 'false';
@@ -33,6 +34,10 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
 
     const setResultsSlug = useCallback((slug?: string, options?: UpdateOptions) => {
         updateSearchParams({ results: slug ?? null }, options);
+    }, [updateSearchParams]);
+
+    const setTimelineExposureId = useCallback((exposureId?: string, options?: UpdateOptions) => {
+        updateSearchParams({ timelineExposure: exposureId ?? null }, options);
     }, [updateSearchParams]);
 
     const setPluginParam = useCallback((value?: string | null, options?: UpdateOptions) => {
@@ -83,6 +88,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         updateSearchParams,
         analysisId,
         resultsSlug,
+        timelineExposureId,
         pluginParam,
         pluginSelection,
         settingsKey,
@@ -95,6 +101,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         isModifierSelected,
         setAnalysisId,
         setResultsSlug,
+        setTimelineExposureId,
         setPluginParam,
         setSettingsKey,
         setRenderConfigOpen,

@@ -1,7 +1,58 @@
 .canvas-timeline-header {
+    position: relative;
     height: 40px;
     padding: 4px 8px;
     border-bottom: 1px solid var(--color-border-soft);
+}
+
+.canvas-timeline-tabs-region,
+.canvas-timeline-frame-region {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.canvas-timeline-controls-region {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    pointer-events: none;
+    padding: 0 6px;
+}
+
+.canvas-timeline-controls-center {
+    width: max-content;
+    pointer-events: auto;
+}
+
+.canvas-timeline-tabs {
+    flex: 0 1 auto;
+    max-width: min(55vw, 500px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 14px, black calc(100% - 14px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, black 14px, black calc(100% - 14px), transparent 100%);
+}
+
+.canvas-timeline-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.canvas-timeline-tabs > * {
+    flex-shrink: 0;
+}
+
+.canvas-timeline-frame-info {
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.canvas-timeline-frame-region {
+    justify-content: flex-end;
 }
 
 
