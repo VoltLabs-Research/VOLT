@@ -4,11 +4,14 @@ import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowR
 import ListingRow from '@modules/plugin/domain/entities/ListingRow';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 
 interface ListingOptions {
     teamId?: string;
     trajectoryId?: string;
     analysisId?: string;
+    listingSlug?: string;
+    exposureId?: string;
     page?: number;
     limit?: number;
     sortAsc?: boolean;
@@ -40,18 +43,10 @@ export interface PluginListingPaginatedResult {
     _meta: {
         pluginSlug: string;
         listingSlug: string;
+        exposureId: string;
         columns: ColumnConfig[];
     };
 };
-
-const RESERVED_KEYS = new Set([
-    '_id',
-    'timestep',
-    'analysisId',
-    'trajectoryId',
-    'exposureId',
-    'trajectoryName'
-]);
 
 @injectable()
 export class PluginListingService {
@@ -60,10 +55,14 @@ export class PluginListingService {
         @inject(PLUGIN_TOKENS.ListingRowRepository) private listingRowRepository: IListingRowRepository
     ) {}
 
-    async getListingDocuments(pluginSlug: string, listingSlug: string, options: ListingOptions): Promise<PluginListingPaginatedResult> {
+    async getListingDocuments(pluginSlug: string, options: ListingOptions): Promise<PluginListingPaginatedResult> {
         const page = Math.max(1, options.page || 1);
         const limit = Math.min(200, Math.max(1, options.limit || 50));
         const sortAsc = options.sortAsc || false;
+
+        if (!options.exposureId && !options.listingSlug) {
+            throw new Error('Exposure::SelectorRequired');
+        }
 
         // Find plugin by slug
         const plugin = await this.pluginRepository.findOne({ slug: pluginSlug });
@@ -71,12 +70,23 @@ export class PluginListingService {
             throw new Error('Plugin::NotFound');
         }
 
+        const exposureDescriptor = this.resolveListingExposure(plugin, options.exposureId, options.listingSlug);
+        if (!exposureDescriptor) {
+            throw new Error('Exposure::NotFound');
+        }
+
+        const { exposureId, listingSlug, columns } = exposureDescriptor;
+
         // Build base query
         const baseQuery: Record<string, unknown> = {
             plugin: plugin.id,
-            listingSlug,
+            exposureId,
             team: options.teamId
         };
+
+        if (listingSlug) {
+            baseQuery.listingSlug = listingSlug;
+        }
 
         if (options.trajectoryId) {
             baseQuery.trajectory = options.trajectoryId;
@@ -131,27 +141,6 @@ export class PluginListingService {
             return { ...fixed, ...rest };
         });
 
-        // Extract column metadata
-        const seen = new Set<string>();
-        const ordered: string[] = [];
-        const nonNull = new Set<string>();
-
-        for (const r of rows) {
-            for (const [k, v] of Object.entries(r)) {
-                if (RESERVED_KEYS.has(k)) continue;
-                if (v === null || v === undefined) continue;
-                nonNull.add(k);
-                if (!seen.has(k)) {
-                    seen.add(k);
-                    ordered.push(k);
-                }
-            }
-        }
-
-        const columns: ColumnConfig[] = ordered
-            .filter((k) => nonNull.has(k))
-            .map((k) => ({ path: k, label: k, sortable: true }));
-
         return {
             data: rows,
             total: result.total,
@@ -161,8 +150,76 @@ export class PluginListingService {
             _meta: {
                 pluginSlug,
                 listingSlug,
+                exposureId,
                 columns
             }
         };
+    }
+
+    private resolveListingExposure(
+        plugin: any,
+        exposureId?: string,
+        listingSlug?: string
+    ): { exposureId: string; listingSlug: string; columns: ColumnConfig[] } | null {
+        const workflow = plugin?.props?.workflow;
+        const nodes = workflow?.props?.nodes || [];
+        const edges = workflow?.props?.edges || [];
+
+        const exposures = nodes.filter((node: any) => node?.type === WorkflowNodeType.Exposure);
+        for (const exposureNode of exposures) {
+            const id = String(exposureNode?.id || '');
+            const name = String(exposureNode?.data?.exposure?.name || '').trim();
+            if (!id || !name) continue;
+
+            if (exposureId && id !== exposureId) continue;
+            if (!exposureId && listingSlug && name !== listingSlug) continue;
+
+            const columns = this.findColumnsForExposure(id, nodes, edges);
+            if (!columns.length) {
+                continue;
+            }
+
+            return {
+                exposureId: id,
+                listingSlug: name,
+                columns
+            };
+        }
+
+        return null;
+    }
+
+    private findColumnsForExposure(exposureId: string, nodes: any[], edges: any[]): ColumnConfig[] {
+        const visited = new Set<string>();
+        const queue = [exposureId];
+
+        while (queue.length > 0) {
+            const current = queue.shift()!;
+            if (visited.has(current)) continue;
+            visited.add(current);
+
+            const outgoing = edges.filter((edge: any) => edge.source === current);
+            for (const edge of outgoing) {
+                const target = nodes.find((node: any) => node.id === edge.target);
+                if (!target) continue;
+
+                if (target.type === WorkflowNodeType.Visualizers) {
+                    const listing = target?.data?.visualizers?.listing;
+                    if (!listing || typeof listing !== 'object' || Object.keys(listing).length === 0) {
+                        continue;
+                    }
+
+                    return Object.entries(listing).map(([, label]) => ({
+                        path: String(label),
+                        label: String(label),
+                        sortable: true
+                    }));
+                }
+
+                queue.push(target.id);
+            }
+        }
+
+        return [];
     }
 };

@@ -11,7 +11,8 @@ import type { ListingRow } from '../../domain/entities';
 
 interface UsePluginListingParams {
     pluginSlug: string;
-    listingSlug: string;
+    listingSlug?: string;
+    exposureId?: string;
     trajectoryId?: string;
     analysisId?: string;
     teamId?: string;
@@ -20,7 +21,8 @@ interface UsePluginListingParams {
 
 interface PluginListingContext {
     pluginSlug: string;
-    listingSlug: string;
+    listingSlug?: string;
+    exposureId?: string;
     trajectoryId?: string;
     analysisId?: string;
     teamId?: string;
@@ -43,6 +45,7 @@ const TRAJECTORY_COLUMN: ColumnConfig = {
 const usePluginListing = ({
     pluginSlug,
     listingSlug,
+    exposureId,
     trajectoryId,
     analysisId,
     teamId,
@@ -67,10 +70,11 @@ const usePluginListing = ({
     const context: PluginListingContext = useMemo(() => ({
         pluginSlug,
         listingSlug,
+        exposureId,
         trajectoryId,
         analysisId,
         teamId
-    }), [pluginSlug, listingSlug, trajectoryId, analysisId, teamId]);
+    }), [pluginSlug, listingSlug, exposureId, trajectoryId, analysisId, teamId]);
 
     const fetchData = useCallback(async (
         params: { page: number; limit: number } & PluginListingContext
@@ -78,6 +82,7 @@ const usePluginListing = ({
         const response = await pluginListingRepository.getListing({
             pluginSlug: params.pluginSlug,
             listingSlug: params.listingSlug,
+            exposureId: params.exposureId,
             trajectoryId: params.trajectoryId,
             analysisId: params.analysisId,
             page: params.page,
@@ -85,9 +90,18 @@ const usePluginListing = ({
         });
 
         // Update columns from response metadata
-        const cols = response._meta?.columns as ColumnConfig[] | undefined;
-        if (cols) {
-            setColumns(cols);
+        const cols = response._meta?.columns;
+        if (cols?.length) {
+            const normalizedColumns: ColumnConfig[] = cols.map((column: any) => {
+                const title = String(column?.label || column?.title || column?.path || '');
+                return {
+                    key: title,
+                    title,
+                    sortable: Boolean(column?.sortable)
+                };
+            });
+
+            setColumns(normalizedColumns);
         }
 
         return {
@@ -142,7 +156,7 @@ const usePluginListing = ({
         return options;
     }, [handleDelete, navigate]);
 
-    const isEnabled = !!(pluginSlug && listingSlug && (trajectoryId || teamId));
+    const isEnabled = !!(pluginSlug && (listingSlug || exposureId) && (trajectoryId || teamId));
 
     return {
         columns,

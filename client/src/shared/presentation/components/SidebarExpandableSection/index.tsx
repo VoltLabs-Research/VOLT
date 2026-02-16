@@ -9,6 +9,7 @@ export interface SubItem {
     label: string;
     isSelected?: boolean;
     onClick?: () => void;
+    subItems?: SubItem[];
 };
 
 interface SidebarExpandableSectionProps {
@@ -44,6 +45,32 @@ const SidebarExpandableSection = ({
         }
     };
 
+    const renderSubItem = (item: SubItem, index: number) => {
+        const hasChildren = Boolean(item.subItems?.length);
+
+        if (!hasChildren) {
+            return (
+                <button
+                    key={index}
+                    className={`sidebar-sub-item ${item.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
+                    onClick={item.onClick}
+                >
+                    {item.label}
+                </button>
+            );
+        }
+
+        const childSelected = Boolean(item.subItems?.some((subItem) => subItem.isSelected));
+
+        return (
+            <NestedSubItems
+                key={index}
+                item={item}
+                childSelected={childSelected}
+            />
+        );
+    };
+
     return (
         <>
             <button
@@ -62,18 +89,49 @@ const SidebarExpandableSection = ({
 
             {expanded && (
                 <Container className='sidebar-sub-items'>
-                    {subItems.map((item, index) => (
+                    {subItems.map(renderSubItem)}
+                </Container>
+            )}
+        </>
+    );
+};
+
+interface NestedSubItemsProps {
+    item: SubItem;
+    childSelected: boolean;
+}
+
+const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
+    const [expanded, setExpanded] = useState(childSelected);
+    const children = item.subItems || [];
+
+    return (
+        <Container className='sidebar-nested-section'>
+            <button
+                className={`sidebar-sub-item sidebar-nested-header ${item.isSelected || childSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
+                onClick={() => setExpanded((value) => !value)}
+            >
+                <span>{item.label}</span>
+                <IoChevronDown
+                    className={`sidebar-nested-chevron ${expanded ? 'is-expanded' : ''}`}
+                    size={12}
+                />
+            </button>
+
+            {expanded && (
+                <Container className='sidebar-nested-items'>
+                    {children.map((subItem, index) => (
                         <button
-                            key={index}
-                            className={`sidebar-sub-item ${item.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
-                            onClick={item.onClick}
+                            key={`${item.label}-${index}`}
+                            className={`sidebar-nested-item ${subItem.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
+                            onClick={subItem.onClick}
                         >
-                            {item.label}
+                            {subItem.label}
                         </button>
                     ))}
                 </Container>
             )}
-        </>
+        </Container>
     );
 };
 

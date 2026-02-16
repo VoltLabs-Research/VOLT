@@ -99,11 +99,11 @@ export const routesConfig: RouteGroup = {
             component: PluginBuilderPage
         },
         {
-            path: '/dashboard/plugins/:pluginSlug/listing/:listingSlug',
+            path: '/dashboard/plugins/:pluginSlug/exposure/:exposureId/listing',
             component: PluginListingPage
         },
         {
-            path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginSlug/listing/:listingSlug',
+            path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginSlug/exposure/:exposureId/listing',
             component: PluginListingPage
         },
         {

@@ -20,6 +20,7 @@ export interface ComputedExposure {
 }
 
 export interface ListingExposureEntry {
+    exposureId: string;
     name: string;
     slug: string;
     hasPerAtomProperties: boolean;
@@ -75,11 +76,9 @@ export default class WorkflowProjectionService {
 
         // 4. Listing Exposures
         const listingEntries = exposures
-            .filter((exp) => (
-                (exp.listing && Object.keys(exp.listing).length > 0) ||
-                (exp.perAtomProperties && exp.perAtomProperties.length > 0)
-            ))
+            .filter((exp) => exp.listing && Object.keys(exp.listing).length > 0)
             .map((exp) => ({
+                exposureId: exp._id,
                 name: exp.name,
                 slug: exp.name,
                 hasPerAtomProperties: Boolean(exp.perAtomProperties?.length)

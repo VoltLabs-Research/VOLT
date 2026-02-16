@@ -4,6 +4,7 @@ import { Wrench, Monitor } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
+import { usePluginCatalog } from '@/modules/plugin/presentation/hooks';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import {
     buildCanvasModifierOptions,
@@ -32,7 +33,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
     const { activeModifiers, toggleModifier, pluginParam } = useCanvasUrlState();
     const { pluginRepository } = usePluginUseCases();
     const plugins = usePluginStore((s) => s.plugins);
-    const fetchAllPlugins = usePluginStore((s) => s.fetchAllPlugins);
+    const { loadAllPlugins } = usePluginCatalog();
     const modifiers = useMemo(() =>
         plugins
             .filter(plugin => plugin.modifier)
@@ -44,7 +45,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
             })),
         [plugins]
     );
-    const pluginLoading = usePluginStore((s) => s.loading || s.isFetchingMore);
+    const pluginLoading = usePluginStore((s) => s.loading);
     const getPluginArguments = usePluginStore((s) => s.getPluginArguments);
     const [openModifierIds, setOpenModifierIds] = useState<Set<string>>(new Set());
     const [modifiersOpen, setModifiersOpen] = useState(true);
@@ -74,10 +75,10 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
 
     useEffect(() => {
         if (plugins.length > 0) return;
-        fetchAllPlugins({ limit: 200, force: true }).catch((error) => {
+        loadAllPlugins({ limit: 200, force: true }).catch((error) => {
             console.error('[RightPanel] failed to load plugins', error);
         });
-    }, [plugins.length, fetchAllPlugins]);
+    }, [plugins.length, loadAllPlugins]);
 
     const allModifiers = useMemo<ModifierOption[]>(() => buildCanvasModifierOptions(modifiers), [modifiers]);
 

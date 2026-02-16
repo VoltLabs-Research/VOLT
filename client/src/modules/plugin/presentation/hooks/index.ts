@@ -4,5 +4,6 @@ export { default as useExportPlugin } from './use-export-plugin';
 export { default as useImportPlugin } from './use-import-plugin';
 export { default as useSaveWorkflow } from './use-save-workflow';
 export { default as useLoadPlugin } from './use-load-plugin';
+export { default as usePluginCatalog } from './use-plugin-catalog';
 export { default as useNodeForm } from './use-node-form';
 export { default as useNodeCollectionForm } from './use-node-collection-form';
