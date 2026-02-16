@@ -15,6 +15,7 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { decodeMultiStreamFromFile } from '@shared/infrastructure/utilities/msgpack';
 import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
 import getNestedValue from '@shared/infrastructure/utilities/get-nested-value';
+import normalizePerAtomProperties from '@shared/infrastructure/utilities/normalize-per-atom-properties';
 import slugify from '@shared/infrastructure/utilities/slugify';
 import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
 
@@ -59,6 +60,8 @@ export default class ExportHandler implements INodeHandler{
         const config = node.data.export!;
         const exposureNode = context.workflow.findAncestorByType(node.id, WorkflowNodeType.Exposure);
         if(!exposureNode) throw new Error('ExportHandler: Orphaned export node');
+        const visualizerNode = context.workflow.findDescendantByType(exposureNode.id, WorkflowNodeType.Visualizers);
+        const perAtomProperties = normalizePerAtomProperties(visualizerNode?.data?.visualizers?.perAtomProperties);
         const exposureName = typeof exposureNode.data.exposure?.name === 'string'
             ? exposureNode.data.exposure.name.trim()
             : '';
@@ -121,6 +124,7 @@ export default class ExportHandler implements INodeHandler{
                             pluginSlug: context.pluginSlug,
                             exposureId: exposureNode.id,
                             exposureName,
+                            perAtomProperties,
                             exporter: config.exporter,
                             exportType: config.type,
                             listingMetadata: item.metadata || null
