@@ -16,14 +16,20 @@ export abstract class PaginatedBaseController<TUseCase extends IUseCase<any, Pag
                 return BaseResponse.error(
                     res,
                     result.error.message,
-                    result.error.statusCode
+                    result.error.statusCode,
+                    result.error.code
                 );
             }
 
             return BaseResponse.paginated(res, result.value);
         } catch (error) {
             console.error(error);
-            return BaseResponse.error(res, 'Internal Server Error', HttpStatus.InternalServerError);
+            return BaseResponse.error(
+                res,
+                'Internal Server Error',
+                HttpStatus.InternalServerError,
+                'Internal::Server::Error'
+            );
         }
     };
 }

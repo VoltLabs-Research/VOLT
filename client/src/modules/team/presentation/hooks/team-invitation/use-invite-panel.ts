@@ -7,6 +7,7 @@ import { teamInviteSchema, TeamInviteForm } from '../../components/organisms/Tea
 import type { TeamInvitation } from '@/modules/team/domain/entities/TeamInvitation';
 import type { InviteButtonState } from '../../components/atoms/InviteButton';
 import { FieldBind } from '@/shared/presentation/hooks/use-form';
+import ApiError from '@/shared/errors/ApiError';
 
 interface UseInvitePanelOptions{
     teamId: string;
@@ -14,7 +15,7 @@ interface UseInvitePanelOptions{
 
 interface UseInvitePanelReturn{
     emailField: FieldBind<TeamInviteForm, 'email'>;
-    handleSubmit: () => void;
+    handleSubmit: () => Promise<void>;
     isSubmitting: boolean;
     buttonState: InviteButtonState;
     pendingInvitations: TeamInvitation[];
@@ -34,29 +35,36 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
 
     const { fetchPendingInvitations } = useTeamInvitationData();
 
-    const { field, handleSubmit: formHandleSubmit, isSubmitting, reset } = useForm<TeamInviteForm>({
+    const { field, handleSubmit: formHandleSubmit, isSubmitting, reset, setErrors } = useForm<TeamInviteForm>({
         initialValues: {
             email: ''
         },
         schema: teamInviteSchema,
         onSubmit: async (data) => {
-            const existingInvitation = invitations.find(inv => inv.email === data.email.trim());
+            const email = data.email.trim().toLowerCase();
+            const existingInvitation = invitations.find(inv => inv.email.toLowerCase() === email);
             if(existingInvitation){
+                setErrors({ email: 'Invitation already exists' });
                 setButtonState('error');
                 setTimeout(() => setButtonState('idle'), 2000);
-                throw new Error('Invitation already exists');
+                return;
             }
 
             try{
-                await teamInvitationRepository.send(data.email, 'Can view');
+                await teamInvitationRepository.send(email, 'Can view');
                 await fetchPendingInvitations();
                 reset();
+                setErrors({});
                 setButtonState('success');
                 setTimeout(() => setButtonState('idle'), 2500);
             }catch(error){
+                const message = error instanceof ApiError
+                    ? error.getFriendlyMessage()
+                    : 'An unexpected error occurred';
+
+                setErrors({ email: message });
                 setButtonState('error');
                 setTimeout(() => setButtonState('idle'), 2000);
-                throw error;
             }
         }
     });

@@ -36,6 +36,7 @@ const InvitationsList: React.FC<InvitationsListProps> = ({
             <EmptyState
                 title='No Invitations'
                 description='No pending invitations'
+                className='invitation-list-empty'
             />
         );
     }

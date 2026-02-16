@@ -28,6 +28,7 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'User::LastName::MinLength': 'Last name must be at least 4 characters long',
     'User::LastName::MaxLength': 'Last name cannot exceed 16 characters',
     'User::Username::Required': 'Username is required',
+    'User::NotFound': 'User not found',
 
     // Password errors
     'Password::Validation::MissingFields': 'Current password, new password, and confirmation are required',
@@ -48,6 +49,8 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'Team::Name::MaxLength': 'Team name cannot exceed 50 characters',
     'Team::Description::MaxLength': 'Team description cannot exceed 250 characters',
     'Team::Owner::Required': 'Team owner is required',
+    'TeamInvitation::AlreadySent': 'Invitation already sent to this email',
+    'TeamInvitation::UserAlreadyMember': 'User is already a member of this team',
 
     // Chat errors
     'Chat::Team::NotFound': 'Team not found',

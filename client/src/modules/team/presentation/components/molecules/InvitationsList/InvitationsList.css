@@ -8,3 +8,8 @@
     padding: 0.5rem;
     min-height: 100px;
 }
+
+.invitation-list-empty{
+    height: auto;
+    padding: 2rem;
+}

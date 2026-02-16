@@ -34,7 +34,8 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
                 return BaseResponse.error(
                     res,
                     result.error.message,
-                    result.error.statusCode
+                    result.error.statusCode,
+                    result.error.code
                 );
             }
 
@@ -45,7 +46,12 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
             )
         } catch (error) {
             console.error(error);
-            return BaseResponse.error(res, 'Internal Server Error', HttpStatus.InternalServerError);
+            return BaseResponse.error(
+                res,
+                'Internal Server Error',
+                HttpStatus.InternalServerError,
+                'Internal::Server::Error'
+            );
         }
     };
 };

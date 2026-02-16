@@ -43,9 +43,15 @@ export default class BaseResponse{
     /**
      * Error response.
      */
-    static error(res: Response, message: string, statusCode: number = 500): void{
+    static error(
+        res: Response,
+        message: string,
+        statusCode: number = 500,
+        code?: string
+    ): void{
         res.status(statusCode).json({
             status: 'error',
+            ...(code ? { code } : {}),
             message,
             statusCode
         });
