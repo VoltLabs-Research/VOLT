@@ -29,9 +29,15 @@ import SSHFileExplorerPage from '@/modules/ssh/presentation/components/templates
 import DashboardLayout from '@/modules/dashboard/presentation/components/organisms/DashboardLayout';
 import Dashboard from '@/modules/dashboard/presentation/components/templates/Dashboard';
 import MessagesPage from '@/modules/chat/presentation/components/templates/MessagesPage';
+import ErrorPage from '@/shared/presentation/components/ErrorPage';
 
 export const routesConfig: RouteGroup = {
-    public: [],
+    public: [
+        {
+            path: '/error',
+            component: ErrorPage
+        }
+    ],
 
     protected: [
         // Dashboard routes (with layout)
