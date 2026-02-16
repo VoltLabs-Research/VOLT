@@ -1,0 +1,83 @@
+name: Bug report
+description: Something isn't working
+title: "Bug: "
+labels: ["bug", "Something isn't working"]
+body:
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0-critical
+        - P1-high
+        - P2-medium
+        - P3-low
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: A clear and concise description of the bug.
+      placeholder: What is broken?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Provide steps so we can reproduce the issue.
+      placeholder: |
+        1. Go to...
+        2. Click...
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: What happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Paste logs or attach screenshots if relevant.
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Version / commit
+      description: App version, tag, or commit SHA.
+      placeholder: e.g. v1.2.3 or 1a2b3c4
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, browser, runtime, etc.
+      placeholder: |
+        OS:
+        Browser:
+        Runtime:
+    validations:
+      required: false

@@ -1,0 +1,55 @@
+name: Feature request
+description: Propose an improvement or new feature
+title: "Feature: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0-critical
+        - P1-high
+        - P2-medium
+        - P3-low
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem are you trying to solve?
+      placeholder: Describe the user pain / gap.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should we build or change?
+      placeholder: Describe the solution at a high level.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is in scope / out of scope?
+      placeholder: |
+        In scope:
+        Out of scope:
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: false
