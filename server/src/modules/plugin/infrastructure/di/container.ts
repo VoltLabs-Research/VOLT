@@ -38,6 +38,7 @@ import { ImportPluginUseCase } from '@modules/plugin/application/use-cases/plugi
 import { ExportPluginUseCase } from '@modules/plugin/application/use-cases/plugin/ExportPluginUseCase';
 import { DeleteBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DeleteBinaryUseCase';
 import { UploadBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/UploadBinaryUseCase';
+import { ExportPluginListingDocumentsUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportPluginListingDocumentsUseCase';
 
 import { INodeRegistry, INodeHandler } from '@modules/plugin/domain/ports/INodeRegistry';
 
@@ -89,6 +90,7 @@ export const registerPluginDependencies = (): void => {
     container.registerSingleton(ExportPluginUseCase);
     container.registerSingleton(DeleteBinaryUseCase);
     container.registerSingleton(UploadBinaryUseCase);
+    container.registerSingleton(ExportPluginListingDocumentsUseCase);
 };
 
 /**

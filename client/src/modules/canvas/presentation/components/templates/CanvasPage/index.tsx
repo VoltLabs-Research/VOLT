@@ -11,6 +11,7 @@ import useCanvasPresence from '../../../hooks/use-canvas-presence';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
 import { useKeyboardShortcutsStore } from '../../../stores/use-keyboard-shortcuts-store';
+import useDownloadPluginListing from '../../../hooks/use-download-plugin-listing';
 import './CanvasPage.css';
 import ResizeHandle from '../../atoms/ResizeHandle';
 import CanvasPresence from '../../atoms/CanvasPresence';
@@ -54,6 +55,7 @@ const CanvasPage = () => {
     const sceneRef = useRef<FractalSceneRef>(null);
     const { analysisId, showGrid, resultsSlug, showWidgets, searchParams } = useCanvasUrlState({ trajectory });
     const showStatusBar = searchParams.get('statusBar') !== 'false';
+    const { downloadListing } = useDownloadPluginListing();
 
     useEffect(() => {
         return () => {
@@ -95,6 +97,16 @@ const CanvasPage = () => {
         timeline.setSize(tab === 'timeline' ? 65 : 280);
     }, [timeline.setSize]);
 
+    const handleDownloadExposureListing = useCallback((params: {
+        pluginSlug: string;
+        exposureId: string;
+        analysisId?: string;
+        trajectoryId?: string;
+        listingSlug?: string;
+    }) => {
+        downloadListing(params);
+    }, [downloadListing]);
+
     const leftSplit = useResizable({
         direction: 'vertical',
         initialSize: 56,
@@ -111,7 +123,7 @@ const CanvasPage = () => {
             <Container className="canvas-editor-main d-flex flex-1 overflow-hidden p-relative min-h-0">
                 <Container className="canvas-left-panel d-flex column f-shrink-0" style={{ width: leftPanel.size }}>
                     <Container className="canvas-left-panel-top d-flex column min-h-0 overflow-hidden" style={{ flex: `1 1 ${100 - leftSplit.size}%` }}>
-                        <ObjectsPanel trajectory={trajectory} />
+                        <ObjectsPanel trajectory={trajectory} onDownloadExposureListing={handleDownloadExposureListing} />
                     </Container>
                     <ResizeHandle
                         direction="vertical"
@@ -147,7 +159,13 @@ const CanvasPage = () => {
                         {...timeline.handleProps}
                     />
                     <Container className="canvas-center-timeline d-flex column f-shrink-0" style={{ height: timeline.size }}>
-                        <Timeline sceneRef={sceneRef} trajectory={trajectory} analysisId={analysisId} onTabChange={handleTimelineTabChange} />
+                        <Timeline
+                            sceneRef={sceneRef}
+                            trajectory={trajectory}
+                            analysisId={analysisId}
+                            onTabChange={handleTimelineTabChange}
+                            onDownloadExposureListing={handleDownloadExposureListing}
+                        />
                     </Container>
                 </Container>
 
