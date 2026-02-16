@@ -123,10 +123,11 @@ export default class TrajectoryRepository extends BaseRepository implements ITra
             };
         }
         
-        const response = await this.client.get<AtomsApiResponse>(`/${trajectoryId}/atoms`, {
-            analysisId,
-            ...query
-        });
+        const path = analysisId
+            ? `/${trajectoryId}/atoms/${analysisId}`
+            : `/${trajectoryId}/atoms`;
+        
+        const response = await this.client.get<AtomsApiResponse>(path, query);
         
         return {
             status: 'success' as const,

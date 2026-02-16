@@ -6,8 +6,8 @@ import useGetAtoms from '@/modules/trajectory/presentation/hooks/trajectory/use-
 
 interface PluginAtomsTableProps {
     trajectoryId: string;
-    analysisId: string;
-    exposureId: string;
+    analysisId?: string;
+    exposureId?: string;
     onDataReady?: (columns: ColumnConfig[], data: any[]) => void;
 }
 
@@ -41,7 +41,9 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId, onDataReady }:
     const [error, setError] = useState<string | null>(null);
 
     const fetchAtoms = useCallback(async (params: any) => {
-        if (!trajectoryId || !analysisId || currentTimestep === undefined) return;
+        if (!trajectoryId || currentTimestep === undefined) return;
+
+        const resolvedAnalysisId = analysisId || 'default';
 
         const { page: pageNum, force } = params;
 
@@ -53,21 +55,21 @@ const PluginAtomsTable = ({ trajectoryId, analysisId, exposureId, onDataReady }:
         try {
             const response = await getAtoms({
                 trajectoryId,
-                analysisId,
+                analysisId: resolvedAnalysisId,
                 timestep: currentTimestep,
                 exposureId,
                 page: pageNum,
-                pageSize: 100
+                limit: 100
             });
 
             if (response) {
                 setRows((prev) => (pageNum === 1 ? response.data : [...prev, ...response.data]));
-                setProperties(response.properties || []);
+                setProperties(response._meta?.properties || []);
                 setListingMeta(prev => ({
                     ...prev,
                     page: pageNum,
-                    hasMore: response.hasMore,
-                    total: response.total
+                    hasMore: response.pagination?.hasMore ?? false,
+                    total: response.pagination?.total
                 }));
             } else {
                 if (pageNum === 1) setRows([]);
