@@ -21,6 +21,7 @@ import type { GetTeamMembersParams } from '@/modules/team/domain/ports/ITeamMemb
 import type { TeamMember } from '@/modules/team/domain/entities/TeamMember';
 import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/use-daily-activity-data';
 import ActivityHeatmap from '@/modules/daily-activity/presentation/components/molecules/ActivityHeatmap';
+import useTeamPresence from '@/modules/team/presentation/hooks/use-team-presence';
 import './MyTeam.css';
 
 const MyTeamTemplate: React.FC = () => {
@@ -42,6 +43,8 @@ const MyTeamTemplate: React.FC = () => {
     const { teamRepository } = useTeamUseCases();
     const { teamMemberRepository } = useTeamMemberUseCases();
     const { activityData, fetchActivity } = useDailyActivityData();
+
+    const onlineUserIds = useTeamPresence();
 
     useEffect(() => {
         fetchRoles(selectedTeam._id);
@@ -155,7 +158,7 @@ const MyTeamTemplate: React.FC = () => {
             title: 'Status',
             render: (_: unknown, row?: unknown) => {
                 const member = row as TeamMember;
-                const isOnline = false;
+                const isOnline = onlineUserIds.has(member.user._id);
                 return (
                     <>
                         {isOnline ? (
@@ -205,7 +208,7 @@ const MyTeamTemplate: React.FC = () => {
                 </span>
             )
         }
-    ], [canInvite, user, selectedTeam, roleOptions, handleRoleChange]);
+    ], [canInvite, user, selectedTeam, roleOptions, handleRoleChange, onlineUserIds]);
 
     const getMenuOptions = useCallback((member: TeamMember): MenuOption[] => {
         const options: MenuOption[] = [];
