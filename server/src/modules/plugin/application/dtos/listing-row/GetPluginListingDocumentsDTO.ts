@@ -10,6 +10,16 @@ export interface GetPluginListingDocumentsInputDTO {
     sortAsc?: boolean;
 };
 
+export interface ExportPluginListingDocumentsInputDTO {
+    pluginSlug: string;
+    exposureId: string;
+    teamId: string;
+    trajectoryId?: string;
+    analysisId?: string;
+    listingSlug?: string;
+    sortAsc?: boolean;
+};
+
 export interface ColumnDef {
     path: string;
     label: string;
@@ -37,4 +47,15 @@ export interface GetPluginListingDocumentsOutputDTO {
         exposureId: string;
         columns: ColumnDef[];
     };
+};
+
+export interface ExportPluginListingDocumentsOutputDTO {
+    meta: {
+        pluginSlug: string;
+        exposureId: string;
+        analysisId?: string;
+        trajectoryId?: string;
+        total: number;
+    };
+    data: ListingRowData[];
 };

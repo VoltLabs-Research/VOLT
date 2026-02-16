@@ -14,6 +14,13 @@ interface AnalysisTreeNodeProps {
     isSceneActive: (scene: any) => boolean;
     onAddScene: (scene: any) => void;
     onRemoveScene: (scene: any) => void;
+    onDownloadExposureListing?: (params: {
+        pluginSlug: string;
+        exposureId: string;
+        analysisId?: string;
+        trajectoryId?: string;
+        listingSlug?: string;
+    }) => void;
 }
 
 const AnalysisTreeNode = ({
@@ -24,7 +31,8 @@ const AnalysisTreeNode = ({
     onSelectScene,
     isSceneActive,
     onAddScene,
-    onRemoveScene
+    onRemoveScene,
+    onDownloadExposureListing
 }: AnalysisTreeNodeProps) => {
     const { analysis, pluginDisplayName, entry, isCurrentAnalysis } = section;
     const hasExposures = entry.state === 'loaded' && entry.exposures.length > 0;
@@ -119,6 +127,17 @@ const AnalysisTreeNode = ({
                         <PopoverMenuItem onClick={() => onRemoveScene(scene)} disabled={!isActive}>
                             Remove from scene
                         </PopoverMenuItem>
+                        <PopoverMenuItem
+                            label="Download"
+                            onClick={() => {
+                                onDownloadExposureListing?.({
+                                    pluginSlug: section.pluginSlug,
+                                    exposureId: exposure.exposureId,
+                                    analysisId: analysis._id,
+                                    listingSlug: exposure.name
+                                });
+                            }}
+                        />
                     </Popover>
                 );
             })}

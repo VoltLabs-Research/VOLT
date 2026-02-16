@@ -15,9 +15,16 @@ import './ObjectsPanel.css';
 
 interface ObjectsPanelProps {
     trajectory: Trajectory | null | undefined;
+    onDownloadExposureListing?: (params: {
+        pluginSlug: string;
+        exposureId: string;
+        analysisId?: string;
+        trajectoryId?: string;
+        listingSlug?: string;
+    }) => void;
 }
 
-const ObjectsPanel = ({ trajectory }: ObjectsPanelProps) => {
+const ObjectsPanel = ({ trajectory, onDownloadExposureListing }: ObjectsPanelProps) => {
     const [sceneCollectionOpen, setSceneCollectionOpen] = useState(true);
     const [colorCodingOpen, setColorCodingOpen] = useState(true);
     const [particleFilterOpen, setParticleFilterOpen] = useState(true);
@@ -85,6 +92,7 @@ const ObjectsPanel = ({ trajectory }: ObjectsPanelProps) => {
                     removeScene={removeScene}
                     totalAnalyses={totalAnalyses}
                     statusMap={statusMap}
+                    onDownloadExposureListing={onDownloadExposureListing}
                 />
             </CollapsibleSection>
 

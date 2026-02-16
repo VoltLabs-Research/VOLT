@@ -19,10 +19,17 @@ interface TimelineProps {
     trajectory: Trajectory | null | undefined;
     analysisId: string | undefined;
     onTabChange?: (tab: string) => void;
+    onDownloadExposureListing?: (params: {
+        pluginSlug: string;
+        exposureId: string;
+        analysisId?: string;
+        trajectoryId?: string;
+        listingSlug?: string;
+    }) => void;
 }
 
 
-const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange }: TimelineProps) => {
+const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExposureListing }: TimelineProps) => {
     const [activeTab, setActiveTab] = useState<string>('timeline');
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
     const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id);
@@ -31,7 +38,8 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange }: TimelinePro
     const exposureTabs = useMemo<TimelineTabOption[]>(() => {
         return listingExposures.map((exposure) => ({
             id: `exposure:${exposure.exposureId}`,
-            label: exposure.name
+            label: exposure.name,
+            exposureId: exposure.exposureId
         }));
     }, [listingExposures]);
 
@@ -286,6 +294,12 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange }: TimelinePro
                 onRangeEndChange={setRangeEnd}
                 playSpeed={playSpeed}
                 onPlaySpeedChange={setPlaySpeed}
+                onDownloadExposureListing={onDownloadExposureListing}
+                downloadContext={{
+                    pluginSlug,
+                    analysisId,
+                    trajectoryId: trajectory?._id
+                }}
             />
 
             {activeTab === 'timeline' && (

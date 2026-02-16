@@ -17,6 +17,14 @@ interface ListingOptions {
     sortAsc?: boolean;
 };
 
+interface ListingPreparedContext {
+    pluginSlug: string;
+    exposureId: string;
+    listingSlug: string;
+    columns: ColumnConfig[];
+    baseQuery: Record<string, unknown>;
+};
+
 interface ColumnConfig {
     path: string;
     label: string;
@@ -48,6 +56,17 @@ export interface PluginListingPaginatedResult {
     };
 };
 
+export interface PluginListingExportResult {
+    meta: {
+        pluginSlug: string;
+        exposureId: string;
+        analysisId?: string;
+        trajectoryId?: string;
+        total: number;
+    };
+    data: ListingRowData[];
+};
+
 @injectable()
 export class PluginListingService {
     constructor(
@@ -59,12 +78,83 @@ export class PluginListingService {
         const page = Math.max(1, options.page || 1);
         const limit = Math.min(200, Math.max(1, options.limit || 50));
         const sortAsc = options.sortAsc || false;
+        const prepared = await this.prepareListingContext(pluginSlug, options);
 
+        // Query database with pagination
+        const result: PaginatedResult<ListingRow> = await this.listingRowRepository.findAll({
+            filter: prepared.baseQuery as any,
+            limit,
+            page,
+            sort: {
+                timestep: sortAsc ? 1 : -1,
+                _id: sortAsc ? 1 : -1
+            },
+            populate: 'trajectory'
+        });
+
+        // Transform to raw rows
+        const rows = this.toListingRows(result.data);
+
+        return {
+            data: rows,
+            total: result.total,
+            page: result.page,
+            totalPages: result.totalPages,
+            limit: result.limit,
+            _meta: {
+                pluginSlug: prepared.pluginSlug,
+                listingSlug: prepared.listingSlug,
+                exposureId: prepared.exposureId,
+                columns: prepared.columns
+            }
+        };
+    }
+
+    async exportListingDocuments(pluginSlug: string, options: ListingOptions): Promise<PluginListingExportResult> {
+        const sortAsc = options.sortAsc || false;
+        const pageSize = 200;
+        const prepared = await this.prepareListingContext(pluginSlug, options);
+
+        let page = 1;
+        let totalPages = 1;
+        let total = 0;
+        const rows: ListingRowData[] = [];
+
+        do {
+            const pageResult = await this.listingRowRepository.findAll({
+                filter: prepared.baseQuery as any,
+                limit: pageSize,
+                page,
+                sort: {
+                    timestep: sortAsc ? 1 : -1,
+                    _id: sortAsc ? 1 : -1
+                },
+                populate: 'trajectory'
+            });
+
+            total = pageResult.total;
+            totalPages = Math.max(1, pageResult.totalPages || 1);
+            rows.push(...this.toListingRows(pageResult.data));
+            page += 1;
+        } while (page <= totalPages);
+
+        return {
+            meta: {
+                pluginSlug: prepared.pluginSlug,
+                exposureId: prepared.exposureId,
+                analysisId: options.analysisId,
+                trajectoryId: options.trajectoryId,
+                total
+            },
+            data: rows
+        };
+    }
+
+    private async prepareListingContext(pluginSlug: string, options: ListingOptions): Promise<ListingPreparedContext> {
         if (!options.exposureId && !options.listingSlug) {
             throw new Error('Exposure::SelectorRequired');
         }
 
-        // Find plugin by slug
         const plugin = await this.pluginRepository.findOne({ slug: pluginSlug });
         if (!plugin) {
             throw new Error('Plugin::NotFound');
@@ -76,8 +166,6 @@ export class PluginListingService {
         }
 
         const { exposureId, listingSlug, columns } = exposureDescriptor;
-
-        // Build base query
         const baseQuery: Record<string, unknown> = {
             plugin: plugin.id,
             exposureId,
@@ -98,20 +186,17 @@ export class PluginListingService {
             baseQuery.analysis = options.analysisId;
         }
 
-        // Query database with pagination
-        const result: PaginatedResult<ListingRow> = await this.listingRowRepository.findAll({
-            filter: baseQuery as any,
-            limit,
-            page,
-            sort: {
-                timestep: sortAsc ? 1 : -1,
-                _id: sortAsc ? 1 : -1
-            },
-            populate: 'trajectory'
-        });
+        return {
+            pluginSlug,
+            exposureId,
+            listingSlug,
+            columns,
+            baseQuery
+        };
+    }
 
-        // Transform to raw rows
-        const rawRows = result.data.map((doc: ListingRow) => {
+    private toListingRows(documents: ListingRow[]): ListingRowData[] {
+        const rawRows = documents.map((doc: ListingRow) => {
             const trajectory = doc.props.trajectory as any;
             return {
                 _id: doc.id,
@@ -124,36 +209,23 @@ export class PluginListingService {
             };
         });
 
-        // Reorder fields to have reserved keys first
-        const rows = rawRows.map((r: any) => {
+        return rawRows.map((row: any) => {
             const fixed: Record<string, unknown> = {
-                _id: r._id,
-                timestep: r.timestep,
-                analysisId: r.analysisId,
-                trajectoryId: r.trajectoryId,
-                exposureId: r.exposureId,
-                trajectoryName: r.trajectoryName
+                _id: row._id,
+                timestep: row.timestep,
+                analysisId: row.analysisId,
+                trajectoryId: row.trajectoryId,
+                exposureId: row.exposureId,
+                trajectoryName: row.trajectoryName
             };
 
-            const rest = { ...r };
-            for (const k of Object.keys(fixed)) delete rest[k];
-
-            return { ...fixed, ...rest };
-        });
-
-        return {
-            data: rows,
-            total: result.total,
-            page: result.page,
-            totalPages: result.totalPages,
-            limit: result.limit,
-            _meta: {
-                pluginSlug,
-                listingSlug,
-                exposureId,
-                columns
+            const rest = { ...row };
+            for (const key of Object.keys(fixed)) {
+                delete rest[key];
             }
-        };
+
+            return { ...fixed, ...rest } as ListingRowData;
+        });
     }
 
     private resolveListingExposure(

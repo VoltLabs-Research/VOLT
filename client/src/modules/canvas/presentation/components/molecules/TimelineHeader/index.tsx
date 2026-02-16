@@ -4,6 +4,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
+import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import TransportControls from '../TransportControls';
 import FrameCombobox from '../FrameCombobox';
 
@@ -16,6 +17,7 @@ export interface TimelineTabOption {
     id: string;
     label: string;
     icon?: ReactNode;
+    exposureId?: string;
 }
 
 const CORE_TABS: TimelineTabOption[] = [
@@ -47,6 +49,18 @@ interface TimelineHeaderProps {
     onRangeEndChange: (value: number | undefined) => void;
     playSpeed: number;
     onPlaySpeedChange: (speed: number) => void;
+    onDownloadExposureListing?: (params: {
+        pluginSlug: string;
+        exposureId: string;
+        analysisId?: string;
+        trajectoryId?: string;
+        listingSlug?: string;
+    }) => void;
+    downloadContext?: {
+        pluginSlug?: string;
+        analysisId?: string;
+        trajectoryId?: string;
+    };
 }
 
 const TimelineHeader = ({
@@ -61,7 +75,9 @@ const TimelineHeader = ({
     onRangeStartChange,
     onRangeEndChange,
     playSpeed,
-    onPlaySpeedChange
+    onPlaySpeedChange,
+    onDownloadExposureListing,
+    downloadContext
 }: TimelineHeaderProps) => {
     const resolvedTabs = tabs?.length ? tabs : CORE_TABS;
 
@@ -69,23 +85,62 @@ const TimelineHeader = ({
         <Container className="canvas-timeline-header d-flex items-center w-max">
             <Container className="canvas-timeline-tabs-region d-flex items-center">
                 <Container className="canvas-timeline-tabs d-flex items-center" role="tablist" aria-label="Timeline tabs">
-                    {resolvedTabs.map((tab) => (
-                        <Button
-                            key={tab.id}
-                            role="tab"
-                            aria-selected={activeTab === tab.id}
-                            variant={activeTab === tab.id ? 'solid' : 'ghost'}
-                            intent="canvas"
-                            shape="rounded"
-                            size="sm"
-                            className="font-size-05 canvas-btn-compact"
-                            onClick={() => onTabChange(tab.id)}
-                            title={tab.label}
-                            leftIcon={tab.icon}
-                        >
-                            {tab.label}
-                        </Button>
-                    ))}
+                    {resolvedTabs.map((tab) => {
+                        const canDownloadExposure = Boolean(
+                            tab.exposureId &&
+                            downloadContext?.pluginSlug &&
+                            onDownloadExposureListing
+                        );
+
+                        const tabButton = (
+                            <Button
+                                key={tab.id}
+                                role="tab"
+                                aria-selected={activeTab === tab.id}
+                                variant={activeTab === tab.id ? 'solid' : 'ghost'}
+                                intent="canvas"
+                                shape="rounded"
+                                size="sm"
+                                className="font-size-05 canvas-btn-compact"
+                                onClick={() => onTabChange(tab.id)}
+                                title={tab.label}
+                                leftIcon={tab.icon}
+                            >
+                                {tab.label}
+                            </Button>
+                        );
+
+                        if (!canDownloadExposure) {
+                            return tabButton;
+                        }
+
+                        return (
+                            <Popover
+                                key={`exposure-tab-popover-${tab.id}`}
+                                id={`timeline-tab-download-${tab.id}`}
+                                triggerAction="contextmenu"
+                                trigger={tabButton}
+                            >
+                                {(close) => (
+                                    <PopoverMenu>
+                                        <PopoverMenuItem
+                                            label="Download"
+                                            onClick={() => {
+                                                onDownloadExposureListing?.({
+                                                    pluginSlug: downloadContext?.pluginSlug || '',
+                                                    exposureId: tab.exposureId || '',
+                                                    analysisId: downloadContext?.analysisId,
+                                                    trajectoryId: downloadContext?.trajectoryId,
+                                                    listingSlug: tab.label
+                                                });
+                                                close();
+                                            }}
+                                        />
+                                    </PopoverMenu>
+                                )}
+                            </Popover>
+                        );
+                    })}
                 </Container>
             </Container>
 

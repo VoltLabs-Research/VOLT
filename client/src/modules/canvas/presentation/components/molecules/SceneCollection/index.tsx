@@ -18,6 +18,13 @@ interface SceneCollectionProps {
     removeScene: (scene: { sceneType: string; source: string }) => void;
     totalAnalyses: number;
     statusMap: Map<string, string>;
+    onDownloadExposureListing?: (params: {
+        pluginSlug: string;
+        exposureId: string;
+        analysisId?: string;
+        trajectoryId?: string;
+        listingSlug?: string;
+    }) => void;
 }
 
 const SceneCollection = ({
@@ -31,7 +38,8 @@ const SceneCollection = ({
     addScene,
     removeScene,
     totalAnalyses,
-    statusMap
+    statusMap,
+    onDownloadExposureListing
 }: SceneCollectionProps) => {
     const defaultScene = { sceneType: 'trajectory', source: 'default' as const };
     const isDefaultActive = activeScene?.source === 'default';
@@ -88,6 +96,7 @@ const SceneCollection = ({
                     isSceneActive={isSceneInActiveScenes}
                     onAddScene={addScene}
                     onRemoveScene={removeScene}
+                    onDownloadExposureListing={onDownloadExposureListing}
                 />
             ))}
 

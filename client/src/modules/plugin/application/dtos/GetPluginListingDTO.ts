@@ -12,6 +12,14 @@ export interface GetPluginListingInputDTO {
     limit?: number;
 };
 
+export interface ExportPluginListingInputDTO {
+    pluginSlug: string;
+    exposureId: string;
+    trajectoryId?: string;
+    analysisId?: string;
+    listingSlug?: string;
+};
+
 export interface GetPluginListingOutputDTO extends PaginatedResponse<ListingRow> {
     _meta?: {
         pluginSlug: string;
@@ -19,4 +27,15 @@ export interface GetPluginListingOutputDTO extends PaginatedResponse<ListingRow>
         exposureId: string;
         columns: ColumnConfig[];
     };
+};
+
+export interface ExportPluginListingOutputDTO {
+    meta: {
+        pluginSlug: string;
+        exposureId: string;
+        analysisId?: string;
+        trajectoryId?: string;
+        total: number;
+    };
+    data: ListingRow[];
 };

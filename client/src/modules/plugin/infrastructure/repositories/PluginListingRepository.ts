@@ -4,7 +4,9 @@ import type IPluginListingRepository from '../../domain/ports/IPluginListingRepo
 import type { ListingRow } from '../../domain/entities';
 import type {
     GetPluginListingInputDTO,
-    GetPluginListingOutputDTO
+    GetPluginListingOutputDTO,
+    ExportPluginListingInputDTO,
+    ExportPluginListingOutputDTO
 } from '../../application/dtos';
 
 @injectable()
@@ -62,5 +64,31 @@ export default class PluginListingRepository extends BaseRepository implements I
         }
 
         return unwrapped as GetPluginListingOutputDTO;
+    }
+
+    async exportListing(params: ExportPluginListingInputDTO): Promise<ExportPluginListingOutputDTO> {
+        const { pluginSlug, exposureId, trajectoryId, analysisId, listingSlug } = params;
+
+        if (!exposureId) {
+            throw new Error('Exposure::IdRequired');
+        }
+
+        const path = trajectoryId
+            ? `/listing/${pluginSlug}/exposure/${exposureId}/${trajectoryId}/export`
+            : `/listing/${pluginSlug}/exposure/${exposureId}/export`;
+
+        const query: Record<string, unknown> = {};
+
+        if (analysisId) {
+            query.analysisId = analysisId;
+        }
+
+        if (listingSlug) {
+            query.listingSlug = listingSlug;
+        }
+
+        const response = await this.client.get<{ status: string; data: ExportPluginListingOutputDTO }>(path, query);
+
+        return response.data;
     }
 };
