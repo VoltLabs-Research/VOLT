@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiRefreshLine } from 'react-icons/ri';
 import { formatDistanceToNow } from 'date-fns';
@@ -7,6 +7,7 @@ import useDeleteAnalysis from '../../../hooks/use-delete-analysis';
 import useRetryFailedFrames from '../../../hooks/use-retry-failed-frames';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import type { PaginationParams } from '@/shared/presentation/hooks/use-document-listing-pagination';
 import type { Analysis } from '@/modules/analysis/domain/entities';
 
 const AnalysesListing = () => {
@@ -15,6 +16,10 @@ const AnalysesListing = () => {
     const { getAnalysesUseCase } = useAnalysisUseCases();
     const deleteAnalysis = useDeleteAnalysis();
     const retryFailedFrames = useRetryFailedFrames();
+
+    const fetchAnalyses = useCallback((params: PaginationParams) => {
+        return getAnalysesUseCase.execute(params);
+    }, [getAnalysesUseCase]);
 
     const { getMenuOptions } = useListingActions<Analysis>({
         actions: {
@@ -89,7 +94,7 @@ const AnalysesListing = () => {
         <DocumentListing<Analysis>
             title='Analyses'
             columns={columns}
-            fetchData={getAnalysesUseCase.execute}
+            fetchData={fetchAnalyses}
             defaultLimit={20}
             getMenuOptions={getMenuOptions}
             emptyMessage='No analyses found'
