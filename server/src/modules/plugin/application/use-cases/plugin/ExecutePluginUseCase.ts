@@ -83,15 +83,6 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
             trajectory.props.name
         ));
 
-        const analysis = await this.analysisRepo.create({
-            plugin: plugin.id,
-            config: input.config,
-            team: input.teamId,
-            trajectory: input.trajectoryId,
-            createdBy: input.userId,
-            startedAt: new Date()
-        });
-
         const modifierNode = plugin.props.workflow?.props?.nodes?.find(
             (node: any) => node?.type === WorkflowNodeType.Modifier
         );
@@ -105,6 +96,15 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
                 'Modifier node must define a non-empty name'
             ));
         }
+
+        const analysis = await this.analysisRepo.create({
+            plugin: plugin.id,
+            config: input.config,
+            team: input.teamId,
+            trajectory: input.trajectoryId,
+            createdBy: input.userId,
+            startedAt: new Date()
+        });
 
         await this.eventBus.publish(new AnalysisCreatedEvent({
             analysisId: analysis.id,

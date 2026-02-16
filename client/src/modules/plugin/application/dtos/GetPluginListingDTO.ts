@@ -4,7 +4,8 @@ import type { ColumnConfig } from '@/shared/presentation/components/DocumentList
 
 export interface GetPluginListingInputDTO {
     pluginSlug: string;
-    listingSlug: string;
+    listingSlug?: string;
+    exposureId?: string;
     trajectoryId?: string;
     analysisId?: string;
     page?: number;
@@ -15,6 +16,7 @@ export interface GetPluginListingOutputDTO extends PaginatedResponse<ListingRow>
     _meta?: {
         pluginSlug: string;
         listingSlug: string;
+        exposureId: string;
         columns: ColumnConfig[];
     };
 };

@@ -8,11 +8,19 @@ export interface ListingRowDocument extends Persistable<ListingRowProps, Listing
 
 ListingRowSchema.index({
     plugin: 1,
-    listingSlug: 1,
+    exposureId: 1,
     trajectory: 1,
     analysis: 1,
     timestep: 1
 }, { unique: true });
+
+ListingRowSchema.index({
+    team: 1,
+    plugin: 1,
+    exposureId: 1,
+    analysis: 1,
+    timestep: -1
+});
 
 const ListingRowModel: Model<ListingRowDocument> = mongoose.model<ListingRowDocument>('PluginListingRow', ListingRowSchema);
 

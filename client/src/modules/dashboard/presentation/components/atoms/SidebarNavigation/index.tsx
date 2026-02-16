@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { RiHomeSmile2Fill } from 'react-icons/ri';
@@ -13,6 +13,9 @@ import type { IconType } from 'react-icons';
 import Container from '@/shared/presentation/components/Container';
 import Divider from '@/shared/presentation/components/Divider';
 import TeamSelector from '@/modules/team/presentation/components/atoms/TeamSelector';
+import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
+import { usePluginCatalog } from '@/modules/plugin/presentation/hooks';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import './SidebarNavigation.css';
@@ -40,6 +43,14 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
     const { searchParams } = useSearchParamsState();
     const navigate = useNavigate();
     const { pathname } = useLocation();
+    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const plugins = usePluginStore((state) => state.plugins);
+    const { loadAllPlugins } = usePluginCatalog();
+
+    useEffect(() => {
+        if (!selectedTeam?._id) return;
+        loadAllPlugins({ force: true }).catch(() => {});
+    }, [selectedTeam?._id, loadAllPlugins]);
 
     const handleNavigate = (to: string) => {
         navigate(to);
@@ -68,8 +79,39 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
             label: 'View all',
             isSelected: pathname === '/dashboard/analysis-configs/list' && !searchParams.get('plugin'),
             onClick: () => { navigate('/dashboard/analysis-configs/list'); setSidebarOpen(false); }
-        }
-    ], [pathname, searchParams, navigate, setSidebarOpen]);
+        },
+        ...plugins
+            .map((plugin) => {
+                const exposures = (plugin.exposures || [])
+                    .filter((exposure) => Boolean(exposure?._id) && Boolean(exposure?.name) && Boolean(exposure?.listing && Object.keys(exposure.listing).length > 0))
+                    .map((exposure) => ({
+                        exposureId: exposure._id,
+                        name: exposure.name
+                    }));
+
+                return { plugin, exposures };
+            })
+            .filter(({ exposures }) => exposures.length > 0)
+            .map(({ plugin, exposures }) => {
+                const pluginLabel = plugin.listingExposures?.pluginName || plugin.modifier?.name || plugin.slug;
+
+                return {
+                    label: pluginLabel,
+                    isSelected: exposures.some((exposure) =>
+                        pathname.includes(`/plugins/${plugin.slug}/exposure/${exposure.exposureId}/listing`)
+                    ),
+                    subItems: exposures.map((exposure) => ({
+                        label: exposure.name,
+                        isSelected: pathname.includes(`/plugins/${plugin.slug}/exposure/${exposure.exposureId}/listing`),
+                        onClick: () => {
+                            navigate(`/dashboard/plugins/${plugin.slug}/exposure/${exposure.exposureId}/listing`);
+                            setSidebarOpen(false);
+                            setSettingsExpanded(false);
+                        }
+                    }))
+                };
+            })
+    ], [pathname, searchParams, navigate, setSidebarOpen, setSettingsExpanded, plugins]);
 
     return (
         <nav className='sidebar-nav y-auto'>

@@ -8,7 +8,8 @@ import '@/modules/plugin/presentation/components/organisms/PluginExposureTable/P
 
 export interface PluginExposureTableProps {
     pluginSlug: string;
-    listingSlug: string;
+    listingSlug?: string;
+    exposureId?: string;
     trajectoryId?: string;
     analysisId?: string;
     teamId?: string;
@@ -21,6 +22,7 @@ export interface PluginExposureTableProps {
 const PluginExposureTable = ({
     pluginSlug,
     listingSlug,
+    exposureId,
     trajectoryId,
     analysisId,
     teamId,
@@ -32,6 +34,7 @@ const PluginExposureTable = ({
     const listingHook = usePluginListing({
         pluginSlug,
         listingSlug,
+        exposureId,
         trajectoryId,
         analysisId,
         teamId,
@@ -55,7 +58,7 @@ const PluginExposureTable = ({
         const { force, page } = params;
         const isInitial = page === 1;
 
-        if (!pluginSlug || !listingSlug) {
+        if (!pluginSlug || (!listingSlug && !exposureId)) {
             setError('Invalid listing parameters.');
             return;
         }
@@ -97,7 +100,7 @@ const PluginExposureTable = ({
             setLoading(false);
             setIsFetchingMore(false);
         }
-    }, [listingSlug, pluginSlug, trajectoryId, teamId, pageSize, listingHook]);
+    }, [listingSlug, exposureId, pluginSlug, trajectoryId, teamId, pageSize, listingHook]);
 
     const { handleLoadMore } = useListingLifecycle({
         data: rows,
@@ -106,7 +109,7 @@ const PluginExposureTable = ({
         listingMeta,
         fetchData: fetchBatch,
         initialFetchParams: { page: 1, limit: pageSize },
-        dependencies: [pluginSlug, listingSlug, trajectoryId, teamId],
+        dependencies: [pluginSlug, listingSlug, exposureId, trajectoryId, teamId],
         skipInitialFetch: !compact,
         onReset: () => {
             setRows([]);
@@ -139,7 +142,7 @@ const PluginExposureTable = ({
 
     return (
         <DocumentListing
-            title={listingSlug}
+            title={listingSlug || exposureId || 'Listing'}
             fetchData={listingHook.fetchData}
             context={listingHook.context}
             enabled={listingHook.isEnabled}

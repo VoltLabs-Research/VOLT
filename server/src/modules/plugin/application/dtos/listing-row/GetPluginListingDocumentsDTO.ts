@@ -1,6 +1,7 @@
 export interface GetPluginListingDocumentsInputDTO {
     pluginSlug: string;
-    listingSlug: string;
+    listingSlug?: string;
+    exposureId?: string;
     teamId: string;
     trajectoryId?: string;
     analysisId?: string;
@@ -33,6 +34,7 @@ export interface GetPluginListingDocumentsOutputDTO {
     _meta: {
         pluginSlug: string;
         listingSlug: string;
+        exposureId: string;
         columns: ColumnDef[];
     };
 };

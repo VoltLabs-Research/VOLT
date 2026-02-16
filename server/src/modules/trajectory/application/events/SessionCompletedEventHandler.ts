@@ -9,6 +9,10 @@ import { IRasterService } from '@modules/raster/domain/ports/IRasterService';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import TrajectoryUpdatedEvent from './TrajectoryUpdatedEvent';
+import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
+import { ListingRowPrecomputationService } from '@modules/plugin/infrastructure/services/ListingRowPrecomputationService';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
+import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
 
 @injectable()
 export default class SessionCompletedEventHandler implements IEventHandler<SessionCompletedEvent> {
@@ -20,7 +24,13 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
         private readonly rasterService: IRasterService,
 
         @inject(SHARED_TOKENS.EventBus)
-        private readonly eventBus: IEventBus
+        private readonly eventBus: IEventBus,
+
+        @inject(PLUGIN_TOKENS.ListingRowPrecomputationService)
+        private readonly listingRowPrecomputationService: ListingRowPrecomputationService,
+
+        @inject(ANALYSIS_TOKENS.AnalysisRepository)
+        private readonly analysisRepo: IAnalysisRepository
     ){}
 
     async handle(event: SessionCompletedEvent): Promise<void> {
@@ -88,13 +98,37 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
                 updatedAt: new Date()
             }));
         } else if (queueType === 'analysis_processing') {
-            const { trajectoryId } = metadata || {};
+            const { trajectoryId, analysisId } = metadata || {};
             if (!trajectoryId) {
                 console.error('[SessionCompletedEventHandler] Missing trajectoryId in analysis metadata');
                 return;
             }
 
+            if (!analysisId) {
+                console.error('[SessionCompletedEventHandler] Missing analysisId in analysis metadata');
+                return;
+            }
+
             console.log(`[SessionCompletedEventHandler] Analysis processing completed for ${trajectoryId}. Marking as completed.`);
+
+            try {
+                await this.listingRowPrecomputationService.precomputeForAnalysis({
+                    analysisId,
+                    teamId: event.data.teamId
+                });
+
+                await this.analysisRepo.updateById(analysisId, {
+                    status: 'completed',
+                    finishedAt: new Date()
+                });
+            } catch (error) {
+                console.error(`[SessionCompletedEventHandler] Listing precomputation failed for analysis ${analysisId}:`, error);
+
+                await this.analysisRepo.updateById(analysisId, {
+                    status: 'failed',
+                    finishedAt: new Date()
+                }).catch(() => {});
+            }
 
             await this.trajectoryRepo.updateById(trajectoryId, { status: TrajectoryStatus.Completed });
 

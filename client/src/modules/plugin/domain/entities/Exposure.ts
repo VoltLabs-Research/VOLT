@@ -34,6 +34,7 @@ export interface IComputedArgumentDefinition {
 };
 
 export interface IListingExposure {
+    exposureId: string;
     name: string;
     slug: string;
     hasPerAtomProperties: boolean;

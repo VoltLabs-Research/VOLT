@@ -6,7 +6,7 @@ import { PluginListingPaginatedResult } from '@modules/plugin/infrastructure/ser
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
 export interface IPluginListingService {
-    getListingDocuments(pluginSlug: string, listingSlug: string, options: any): Promise<PluginListingPaginatedResult>;
+    getListingDocuments(pluginSlug: string, options: any): Promise<PluginListingPaginatedResult>;
 };
 
 @injectable()
@@ -18,11 +18,12 @@ export class GetPluginListingDocumentsUseCase implements IUseCase<GetPluginListi
     async execute(input: GetPluginListingDocumentsInputDTO): Promise<Result<GetPluginListingDocumentsOutputDTO>> {
         const result = await this.listingService.getListingDocuments(
             input.pluginSlug,
-            input.listingSlug,
             {
                 teamId: input.teamId,
                 trajectoryId: input.trajectoryId,
                 analysisId: input.analysisId,
+                exposureId: input.exposureId,
+                listingSlug: input.listingSlug,
                 page: input.page ?? 1,
                 limit: input.limit ?? 50,
                 sortAsc: input.sortAsc ?? false

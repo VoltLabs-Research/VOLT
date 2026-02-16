@@ -162,14 +162,16 @@ export default class GetTeamMetricsUseCase implements IUseCase<GetTeamMetricsInp
             const analysisIds = pointers.map(p => p.analysisId);
 
             for (const exposure of pluginExposures) {
+                const exposureId = exposure._id;
                 const listingSlug = exposure.name;
-                if (!listingSlug) continue;
+                const hasListing = Boolean(exposure.listing && Object.keys(exposure.listing).length > 0);
+                if (!listingSlug || !exposureId || !hasListing) continue;
 
                 // Count listing rows
                 const listingResult = await this.listingRowRepo.findAll({
                     filter: {
                         plugin: pluginId,
-                        listingSlug,
+                        exposureId,
                         analysis: { $in: analysisIds }
                     } as any,
                     page: 1,
@@ -182,7 +184,7 @@ export default class GetTeamMetricsUseCase implements IUseCase<GetTeamMetricsInp
                 }
 
                 const first = pointers[0];
-                const listingUrl = `/dashboard/trajectory/${first.trajectoryId}/plugin/${plugin.props.slug}/listing/${listingSlug}`;
+                const listingUrl = `/dashboard/trajectory/${first.trajectoryId}/plugins/${plugin.props.slug}/exposure/${exposureId}/listing`;
 
                 totals[listingSlug] = listingBuckets.total;
                 lastMonth[listingSlug] = pct(listingBuckets.currMonth, listingBuckets.prevMonth);
