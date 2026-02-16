@@ -16,6 +16,7 @@ import TeamSelector from '@/modules/team/presentation/components/atoms/TeamSelec
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 import { usePluginCatalog } from '@/modules/plugin/presentation/hooks';
+import { getListingRelevantExposures } from '@/modules/plugin/presentation/utils/listing-exposures';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import './SidebarNavigation.css';
@@ -82,12 +83,7 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
         },
         ...plugins
             .map((plugin) => {
-                const exposures = (plugin.exposures || [])
-                    .filter((exposure) => Boolean(exposure?._id) && Boolean(exposure?.name) && Boolean(exposure?.listing && Object.keys(exposure.listing).length > 0))
-                    .map((exposure) => ({
-                        exposureId: exposure._id,
-                        name: exposure.name
-                    }));
+                const exposures = getListingRelevantExposures(plugin.exposures);
 
                 return { plugin, exposures };
             })

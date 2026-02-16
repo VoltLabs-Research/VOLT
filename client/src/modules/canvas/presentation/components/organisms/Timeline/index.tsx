@@ -4,29 +4,90 @@ import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import { useShallow } from 'zustand/react/shallow';
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
 import type { FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
-import TimelineHeader, { type TimelineTab } from '../../molecules/TimelineHeader';
+import TimelineHeader, { CORE_TABS, type TimelineTabOption } from '../../molecules/TimelineHeader';
 import TimelineRuler from '../../molecules/TimelineRuler';
 import PluginAtomsTable from '@/modules/plugin/presentation/components/organisms/PluginAtomsTable';
+import PluginExposureListingPanel from '@/modules/plugin/presentation/components/organisms/PluginExposureListingPanel';
 import SimulationCellView from '../../molecules/SimulationCellView';
+import useCanvasUrlState from '@/modules/canvas/presentation/hooks/use-canvas-url-state';
+import useCanvasTimelineTabs from '@/modules/canvas/presentation/hooks/use-canvas-timeline-tabs';
+import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import './Timeline.css';
 
 interface TimelineProps {
     sceneRef: React.RefObject<FractalSceneRef | null>;
     trajectory: Trajectory | null | undefined;
     analysisId: string | undefined;
-    onTabChange?: (tab: TimelineTab) => void;
+    onTabChange?: (tab: string) => void;
 }
 
 
 const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange }: TimelineProps) => {
-    const [activeTab, setActiveTab] = useState<TimelineTab>('timeline');
+    const [activeTab, setActiveTab] = useState<string>('timeline');
+    const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
+    const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id);
+    const { pluginSlug, isPluginReady, listingExposures, atomExposureId } = useCanvasTimelineTabs({ trajectory, analysisId });
 
-    const handleTabChange = useCallback((tab: TimelineTab) => {
+    const exposureTabs = useMemo<TimelineTabOption[]>(() => {
+        return listingExposures.map((exposure) => ({
+            id: `exposure:${exposure.exposureId}`,
+            label: exposure.name
+        }));
+    }, [listingExposures]);
+
+    const tabs = useMemo<TimelineTabOption[]>(() => {
+        return [...CORE_TABS, ...exposureTabs];
+    }, [exposureTabs]);
+
+    const hasExposure = useCallback((exposureId?: string) => {
+        if (!exposureId) return false;
+        return listingExposures.some((item) => item.exposureId === exposureId);
+    }, [listingExposures]);
+
+    const handleTabChange = useCallback((tab: string) => {
         setActiveTab(tab);
+        if (tab.startsWith('exposure:')) {
+            setTimelineExposureId(tab.replace('exposure:', ''), { replace: true });
+        } else if (timelineExposureId) {
+            setTimelineExposureId(undefined, { replace: true });
+        }
         onTabChange?.(tab);
-    }, [onTabChange]);
+    }, [onTabChange, setTimelineExposureId, timelineExposureId]);
+
+    useEffect(() => {
+        if (timelineExposureId && hasExposure(timelineExposureId)) {
+            setActiveTab(`exposure:${timelineExposureId}`);
+            return;
+        }
+
+        if (timelineExposureId && isPluginReady && !hasExposure(timelineExposureId)) {
+            setTimelineExposureId(undefined, { replace: true });
+            if (activeTab.startsWith('exposure:')) {
+                setActiveTab('timeline');
+            }
+            return;
+        }
+
+        if (activeTab.startsWith('exposure:')) {
+            const exposureId = activeTab.replace('exposure:', '');
+            if (!hasExposure(exposureId)) {
+                setActiveTab('timeline');
+                if (timelineExposureId) {
+                    setTimelineExposureId(undefined, { replace: true });
+                }
+            }
+        }
+    }, [activeTab, hasExposure, isPluginReady, timelineExposureId, setTimelineExposureId]);
+
+    useEffect(() => {
+        if (!analysisId && timelineExposureId) {
+            setTimelineExposureId(undefined, { replace: true });
+            setActiveTab('timeline');
+        }
+    }, [analysisId, timelineExposureId, setTimelineExposureId]);
 
     const resolvedExposureId = useMemo(() => {
+        if (atomExposureId) return atomExposureId;
         if (!trajectory?.analysis?.length) return undefined;
         for (const analysis of trajectory.analysis) {
             if ((analysis as any).exposures?.length) {
@@ -37,7 +98,13 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange }: TimelinePro
             }
         }
         return undefined;
-    }, [trajectory?.analysis]);
+    }, [trajectory?.analysis, atomExposureId]);
+
+    const activeExposureId = useMemo(() => {
+        return activeTab.startsWith('exposure:')
+            ? activeTab.replace('exposure:', '')
+            : undefined;
+    }, [activeTab]);
 
     const {
         timestepData, currentTimestep, setCurrentTimestep, playSpeed, setPlaySpeed
@@ -209,6 +276,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange }: TimelinePro
             <TimelineHeader
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
+                tabs={tabs}
                 startFrame={startFrame}
                 endFrame={endFrame}
                 availableTimesteps={availableTimesteps}
@@ -247,6 +315,20 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange }: TimelinePro
             {activeTab === 'simulation-cell' && (
                 <Container className="canvas-timeline-body flex-1 p-relative overflow-hidden min-h-0">
                     <SimulationCellView trajectory={trajectory} currentTimestep={currentTimestep} />
+                </Container>
+            )}
+
+            {activeExposureId && trajectory?._id && pluginSlug && selectedTeamId && (
+                <Container className="canvas-timeline-body flex-1 p-relative overflow-hidden min-h-0">
+                    <PluginExposureListingPanel
+                        pluginSlug={pluginSlug}
+                        exposureId={activeExposureId}
+                        trajectoryId={trajectory._id}
+                        analysisId={analysisId}
+                        teamId={selectedTeamId}
+                        compact
+                        showTrajectoryColumn={false}
+                    />
                 </Container>
             )}
         </Container>

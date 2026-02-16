@@ -12,7 +12,13 @@ const SPEED_PRESETS = [0.25, 0.5, 1, 2, 4, 8, 10];
 
 type TimelineTab = 'timeline' | 'particles' | 'simulation-cell';
 
-const TABS: { id: TimelineTab; label: string; icon: ReactNode }[] = [
+export interface TimelineTabOption {
+    id: string;
+    label: string;
+    icon?: ReactNode;
+}
+
+const CORE_TABS: TimelineTabOption[] = [
     { id: 'particles', label: 'Particles', icon: <Atom style={{ width: 12, height: 12 }} /> },
     { id: 'simulation-cell', label: 'Simulation Cell', icon: <Box style={{ width: 12, height: 12 }} /> },
     {
@@ -29,8 +35,9 @@ const TABS: { id: TimelineTab; label: string; icon: ReactNode }[] = [
 ];
 
 interface TimelineHeaderProps {
-    activeTab: TimelineTab;
-    onTabChange: (tab: TimelineTab) => void;
+    activeTab: string;
+    onTabChange: (tab: string) => void;
+    tabs?: TimelineTabOption[];
     startFrame: number;
     endFrame: number;
     availableTimesteps: number[];
@@ -45,6 +52,7 @@ interface TimelineHeaderProps {
 const TimelineHeader = ({
     activeTab,
     onTabChange,
+    tabs,
     startFrame,
     endFrame,
     availableTimesteps,
@@ -55,133 +63,136 @@ const TimelineHeader = ({
     playSpeed,
     onPlaySpeedChange
 }: TimelineHeaderProps) => {
-    const isTimelineTab = activeTab === 'timeline';
+    const resolvedTabs = tabs?.length ? tabs : CORE_TABS;
 
     return (
         <Container className="canvas-timeline-header d-flex items-center w-max">
-            <Container className="d-flex items-center flex-1" role="tablist" aria-label="Timeline tabs">
-                {TABS.map((tab) => (
-                    <Button
-                        key={tab.id}
-                        role="tab"
-                        aria-selected={activeTab === tab.id}
-                        variant={activeTab === tab.id ? 'solid' : 'ghost'}
-                        intent="canvas"
-                        shape="rounded"
-                        size="sm"
-                        className="font-size-05 canvas-btn-compact"
-                        onClick={() => onTabChange(tab.id)}
-                        title={tab.label}
-                        leftIcon={tab.icon}
-                    >
-                        {tab.label}
-                    </Button>
-                ))}
+            <Container className="canvas-timeline-tabs-region d-flex items-center">
+                <Container className="canvas-timeline-tabs d-flex items-center" role="tablist" aria-label="Timeline tabs">
+                    {resolvedTabs.map((tab) => (
+                        <Button
+                            key={tab.id}
+                            role="tab"
+                            aria-selected={activeTab === tab.id}
+                            variant={activeTab === tab.id ? 'solid' : 'ghost'}
+                            intent="canvas"
+                            shape="rounded"
+                            size="sm"
+                            className="font-size-05 canvas-btn-compact"
+                            onClick={() => onTabChange(tab.id)}
+                            title={tab.label}
+                            leftIcon={tab.icon}
+                        >
+                            {tab.label}
+                        </Button>
+                    ))}
+                </Container>
             </Container>
 
-            {isTimelineTab && (
-                <>
-                    <Container className="d-flex items-center content-center">
-                        <TransportControls />
-                    </Container>
+            <Container className="canvas-timeline-controls-region d-flex items-center content-center">
+                <Container className="canvas-timeline-controls-center d-flex items-center content-center">
+                    <TransportControls />
+                </Container>
+            </Container>
 
-                    <Container className="canvas-timeline-frame-info d-flex items-center gap-05 flex-1 content-end">
-                        {[
-                            { value: startFrame, onChange: onRangeStartChange, title: 'Start frame' },
-                            { value: endFrame, onChange: onRangeEndChange, title: 'End frame' }
-                        ].map((frame) => (
-                            <FrameCombobox
-                                key={frame.title}
-                                value={frame.value}
-                                options={availableTimesteps}
-                                onChange={frame.onChange}
-                                title={frame.title}
-                            />
-                        ))}
+            <Container className="canvas-timeline-frame-region d-flex items-center content-end">
+                <Container className="canvas-timeline-frame-info d-flex items-center gap-05 content-end">
+                    {[
+                        { value: startFrame, onChange: onRangeStartChange, title: 'Start frame' },
+                        { value: endFrame, onChange: onRangeEndChange, title: 'End frame' }
+                    ].map((frame) => (
+                        <FrameCombobox
+                            key={frame.title}
+                            value={frame.value}
+                            options={availableTimesteps}
+                            onChange={frame.onChange}
+                            title={frame.title}
+                        />
+                    ))}
 
-                        <Container className="canvas-viewport-divider f-shrink-0" />
+                    <Container className="canvas-viewport-divider f-shrink-0" />
 
-                        <Popover
-                            id="timeline-speed"
-                            noPadding
-                            trigger={(
-                                <Button
-                                    variant="ghost"
-                                    intent="canvas"
-                                    shape="rounded"
-                                    size="sm"
-                                    className="font-size-05 canvas-btn-compact"
-                                    leftIcon={<Gauge size={12} />}
-                                    title="Playback speed"
-                                >
-                                    {playSpeed}x
-                                </Button>
-                            )}
-                        >
-                            {(close) => (
-                                <PopoverMenu>
-                                    {SPEED_PRESETS.map((preset) => (
-                                        <Button
-                                            key={preset}
-                                            variant={preset === playSpeed ? 'solid' : 'ghost'}
-                                            intent="canvas"
-                                            shape="rounded"
-                                            size="sm"
-                                            className="font-size-05"
-                                            block
-                                            align="start"
-                                            onClick={() => { onPlaySpeedChange(preset); close(); }}
-                                        >
-                                            {preset}x
-                                        </Button>
-                                    ))}
-                                </PopoverMenu>
-                            )}
-                        </Popover>
+                    <Popover
+                        id="timeline-speed"
+                        noPadding
+                        trigger={(
+                            <Button
+                                variant="ghost"
+                                intent="canvas"
+                                shape="rounded"
+                                size="sm"
+                                className="font-size-05 canvas-btn-compact"
+                                leftIcon={<Gauge size={12} />}
+                                title="Playback speed"
+                            >
+                                {playSpeed}x
+                            </Button>
+                        )}
+                    >
+                        {(close) => (
+                            <PopoverMenu>
+                                {SPEED_PRESETS.map((preset) => (
+                                    <Button
+                                        key={preset}
+                                        variant={preset === playSpeed ? 'solid' : 'ghost'}
+                                        intent="canvas"
+                                        shape="rounded"
+                                        size="sm"
+                                        className="font-size-05"
+                                        block
+                                        align="start"
+                                        onClick={() => { onPlaySpeedChange(preset); close(); }}
+                                    >
+                                        {preset}x
+                                    </Button>
+                                ))}
+                            </PopoverMenu>
+                        )}
+                    </Popover>
 
-                        <Popover
-                            id="timeline-zoom"
-                            noPadding
-                            trigger={(
-                                <Button
-                                    variant="ghost"
-                                    intent="canvas"
-                                    shape="rounded"
-                                    size="sm"
-                                    className="font-size-05 canvas-btn-compact"
-                                    leftIcon={<ZoomIn size={12} />}
-                                    title="Zoom level"
-                                >
-                                    {zoomPercent}%
-                                </Button>
-                            )}
-                        >
-                            {(close) => (
-                                <PopoverMenu>
-                                    {ZOOM_PRESETS.map((preset) => (
-                                        <Button
-                                            key={preset}
-                                            variant={preset === zoomPercent ? 'solid' : 'ghost'}
-                                            intent="canvas"
-                                            shape="rounded"
-                                            size="sm"
-                                            className="font-size-05"
-                                            block
-                                            align="start"
-                                            onClick={() => { onZoomPreset(preset); close(); }}
-                                        >
-                                            {preset}%
-                                        </Button>
-                                    ))}
-                                </PopoverMenu>
-                            )}
-                        </Popover>
-                    </Container>
-                </>
-            )}
+                    <Popover
+                        id="timeline-zoom"
+                        noPadding
+                        trigger={(
+                            <Button
+                                variant="ghost"
+                                intent="canvas"
+                                shape="rounded"
+                                size="sm"
+                                className="font-size-05 canvas-btn-compact"
+                                leftIcon={<ZoomIn size={12} />}
+                                title="Zoom level"
+                            >
+                                {zoomPercent}%
+                            </Button>
+                        )}
+                    >
+                        {(close) => (
+                            <PopoverMenu>
+                                {ZOOM_PRESETS.map((preset) => (
+                                    <Button
+                                        key={preset}
+                                        variant={preset === zoomPercent ? 'solid' : 'ghost'}
+                                        intent="canvas"
+                                        shape="rounded"
+                                        size="sm"
+                                        className="font-size-05"
+                                        block
+                                        align="start"
+                                        onClick={() => { onZoomPreset(preset); close(); }}
+                                    >
+                                        {preset}%
+                                    </Button>
+                                ))}
+                            </PopoverMenu>
+                        )}
+                    </Popover>
+                </Container>
+            </Container>
         </Container>
     );
 };
 
 export type { TimelineTab };
+export { CORE_TABS };
 export default TimelineHeader;

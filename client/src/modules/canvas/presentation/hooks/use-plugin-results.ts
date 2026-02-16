@@ -7,6 +7,7 @@ import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-tra
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-use-cases';
 import { triggerBrowserDownload } from '@/shared/utils/file';
+import { getListingRelevantExposures } from '@/modules/plugin/presentation/utils/listing-exposures';
 
 interface UsePluginResultsOptions {
     pluginSlug: string;
@@ -26,10 +27,7 @@ const usePluginResults = ({ pluginSlug, analysisId }: UsePluginResultsOptions) =
 
     const exposures = plugin?.exposures ?? [];
 
-    const listingExposures = useMemo(
-        () => exposures.filter((exp: any) => Boolean(exp.name)),
-        [exposures]
-    );
+    const listingExposures = useMemo(() => getListingRelevantExposures(exposures), [exposures]);
 
     const atomExposureId = useMemo(
         () => exposures.find((e: any) => e.perAtomProperties?.length)?._id,
