@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import FormField from '@/shared/presentation/components/FormField';
 import type { IArgumentDefinition } from '@/modules/plugin/domain/entities';
@@ -48,14 +48,16 @@ interface ArgumentFieldProps {
     index: number;
 }
 
+const getInitialValue = (arg: IArgumentDefinition, fieldType: string) => {
+    const raw = arg.value ?? arg.default;
+    if (fieldType === 'checkbox') return Boolean(raw);
+    if (raw !== undefined) return String(raw);
+    return '';
+};
+
 const ArgumentField = ({ arg, index }: ArgumentFieldProps) => {
-    const value = arg.value;
     const fieldProps = getArgumentFieldProps(arg, index);
-    const fieldValue = fieldProps.fieldType === 'checkbox'
-        ? Boolean(value)
-        : fieldProps.fieldType === 'input'
-            ? value !== undefined ? String(value) : ''
-            : String(value);
+    const [value, setValue] = useState<string | number | boolean>(getInitialValue(arg, fieldProps.fieldType));
 
     return (
         <FormField
@@ -63,10 +65,10 @@ const ArgumentField = ({ arg, index }: ArgumentFieldProps) => {
             fieldType={fieldProps.fieldType}
             variant={fieldProps.variant}
             fieldKey={fieldProps.fieldKey}
-            fieldValue={fieldValue}
+            fieldValue={value}
             options={fieldProps.options}
             inputProps={fieldProps.inputProps}
-            onFieldChange={() => {}}
+            onFieldChange={(_, v) => setValue(v)}
         />
     );
 };
