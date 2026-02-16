@@ -33,16 +33,27 @@ export const getTrajectoryBoxBounds = (trajectory: any, currentTimestep?: number
     return frame?.boxBounds;
 };
 
-export const calculateBoxTransforms = (boxBounds: BoxBounds): BoxTransforms => {
+export interface BoxDimensions {
+    width: number;
+    height: number;
+    depth: number;
+    center: { x: number; y: number; z: number };
+};
+
+export const getBoxDimensions = (boxBounds: BoxBounds): BoxDimensions => {
     const width = boxBounds.xhi - boxBounds.xlo;
     const height = boxBounds.yhi - boxBounds.ylo;
     const depth = boxBounds.zhi - boxBounds.zlo;
-
     const center = {
         x: (boxBounds.xlo + boxBounds.xhi) / 2,
         y: (boxBounds.ylo + boxBounds.yhi) / 2,
         z: (boxBounds.zlo + boxBounds.zhi) / 2
     };
+    return { width, height, depth, center };
+};
+
+export const calculateBoxTransforms = (boxBounds: BoxBounds): BoxTransforms => {
+    const { width, height, depth, center } = getBoxDimensions(boxBounds);
 
     const maxDimension = Math.max(width, height, depth);
 

@@ -43,6 +43,8 @@ export default function useGlbScene(params: UseGlbSceneParams) {
 
     const engineRef = useRef<FractalEngine | null>(null);
 
+    const pendingSimBoxMeshRef = useRef<THREE.Mesh | null>(null);
+
     const onModelBoundsChangedRef = useRef(onModelBoundsChanged);
     onModelBoundsChangedRef.current = onModelBoundsChanged;
 
@@ -71,6 +73,12 @@ export default function useGlbScene(params: UseGlbSceneParams) {
                 onModelAvailable: (modelObj) => setModel(modelObj)
             }
         );
+
+        // If the callback ref already fired before the engine was created,
+        // feed the pending mesh to the engine now.
+        if (pendingSimBoxMeshRef.current) {
+            engineRef.current.setSimBoxMesh(pendingSimBoxMeshRef.current);
+        }
 
         return () => {
             engineRef.current?.dispose();
@@ -131,6 +139,7 @@ export default function useGlbScene(params: UseGlbSceneParams) {
             engineRef.current?.deselect();
         }, []),
         setSimBoxMesh: useCallback((mesh: THREE.Mesh | null) => {
+            pendingSimBoxMeshRef.current = mesh;
             engineRef.current?.setSimBoxMesh(mesh);
         }, [])
     };
