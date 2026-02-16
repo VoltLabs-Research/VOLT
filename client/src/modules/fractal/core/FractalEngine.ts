@@ -3,6 +3,7 @@ import { Plane, Raycaster, Vector3, Euler } from 'three';
 import { AssetLoader } from '@/modules/fractal/core/AssetLoader';
 import { MaterialPipeline } from '@/modules/fractal/core/MaterialPipeline';
 import { ModelTransform, type BoundsInfo } from '@/modules/fractal/core/ModelTransform';
+import { getBoxDimensions } from '@/modules/fractal/presentation/utilities/boxUtils';
 
 type FractalParams = {
     url?: string | null;
@@ -118,7 +119,7 @@ export class FractalEngine {
         canvas.addEventListener('pointerdown', this.handlePointerDown);
         canvas.addEventListener('pointermove', this.handlePointerMove);
         canvas.addEventListener('pointerup', this.handlePointerUp);
-        window.addEventListener('keydown', this.handleKeyDown);
+        window.addEventListener('keydown', this.handleKeyDown, { capture: true });
     }
 
     detachEvents() {
@@ -128,7 +129,7 @@ export class FractalEngine {
             canvas.removeEventListener('pointermove', this.handlePointerMove);
             canvas.removeEventListener('pointerup', this.handlePointerUp);
         }
-        window.removeEventListener('keydown', this.handleKeyDown);
+        window.removeEventListener('keydown', this.handleKeyDown, { capture: true });
     }
 
     async loadIfNeeded() {
@@ -221,10 +222,7 @@ export class FractalEngine {
         let baseScale = mat.userData.basePointScale;
 
         if (boxBounds) {
-            const { xlo, xhi, ylo, yhi, zlo, zhi } = boxBounds;
-            const width = xhi - xlo;
-            const height = yhi - ylo;
-            const depth = zhi - zlo;
+            const { width, height, depth } = getBoxDimensions(boxBounds);
             const volume = width * height * depth;
             const numPoints = mesh.geometry.attributes.position.count;
 
@@ -411,18 +409,13 @@ export class FractalEngine {
 
             this.surface.scene.add(mesh);
             this.simulationBox.mesh = mesh;
-            this.simulationBox.baseSize = size.clone();
-            this.simulationBox.size = size.clone();
+            this.replaceSimBoxGeometry(size);
         } else if (!this.simulationBox.sizeAnimActive && !this.simulationBox.external) {
             const current = this.simulationBox.size || new THREE.Vector3();
             if (Math.abs(current.x - size.x) > EPS ||
                 Math.abs(current.y - size.y) > EPS ||
                 Math.abs(current.z - size.z) > EPS) {
-                this.simulationBox.mesh.geometry.dispose();
-                this.simulationBox.mesh.geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
-                this.simulationBox.mesh.scale.set(1, 1, 1);
-                this.simulationBox.baseSize = size.clone();
-                this.simulationBox.size = size.clone();
+                this.replaceSimBoxGeometry(size);
             }
         }
 
@@ -445,14 +438,7 @@ export class FractalEngine {
         this.simulationBox.sizeAnimStartMs = Date.now();
         this.simulationBox.sizeAnimActive = true;
 
-        if (this.simulationBox.mesh) {
-            this.simulationBox.mesh.geometry.dispose();
-            this.simulationBox.mesh.geometry = new THREE.BoxGeometry(sizeFrom.x, sizeFrom.y, sizeFrom.z);
-            this.simulationBox.mesh.scale.set(1, 1, 1);
-        }
-
-        this.simulationBox.baseSize = sizeFrom.clone();
-        this.simulationBox.size = sizeFrom.clone();
+        this.replaceSimBoxGeometry(sizeFrom);
     }
 
     private tickSimulationBox(now: number) {
@@ -484,15 +470,22 @@ export class FractalEngine {
         this.simulationBox.size = cur.clone();
 
         if (t >= 1) {
-            this.simulationBox.mesh.geometry.dispose();
-            this.simulationBox.mesh.geometry = new THREE.BoxGeometry(this.simulationBox.sizeAnimTo.x, this.simulationBox.sizeAnimTo.y, this.simulationBox.sizeAnimTo.z);
-            this.simulationBox.mesh.scale.set(1, 1, 1);
-            this.simulationBox.baseSize = this.simulationBox.sizeAnimTo.clone();
-            this.simulationBox.size = this.simulationBox.sizeAnimTo.clone();
+            this.replaceSimBoxGeometry(this.simulationBox.sizeAnimTo);
             this.simulationBox.sizeAnimActive = false;
         }
 
         return cur;
+    }
+
+    /** Replace the internal simulation box geometry and reset scale to identity. */
+    private replaceSimBoxGeometry(size: THREE.Vector3) {
+        if (this.simulationBox.mesh) {
+            this.simulationBox.mesh.geometry.dispose();
+            this.simulationBox.mesh.geometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+            this.simulationBox.mesh.scale.set(1, 1, 1);
+        }
+        this.simulationBox.baseSize = size.clone();
+        this.simulationBox.size = size.clone();
     }
 
     private updateSelectionGeometry(_size: THREE.Vector3, _hover: boolean) {
@@ -538,7 +531,12 @@ export class FractalEngine {
         if (event.button === 0 && simHits.length > 0) {
             if (!this.state.isSelectedPersistent) {
                 this.state.isSelectedPersistent = true;
-                this.state.selected = (simBox.parent as THREE.Group) || simBox;
+                const target = (simBox.parent as THREE.Group) || simBox;
+                this.state.selected = target;
+                this.state.currentRotation = target.rotation.clone();
+                this.state.targetRotation = target.rotation.clone();
+                this.state.currentScale = target.scale.x;
+                this.state.targetScale = target.scale.x;
                 if (this.state.bounds) {
                     const size = this.state.bounds.size.clone().multiplyScalar(1.06);
                     this.showSelection(size, false);
@@ -612,22 +610,28 @@ export class FractalEngine {
     private handleKeyDown = (event: KeyboardEvent) => {
         if (!this.state.selected) return;
         const isCtrl = event.ctrlKey || event.metaKey;
+
+        if (event.shiftKey && !isCtrl) {
+            switch (event.code) {
+                case 'ArrowLeft': event.preventDefault(); event.stopImmediatePropagation(); this.rotate(0, 0, -Math.PI / 24); this.surface.invalidate(); return;
+                case 'ArrowRight': event.preventDefault(); event.stopImmediatePropagation(); this.rotate(0, 0, Math.PI / 24); this.surface.invalidate(); return;
+            }
+        }
+
         if (isCtrl) {
             switch (event.code) {
-                case 'ArrowUp': event.preventDefault(); this.rotate(-Math.PI / 24, 0, 0); this.surface.invalidate(); break;
-                case 'ArrowDown': event.preventDefault(); this.rotate(Math.PI / 24, 0, 0); this.surface.invalidate(); break;
-                case 'ArrowLeft': event.preventDefault(); this.rotate(0, -Math.PI / 24, 0); this.surface.invalidate(); break;
-                case 'ArrowRight': event.preventDefault(); this.rotate(0, Math.PI / 24, 0); this.surface.invalidate(); break;
                 case 'Equal':
-                case 'NumpadAdd': event.preventDefault(); this.scale(0.1); this.surface.invalidate(); break;
+                case 'NumpadAdd': event.preventDefault(); event.stopImmediatePropagation(); this.scale(0.1); this.surface.invalidate(); return;
                 case 'Minus':
-                case 'NumpadSubtract': event.preventDefault(); this.scale(-0.1); this.surface.invalidate(); break;
+                case 'NumpadSubtract': event.preventDefault(); event.stopImmediatePropagation(); this.scale(-0.1); this.surface.invalidate(); return;
             }
-        } else if (event.shiftKey) {
-            switch (event.code) {
-                case 'ArrowLeft': event.preventDefault(); this.rotate(0, 0, -Math.PI / 24); this.surface.invalidate(); break;
-                case 'ArrowRight': event.preventDefault(); this.rotate(0, 0, Math.PI / 24); this.surface.invalidate(); break;
-            }
+        }
+
+        switch (event.code) {
+            case 'ArrowUp': event.preventDefault(); event.stopImmediatePropagation(); this.rotate(-Math.PI / 24, 0, 0); this.surface.invalidate(); return;
+            case 'ArrowDown': event.preventDefault(); event.stopImmediatePropagation(); this.rotate(Math.PI / 24, 0, 0); this.surface.invalidate(); return;
+            case 'ArrowLeft': event.preventDefault(); event.stopImmediatePropagation(); this.rotate(0, -Math.PI / 24, 0); this.surface.invalidate(); return;
+            case 'ArrowRight': event.preventDefault(); event.stopImmediatePropagation(); this.rotate(0, Math.PI / 24, 0); this.surface.invalidate(); return;
         }
 
         if (event.key === 'Escape') {

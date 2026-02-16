@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import type { BoxBounds } from '@/modules/fractal/presentation/types';
+import { getBoxDimensions } from '@/modules/fractal/presentation/utilities/boxUtils';
 
 interface SimulationCellBoxProps {
     boxBounds?: BoxBounds;
@@ -17,6 +18,30 @@ const SimulationCellBox = React.forwardRef<THREE.Mesh, SimulationCellBoxProps>((
     children,
     transforms
 }, ref) => {
+    const groupRef = useRef<THREE.Group>(null!);
+
+    // Apply position/scale imperatively instead of via declarative JSX props.
+    // R3F reconciles declarative props on every re-render, which overrides
+    // any imperative transforms applied by FractalEngine (drag, rotate, scale).
+    // By applying them in useEffect, they only reset when transforms actually change
+    // (e.g. on timestep change), not on unrelated re-renders.
+    useEffect(() => {
+        const group = groupRef.current;
+        if (!group) return;
+        if (transforms) {
+            group.position.set(
+                transforms.position.x,
+                transforms.position.y,
+                transforms.position.z + (transforms.groundOffset || 0)
+            );
+            const s = transforms.scale || 1;
+            group.scale.set(s, s, s);
+        } else {
+            group.position.set(0, 0, 0);
+            group.scale.set(1, 1, 1);
+        }
+    }, [transforms]);
+
     const geometry = useMemo(() => {
         if (!boxBounds) return null;
 
@@ -45,43 +70,19 @@ const SimulationCellBox = React.forwardRef<THREE.Mesh, SimulationCellBoxProps>((
 
     const boxGeometry = useMemo(() => {
         if (!boxBounds) return null;
-        const { xlo, xhi, ylo, yhi, zlo, zhi } = boxBounds;
-        const width = xhi - xlo;
-        const height = yhi - ylo;
-        const depth = zhi - zlo;
-
-        const centerX = (xlo + xhi) / 2;
-        const centerY = (ylo + yhi) / 2;
-        const centerZ = (zlo + zhi) / 2;
+        const { width, height, depth, center } = getBoxDimensions(boxBounds);
 
         const geo = new THREE.BoxGeometry(width, height, depth);
-        geo.translate(centerX, centerY, centerZ);
+        geo.translate(center.x, center.y, center.z);
         return geo;
     }, [boxBounds]);
 
     if (!boxBounds || !geometry) {
-        const fallbackPos: [number, number, number] = transforms ? [
-            transforms.position.x,
-            transforms.position.y,
-            transforms.position.z + (transforms.groundOffset || 0)
-        ] : [0, 0, 0];
-
-        return <group position={fallbackPos}>{children}</group>;
+        return <group ref={groupRef}>{children}</group>;
     }
 
-    const groupPosition: [number, number, number] = transforms ? [
-        transforms.position.x,
-        transforms.position.y,
-        transforms.position.z + (transforms.groundOffset || 0)
-    ] : [0, 0, 0];
-
-    const groupScale = transforms?.scale || 1;
-
     return (
-        <group
-            position={groupPosition}
-            scale={[groupScale, groupScale, groupScale]}
-        >
+        <group ref={groupRef}>
             {boxGeometry && (
                 <mesh
                     ref={ref}
