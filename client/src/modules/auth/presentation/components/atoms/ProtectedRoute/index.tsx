@@ -79,7 +79,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     // Guest mode: redirect authenticated users away
     if(mode === 'guest'){
         if(isAuthenticated){
-            return <Navigate to='/dashboard/trajectories' replace />;
+            return <Navigate to='/dashboard' replace />;
         }
 
         return <Outlet />;

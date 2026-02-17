@@ -11,6 +11,7 @@ import PasswordStep from '../../molecules/PasswordStep';
 import { signInSchema, SignInForm } from './validation-schema';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
 import { useAuthStore } from '../../../stores/use-auth-store';
+import { useNavigate } from 'react-router-dom';
 import './SignIn.css';
 
 type Step = 'email' | 'password' | 'register';
@@ -31,6 +32,7 @@ const stepTitles: StepTitles<Step> = {
 };
 
 const SignInTemplate = () => {
+    const navigate = useNavigate();
     const { step, goTo } = useStepper<Step>('email');
     const { authRepository, signInUseCase, signUpUseCase } = useAuthUseCases();
     const setUser = useAuthStore((state) => state.setUser);
@@ -51,7 +53,7 @@ const SignInTemplate = () => {
     };
 
     const finalizeAuth = () => {
-        window.location.href = '/';
+        navigate('/dashboard');
     };
 
     const handleEmailStep = async () => {

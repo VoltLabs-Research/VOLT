@@ -73,7 +73,10 @@ const COLUMNS: ColumnConfig[] = [
         key: 'ports',
         title: 'Ports',
         render: (_, row) => {
-            const port = (row as ContainerEntity).ports[0];
+            const port = (row as ContainerEntity).ports?.[0];
+            if(!port){
+                return <span className='font-size-2 color-muted'>No ports</span>;
+            }
             return (
                 <span className='font-size-2 font-weight-5'>
                     {port.private} {'->'} {port.public}

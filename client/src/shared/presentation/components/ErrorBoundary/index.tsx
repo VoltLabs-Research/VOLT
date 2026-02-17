@@ -22,12 +22,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState>{
 
     componentDidCatch(error: Error, info: ErrorInfo): void{
         this.props.onError(error, info);
+        this.setState({ hasError: false });
     }
 
     render(){
         if(this.state.hasError){
-            // Reset so the error page itself can render normally
-            this.setState({ hasError: false });
             return null;
         }
 

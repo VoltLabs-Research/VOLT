@@ -36,44 +36,64 @@ const Terminal = forwardRef<TerminalHandle, TerminalProps>(({
     }));
 
     useEffect(() => {
-        if(!containerRef.current || xtermRef.current) return;
+        let term: XTerm | null = null;
+        let fitAddon: FitAddon | null = null;
+        let fitTimer: number | null = null;
+        let isDisposed = false;
 
-        const bgColor = getComputedStyle(document.documentElement)
-            .getPropertyValue('--color-bg').trim() || '#1e1e1e';
+        const initTimer = window.setTimeout(() => {
+            if(isDisposed || !containerRef.current || xtermRef.current) return;
 
-        const term = new XTerm({
-            cursorBlink: true,
-            fontSize,
-            fontFamily,
-            theme: {
-                background: bgColor,
-                foreground: '#f0f0f0',
-                cursor: '#ffffff',
-                selectionBackground: 'rgba(255, 255, 255, 0.3)'
-            },
-            allowProposedApi: true
-        });
+            const bgColor = getComputedStyle(document.documentElement)
+                .getPropertyValue('--color-bg').trim() || '#1e1e1e';
 
-        const fitAddon = new FitAddon();
-        term.loadAddon(fitAddon);
-        term.open(containerRef.current);
-        fitAddon.fit();
+            term = new XTerm({
+                cursorBlink: true,
+                fontSize,
+                fontFamily,
+                theme: {
+                    background: bgColor,
+                    foreground: '#f0f0f0',
+                    cursor: '#ffffff',
+                    selectionBackground: 'rgba(255, 255, 255, 0.3)'
+                },
+                allowProposedApi: true
+            });
 
-        xtermRef.current = term;
-        fitAddonRef.current = fitAddon;
+            fitAddon = new FitAddon();
+            term.loadAddon(fitAddon);
+            term.open(containerRef.current);
+            fitAddon.fit();
 
-        if(onData){
-            term.onData(onData);
-        }
+            xtermRef.current = term;
+            fitAddonRef.current = fitAddon;
 
-        const handleResize = () => fitAddon.fit();
+            if(onData){
+                term.onData(onData);
+            }
+
+            fitTimer = window.setTimeout(() => {
+                if(!isDisposed && fitAddonRef.current){
+                    fitAddonRef.current.fit();
+                }
+            }, 100);
+        }, 0);
+
+        const handleResize = () => {
+            if(!isDisposed && fitAddonRef.current){
+                fitAddonRef.current.fit();
+            }
+        };
         window.addEventListener('resize', handleResize);
 
-        setTimeout(() => fitAddon.fit(), 100);
-
         return () => {
+            isDisposed = true;
+            window.clearTimeout(initTimer);
+            if(fitTimer !== null){
+                window.clearTimeout(fitTimer);
+            }
             window.removeEventListener('resize', handleResize);
-            term.dispose();
+            term?.dispose();
             xtermRef.current = null;
             fitAddonRef.current = null;
         };
