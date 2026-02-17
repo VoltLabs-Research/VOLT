@@ -182,7 +182,7 @@ const PluginBuilder = () => {
                 </Sidebar.Bottom>
             </Sidebar>
 
-            <PluginBuilderCanvas saveStatus={saveStatus} />
+            <PluginBuilderCanvas saveStatus={saveStatus} onSave={handleSave} />
         </Container>
     );
 };

@@ -87,7 +87,7 @@ input:-webkit-autofill:hover {
     -webkit-backdrop-filter: var(--glass-blur);
 }
 
-.react-flow__panel {
+.react-flow__attribution {
     display: none;
 }
 
