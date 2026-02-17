@@ -48,6 +48,19 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
         };
     }
 
+    async export(options: Omit<FindOptions<TProps>, 'limit' | 'skip'> = {}): Promise<TDomain[]> {
+        const { filter = {}, populate, select, sort } = options;
+
+        let query = this.model.find(filter as any);
+
+        if (populate) query = query.populate(populate as any);
+        if (select) query = query.select(select.join(' '));
+        if (sort) query = query.sort(sort as any);
+
+        const docs = await query.exec();
+        return docs.map((doc) => this.mapper.toDomain(doc as TDocument));
+    }
+
     async create(data: TProps): Promise<TDomain> {
         const persistenceData = this.mapper.toPersistence(data);
         const doc = await this.model.create(persistenceData);

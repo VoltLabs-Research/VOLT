@@ -4,6 +4,11 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import './Select.css';
 
+interface PopoverHTMLElement extends HTMLElement {
+    showPopover?: () => void;
+    hidePopover?: () => void;
+}
+
 export interface SelectOption {
     value: string;
     title: string;
@@ -120,13 +125,18 @@ const Select = ({
         if (!isOpen) return;
 
         const handleClickOutside = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
+            const target = e.target as Node | null;
+            const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+
             if (
-                triggerRef.current?.contains(target) ||
-                dropdownRef.current?.contains(target)
+                (target && triggerRef.current?.contains(target)) ||
+                (target && dropdownRef.current?.contains(target)) ||
+                (triggerRef.current && path.includes(triggerRef.current)) ||
+                (dropdownRef.current && path.includes(dropdownRef.current))
             ) {
                 return;
             }
+
             setIsOpen(false);
         };
 
@@ -136,11 +146,11 @@ const Select = ({
             }
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('click', handleClickOutside);
         document.addEventListener('keydown', handleEscape);
 
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('click', handleClickOutside);
             document.removeEventListener('keydown', handleEscape);
         };
     }, [isOpen]);
@@ -159,11 +169,24 @@ const Select = ({
         };
     }, [isOpen, calculatePosition]);
 
+    useEffect(() => {
+        const dropdownEl = dropdownRef.current as PopoverHTMLElement | null;
+        if (!dropdownEl) return;
+
+        if (isOpen) {
+            dropdownEl.showPopover?.();
+            return;
+        }
+
+        dropdownEl.hidePopover?.();
+    }, [isOpen]);
+
     const dropdown = isOpen ? createPortal(
         <div
             ref={dropdownRef}
+            popover='manual'
             className='select-dropdown y-auto glass-bg'
-            style={dropdownStyle}
+            style={{ ...dropdownStyle, zIndex: 2147483647 }}
             onScroll={handleScroll}
         >
             {options.map((opt) => {

@@ -27,7 +27,8 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<ExportPlugi
                 analysisId: input.analysisId,
                 exposureId: input.exposureId,
                 listingSlug: input.listingSlug,
-                sortAsc: input.sortAsc ?? false
+                sortAsc: input.sortAsc ?? false,
+                format: input.format ?? 'json'
             }
         );
 

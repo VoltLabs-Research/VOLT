@@ -45,6 +45,16 @@ export default class BaseRepository{
         return this.unwrapPaginated(raw);
     }
 
+    protected exportFile<P extends object = Record<string, unknown>>(
+        path: string,
+        params?: P
+    ): Promise<Blob> {
+        return this.client.request<Blob>('GET', path, {
+            query: params as Record<string, unknown> | undefined,
+            responseType: 'blob'
+        });
+    }
+
     /**
      * Transforms the raw server paginated response to the client's PaginatedResponse format
      */

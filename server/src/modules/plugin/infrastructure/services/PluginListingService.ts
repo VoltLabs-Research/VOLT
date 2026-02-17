@@ -3,7 +3,7 @@ import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepositor
 import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
 import ListingRow from '@modules/plugin/domain/entities/ListingRow';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
-import { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
+import { ExportType, PaginatedResult } from '@shared/domain/ports/IBaseRepository';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 
 interface ListingOptions {
@@ -15,6 +15,7 @@ interface ListingOptions {
     page?: number;
     limit?: number;
     sortAsc?: boolean;
+    format?: ExportType;
 };
 
 interface ListingPreparedContext {
@@ -63,6 +64,8 @@ export interface PluginListingExportResult {
         analysisId?: string;
         trajectoryId?: string;
         total: number;
+        columns: ColumnConfig[];
+        format: ExportType;
     };
     data: ListingRowData[];
 };
@@ -112,6 +115,7 @@ export class PluginListingService {
 
     async exportListingDocuments(pluginSlug: string, options: ListingOptions): Promise<PluginListingExportResult> {
         const sortAsc = options.sortAsc || false;
+        const format = options.format || 'json';
         const pageSize = 200;
         const prepared = await this.prepareListingContext(pluginSlug, options);
 
@@ -144,7 +148,9 @@ export class PluginListingService {
                 exposureId: prepared.exposureId,
                 analysisId: options.analysisId,
                 trajectoryId: options.trajectoryId,
-                total
+                total,
+                columns: prepared.columns,
+                format
             },
             data: rows
         };
