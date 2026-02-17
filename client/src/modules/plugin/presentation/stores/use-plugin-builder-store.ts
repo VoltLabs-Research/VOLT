@@ -25,6 +25,8 @@ interface PluginBuilderState {
     saveError: string | null;
     loadError: string | null;
     validationResult: ValidationResult | null;
+    past: Array<{ nodes: Node<INodeData>[]; edges: Edge[] }>;
+    future: Array<{ nodes: Node<INodeData>[]; edges: Edge[] }>;
 };
 
 interface PluginBuilderActions {
@@ -50,6 +52,10 @@ interface PluginBuilderActions {
     setSaveError: (error: string | null) => void;
     setLoadError: (error: string | null) => void;
     setValidationResult: (result: ValidationResult | null) => void;
+    undo: () => void;
+    redo: () => void;
+    canUndo: () => boolean;
+    canRedo: () => boolean;
     reset: () => void;
 };
 
@@ -64,10 +70,39 @@ const initialState: PluginBuilderState = {
     isLoading: false,
     saveError: null,
     loadError: null,
-    validationResult: null
+    validationResult: null,
+    past: [],
+    future: []
 };
 
-const usePluginBuilderStore = create<PluginBuilderStore>((set, get) => ({
+const usePluginBuilderStore = create<PluginBuilderStore>((set, get) => {
+    const _snapshot = () => {
+        const { nodes, edges } = get();
+        set((s) => ({
+            past: [...s.past, { nodes, edges }].slice(-50),
+            future: []
+        }));
+    };
+
+    const _validate = () => {
+        const { nodes, edges } = get();
+        const errors: string[] = [];
+        const nodeTypes = nodes.map((n) => n.type);
+
+        if (!nodeTypes.includes('modifier')) {
+            errors.push('Missing Modifier node — required as the plugin entry point.');
+        }
+        if (nodeTypes.includes('modifier') && !edges.some((e) => {
+            const src = nodes.find((n) => n.id === e.source);
+            return src?.type === 'modifier';
+        })) {
+            if (nodes.length > 1) errors.push('Modifier node has no outgoing connections.');
+        }
+
+        set({ validationResult: { valid: errors.length === 0, errors } });
+    };
+
+    return {
     ...initialState,
 
     setNodes: (nodesOrUpdater) => {
@@ -82,9 +117,11 @@ const usePluginBuilderStore = create<PluginBuilderStore>((set, get) => ({
             : { edges: edgesOrUpdater });
     },
 
-    onNodesChange: (changes) => set((s) => ({
-        nodes: applyNodeChanges(changes, s.nodes) as Node<INodeData>[]
-    })),
+    onNodesChange: (changes) => {
+        const hasDragEnd = changes.some((c) => c.type === 'position' && (c as { dragging?: boolean }).dragging === false);
+        if (hasDragEnd) _snapshot();
+        set((s) => ({ nodes: applyNodeChanges(changes, s.nodes) as Node<INodeData>[] }));
+    },
 
     onEdgesChange: (changes) => set((s) => ({
         edges: applyEdgeChanges(changes, s.edges)
@@ -120,6 +157,8 @@ const usePluginBuilderStore = create<PluginBuilderStore>((set, get) => ({
     onConnect(connection) {
         if (!get().validateConnection(connection)) return;
 
+        _snapshot();
+
         const edge: Edge = {
             id: `e-${connection.source}-${connection.target}-${connection.sourceHandle ?? 's'}-${connection.targetHandle ?? 't'}`,
             source: connection.source!,
@@ -130,6 +169,7 @@ const usePluginBuilderStore = create<PluginBuilderStore>((set, get) => ({
         };
 
         set((s) => ({ edges: addEdge(edge, s.edges) }));
+        _validate();
     },
 
     onNodeClick: (_, node) => set({ selectedNode: node }),
@@ -138,9 +178,11 @@ const usePluginBuilderStore = create<PluginBuilderStore>((set, get) => ({
 
     selectNode: (node) => set({ selectedNode: node }),
 
-    addNode: (type, position) => set((s) => ({
-        nodes: [...s.nodes, createNode(type, position)]
-    })),
+    addNode: (type, position) => {
+        _snapshot();
+        set((s) => ({ nodes: [...s.nodes, createNode(type, position)] }));
+        _validate();
+    },
 
     updateNodeData(nodeId, data) {
         set((s) => {
@@ -154,15 +196,21 @@ const usePluginBuilderStore = create<PluginBuilderStore>((set, get) => ({
         });
     },
 
-    deleteNode: (nodeId) => set((s) => ({
-        nodes: s.nodes.filter((n) => n.id !== nodeId),
-        edges: s.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
-        selectedNode: s.selectedNode?.id === nodeId ? null : s.selectedNode
-    })),
+    deleteNode: (nodeId) => {
+        _snapshot();
+        set((s) => ({
+            nodes: s.nodes.filter((n) => n.id !== nodeId),
+            edges: s.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+            selectedNode: s.selectedNode?.id === nodeId ? null : s.selectedNode
+        }));
+        _validate();
+    },
 
-    deleteEdge: (edgeId) => set((s) => ({
-        edges: s.edges.filter((e) => e.id !== edgeId)
-    })),
+    deleteEdge: (edgeId) => {
+        _snapshot();
+        set((s) => ({ edges: s.edges.filter((e) => e.id !== edgeId) }));
+        _validate();
+    },
 
     getWorkflow() {
         const { nodes, edges } = get();
@@ -202,10 +250,12 @@ const usePluginBuilderStore = create<PluginBuilderStore>((set, get) => ({
                 ...DEFAULT_EDGE_STYLE
             })),
             selectedNode: null,
-            validationResult: null,
             saveError: null,
-            loadError: null
+            loadError: null,
+            past: [],
+            future: []
         });
+        _validate();
     },
 
     clearWorkflow: () => set(initialState),
@@ -222,8 +272,39 @@ const usePluginBuilderStore = create<PluginBuilderStore>((set, get) => ({
 
     setValidationResult: (result) => set({ validationResult: result }),
 
+    undo: () => {
+        const { past, nodes, edges } = get();
+        if (past.length === 0) return;
+        const previous = past[past.length - 1];
+        set((s) => ({
+            past: s.past.slice(0, -1),
+            future: [{ nodes, edges }, ...s.future].slice(0, 50),
+            nodes: previous.nodes,
+            edges: previous.edges,
+            selectedNode: null
+        }));
+    },
+
+    redo: () => {
+        const { future, nodes, edges } = get();
+        if (future.length === 0) return;
+        const next = future[0];
+        set((s) => ({
+            future: s.future.slice(1),
+            past: [...s.past, { nodes, edges }].slice(0, 50),
+            nodes: next.nodes,
+            edges: next.edges,
+            selectedNode: null
+        }));
+    },
+
+    canUndo: () => get().past.length > 0,
+
+    canRedo: () => get().future.length > 0,
+
     reset: () => set(initialState)
-}));
+    };
+});
 
 export { usePluginBuilderStore };
 export default usePluginBuilderStore;

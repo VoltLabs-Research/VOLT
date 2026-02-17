@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useReactFlow } from '@xyflow/react';
+import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
@@ -16,6 +17,8 @@ interface CanvasToolbarProps {
 const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
     const { zoomIn, zoomOut, fitView } = useReactFlow();
     const zoomPercent = Math.round(zoom * 100);
+    const validationResult = usePluginBuilderStore((state) => state.validationResult);
+    const hasErrors = validationResult && !validationResult.valid && validationResult.errors.length > 0;
 
     const handleZoomIn = useCallback(() => { zoomIn(); }, [zoomIn]);
     const handleZoomOut = useCallback(() => { zoomOut(); }, [zoomOut]);
@@ -40,6 +43,20 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                     <AlertTriangle size={14} />
                     <Paragraph className='font-size-2'>Error</Paragraph>
                 </Container>
+            )}
+
+            {hasErrors && (
+                <Tooltip
+                    content={validationResult!.errors.join(' · ')}
+                    placement='top'
+                >
+                    <Container className='d-flex items-center gap-05 canvas-toolbar-status canvas-toolbar-status--error cursor-pointer'>
+                        <AlertTriangle size={14} />
+                        <Paragraph className='font-size-2'>
+                            {validationResult!.errors.length} {validationResult!.errors.length === 1 ? 'issue' : 'issues'}
+                        </Paragraph>
+                    </Container>
+                </Tooltip>
             )}
 
             <Container className='d-flex items-center gap-025'>

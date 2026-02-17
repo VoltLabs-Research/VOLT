@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useReactFlow } from '@xyflow/react';
+import { useReactFlow, useViewport } from '@xyflow/react';
 import type { Node } from '@xyflow/react';
 import { NodeType } from '@/modules/plugin/domain/entities';
 import { NODE_CONFIGS } from '@/modules/plugin/presentation/utilities/node-types';
@@ -23,7 +23,9 @@ const panelVariants = {
 const FloatingNodePanel = () => {
     const selectedNode = usePluginBuilderStore((state) => state.selectedNode);
     const selectNode = usePluginBuilderStore((state) => state.selectNode);
+    const nodes = usePluginBuilderStore((state) => state.nodes);
     const { flowToScreenPosition } = useReactFlow();
+    const viewport = useViewport();
     const panelRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLElement | null>(null);
     const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
@@ -51,11 +53,15 @@ const FloatingNodePanel = () => {
         return { top: clampedTop, right };
     }, [flowToScreenPosition]);
 
+    const liveSelectedNode = selectedNode
+        ? nodes.find(n => n.id === selectedNode.id) ?? selectedNode
+        : null;
+
     useEffect(() => {
-        if(!selectedNode) return;
-        const pos = computePosition(selectedNode);
+        if(!liveSelectedNode) return;
+        const pos = computePosition(liveSelectedNode);
         setPosition(pos);
-    }, [selectedNode?.id]);
+    }, [liveSelectedNode?.id, liveSelectedNode?.position.x, liveSelectedNode?.position.y, viewport.x, viewport.y, viewport.zoom, computePosition]);
 
     useEffect(() => {
         const canvas = document.querySelector('.plugin-builder-canvas');
@@ -68,11 +74,11 @@ const FloatingNodePanel = () => {
         selectNode(null);
     }, [selectNode]);
 
-    const config = selectedNode ? NODE_CONFIGS[selectedNode.type as NodeType] : null;
+    const config = liveSelectedNode ? NODE_CONFIGS[liveSelectedNode.type as NodeType] : null;
 
     return (
         <AnimatePresence mode='wait'>
-            {selectedNode && config && position && (
+            {liveSelectedNode && config && position && (
                 <motion.div
                     ref={panelRef}
                     className='floating-node-panel p-absolute overflow-hidden card-elevated d-flex column'
@@ -82,7 +88,7 @@ const FloatingNodePanel = () => {
                     animate='visible'
                     exit='exit'
                     transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
-                    key={selectedNode.id}
+                    key={liveSelectedNode.id}
                     onClick={(e) => e.stopPropagation()}
                 >
                     <Container className='d-flex items-center gap-075 floating-node-panel-header p-1'>
@@ -96,7 +102,7 @@ const FloatingNodePanel = () => {
                     </Container>
 
                     <Container className='floating-node-panel-body flex-1 min-h-0 y-auto'>
-                        <NodeEditor node={selectedNode} />
+                        <NodeEditor node={liveSelectedNode} />
                     </Container>
                 </motion.div>
             )}

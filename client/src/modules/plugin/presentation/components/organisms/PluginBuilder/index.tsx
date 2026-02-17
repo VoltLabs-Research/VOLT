@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type DragEvent } from 'react';
+import { useCallback, useMemo, useState, useRef, useEffect, type DragEvent } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { NodeType } from '@/modules/plugin/domain/entities';
 import { NODE_CONFIGS } from '@/modules/plugin/presentation/utilities/node-types';
@@ -26,11 +26,18 @@ const PluginBuilder = () => {
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const signOut = useAuthStore((state) => state.signOut);
     const [isSigningOut, setIsSigningOut] = useState(false);
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-    const { nodes, updateNodeData } = usePluginBuilderStore(
+    const { nodes, updateNodeData, selectedNode, selectNode, deleteNode, addNode, undo, redo } = usePluginBuilderStore(
         useShallow((state) => ({
             nodes: state.nodes,
-            updateNodeData: state.updateNodeData
+            updateNodeData: state.updateNodeData,
+            selectedNode: state.selectedNode,
+            selectNode: state.selectNode,
+            deleteNode: state.deleteNode,
+            addNode: state.addNode,
+            undo: state.undo,
+            redo: state.redo
         }))
     );
 
@@ -44,6 +51,7 @@ const PluginBuilder = () => {
             const result = await saveWorkflow();
             if (result) {
                 setSaveStatus('saved');
+                setHasUnsavedChanges(false);
                 setTimeout(() => setSaveStatus('idle'), 2000);
             } else {
                 setSaveStatus('error');
@@ -56,6 +64,46 @@ const PluginBuilder = () => {
     }, [saveWorkflow, isSaving]);
 
     useKeyboardShortcut('s', handleSave, { ctrl: true });
+
+    const handleEscape = useCallback(() => {
+        if (selectedNode) selectNode(null);
+    }, [selectedNode, selectNode]);
+
+    const handleDeleteSelected = useCallback(() => {
+        if (selectedNode) deleteNode(selectedNode.id);
+    }, [selectedNode, deleteNode]);
+
+    const handleUndo = useCallback(() => { undo(); }, [undo]);
+    const handleRedo = useCallback(() => { redo(); }, [redo]);
+
+    useKeyboardShortcut('Escape', handleEscape, { preventDefault: false });
+    useKeyboardShortcut('Delete', handleDeleteSelected, { preventDefault: false });
+    useKeyboardShortcut('z', handleUndo, { ctrl: true });
+    useKeyboardShortcut('z', handleRedo, { ctrl: true, shift: true });
+
+    const isFirstRender = useRef(true);
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        setHasUnsavedChanges(true);
+    }, [nodes.length]);
+
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (!hasUnsavedChanges) return;
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedChanges]);
+
+    const handleAddNode = useCallback((nodeType: NodeType) => {
+        const offset = nodes.length * 20;
+        addNode(nodeType, { x: 150 + offset, y: 150 + offset });
+    }, [addNode, nodes.length]);
 
     const modifierNode = useMemo(() => {
         return nodes.find(n => n.type === NodeType.MODIFIER);
@@ -100,12 +148,12 @@ const PluginBuilder = () => {
             Component: () => (
                 <Container className='d-flex column gap-1-5 plugin-builder-palette-list-container p-2'>
                     {nodeTypesList.map((config) => (
-                        <PaletteItem config={config} onDragStart={onDragStart} key={config.type} />
+                        <PaletteItem config={config} onDragStart={onDragStart} onAdd={handleAddNode} key={config.type} />
                     ))}
                 </Container>
             )
         }
-    ], [onDragStart]);
+    ], [onDragStart, handleAddNode]);
 
     return (
         <Container className='wh-max vh-max'>
@@ -122,7 +170,10 @@ const PluginBuilder = () => {
                                 intent='neutral'
                                 iconOnly
                                 size='sm'
-                                onClick={() => navigate(-1)}
+                                onClick={() => {
+                                    if (hasUnsavedChanges && !window.confirm('You have unsaved changes. Leave anyway?')) return;
+                                    navigate(-1);
+                                }}
                             >
                                 <ArrowLeft size={18} />
                             </Button>
