@@ -80,7 +80,9 @@ export const getDefaultDataForType = (type: NodeType): INodeData => {
                 visualizers: {
                     canvas: false,
                     raster: false,
-                    listing: {}
+                    listingTitle: '',
+                    listing: {},
+                    perAtomProperties: []
                 }
             };
 
