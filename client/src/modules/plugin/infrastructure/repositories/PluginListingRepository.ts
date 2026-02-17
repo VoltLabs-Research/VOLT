@@ -67,15 +67,15 @@ export default class PluginListingRepository extends BaseRepository implements I
     }
 
     async exportListing(params: ExportPluginListingInputDTO): Promise<ExportPluginListingOutputDTO> {
-        const { pluginSlug, exposureId, trajectoryId, analysisId, listingSlug } = params;
+        const { pluginSlug, exposureId, trajectoryId, analysisId, listingSlug, format } = params;
 
-        if (!exposureId) {
-            throw new Error('Exposure::IdRequired');
+        if (!exposureId && !listingSlug) {
+            throw new Error('Exposure::SelectorRequired');
         }
 
         const path = trajectoryId
-            ? `/listing/${pluginSlug}/exposure/${exposureId}/${trajectoryId}/export`
-            : `/listing/${pluginSlug}/exposure/${exposureId}/export`;
+            ? `/listing/${pluginSlug}/trajectory/${trajectoryId}/export`
+            : `/listing/${pluginSlug}/export`;
 
         const query: Record<string, unknown> = {};
 
@@ -83,12 +83,16 @@ export default class PluginListingRepository extends BaseRepository implements I
             query.analysisId = analysisId;
         }
 
+        if (exposureId) {
+            query.exposureId = exposureId;
+        }
+
         if (listingSlug) {
             query.listingSlug = listingSlug;
         }
 
-        const response = await this.client.get<{ status: string; data: ExportPluginListingOutputDTO }>(path, query);
+        query.format = format;
 
-        return response.data;
+        return this.exportFile(path, query);
     }
 };

@@ -3,18 +3,24 @@ import { motion } from 'framer-motion';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import { Plus } from 'lucide-react';
 import { Skeleton } from '@mui/material';
-import useDocumentListingPagination, { PaginationParams } from '@/shared/presentation/hooks/use-document-listing-pagination';
+import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
+import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import useOptimisticAction from '@/shared/presentation/hooks/use-optimistic-action';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import DocumentListingTable, { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListingTable';
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
+import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
+import FormField from '@/shared/presentation/components/FormField';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import useToast from '@/shared/presentation/hooks/use-toast';
 import { getValueByPath } from '@/shared/utils/format';
+import { triggerBrowserDownload } from '@/shared/utils/file';
 import { sortData } from '@/shared/utils/sort';
 import { SortConfig } from '@/shared/domain/sorting/types';
+import { ExportType } from '@/shared/domain/export/types';
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import './DocumentListing.css';
 
@@ -22,6 +28,19 @@ export type { ColumnConfig, MenuOption };
 export { getValueByPath };
 
 type ViewMode = 'table' | 'grid';
+type HeaderTabMode = 'list' | 'export';
+
+export interface DocumentListingExportParams<TContext = Record<string, never>> {
+    format: ExportType;
+    context?: TContext;
+    search: string;
+    sort?: SortConfig | null;
+}
+
+interface DocumentListingExportConfig<TContext = Record<string, never>> {
+    onExport?: (params: DocumentListingExportParams<TContext>) => Promise<Blob | void>;
+    getFilename?: (format: ExportType) => string;
+}
 
 interface DocumentListingProps<T, TContext = Record<string, never>> {
     title: string | React.ReactNode;
@@ -50,9 +69,10 @@ interface DocumentListingProps<T, TContext = Record<string, never>> {
     // Layout options
     hideHeader?: boolean;
     hideTabs?: boolean;
+    exportConfig?: DocumentListingExportConfig<TContext>;
 };
 
-const DocumentListing = <T, TContext = Record<string, never>>({
+const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({
     title,
     fetchData,
     context,
@@ -74,8 +94,10 @@ const DocumentListing = <T, TContext = Record<string, never>>({
     emptyButtonIsLoading = false,
     onEmptyButtonClick,
     hideHeader = false,
-    hideTabs = false
+    hideTabs = false,
+    exportConfig
 }: DocumentListingProps<T, TContext>) => {
+    const { showError, showSuccess } = useToast();
     const getColumnSortKey = useCallback((col: ColumnConfig): string => {
         return String(col.key ?? (col as any).path ?? '');
     }, []);
@@ -87,7 +109,8 @@ const DocumentListing = <T, TContext = Record<string, never>>({
         hasMore,
         error,
         handleLoadMore,
-        refresh
+        refresh,
+        search
     } = useDocumentListingPagination<T, TContext>({
         fetchData,
         context,
@@ -99,6 +122,11 @@ const DocumentListing = <T, TContext = Record<string, never>>({
     useKeyboardShortcut('F5', refresh);
 
     const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+    const [activeTab, setActiveTab] = useState<HeaderTabMode>('list');
+    const [selectedExportType, setSelectedExportType] = useState<ExportType>('json');
+    const [isExporting, setIsExporting] = useState(false);
+
+    const exportModalId = useMemo(() => `document-listing-export-${Math.random().toString(36).slice(2)}`, []);
 
     const { wrapMenuOptions, filterVisibleData } = useOptimisticAction<T>({
         shouldTrack: (opt) => opt.destructive === true
@@ -133,6 +161,45 @@ const DocumentListing = <T, TContext = Record<string, never>>({
         if(!sortConfig || sortConfig.key !== columnKey) return <span className='sort-indicator'>⇅</span>;
         return sortConfig.direction === 'asc' ? <span className='sort-indicator'>↑</span> : <span className='sort-indicator'>↓</span>;
     }, [sortConfig, getColumnSortKey]);
+
+    const handleTabChange = useCallback((tab: HeaderTabMode) => {
+        setActiveTab(tab);
+        if (tab === 'export') {
+            openModal(exportModalId);
+        }
+    }, [exportModalId]);
+
+    const handleConfirmExport = useCallback(async () => {
+        if (!exportConfig?.onExport) {
+            showError('Export is not available for this module yet');
+            return;
+        }
+
+        try {
+            setIsExporting(true);
+            const result = await exportConfig.onExport({
+                format: selectedExportType,
+                context,
+                search,
+                sort: sortConfig
+            });
+
+            if (result instanceof Blob) {
+                const filename = exportConfig.getFilename?.(selectedExportType)
+                    ?? `listing-export.${selectedExportType}`;
+                triggerBrowserDownload(result, filename);
+            }
+
+            showSuccess('Export generated successfully');
+            closeModal(exportModalId);
+            setActiveTab('list');
+        } catch (error) {
+            console.error('Export failed:', error);
+            showError('Failed to export listing');
+        } finally {
+            setIsExporting(false);
+        }
+    }, [exportConfig, selectedExportType, context, search, sortConfig, showSuccess, showError, exportModalId]);
 
     const renderContent = () => {
         const emptyMessageText = error ? error : emptyMessage;
@@ -216,8 +283,17 @@ const DocumentListing = <T, TContext = Record<string, never>>({
                     {!hideTabs && (
                         <Container>
                             <Container className='d-flex w-max gap-1 document-listing-header-tabs-container'>
-                                <Container className='d-flex items-center gap-1 color-secondary document-listing-header-tab-container'>
+                                <Container
+                                    className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container ${activeTab === 'list' ? 'is-active' : ''}`}
+                                    onClick={() => handleTabChange('list')}
+                                >
                                     <Paragraph>{view === 'grid' ? 'Grid' : 'List'}</Paragraph>
+                                </Container>
+                                <Container
+                                    className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container ${activeTab === 'export' ? 'is-active' : ''}`}
+                                    onClick={() => handleTabChange('export')}
+                                >
+                                    <Paragraph>Export</Paragraph>
                                 </Container>
                             </Container>
                             <Container className='document-listing-header-filters-container' />
@@ -227,6 +303,48 @@ const DocumentListing = <T, TContext = Record<string, never>>({
             )}
 
             {renderContent()}
+
+            <Modal
+                id={exportModalId}
+                title='Export listing'
+                description='Choose a format to export all matching records with the current listing scope.'
+                footer={(
+                    <>
+                        <Button
+                            variant='ghost'
+                            intent='neutral'
+                            onClick={() => {
+                                closeModal(exportModalId);
+                                setActiveTab('list');
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant='solid'
+                            intent='brand'
+                            isLoading={isExporting}
+                            onClick={handleConfirmExport}
+                        >
+                            Export
+                        </Button>
+                    </>
+                )}
+            >
+                <Container className='p-1-5'>
+                    <FormField
+                        label='Format'
+                        fieldType='select'
+                        variant='inline'
+                        options={[
+                            { title: 'JSON', value: 'json' },
+                            { title: 'CSV', value: 'csv' }
+                        ]}
+                        value={selectedExportType}
+                        onChange={(event) => setSelectedExportType(event.target.value as ExportType)}
+                    />
+                </Container>
+            </Modal>
         </Container>
     );
 };

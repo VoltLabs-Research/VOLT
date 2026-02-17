@@ -22,6 +22,7 @@ export interface UseDocumentListingPaginationReturn<T> {
     isFetchingMore: boolean;
     hasMore: boolean;
     error: string | null;
+    search: string;
     handleLoadMore: () => void;
     refresh: () => void;
 }
@@ -144,6 +145,7 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
         isFetchingMore,
         hasMore,
         error,
+        search,
         handleLoadMore,
         refresh
     };

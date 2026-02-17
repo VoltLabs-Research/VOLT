@@ -1,6 +1,7 @@
 import type { ListingRow } from '../../domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import type { ExportType } from '@/shared/domain/export/types';
 
 export interface GetPluginListingInputDTO {
     pluginSlug: string;
@@ -14,10 +15,11 @@ export interface GetPluginListingInputDTO {
 
 export interface ExportPluginListingInputDTO {
     pluginSlug: string;
-    exposureId: string;
+    exposureId?: string;
     trajectoryId?: string;
     analysisId?: string;
     listingSlug?: string;
+    format: ExportType;
 };
 
 export interface GetPluginListingOutputDTO extends PaginatedResponse<ListingRow> {
@@ -29,13 +31,4 @@ export interface GetPluginListingOutputDTO extends PaginatedResponse<ListingRow>
     };
 };
 
-export interface ExportPluginListingOutputDTO {
-    meta: {
-        pluginSlug: string;
-        exposureId: string;
-        analysisId?: string;
-        trajectoryId?: string;
-        total: number;
-    };
-    data: ListingRow[];
-};
+export type ExportPluginListingOutputDTO = Blob;

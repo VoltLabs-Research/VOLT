@@ -148,6 +148,10 @@ const PluginExposureTable = ({
             enabled={listingHook.isEnabled}
             columns={listingHook.columns}
             getMenuOptions={listingHook.getMenuOptions}
+            exportConfig={{
+                onExport: ({ format }) => listingHook.exportData(format),
+                getFilename: (format) => `${pluginSlug}_${listingSlug || exposureId || 'listing'}.${format}`
+            }}
             headerActions={headerActions}
         />
     );

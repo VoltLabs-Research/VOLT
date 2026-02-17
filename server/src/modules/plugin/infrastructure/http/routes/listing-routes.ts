@@ -11,8 +11,8 @@ const module: HttpModule = {
 
 router.use(protect);
 
-router.get('/listing/:pluginSlug/exposure/:exposureId/export', controllers.exportPluginListingDocuments.handle);
-router.get('/listing/:pluginSlug/exposure/:exposureId/:trajectoryId/export', controllers.exportPluginListingDocuments.handle);
+router.get('/listing/:pluginSlug/export', controllers.exportPluginListingDocuments.handle);
+router.get('/listing/:pluginSlug/trajectory/:trajectoryId/export', controllers.exportPluginListingDocuments.handle);
 router.get('/listing/:pluginSlug/exposure/:exposureId', controllers.getPluginListingDocuments.handle);
 router.get('/listing/:pluginSlug/exposure/:exposureId/:trajectoryId', controllers.getPluginListingDocuments.handle);
 router.get('/listing/:pluginSlug/:listingSlug', controllers.getPluginListingDocuments.handle);

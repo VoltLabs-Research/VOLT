@@ -26,6 +26,8 @@ export interface PaginationOptions {
     limit: number;
 };
 
+export type ExportType = 'json' | 'csv';
+
 export interface IBaseRepository<T, TProps> {
     /**
      * Find a single entity by its ID.
@@ -47,6 +49,11 @@ export interface IBaseRepository<T, TProps> {
      * Find all entities matching the filter.
      */
     findAll(options?: FindOptions<TProps> & PaginationOptions): Promise<PaginatedResult<T>>;
+
+    /**
+     * Export all entities matching the filter without pagination.
+     */
+    export(options?: Omit<FindOptions<TProps>, 'limit' | 'skip'>): Promise<T[]>;
 
     /**
      * Create new entity.

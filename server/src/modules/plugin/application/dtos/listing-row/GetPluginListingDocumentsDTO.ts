@@ -1,3 +1,5 @@
+import { ExportType } from '@shared/domain/ports/IBaseRepository';
+
 export interface GetPluginListingDocumentsInputDTO {
     pluginSlug: string;
     listingSlug?: string;
@@ -12,12 +14,13 @@ export interface GetPluginListingDocumentsInputDTO {
 
 export interface ExportPluginListingDocumentsInputDTO {
     pluginSlug: string;
-    exposureId: string;
+    exposureId?: string;
     teamId: string;
     trajectoryId?: string;
     analysisId?: string;
     listingSlug?: string;
     sortAsc?: boolean;
+    format?: ExportType;
 };
 
 export interface ColumnDef {
@@ -56,6 +59,8 @@ export interface ExportPluginListingDocumentsOutputDTO {
         analysisId?: string;
         trajectoryId?: string;
         total: number;
+        columns: ColumnDef[];
+        format: ExportType;
     };
     data: ListingRowData[];
 };

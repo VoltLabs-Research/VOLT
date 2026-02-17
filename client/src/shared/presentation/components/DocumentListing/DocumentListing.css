@@ -10,7 +10,17 @@
 
 .document-listing-header-tab-container {
     padding-bottom: 1rem;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease;
+}
+
+.document-listing-header-tab-container.is-active {
     border-bottom: 2px solid var(--accent-blue);
+}
+
+.document-listing-header-tab-container:not(.is-active) {
+    color: var(--color-secondary);
 }
 
 .document-listing-body-container {

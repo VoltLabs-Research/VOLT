@@ -7,6 +7,7 @@ import useDeleteAnalysis from '@/modules/analysis/presentation/hooks/use-delete-
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { ExportType } from '@/shared/domain/export/types';
 import type { ListingRow } from '../../domain/entities';
 
 interface UsePluginListingParams {
@@ -33,6 +34,7 @@ interface UsePluginListingReturn {
     context: PluginListingContext;
     isEnabled: boolean;
     fetchData: (params: { page: number; limit: number } & PluginListingContext) => Promise<PaginatedResponse<ListingRow>>;
+    exportData: (format: ExportType) => Promise<Blob>;
     getMenuOptions: (item: ListingRow) => MenuOption[];
 };
 
@@ -112,6 +114,17 @@ const usePluginListing = ({
         };
     }, [pluginListingRepository, setColumns]);
 
+    const exportData = useCallback(async (format: ExportType): Promise<Blob> => {
+        return pluginListingRepository.exportListing({
+            pluginSlug,
+            listingSlug,
+            exposureId,
+            trajectoryId,
+            analysisId,
+            format
+        });
+    }, [pluginListingRepository, pluginSlug, listingSlug, exposureId, trajectoryId, analysisId]);
+
     const handleDelete = useCallback(async (item: ListingRow) => {
         const analysisToDelete = item?.analysisId;
         if (!analysisToDelete) {
@@ -163,6 +176,7 @@ const usePluginListing = ({
         context,
         isEnabled,
         fetchData,
+        exportData,
         getMenuOptions
     };
 };
