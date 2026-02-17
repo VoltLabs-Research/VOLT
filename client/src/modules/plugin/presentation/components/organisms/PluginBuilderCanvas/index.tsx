@@ -4,9 +4,10 @@ import { useShallow } from 'zustand/react/shallow';
 import { nodeTypes } from '@/modules/plugin/presentation/components/molecules/nodes';
 import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/domain/entities';
-import useCanvasHandlers from '../hooks/use-canvas-handlers';
-import CanvasToolbar from './CanvasToolbar';
-import CanvasEmptyState from './CanvasEmptyState';
+import { useCanvasHandlers } from '@/modules/plugin/presentation/hooks';
+import CanvasToolbar from '@/modules/plugin/presentation/components/molecules/CanvasToolbar';
+import CanvasEmptyState from '@/modules/plugin/presentation/components/molecules/CanvasEmptyState';
+import FloatingNodePanel from '@/modules/plugin/presentation/components/organisms/FloatingNodePanel';
 import Container from '@/shared/presentation/components/Container';
 
 const NODE_MINIMAP_COLORS: Record<string, string> = {
@@ -69,7 +70,7 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
     const isEmpty = nodes.length === 0;
 
     return (
-        <Container className='h-max w-max p-relative' ref={reactFlowWrapper}>
+        <Container className='h-max w-max p-relative plugin-builder-canvas' ref={reactFlowWrapper}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -92,7 +93,7 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
                     style: { stroke: '#64748b', strokeWidth: 2 }
                 }}
             >
-                <Background bgColor='#080808ff' color='#3d3d3dff' gap={16} size={0.8} />
+                <Background bgColor='#080808ff' color='rgb(116, 116, 116)' gap={16} size={0.8} />
                 {!isEmpty && (
                     <MiniMap
                         nodeColor={nodeColor}
@@ -103,6 +104,8 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
             </ReactFlow>
 
             {isEmpty && <CanvasEmptyState />}
+
+            <FloatingNodePanel />
 
             <CanvasToolbar saveStatus={saveStatus} onSave={onSave} zoom={currentZoom} />
         </Container>

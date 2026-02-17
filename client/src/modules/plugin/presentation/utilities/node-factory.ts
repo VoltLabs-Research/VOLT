@@ -19,7 +19,7 @@ export const getDefaultDataForType = (type: NodeType): INodeData => {
         case NodeType.MODIFIER:
             return {
                 modifier: {
-                    name: '',
+                    name: 'New Plugin',
                     icon: '',
                     author: '',
                     license: 'MIT',

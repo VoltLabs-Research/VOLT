@@ -1,7 +1,6 @@
 .plugin-builder-palette-list-container {
     overflow-y: auto;
-    max-height: 64vh;
-}
+    }
 
 /** Canvas Empty State **/
 .canvas-empty-state {
@@ -82,4 +81,28 @@
     border: 1px solid var(--color-border-soft) !important;
     box-shadow: var(--shadow-card) !important;
     overflow: hidden;
+}
+
+/** Floating Node Panel **/
+.floating-node-panel {
+    z-index: 100;
+    width: 380px;
+    max-height: 75vh;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: color-mix(in srgb, var(--color-surface-1) 85%, transparent);
+}
+
+.floating-node-panel-header {
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.floating-node-panel-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--color-surface-3);
+}
+
+.floating-node-panel-body {
+    overflow-x: hidden;
 }

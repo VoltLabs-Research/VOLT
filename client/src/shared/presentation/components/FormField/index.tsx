@@ -174,7 +174,9 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({
         const isCheckbox = fieldType === 'checkbox';
         const containerClass = isCheckbox
             ? `${containerBaseClass} form-field-inline-checkbox-container d-flex content-between items-center checkbox-container`
-            : `${containerBaseClass} d-flex content-between items-center gap-1`;
+            : isCanvasVariant
+                ? `${containerBaseClass} d-flex content-between items-center gap-1`
+                : containerBaseClass;
 
         const labelClass = isCanvasVariant
             ? 'canvas-form-label'
@@ -183,7 +185,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(({
         return (
             <Container className={`${containerClass} ${isLoading ? 'is-loading form-field-loading' : ''}`}>
                 <span className={labelClass}>{label}</span>
-                <Container className='d-flex items-center render-input-container' style={{ flex: isCheckbox ? undefined : 1 }}>
+                <Container className='d-flex items-center render-input-container'>
                     {renderInlineField()}
                 </Container>
             </Container>

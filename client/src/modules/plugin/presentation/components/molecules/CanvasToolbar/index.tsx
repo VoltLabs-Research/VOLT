@@ -5,7 +5,7 @@ import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Divider from '@/shared/presentation/components/Divider';
-import { TbZoomIn, TbZoomOut, TbMaximize, TbDeviceFloppy, TbCheck, TbAlertTriangle } from 'react-icons/tb';
+import { ZoomIn, ZoomOut, Maximize, Save, Check, AlertTriangle } from 'lucide-react';
 
 interface CanvasToolbarProps {
     saveStatus: 'idle' | 'saving' | 'saved' | 'error';
@@ -31,13 +31,13 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
             )}
             {saveStatus === 'saved' && (
                 <Container className='d-flex items-center gap-05 canvas-toolbar-status canvas-toolbar-status--saved'>
-                    <TbCheck size={14} />
+                    <Check size={14} />
                     <Paragraph className='font-size-2'>Saved</Paragraph>
                 </Container>
             )}
             {saveStatus === 'error' && (
                 <Container className='d-flex items-center gap-05 canvas-toolbar-status canvas-toolbar-status--error'>
-                    <TbAlertTriangle size={14} />
+                    <AlertTriangle size={14} />
                     <Paragraph className='font-size-2'>Error</Paragraph>
                 </Container>
             )}
@@ -45,7 +45,7 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
             <Container className='d-flex items-center gap-025'>
                 <Tooltip content='Zoom out' placement='top'>
                     <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomOut}>
-                        <TbZoomOut size={16} />
+                        <ZoomOut size={16} />
                     </Button>
                 </Tooltip>
                 <Paragraph className='text-center u-select-none canvas-toolbar-zoom-label color-secondary font-size-2'>
@@ -53,13 +53,13 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                 </Paragraph>
                 <Tooltip content='Zoom in' placement='top'>
                     <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleZoomIn}>
-                        <TbZoomIn size={16} />
+                        <ZoomIn size={16} />
                     </Button>
                 </Tooltip>
                 <Divider orientation='vertical' className='canvas-toolbar-divider' />
                 <Tooltip content='Fit to view' placement='top'>
                     <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={handleFitView}>
-                        <TbMaximize size={16} />
+                        <Maximize size={16} />
                     </Button>
                 </Tooltip>
             </Container>
@@ -73,7 +73,7 @@ const CanvasToolbar = ({ saveStatus, onSave, zoom }: CanvasToolbarProps) => {
                     onClick={onSave}
                     disabled={saveStatus === 'saving'}
                 >
-                    <TbDeviceFloppy size={16} />
+                    <Save size={16} />
                 </Button>
             </Tooltip>
         </Container>

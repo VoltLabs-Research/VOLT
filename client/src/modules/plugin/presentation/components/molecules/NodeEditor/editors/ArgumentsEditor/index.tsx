@@ -3,7 +3,7 @@ import CollapsibleSection from '@/shared/presentation/components/CollapsibleSect
 import FormField from '@/shared/presentation/components/FormField';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
-import { TbPlus } from 'react-icons/tb';
+import { Plus } from 'lucide-react';
 import { useNodeCollectionForm } from '@/modules/plugin/presentation/hooks';
 import { ARGUMENT_TYPE_OPTIONS } from '@/modules/plugin/presentation/utilities/node-types';
 import type { IArgumentDefinition, ArgumentType } from '@/modules/plugin/domain/entities';
@@ -90,7 +90,8 @@ const ArgumentsEditor = ({ node }: EditorProps) => {
                     variant='outline'
                     intent='neutral'
                     size='sm'
-                    leftIcon={<TbPlus size={14} />}
+                    className='w-max'
+                    leftIcon={<Plus size={14} />}
                     onClick={addItem}
                 >
                     Add Argument

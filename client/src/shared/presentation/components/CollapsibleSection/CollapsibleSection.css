@@ -27,6 +27,17 @@
     color: var(--accent-green, #4ade80);
 }
 
+.collapsible-section-action--delete {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.collapsible-section-header:hover .collapsible-section-action--delete {
+    opacity: 1;
+    pointer-events: auto;
+}
+
 .collapsible-section-action--delete:hover {
     color: var(--accent-red, #ff6b6b);
 }

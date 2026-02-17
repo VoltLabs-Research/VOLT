@@ -6,16 +6,14 @@ import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-
 import { useSaveWorkflow } from '@/modules/plugin/presentation/hooks';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import PaletteItem from '@/modules/plugin/presentation/components/atoms/PaletteItem';
-import NodeEditor from '@/modules/plugin/presentation/components/molecules/NodeEditor';
-import PluginBuilderCanvas from './components/PluginBuilderCanvas';
+import PluginBuilderCanvas from '@/modules/plugin/presentation/components/organisms/PluginBuilderCanvas';
 import Sidebar from '@/shared/presentation/components/Sidebar';
 import EditableTag from '@/shared/presentation/components/EditableTag';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
-import Title from '@/shared/presentation/components/Title';
 import UserMenuPopover from '@/modules/auth/presentation/components/molecules/UserMenuPopover';
-import { TbArrowLeft } from 'react-icons/tb';
+import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
 import '@xyflow/react/dist/style.css';
@@ -25,21 +23,13 @@ const nodeTypesList = Object.values(NODE_CONFIGS);
 
 const PluginBuilder = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('Palette');
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
     const signOut = useAuthStore((state) => state.signOut);
     const [isSigningOut, setIsSigningOut] = useState(false);
 
-    const {
-        nodes,
-        selectedNode,
-        selectNode,
-        updateNodeData
-    } = usePluginBuilderStore(
+    const { nodes, updateNodeData } = usePluginBuilderStore(
         useShallow((state) => ({
             nodes: state.nodes,
-            selectedNode: state.selectedNode,
-            selectNode: state.selectNode,
             updateNodeData: state.updateNodeData
         }))
     );
@@ -90,10 +80,6 @@ const PluginBuilder = () => {
         event.dataTransfer.effectAllowed = 'move';
     }, []);
 
-    const handleClearSelection = useCallback(() => {
-        selectNode(null);
-    }, [selectNode]);
-
     const handleSignOut = useCallback(async () => {
         try {
             setIsSigningOut(true);
@@ -107,8 +93,6 @@ const PluginBuilder = () => {
         navigate('/dashboard/settings/general');
     }, [navigate]);
 
-    const selectedNodeConfig = selectedNode ? NODE_CONFIGS[selectedNode.type as NodeType] : null;
-
     const SIDEBAR_TAGS = useMemo(() => [
         {
             id: 'Palette',
@@ -120,17 +104,6 @@ const PluginBuilder = () => {
                     ))}
                 </Container>
             )
-        },
-        {
-            id: 'Options',
-            name: 'Options',
-            Component: () => (
-                <Container className='p-2'>
-                    <Title className='color-muted font-size-2'>
-                        Select a node or add global plugin options here.
-                    </Title>
-                </Container>
-            )
         }
     ], [onDragStart]);
 
@@ -138,28 +111,22 @@ const PluginBuilder = () => {
         <Container className='wh-max vh-max'>
             <Sidebar
                 tags={SIDEBAR_TAGS}
-                activeTag={activeTab}
-                onTagChange={setActiveTab}
+                activeTag='Palette'
                 className='primary-surface'
-                overrideContent={selectedNode ? <NodeEditor node={selectedNode} /> : null}
             >
                 <Sidebar.Header>
-                    {selectedNode ? (
-                        <Container className='d-flex items-center gap-075'>
-                            <Tooltip content='Back to Palette' placement='right'>
-                                <Button
-                                    variant='ghost'
-                                    intent='neutral'
-                                    iconOnly
-                                    size='sm'
-                                    onClick={handleClearSelection}
-                                >
-                                    <TbArrowLeft size={18} />
-                                </Button>
-                            </Tooltip>
-                            <Title className='font-weight-6'>{selectedNodeConfig?.label}</Title>
-                        </Container>
-                    ) : (
+                    <Container className='d-flex items-center gap-075'>
+                        <Tooltip content='Back' placement='right'>
+                            <Button
+                                variant='ghost'
+                                intent='neutral'
+                                iconOnly
+                                size='sm'
+                                onClick={() => navigate(-1)}
+                            >
+                                <ArrowLeft size={18} />
+                            </Button>
+                        </Tooltip>
                         <Tooltip content='Double-click to edit plugin name' placement='bottom'>
                             <EditableTag
                                 as='h3'
@@ -168,7 +135,7 @@ const PluginBuilder = () => {
                                 {pluginName}
                             </EditableTag>
                         </Tooltip>
-                    )}
+                    </Container>
                 </Sidebar.Header>
 
                 <Sidebar.Bottom>
