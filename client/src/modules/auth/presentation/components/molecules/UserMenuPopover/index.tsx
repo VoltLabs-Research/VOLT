@@ -5,6 +5,7 @@ import Container from '@/shared/presentation/components/Container';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import UserInfo from '@/modules/auth/presentation/components/atoms/UserInfo';
+import Avatar from '@/shared/presentation/components/Avatar';
 import './UserMenuPopover.css';
 
 interface UserMenuPopoverProps {
@@ -12,10 +13,17 @@ interface UserMenuPopoverProps {
     onSignOut: () => void;
     isSigningOut?: boolean;
     trigger?: React.ReactNode;
+    collapsed?: boolean;
 };
 
-const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, trigger }: UserMenuPopoverProps) => {
+const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, trigger, collapsed = false }: UserMenuPopoverProps) => {
     const user = useAuthStore((state) => state.user);
+
+    const collapsedTrigger = (
+        <button className='user-menu-trigger user-menu-trigger-collapsed cursor-pointer'>
+            <Avatar user={user} size='sm' />
+        </button>
+    );
 
     const defaultTrigger = (
         <button className='user-menu-trigger cursor-pointer'>
@@ -26,11 +34,13 @@ const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, tri
         </button>
     );
 
+    const activeTrigger = trigger ?? (collapsed ? collapsedTrigger : defaultTrigger);
+
     return (
         <Popover
             id='user-menu-popover'
             className='gap-1'
-            trigger={trigger ?? defaultTrigger}
+            trigger={activeTrigger}
         >
             <PopoverMenuItem icon={<IoSettingsOutline />} onClick={onSettingsClick}>
                 Account Settings

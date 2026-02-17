@@ -6,25 +6,23 @@
 
 .sidebar-sub-item {
     display: block;
-    padding: 0.5rem 0.75rem;
+    padding: 0.375rem 0.75rem;
     font-size: 0.8rem;
     background: transparent;
     border: none;
-    border-left: 3px solid transparent;
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     text-align: left;
     transition: all 0.15s ease;
+    color: var(--color-text-secondary);
 }
 
 .sidebar-sub-item:hover {
-    background: var(--hover-bg);
     color: var(--color-text-primary);
 }
 
 .sidebar-sub-item.is-selected {
-    color: var(--color-text-primary);
+    color: var(--accent-blue);
     font-weight: 500;
-    background-color: var(--hover-bg);
 }
 
 /* Nested Sections (plugins with exposures) */
@@ -59,18 +57,17 @@
     padding: 0.375rem 0.5rem;
     background: transparent;
     border: none;
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     text-align: left;
     transition: all 0.15s ease;
+    color: var(--color-text-secondary);
 }
 
 .sidebar-nested-item:hover {
-    background: var(--hover-bg);
     color: var(--color-text-primary);
 }
 
 .sidebar-nested-item.is-selected {
-    background: transparent;
     color: var(--accent-blue);
     font-weight: 500;
 }

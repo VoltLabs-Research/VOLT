@@ -11,12 +11,12 @@
     flex: 1 0 auto;
     min-width: 130px;
     padding: 0 1rem;
-    transition: .1s;
-    height: 45px;
+    transition: .15s ease;
+    height: 40px;
     cursor: pointer;
     white-space: nowrap;
 }
 
 .editor-sidebar-option-title {
-    font-size: 1.05rem;
+    font-size: 0.875rem;
 }

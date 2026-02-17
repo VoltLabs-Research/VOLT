@@ -1,16 +1,33 @@
+import { GoSidebarCollapse, GoSidebarExpand } from 'react-icons/go';
 import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
 import Title from '@/shared/presentation/components/Title';
+import IconButton from '@/shared/presentation/components/IconButton';
 import './Brand.css';
 
-const Brand = () => {
+interface BrandProps {
+    collapsed?: boolean;
+    onToggleCollapse?: () => void;
+};
+
+const Brand = ({ collapsed = false, onToggleCollapse }: BrandProps) => {
     return (
-        <Container className='sidebar-brand gap-075'>
-            <Container className='sidebar-brand-logo font-size-3'>V</Container>
-            <Container className='d-flex column gap-02'>
+        <Container className={`sidebar-brand ${collapsed ? 'is-collapsed' : ''}`}>
+            {collapsed ? (
+                <Container className='sidebar-brand-icon'>V</Container>
+            ) : (
                 <Title className='sidebar-brand-title color-primary'>Volt</Title>
-                <Paragraph className='font-size-05'>From VoltLabs Research</Paragraph>
-            </Container>
+            )}
+
+            {onToggleCollapse && (
+                <IconButton
+                    className='sidebar-collapse-toggle'
+                    onClick={onToggleCollapse}
+                    size={20}
+                    title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                >
+                    {collapsed ? <GoSidebarExpand size={16} /> : <GoSidebarCollapse size={16} />}
+                </IconButton>
+            )}
         </Container>
     );
 };

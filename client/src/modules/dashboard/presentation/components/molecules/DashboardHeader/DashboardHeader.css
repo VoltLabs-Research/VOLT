@@ -1,16 +1,10 @@
 .dashboard-top-header {
-    background: var(--color-bg);
+    padding: 1rem 2rem;
     z-index: 50;
 }
 
 .dashboard-header-left {
     min-width: 0;
-}
-
-.header-greeting {
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-    margin: 0;
 }
 
 .dashboard-header-center {
@@ -24,7 +18,7 @@
 }
 
 .mobile-sidebar-trigger:hover {
-    background: var(--color-surface-2);
+    background: var(--hover-bg);
 }
 
 @media screen and (max-width: 1024px) {

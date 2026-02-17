@@ -38,9 +38,10 @@ const SECONDARY_NAV_ITEMS: Array<[string, IconType, string]> = [
 interface SidebarNavigationProps {
     setSidebarOpen: (status: boolean) => void;
     setSettingsExpanded: (status: boolean) => void;
+    collapsed?: boolean;
 };
 
-const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavigationProps) => {
+const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded, collapsed = false }: SidebarNavigationProps) => {
     const { searchParams } = useSearchParamsState();
     const navigate = useNavigate();
     const { pathname } = useLocation();
@@ -145,18 +146,20 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded }: SidebarNavig
                 />
             ))}
 
-            <Divider className='sidebar-divider' />
+            <Divider className={`sidebar-divider ${collapsed ? 'is-hidden' : ''}`} />
 
-            <Container className='sidebar-team-section'>
+            <Container className={`sidebar-team-section ${collapsed ? 'is-hidden' : ''}`}>
                 <TeamSelector className='team-select' />
             </Container>
 
-            <SidebarNavItem
-                label='Create Team'
-                icon={IoIosAdd}
-                commandFor='team-creator-modal'
-                command='show-modal'
-            />
+            {!collapsed && (
+                <SidebarNavItem
+                    label='Create Team'
+                    icon={IoIosAdd}
+                    commandFor='team-creator-modal'
+                    command='show-modal'
+                />
+            )}
         </nav>
     );
 };

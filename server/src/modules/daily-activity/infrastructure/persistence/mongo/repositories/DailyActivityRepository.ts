@@ -43,6 +43,7 @@ export default class DailyActivityRepository
         // Return individual documents per user/date instead of grouping by date only
         const activities = await this.model.find(statsQuery)
             .select('date user minutesOnline activity')
+            .populate('user', 'firstName lastName avatar')
             .sort({ date: 1 });
 
         return activities.map((activity) => dailyActitvityMapper.toDomain(activity).props);

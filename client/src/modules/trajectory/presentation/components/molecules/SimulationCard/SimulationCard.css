@@ -4,6 +4,7 @@
 }
 
 .simulation-card{
+    overflow: hidden;
     background: transparent;
     transition: border-color 0.3s ease;
 }
@@ -23,7 +24,6 @@
 
 .cover-container{
     height: 200px;
-    background: var(--color-surface-2);
 }
 
 .cover-container::before{

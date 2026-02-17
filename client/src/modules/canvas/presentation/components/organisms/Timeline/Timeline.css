@@ -75,7 +75,6 @@
 .canvas-timeline-ruler {
     height: 100%;
     min-height: 18px;
-    background: var(--color-surface-2);
     border-bottom: 1px solid var(--color-border-soft);
     overflow-x: auto;
     overflow-y: hidden;

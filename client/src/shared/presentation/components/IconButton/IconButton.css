@@ -4,20 +4,20 @@
     align-items: center;
     background-color: transparent;
     border: none;
-    border-radius: var(--radius-xs);
+    border-radius: var(--radius-sm);
     transition: all 0.15s ease;
     cursor: pointer;
     color: var(--color-text-secondary);
 }
 
 .volt-icon-button:hover {
-    background-color: var(--color-surface-2);
+    background-color: var(--hover-bg);
     color: var(--color-text-primary);
 }
 
 .volt-icon-button--disabled {
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.5;
 }
 
 .volt-icon-button--disabled:hover {

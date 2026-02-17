@@ -8,13 +8,14 @@
 }
 
 .form-field-input{
-    height: 3.25rem;
+    height: 2.75rem;
     background-color: transparent;
     border: 1px solid var(--color-border);
     color: var(--color-text-primary);
-    padding: 0 1rem;
-    font-size: 0.95rem;
-    transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+    padding: 0 0.875rem;
+    font-size: 0.875rem;
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s ease;
 }
 
 .form-field-input::placeholder{
@@ -26,9 +27,8 @@
 }
 
 .form-field-input:focus{
-    border-color: var(--color-text-primary);
-    background-color: var(--color-surface-1);
-    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+    border-color: var(--accent-blue);
+    background-color: transparent;
 }
 
 .form-field-input.has-error{
@@ -36,7 +36,7 @@
 }
 
 .form-field-input.has-error:focus{
-    box-shadow: 0 0 0 4px var(--status-error-bg);
+    border-color: var(--status-error);
 }
 
 .form-field-input.has-icon{
@@ -48,7 +48,7 @@
     top: 50%;
     transform: translateY(-50%);
     color: var(--color-text-muted);
-    transition: color 0.2s;
+    transition: color 0.15s ease;
 }
 
 .form-field-input:focus ~ .form-field-icon,
@@ -82,7 +82,7 @@
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-sm);
-    background: var(--color-bg);
+    background: transparent;
     color: var(--color-text-primary);
     font-size: 0.875rem;
 }
@@ -102,7 +102,7 @@
     min-height: 80px;
 }
 
-/* Canvas variant (compact inline inputs — Apple inspector style) */
+/* Canvas variant (compact inline inputs) */
 .form-field-canvas {
     min-height: 24px;
     gap: 0.5rem;
@@ -134,10 +134,10 @@
     padding: 0 0.4rem;
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-sm);
-    background: var(--color-surface-1);
+    background: transparent;
     color: var(--color-text-primary);
     font-size: 0.7rem;
-    transition: border-color 0.15s ease, background-color 0.15s ease;
+    transition: border-color 0.15s ease;
 }
 
 .form-field-canvas-input:hover,
@@ -149,7 +149,6 @@
 .form-field-canvas-select:focus {
     outline: none;
     border-color: var(--accent-blue);
-    background-color: var(--color-surface-2);
 }
 
 .form-field-canvas-input::placeholder {
@@ -177,7 +176,7 @@
     font-size: 0.7rem;
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-sm);
-    background: var(--color-surface-1);
+    background: transparent;
     padding: 0 0.4rem;
     transition: border-color 0.15s ease;
 }
@@ -205,7 +204,7 @@
 }
 
 .form-field-canvas-dropdown {
-    background: var(--color-surface-2);
+    background: var(--color-surface-1);
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-sm);
     padding: 4px;

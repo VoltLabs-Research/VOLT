@@ -1,16 +1,16 @@
 .container-terminal-overlay {
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--color-overlay);
     z-index: 1000;
-    backdrop-filter: blur(4px);
+    backdrop-filter: var(--glass-blur);
 }
 
 .container-terminal-window {
-    background: #1e1e1e;
+    background: var(--color-surface-1);
     border-radius: var(--radius-sm);
     width: 90vw;
     height: 80vh;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    border: 1px solid #333;
+    box-shadow: var(--shadow-elevated);
+    border: 1px solid var(--color-border);
 }
 
 .container-terminal-window.embedded {
@@ -25,11 +25,11 @@
     background: var(--color-bg);
     border: 1px solid var(--color-border-soft);
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .container-terminal-title {
-    color: #e5e5e5;
+    color: var(--color-text-primary);
     font-size: 0.9rem;
 }
 

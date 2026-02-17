@@ -9,8 +9,8 @@ export interface SettingsSectionProps {
 
 const SettingsSection: React.FC<SettingsSectionProps> = ({ children, className = '' }) => {
     const classes = cn(
-        'glass-bg',
         'd-flex', 
+        'b-soft',
         'column', 
         'gap-1', 
         'p-1-5', 

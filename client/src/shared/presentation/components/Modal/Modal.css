@@ -1,12 +1,14 @@
 dialog.volt-modal{
-    border: 1px solid var(--color-border-soft);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
     padding: 0;
     width: 100%;
     max-width: 500px;
-    background: var(--color-bg);
-    color: var(--color-text-primary);
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
     box-shadow: var(--shadow-elevated);
+    color: var(--color-text-primary);
     margin: auto;
     opacity: 0;
     transform: scale(0.95);
@@ -51,7 +53,7 @@ dialog.volt-modal[open]::backdrop{
 
 .volt-modal-header{
     padding: 1.5rem 1.5rem 1rem;
-    border-bottom: 1px solid var(--color-border-soft);
+    border-bottom: 1px solid var(--glass-border);
 }
 
 .volt-modal-body{
@@ -60,8 +62,8 @@ dialog.volt-modal[open]::backdrop{
 
 .volt-modal-footer{
     padding: 1rem 1.5rem;
-    background: var(--color-surface-1);
-    border-top: 1px solid var(--color-border-soft);
+    background: rgba(255, 255, 255, 0.03);
+    border-top: 1px solid var(--glass-border);
     border-bottom-left-radius: var(--radius-md);
     border-bottom-right-radius: var(--radius-md);
 }

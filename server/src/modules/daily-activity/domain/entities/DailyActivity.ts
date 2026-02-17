@@ -10,9 +10,16 @@ export interface ActivityProps{
     description: string;
 };
 
+export interface PopulatedUser{
+    _id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+};
+
 export interface DailyActivityProps{
     team: string;
-    user: string;
+    user: string | PopulatedUser;
     date: Date;
     activity: ActivityProps[];
     minutesOnline: number;
