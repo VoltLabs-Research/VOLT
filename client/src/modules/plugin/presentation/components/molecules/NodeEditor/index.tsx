@@ -1,9 +1,9 @@
 import type { FC } from 'react';
 import type { Node } from '@xyflow/react';
-import { TbTrash } from 'react-icons/tb';
+import { Trash2 } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
-import Button from '@/shared/presentation/components/Button';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import DangerZone from '@/shared/presentation/components/DangerZone';
 import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/domain/entities';
 import ModifierEditor from './editors/ModifierEditor';
@@ -16,7 +16,7 @@ import SchemaEditor from './editors/SchemaEditor';
 import VisualizersEditor from './editors/VisualizersEditor';
 import ExportEditor from './editors/ExportEditor';
 import IfStatementEditor from './editors/IfStatementEditor';
-import './NodeEditor.css';
+
 
 interface NodeEditorProps {
     node: Node;
@@ -48,7 +48,7 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
     };
 
     return (
-        <Container className='p-2 node-editor-container y-auto'>
+        <Container className='p-1 y-auto'>
             <Container>
                 {EditorComponent ? (
                     <EditorComponent node={node} />
@@ -59,16 +59,15 @@ const NodeEditor = ({ node }: NodeEditorProps) => {
                 )}
             </Container>
 
-            <Button
-                variant='ghost'
-                intent='danger'
-                size='sm'
-                leftIcon={<TbTrash size={14} />}
-                onClick={handleDelete}
-                style={{ marginTop: '1rem' }}
-            >
-                Delete Node
-            </Button>
+            <Container className='mt-1'>
+                <DangerZone
+                    title='Delete Node'
+                    description='Remove this node and its connections'
+                    actionLabel='Delete'
+                    actionIcon={<Trash2 size={14} />}
+                    onAction={handleDelete}
+                />
+            </Container>
         </Container>
     );
 };

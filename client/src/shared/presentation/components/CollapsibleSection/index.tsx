@@ -51,7 +51,6 @@ const CollapsibleSection = ({
     collapsible = true
 }: CollapsibleSectionProps) => {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-    const [isHovered, setIsHovered] = useState(false);
     const [hasBeenExpanded, setHasBeenExpanded] = useState(defaultExpanded);
     const [height, setHeight] = useState<number | 'auto'>(defaultExpanded ? 'auto' : 0);
     const isControlled = typeof expanded === 'boolean';
@@ -94,8 +93,6 @@ const CollapsibleSection = ({
             <Container
                 className={`${headerBaseClass} d-flex content-between items-center cursor-pointer u-select-none ${headerClassName}`}
                 onClick={handleToggle}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
             >
                 <Container className='d-flex items-center gap-05'>
                     {icon && <span className={`d-flex items-center ${iconClassName}`}>{icon}</span>}
@@ -113,7 +110,7 @@ const CollapsibleSection = ({
                             <Plus size={16} />
                         </IconButton>
                     )}
-                    {onDelete && isHovered && (
+                    {onDelete && (
                         <IconButton
                             size='sm'
                             variant='ghost'

@@ -62,6 +62,10 @@
 
 /* Inline variant (for workflow editors) */
 .form-field-inline {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    align-items: center;
+    gap: 0.75rem;
     min-height: 2.5rem;
 }
 
@@ -71,8 +75,11 @@
 }
 
 .form-field-inline-label {
-    min-width: 100px;
     flex-shrink: 0;
+}
+
+.form-field-inline .render-input-container {
+    min-width: 0;
 }
 
 .form-field-inline-input,

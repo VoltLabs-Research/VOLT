@@ -1,9 +1,8 @@
 import React from 'react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
+import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
-import SettingsSection from '@/modules/auth/presentation/components/atoms/SettingsSection';
-import SettingsSectionHeader from '@/modules/auth/presentation/components/molecules/SettingsSectionHeader';
 
 interface DangerZoneProps{
     title: string;
@@ -16,38 +15,32 @@ interface DangerZoneProps{
 const DangerZone: React.FC<DangerZoneProps> = ({
     title,
     description,
-    actionLabel,
     actionIcon,
+    actionLabel,
     onAction
 }) => {
     return (
-        <SettingsSection>
-            <SettingsSectionHeader
-                title="Danger Zone"
-                description="Irreversible actions that affect your account"
-            />
-
-            <Container className='zone-danger p-1'>
-                <Container className="d-flex items-center content-between gap-1 sm:column">
-                    <Container className="d-flex column gap-025">
-                        <Title className="font-size-2 font-weight-6">
-                            {title}
-                        </Title>
-                        <Container className="color-muted font-size-1">
-                            {description}
-                        </Container>
-                    </Container>
-                    <Button
-                        intent="danger"
-                        variant="outline"
-                        leftIcon={actionIcon}
-                        onClick={onAction}
-                    >
-                        {actionLabel}
-                    </Button>
+        <Container className='zone-danger p-1'>
+            <Container className='d-flex items-center content-between gap-1'>
+                <Container className='d-flex column gap-025'>
+                    <Title className='font-size-2 font-weight-6'>
+                        {title}
+                    </Title>
+                    <Paragraph className='color-muted font-size-1'>
+                        {description}
+                    </Paragraph>
                 </Container>
+                <Button
+                    intent='danger'
+                    variant='outline'
+                    size='sm'
+                    leftIcon={actionIcon}
+                    onClick={onAction}
+                >
+                    {actionLabel}
+                </Button>
             </Container>
-        </SettingsSection>
+        </Container>
     );
 };
 
