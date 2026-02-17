@@ -13,9 +13,11 @@ import './DashboardSidebar.css';
 interface DashboardSidebarProps {
     sidebarOpen: boolean;
     setSidebarOpen: (status: boolean) => void;
+    collapsed: boolean;
+    onToggleCollapse: () => void;
 };
 
-const DashboardSidebar = ({ sidebarOpen, setSidebarOpen }: DashboardSidebarProps) => {
+const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleCollapse }: DashboardSidebarProps) => {
     const [settingsExpanded, setSettingsExpanded] = useState(false);
     const navigate = useNavigate();
     const [isSigningOut, setIsSigningOut] = useState(false);
@@ -36,7 +38,7 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen }: DashboardSidebarProps
     };
 
     return (
-        <aside className={`dashboard-sidebar ${sidebarOpen ? 'is-open' : ''} p-fixed vh-max`}>
+        <aside className={`dashboard-sidebar ${sidebarOpen ? 'is-open' : ''} ${collapsed ? 'is-collapsed' : ''} p-fixed vh-max`}>
             <IconButton
                 className='sidebar-close-btn p-absolute'
                 onClick={() => setSidebarOpen(false)}
@@ -44,23 +46,26 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen }: DashboardSidebarProps
                 <IoCloseOutline size={20} />
             </IconButton>
 
-            <Brand />
+            <Brand collapsed={collapsed} onToggleCollapse={onToggleCollapse} />
 
             <SidebarNavigation
                 setSettingsExpanded={setSettingsExpanded}
                 setSidebarOpen={setSidebarOpen}
+                collapsed={collapsed}
             />
            
             <Container className='sidebar-footer'>
                 <SidebarFooterNavigation
                     setSettingsExpanded={setSettingsExpanded}
                     settingsExpanded={settingsExpanded}
+                    collapsed={collapsed}
                 />
                
                 <UserMenuPopover
                     onSettingsClick={handleSettingsClick}
                     onSignOut={handleSignOut}
                     isSigningOut={isSigningOut}
+                    collapsed={collapsed}
                 />
             </Container>
         </aside>

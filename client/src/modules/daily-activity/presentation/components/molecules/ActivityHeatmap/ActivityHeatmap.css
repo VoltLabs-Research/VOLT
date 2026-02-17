@@ -11,31 +11,31 @@
 }
 
 .react-calendar-heatmap rect {
-    fill: rgba(255, 255, 255, 0.1);
+    fill: var(--color-surface-2);
 }
 
 .react-calendar-heatmap .color-empty {
-    fill: rgba(255, 255, 255, 0.1);
+    fill: var(--color-surface-2);
     rx: 2px;
 }
 
 .react-calendar-heatmap .color-scale-1 {
-    fill: #d0e2ff;
+    fill: color-mix(in srgb, var(--accent-blue) 25%, transparent);
     rx: 2px;
 }
 
 .react-calendar-heatmap .color-scale-2 {
-    fill: #78a9ff;
+    fill: color-mix(in srgb, var(--accent-blue) 50%, transparent);
     rx: 2px;
 }
 
 .react-calendar-heatmap .color-scale-3 {
-    fill: #0f62fe;
+    fill: var(--accent-blue);
     rx: 2px;
 }
 
 .react-calendar-heatmap .color-scale-4 {
-    fill: #0043ce;
+    fill: color-mix(in srgb, var(--accent-blue) 85%, black);
     rx: 2px;
 }
 

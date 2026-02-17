@@ -6,9 +6,16 @@ export interface ActivityItem {
     description: string;
 };
 
+export interface PopulatedUser {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+};
+
 export interface DailyActivity {
     team: string;
-    user: string;
+    user: string | PopulatedUser;
     date: string;
     activity: ActivityItem[];
     minutesOnline: number;

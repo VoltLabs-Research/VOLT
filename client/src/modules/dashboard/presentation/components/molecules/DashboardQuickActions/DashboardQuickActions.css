@@ -1,0 +1,63 @@
+.dashboard-actions-card {
+    grid-column: span 4;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-action-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.dashboard-action-item:hover {
+    background: var(--color-surface-2);
+}
+
+.dashboard-action-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--color-surface-2);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.dashboard-action-arrow {
+    margin-left: auto;
+    color: var(--color-text-muted);
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.dashboard-action-item:hover .dashboard-action-arrow {
+    opacity: 1;
+    transform: translateX(2px);
+}
+
+@media screen and (max-width: 1200px) {
+    .dashboard-actions-card {
+        grid-column: span 6;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .dashboard-actions-card {
+        grid-column: span 12;
+    }
+
+    .dashboard-action-item {
+        padding: 0.6rem;
+    }
+}

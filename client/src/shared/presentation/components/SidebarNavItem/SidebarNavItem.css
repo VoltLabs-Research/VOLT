@@ -1,25 +1,24 @@
 .sidebar-nav-item {
     display: flex;
     align-items: center;
-    padding: 0.625rem 0.75rem;
-    border-radius: var(--radius-xs);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
     transition: all 0.15s ease;
     margin-bottom: 0;
     background: transparent;
     border: none;
-    border-left: 3px solid transparent;
     text-align: left;
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
 }
 
 .sidebar-nav-item:hover {
-    background: var(--hover-bg);
     color: var(--color-text-primary);
 }
 
 .sidebar-nav-item.is-selected {
     color: var(--color-text-primary);
-    font-weight: 600;
-    background-color: var(--hover-bg);
+    font-weight: 500;
 }
 
 .sidebar-nav-icon {
@@ -34,7 +33,9 @@
 }
 
 .sidebar-nav-badge {
-    background: var(--color-surface-3);
+    background: var(--color-surface-2);
     padding: 0.125rem 0.5rem;
     border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
 }

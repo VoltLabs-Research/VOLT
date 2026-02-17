@@ -1,6 +1,5 @@
 .workflow-node {
-    background-color: color-mix(in srgb, var(--color-bg) 80%, transparent);
-    backdrop-filter: blur(3px);
+    background-color: var(--color-surface-1);
     border-radius: .5rem;
     padding: 1rem 1.5rem;
     border: 1px solid var(--color-border-soft);

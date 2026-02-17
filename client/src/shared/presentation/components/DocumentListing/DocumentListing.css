@@ -13,6 +13,7 @@
     border-bottom: 2px solid transparent;
     cursor: pointer;
     transition: border-color .15s ease, color .15s ease;
+    min-width: 50px;
 }
 
 .document-listing-header-tab-container.is-active {

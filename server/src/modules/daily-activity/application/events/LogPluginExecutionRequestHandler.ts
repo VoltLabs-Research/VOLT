@@ -13,7 +13,11 @@ export default class LogPluginExecutionRequestHandler implements IEventHandler<P
     ){}
 
     async handle(event: PluginExecutionRequestEvent): Promise<void>{
-        const description = `User ${event.userId} started analysis on ${event.pluginName} for trajectory ${event.trajectoryName}`;
+        // const description = `User ${event.userId} started analysis on ${event.pluginName} for trajectory ${event.trajectoryName}`;
+        // TODO: In the dashboard I am showing {user full name} + description, for this reason 
+        // remove "User ${event.userId} ". This is temporary since it is not a clean solution, 
+        // because directly here in the description I could put the username ;)
+        const description = `started analysis on ${event.pluginName} for trajectory ${event.trajectoryName}`;
         await this.activityRepo.addDailyActivity(
             event.teamId, 
             event.userId, 

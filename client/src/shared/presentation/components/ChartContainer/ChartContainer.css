@@ -1,9 +1,7 @@
 .chart-container {
-    background: var(--color-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
     border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-card);
     max-height: 400px;
 }
 

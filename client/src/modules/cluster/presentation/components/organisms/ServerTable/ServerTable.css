@@ -1,10 +1,8 @@
 .server-table-container {
-    background: var(--color-bg);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--shadow-card);
 }
 
 .server-table-title-bar {

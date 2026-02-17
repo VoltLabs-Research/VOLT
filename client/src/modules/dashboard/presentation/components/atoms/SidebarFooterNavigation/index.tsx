@@ -9,9 +9,10 @@ import SidebarExpandableSection from '@/shared/presentation/components/SidebarEx
 interface SidebarFooterNavigationProps {
     setSettingsExpanded: (status: boolean) => void;
     settingsExpanded: boolean;
+    collapsed?: boolean;
 };
 
-const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded }: SidebarFooterNavigationProps) => {
+const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collapsed = false }: SidebarFooterNavigationProps) => {
     const { pathname } = useLocation();
     const navigate = useNavigate();
 
@@ -25,6 +26,24 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded }: Side
         { label: 'Data & Export', isSelected: pathname === '/dashboard/settings/data-export', onClick: () => navigate('/dashboard/settings/data-export') },
         { label: 'Advanced', isSelected: pathname === '/dashboard/settings/advanced', onClick: () => navigate('/dashboard/settings/advanced') }
     ], [pathname, navigate]);
+
+    if (collapsed) {
+        return (
+            <Container className='sidebar-footer-nav'>
+                <SidebarNavItem
+                    label='Settings'
+                    icon={IoSettingsOutline}
+                    isSelected={pathname.startsWith('/dashboard/settings')}
+                    onClick={() => navigate('/dashboard/settings/general')}
+                />
+
+                <SidebarNavItem
+                    label='Support'
+                    icon={TbHelp}
+                />
+            </Container>
+        );
+    }
 
     return (
         <Container className='sidebar-footer-nav'>

@@ -284,13 +284,13 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
                         <Container>
                             <Container className='d-flex w-max gap-1 document-listing-header-tabs-container'>
                                 <Container
-                                    className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container ${activeTab === 'list' ? 'is-active' : ''}`}
+                                    className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container d-flex flex-center ${activeTab === 'list' ? 'is-active' : ''}`}
                                     onClick={() => handleTabChange('list')}
                                 >
                                     <Paragraph>{view === 'grid' ? 'Grid' : 'List'}</Paragraph>
                                 </Container>
                                 <Container
-                                    className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container ${activeTab === 'export' ? 'is-active' : ''}`}
+                                    className={`d-flex items-center gap-1 color-secondary document-listing-header-tab-container d-flex flex-center ${activeTab === 'export' ? 'is-active' : ''}`}
                                     onClick={() => handleTabChange('export')}
                                 >
                                     <Paragraph>Export</Paragraph>

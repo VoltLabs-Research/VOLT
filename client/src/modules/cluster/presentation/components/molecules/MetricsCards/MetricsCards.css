@@ -16,14 +16,12 @@
 }
 
 .metric-card {
-    background: var(--color-bg);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     padding: 1.25rem;
     transition: all 0.2s ease;
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--shadow-card);
 }
 
 .metric-card:hover {

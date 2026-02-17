@@ -20,7 +20,6 @@
 }
 
 .clusters-page {
-    background-color: var(--color-bg);
     overflow: scroll;
     height: 100% !important;
 }

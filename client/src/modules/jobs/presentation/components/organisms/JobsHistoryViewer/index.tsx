@@ -106,9 +106,9 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = (props) => {
                     initial='hidden'
                     animate='visible'
                     exit='exit'
-                    className='jobs-history-viewer-enhanced expanded p-absolute overflow-hidden cursor-pointer left-1 bottom-1 radius-2xl p-0'
+                    className='jobs-history-viewer-enhanced expanded overflow-hidden cursor-pointer left-1 bottom-1 radius-2xl p-0'
                 >
-                    <div className='jobs-history-expanded-content p-absolute inset-0'>
+                    <div className='jobs-history-expanded-content'>
                         <div className='jobs-history-viewer-body-enhanced y-auto flex-1'>
                             <JobsHistory
                                 trajectoryId={trajectoryId}

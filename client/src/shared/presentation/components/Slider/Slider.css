@@ -9,9 +9,7 @@
     height: 16px;
     border-radius: 9999px;
     border: 1px solid var(--color-border-soft);
-    background: color-mix(in srgb, var(--color-surface-2), transparent 10%);
-    backdrop-filter: saturate(180%) blur(14px);
-    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    background: var(--color-surface-2);
     transition: border-color .15s ease, transform .2s ease;
     box-shadow:
         0 0 0 calc(var(--ringA, 0)*6px) rgba(0, 0, 0, .05),

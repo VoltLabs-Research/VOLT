@@ -4,9 +4,9 @@
 }
 
 .react-flow__handle.if-statement-handle.if-statement-handle--true {
-    background-color: #22c55e !important;
+    background-color: var(--accent-green) !important;
 }
 
 .react-flow__handle.if-statement-handle.if-statement-handle--false {
-    background-color: #ef4444 !important;
+    background-color: var(--accent-red) !important;
 }

@@ -1,0 +1,100 @@
+.dashboard-stat-card {
+    grid-column: span 3;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    padding: 1rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    cursor: pointer;
+    min-height: 130px;
+}
+
+.dashboard-stat-card:hover {
+    background: var(--color-surface-2);
+    border-color: var(--color-border);
+}
+
+.dashboard-stat-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    flex-shrink: 0;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.dashboard-stat-card:hover .dashboard-stat-card-icon {
+    color: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+.dashboard-stat-value {
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--color-text-primary);
+}
+
+.dashboard-stat-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.dashboard-stat-trend.up {
+    color: var(--accent-green);
+}
+
+.dashboard-stat-trend.down {
+    color: var(--accent-red);
+}
+
+.dashboard-stat-sparkline {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.dashboard-stat-card:hover .dashboard-stat-sparkline {
+    opacity: 0.85;
+}
+
+.dashboard-stat-navigate {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    opacity: 0;
+    color: var(--accent-blue);
+    font-size: 1.15rem;
+    transition: opacity 0.2s ease;
+}
+
+.dashboard-stat-card:hover .dashboard-stat-navigate {
+    opacity: 1;
+}
+
+@media screen and (max-width: 1200px) {
+    .dashboard-stat-card {
+        grid-column: span 6;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .dashboard-stat-card {
+        grid-column: span 12;
+    }
+}
