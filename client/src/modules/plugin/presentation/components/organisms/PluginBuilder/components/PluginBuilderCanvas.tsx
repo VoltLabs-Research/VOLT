@@ -1,19 +1,39 @@
-import { useRef, useState } from 'react';
-import { Background, ReactFlow, type ReactFlowInstance } from '@xyflow/react';
+import { useRef, useState, useCallback } from 'react';
+import { Background, MiniMap, ReactFlow, type ReactFlowInstance } from '@xyflow/react';
 import { useShallow } from 'zustand/react/shallow';
 import { nodeTypes } from '@/modules/plugin/presentation/components/molecules/nodes';
 import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
+import { NodeType } from '@/modules/plugin/domain/entities';
 import useCanvasHandlers from '../hooks/use-canvas-handlers';
-import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader';
+import CanvasToolbar from './CanvasToolbar';
+import CanvasEmptyState from './CanvasEmptyState';
 import Container from '@/shared/presentation/components/Container';
+
+const NODE_MINIMAP_COLORS: Record<string, string> = {
+    [NodeType.MODIFIER]: '#0062FF',
+    [NodeType.ARGUMENTS]: '#5e5ce6',
+    [NodeType.CONTEXT]: '#64d2ff',
+    [NodeType.FOREACH]: '#bf5af2',
+    [NodeType.ENTRYPOINT]: '#2dcc70',
+    [NodeType.EXPOSURE]: '#ff9f0a',
+    [NodeType.SCHEMA]: '#ffd60a',
+    [NodeType.VISUALIZERS]: '#64d2ff',
+    [NodeType.EXPORT]: '#ff453a',
+    [NodeType.IF_STATEMENT]: '#bf5af2'
+};
+
+const nodeColor = (node: { type?: string }) =>
+    NODE_MINIMAP_COLORS[node.type ?? ''] ?? '#64748b';
 
 interface PluginBuilderCanvasProps {
     saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+    onSave: () => void;
 };
 
-const PluginBuilderCanvas = ({ saveStatus }: PluginBuilderCanvasProps) => {
+const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) => {
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+    const [currentZoom, setCurrentZoom] = useState(1);
 
     const {
         nodes,
@@ -37,18 +57,19 @@ const PluginBuilderCanvas = ({ saveStatus }: PluginBuilderCanvasProps) => {
 
     const { onDragOver, onDrop, isValidConnection } = useCanvasHandlers({ reactFlowInstance });
 
-    return (
-        <Container className='h-max w-max' ref={reactFlowWrapper}>
-            {saveStatus === 'saving' && (
-                <Container className='d-flex items-center gap-05 bottom-1 right-1 z-20 p-absolute'>
-                    <ProcessingLoader
-                        message='Saving workflow...'
-                        completionRate={0}
-                        isVisible={true}
-                    />
-                </Container>
-            )}
+    const handleInit = useCallback((instance: ReactFlowInstance) => {
+        setReactFlowInstance(instance);
+        setCurrentZoom(instance.getZoom());
+    }, []);
 
+    const handleMoveEnd = useCallback((_event: unknown, viewport: { x: number; y: number; zoom: number }) => {
+        setCurrentZoom(viewport.zoom);
+    }, []);
+
+    const isEmpty = nodes.length === 0;
+
+    return (
+        <Container className='h-max w-max p-relative' ref={reactFlowWrapper}>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
@@ -58,7 +79,8 @@ const PluginBuilderCanvas = ({ saveStatus }: PluginBuilderCanvasProps) => {
                 onConnect={onConnect}
                 onNodeClick={onNodeClick}
                 onPaneClick={onPaneClick}
-                onInit={setReactFlowInstance}
+                onInit={handleInit}
+                onMoveEnd={handleMoveEnd}
                 onDragOver={onDragOver}
                 onDrop={onDrop}
                 isValidConnection={isValidConnection}
@@ -71,7 +93,18 @@ const PluginBuilderCanvas = ({ saveStatus }: PluginBuilderCanvasProps) => {
                 }}
             >
                 <Background bgColor='#080808ff' color='#3d3d3dff' gap={16} size={0.8} />
+                {!isEmpty && (
+                    <MiniMap
+                        nodeColor={nodeColor}
+                        maskColor='rgba(0, 0, 0, 0.7)'
+                        bgColor='#171719'
+                    />
+                )}
             </ReactFlow>
+
+            {isEmpty && <CanvasEmptyState />}
+
+            <CanvasToolbar saveStatus={saveStatus} onSave={onSave} zoom={currentZoom} />
         </Container>
     );
 };
