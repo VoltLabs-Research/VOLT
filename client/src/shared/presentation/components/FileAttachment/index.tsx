@@ -51,7 +51,7 @@ const FileAttachment = ({
             </Container>
             
             <Container className='d-flex column flex-1 overflow-hidden'>
-                <Paragraph className='font-size-2 font-weight-5 file-attachment-name'>
+                <Paragraph className='font-size-2 font-weight-5 file-attachment-name text-truncate'>
                     {fileName}
                 </Paragraph>
                 <Container className='d-flex items-center gap-05 font-size-1 color-muted'>

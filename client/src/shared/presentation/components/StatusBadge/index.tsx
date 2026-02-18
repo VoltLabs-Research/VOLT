@@ -11,7 +11,7 @@ export interface StatusBadgeProps{
     /**
      * Visual variant override
      */
-    variant?: 'active' | 'inactive' | 'danger' | 'neutral' | 'success' | 'warning';
+    variant?: 'active' | 'inactive' | 'danger' | 'neutral' | 'success' | 'warning' | 'brand' | 'primary';
 
     /**
      * Size variant
@@ -52,6 +52,10 @@ const statusToVariant = (status: string): string => {
         case 'inactive':
         case 'draft':
             return 'inactive';
+        case 'brand':
+            return 'brand';
+        case 'primary':
+            return 'primary';
         default:
             return 'neutral';
     }

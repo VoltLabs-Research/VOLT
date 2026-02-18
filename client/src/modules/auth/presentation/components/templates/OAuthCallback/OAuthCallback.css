@@ -33,10 +33,6 @@
     margin-bottom: 0.5rem;
 }
 
-.oauth-description{
-    color: var(--color-text-secondary);
-}
-
 .oauth-icon-loading{
     color: var(--accent-blue);
 }

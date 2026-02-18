@@ -1,18 +1,17 @@
 import { injectable, inject } from 'tsyringe';
-import { IEventHandler } from '@shared/application/events/IEventHandler';
-import TrajectoryDeletedEvent from '@modules/trajectory/domain/events/TrajectoryDeletedEvent';
+import { DeleteManyOnTrajectoryDeletedHandler } from '@shared/application/events/DeleteManyOnTrajectoryDeletedHandler';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import { ISimulationCellRepository } from '@modules/simulation-cell/domain/ports/ISimulationCellRepository';
 
 @injectable()
-export default class TrajectoryDeletedEventHandler implements IEventHandler<TrajectoryDeletedEvent> {
+export default class TrajectoryDeletedEventHandler extends DeleteManyOnTrajectoryDeletedHandler {
+    protected readonly repository: ISimulationCellRepository;
+
     constructor(
         @inject(SIMULATION_CELL_TOKENS.SimulationCellRepository)
-        private readonly simulationCellRepository: ISimulationCellRepository
-    ){}
-
-    async handle(event: TrajectoryDeletedEvent): Promise<void> {
-        const { trajectoryId } = event.payload;
-        await this.simulationCellRepository.deleteMany({ trajectory: trajectoryId });
+        simulationCellRepository: ISimulationCellRepository
+    ){
+        super();
+        this.repository = simulationCellRepository;
     }
 }

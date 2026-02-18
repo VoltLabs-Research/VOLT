@@ -9,6 +9,8 @@ import { IQueueRegistry } from '@modules/jobs/domain/ports/IQueueRegistry';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
+import logger from '@shared/infrastructure/logger';
+import { QUEUE_CONFIG } from '@core/config/queues';
 import path from 'path';
 
 @injectable()
@@ -39,12 +41,12 @@ export default class TrajectoryProcessingQueue extends BaseProcessingQueue {
         queueRegistry: IQueueRegistry
     ) {
         const workerPath = path.join(__dirname, '../workers/TrajectoryProcessingWorker.ts');
-        console.log(`[TrajectoryProcessingQueue] Initializing with worker path: ${workerPath}`);
+        logger.info(`[TrajectoryProcessingQueue] Initializing with worker path: ${workerPath}`);
         super(
             {
                 queueName: 'trajectory_processing',
                 workerPath: workerPath,
-                maxConcurrentJobs: Number(process.env.TRAJECTORY_QUEUE_MAX_CONCURRENT_JOBS) || 4
+                maxConcurrentJobs: QUEUE_CONFIG.trajectoryMaxConcurrentJobs
             },
             jobRepository,
             workerPoolService,

@@ -1,15 +1,15 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine } from 'react-icons/ri';
-import { formatDistanceToNow } from 'date-fns';
 import { usePluginUseCases, useDeletePlugin, useExportPlugin, useImportPlugin } from '../../../hooks';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Button from '@/shared/presentation/components/Button';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import type { GetPluginsInputDTO } from '@/modules/plugin/application/dtos';
 import type { Plugin } from '../../../../domain/entities';
+import { dateColumn } from '@/shared/presentation/utils/column-presets';
 import './PluginsListing.css';
 
 const PluginsListing = () => {
@@ -17,7 +17,7 @@ const PluginsListing = () => {
     const importInputRef = useRef<HTMLInputElement>(null);
     const [isImporting, setIsImporting] = useState(false);
 
-    const selectedTeam = useTeamStore((s) => s.selectedTeam)!;
+    const selectedTeam = useSelectedTeam()!;
 
     const { clonePluginUseCase, pluginRepository } = usePluginUseCases();
     const deletePlugin = useDeletePlugin();
@@ -125,13 +125,7 @@ const PluginsListing = () => {
             ),
             skeleton: { variant: 'text', width: 60 }
         },
-        {
-            key: 'createdAt',
-            title: 'Created',
-            sortable: true,
-            render: (value) => formatDistanceToNow(new Date(value as string), { addSuffix: true }),
-            skeleton: { variant: 'text', width: 100 }
-        }
+        dateColumn('createdAt', 'Created', { width: 100 })
     ], [navigate]);
 
     return (
@@ -158,6 +152,7 @@ const PluginsListing = () => {
                     <Button
                         variant='ghost'
                         intent='neutral'
+                        className='import-plugin-btn transition-fast'
                         onClick={() => importInputRef.current!.click()}
                         disabled={isImporting}
                         isLoading={isImporting}

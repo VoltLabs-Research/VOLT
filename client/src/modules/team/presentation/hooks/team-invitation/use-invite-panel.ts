@@ -8,6 +8,7 @@ import type { TeamInvitation } from '@/modules/team/domain/entities/TeamInvitati
 import type { InviteButtonState } from '../../components/atoms/InviteButton';
 import { FieldBind } from '@/shared/presentation/hooks/use-form';
 import ApiError from '@/shared/errors/ApiError';
+import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 
 interface UseInvitePanelOptions{
     teamId: string;
@@ -34,6 +35,20 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
     const removeInvitation = useTeamInvitationStore((state) => state.removeInvitation);
 
     const { fetchPendingInvitations } = useTeamInvitationData();
+
+    const loadInvitationsAction = useAsyncAction({
+        onError: (error: unknown) => {
+            console.error('Error fetching pending invitations:', error);
+        },
+        onFinally: () => setLoadingInvitations(false)
+    });
+
+    const cancelInvitationAction = useAsyncAction({
+        onError: (error: unknown) => {
+            console.error('Failed to cancel invitation:', error);
+        },
+        onFinally: () => setCancelingId(null)
+    });
 
     const { field, handleSubmit: formHandleSubmit, isSubmitting, reset, setErrors } = useForm<TeamInviteForm>({
         initialValues: {
@@ -73,14 +88,10 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
         if(!teamId) return;
 
         setLoadingInvitations(true);
-        try{
+        await loadInvitationsAction.execute(async () => {
             await fetchPendingInvitations();
-        }catch(error){
-            console.error('Error fetching pending invitations:', error);
-        }finally{
-            setLoadingInvitations(false);
-        }
-    }, [teamId, fetchPendingInvitations]);
+        });
+    }, [teamId, fetchPendingInvitations, loadInvitationsAction]);
 
     useEffect(() => {
         loadInvitations();
@@ -88,15 +99,11 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
 
     const handleCancelInvitation = useCallback(async (invitationId: string) => {
         setCancelingId(invitationId);
-        try{
+        await cancelInvitationAction.execute(async () => {
             await teamInvitationRepository.cancel(invitationId);
             removeInvitation(invitationId);
-        }catch(error){
-            console.error('Failed to cancel invitation:', error);
-        }finally{
-            setCancelingId(null);
-        }
-    }, [teamInvitationRepository, removeInvitation]);
+        });
+    }, [teamInvitationRepository, removeInvitation, cancelInvitationAction]);
 
     const emailField = field('email');
 

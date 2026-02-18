@@ -21,7 +21,7 @@ const TemplateCard = ({
     variant = 'default'
 }: TemplateCardProps) => (
     <Container
-        className={`create-container-template-card ${variant} d-flex column items-center gap-1 p-1 p-relative text-center cursor-pointer radius-md ${isSelected ? 'selected' : ''}`}
+        className={`create-container-template-card transition-normal ${variant} d-flex column items-center gap-1 p-1 p-relative text-center cursor-pointer radius-md ${isSelected ? 'selected' : ''}`}
         onClick={onClick}
     >
         <Container className='create-container-template-icon d-flex flex-center f-shrink-0 radius-md'>

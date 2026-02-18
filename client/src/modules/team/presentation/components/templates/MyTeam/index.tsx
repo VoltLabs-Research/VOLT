@@ -7,11 +7,14 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 import Select from '@/shared/presentation/components/Select';
 import EditableTag from '@/shared/presentation/components/EditableTag';
+import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import UserInfo from '@/modules/auth/presentation/components/atoms/UserInfo';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import { useTeamMemberStore } from '@/modules/team/presentation/stores/use-team-member-store';
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
+import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import useTeamRoleData from '@/modules/team/presentation/hooks/team-role/use-team-role-data';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
@@ -27,7 +30,7 @@ import './MyTeam.css';
 const MyTeamTemplate: React.FC = () => {
     const navigate = useNavigate();
 
-    const selectedTeam = useTeamStore((state) => state.selectedTeam)!;
+    const selectedTeam = useSelectedTeam()!;
     const canInvite = useTeamStore((state) => state.canInvite);
     const updateTeamInList = useTeamStore((state) => state.updateTeamInList);
 
@@ -36,7 +39,7 @@ const MyTeamTemplate: React.FC = () => {
 
     const roles = useTeamRoleStore((state) => state.roles);
 
-    const user = useAuthStore((state) => state.user)!;
+    const user = useCurrentUser()!;
 
     const { checkCanInvite } = useTeamData();
     const { fetchRoles } = useTeamRoleData();
@@ -135,7 +138,7 @@ const MyTeamTemplate: React.FC = () => {
                 const isOwner = selectedTeam.owner._id === member.user._id;
                 
                 if(isOwner){
-                    return <span className='badge badge-primary'>Owner</span>;
+                    return <StatusBadge variant='primary'>Owner</StatusBadge>;
                 }
                 
                 if(canInvite && member.user._id !== user._id && roleOptions.length > 0){
@@ -150,7 +153,7 @@ const MyTeamTemplate: React.FC = () => {
                     );
                 }
 
-                return <span className='badge badge-outline'>{member.role.name}</span>;
+                return <StatusBadge variant='neutral'>{member.role.name}</StatusBadge>;
             }
         },
         {

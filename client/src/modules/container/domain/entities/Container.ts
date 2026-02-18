@@ -1,3 +1,5 @@
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+
 export interface PortMapping {
     private: number;
     public: number;
@@ -8,8 +10,7 @@ export interface EnvVariable {
     value: string;
 };
 
-export interface Container {
-    _id: string;
+export interface Container extends BaseEntity {
     name: string;
     image: string;
     containerId: string;
@@ -23,6 +24,4 @@ export interface Container {
     ports: PortMapping[];
     network?: string;
     volume?: string;
-    createdAt: string;
-    updatedAt: string;
 };

@@ -1,6 +1,7 @@
 import util from 'node:util';
 import { Worker } from 'node:worker_threads';
 import { injectable } from 'tsyringe';
+import logger from '@shared/infrastructure/logger';
 import { WorkerPoolItem } from '@modules/jobs/domain/entities/WorkerStatus';
 import {
     IWorkerPoolService,
@@ -75,7 +76,7 @@ export default class WorkerPoolService implements IWorkerPoolService {
     }
 
     private createWorker(): Worker {
-        console.log(`[WorkerPool] Creating worker from path: ${this.config.workerPath}`);
+        logger.info(`[WorkerPool] Creating worker from path: ${this.config.workerPath}`);
         const worker = new Worker(this.config.workerPath, {
             execArgv: [
                 '-r',
@@ -88,7 +89,7 @@ export default class WorkerPoolService implements IWorkerPoolService {
         });
 
         const workerId = worker.threadId;
-        console.log(`[WorkerPool] Worker created with threadId: ${workerId} `);
+        logger.info(`[WorkerPool] Worker created with threadId: ${workerId} `);
 
         worker.on('message', (message) => this.onMessage(workerId, message));
         worker.on('error', (err: any) => this.handleWorkerError(workerId, err));
@@ -112,13 +113,13 @@ export default class WorkerPoolService implements IWorkerPoolService {
             msg = 'Non-inspectable error';
         }
 
-        console.error(`[WorkerPool] Worker ${workerId} error: `, msg);
+        logger.error(`[WorkerPool] Worker ${workerId} error: `, msg);
         await this.onError(workerId, new Error(msg));
         this.replaceWorker(workerId, false);
     }
 
     private async handleWorkerExit(workerId: number, code: number): Promise<void> {
-        console.log(`[WorkerPool] Worker ${workerId} exited with code ${code} `);
+        logger.info(`[WorkerPool] Worker ${workerId} exited with code ${code} `);
         let hadJob = true;
         if (code !== 0) {
             await this.onExit(workerId, code);

@@ -3,16 +3,12 @@ import { container } from 'tsyringe';
 import type { Team } from '@/modules/team/domain/entities';
 import type ITeamStorage from '@/modules/team/domain/ports/ITeamStorage';
 import { TEAM_TOKENS } from '@/modules/team/infrastructure/di/tokens';
+import { createBaseSlice, BASE_SLICE_INITIAL_STATE, type BaseSlice } from '@/shared/presentation/stores/create-base-store-slice';
 
-interface TeamState{
+interface TeamStore extends BaseSlice {
     teams: Team[];
     selectedTeam: Team | null;
     canInvite: boolean;
-    isLoading: boolean;
-    error: string | null;
-};
-
-interface TeamActions{
     setTeams: (teams: Team[]) => void;
     setSelectedTeam: (team: Team | null) => void;
     selectTeamById: (teamId: string) => void;
@@ -20,23 +16,19 @@ interface TeamActions{
     addTeam: (team: Team) => void;
     updateTeamInList: (teamId: string, updates: Partial<Team>) => void;
     removeTeam: (teamId: string) => void;
-    setLoading: (isLoading: boolean) => void;
-    setError: (error: string | null) => void;
     reset: () => void;
 };
 
-type TeamStore = TeamState & TeamActions;
-
-const initialState: TeamState = {
-    teams: [],
-    selectedTeam: null,
+const initialState = {
+    teams: [] as Team[],
+    selectedTeam: null as Team | null,
     canInvite: false,
-    isLoading: false,
-    error: null
+    ...BASE_SLICE_INITIAL_STATE
 };
 
 export const useTeamStore = create<TeamStore>((set, get) => ({
     ...initialState,
+    ...createBaseSlice(set),
 
     setTeams: (teams) => set({ teams }),
 
@@ -99,10 +91,6 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
             return { teams, selectedTeam };
         });
     },
-
-    setLoading: (isLoading) => set({ isLoading }),
-
-    setError: (error) => set({ error }),
 
     reset: () => set(initialState)
 }));

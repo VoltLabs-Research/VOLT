@@ -10,12 +10,7 @@
     background: var(--hover-bg);
 }
 
-.chevron-icon {
-}
-
 .job-group-name {
-    white-space: nowrap;
-    text-overflow: ellipsis;
     max-width: 200px;
 }
 

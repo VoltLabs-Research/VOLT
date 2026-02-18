@@ -1,3 +1,5 @@
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+
 export type SceneArtifactSourceType = 'color-coding' | 'particle-filter' | 'plugin-exposure';
 
 export interface SceneArtifactParams {
@@ -11,8 +13,7 @@ export interface SceneArtifactParams {
     exposureId?: string;
 }
 
-export interface SceneArtifact {
-    _id: string;
+export interface SceneArtifact extends BaseEntity {
     trajectory: string;
     analysis?: string;
     plugin?: string;
@@ -24,6 +25,4 @@ export interface SceneArtifact {
     displayName: string;
     status: 'ready' | 'failed';
     metadata?: Record<string, any>;
-    createdAt: string;
-    updatedAt: string;
 }

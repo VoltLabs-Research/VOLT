@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,9 +7,8 @@ import FractalScene from '@/modules/fractal/presentation/components/organisms/Fr
 import SingleModelViewer from '@/modules/fractal/presentation/components/molecules/SingleModelViewer';
 import useFractalSceneConfig from '@/modules/canvas/presentation/hooks/use-fractal-scene-config';
 import useCanvasCoordinator from '@/modules/canvas/presentation/hooks/use-canvas-coordinator';
-import useGetTrajectories from '@/modules/trajectory/presentation/hooks/trajectory/use-get-trajectories';
+import useFirstCompletedTrajectory from '@/modules/dashboard/presentation/hooks/use-first-completed-trajectory';
 import JobsHistoryViewer from '@/modules/jobs/presentation/components/organisms/JobsHistoryViewer';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import { DEFAULT_SCENE } from '@/modules/fractal/presentation/utilities/sceneUtils';
 import { formatNumber } from '@/shared/utils/format';
@@ -17,15 +16,11 @@ import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import type { Trajectory } from '@/modules/trajectory/domain/entities';
 import './DashboardModelPreview.css';
 
 const DashboardModelPreview: React.FC = () => {
     const navigate = useNavigate();
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
-    const getTrajectories = useGetTrajectories();
-    const [completedTrajectory, setCompletedTrajectory] = useState<Trajectory | null>(null);
-    const [isLoadingTrajectories, setIsLoadingTrajectories] = useState(true);
+    const { completedTrajectory, isLoadingTrajectories } = useFirstCompletedTrajectory();
 
     const {
         slicePlaneConfig,
@@ -42,25 +37,6 @@ const DashboardModelPreview: React.FC = () => {
         setModelBounds: s.setModelBounds,
         setIsModelLoading: s.setIsModelLoading
     })));
-
-    useEffect(() => {
-        if (!selectedTeam?._id) return;
-
-        const fetchFirstCompleted = async () => {
-            setIsLoadingTrajectories(true);
-            try {
-                const result = await getTrajectories({ page: 1, limit: 10 });
-                const firstCompleted = result.data.find((t) => t.status === 'completed');
-                setCompletedTrajectory(firstCompleted || null);
-            } catch {
-                setCompletedTrajectory(null);
-            } finally {
-                setIsLoadingTrajectories(false);
-            }
-        };
-
-        fetchFirstCompleted();
-    }, [selectedTeam?._id, getTrajectories]);
 
     const { trajectory, currentTimestep, isLoading } = useCanvasCoordinator({
         trajectoryId: completedTrajectory?._id

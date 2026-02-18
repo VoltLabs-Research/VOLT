@@ -1,29 +1,17 @@
 import { injectable, inject } from 'tsyringe';
-import { Request, Response, NextFunction } from 'express';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import { GetRasterMetadataUseCase } from '@modules/raster/application/use-cases/GetRasterMetadataUseCase';
 
 @injectable()
-export class GetRasterMetadataController {
+export class GetRasterMetadataController extends BaseController<GetRasterMetadataUseCase> {
     constructor(
-        @inject(GetRasterMetadataUseCase) private useCase: GetRasterMetadataUseCase
-    ){}
+        @inject(GetRasterMetadataUseCase) useCase: GetRasterMetadataUseCase
+    ){
+        super(useCase);
+    }
 
-    async handle(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const trajectoryId = String(req.params.trajectoryId);
-
-            const result = await this.useCase.execute(trajectoryId);
-
-            if (result.success) {
-                res.status(200).json({
-                    status: 'success',
-                    data: result.value
-                });
-            } else {
-                next(result.error);
-            }
-        } catch (error) {
-            next(error);
-        }
+    protected override getParams(req: AuthenticatedRequest): string {
+        return String(req.params.trajectoryId);
     }
 }

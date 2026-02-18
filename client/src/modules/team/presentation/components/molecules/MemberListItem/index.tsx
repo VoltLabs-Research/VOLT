@@ -2,7 +2,7 @@ import type { User } from '@/modules/auth/domain/entities';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Avatar from '@/shared/presentation/components/Avatar';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@/shared/utils';
 import './MemberListItem.css';
 
 type MemberRole = 'owner' | 'admin' | 'member';

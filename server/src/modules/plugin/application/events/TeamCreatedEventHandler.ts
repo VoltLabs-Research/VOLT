@@ -8,8 +8,9 @@ import CreateNotificationUseCase from '@modules/notification/application/use-cas
 import logger from '@shared/infrastructure/logger';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import { STATIC_ROOT } from '@core/config/paths';
 
-const DEFAULT_PLUGINS_PATH = path.join(__dirname, '../../../../..', 'static/default/plugins');
+const DEFAULT_PLUGINS_PATH = path.join(STATIC_ROOT, 'default/plugins');
 
 @injectable()
 export default class TeamCreatedEventHandler implements IEventHandler<TeamCreatedEvent> {

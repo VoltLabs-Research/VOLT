@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
+import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
 import useUpdateTrajectory from '../../../hooks/trajectory/use-update-trajectory';
 import EditableTag from '@/shared/presentation/components/EditableTag';
 import Paragraph from '@/shared/presentation/components/Paragraph';
@@ -11,7 +11,7 @@ interface EditableTrajectoryNameProps{
 };
 
 const EditableTrajectoryName = ({ trajectoryId, name, className = '' }: EditableTrajectoryNameProps) => {
-    const user = useAuthStore((state) => state.user);
+    const user = useCurrentUser();
     const updateTrajectory = useUpdateTrajectory();
 
     const handleSave = useCallback((newName: string): void => {

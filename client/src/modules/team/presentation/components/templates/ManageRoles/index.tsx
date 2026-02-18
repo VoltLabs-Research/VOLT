@@ -5,9 +5,10 @@ import { formatDistanceToNow } from 'date-fns';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
+import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import RoleEditorModal, { openRoleEditorModal } from '../../organisms/RoleEditorModal';
 import type { RoleEditorPayload, RBACResource, RBACAction } from '../../organisms/RoleEditorModal';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
@@ -44,9 +45,9 @@ const COLUMNS: ColumnConfig[] = [
         key: 'isSystem',
         title: 'Type',
         render: (isSystem: unknown) => (
-            <span className={`badge ${isSystem ? 'badge-warning' : 'badge-brand'}`}>
+            <StatusBadge variant={isSystem ? 'warning' : 'brand'}>
                 {isSystem ? 'System' : 'Custom'}
-            </span>
+            </StatusBadge>
         )
     },
     {
@@ -55,7 +56,7 @@ const COLUMNS: ColumnConfig[] = [
         render: (permissions: unknown) => {
             const perms = permissions as string[];
             if(perms.includes('*')){
-                return <span className='badge badge-primary'>All Permissions</span>;
+                return <StatusBadge variant='primary'>All Permissions</StatusBadge>;
             }
             const count = perms.length;
             return (
@@ -80,7 +81,7 @@ const ManageRolesTemplate: React.FC = () => {
     const [editingRole, setEditingRole] = useState<TeamRole | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
-    const selectedTeam = useTeamStore((state) => state.selectedTeam)!;
+    const selectedTeam = useSelectedTeam()!;
     const addRole = useTeamRoleStore((state) => state.addRole);
     const updateRole = useTeamRoleStore((state) => state.updateRole);
     const removeRole = useTeamRoleStore((state) => state.removeRole);

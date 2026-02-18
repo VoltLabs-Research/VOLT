@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight, FlaskConical, Atom } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
+import Button from '@/shared/presentation/components/Button';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import Tooltip from '@/shared/presentation/components/Tooltip';
@@ -54,8 +55,11 @@ const AnalysisTreeNode = ({
                     aria-disabled={isAnalysisInProgress}
                     tabIndex={isAnalysisInProgress ? -1 : 0}
                 >
-                    <button
-                        type="button"
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        iconOnly
+                        size='sm'
                         onClick={(e) => {
                             if (isAnalysisInProgress) return;
                             e.stopPropagation();
@@ -69,7 +73,7 @@ const AnalysisTreeNode = ({
                             ? <ChevronDown style={{ width: 13, height: 13 }} />
                             : <ChevronRight style={{ width: 13, height: 13 }} />
                         }
-                    </button>
+                    </Button>
                     <FlaskConical style={{ width: 13, height: 13, color: isCurrentAnalysis ? 'rgba(255, 255, 255, 0.85)' : 'rgba(255, 255, 255, 0.3)' }} />
                     <span className={`${isCurrentAnalysis ? 'color-primary' : 'color-secondary'}`}>
                         {pluginDisplayName}

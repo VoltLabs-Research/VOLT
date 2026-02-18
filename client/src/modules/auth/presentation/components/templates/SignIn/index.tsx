@@ -183,14 +183,14 @@ const SignInTemplate = () => {
                     <Container className='d-flex column gap-2 sign-in-form-section w-max'>
                         <Container>
                             <Title className='sign-in-form-title'>{title}</Title>
-                            <Paragraph className='sign-in-form-subtitle font-size-3 mt-05'>{subtitle}</Paragraph>
+                            <Paragraph className='color-muted font-size-3 mt-05'>{subtitle}</Paragraph>
                         </Container>
 
                         <Stepper 
                             steps={steps} 
                             activeStep={step} />
 
-                        <Paragraph className='sign-in-footer-text text-center mt-2 font-size-1'>
+                        <Paragraph className='color-muted text-center mt-2 font-size-1'>
                             By clicking continue, you agree to our{' '}
                             <a href='#' className='sign-in-footer-link'>Terms</a> and{' '}
                             <a href='#' className='sign-in-footer-link'>Privacy Policy</a>.

@@ -9,6 +9,8 @@ import { IQueueRegistry } from '@modules/jobs/domain/ports/IQueueRegistry';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
+import logger from '@shared/infrastructure/logger';
+import { QUEUE_CONFIG } from '@core/config/queues';
 import path from 'path';
 
 @injectable()
@@ -39,12 +41,12 @@ export default class AnalysisProcessingQueue extends BaseProcessingQueue {
         queueRegistry: IQueueRegistry
     ) {
         const workerPath = path.join(__dirname, '../workers/AnalysisWorker.ts');
-        console.log(`[AnalysisProcessingQueue] Initializing with worker path: ${workerPath}`);
+        logger.info(`[AnalysisProcessingQueue] Initializing with worker path: ${workerPath}`);
         super(
             {
                 queueName: 'analysis_processing',
                 workerPath: workerPath,
-                maxConcurrentJobs: Number(process.env.ANALYSIS_QUEUE_MAX_CONCURRENT_JOBS) || 4
+                maxConcurrentJobs: QUEUE_CONFIG.analysisMaxConcurrentJobs
             },
             jobRepository,
             workerPoolService,

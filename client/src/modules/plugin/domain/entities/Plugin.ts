@@ -1,15 +1,13 @@
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 import type { IWorkflow, IModifierData, PluginStatus } from './Workflow';
 import type { IExposureComputed, IComputedArgumentDefinition, IListingsWithExposures } from './Exposure';
 
-export interface Plugin {
-    _id: string;
+export interface Plugin extends BaseEntity {
     slug: string;
     workflow: IWorkflow;
     status: PluginStatus;
     validated: boolean;
     validationErrors: string[];
-    createdAt: string;
-    updatedAt: string;
     modifier?: IModifierData | null;
     exposures?: IExposureComputed[];
     arguments?: IComputedArgumentDefinition[];

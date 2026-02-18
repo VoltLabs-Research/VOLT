@@ -1,17 +1,16 @@
-import { createUseCasesHook } from '@/shared/presentation/hooks/create-use-cases-hook';
+import { useMemo } from 'react';
+import { container } from 'tsyringe';
 import { PLUGIN_TOKENS } from '../../infrastructure/di/tokens';
 import type IPluginRepository from '../../domain/ports/IPluginRepository';
 import type IPluginListingRepository from '../../domain/ports/IPluginListingRepository';
 import type ClonePluginUseCase from '../../application/use-cases/ClonePluginUseCase';
 
-const usePluginUseCases = createUseCasesHook({
-    clonePluginUseCase: PLUGIN_TOKENS.ClonePluginUseCase,
-    pluginRepository: PLUGIN_TOKENS.PluginRepository,
-    pluginListingRepository: PLUGIN_TOKENS.PluginListingRepository
-}) as () => {
-    clonePluginUseCase: ClonePluginUseCase;
-    pluginRepository: IPluginRepository;
-    pluginListingRepository: IPluginListingRepository;
+const usePluginUseCases = () => {
+    return useMemo(() => ({
+        clonePluginUseCase: container.resolve<ClonePluginUseCase>(PLUGIN_TOKENS.ClonePluginUseCase),
+        pluginRepository: container.resolve<IPluginRepository>(PLUGIN_TOKENS.PluginRepository),
+        pluginListingRepository: container.resolve<IPluginListingRepository>(PLUGIN_TOKENS.PluginListingRepository)
+    }), []);
 };
 
 export default usePluginUseCases;

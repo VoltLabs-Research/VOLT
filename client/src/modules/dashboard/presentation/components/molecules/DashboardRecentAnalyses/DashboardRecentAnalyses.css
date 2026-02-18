@@ -52,11 +52,7 @@
     min-width: 0;
 }
 
-.dashboard-recent-analyses-item-info .text-ellipsis {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+
 
 .dashboard-recent-analyses-item-meta {
     display: flex;

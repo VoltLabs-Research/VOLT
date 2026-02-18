@@ -1,14 +1,14 @@
-import { createUseCasesHook } from '@/shared/presentation/hooks/create-use-cases-hook';
+import { useMemo } from 'react';
+import { container } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from '../../../infrastructure/di/tokens';
 import type ITrajectoryRepository from '../../../domain/ports/ITrajectoryRepository';
 import type DeleteTrajectoryUseCase from '../../../application/use-cases/trajectory/DeleteTrajectoryUseCase';
 
-const useTrajectoryUseCases = createUseCasesHook({
-    deleteTrajectoryUseCase: TRAJECTORY_TOKENS.DeleteTrajectoryUseCase,
-    trajectoryRepository: TRAJECTORY_TOKENS.TrajectoryRepository
-}) as () => {
-    deleteTrajectoryUseCase: DeleteTrajectoryUseCase;
-    trajectoryRepository: ITrajectoryRepository;
+const useTrajectoryUseCases = () => {
+    return useMemo(() => ({
+        deleteTrajectoryUseCase: container.resolve<DeleteTrajectoryUseCase>(TRAJECTORY_TOKENS.DeleteTrajectoryUseCase),
+        trajectoryRepository: container.resolve<ITrajectoryRepository>(TRAJECTORY_TOKENS.TrajectoryRepository)
+    }), []);
 };
 
 export default useTrajectoryUseCases;

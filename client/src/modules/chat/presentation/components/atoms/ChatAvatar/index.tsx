@@ -1,7 +1,7 @@
 import { IoPeopleOutline } from 'react-icons/io5';
 import type { Chat } from '@/modules/chat/domain/entities';
 import Avatar from '@/shared/presentation/components/Avatar';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@/shared/utils';
 import { getOtherParticipant } from '@/modules/chat/presentation/utilities';
 import './ChatAvatar.css';
 

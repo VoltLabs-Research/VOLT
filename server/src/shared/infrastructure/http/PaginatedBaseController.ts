@@ -5,6 +5,7 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import BaseResponse from '@shared/infrastructure/http/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 import { BaseController } from '@shared/infrastructure/http/BaseController';
+import logger from '@shared/infrastructure/logger';
 
 export abstract class PaginatedBaseController<TUseCase extends IUseCase<any, PaginatedResult<any>, any>> extends BaseController<TUseCase> {
     public override handle = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -23,7 +24,7 @@ export abstract class PaginatedBaseController<TUseCase extends IUseCase<any, Pag
 
             return BaseResponse.paginated(res, result.value);
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             return BaseResponse.error(
                 res,
                 'Internal Server Error',

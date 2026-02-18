@@ -5,6 +5,7 @@ import DashboardSidebar from '@/modules/dashboard/presentation/components/organi
 import DashboardHeader from '@/modules/dashboard/presentation/components/molecules/DashboardHeader';
 import TeamCreatorModal from '@/modules/team/presentation/components/organisms/TeamCreatorModal';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import './DashboardLayout.css';
 
@@ -12,7 +13,7 @@ const SIDEBAR_COLLAPSED_KEY = 'volt:sidebar-collapsed';
 
 const DashboardLayout = () => {
     const teams = useTeamStore((state) => state.teams);
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const selectedTeam = useSelectedTeam();
     const setCanInvite = useTeamStore((state) => state.setCanInvite);
     const { checkCanInvite } = useTeamData();
     const [sidebarOpen, setSidebarOpen] = useState(false);

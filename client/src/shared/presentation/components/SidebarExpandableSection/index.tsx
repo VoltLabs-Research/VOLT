@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { IoChevronDown } from 'react-icons/io5';
 import type { IconType } from 'react-icons';
 import Container from '@/shared/presentation/components/Container';
+import Button from '@/shared/presentation/components/Button';
 import '@/shared/presentation/components/SidebarSubItems/SidebarSubItems.css';
 import './SidebarExpandableSection.css';
 
@@ -50,13 +51,15 @@ const SidebarExpandableSection = ({
 
         if (!hasChildren) {
             return (
-                <button
+                <Button
                     key={index}
-                    className={`sidebar-sub-item ${item.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
+                    variant='ghost'
+                    intent='neutral'
+                    className={`sidebar-sub-item transition-fast ${item.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                     onClick={item.onClick}
                 >
                     {item.label}
-                </button>
+                </Button>
             );
         }
 
@@ -73,7 +76,9 @@ const SidebarExpandableSection = ({
 
     return (
         <>
-            <button
+            <Button
+                variant='ghost'
+                intent='neutral'
                 className={`sidebar-nav-item sidebar-section-header ${isActive ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer`}
                 onClick={handleToggle}
             >
@@ -85,7 +90,7 @@ const SidebarExpandableSection = ({
                     className={`sidebar-section-chevron ${expanded ? 'is-expanded' : ''} color-muted`}
                     size={14}
                 />
-            </button>
+            </Button>
 
             {expanded && (
                 <Container className='sidebar-sub-items'>
@@ -107,8 +112,10 @@ const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
 
     return (
         <Container className='sidebar-nested-section'>
-            <button
-                className={`sidebar-sub-item sidebar-nested-header ${item.isSelected || childSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
+            <Button
+                variant='ghost'
+                intent='neutral'
+                className={`sidebar-sub-item sidebar-nested-header transition-fast ${item.isSelected || childSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                 onClick={() => setExpanded((value) => !value)}
             >
                 <span>{item.label}</span>
@@ -116,18 +123,20 @@ const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
                     className={`sidebar-nested-chevron ${expanded ? 'is-expanded' : ''}`}
                     size={12}
                 />
-            </button>
+            </Button>
 
             {expanded && (
                 <Container className='sidebar-nested-items'>
                     {children.map((subItem, index) => (
-                        <button
+                        <Button
                             key={`${item.label}-${index}`}
-                            className={`sidebar-nested-item ${subItem.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
+                            variant='ghost'
+                            intent='neutral'
+                            className={`sidebar-nested-item transition-fast ${subItem.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                             onClick={subItem.onClick}
                         >
                             {subItem.label}
-                        </button>
+                        </Button>
                     ))}
                 </Container>
             )}

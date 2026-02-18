@@ -2,6 +2,7 @@ import mongoose, { Schema, Model, Document } from 'mongoose';
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { TrajectoryProps, TrajectoryFrame, TrajectoryStatus } from '@modules/trajectory/domain/entities/Trajectory';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
 type TrajectoryRelations = 'createdBy' | 'team';
 type TrajectoryFrameRelations = 'simulationCell';
@@ -34,15 +35,11 @@ const TrajectorySchema: Schema<TrajectoryDocument> = new Schema({
         trim: true
     },
     team: {
-        type: Schema.Types.ObjectId,
-        ref: 'Team',
-        required: true,
+        ...teamRefField(true),
         inverse: { path: 'trajectories', behavior: 'addToSet' }
     },
     createdBy: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        ...userRefField(true)
     },
     status: {
         type: String,

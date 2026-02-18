@@ -1,11 +1,7 @@
 .volt-icon-button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     background-color: transparent;
     border: none;
     border-radius: var(--radius-sm);
-    transition: all 0.15s ease;
     cursor: pointer;
     color: var(--color-text-secondary);
 }

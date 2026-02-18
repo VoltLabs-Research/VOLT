@@ -110,7 +110,7 @@ const OAuthCallbackTemplate = () => {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.1 }}
                 >
-                    <Paragraph className='oauth-description'>
+                    <Paragraph className='color-secondary'>
                         {status === 'loading' && 'Please wait while we verify your credentials.'}
                         {status === 'success' && 'Redirecting you to the dashboard...'}
                         {status === 'error' && 'Something went wrong. Redirecting to login...'}

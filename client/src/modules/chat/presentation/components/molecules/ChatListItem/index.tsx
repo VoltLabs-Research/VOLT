@@ -2,7 +2,7 @@ import { formatDistanceToNow } from 'date-fns';
 import type { Chat } from '@/modules/chat/domain/entities';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@/shared/utils';
 import { ChatAvatar } from '../../atoms';
 import { getChatDisplayName } from '@/modules/chat/presentation/utilities';
 import './ChatListItem.css';
@@ -26,7 +26,7 @@ const ChatListItem = ({ chat, currentUserId, isActive, onClick }: ChatListItemPr
             
             <Container className='d-flex column gap-025 flex-1 overflow-hidden'>
                 <Container className='d-flex items-center content-between gap-05'>
-                    <Paragraph className='font-size-2-5 font-weight-6 color-primary chat-list-item-name'>
+                    <Paragraph className='font-size-2-5 font-weight-6 color-primary chat-list-item-name text-truncate'>
                         {displayName}
                     </Paragraph>
                     {chat.lastMessageAt && (
@@ -37,7 +37,7 @@ const ChatListItem = ({ chat, currentUserId, isActive, onClick }: ChatListItemPr
                 </Container>
                 
                 {chat.lastMessage && (
-                    <Paragraph className='font-size-1 color-secondary chat-list-item-preview'>
+                    <Paragraph className='font-size-1 color-secondary chat-list-item-preview text-truncate'>
                         {chat.lastMessage.content}
                     </Paragraph>
                 )}

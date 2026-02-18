@@ -62,10 +62,6 @@
     font-size: 2rem;
 }
 
-.sign-in-form-subtitle{
-    color: var(--color-text-muted);
-}
-
 .sign-in-divider{
     color: var(--color-text-muted);
     text-transform: uppercase;
@@ -93,16 +89,6 @@
 .sign-in-user-badge-info{
     min-width: 0;
     flex: 1;
-}
-
-.sign-in-user-badge-email{
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.sign-in-footer-text{
-    color: var(--color-text-muted);
 }
 
 .sign-in-footer-link{

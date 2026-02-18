@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Container from '@/shared/presentation/components/Container';
+import SearchInput from '@/shared/presentation/components/SearchInput';
 
 interface FrameComboboxProps {
     value: number;
@@ -123,15 +124,11 @@ const FrameCombobox = ({ value, options, onChange, title }: FrameComboboxProps) 
 
     return (
         <>
-            <Container
-                ref={containerRef}
-                className={`form-field-canvas-field d-flex items-center`}
-                title={title}
-            >
-                <input
+            <Container ref={containerRef} title={title}>
+                <SearchInput
                     ref={inputRef}
-                    type="text"
-                    className="form-field-canvas-input form-field-canvas-input--compact"
+                    containerClassName='form-field-canvas-field'
+                    className='form-field-canvas-input form-field-canvas-input--compact'
                     value={isOpen ? query : value}
                     onChange={handleInputChange}
                     onFocus={open}

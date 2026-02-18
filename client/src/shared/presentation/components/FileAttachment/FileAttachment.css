@@ -27,12 +27,6 @@
     object-fit: cover;
 }
 
-.file-attachment-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .file-attachment-download {
     padding: 0.375rem;
     border-radius: var(--radius-sm);

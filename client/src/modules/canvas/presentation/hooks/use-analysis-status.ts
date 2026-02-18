@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { createExternalStore, useExternalStore } from '../utils/external-store';
-import useSocket from '@/modules/socket/presentation/hooks/use-socket';
+import useSocketEvent from '@/modules/socket/presentation/hooks/use-socket-event';
 
 type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed';
 
@@ -27,7 +27,6 @@ interface UseAnalysisStatusProps {
 }
 
 const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusProps) => {
-    const socketService = useSocket();
     const currentTrajectoryIdRef = useRef(trajectoryId);
 
     const statusMap = useExternalStore(store);
@@ -48,16 +47,17 @@ const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusPr
     }, []);
 
     useEffect(() => {
-        if (!enabled || !trajectoryId) return;
-
-        clearStatus();
-        const unsubscribe = socketService.on('team.job.updated', handleJobUpdate);
-
-        return () => {
-            unsubscribe();
+        if (enabled && trajectoryId) {
             clearStatus();
+        }
+        return () => {
+            if (enabled && trajectoryId) {
+                clearStatus();
+            }
         };
-    }, [trajectoryId, enabled, handleJobUpdate, socketService]);
+    }, [trajectoryId, enabled]);
+
+    useSocketEvent('team.job.updated', handleJobUpdate, { enabled: enabled && !!trajectoryId });
 
     const getAnalysisStatus = useCallback((analysisId: string): AnalysisStatus | undefined => {
         return statusMap.get(analysisId);

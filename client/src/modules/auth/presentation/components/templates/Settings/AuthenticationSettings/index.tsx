@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
+import SettingsPage from '../SettingsPage';
 import SettingsSection from '@/modules/auth/presentation/components/atoms/SettingsSection';
 import SettingsSectionHeader from '@/modules/auth/presentation/components/molecules/SettingsSectionHeader';
 import PasswordStatusRow from '@/modules/auth/presentation/components/molecules/PasswordStatusRow';
@@ -43,11 +43,7 @@ const AuthenticationSettings: React.FC = () => {
     };
 
     return (
-        <Container className="settings-page-container d-flex column gap-3 p-2">
-            <Title className="font-size-5 font-weight-6">
-                Authentication Settings
-            </Title>
-
+        <SettingsPage title="Authentication Settings">
             <SettingsSection>
                 <SettingsSectionHeader
                     title="Password"
@@ -74,7 +70,7 @@ const AuthenticationSettings: React.FC = () => {
 
                 <LoginActivityRow onViewActivity={handleViewLoginActivity} />
             </SettingsSection>
-        </Container>
+        </SettingsPage>
     );
 };
 

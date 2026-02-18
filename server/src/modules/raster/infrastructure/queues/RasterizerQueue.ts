@@ -9,6 +9,7 @@ import { IQueueRegistry } from '@modules/jobs/domain/ports/IQueueRegistry';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
+import { QUEUE_CONFIG } from '@core/config/queues';
 import path from 'path';
 
 @injectable()
@@ -42,7 +43,7 @@ export default class RasterizerQueue extends BaseProcessingQueue {
             {
                 queueName: 'rasterizer',
                 workerPath: path.join(__dirname, '../workers/HeadlessRasterizerWorker.ts'),
-                maxConcurrentJobs: Number(process.env.RASTERIZER_QUEUE_MAX_CONCURRENT_JOBS) || 4
+                maxConcurrentJobs: QUEUE_CONFIG.rasterizerMaxConcurrentJobs
             },
             jobRepository,
             workerPoolService,

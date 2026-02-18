@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
 import useParticleFilterUseCases from '@/modules/trajectory/presentation/hooks/particle-filter/use-particle-filter-use-cases';
+import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 
 export type FilterOperator = '==' | '!=' | '>' | '>=' | '<' | '<=';
 export type FilterAction = 'delete' | 'highlight';
@@ -54,6 +55,16 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
     const [previewResult, setPreviewResult] = useState<PreviewResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
+    const previewAction = useAsyncAction({
+        onError: (err: unknown) => setError((err as any).message),
+        onFinally: () => setIsLoadingPreview(false)
+    });
+
+    const applyAction = useAsyncAction({
+        onError: (err: unknown) => setError((err as any).message),
+        onFinally: () => setIsApplying(false)
+    });
+
     const handlePropertyChange = useCallback((newValue: string) => {
         baseHandlePropertyChange(newValue);
         setPreviewResult(null);
@@ -93,7 +104,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         setPreviewResult(null);
         const normalizedExposureId = exposureId ?? undefined;
 
-        try {
+        await previewAction.execute(async () => {
             const result = await particleFilterRepository.preview({
                 trajectoryId, analysisId, timestep: currentTimestep,
                 property,
@@ -106,12 +117,8 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 totalCount: result.totalAtoms,
                 filterParams: { property, operator, value, exposureId: normalizedExposureId }
             });
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoadingPreview(false);
-        }
-    }, [trajectoryId, analysisId, currentTimestep, property, operator, value, exposureId, propertyOptions, particleFilterRepository]);
+        });
+    }, [trajectoryId, analysisId, currentTimestep, property, operator, value, exposureId, propertyOptions, particleFilterRepository, previewAction]);
 
     const handleApplyAction = useCallback(async () => {
         if (!previewResult || !trajectoryId || currentTimestep === undefined) {
@@ -122,7 +129,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         setIsApplying(true);
         setError(null);
 
-        try {
+        await applyAction.execute(async () => {
             const { filterParams } = previewResult;
             await particleFilterRepository.applyAction({
                 trajectoryId, analysisId, timestep: currentTimestep,
@@ -149,12 +156,8 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
             }));
 
             setPreviewResult(null);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsApplying(false);
-        }
-    }, [trajectoryId, analysisId, currentTimestep, action, previewResult, setActiveScene, particleFilterRepository]);
+        });
+    }, [trajectoryId, analysisId, currentTimestep, action, previewResult, setActiveScene, particleFilterRepository, applyAction]);
 
     const handleCancelPreview = useCallback(() => {
         setPreviewResult(null);
