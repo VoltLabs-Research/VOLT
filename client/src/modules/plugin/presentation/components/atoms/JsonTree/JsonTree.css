@@ -1,0 +1,32 @@
+.json-tree-key {
+    color: var(--syntax-key);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    user-select: none;
+}
+
+.json-tree-string {
+    color: var(--syntax-string);
+    word-break: break-all;
+}
+
+.json-tree-primitive {
+    color: var(--syntax-primitive);
+}
+
+.json-tree-null {
+    color: var(--syntax-null);
+    font-style: italic;
+}
+
+.json-tree-meta {
+    color: var(--syntax-meta);
+    font-size: 0.7rem;
+}
+
+.json-tree-children {
+    padding-left: 1rem;
+    border-left: 1px solid var(--color-border-soft);
+    margin-left: 0.4rem;
+}

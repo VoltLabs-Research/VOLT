@@ -6,21 +6,4 @@
     padding-top: unset !important;
 }
 
-.search-container {
-    border: 1px solid var(--color-border-soft);
-    background-color: var(--color-bg);
-    height: 2.7rem;
-    padding: 0 1.5rem;
-    border-radius: var(--radius-full);
-    width: 500px;
-    transition: .2s;
-}
 
-.search-input {
-    font-size: .95rem;
-    background-color: transparent;
-}
-
-.search-container:hover {
-    opacity: .9;
-}

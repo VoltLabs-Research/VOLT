@@ -36,7 +36,7 @@ const StatusBar = ({ trajectory, currentTimestep }: StatusBarProps) => {
     return (
         <Container className="canvas-status-bar d-flex items-center content-between">
             <Container className="d-flex items-center gap-05">
-                <Container className="canvas-live-dot f-shrink-0" />
+                <Container className="canvas-live-dot radius-full f-shrink-0" />
                 <StatusGroup items={left} />
             </Container>
             <StatusGroup items={right} />

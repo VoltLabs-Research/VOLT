@@ -22,11 +22,7 @@
     margin-left: 64px;
 }
 
-.dashboard-content-main {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-}
+
 
 @media screen and (max-width: 1024px) {
     .dashboard-main {

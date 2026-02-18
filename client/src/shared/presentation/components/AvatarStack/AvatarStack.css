@@ -11,8 +11,8 @@
     margin-left: 0;
 }
 
-.avatar-stack-overflow{
+.avatar-stack-overflow {
     margin-left: -0.5rem;
-    background: var(--color-bg-secondary);
+    background: var(--color-surface-2);
     border: 2px solid var(--color-color-bg);
 }

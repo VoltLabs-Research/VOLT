@@ -1,9 +1,7 @@
 .metric-bar {
     height: 6px;
     background-color: var(--color-border-soft);
-    border-radius: var(--radius-full);
 }
 
 .metric-bar-segment {
-    border-radius: var(--radius-full);
 }

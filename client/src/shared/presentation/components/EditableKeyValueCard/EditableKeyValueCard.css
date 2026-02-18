@@ -1,12 +1,12 @@
 .editable-kv-card {
-    background: var(--color-card);
+    background: var(--color-surface-1);
     border: 1px solid var(--color-border-soft);
     border-radius: 16px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .editable-kv-row {
-    animation: editable-kv-slideIn 0.2s ease-out;
+    animation: animate-fade-in 0.2s ease-out;
 }
 
 .editable-kv-field {
@@ -24,14 +24,14 @@
     border: 1px solid var(--color-border-soft);
     padding: 0.6rem 0.75rem;
     border-radius: 6px;
-    color: var(--color-primary);
+    color: var(--color-text-primary);
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .editable-kv-input:focus {
     outline: none;
-    border-color: var(--color-brand);
-    box-shadow: 0 0 0 3px rgba(var(--color-brand-rgb), 0.1);
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(0, 98, 255, 0.1);
 }
 
 .editable-kv-add-btn {
@@ -39,12 +39,12 @@
 }
 
 .editable-kv-add-btn:hover {
-    border-color: var(--color-brand) !important;
+    border-color: var(--accent-blue) !important;
 }
 
 .editable-kv-display-row {
     padding: 0.875rem;
-    background: var(--color-bg-secondary);
+    background: var(--color-surface-2);
     border-radius: 8px;
     font-size: 0.875rem;
     border: 1px solid transparent;
@@ -55,7 +55,4 @@
     border-color: var(--color-border-soft);
 }
 
-@keyframes editable-kv-slideIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+

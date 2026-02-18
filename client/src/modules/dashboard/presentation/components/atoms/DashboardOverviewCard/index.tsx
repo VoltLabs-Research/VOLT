@@ -34,7 +34,7 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
         >
             <Container className='d-flex column gap-1 p-relative z-5'>
                 <Container className='d-flex items-center gap-075'>
-                    <Container className='dashboard-stat-card-icon'>
+                    <Container className='dashboard-stat-card-icon d-flex flex-center radius-md'>
                         {icon}
                     </Container>
                     <Container className='d-flex column gap-01'>
@@ -47,7 +47,7 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
 
                 <Container className='d-flex items-end gap-075'>
                     <span className='dashboard-stat-value'>{card.count}</span>
-                    <Container className={`dashboard-stat-trend ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
+                    <Container className={`dashboard-stat-trend d-flex items-center gap-025 ${up ? 'up' : 'down'}`} style={{ marginBottom: '0.3rem' }}>
                         {up ? <FaArrowUpLong size={10} /> : <FaArrowDownLong size={10} />}
                         <span>{Math.abs(card.lastMonthStatus ?? 0)}%</span>
                     </Container>
@@ -57,12 +57,12 @@ const DashboardOverviewCard = ({ card, icon }: DashboardOverviewCardProps) => {
             </Container>
 
             {isClickable && (
-                <Container className='dashboard-stat-navigate'>
+                <Container className='dashboard-stat-navigate p-absolute top-1 right-1'>
                     <GoArrowRight />
                 </Container>
             )}
 
-            <Container className='dashboard-stat-sparkline'>
+            <Container className='dashboard-stat-sparkline p-absolute bottom-0 right-0'>
                 <TinyLineChart
                     lineColor={lineColor || '#30d158'}
                     pData={card.series}

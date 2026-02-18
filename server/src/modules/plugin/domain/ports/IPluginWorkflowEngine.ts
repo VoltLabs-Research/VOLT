@@ -55,6 +55,17 @@ export interface WorkflowExecutionRequest{
     currentIterationIndex?: number;
 };
 
+/**
+ * Debug hooks for step-through workflow execution.
+ * Each hook is async to allow the caller to implement pause/gate patterns.
+ */
+export interface DebugHooks {
+    onNodeStart: (nodeId: string, nodeType: string, index: number, total: number) => Promise<void>;
+    onNodeCompleted: (nodeId: string, nodeType: string, output: Record<string, any>, durationMs: number, index: number, contextSnapshot: Record<string, Record<string, any>>) => Promise<void>;
+    onNodeSkipped: (nodeId: string, nodeType: string, reason: string) => Promise<void>;
+    onNodeError: (nodeId: string, nodeType: string, error: Error) => Promise<void>;
+};
+
 export interface IPluginWorkflowEngine{
     /**
      * Executes the workflow only up to the "ForEach" node.
@@ -66,4 +77,13 @@ export interface IPluginWorkflowEngine{
      * Executes the full workflow for a single item from the planning phase.
      */
     executeWorkflowJob(request: WorkflowExecutionRequest): Promise<ExposureResult[]>;
+
+    /**
+     * Executes the full workflow with debug hooks called before/after each node.
+     * Hooks are async to support step-through (pause/continue) patterns.
+     */
+    executeWorkflowJobWithDebugHooks(
+        request: WorkflowExecutionRequest,
+        hooks: DebugHooks
+    ): Promise<ExposureResult[]>;
 };

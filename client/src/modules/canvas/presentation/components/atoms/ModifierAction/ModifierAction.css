@@ -49,12 +49,6 @@
     color: var(--color-text-primary, #fff);
 }
 
-/* Spinner animation */
-@keyframes modifier-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
 .modifier-action-spinner {
-    animation: modifier-spin 0.8s linear infinite;
+    animation: animate-spin 0.8s linear infinite;
 }

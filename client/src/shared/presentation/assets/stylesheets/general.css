@@ -406,6 +406,59 @@
     border-radius: var(--radius-full);
 }
 
+/** Shared Animations **/
+@keyframes animate-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+@keyframes animate-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes animate-skeleton {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes animate-fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/** Scrollbar **/
+.scrollbar-thin {
+    scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+    width: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: 2px;
+}
+
+/** Floating panel **/
+.panel-floating {
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-elevated);
+}
+
+/** Centering **/
+.center-x {
+    left: 50%;
+    transform: translateX(-50%);
+}
+
 /** Other **/
 .u-select-none {
     user-select: none;

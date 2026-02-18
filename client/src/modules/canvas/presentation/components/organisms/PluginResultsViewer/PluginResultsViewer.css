@@ -1,9 +1,5 @@
 .canvas-results-viewer {
     max-height: 280px;
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
     border-radius: var(--radius-md);
     z-index: 200;
 }

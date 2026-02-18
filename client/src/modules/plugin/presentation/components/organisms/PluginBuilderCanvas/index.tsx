@@ -5,9 +5,12 @@ import { nodeTypes } from '@/modules/plugin/presentation/components/molecules/no
 import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
 import { NodeType } from '@/modules/plugin/domain/entities';
 import { useCanvasHandlers } from '@/modules/plugin/presentation/hooks';
+import usePluginDebugSocket from '@/modules/plugin/presentation/hooks/use-plugin-debug-socket';
 import CanvasToolbar from '@/modules/plugin/presentation/components/molecules/CanvasToolbar';
 import CanvasEmptyState from '@/modules/plugin/presentation/components/molecules/CanvasEmptyState';
 import FloatingNodePanel from '@/modules/plugin/presentation/components/organisms/FloatingNodePanel';
+import DebugToolbar from '@/modules/plugin/presentation/components/molecules/DebugToolbar';
+import DebugContextPanel from '@/modules/plugin/presentation/components/molecules/DebugContextPanel';
 import Container from '@/shared/presentation/components/Container';
 
 const NODE_MINIMAP_COLORS: Record<string, string> = {
@@ -35,6 +38,9 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
     const reactFlowWrapper = useRef<HTMLDivElement>(null);
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
     const [currentZoom, setCurrentZoom] = useState(1);
+
+    // Initialize debug socket subscriptions
+    usePluginDebugSocket();
 
     const {
         nodes,
@@ -106,6 +112,10 @@ const PluginBuilderCanvas = ({ saveStatus, onSave }: PluginBuilderCanvasProps) =
             {isEmpty && <CanvasEmptyState />}
 
             <FloatingNodePanel />
+
+            <DebugToolbar />
+
+            <DebugContextPanel />
 
             <CanvasToolbar saveStatus={saveStatus} onSave={onSave} zoom={currentZoom} />
         </Container>

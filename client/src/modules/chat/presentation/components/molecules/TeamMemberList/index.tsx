@@ -32,7 +32,7 @@ const TeamMemberList = ({ members, selectedIds, currentUserId, onToggle }: TeamM
                 return (
                     <Container
                         key={member._id}
-                        className={cn('d-flex items-center gap-075 team-member-item', isSelected && 'selected')}
+                        className={cn('d-flex items-center gap-075 list-item-hoverable team-member-item', isSelected && 'selected')}
                         onClick={() => onToggle(member._id)}
                     >
                         <Container className='d-flex flex-center team-member-item-checkbox f-shrink-0'>

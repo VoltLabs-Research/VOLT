@@ -9,7 +9,7 @@
 }
 
 .canvas-toolbar-logo:hover .canvas-volt {
-    color: var(--color-primary);
+    color: var(--color-text-primary);
 }
 
 .canvas-toolbar-menus{

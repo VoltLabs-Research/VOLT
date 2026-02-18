@@ -46,7 +46,7 @@ const NotificationList = ({
         return (
             <Container className='d-flex column gap-05 p-05'>
                 {Array.from({ length: 5 }).map((_, i) => (
-                    <Container key={`notif-skel-${i}`} className='notification-item p-075'>
+                    <Container key={`notif-skel-${i}`} className='notification-item list-item-hoverable p-075'>
                         <Skeleton variant='text' width='60%' height={20} />
                         <Skeleton variant='text' width='90%' height={16} />
                     </Container>
@@ -78,7 +78,7 @@ const NotificationList = ({
                 />
             ))}
             {isLoading && (
-                <Container className='notification-item p-075'>
+                <Container className='notification-item list-item-hoverable p-075'>
                     <Skeleton variant='text' width='60%' height={20} />
                     <Skeleton variant='text' width='90%' height={16} />
                 </Container>

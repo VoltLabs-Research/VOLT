@@ -70,7 +70,7 @@ const GlobalSearch: React.FC = () => {
             <SearchInput placeholder='Search...' value={query} onChange={(e) => setQuery(e.target.value)} onFocus={() => query && setShowResults(true)} />
 
             {showResults && (
-                <Container className='global-search-results p-absolute left-0 right-0 radius-md y-auto'>
+                <Container className='global-search-results panel-floating p-absolute left-0 right-0 radius-md y-auto'>
                     {isLoading && <Container className='global-search-loading p-2'><Paragraph className='color-muted font-size-1'>Searching...</Paragraph></Container>}
 
                     {!isLoading && results && totalResults === 0 && <Container className='global-search-empty p-2'><Paragraph className='color-muted font-size-2'>No results found</Paragraph></Container>}

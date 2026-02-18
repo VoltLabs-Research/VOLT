@@ -11,6 +11,7 @@ import TeamJobsSocketModule from '@modules/team/infrastructure/socket/TeamJobsSo
 import SystemSocketModule from '@modules/system/infrastructure/socket/SystemSocketModule';
 import ChatSocketModule from '@modules/chat/infrastructure/socket/ChatSocketModule';
 import NotificationSocketModule from '@modules/notification/infrastructure/socket/NotificationSocketModule';
+import DebugSocketModule from '@modules/plugin/infrastructure/socket/DebugSocketModule';
 
 /**
  * Register socket module dependencies.
@@ -30,4 +31,5 @@ export const registerSocketModule = (): void => {
     container.registerSingleton('SocketModule', SystemSocketModule);
     container.registerSingleton('SocketModule', ChatSocketModule);
     container.registerSingleton('SocketModule', NotificationSocketModule);
+    container.registerSingleton('SocketModule', DebugSocketModule);
 };

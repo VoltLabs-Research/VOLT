@@ -28,6 +28,7 @@ export default class ProcessExecutorService implements IProcessExecutorService{
             logger.info(`@processor-executor-service: running: ${cmd} ${args.join(' ')}`);
 
             const child = spawn(cmd, args, { cwd });
+            let stdout = '';
             let stderr = '';
 
             child.stderr.on('data', (data) => {
@@ -39,11 +40,15 @@ export default class ProcessExecutorService implements IProcessExecutorService{
             });
 
             child.stdout.on('data', (data) => {
-                logger.debug(`@process-executor-service: stdout: ${data.toString().trim()}`);
+                const message = data.toString().trim();
+                if(message){
+                    logger.debug(`@process-executor-service: stdout: ${message}`);
+                    stdout += message + '\n';
+                }
             });
 
             child.on('close', (code) => {
-                if(code === 0) resolve({ code: 0, stderr });
+                if(code === 0) resolve({ code: 0, stdout, stderr });
                 else reject(new Error(`Process exited with code ${code}. Logs:\n${stderr}`));
             });
 

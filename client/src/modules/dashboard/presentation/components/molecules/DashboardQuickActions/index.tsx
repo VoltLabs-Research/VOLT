@@ -49,7 +49,7 @@ const DashboardQuickActions = () => {
                 {actions.map((action) => (
                     <Container
                         key={action.label}
-                        className='dashboard-action-item'
+                        className='dashboard-action-item list-item-hoverable d-flex items-center gap-075'
                         onClick={() => navigate(action.path)}
                     >
                         <Container className={`dashboard-action-icon ${action.variant}`}>

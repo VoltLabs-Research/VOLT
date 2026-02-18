@@ -32,8 +32,6 @@
 /** Canvas Toolbar **/
 .canvas-toolbar {
     bottom: 1.25rem;
-    left: 50%;
-    transform: translateX(-50%);
     padding: 0.375rem 0.5rem;
     background: var(--color-surface-1);
     box-shadow: var(--shadow-elevated);
@@ -59,7 +57,7 @@
     width: 6px;
     height: 6px;
     background: var(--accent-blue);
-    animation: canvas-toolbar-pulse 1.5s ease-in-out infinite;
+    animation: animate-pulse 1.5s ease-in-out infinite;
 }
 
 .canvas-toolbar-status--saved {
@@ -70,10 +68,7 @@
     color: var(--status-error);
 }
 
-@keyframes canvas-toolbar-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-}
+
 
 /** MiniMap overrides **/
 .react-flow__minimap {
@@ -91,6 +86,8 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     background: color-mix(in srgb, var(--color-surface-1) 85%, transparent);
+    border: 1px solid var(--color-border-soft);
+    box-shadow: var(--shadow-elevated);
 }
 
 .floating-node-panel-header {

@@ -86,6 +86,12 @@
     --active-bg: rgba(255, 255, 255, 0.06);
     --selected-indicator: var(--accent-blue);
     --focus-ring: var(--accent-blue);
+
+    --syntax-key: #93c5fd;
+    --syntax-string: #86efac;
+    --syntax-primitive: #fbbf24;
+    --syntax-null: #94a3b8;
+    --syntax-meta: #64748b;
 }
 
 :root[data-theme='light'] {
@@ -166,4 +172,10 @@
     --active-bg: rgba(0, 0, 0, 0.08);
     --selected-indicator: #007aff;
     --focus-ring: #007aff;
+
+    --syntax-key: #2563eb;
+    --syntax-string: #16a34a;
+    --syntax-primitive: #d97706;
+    --syntax-null: #6b7280;
+    --syntax-meta: #9ca3af;
 }
