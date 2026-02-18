@@ -54,15 +54,15 @@ const DashboardRecentAnalyses: React.FC = () => {
                 </button>
             </Container>
 
-            <Container className='dashboard-recent-analyses-list'>
+            <Container className='dashboard-recent-analyses-list d-flex column flex-1 y-auto min-h-0'>
                 {isLoading ? (
                     Array.from({ length: 3 }).map((_, i) => (
-                        <Container key={i} className='dashboard-recent-analyses-item'>
+                        <Container key={i} className='dashboard-recent-analyses-item list-item-hoverable d-flex items-center content-between gap-075'>
                             <Container className='dashboard-skeleton-pulse' style={{ width: '100%', height: 40, borderRadius: 'var(--radius-md)' }} />
                         </Container>
                     ))
                 ) : analyses.length === 0 ? (
-                    <Container className='dashboard-recent-analyses-empty'>
+                    <Container className='dashboard-recent-analyses-empty d-flex column items-center content-center flex-1'>
                         <FlaskConical size={20} strokeWidth={1.5} />
                         <span className='font-size-1 color-muted'>No analyses yet</span>
                     </Container>
@@ -70,10 +70,10 @@ const DashboardRecentAnalyses: React.FC = () => {
                     analyses.map((analysis) => (
                         <button
                             key={analysis._id}
-                            className='dashboard-recent-analyses-item'
+                            className='dashboard-recent-analyses-item list-item-hoverable d-flex items-center content-between gap-075'
                             onClick={() => handleClickAnalysis(analysis)}
                         >
-                            <Container className='dashboard-recent-analyses-item-info'>
+                            <Container className='dashboard-recent-analyses-item-info d-flex column flex-1'>
                                 <span className='font-size-2 color-primary font-weight-5 text-ellipsis'>
                                     {analysis.pluginDisplayName || analysis.plugin}
                                 </span>

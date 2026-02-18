@@ -79,11 +79,11 @@ const DashboardTeamTimeline = () => {
                 <Container className='dashboard-timeline-header'>
                     <Title className='font-size-3 color-primary font-weight-5'>Activity</Title>
                 </Container>
-                <Container className='dashboard-timeline-list'>
+                <Container className='dashboard-timeline-list flex-1 min-h-0 y-auto d-flex column'>
                     {Array.from({ length: 4 }, (_, i) => (
                         <Container key={i} className='dashboard-timeline-item'>
                             <Container className='dashboard-timeline-dot-col'>
-                                <span className='dashboard-timeline-dot dashboard-skeleton-pulse' />
+                                <span className='dashboard-timeline-dot d-flex flex-center radius-md dashboard-skeleton-pulse' />
                                 {i < 3 && <span className='dashboard-timeline-line' />}
                             </Container>
                             <Container className='dashboard-timeline-content'>
@@ -106,13 +106,13 @@ const DashboardTeamTimeline = () => {
                 <span className='font-size-1 color-muted'>Last 7 days</span>
             </Container>
 
-            <Container className='dashboard-timeline-list'>
+            <Container className='dashboard-timeline-list flex-1 min-h-0 y-auto d-flex column'>
                 {hasData ? (
                     entries.map((entry, i) => (
                         <Container key={`${entry.timestamp}-${i}`} className='dashboard-timeline-item'>
                             <Container className='dashboard-timeline-dot-col'>
                                 <span
-                                    className='dashboard-timeline-dot'
+                                    className='dashboard-timeline-dot d-flex flex-center radius-md'
                                     style={{ color: ACTIVITY_ACCENT[entry.type] }}
                                 >
                                     {ACTIVITY_ICON[entry.type]}
@@ -132,7 +132,7 @@ const DashboardTeamTimeline = () => {
                         </Container>
                     ))
                 ) : (
-                    <Container className='dashboard-timeline-empty'>
+                    <Container className='dashboard-timeline-empty d-flex flex-center flex-1'>
                         <span className='color-muted font-size-2'>No activity this week</span>
                     </Container>
                 )}

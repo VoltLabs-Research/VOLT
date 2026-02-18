@@ -19,7 +19,7 @@ const ChatListItem = ({ chat, currentUserId, isActive, onClick }: ChatListItemPr
 
     return (
         <Container
-            className={cn('d-flex items-center gap-075 chat-list-item', isActive && 'active')}
+            className={cn('d-flex items-center gap-075 list-item-hoverable chat-list-item', isActive && 'active')}
             onClick={onClick}
         >
             <ChatAvatar chat={chat} currentUserId={currentUserId} size='sm' className='f-shrink-0' />

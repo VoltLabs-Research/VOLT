@@ -48,7 +48,7 @@ const ExposureSettingsWidget = () => {
     return (
         <Container
             style={{ bottom: '1rem', right: '1rem', top: 'auto', left: 'auto' }}
-            className={`canvas-widget canvas-exposure-widget ${isSceneInteracting ? 'is-dimmed' : ''}`}
+            className={`canvas-widget glass-bg canvas-exposure-widget ${isSceneInteracting ? 'is-dimmed' : ''}`}
         >
             <Container className="d-flex column gap-05">
                 <FormField

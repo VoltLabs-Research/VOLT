@@ -5,11 +5,11 @@
     padding: 0.5rem 0.75rem;
     transition: background-color 0.15s ease;
     font-size: var(--font-size-2);
-    color: var(--text-primary);
+    color: var(--color-text-primary);
 }
 
 .popover-menu-item:hover {
-    background-color: var(--surface-tertiary);
+    background-color: var(--color-surface-3);
 }
 
 .popover-menu-item.danger {

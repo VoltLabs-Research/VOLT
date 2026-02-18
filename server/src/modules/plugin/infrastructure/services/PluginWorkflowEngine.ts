@@ -1,4 +1,4 @@
-import { IPluginWorkflowEngine, ExposureResult, ExecutionPlanResult, WorkflowExecutionRequest } from '@modules/plugin/domain/ports/IPluginWorkflowEngine';
+import { IPluginWorkflowEngine, ExposureResult, ExecutionPlanResult, WorkflowExecutionRequest, DebugHooks } from '@modules/plugin/domain/ports/IPluginWorkflowEngine';
 import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import { injectable, inject } from 'tsyringe';
@@ -85,6 +85,85 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
             return results;
         }catch(error: any){
             logger.error(`@plugin-workflow-engine: job failed ${error.message}`);
+            await this.cleanupGeneratedFiles(context.generatedFiles);
+            throw error;
+        }
+    }
+
+    /**
+     * Same as executeWorkflowJob but calls debug hooks before/after each node.
+     */
+    async executeWorkflowJobWithDebugHooks(
+        request: WorkflowExecutionRequest,
+        hooks: DebugHooks
+    ): Promise<ExposureResult[]> {
+        const { plugin, currentIterationIndex, currentIterationItem } = request;
+        const context = this.createExecutionContext(request);
+
+        try {
+            const executionOrder = plugin.props.workflow.topologicalSort();
+            const nodesToSkip = new Set<string>();
+            const total = executionOrder.length;
+
+            logger.info(`@plugin-workflow-engine: debug job start "${plugin.props.slug}" (Index: ${currentIterationIndex})`);
+
+            for (let i = 0; i < executionOrder.length; i++) {
+                const node = executionOrder[i];
+
+                // Skip logic (handled by previous If-Statements)
+                if (nodesToSkip.has(node.id)) {
+                    await hooks.onNodeSkipped(node.id, node.type, 'Disabled by if-statement branch');
+                    continue;
+                }
+
+                // Notify hook: node is about to start
+                await hooks.onNodeStart(node.id, node.type, i, total);
+
+                const startTime = Date.now();
+
+                try {
+                    // ForEach injection logic
+                    if (node.type === WorkflowNodeType.ForEach && currentIterationIndex !== undefined) {
+                        await this.nodeRegistry.execute(node, context);
+                        const forEachOutput = context.outputs.get(node.id);
+                        if (forEachOutput) {
+                            forEachOutput.currentValue = currentIterationItem;
+                            forEachOutput.currentIndex = currentIterationIndex ?? 0;
+                        }
+                    } else {
+                        // Standard execution
+                        await this.nodeRegistry.execute(node, context);
+                    }
+
+                    const durationMs = Date.now() - startTime;
+                    const output = context.outputs.get(node.id) ?? {};
+
+                    // Build a plain-object snapshot of all accumulated outputs
+                    const contextSnapshot: Record<string, Record<string, any>> = {};
+                    context.outputs.forEach((value, key) => {
+                        contextSnapshot[key] = value;
+                    });
+
+                    // Notify hook: node completed
+                    await hooks.onNodeCompleted(node.id, node.type, output, durationMs, i, contextSnapshot);
+
+                } catch (nodeError: any) {
+                    await hooks.onNodeError(node.id, node.type, nodeError);
+                    throw nodeError;
+                }
+
+                // Branching Logic (If-Statement)
+                if (node.type === WorkflowNodeType.IfStatement) {
+                    this.handleBranching(node.id, context, plugin.props.workflow, nodesToSkip);
+                }
+            }
+
+            const results = this.collectExposureResults(plugin.props.workflow, context);
+            await this.cleanupGeneratedFiles(context.generatedFiles);
+
+            return results;
+        } catch (error: any) {
+            logger.error(`@plugin-workflow-engine: debug job failed ${error.message}`);
             await this.cleanupGeneratedFiles(context.generatedFiles);
             throw error;
         }

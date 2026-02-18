@@ -15,7 +15,7 @@
 }
 
 .code-editor-wrapper:focus-within .code-editor-container {
-    border-color: var(--color-primary);
+    border-color: var(--accent-blue);
 }
 
 .code-editor-wrapper.has-error .code-editor-container {
@@ -31,5 +31,5 @@
 /* Monaco background only - don't override syntax colors */
 .code-editor-container .monaco-editor,
 .code-editor-container .monaco-editor .margin {
-    background-color: var(--color-bg-secondary) !important;
+    background-color: var(--color-surface-2) !important;
 }

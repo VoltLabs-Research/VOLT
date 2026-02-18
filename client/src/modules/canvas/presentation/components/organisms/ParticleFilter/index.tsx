@@ -11,7 +11,7 @@ interface ParticleFilterProps {
 }
 
 const PreviewStats = ({ percentage }: { percentage: string }) => (
-    <Container className="canvas-filter-preview d-flex column gap-05">
+    <Container className="canvas-filter-preview radius-sm d-flex column gap-05">
         <Container className="d-flex content-between">
             <span>Selection</span>
             <span className="color-primary">{percentage}% of total</span>

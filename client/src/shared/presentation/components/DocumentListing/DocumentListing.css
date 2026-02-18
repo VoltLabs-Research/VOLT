@@ -21,7 +21,7 @@
 }
 
 .document-listing-header-tab-container:not(.is-active) {
-    color: var(--color-secondary);
+    color: var(--color-text-secondary);
 }
 
 .document-listing-body-container {

@@ -12,7 +12,7 @@ const ShortcutFeedback = () => {
     if (!lastTriggered || !shortcut) return null;
 
     return (
-        <Container className="canvas-shortcut-feedback d-flex items-center gap-05 p-fixed">
+        <Container className="canvas-shortcut-feedback center-x glass-bg d-flex items-center gap-05 p-fixed">
             <Container className="canvas-shortcut-feedback-keys d-flex items-center gap-025">
                 {shortcut.keys.map((key, i) => (
                     <Fragment key={key}>

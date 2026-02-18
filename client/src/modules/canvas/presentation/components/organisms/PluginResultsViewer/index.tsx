@@ -21,7 +21,7 @@ const PluginResultsViewer = ({ pluginSlug, analysisId }: PluginResultsViewerProp
     } = usePluginResults({ pluginSlug, analysisId });
 
     return (
-        <Container className="canvas-results-viewer d-flex column p-absolute right-1 bottom-1 w-max overflow-hidden">
+        <Container className="canvas-results-viewer glass-bg d-flex column p-absolute right-1 bottom-1 w-max overflow-hidden">
             <Container className="canvas-results-header d-flex items-center content-between panel-header-bordered">
                 <Title className="font-size-1">{title}</Title>
                 <Container className="d-flex items-center gap-05">

@@ -37,7 +37,7 @@ const NotificationsPopover = () => {
                     <NotificationBadge count={unreadCount} />
                 </IconButton>
             }
-            className='notifications-popover-dropdown radius-md overflow-hidden'
+            className='notifications-popover-dropdown panel-floating radius-md overflow-hidden'
             noPadding
             onOpenChange={handleOpenChange}
         >

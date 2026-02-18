@@ -1,0 +1,20 @@
+.debug-arguments-panel {
+    top: 3.5rem;
+    width: 320px;
+    max-height: 400px;
+}
+
+.debug-arguments-panel-header {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-soft);
+}
+
+.debug-arguments-panel-body {
+    padding: 0.75rem;
+    max-height: 280px;
+}
+
+.debug-arguments-panel-footer {
+    padding: 0.625rem 0.75rem;
+    border-top: 1px solid var(--color-border-soft);
+}

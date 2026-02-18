@@ -86,7 +86,7 @@
     border-radius: 6px;
     padding: 0 0.75rem;
     font-size: 0.9rem;
-    color: var(--color-primary);
+    color: var(--color-text-primary);
 }
 
 .create-container-field-input:focus {

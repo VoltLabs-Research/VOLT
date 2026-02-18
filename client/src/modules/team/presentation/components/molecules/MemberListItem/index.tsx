@@ -20,7 +20,7 @@ const MemberListItem = ({ user, role, action, onClick, className }: MemberListIt
 
     return (
         <Container
-            className={cn('d-flex items-center gap-075 member-list-item', onClick && 'cursor-pointer', className)}
+            className={cn('d-flex items-center gap-075 list-item-hoverable member-list-item', onClick && 'cursor-pointer', className)}
             onClick={onClick}
         >
             <Avatar user={user} size='sm' />

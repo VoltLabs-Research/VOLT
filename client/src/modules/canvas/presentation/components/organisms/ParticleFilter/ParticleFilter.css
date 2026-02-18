@@ -1,7 +1,6 @@
 .canvas-filter-preview {
     background: var(--color-surface-2);
     padding: 6px;
-    border-radius: var(--radius-sm);
 }
 
 .canvas-filter-error {

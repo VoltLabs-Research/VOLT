@@ -61,7 +61,7 @@ export default class EntrypointHandler implements INodeHandler{
 
         // Execute
         try{
-            await this.processExecutor.execute(binaryPath, args, outputDir);
+            const result = await this.processExecutor.execute(binaryPath, args, outputDir);
             return {
                 results: [{
                     index,
@@ -69,6 +69,9 @@ export default class EntrypointHandler implements INodeHandler{
                     success: true,
                     outputPath: outputDir
                 }],
+                stdout: result.stdout,
+                stderr: result.stderr,
+                exitCode: result.code,
                 successCount: 1,
                 failCount: 0
             };
@@ -81,6 +84,9 @@ export default class EntrypointHandler implements INodeHandler{
                     success: false,
                     error: error.message
                 }],
+                stdout: '',
+                stderr: error.message,
+                exitCode: 1,
                 successCount: 0,
                 failCount: 1
             };

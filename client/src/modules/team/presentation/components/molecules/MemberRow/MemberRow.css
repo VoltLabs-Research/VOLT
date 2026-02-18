@@ -1,16 +1,16 @@
 .member-row {
-    background: var(--surface-secondary);
+    background: var(--color-surface-2);
     transition: background 0.2s ease;
 }
 
 .member-row:hover {
-    background: var(--surface-tertiary);
+    background: var(--color-surface-3);
 }
 
 .member-role-badge {
     padding: 0.25rem 0.5rem;
-    background: var(--surface-tertiary);
-    font-size: var(--font-size-1);
-    font-weight: var(--font-weight-5);
-    color: var(--text-secondary);
+    background: var(--color-surface-3);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
 }

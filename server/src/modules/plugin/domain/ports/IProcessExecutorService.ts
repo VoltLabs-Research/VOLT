@@ -1,5 +1,6 @@
 export interface ExecutionResult{
     code: number;
+    stdout: string;
     stderr: string;
 };
 

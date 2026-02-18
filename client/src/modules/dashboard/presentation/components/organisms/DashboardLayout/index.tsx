@@ -57,7 +57,7 @@ const DashboardLayout = () => {
             <Container className='dashboard-content-wrapper'>
                 <DashboardHeader setSidebarOpen={setSidebarOpen} />
 
-                <Container className='dashboard-content-main'>
+                <Container className='dashboard-content-main flex-1 min-h-0 y-auto'>
                     <Outlet />
                 </Container>
             </Container>

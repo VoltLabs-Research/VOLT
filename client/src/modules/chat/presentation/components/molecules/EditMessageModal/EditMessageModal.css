@@ -1,15 +1,15 @@
 .edit-message-textarea {
-    padding: var(--spacing-md);
-    border: 1px solid var(--border-secondary);
-    background: var(--bg-secondary);
-    color: var(--text-primary);
+    padding: 0.75rem;
+    border: 1px solid var(--color-border-soft);
+    background: var(--color-surface-2);
+    color: var(--color-text-primary);
     font-family: inherit;
-    font-size: var(--text-sm);
+    font-size: 0.875rem;
     resize: vertical;
     min-height: 80px;
 }
 
 .edit-message-textarea:focus {
     outline: none;
-    border-color: var(--border-brand);
+    border-color: var(--accent-blue);
 }

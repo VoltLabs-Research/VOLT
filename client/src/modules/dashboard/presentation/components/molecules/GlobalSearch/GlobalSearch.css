@@ -1,9 +1,6 @@
 /* Search Results */
 .global-search-results {
     top: calc(100% + 0.5rem);
-    background: var(--color-surface-1);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-elevated);
     max-height: 60vh;
     z-index: 1000;
 }

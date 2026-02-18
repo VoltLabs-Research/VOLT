@@ -31,7 +31,7 @@
     background: var(--color-border);
     border-radius: 50%;
     font-size: 0.85rem;
-    color: var(--color-muted-foreground);
+    color: var(--color-text-muted);
     flex-shrink: 0;
     transition: all 0.2s;
 }

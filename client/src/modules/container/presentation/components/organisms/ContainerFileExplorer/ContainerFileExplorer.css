@@ -4,7 +4,7 @@
 }
 
 .container-file-current-path {
-    color: var(--color-muted);
+    color: var(--color-text-muted);
 }
 
 .container-file-item {
@@ -21,24 +21,24 @@
 
 .container-file-icon {
     font-size: 1.1rem;
-    color: var(--color-muted);
+    color: var(--color-text-muted);
 }
 
 .container-file-item:hover .container-file-icon {
-    color: var(--color-secondary);
+    color: var(--color-text-secondary);
 }
 
 .container-file-name {
-    color: var(--color-secondary);
+    color: var(--color-text-secondary);
 }
 
 .container-file-item:hover .container-file-name {
-    color: var(--color-primary);
+    color: var(--color-text-primary);
 }
 
 .container-file-size,
 .container-file-date {
-    color: var(--color-muted);
+    color: var(--color-text-muted);
     font-size: 0.85rem;
 }
 
@@ -49,7 +49,7 @@
 
 .container-file-content {
     background: var(--color-bg);
-    color: var(--color-secondary);
+    color: var(--color-text-secondary);
     border: 1px solid var(--color-border-soft);
     border-radius: var(--radius-sm);
     font-size: 0.85rem;
@@ -57,6 +57,6 @@
 }
 
 .container-file-empty-folder {
-    color: var(--color-muted);
+    color: var(--color-text-muted);
     padding: 1rem;
 }

@@ -18,7 +18,7 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background-color: var(--primary-color);
+    background-color: var(--accent-blue);
     color: #fff;
     font-size: 1.2rem;
 }

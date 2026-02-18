@@ -17,13 +17,7 @@
     margin-bottom: 0.75rem;
 }
 
-.dashboard-timeline-list {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-}
+
 
 .dashboard-timeline-item {
     display: flex;
@@ -43,12 +37,8 @@
 .dashboard-timeline-dot {
     width: 28px;
     height: 28px;
-    border-radius: var(--radius-md);
     background: var(--color-surface-2);
     border: 1px solid var(--color-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     flex-shrink: 0;
 }
 
@@ -72,9 +62,6 @@
 }
 
 .dashboard-timeline-empty {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     flex: 1;
 }
 
