@@ -18,6 +18,7 @@ import getNestedValue from '@shared/infrastructure/utilities/get-nested-value';
 import normalizePerAtomProperties from '@shared/infrastructure/utilities/normalize-per-atom-properties';
 import slugify from '@shared/infrastructure/utilities/slugify';
 import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
+import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class ExportHandler implements INodeHandler{
@@ -102,7 +103,6 @@ export default class ExportHandler implements INodeHandler{
             const objectPath = `trajectory-${context.trajectoryId}/analysis-${context.analysisId}/${folder}/${item.frame}/${slugify(exposureNode.id)}.${extension}`;
             const options = this.resolveOptionsRecursive(config.options || {}, context);
 
-            console.log('EXPORT HANDLER===', objectPath);
             try{
                 await this.runExporter(config.exporter, data, objectPath, options);
 
@@ -139,7 +139,7 @@ export default class ExportHandler implements INodeHandler{
                     exporter: config.exporter
                 });
             }catch(err: any){
-                console.log('ERROR:', err)
+                logger.error(err)
                 results.push({
                     index: item.index,
                     success: false,

@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import type { Notification } from '@/modules/notification/domain/entities';
+import { deduplicateById } from '@/shared/domain/utils/deduplicateById';
+import {
+    createBaseSlice, BASE_SLICE_INITIAL_STATE,
+    type BaseSlice
+} from '@/shared/presentation/stores/create-base-store-slice';
 
 interface NotificationState {
     notifications: Notification[];
     unreadCount: number;
-    isLoading: boolean;
-    hasMore: boolean;
-    page: number;
-    error: string | null;
 };
 
 interface NotificationActions {
@@ -15,22 +16,20 @@ interface NotificationActions {
     appendNotifications: (notifications: Notification[]) => void;
     addNotification: (notification: Notification) => void;
     markAllAsRead: () => void;
-    setLoading: (isLoading: boolean) => void;
-    setHasMore: (hasMore: boolean) => void;
-    setPage: (page: number) => void;
-    setError: (error: string | null) => void;
     reset: () => void;
 };
 
-type NotificationStore = NotificationState & NotificationActions;
+type NotificationStore = NotificationState & NotificationActions & BaseSlice & {
+    hasMore: boolean;
+    page: number;
+    setHasMore: (hasMore: boolean) => void;
+    setPage: (page: number) => void;
+};
 
-const initialState: NotificationState = {
+const initialState: NotificationState & typeof BASE_SLICE_INITIAL_STATE = {
     notifications: [],
     unreadCount: 0,
-    isLoading: false,
-    hasMore: true,
-    page: 1,
-    error: null
+    ...BASE_SLICE_INITIAL_STATE
 };
 
 const countUnread = (notifications: Notification[]): number => {
@@ -39,6 +38,11 @@ const countUnread = (notifications: Notification[]): number => {
 
 export const useNotificationStore = create<NotificationStore>((set) => ({
     ...initialState,
+    ...createBaseSlice(set),
+    hasMore: true,
+    page: 1,
+    setHasMore: (hasMore) => set({ hasMore }),
+    setPage: (page) => set({ page }),
 
     setNotifications: (notifications) => {
         set({ 
@@ -49,9 +53,7 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
 
     appendNotifications: (newNotifications) => {
         set((state) => {
-            const existingIds = new Set(state.notifications.map((n) => n._id));
-            const uniqueNew = newNotifications.filter((n) => !existingIds.has(n._id));
-            const combined = [...state.notifications, ...uniqueNew];
+            const combined = deduplicateById(state.notifications, newNotifications);
             return {
                 notifications: combined,
                 unreadCount: countUnread(combined)
@@ -79,14 +81,6 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
             unreadCount: 0
         }));
     },
-
-    setLoading: (isLoading) => set({ isLoading }),
-
-    setHasMore: (hasMore) => set({ hasMore }),
-
-    setPage: (page) => set({ page }),
-
-    setError: (error) => set({ error }),
 
     reset: () => set(initialState)
 }));

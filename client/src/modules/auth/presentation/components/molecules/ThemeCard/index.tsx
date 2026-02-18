@@ -23,6 +23,7 @@ const ThemeCard: React.FC<ThemeCardProps> = ({
 }) => {
     const cardClasses = cn(
         'theme-card',
+        'transition-normal',
         'radius-md',
         'cursor-pointer',
         'overflow-hidden',

@@ -6,8 +6,9 @@ import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
 import { searchService, type SearchResults } from '@/modules/dashboard/infrastructure/services/search-service';
 import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import SearchInput from '@/shared/presentation/components/SearchInput';
+import Button from '@/shared/presentation/components/Button';
 import './GlobalSearch.css';
 
 type SectionConfig = {
@@ -71,9 +72,9 @@ const GlobalSearch: React.FC = () => {
 
             {showResults && (
                 <Container className='global-search-results panel-floating p-absolute left-0 right-0 radius-md y-auto'>
-                    {isLoading && <Container className='global-search-loading p-2'><Paragraph className='color-muted font-size-1'>Searching...</Paragraph></Container>}
+                    {isLoading && <Container className='global-search-loading p-2'><EmptyState title='Searching...' description='' /></Container>}
 
-                    {!isLoading && results && totalResults === 0 && <Container className='global-search-empty p-2'><Paragraph className='color-muted font-size-2'>No results found</Paragraph></Container>}
+                    {!isLoading && results && totalResults === 0 && <EmptyState title='No results found' description='' />}
 
                     {!isLoading && results && totalResults > 0 && SECTIONS.map(({ key, icon, title, getPath, getTitle, getSubtitle }) => {
                         const items = results[key];
@@ -85,10 +86,10 @@ const GlobalSearch: React.FC = () => {
                                     <Paragraph className='font-size-1 font-weight-5'>{title}</Paragraph>
                                 </Container>
                                 {items.map((item: any) => (
-                                    <button key={item._id} onClick={() => handleNav(getPath(item))} className='global-search-item d-flex column items-start gap-025 p-075 w-max cursor-pointer'>
+                                    <Button key={item._id} onClick={() => handleNav(getPath(item))} className='global-search-item d-flex column items-start gap-025 p-075 w-max cursor-pointer' variant='ghost' intent='neutral' align='start'>
                                         <Paragraph className='font-size-2 font-weight-5'>{getTitle(item)}</Paragraph>
                                         <Paragraph className='font-size-1 color-muted'>{getSubtitle(item)}</Paragraph>
-                                    </button>
+                                    </Button>
                                 ))}
                             </Container>
                         );

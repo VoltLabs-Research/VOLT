@@ -1,7 +1,7 @@
 import type { ChatReaction } from '@/modules/chat/domain/entities';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@/shared/utils';
 import './ReactionsDisplay.css';
 
 interface ReactionsDisplayProps {
@@ -28,7 +28,7 @@ const ReactionsDisplay = ({ reactions = [], currentUserId, onToggle }: Reactions
                 <Paragraph
                     key={reaction.emoji}
                     className={cn(
-                        'd-flex items-center gap-025 font-size-1 cursor-pointer chat-reaction',
+                        'd-flex items-center gap-025 font-size-1 cursor-pointer chat-reaction transition-normal',
                         hasUserReacted(reaction) && 'user-reacted'
                     )}
                     onClick={() => onToggle(reaction.emoji)}

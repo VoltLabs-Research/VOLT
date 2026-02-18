@@ -50,7 +50,7 @@ const SimulationCardHeader = ({ user }: SimulationCardHeaderProps) => {
                     transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                 >
                     <Paragraph className='font-size-1 font-weight-5 color-secondary'>Uploaded by</Paragraph>
-                    <Paragraph className='font-size-1 font-weight-5 color-secondary header-user-name'>
+                    <Paragraph className='font-size-1 font-weight-5 color-secondary header-user-name text-truncate'>
                         {`${user.firstName} ${user.lastName}`}
                     </Paragraph>
                 </motion.div>

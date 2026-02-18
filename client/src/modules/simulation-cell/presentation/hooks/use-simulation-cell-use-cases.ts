@@ -5,9 +5,7 @@ import type ISimulationCellRepository from '../../domain/ports/ISimulationCellRe
 
 const useSimulationCellUseCases = () => {
     return useMemo(() => ({
-        simulationCellRepository: container.resolve<ISimulationCellRepository>(
-            SIMULATION_CELL_TOKENS.SimulationCellRepository
-        )
+        simulationCellRepository: container.resolve<ISimulationCellRepository>(SIMULATION_CELL_TOKENS.SimulationCellRepository)
     }), []);
 };
 

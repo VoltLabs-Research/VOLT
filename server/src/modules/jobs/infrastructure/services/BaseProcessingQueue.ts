@@ -14,6 +14,7 @@ import JobsAddedEvent from '@modules/jobs/application/events/JobsAddedEvent';
 import JobProgressEvent from '@modules/jobs/application/events/JobProgressEvent';
 import os from 'node:os';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import logger from '@shared/infrastructure/logger';
 
 interface QueueConstants {
     MIN_WORKERS: number;
@@ -330,7 +331,7 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
         } catch (error) {
             workerItem.isIdle = true;
             this.jobMap.delete(workerItem.worker.threadId);
-            console.log(error);
+            logger.error(error);
             throw error;
         }
     }
@@ -345,12 +346,12 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
         }
 
         if (!idleWorker) {
-            console.warn(`[${this.queueName}] No idle worker found for job dispatch.`);
+            logger.warn(`[${this.queueName}] No idle worker found for job dispatch.`);
             return;
         }
 
         const job = this.deserializeJob(rawData);
-        console.log(`[${this.queueName}] Assigning job ${job.props.jobId} to worker ${idleWorker.worker.threadId}`);
+        logger.info(`[${this.queueName}] Assigning job ${job.props.jobId} to worker ${idleWorker.worker.threadId}`);
         await this.assignJobToWorker(idleWorker, job, rawData);
     }
 
@@ -398,25 +399,24 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
 
     private async startDispatchLoop(): Promise<void> {
         let noWorkersLogCount = 0;
-        console.log(`[${this.queueName}] Starting dispatch loop...`);
+        logger.info(`[${this.queueName}] Starting dispatch loop...`);
         while (!this.isShutdown) {
             try {
                 const backlog = await this.jobRepository.getQueueLength(this.queueKey);
-                // console.log(`[${this.queueName}] Backlog: ${backlog}`);
 
                 const workers = this.workerPoolService.getPoolSize();
                 const desired = Math.min(this.maxConcurrentJobs, backlog);
                 const toSpawn = Math.max(0, desired - workers);
 
                 if (toSpawn > 0) {
-                    console.log(`[${this.queueName}] Spawning ${toSpawn} workers...`);
+                    logger.info(`[${this.queueName}] Spawning ${toSpawn} workers...`);
                     await this.workerPoolService.scaleUp(toSpawn);
                 }
 
                 const available = this.getAvailableWorkerCount();
                 if (backlog > 0 && available === 0) {
                     if (noWorkersLogCount++ % 50 === 0) {
-                        console.log(`[${this.queueName}] Backlog: ${backlog}, Workers: ${workers}, Available: ${available} - Waiting for workers...`);
+                        logger.info(`[${this.queueName}] Backlog: ${backlog}, Workers: ${workers}, Available: ${available} - Waiting for workers...`);
                     }
                     await this.sleep(100);
                     continue;
@@ -429,17 +429,16 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
                     // Only fetch if available capacity and jobs exist
                     const jobs = await this.fetchJobs(jobsToProcess);
                     if (jobs.length === 0) {
-                        // console.log(`[${this.queueName}] Fetch returned empty`);
                         await this.sleep(100);
                         continue;
                     }
-                    console.log(`[${this.queueName}] Dispatching ${jobs.length} jobs...`);
+                    logger.info(`[${this.queueName}] Dispatching ${jobs.length} jobs...`);
                     await this.dispatchJobs(jobs);
                 } else {
                     await this.sleep(100);
                 }
             } catch (error) {
-                console.error(`[${this.queueName}] Error in dispatch loop:`, error);
+                logger.error(`[${this.queueName}] Error in dispatch loop:`, error);
                 await this.sleep(1000);
             }
         }

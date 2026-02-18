@@ -127,12 +127,6 @@
     overflow-x: auto;
     overflow-y: hidden;
     flex-wrap: nowrap;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-}
-
-.editor-sidebar-options-container::-webkit-scrollbar {
-    display: none;
 }
 
 .editor-sidebar-tabs-wrapper {

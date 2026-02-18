@@ -1,7 +1,7 @@
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 import type { User } from '@/modules/auth/domain/entities';
 
-export interface Chat {
-    _id: string;
+export interface Chat extends BaseEntity {
     participants: User[];
     team: string | { _id: string; name: string };
     lastMessage?: {
@@ -18,6 +18,4 @@ export interface Chat {
     groupAvatar?: string;
     admins: User[];
     createdBy?: User;
-    createdAt: string;
-    updatedAt: string;
 };

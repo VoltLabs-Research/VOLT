@@ -1,3 +1,4 @@
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 import type { User } from '@/modules/auth/domain/entities';
 
 export type ChatMessageType = 'text' | 'file' | 'system';
@@ -15,8 +16,7 @@ export interface ChatReaction {
     users: (string | User)[];
 };
 
-export interface ChatMessage {
-    _id: string;
+export interface ChatMessage extends BaseEntity {
     chat: string;
     sender: User;
     content: string;
@@ -29,8 +29,6 @@ export interface ChatMessage {
     deletedAt?: string | null;
     deletedBy?: User | string | null;
     reactions?: ChatReaction[];
-    createdAt: string;
-    updatedAt: string;
 };
 
 export interface TypingUser {

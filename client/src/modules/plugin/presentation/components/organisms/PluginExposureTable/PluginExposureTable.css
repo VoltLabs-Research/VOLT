@@ -52,7 +52,6 @@
     border-radius: var(--radius-sm);
     margin: 0.5rem auto;
     display: block;
-    transition: all 0.15s ease;
     font-size: 0.6875rem;
 }
 

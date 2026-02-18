@@ -4,7 +4,7 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Avatar from '@/shared/presentation/components/Avatar';
 import FileAttachment from '@/shared/presentation/components/FileAttachment';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@/shared/utils';
 import { ReactionsDisplay } from '../../atoms';
 import './MessageBubble.css';
 

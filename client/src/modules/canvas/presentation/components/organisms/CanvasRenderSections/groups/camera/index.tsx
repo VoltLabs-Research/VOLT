@@ -7,8 +7,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import { row, vec3Rows } from '../../../../molecules/CanvasRenderConfigHelpers';
 import type { RenderGroup } from '../../types';
-
-type Vec3 = [number, number, number];
+import type { Vec3 } from '../types/Vec3';
 
 const useCameraGroup = (): RenderGroup => {
     const {

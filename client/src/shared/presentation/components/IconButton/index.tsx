@@ -17,6 +17,8 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(({
 }, ref) => {
     const classes = [
         'volt-icon-button',
+        'flex-center',
+        'transition-fast',
         `volt-icon-button--${variant}`,
         `volt-icon-button--${size}`,
         disabled && 'volt-icon-button--disabled',

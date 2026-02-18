@@ -2,6 +2,7 @@ import mongoose, { Schema, Model, Document } from 'mongoose';
 import { ValidationCodes } from '@core/constants/validation-codes';
 import { SSHConnectionProps } from '@modules/ssh/domain/entities/SSHConnection';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
 type SSHConnectionRelations = 'team' | 'user';
 
@@ -16,9 +17,7 @@ const SSHConnectionSchema = new Schema({
         trim: true
     },
     team: {
-        type: Schema.Types.ObjectId,
-        ref: 'Team',
-        required: [true, ValidationCodes.SSH_CONNECTION_TEAM],
+        ...teamRefField([true, ValidationCodes.SSH_CONNECTION_TEAM]),
         index: true
     },
     host: {
@@ -53,9 +52,7 @@ const SSHConnectionSchema = new Schema({
         select: false
     },
     user: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: [true, ValidationCodes.SSH_CONNECTION_USER],
+        ...userRefField([true, ValidationCodes.SSH_CONNECTION_USER]),
         index: true
     }
 }, {

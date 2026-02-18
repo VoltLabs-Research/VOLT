@@ -5,8 +5,7 @@ import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import type { DirLight, PointLight, SpotLight, HemiLight, RectAreaLightCfg } from '@/modules/fractal/presentation/types/stores/editor/visual-types';
 import { row, PRESETS, positionRows, vec3Rows, colorExtras } from '../../../../molecules/CanvasRenderConfigHelpers';
 import type { RenderGroup } from '../../types';
-
-type Vec3 = [number, number, number];
+import type { Vec3 } from '../types/Vec3';
 
 const setVec3 = <T extends { position: Vec3 }>(
     setter: (patch: Partial<T>) => void,

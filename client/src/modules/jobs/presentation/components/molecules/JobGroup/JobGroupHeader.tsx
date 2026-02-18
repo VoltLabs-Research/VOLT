@@ -26,7 +26,7 @@ const JobGroupHeader: React.FC<JobGroupHeaderProps> = ({
         >
             <Container className='d-flex w-max items-center content-between gap-05 p-1'>
                 <Container className='d-flex column gap-01'>
-                    <Title className='font-size-1 font-weight-6 color-primary job-group-name overflow-hidden'>
+                    <Title className='font-size-1 font-weight-6 color-primary job-group-name text-truncate'>
                         {group.trajectoryName}
                     </Title>
                     <Paragraph className='font-size-1 color-secondary'>

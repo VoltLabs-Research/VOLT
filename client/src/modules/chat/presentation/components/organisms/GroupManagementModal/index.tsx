@@ -5,8 +5,9 @@ import type { User } from '@/modules/auth/domain/entities';
 import Modal from '@/shared/presentation/components/Modal';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import Button from '@/shared/presentation/components/Button';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
-import { cn } from '@/shared/utils/cn';
+import { cn } from '@/shared/utils';
 import { toggleSelection } from '@/shared/utils/selection';
 import { GeneralTab, MembersTab, AdminsTab } from './tabs';
 import './GroupManagementModal.css';
@@ -95,17 +96,19 @@ const GroupManagementModal = ({
         <Modal id='group-management-modal' title='Group Settings' width='600px'>
             <Container className='d-flex gap-05 group-management-tabs'>
                 {TABS.map((tab) => (
-                    <button
+                    <Button
                         key={tab.id}
+                        variant='ghost'
+                        intent='neutral'
                         className={cn(
-                            'd-flex items-center gap-05 group-management-tab cursor-pointer color-secondary',
+                            'd-flex items-center gap-05 group-management-tab transition-normal cursor-pointer color-secondary',
                             activeTab === tab.id && 'active'
                         )}
                         onClick={() => setActiveTab(tab.id)}
                     >
                         {tab.icon}
                         <Paragraph className='font-size-2'>{tab.label}</Paragraph>
-                    </button>
+                    </Button>
                 ))}
             </Container>
 

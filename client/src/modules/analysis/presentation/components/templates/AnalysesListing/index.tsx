@@ -1,7 +1,6 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiRefreshLine } from 'react-icons/ri';
-import { formatDistanceToNow } from 'date-fns';
 import useAnalysisUseCases from '../../../hooks/use-analysis-use-cases';
 import useDeleteAnalysis from '../../../hooks/use-delete-analysis';
 import useRetryFailedFrames from '../../../hooks/use-retry-failed-frames';
@@ -9,6 +8,34 @@ import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-document-listing-pagination';
 import type { Analysis } from '@/modules/analysis/domain/entities';
+import { dateColumn } from '@/shared/presentation/utils/column-presets';
+
+const COLUMNS: ColumnConfig[] = [
+    {
+        key: 'trajectory.name',
+        title: 'Trajectory',
+        sortable: true,
+        render: (_, row) => (row as Analysis).trajectory.name,
+        skeleton: { variant: 'text', width: 140 }
+    },
+    {
+        key: 'plugin',
+        title: 'Plugin',
+        sortable: true,
+        render: (value) => String(value),
+        skeleton: { variant: 'text', width: 110 }
+    },
+    {
+        key: 'totalFrames',
+        title: 'Total Frames',
+        sortable: true,
+        render: (value) => (value as number).toLocaleString(),
+        skeleton: { variant: 'text', width: 90 }
+    },
+    dateColumn('startedAt', 'Started At'),
+    dateColumn('finishedAt', 'Finished At'),
+    dateColumn('createdAt', 'Created')
+];
 
 const AnalysesListing = () => {
     const navigate = useNavigate();
@@ -45,50 +72,7 @@ const AnalysesListing = () => {
         }
     });
 
-    const columns: ColumnConfig[] = useMemo(() => [
-        {
-            key: 'trajectory.name',
-            title: 'Trajectory',
-            sortable: true,
-            render: (_, row) => (row as Analysis).trajectory.name,
-            skeleton: { variant: 'text', width: 140 }
-        },
-        {
-            key: 'plugin',
-            title: 'Plugin',
-            sortable: true,
-            render: (value) => String(value),
-            skeleton: { variant: 'text', width: 110 }
-        },
-        {
-            key: 'totalFrames',
-            title: 'Total Frames',
-            sortable: true,
-            render: (value) => (value as number).toLocaleString(),
-            skeleton: { variant: 'text', width: 90 }
-        },
-        {
-            key: 'startedAt',
-            title: 'Started At',
-            sortable: true,
-            render: (value) => formatDistanceToNow(new Date(value as string), { addSuffix: true }),
-            skeleton: { variant: 'text', width: 100 }
-        },
-        {
-            key: 'finishedAt',
-            title: 'Finished At',
-            sortable: true,
-            render: (value) => formatDistanceToNow(new Date(value as string), { addSuffix: true }),
-            skeleton: { variant: 'text', width: 100 }
-        },
-        {
-            key: 'createdAt',
-            title: 'Created',
-            sortable: true,
-            render: (value) => formatDistanceToNow(new Date(value as string), { addSuffix: true }),
-            skeleton: { variant: 'text', width: 100 }
-        }
-    ], []);
+    const columns: ColumnConfig[] = COLUMNS;
 
     return (
         <DocumentListing<Analysis>

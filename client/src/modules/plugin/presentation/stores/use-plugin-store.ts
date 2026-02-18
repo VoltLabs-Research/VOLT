@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Plugin } from '../../domain/entities';
 import type { IArgumentDefinition } from '../../domain/entities';
+import { createBaseSlice, BASE_SLICE_INITIAL_STATE, type BaseSlice } from '@/shared/presentation/stores/create-base-store-slice';
 
 export interface RenderableExposure {
     pluginId: string;
@@ -30,34 +31,24 @@ export interface ResolvedModifier {
 
 export type PluginArgument = IArgumentDefinition;
 
-interface PluginState {
+interface PluginStore extends BaseSlice {
     plugins: Plugin[];
     pluginsBySlug: Record<string, Plugin>;
-    loading: boolean;
-    error: string | null;
-}
-
-interface PluginActions {
     setPlugins: (items: Plugin[]) => void;
     appendPlugins: (items: Plugin[]) => void;
     addPlugin: (item: Plugin) => void;
     removePlugin: (id: string) => void;
     updatePlugin: (id: string, updates: Partial<Plugin>) => void;
-    setLoading: (value: boolean) => void;
-    setError: (error: string | null) => void;
     getModifiers: () => ResolvedModifier[];
     getPluginArguments: (pluginSlug: string) => PluginArgument[];
     registerPlugins: (plugins: Plugin[]) => void;
     resetPlugins: () => void;
 }
 
-type PluginStore = PluginState & PluginActions;
-
-const initialState: PluginState = {
-    plugins: [],
-    pluginsBySlug: {},
-    loading: false,
-    error: null
+const initialState = {
+    plugins: [] as Plugin[],
+    pluginsBySlug: {} as Record<string, Plugin>,
+    ...BASE_SLICE_INITIAL_STATE
 };
 
 const buildPluginsBySlug = (plugins: Plugin[]): Record<string, Plugin> => {
@@ -66,6 +57,7 @@ const buildPluginsBySlug = (plugins: Plugin[]): Record<string, Plugin> => {
 
 const usePluginStore = create<PluginStore>((set, get) => ({
     ...initialState,
+    ...createBaseSlice(set),
 
     setPlugins: (items) => set({
         plugins: items,
@@ -107,10 +99,6 @@ const usePluginStore = create<PluginStore>((set, get) => ({
             pluginsBySlug: buildPluginsBySlug(newPlugins)
         };
     }),
-
-    setLoading: (value) => set({ loading: value }),
-
-    setError: (error) => set({ error }),
 
     getModifiers: () => {
         return get().plugins

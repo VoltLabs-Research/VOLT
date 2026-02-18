@@ -123,7 +123,7 @@ const Sidebar = ({
                                         )}
                                             <Container 
                                                 ref={tabsContainerRef}
-                                                className='d-flex p-05 content-between editor-sidebar-options-container'
+                                                className='d-flex p-05 content-between editor-sidebar-options-container scrollbar-none'
                                             >
                                                 {tags.map((tag) => (
                                                     <Container

@@ -7,6 +7,7 @@ import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';
 import SessionCompletedEvent from '@modules/jobs/application/events/SessionCompletedEvent';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
+import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class SessionManagerService implements ISessionManagerService {
@@ -101,7 +102,7 @@ export default class SessionManagerService implements ISessionManagerService {
             metadata: sessionData.metadata
         });
 
-        console.log(`[SessionManagerService] Emitting session.completed event: sessionId=${sessionId}, queueType=${sessionData.queueType}, trajectoryId=${sessionData.metadata?.trajectoryId}`);
+        logger.info(`[SessionManagerService] Emitting session.completed event: sessionId=${sessionId}, queueType=${sessionData.queueType}, trajectoryId=${sessionData.metadata?.trajectoryId}`);
         await this.eventBus.publish(event);
     }
 

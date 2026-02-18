@@ -8,6 +8,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import type { PaginatedResult } from '@shared/domain/ports/IBaseRepository';
 import normalizePerAtomProperties from '@shared/infrastructure/utilities/normalize-per-atom-properties';
 
+
 export interface ListTrajectorySceneArtifactsInput {
     trajectoryId: string;
     sourceType?: SceneArtifactSourceType;

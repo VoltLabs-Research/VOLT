@@ -9,6 +9,7 @@ import { IQueueRegistry } from '@modules/jobs/domain/ports/IQueueRegistry';
 import { JOBS_TOKENS } from '@modules/jobs/infrastructure/di/JobsTokens';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import BaseProcessingQueue from '@modules/jobs/infrastructure/services/BaseProcessingQueue';
+import { QUEUE_CONFIG } from '@core/config/queues';
 import path from 'node:path';
 
 @injectable()
@@ -43,7 +44,7 @@ export default class CloudUploadQueue extends BaseProcessingQueue {
             {
                 queueName: 'cloud-upload',
                 workerPath: workerPath,
-                maxConcurrentJobs: Number(process.env.CLOUD_UPLOAD_QUEUE_MAX_CONCURRENT_JOBS) || 4
+                maxConcurrentJobs: QUEUE_CONFIG.cloudUploadMaxConcurrentJobs
             },
             jobRepository,
             workerPoolService,

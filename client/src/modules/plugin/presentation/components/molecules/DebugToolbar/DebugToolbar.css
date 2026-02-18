@@ -42,12 +42,12 @@
 
 .debug-toolbar-status-dot--paused {
     background: #f59e0b;
-    animation: debug-status-pulse 1.5s ease-in-out infinite;
+    animation: animate-pulse 1.5s ease-in-out infinite;
 }
 
 .debug-toolbar-status-dot--running {
     background: var(--accent-blue);
-    animation: debug-status-pulse 1s ease-in-out infinite;
+    animation: animate-pulse 1s ease-in-out infinite;
 }
 
 .debug-toolbar-status--completed {
@@ -63,15 +63,5 @@
 }
 
 .debug-toolbar-spinner {
-    animation: debug-spin 1s linear infinite;
-}
-
-@keyframes debug-status-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-}
-
-@keyframes debug-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    animation: animate-spin 1s linear infinite;
 }

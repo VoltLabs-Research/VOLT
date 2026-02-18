@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import type { ChatMessage } from '@/modules/chat/domain/entities';
+import { deduplicateById } from '@/shared/domain/utils/deduplicateById';
+import {
+    createBaseSlice, BASE_SLICE_INITIAL_STATE,
+    type BaseSlice
+} from '@/shared/presentation/stores/create-base-store-slice';
 
 interface ChatMessageState {
     messages: ChatMessage[];
-    isLoading: boolean;
-    hasMore: boolean;
-    page: number;
 };
 
 interface ChatMessageActions {
@@ -14,31 +16,34 @@ interface ChatMessageActions {
     addMessage: (message: ChatMessage) => void;
     updateMessage: (messageId: string, updates: Partial<ChatMessage>) => void;
     removeMessage: (messageId: string) => void;
-    setLoading: (isLoading: boolean) => void;
-    setHasMore: (hasMore: boolean) => void;
-    setPage: (page: number) => void;
     reset: () => void;
 };
 
-type ChatMessageStore = ChatMessageState & ChatMessageActions;
+type ChatMessageStore = ChatMessageState & ChatMessageActions & BaseSlice & {
+    hasMore: boolean;
+    page: number;
+    setHasMore: (hasMore: boolean) => void;
+    setPage: (page: number) => void;
+};
 
-const initialState: ChatMessageState = {
+const initialState: ChatMessageState & typeof BASE_SLICE_INITIAL_STATE = {
     messages: [],
-    isLoading: false,
-    hasMore: true,
-    page: 1
+    ...BASE_SLICE_INITIAL_STATE
 };
 
 export const useChatMessageStore = create<ChatMessageStore>((set) => ({
     ...initialState,
+    hasMore: true,
+    page: 1,
+    ...createBaseSlice(set),
+    setHasMore: (hasMore) => set({ hasMore }),
+    setPage: (page) => set({ page }),
 
     setMessages: (messages) => set({ messages }),
 
-    appendMessages: (newMessages) => set((state) => {
-        const existingIds = new Set(state.messages.map((m) => m._id));
-        const uniqueNew = newMessages.filter((m) => !existingIds.has(m._id));
-        return { messages: [...state.messages, ...uniqueNew] };
-    }),
+    appendMessages: (newMessages) => set((state) => ({
+        messages: deduplicateById(state.messages, newMessages)
+    })),
 
     addMessage: (message) => set((state) => {
         if (state.messages.some((m) => m._id === message._id)) return state;
@@ -54,12 +59,6 @@ export const useChatMessageStore = create<ChatMessageStore>((set) => ({
     removeMessage: (messageId) => set((state) => ({
         messages: state.messages.filter((m) => m._id !== messageId)
     })),
-
-    setLoading: (isLoading) => set({ isLoading }),
-
-    setHasMore: (hasMore) => set({ hasMore }),
-
-    setPage: (page) => set({ page }),
 
     reset: () => set(initialState)
 }));

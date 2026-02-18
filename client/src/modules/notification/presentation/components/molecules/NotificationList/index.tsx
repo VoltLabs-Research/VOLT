@@ -1,7 +1,7 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { Skeleton } from '@mui/material';
 import Container from '@/shared/presentation/components/Container';
-import Paragraph from '@/shared/presentation/components/Paragraph';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import NotificationItem from '../NotificationItem';
 import type { Notification } from '@/modules/notification/domain/entities';
 
@@ -56,13 +56,7 @@ const NotificationList = ({
     }
 
     if(notifications.length === 0){
-        return (
-            <Container className='p-2'>
-                <Paragraph className='color-muted font-size-2 text-center'>
-                    No notifications
-                </Paragraph>
-            </Container>
-        );
+        return <EmptyState title='No notifications' description="You're all caught up!" />;
     }
 
     return (

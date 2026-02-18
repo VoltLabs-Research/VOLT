@@ -14,7 +14,7 @@ const UserBadge = ({ label, email, onChangeClick }: UserBadgeProps) => (
             <CheckCircle2 size={18} color='#22c55e' className='f-shrink-0' />
             <Container className='d-flex column'>
                 <span className='font-size-1 color-muted'>{label}</span>
-                <span className='font-size-2 font-weight-5 sign-in-user-badge-email'>{email}</span>
+                <span className='font-size-2 font-weight-5 sign-in-user-badge-email text-truncate'>{email}</span>
             </Container>
         </Container>
         

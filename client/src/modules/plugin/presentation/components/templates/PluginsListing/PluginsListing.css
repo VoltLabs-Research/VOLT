@@ -38,7 +38,6 @@
     border: 1px solid var(--button-border);
     border-radius: var(--radius-sm);
     color: var(--color-text-secondary);
-    transition: all 0.15s ease;
 }
 
 .import-plugin-btn:hover:not(:disabled) {

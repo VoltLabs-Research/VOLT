@@ -1,6 +1,6 @@
 import { HiOutlineDotsVertical } from 'react-icons/hi';
 import { IoSettingsOutline, IoCloseOutline } from 'react-icons/io5';
-import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
+import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
 import Container from '@/shared/presentation/components/Container';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
@@ -17,7 +17,7 @@ interface UserMenuPopoverProps {
 };
 
 const UserMenuPopover = ({ onSettingsClick, onSignOut, isSigningOut = false, trigger, collapsed = false }: UserMenuPopoverProps) => {
-    const user = useAuthStore((state) => state.user);
+    const user = useCurrentUser();
 
     const collapsedTrigger = (
         <button className='user-menu-trigger user-menu-trigger-collapsed cursor-pointer'>

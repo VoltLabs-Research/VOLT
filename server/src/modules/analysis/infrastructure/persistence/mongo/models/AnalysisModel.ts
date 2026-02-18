@@ -1,4 +1,5 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
+import { teamRefField, userRefField, trajectoryRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 import { AnalysisProps } from '@modules/analysis/domain/entities/Analysis';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 
@@ -35,23 +36,13 @@ const AnalysisSchema: Schema<AnalysisDocument> = new Schema({
     },
     startedAt: Date,
     finishedAt: Date,
-    team: {
-        type: Schema.Types.ObjectId,
-        ref: 'Team',
-        required: true
-    },
+    team: teamRefField(),
     trajectory: {
-        type: Schema.Types.ObjectId,
-        ref: 'Trajectory',
-        required: true,
+        ...trajectoryRefField(),
         cascade: 'delete',
         inverse: { path: 'analysis', behavior: 'addToSet' }
     },
-    createdBy: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    }
+    createdBy: userRefField()
 }, {
     timestamps: true
 });

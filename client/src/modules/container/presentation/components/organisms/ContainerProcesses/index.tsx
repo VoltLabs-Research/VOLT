@@ -45,7 +45,7 @@ const mapProcess = (p: RawContainerProcess): ProcessInfo => ({
 const COLUMNS: Column<ProcessInfo>[] = [
     { key: 'PID', header: 'PID', cellClassName: 'font-family-mono' },
     { key: 'Program', header: 'Program', cellClassName: 'font-weight-5 color-success' },
-    { key: 'Command', header: 'Command', cellClassName: 'font-family-mono color-muted container-processes-command-cell' },
+    { key: 'Command', header: 'Command', cellClassName: 'font-family-mono color-muted container-processes-command-cell text-truncate' },
     { key: 'Threads', header: 'Threads', cellClassName: 'font-family-mono' },
     { key: 'User', header: 'User' },
     { key: 'MemB', header: 'MemB', cellClassName: 'font-family-mono' },

@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { DockerNetwork } from './DockerNetworkModel';
 import { DockerVolume } from './DockerVolumeModel';
 import { ValidationCodes } from '@shared/domain/constants/ValidationCodes';
+import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
 export interface IContainer extends Document {
     name: string;
@@ -49,9 +50,7 @@ const ContainerSchema = new Schema<IContainer>({
         required: false
     },
     team: {
-        type: Schema.Types.ObjectId,
-        ref: 'Team',
-        required: false
+        ...teamRefField(false)
     },
     status: { type: String, default: 'created' },
     memory: { type: Number, default: 512 },
@@ -59,9 +58,7 @@ const ContainerSchema = new Schema<IContainer>({
     env: [{ key: String, value: String }],
     ports: [{ private: Number, public: Number }],
     createdBy: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: [true, ValidationCodes.CONTAINER_CREATED_BY_REQUIRED]
+        ...userRefField([true, ValidationCodes.CONTAINER_CREATED_BY_REQUIRED])
     }
 }, {
     timestamps: true

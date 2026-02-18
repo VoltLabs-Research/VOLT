@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useSSHUseCases from './use-ssh-use-cases';
 import useToast from '@/shared/presentation/hooks/use-toast';
+import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 import type { SSHConnection, SSHFileEntry } from '@/modules/ssh/domain/entities';
 
 interface UseSSHFileExplorerOptions {
@@ -40,21 +41,24 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
         }
     };
 
+    const filesAction = useAsyncAction({
+        onError: (err: unknown) => {
+            const message = err instanceof Error ? err.message : 'Failed to load files';
+            setError(message);
+            showError(message);
+        },
+        onFinally: () => setIsLoading(false)
+    });
+
     const fetchFiles = async () => {
         if (!connectionId) return;
         setIsLoading(true);
         setError(null);
-        try {
+        await filesAction.execute(async () => {
             const result = await sshRepository.listFiles({ connectionId, path });
             setEntries(result.entries);
             setCwd(result.cwd);
-        } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Failed to load files';
-            setError(message);
-            showError(message);
-        } finally {
-            setIsLoading(false);
-        }
+        });
     };
 
     useEffect(() => {

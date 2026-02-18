@@ -1,11 +1,11 @@
 import { Cpu, HardDrive } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
 import FormField from '@/shared/presentation/components/FormField';
 import Slider from '@/shared/presentation/components/Slider';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
+import SettingsSectionHeader from '@/modules/auth/presentation/components/molecules/SettingsSectionHeader';
 import type { ContainerConfig, PortMapping, EnvVariable } from '../../../hooks/use-create-container-form';
 
 const MAX_CPU = 8;
@@ -35,9 +35,7 @@ const ConfigurationStep = ({
             <Title className='font-size-5 font-weight-6'>Configure Container</Title>
             <Container className='create-container-config-grid gap-1-5 mt-1-5'>
                 <Container className='create-container-config-section'>
-                    <Container className='create-container-config-section-header mb-1 pb-075'>
-                        <Title className='font-size-3 font-weight-6'>Basic Information</Title>
-                    </Container>
+                    <SettingsSectionHeader title='Basic Information' className='mb-1 pb-075' />
                     <Container className='create-container-field'>
                         <FormField
                             label='Container Name'
@@ -49,9 +47,7 @@ const ConfigurationStep = ({
                 </Container>
 
                 <Container className='create-container-config-section select'>
-                    <Container className='create-container-config-section-header mb-1 pb-075'>
-                        <Title className='font-size-3 font-weight-6'>Team</Title>
-                    </Container>
+                    <SettingsSectionHeader title='Team' className='mb-1 pb-075' />
                     <FormField
                         variant='inline'
                         fieldType='select'
@@ -68,9 +64,7 @@ const ConfigurationStep = ({
                 </Container>
 
                 <Container className='create-container-config-section full-width'>
-                    <Container className='create-container-config-section-header mb-1 pb-075'>
-                        <Title className='font-size-3 font-weight-6'>Resources</Title>
-                    </Container>
+                    <SettingsSectionHeader title='Resources' className='mb-1 pb-075' />
                     <Container className='create-container-resource-row radius-sm p-1 mb-075'>
                         <Container className='d-flex content-between items-center create-container-resource-header mb-075'>
                             <span className='d-flex items-center gap-05 font-size-2 font-weight-5 color-secondary'>

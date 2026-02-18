@@ -10,14 +10,7 @@
     color: var(--color-text-primary);
 }
 
-.my-team-page .badge-outline {
-    color: var(--color-text-secondary);
-}
-
 .my-team-page .role-select-compact {
     min-width: 120px;
 }
 
-.my-team-page .color-success {
-    color: var(--status-success);
-}

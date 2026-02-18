@@ -4,6 +4,7 @@ import { IoExitOutline } from 'react-icons/io5';
 import Select, { type SelectOption } from '@/shared/presentation/components/Select';
 import IconButton from '@/shared/presentation/components/IconButton';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import './TeamSelector.css';
@@ -15,7 +16,7 @@ interface TeamSelectorProps {
 const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
     const { updateSearchParams } = useSearchParamsState();
     const teams = useTeamStore((state) => state.teams);
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const selectedTeam = useSelectedTeam();
     const { teamRepository } = useTeamUseCases();
     const { checkCanInvite } = useTeamData();
 

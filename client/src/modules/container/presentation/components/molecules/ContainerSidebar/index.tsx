@@ -130,7 +130,7 @@ const ContainerSidebar = ({
                         href={`http://localhost:${container.ports[0].public}`}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='d-flex items-center content-center gap-05 container-details-visit-btn radius-sm font-size-2 font-weight-6'
+                        className='d-flex items-center content-center gap-05 container-details-visit-btn transition-normal radius-sm font-size-2 font-weight-6'
                     >
                         Visit App <ExternalLink size={14} />
                     </a>

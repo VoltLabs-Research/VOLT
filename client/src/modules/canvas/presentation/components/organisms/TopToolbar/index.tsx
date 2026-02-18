@@ -2,7 +2,9 @@ import { memo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Container from '@/shared/presentation/components/Container';
 import Avatar from '@/shared/presentation/components/Avatar';
+import Button from '@/shared/presentation/components/Button';
 import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
+import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
 import UserMenuPopover from '@/modules/auth/presentation/components/molecules/UserMenuPopover';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import MenuPopover from '../../molecules/MenuPopover';
@@ -14,7 +16,7 @@ const TopToolbar = () => {
     const [openMenu, setOpenMenu] = useState<string | null>(null);
     const [isSigningOut, setIsSigningOut] = useState(false);
     const navigate = useNavigate();
-    const user = useAuthStore((state) => state.user);
+    const user = useCurrentUser();
     const { searchParams, updateSearchParams } = useCanvasUrlState();
     const showStatusBar = searchParams.get('statusBar') !== 'false';
     const setShowStatusBar = (value: boolean) => updateSearchParams({ statusBar: value ? 'true' : 'false' });
@@ -87,9 +89,9 @@ const TopToolbar = () => {
                     onSignOut={handleSignOut}
                     isSigningOut={isSigningOut}
                     trigger={
-                        <button className="cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
+                        <Button variant='ghost' intent='neutral' iconOnly className="cursor-pointer" style={{ background: 'none', border: 'none', padding: 0 }}>
                             <Avatar user={user} size="xs" />
-                        </button>
+                        </Button>
                     }
                 />
             </Container>

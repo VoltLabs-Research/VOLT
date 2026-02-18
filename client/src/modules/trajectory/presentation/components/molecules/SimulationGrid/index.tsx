@@ -8,7 +8,7 @@ import useGetTrajectories from '../../../hooks/trajectory/use-get-trajectories';
 import useDeleteSelectedTrajectories from '../../../hooks/trajectory/use-delete-selected-trajectories';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import type { Trajectory } from '@/modules/trajectory/domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 
@@ -19,7 +19,7 @@ interface SimulationGridContext {
 const SimulationGrid = () => {
     const activeUploads = useTrajectoryStore((state) => state.activeUploads);
     
-    const selectedTeam = useTeamStore((state) => state.selectedTeam)!;
+    const selectedTeam = useSelectedTeam()!;
     const getTrajectories = useGetTrajectories();
 
     const { selectedIds, isSelected, toggleSelection } = useSelectionParams();

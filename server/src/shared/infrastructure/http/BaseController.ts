@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/aut
 import { UseCaseInput, UseCaseInstance } from '@shared/application/IUseCase';
 import BaseResponse from '@shared/infrastructure/http/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
+import logger from '@shared/infrastructure/logger';
 
 export abstract class BaseController<TUseCase extends UseCaseInstance> {
     constructor(
@@ -45,7 +46,7 @@ export abstract class BaseController<TUseCase extends UseCaseInstance> {
                 this.statusCode
             )
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             return BaseResponse.error(
                 res,
                 'Internal Server Error',

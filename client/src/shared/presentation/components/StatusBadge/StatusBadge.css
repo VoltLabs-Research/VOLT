@@ -40,3 +40,13 @@
     color: var(--status-error);
     border: 1px solid var(--status-error-border);
 }
+
+.status-badge.variant-brand {
+    color: var(--accent-blue);
+    border: 1px solid rgba(var(--accent-brand-rgb, 59, 130, 246), 0.25);
+}
+
+.status-badge.variant-primary {
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
+}

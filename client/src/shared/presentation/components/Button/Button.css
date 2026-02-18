@@ -1,7 +1,6 @@
 .button {
     /* Base Properties */
     display: inline-flex;
-    transition: all 0.15s ease;
     border: 1px solid transparent;
     outline: none;
     text-decoration: none;

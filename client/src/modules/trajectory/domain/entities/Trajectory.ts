@@ -1,3 +1,4 @@
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
 import type { User } from '@/modules/auth/domain/entities';
 import type { Team } from '@/modules/team/domain/entities';
 import type { Analysis } from '@/modules/analysis/domain/entities';
@@ -14,8 +15,7 @@ export type TrajectoryStatus =
     | 'completed'
     | 'failed';
 
-export interface Trajectory{
-    _id: string;
+export interface Trajectory extends BaseEntity{
     name: string;
     team: Team | string;
     analysis: Analysis[];
@@ -25,8 +25,6 @@ export interface Trajectory{
     isPublic?: boolean;
     status?: TrajectoryStatus;
     processingProgress?: TrajectoryProcessingProgress;
-    createdAt: string;
-    updatedAt: string;
     users: (User | string)[];
     createdBy?: User | string;
     availableModels?: AvailableModels;

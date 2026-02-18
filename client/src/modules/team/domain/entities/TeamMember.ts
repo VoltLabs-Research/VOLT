@@ -1,9 +1,8 @@
-export interface TeamMember{
-    _id: string;
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+
+export interface TeamMember extends BaseEntity {
     team: any;
     user: any;
     role: any;
     joinedAt: Date;
-    createdAt: Date;
-    updatedAt: Date;
 };

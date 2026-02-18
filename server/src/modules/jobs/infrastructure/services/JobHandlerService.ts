@@ -9,6 +9,7 @@ import JobStatusChangedEvent from '@modules/jobs/application/events/JobStatusCha
 import JobCompletedEvent from '@modules/jobs/application/events/JobCompletedEvent';
 import JobFailedEvent from '@modules/jobs/application/events/JobFailedEvent';
 import JobIncrementedEvent from '@modules/jobs/application/events/JobIncrementedEvent';
+import logger from '@shared/infrastructure/logger';
 
 export interface JobHandlerConfig {
     queueName: string;
@@ -136,7 +137,7 @@ export default class JobHandlerService implements IJobHandlerService {
 
     async cancelJob(trajectoryId: string, jobId: string): Promise<void> {
         // Job queue integration placeholder
-        console.log(`Cancelling job ${jobId} for trajectory ${trajectoryId}`);
+        logger.info(`Cancelling job ${jobId} for trajectory ${trajectoryId}`);
     }
 
     async retryFailedJobs(_trajectoryId: string): Promise<number> {

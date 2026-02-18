@@ -84,7 +84,7 @@ const TimelineHeader = ({
     return (
         <Container className="canvas-timeline-header d-flex items-center w-max">
             <Container className="canvas-timeline-tabs-region d-flex items-center">
-                <Container className="canvas-timeline-tabs d-flex items-center" role="tablist" aria-label="Timeline tabs">
+                <Container className="canvas-timeline-tabs scrollbar-none d-flex items-center" role="tablist" aria-label="Timeline tabs">
                     {resolvedTabs.map((tab) => {
                         const canDownloadExposure = Boolean(
                             tab.exposureId &&

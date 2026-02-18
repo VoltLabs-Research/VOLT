@@ -57,7 +57,7 @@ const DocumentListingGrid = <T,>({
             {isInitialLoading && renderSkeleton?.()}
 
             {shouldShowEmptyState && (
-                <Container className='document-listing-grid-empty'>
+                <Container className='document-listing-grid-empty flex-center'>  
                     <EmptyState
                         icon={emptyIcon ? emptyIcon : <FileText size={26} strokeWidth={1.5} />}
                         title={emptyTitle}

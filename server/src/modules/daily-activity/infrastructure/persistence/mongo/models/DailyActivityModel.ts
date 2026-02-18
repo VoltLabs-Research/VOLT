@@ -1,6 +1,7 @@
 import mongoose, { Schema, Model, Document } from 'mongoose';
 import { ActivityType, DailyActivityProps } from '@modules/daily-activity/domain/entities/DailyActivity';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
+import { teamRefField, userRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
 type DailyActivityRelations = 'team' | 'user';
 export interface DailyActivityDocument extends Persistable<DailyActivityProps, DailyActivityRelations>, Document{}
@@ -23,14 +24,11 @@ const ActivitySchema = new Schema({
 
 const DailyActivitySchema: Schema<DailyActivityDocument> = new Schema({
     team: {
-        type: Schema.Types.ObjectId,
-        ref: 'Team',
-        required: true,
+        ...teamRefField(true),
         index: true
     },
     user: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
+        ...userRefField(false),
         index: true
     },
     date: {

@@ -1,6 +1,7 @@
 import type React from 'react';
 import Container from '@/shared/presentation/components/Container';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import ModifierAction from '../../atoms/ModifierAction';
 import type { ModifierOption } from '../../../modifiers/registry';
 import type { ExecState } from '../../../hooks/usePluginExecution';
@@ -101,7 +102,7 @@ const ModifiersSection = ({
     }
 
     if (!pluginLoading && modifiers.length === 0) {
-        return <Container className="p-075 font-size-1 color-muted">No modifiers available</Container>;
+        return <EmptyState title='No modifiers available' description='' />;
     }
 
     return (

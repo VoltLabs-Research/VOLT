@@ -10,9 +10,6 @@
 .document-listing-grid-empty {
     grid-column: 1 / -1;
     min-height: 300px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 @media screen and (max-width: 768px) {

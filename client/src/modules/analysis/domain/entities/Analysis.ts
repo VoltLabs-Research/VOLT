@@ -1,10 +1,11 @@
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+
 export interface AnalysisTrajectory {
     _id: string;
     name: string;
 };
 
-export interface Analysis {
-    _id: string;
+export interface Analysis extends BaseEntity {
     plugin: string;
     pluginDisplayName?: string;
     config: Record<string, unknown>;
@@ -14,6 +15,4 @@ export interface Analysis {
     startedAt?: Date;
     finishedAt?: Date;
     status: string;
-    createdAt: Date;
-    updatedAt: Date;
 };

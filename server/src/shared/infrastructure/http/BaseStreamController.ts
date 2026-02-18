@@ -5,6 +5,7 @@ import type { IUseCase } from '@shared/application/IUseCase';
 import BaseResponse from '@shared/infrastructure/http/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 import { BaseController } from '@shared/infrastructure/http/BaseController';
+import logger from '@shared/infrastructure/logger';
 
 export abstract class BaseStreamController<TUseCase extends IUseCase<any, Readable, any>> extends BaseController<TUseCase> {
     protected getHeaders(): Record<string, string> {
@@ -35,7 +36,7 @@ export abstract class BaseStreamController<TUseCase extends IUseCase<any, Readab
 
             result.value.pipe(res);
         } catch (error) {
-            console.error(error);
+            logger.error(error);
             return BaseResponse.error(
                 res,
                 'Internal Server Error',

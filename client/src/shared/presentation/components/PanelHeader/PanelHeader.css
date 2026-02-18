@@ -1,0 +1,8 @@
+.shared-panel-header--compact {
+    height: 40px;
+}
+
+.shared-panel-header--compact .shared-panel-header-title {
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}

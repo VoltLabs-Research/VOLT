@@ -1,9 +1,9 @@
-import { formatDistanceToNow } from 'date-fns';
 import useGetSimulationCells from '../../../hooks/use-get-simulation-cells';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import { formatNumber } from '@/shared/utils/format';
 import type { SimulationCell } from '@/modules/simulation-cell/domain/entities';
+import { dateColumn } from '@/shared/presentation/utils/column-presets';
 
 const formatPeriodicBoundary = (cell: SimulationCell): string => {
     const pbc = cell.geometry.periodic_boundary_conditions;
@@ -52,13 +52,7 @@ const COLUMNS: ColumnConfig[] = [
         render: (_, row) => formatPeriodicBoundary(row as SimulationCell),
         skeleton: { variant: 'text', width: 120 }
     },
-    {
-        key: 'createdAt',
-        title: 'Created At',
-        sortable: true,
-        render: (value) => formatDistanceToNow(new Date(value as string), { addSuffix: true }),
-        skeleton: { variant: 'text', width: 90 }
-    }
+    dateColumn('createdAt', 'Created At')
 ];
 
 const SimulationCellsListing = () => {

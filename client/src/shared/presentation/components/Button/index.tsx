@@ -142,6 +142,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
         'font-weight-5',
         'u-select-none',
         'cursor-pointer',
+        'transition-fast',
         className
     );
 

@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import Container from '@/shared/presentation/components/Container';
-import Title from '@/shared/presentation/components/Title';
+import SettingsPage from '../SettingsPage';
 import SettingsSection from '@/modules/auth/presentation/components/atoms/SettingsSection';
 import SettingsSectionHeader from '@/modules/auth/presentation/components/molecules/SettingsSectionHeader';
 import AvatarUpload from '@/modules/auth/presentation/components/organisms/AvatarUpload';
@@ -8,12 +8,13 @@ import ProfileForm from '@/modules/auth/presentation/components/organisms/Profil
 import DangerZone from '@/shared/presentation/components/DangerZone';
 import { buildFileFormData } from '@/shared/utils/file';
 import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
+import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
 import { ProfileForm as ProfileFormType } from '@/modules/auth/presentation/components/organisms/ProfileForm/validation-schema';
 import { Trash2 } from 'lucide-react';
 
 const GeneralSettings: React.FC = () => {
-    const user = useAuthStore((state) => state.user);
+    const user = useCurrentUser();
     const setUser = useAuthStore((state) => state.setUser);
     const { authRepository } = useAuthUseCases();
 
@@ -56,11 +57,7 @@ const GeneralSettings: React.FC = () => {
     };
 
     return (
-        <Container className="settings-page-container d-flex column gap-3 p-2">
-            <Title className="font-size-5 font-weight-6">
-                General Settings
-            </Title>
-
+        <SettingsPage title="General Settings">
             <SettingsSection>
                 <SettingsSectionHeader
                     title="Profile"
@@ -85,7 +82,7 @@ const GeneralSettings: React.FC = () => {
                 actionIcon={<Trash2 size={16} />}
                 onAction={handleDeleteAccount}
             />
-        </Container>
+        </SettingsPage>
     );
 };
 

@@ -1,11 +1,12 @@
+import { BaseEntity } from '@/shared/domain/entities/BaseEntity';
+
 export enum TeamInvitationStatus{
     Pending = 'pending',
     Accepted = 'accepted',
     Rejected = 'rejected'
 };
 
-export interface TeamInvitation{
-    _id: string;
+export interface TeamInvitation extends BaseEntity {
     team: any;
     invitedBy: any;
     invitedUser: any;
@@ -15,6 +16,4 @@ export interface TeamInvitation{
     expiresAt: Date;
     acceptedAt?: Date;
     status: TeamInvitationStatus;
-    createdAt: Date;
-    updatedAt: Date;
 };

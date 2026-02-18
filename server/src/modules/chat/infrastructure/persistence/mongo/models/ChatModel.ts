@@ -2,6 +2,7 @@ import mongoose, { Schema, Model, Document } from 'mongoose';
 import { ChatProps } from '@modules/chat/domain/entities/Chat';
 import { Persistable } from '@shared/infrastructure/persistence/mongo/MongoUtils';
 import { ValidationCodes } from '@core/constants/validation-codes';
+import { teamRefField } from '@shared/infrastructure/persistence/mongo/schemaHelpers';
 
 type ChatRelations = 'participants' | 'team' | 'admins' | 'createdBy' | 'lastMessage';
 export interface ChatDocument extends Persistable<ChatProps, ChatRelations>, Document { }
@@ -13,9 +14,7 @@ const ChatSchema: Schema<ChatDocument> = new Schema({
         required: [true, ValidationCodes.CHAT_PARTICIPANTS_REQUIRED]
     }],
     team: {
-        type: Schema.Types.ObjectId,
-        ref: 'Team',
-        required: [true, ValidationCodes.CHAT_TEAM_REQUIRED]
+        ...teamRefField([true, ValidationCodes.CHAT_TEAM_REQUIRED])
     },
     lastMessage: {
         type: Schema.Types.ObjectId,

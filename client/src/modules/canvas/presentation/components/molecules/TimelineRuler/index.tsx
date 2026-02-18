@@ -26,7 +26,7 @@ const TimelineRuler = ({
 }: TimelineRulerProps) => (
     <Container className="canvas-timeline-body flex-1 p-relative min-h-0">
         <Container
-            className="canvas-timeline-ruler d-flex items-end"
+            className="canvas-timeline-ruler scrollbar-none d-flex items-end"
             ref={rulerRef}
             onClick={onClick}
             onPointerDown={onPointerDown}

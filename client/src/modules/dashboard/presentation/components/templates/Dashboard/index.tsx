@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
 import { FlaskConical, Puzzle } from 'lucide-react';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
+import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
+import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
 import useDashboardMetrics from '@/modules/dashboard/presentation/hooks/use-dashboard-metrics';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
@@ -42,8 +42,8 @@ const getGreeting = (): string => {
 const DashboardPage = () => {
     usePageTitle('Dashboard');
 
-    const selectedTeam = useTeamStore((state) => state.selectedTeam)!;
-    const user = useAuthStore((state) => state.user);
+    const selectedTeam = useSelectedTeam()!;
+    const user = useCurrentUser();
     const { loading, cards } = useDashboardMetrics(selectedTeam._id);
 
     const firstName = useMemo(() => {

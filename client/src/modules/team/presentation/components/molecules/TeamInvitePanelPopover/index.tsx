@@ -2,10 +2,10 @@ import { GoPersonAdd } from 'react-icons/go';
 import Popover from '@/shared/presentation/components/Popover';
 import IconButton from '@/shared/presentation/components/IconButton';
 import TeamInvitePanel from '@/modules/team/presentation/components/organisms/TeamInvitePanel';
-import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 
 const TeamInvitePanelPopover = () => {
-    const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const selectedTeam = useSelectedTeam();
     
     return (
         <Popover

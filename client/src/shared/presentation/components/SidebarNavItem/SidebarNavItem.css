@@ -3,7 +3,6 @@
     align-items: center;
     padding: 0.5rem 0.75rem;
     border-radius: var(--radius-sm);
-    transition: all 0.15s ease;
     margin-bottom: 0;
     background: transparent;
     border: none;
@@ -30,12 +29,4 @@
 
 .sidebar-nav-label {
     flex: 1;
-}
-
-.sidebar-nav-badge {
-    background: var(--color-surface-2);
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--radius-full);
-    font-size: 0.7rem;
-    color: var(--color-text-muted);
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { Skeleton } from '@mui/material';
 import { GoUpload, GoTrash, GoBeaker } from 'react-icons/go';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
@@ -83,12 +84,12 @@ const DashboardTeamTimeline = () => {
                     {Array.from({ length: 4 }, (_, i) => (
                         <Container key={i} className='dashboard-timeline-item'>
                             <Container className='dashboard-timeline-dot-col'>
-                                <span className='dashboard-timeline-dot d-flex flex-center radius-md dashboard-skeleton-pulse' />
+                                <Skeleton variant='rounded' width={20} height={20} sx={{ borderRadius: 'var(--radius-md)' }} />
                                 {i < 3 && <span className='dashboard-timeline-line' />}
                             </Container>
                             <Container className='dashboard-timeline-content'>
-                                <span className='dashboard-skeleton-pulse' style={{ width: '70%', height: 12, display: 'block' }} />
-                                <span className='dashboard-skeleton-pulse' style={{ width: '40%', height: 10, display: 'block', marginTop: 4 }} />
+                                <Skeleton variant='text' width='70%' height={12} />
+                                <Skeleton variant='text' width='40%' height={10} sx={{ marginTop: '4px' }} />
                             </Container>
                         </Container>
                     ))}

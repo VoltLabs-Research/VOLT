@@ -9,6 +9,7 @@ import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/Workf
 import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 
+
 @injectable()
 export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByTrajectoryIdInputDTO, GetAnalysesByTrajectoryIdOutputDTO, ApplicationError> {
     constructor(

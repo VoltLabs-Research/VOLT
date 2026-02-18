@@ -196,7 +196,6 @@ export default class ParticleFilterService implements IParticleFilterService {
             atomsResult = filterResult.matchCount;
         }  
 
-        console.log('UPLOAD TO STORAGE SERVER:', objectName)
         await this.storageService.upload(SYS_BUCKETS.MODELS, objectName, buffer, { 'Content-Type': 'model/gltf-binary' });
 
         await recordSceneArtifact(this.sceneArtifactRepository, {
@@ -245,7 +244,6 @@ export default class ParticleFilterService implements IParticleFilterService {
         const formattedValue = typeof value === 'number' ? formatValueForPath(value) : String(value);
         const objectName = `trajectory-${trajectoryId}/analysis-${analysisSegment}/glb/${timestep}/particle-filter/${exposurePart}/${property}-${operator}-${formattedValue}-${actionPart}.glb`;
 
-        console.log('OBJECT NAME:', objectName);
         if (!await this.storageService.exists(SYS_BUCKETS.MODELS, objectName)) {
             throw new RuntimeError(ErrorCodes.COLOR_CODING_DUMP_NOT_FOUND, 404);
         }
