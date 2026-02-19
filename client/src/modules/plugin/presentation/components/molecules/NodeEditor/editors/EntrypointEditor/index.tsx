@@ -40,20 +40,17 @@ const EntrypointEditor = ({ node }: EditorProps) => {
             const result = await pluginRepository.uploadBinary({
                 pluginId: currentPluginId,
                 file,
-                onProgress: (progress: number) => setUploadProgress(progress)
+                onProgress: (progress: number) => setUploadProgress(Math.round(progress * 100))
             });
 
-            if (result) {
-                const newData = {
-                    ...values,
-                    binary: file.name,
-                    binaryObjectPath: result.objectPath,
-                    binaryFileName: result.fileName
-                };
-                setValues(newData);
-                updateNodeData(node.id, { entrypoint: newData });
-            }
-
+            const newData = {
+                ...values,
+                binary: file.name,
+                binaryObjectPath: result.objectPath,
+                binaryFileName: result.fileName
+            };
+            setValues(newData);
+            updateNodeData(node.id, { entrypoint: newData });
             setUploadProgress(100);
         } catch (error) {
             setUploadError(error instanceof Error ? error.message : 'Failed to upload binary');

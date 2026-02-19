@@ -1,11 +1,12 @@
-import { createUseCasesHook } from '@/shared/presentation/hooks/create-use-cases-hook';
+import { useMemo } from 'react';
+import { container } from 'tsyringe';
 import { JOBS_TOKENS } from '../../infrastructure/di/tokens';
 import type IJobsRepository from '../../domain/ports/IJobsRepository';
 
-const useJobsUseCases = createUseCasesHook({
-    jobsRepository: JOBS_TOKENS.JobsRepository
-}) as () => {
-    jobsRepository: IJobsRepository;
+const useJobsUseCases = () => {
+    return useMemo(() => ({
+        jobsRepository: container.resolve<IJobsRepository>(JOBS_TOKENS.JobsRepository)
+    }), []);
 };
 
 export default useJobsUseCases;
