@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
@@ -6,16 +6,14 @@ import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
-import TokenStorage from '@/modules/auth/infrastructure/storage/TokenStorage';
 import { useAuthStore } from '../../../stores/use-auth-store';
 import './OAuthCallback.css';
 
 const OAuthCallbackTemplate = () => {
     const navigate = useNavigate();
-    const { authRepository } = useAuthUseCases();
+    const { authRepository, tokenStorage } = useAuthUseCases();
     const setUser = useAuthStore((state) => state.setUser);
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-    const tokenStorage = useMemo(() => new TokenStorage(), []);
 
     useEffect(() => {
         const handleOAuthCallback = async () => {

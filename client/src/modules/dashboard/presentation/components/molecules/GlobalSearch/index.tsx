@@ -4,7 +4,7 @@ import { TbObjectScan, TbCube3dSphere } from 'react-icons/tb';
 import { IoCubeOutline, IoPeopleOutline } from 'react-icons/io5';
 import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
-import { searchService, type SearchResults } from '@/modules/dashboard/infrastructure/services/search-service';
+import SearchService, { type SearchResults } from '@/modules/dashboard/infrastructure/services/search-service';
 import Container from '@/shared/presentation/components/Container';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import SearchInput from '@/shared/presentation/components/SearchInput';
@@ -37,6 +37,7 @@ const GlobalSearch: React.FC = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const navigate = useNavigate();
+    const searchService = useMemo(() => new SearchService(), []);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
