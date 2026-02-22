@@ -8,17 +8,17 @@ import usePluginResults from '../../../hooks/use-plugin-results';
 import './PluginResultsViewer.css';
 
 interface PluginResultsViewerProps {
-    pluginSlug: string;
+    pluginId: string;
     analysisId: string;
 }
 
-const PluginResultsViewer = ({ pluginSlug, analysisId }: PluginResultsViewerProps) => {
+const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps) => {
     const {
         title, tabs, activeTab, setActiveTab,
-        activeListingSlug, isAtomsTab, atomExposureId,
+        activeExposureName, isAtomsTab, atomExposureId,
         trajectoryId, teamId,
         isDownloading, isEmpty, close, download
-    } = usePluginResults({ pluginSlug, analysisId });
+    } = usePluginResults({ pluginId, analysisId });
 
     return (
         <Container className="canvas-results-viewer glass-bg d-flex column p-absolute right-1 bottom-1 w-max overflow-hidden">
@@ -70,11 +70,11 @@ const PluginResultsViewer = ({ pluginSlug, analysisId }: PluginResultsViewerProp
                     </Container>
 
                     <Container className="canvas-results-content overflow-auto">
-                        {activeListingSlug && (
+                        {activeExposureName && (
                             <PluginExposureTable
-                                key={`${activeListingSlug}-${analysisId}`}
-                                pluginSlug={pluginSlug}
-                                listingSlug={activeListingSlug}
+                                key={`${activeExposureName}-${analysisId}`}
+                                pluginId={pluginId}
+                                exposureName={activeExposureName}
                                 trajectoryId={trajectoryId}
                                 analysisId={analysisId}
                                 teamId={teamId}

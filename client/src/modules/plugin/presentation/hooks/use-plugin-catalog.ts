@@ -10,7 +10,7 @@ interface LoadAllPluginsOptions {
 
 const usePluginCatalog = () => {
     const { pluginRepository } = usePluginUseCases();
-    const pluginsBySlug = usePluginStore((state) => state.pluginsBySlug);
+    const pluginsById = usePluginStore((state) => state.pluginsById);
     const setPlugins = usePluginStore((state) => state.setPlugins);
     const registerPlugins = usePluginStore((state) => state.registerPlugins);
     const setLoading = usePluginStore((state) => state.setLoading);
@@ -56,46 +56,41 @@ const usePluginCatalog = () => {
         return request;
     }, [pluginRepository, setError, setLoading, setPlugins]);
 
-    const ensurePluginBySlug = useCallback(async (slug: string): Promise<Plugin | null> => {
-        if (!slug) return null;
+    const ensurePluginById = useCallback(async (id: string): Promise<Plugin | null> => {
+        if (!id) return null;
 
-        const fromStore = pluginsBySlug[slug];
+        const fromStore = pluginsById[id];
         if (fromStore) return fromStore;
 
-        const existingPromise = ensurePluginPromisesRef.current.get(slug);
+        const existingPromise = ensurePluginPromisesRef.current.get(id);
         if (existingPromise) {
             return existingPromise;
         }
 
         const request = (async () => {
             try {
-                const response = await pluginRepository.getAll({
-                    page: 1,
-                    limit: 50,
-                    search: slug
-                });
-
-                const plugin = (response.data ?? []).find((item) => item.slug === slug) ?? null;
+                const response = await pluginRepository.getById(id);
+                const plugin = response ?? null;
                 if (plugin) {
                     registerPlugins([plugin]);
                     setError(null);
                 }
                 return plugin;
             } catch (error) {
-                setError(error instanceof Error ? error.message : `Failed to load plugin ${slug}`);
+                setError(error instanceof Error ? error.message : `Failed to load plugin ${id}`);
                 throw error;
             } finally {
-                ensurePluginPromisesRef.current.delete(slug);
+                ensurePluginPromisesRef.current.delete(id);
             }
         })();
 
-        ensurePluginPromisesRef.current.set(slug, request);
+        ensurePluginPromisesRef.current.set(id, request);
         return request;
-    }, [pluginRepository, pluginsBySlug, registerPlugins, setError]);
+    }, [pluginRepository, pluginsById, registerPlugins, setError]);
 
     return {
         loadAllPlugins,
-        ensurePluginBySlug
+        ensurePluginById
     };
 };
 

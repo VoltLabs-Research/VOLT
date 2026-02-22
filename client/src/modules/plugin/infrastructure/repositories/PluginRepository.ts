@@ -54,9 +54,9 @@ export default class PluginRepository extends BaseRepository implements IPluginR
     }
 
     async execute(params: ExecutePluginInputDTO): Promise<ExecutePluginOutputDTO> {
-        const { pluginSlug, trajectoryId, ...body } = params;
+        const { pluginId, trajectoryId, ...body } = params;
         const response = await this.client.post<ApiResponse<{ analysisId: string }>>(
-            `/${pluginSlug}/trajectory/${trajectoryId}/execute`,
+            `/${pluginId}/trajectory/${trajectoryId}/execute`,
             body
         );
         return this.unwrap(response);
@@ -68,8 +68,8 @@ export default class PluginRepository extends BaseRepository implements IPluginR
         });
     }
 
-    async exportAnalysisResults(pluginSlug: string, analysisId: string): Promise<Blob> {
-        return this.client.request<Blob>('GET', `/${pluginSlug}/analysis/${analysisId}/export-results`, {
+    async exportAnalysisResults(pluginId: string, analysisId: string): Promise<Blob> {
+        return this.client.request<Blob>('GET', `/${pluginId}/analysis/${analysisId}/export-results`, {
             responseType: 'blob'
         });
     }

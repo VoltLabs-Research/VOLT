@@ -10,7 +10,7 @@ interface NodeReferenceOption {
 }
 
 const BASE_OUTPUT_PROPERTIES: Partial<Record<NodeType, string[]>> = {
-    [NodeType.MODIFIER]: ['pluginSlug', 'trajectory', 'analysis'],
+    [NodeType.MODIFIER]: ['pluginId', 'trajectory', 'analysis'],
     [NodeType.ARGUMENTS]: ['as_str', 'as_array'],
     [NodeType.CONTEXT]: ['trajectory_dumps', 'count', 'trajectory'],
     [NodeType.FOREACH]: ['items', 'count', 'currentValue', 'currentValue.path', 'currentValue.frame', 'currentIndex', 'outputPath'],

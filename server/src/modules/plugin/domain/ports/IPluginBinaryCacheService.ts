@@ -1,5 +1,5 @@
 export interface BinaryCacheRequest{
-    pluginSlug: string;
+    pluginId: string;
     binaryHash: string;
     binaryFileName?: string;
     binaryObjectPath: string;

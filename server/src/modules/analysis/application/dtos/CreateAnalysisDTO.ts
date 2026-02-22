@@ -1,6 +1,6 @@
 export interface CreateAnalysisInputDTO {
     trajectoryId: string;
-    pluginSlug: string;
+    pluginId: string;
     config: any;
     userId: string;
     teamId: string;

@@ -53,7 +53,7 @@ const CanvasPage = () => {
 
     const sceneConfig = useFractalSceneConfig();
     const sceneRef = useRef<FractalSceneRef>(null);
-    const { analysisId, showGrid, resultsSlug, showWidgets, searchParams } = useCanvasUrlState({ trajectory });
+    const { analysisId, showGrid, resultsPluginId, showWidgets, searchParams } = useCanvasUrlState({ trajectory });
     const showStatusBar = searchParams.get('statusBar') !== 'false';
     const { downloadListing } = useDownloadPluginListing();
 
@@ -98,11 +98,11 @@ const CanvasPage = () => {
     }, [timeline.setSize]);
 
     const handleDownloadExposureListing = useCallback((params: {
-        pluginSlug: string;
+        pluginId: string;
         exposureId: string;
         analysisId?: string;
         trajectoryId?: string;
-        listingSlug?: string;
+        exposureName?: string;
     }) => {
         downloadListing(params);
     }, [downloadListing]);
@@ -183,9 +183,9 @@ const CanvasPage = () => {
             {showStatusBar && trajectory && currentTimestep !== undefined && (
                 <StatusBar trajectory={trajectory} currentTimestep={currentTimestep} />
             )}
-            {showWidgets && resultsSlug && (
+            {showWidgets && resultsPluginId && (
                 <PluginResultsViewer
-                    pluginSlug={resultsSlug}
+                    pluginId={resultsPluginId}
                     analysisId={analysisId}
                 />
             )}

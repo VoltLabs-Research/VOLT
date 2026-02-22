@@ -49,7 +49,7 @@ export const ValidationCodes = {
     PLUGIN_WORKFLOW_EDGE_ID_REQUIRED: 'Plugin::WorkflowEdge::Id::Required',
     PLUGIN_WORKFLOW_EDGE_SOURCE_REQUIRED: 'Plugin::WorkflowEdge::Source::Required',
     PLUGIN_WORKFLOW_EDGE_TARGET_REQUIRED: 'Plugin::WorkflowEdge::Target::Required',
-    PLUGIN_SLUG_REQUIRED: 'Plugin::Slug::Required',
+    PLUGIN_ID_REQUIRED: 'Plugin::Id::Required',
     PLUGIN_WORKFLOW_REQUIRED: 'Plugin::Workflow::Required',
 
     SESSION_SUCCESS_REQUIRED: 'Session::Success::Required',

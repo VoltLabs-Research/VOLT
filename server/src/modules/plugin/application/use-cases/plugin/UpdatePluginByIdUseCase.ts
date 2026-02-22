@@ -9,7 +9,7 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import { IWorkflowValidatorService } from './ValidateWorkflowUseCase';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import slugify from '@shared/infrastructure/utilities/slugify';
+
 
 @injectable()
 export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDTO, UpdatePluginByIdOutputDTO> {
@@ -34,20 +34,6 @@ export class UpdatePluginByIdUseCase implements IUseCase<UpdatePluginByIdInputDT
         if(input.status) update.status = input.status;
 
         if(input.workflow){
-            // Update the plugin slug according to the modifier node name.
-            // Only regenerate slug if explicitly requested (not during import/binary updates)
-            if(input.workflow?.nodes && input.regenerateSlug !== false){
-                const modifierNode = input.workflow.nodes.find((node) => node.type === WorkflowNodeType.Modifier);
-                if(modifierNode?.data?.modifier?.name){
-                    const newSlug = slugify(modifierNode.data.modifier.name);
-                    // Only update if the base slug changed (ignore unique suffixes)
-                    const currentBaseSlug = plugin.props.slug?.replace(/-[a-f0-9]{6,}-[a-f0-9]{8}$/i, '');
-                    if(newSlug !== currentBaseSlug){
-                        update.slug = newSlug;
-                    }
-                }
-            }
-
             // Validate the provided workflow.
             const { isValid, errors } = this.workflowValidator.validate(input.workflow);
             update.validated = isValid;

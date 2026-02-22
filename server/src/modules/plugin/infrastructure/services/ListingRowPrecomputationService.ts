@@ -21,7 +21,7 @@ interface PrecomputeParams {
     trajectoryId: string;
     trajectoryName: string;
     analysisId: string;
-    listingSlug: string;
+    exposureName: string;
     timesteps: number[];
 }
 
@@ -32,7 +32,7 @@ interface PrecomputeAnalysisParams {
 
 interface ListingExposureDescriptor {
     exposureId: string;
-    listingSlug: string;
+    exposureName: string;
     columns: Column[];
 }
 
@@ -113,7 +113,7 @@ export class ListingRowPrecomputationService {
                 } else {
                     const payloadObjects = await this.listExposurePayloadObjects(trajectoryId, analysisId, descriptor.exposureId);
                     if (!payloadObjects.length) {
-                        logger.warn(`[ListingRowPrecomputation] Skipping exposure without scene artifacts or payloads: listing=${descriptor.listingSlug}, exposureId=${descriptor.exposureId}, analysis=${analysisId}`);
+                        logger.warn(`[ListingRowPrecomputation] Skipping exposure without scene artifacts or payloads: listing=${descriptor.exposureName}, exposureId=${descriptor.exposureId}, analysis=${analysisId}`);
                         continue;
                     }
 
@@ -143,7 +143,7 @@ export class ListingRowPrecomputationService {
 
                     if (unresolvedColumns.length > 0) {
                         logger.warn(
-                            `[ListingRowPrecomputation] Unresolved columns: listing=${descriptor.listingSlug}, exposureId=${descriptor.exposureId}, analysis=${analysisId}, timestep=${listingRecord.timestep}, columns=${unresolvedColumns.join(',')}`
+                            `[ListingRowPrecomputation] Unresolved columns: listing=${descriptor.exposureName}, exposureId=${descriptor.exposureId}, analysis=${analysisId}, timestep=${listingRecord.timestep}, columns=${unresolvedColumns.join(',')}`
                         );
                     }
 
@@ -153,7 +153,7 @@ export class ListingRowPrecomputationService {
                         trajectory: trajectoryId,
                         trajectoryName: '',
                         analysis: analysisId,
-                        listingSlug: descriptor.listingSlug,
+                        exposureName: descriptor.exposureName,
                         exposureId: descriptor.exposureId,
                         timestep: listingRecord.timestep,
                         row
@@ -175,7 +175,7 @@ export class ListingRowPrecomputationService {
                 }
             } catch (error: any) {
                 const message = error?.message || String(error);
-                logger.error(`[ListingRowPrecomputation] Exposure failed: listing=${descriptor.listingSlug}, exposureId=${descriptor.exposureId}, analysis=${analysisId}, error=${message}`);
+                logger.error(`[ListingRowPrecomputation] Exposure failed: listing=${descriptor.exposureName}, exposureId=${descriptor.exposureId}, analysis=${analysisId}, error=${message}`);
                 exposureFailures.push(message);
             }
         }
@@ -270,7 +270,7 @@ export class ListingRowPrecomputationService {
     }
 
     async precomputeListingRowsForTimesteps(params: PrecomputeParams): Promise<void> {
-        const { pluginId, teamId, trajectoryId, trajectoryName, analysisId, listingSlug, timesteps } = params;
+        const { pluginId, teamId, trajectoryId, trajectoryName, analysisId, exposureName, timesteps } = params;
 
         // Fetch plugin to get workflow
         const plugin = await this.pluginRepo.findById(pluginId);
@@ -293,16 +293,16 @@ export class ListingRowPrecomputationService {
         }
 
         const listingExposures = this.extractListingExposures(workflow);
-        const descriptor = listingExposures.find((item) => item.listingSlug === listingSlug);
+        const descriptor = listingExposures.find((item) => item.exposureName === exposureName);
         if (!descriptor) {
-            logger.warn(`No listing descriptor found for listing: ${listingSlug}`);
+            logger.warn(`No listing descriptor found for listing: ${exposureName}`);
             return;
         }
 
         // Find the primary exposure for this listing
         const primaryExposureId = descriptor.exposureId;
         if (!primaryExposureId) {
-            logger.warn(`No primary exposure found for listing: ${listingSlug}`);
+            logger.warn(`No primary exposure found for listing: ${exposureName}`);
             return;
         }
 
@@ -329,7 +329,7 @@ export class ListingRowPrecomputationService {
             // Simple resolution using metadata._resolvedContext
             const row = resolveRow(descriptor.columns, listingMetadata, analysis.props.createdAt ?? new Date());
             
-            logger.info(`[ListingRowPrecomputation] listingSlug=${listingSlug}, timestep=${timestep}`);
+            logger.info(`[ListingRowPrecomputation] exposureName=${exposureName}, timestep=${timestep}`);
             logger.info(`[ListingRowPrecomputation] columns=${JSON.stringify(descriptor.columns.map(c => c.label))}`);
             logger.info(`[ListingRowPrecomputation] row=${JSON.stringify(row)}`);
             logger.info(`[ListingRowPrecomputation] metadata._resolvedContext=${JSON.stringify(listingMetadata?._resolvedContext)}`);
@@ -347,7 +347,7 @@ export class ListingRowPrecomputationService {
                 trajectoryName,
                 analysis: analysisId,
                 exposureId: primaryExposureId,
-                listingSlug,
+                exposureName,
                 timestep,
                 team: teamId,
                 row 
@@ -369,15 +369,15 @@ export class ListingRowPrecomputationService {
         const exposures = nodes.filter((node: any) => node?.type === WorkflowNodeType.Exposure);
 
         for (const exposureNode of exposures) {
-            const listingSlug = String(exposureNode?.data?.exposure?.name || '').trim();
-            if (!listingSlug) continue;
+            const exposureName = String(exposureNode?.data?.exposure?.name || '').trim();
+            if (!exposureName) continue;
 
             const columns = this.findListingColumnsForExposure(exposureNode.id, nodes, edges);
             if (!columns.length) continue;
 
             descriptors.push({
                 exposureId: exposureNode.id,
-                listingSlug,
+                exposureName,
                 columns
             });
         }

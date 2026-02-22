@@ -63,11 +63,11 @@ const PluginsListing = () => {
             export: {
                 label: 'Export',
                 icon: RiDownloadLine,
-                handler: (item) => exportPlugin(item._id, `${item.slug}.zip`)
+                handler: (item) => exportPlugin(item._id, `${item.modifier?.name || item._id}.zip`)
             },
             delete: {
                 handler: (item) => deletePlugin(item._id),
-                confirm: (item) => `Delete plugin "${item.slug}"? This action cannot be undone.`
+                confirm: (item) => `Delete plugin "${item.modifier?.name || item._id}"? This action cannot be undone.`
             }
         }
     });

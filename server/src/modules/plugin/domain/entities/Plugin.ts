@@ -9,7 +9,6 @@ export enum PluginStatus {
 
 export interface PluginProps extends Partial<PluginProjection> {
     team: string;
-    slug: string;
     workflow: Workflow,
     status: PluginStatus;
     validated: boolean;

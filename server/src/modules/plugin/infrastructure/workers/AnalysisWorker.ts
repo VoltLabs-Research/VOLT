@@ -53,7 +53,7 @@ export default class AnalysisWorker extends BaseWorker<Job> {
             trajectoryId, 
             analysisId, 
             config, 
-            plugin: pluginSlug,
+            plugin: pluginId,
             forEachItem,
             forEachIndex,
             totalItems
@@ -79,9 +79,9 @@ export default class AnalysisWorker extends BaseWorker<Job> {
             }
 
             // Find the plugin
-            const plugin = await this.pluginRepository.findOne({ slug: pluginSlug });
+            const plugin = await this.pluginRepository.findById(pluginId);
             if (!plugin) {
-                throw new Error(`Plugin not found: ${pluginSlug}`);
+                throw new Error(`Plugin not found: ${pluginId}`);
             }
 
             // Execute the workflow for this specific item

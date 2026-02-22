@@ -67,12 +67,12 @@ export const buildCanvasModifierOptions = (pluginModifiers: ResolvedModifier[]):
     }));
 
     const pluginOptions: ModifierOption[] = pluginModifiers.map((modifier) => ({
-        modifierId: `plugin:${modifier.pluginSlug}`,
+        modifierId: `plugin:${modifier.pluginId}`,
         title: modifier.name,
         Icon: resolveIcon(modifier.icon),
         isPlugin: true,
         pluginId: modifier.plugin?._id,
-        pluginModifierId: modifier.pluginSlug
+        pluginModifierId: modifier.pluginId
     }));
 
     return [...legacyOptions, ...pluginOptions];

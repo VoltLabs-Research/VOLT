@@ -93,9 +93,9 @@ export default class Workflow{
      * looking for a node of type visualizer. If found, it extracts the column
      * definitions configured within it.
      */
-    findColumnsDefinitionsFromExposureVisualizer(listingSlug: string){
+    findColumnsDefinitionsFromExposureVisualizer(exposureName: string){
         // TODO: Refactor 
-        const exposureNodeId = this.findExposureByListingSlug(listingSlug);
+        const exposureNodeId = this.findExposureByName(exposureName);
         if(!exposureNodeId) return [];
 
         const visited = new Set<string>();
@@ -126,10 +126,10 @@ export default class Workflow{
     }
 
     /**
-     * Locates the ID of the exposure node corresponding to the requested listing slug.
+     * Locates the ID of the exposure node corresponding to the requested listing exposure name.
      */
-    findExposureByListingSlug(listingSlug: string): string | null{
-        const node = this.props.nodes.find((node) => node.type === WorkflowNodeType.Exposure && node?.data?.exposure?.name === listingSlug);
+    findExposureByName(exposureName: string): string | null{
+        const node = this.props.nodes.find((node) => node.type === WorkflowNodeType.Exposure && node?.data?.exposure?.name === exposureName);
         return node?.id ?? null;
     }
 

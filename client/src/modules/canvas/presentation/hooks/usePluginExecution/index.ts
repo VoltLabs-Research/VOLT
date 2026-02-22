@@ -8,7 +8,7 @@ interface UsePluginExecutionArgs {
     trajectoryId?: string;
     currentTimestep?: number;
     getPluginArguments: (pluginId: string) => IArgumentDefinition[];
-    pluginRepository: { execute: (args: { pluginSlug: string; trajectoryId: string; config: Record<string, unknown>; timestep?: number }) => Promise<unknown> };
+    pluginRepository: { execute: (args: { pluginId: string; trajectoryId: string; config: Record<string, unknown>; timestep?: number }) => Promise<unknown> };
 }
 
 const usePluginExecution = ({
@@ -54,7 +54,7 @@ const usePluginExecution = ({
             });
 
             await pluginRepository.execute({
-                pluginSlug: option.pluginModifierId,
+                pluginId: option.pluginModifierId,
                 trajectoryId,
                 config,
                 timestep: currentTimestep

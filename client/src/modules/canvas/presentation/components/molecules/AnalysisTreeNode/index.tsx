@@ -16,11 +16,11 @@ interface AnalysisTreeNodeProps {
     onAddScene: (scene: any) => void;
     onRemoveScene: (scene: any) => void;
     onDownloadExposureListing?: (params: {
-        pluginSlug: string;
+        pluginId: string;
         exposureId: string;
         analysisId?: string;
         trajectoryId?: string;
-        listingSlug?: string;
+        exposureName?: string;
     }) => void;
 }
 
@@ -135,10 +135,10 @@ const AnalysisTreeNode = ({
                             label="Download"
                             onClick={() => {
                                 onDownloadExposureListing?.({
-                                    pluginSlug: section.pluginSlug,
+                                    pluginId: section.pluginId,
                                     exposureId: exposure.exposureId,
                                     analysisId: analysis._id,
-                                    listingSlug: exposure.name
+                                    exposureName: exposure.name
                                 });
                             }}
                         />

@@ -8,7 +8,7 @@ export const ListingRowSchema = new Schema({
         index: true,
         cascade: 'delete'
     },
-    listingSlug: {
+    exposureName: {
         type: String,
         required: true,
         index: true

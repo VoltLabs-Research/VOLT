@@ -16,19 +16,19 @@ export default class PluginListingRepository extends BaseRepository implements I
     }
 
     async getListing(params: GetPluginListingInputDTO): Promise<GetPluginListingOutputDTO> {
-        const { pluginSlug, listingSlug, exposureId, trajectoryId, analysisId, limit, page } = params;
+        const { pluginId, exposureName, exposureId, trajectoryId, analysisId, limit, page } = params;
 
-        if (!exposureId && !listingSlug) {
+        if (!exposureId && !exposureName) {
             throw new Error('Exposure::IdRequired');
         }
 
         const path = exposureId
             ? (trajectoryId
-                ? `/listing/${pluginSlug}/exposure/${exposureId}/${trajectoryId}`
-                : `/listing/${pluginSlug}/exposure/${exposureId}`)
+                ? `/listing/${pluginId}/exposure/${exposureId}/${trajectoryId}`
+                : `/listing/${pluginId}/exposure/${exposureId}`)
             : (trajectoryId
-                ? `/listing/${pluginSlug}/${listingSlug}/${trajectoryId}`
-                : `/listing/${pluginSlug}/${listingSlug}`);
+                ? `/listing/${pluginId}/${exposureName}/${trajectoryId}`
+                : `/listing/${pluginId}/${exposureName}`);
 
         const query: Record<string, unknown> = {};
 
@@ -44,8 +44,8 @@ export default class PluginListingRepository extends BaseRepository implements I
             query.analysisId = analysisId;
         }
 
-        if (listingSlug) {
-            query.listingSlug = listingSlug;
+        if (exposureName) {
+            query.exposureName = exposureName;
         }
 
         // The server wraps the result via BaseResponse.success(), producing
@@ -67,15 +67,15 @@ export default class PluginListingRepository extends BaseRepository implements I
     }
 
     async exportListing(params: ExportPluginListingInputDTO): Promise<ExportPluginListingOutputDTO> {
-        const { pluginSlug, exposureId, trajectoryId, analysisId, listingSlug, format } = params;
+        const { pluginId, exposureId, trajectoryId, analysisId, exposureName, format } = params;
 
-        if (!exposureId && !listingSlug) {
+        if (!exposureId && !exposureName) {
             throw new Error('Exposure::SelectorRequired');
         }
 
         const path = trajectoryId
-            ? `/listing/${pluginSlug}/trajectory/${trajectoryId}/export`
-            : `/listing/${pluginSlug}/export`;
+            ? `/listing/${pluginId}/trajectory/${trajectoryId}/export`
+            : `/listing/${pluginId}/export`;
 
         const query: Record<string, unknown> = {};
 
@@ -87,8 +87,8 @@ export default class PluginListingRepository extends BaseRepository implements I
             query.exposureId = exposureId;
         }
 
-        if (listingSlug) {
-            query.listingSlug = listingSlug;
+        if (exposureName) {
+            query.exposureName = exposureName;
         }
 
         query.format = format;

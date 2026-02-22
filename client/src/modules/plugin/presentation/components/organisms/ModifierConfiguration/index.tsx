@@ -66,7 +66,7 @@ const ModifierConfiguration = ({
     }, [modifierId, getAvailableArguments]);
 
     const modifierInfo = useMemo(() => {
-        const plugin = plugins.find((pluginItem) => pluginItem.slug === modifierId);
+        const plugin = plugins.find((pluginItem) => pluginItem._id === modifierId);
         if (!plugin?.modifier) return null;
 
         return {
@@ -157,7 +157,7 @@ const ModifierConfiguration = ({
         onAnalysisStart?.();
         try {
             const response = await pluginRepository.execute({
-                pluginSlug: modifierId,
+                pluginId: modifierId,
                 trajectoryId,
                 config,
                 selectedFrameOnly,
@@ -184,7 +184,7 @@ const ModifierConfiguration = ({
                 onAnalysisStart?.();
                 try {
                     const response = await pluginRepository.execute({
-                        pluginSlug: modifierId,
+                        pluginId: modifierId,
                         trajectoryId,
                         config,
                         selectedFrameOnly,

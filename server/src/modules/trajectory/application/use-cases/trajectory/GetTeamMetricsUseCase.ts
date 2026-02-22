@@ -157,15 +157,15 @@ export default class GetTeamMetricsUseCase implements IUseCase<GetTeamMetricsInp
             const pluginExposures = plugin.props.exposures ?? [];
             if (!pluginExposures.length) continue;
 
-            const pluginName = plugin.props.modifier?.name || plugin.props.slug;
+            const pluginName = plugin.props.modifier?.name || plugin.id;
 
             const analysisIds = pointers.map(p => p.analysisId);
 
             for (const exposure of pluginExposures) {
                 const exposureId = exposure._id;
-                const listingSlug = exposure.name;
+                const exposureName = exposure.name;
                 const hasListing = Boolean(exposure.listing && Object.keys(exposure.listing).length > 0);
-                if (!listingSlug || !exposureId || !hasListing) continue;
+                if (!exposureName || !exposureId || !hasListing) continue;
 
                 // Count listing rows
                 const listingResult = await this.listingRowRepo.findAll({
@@ -184,12 +184,12 @@ export default class GetTeamMetricsUseCase implements IUseCase<GetTeamMetricsInp
                 }
 
                 const first = pointers[0];
-                const listingUrl = `/dashboard/trajectory/${first.trajectoryId}/plugins/${plugin.props.slug}/exposure/${exposureId}/listing`;
+                const listingUrl = `/dashboard/trajectory/${first.trajectoryId}/plugins/${plugin.id}/exposure/${exposureId}/listing`;
 
-                totals[listingSlug] = listingBuckets.total;
-                lastMonth[listingSlug] = pct(listingBuckets.currMonth, listingBuckets.prevMonth);
-                series[listingSlug] = listingBuckets.weekly;
-                meta[listingSlug] = { displayName: listingSlug, listingUrl, pluginName };
+                totals[exposureName] = listingBuckets.total;
+                lastMonth[exposureName] = pct(listingBuckets.currMonth, listingBuckets.prevMonth);
+                series[exposureName] = listingBuckets.weekly;
+                meta[exposureName] = { displayName: exposureName, listingUrl, pluginName };
 
                 for (const key of listingBuckets.weekly.keys()) labelsSet.add(key);
             }
@@ -205,15 +205,15 @@ export default class GetTeamMetricsUseCase implements IUseCase<GetTeamMetricsInp
 
             if (teamPlugins.data.length > 0) {
                 const plugin = teamPlugins.data[0];
-                const pluginName = plugin.props.modifier?.name || plugin.props.slug;
+                const pluginName = plugin.props.modifier?.name || plugin.id;
                 const firstExposure = plugin.props.exposures?.[0];
-                const listingSlug = firstExposure?.name || plugin.props.slug;
+                const exposureName = firstExposure?.name || plugin.id;
 
-                totals[listingSlug] = 0;
-                lastMonth[listingSlug] = 0;
-                series[listingSlug] = new Map();
-                meta[listingSlug] = {
-                    displayName: listingSlug,
+                totals[exposureName] = 0;
+                lastMonth[exposureName] = 0;
+                series[exposureName] = new Map();
+                meta[exposureName] = {
+                    displayName: exposureName,
                     listingUrl: `/dashboard/plugins`,
                     pluginName
                 };

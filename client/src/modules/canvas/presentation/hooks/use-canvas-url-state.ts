@@ -19,7 +19,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
     } = useSelectionParams({ paramName: 'modifiers' });
 
     const analysisId = searchParams.get('analysis') || undefined;
-    const resultsSlug = searchParams.get('results') || undefined;
+    const resultsPluginId = searchParams.get('results') || undefined;
     const timelineExposureId = searchParams.get('timelineExposure') || undefined;
     const pluginParam = searchParams.get('plugin') || undefined;
     const settingsKey = searchParams.get('settings') || undefined;
@@ -32,8 +32,8 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         updateSearchParams({ analysis: id ?? null }, options);
     }, [updateSearchParams]);
 
-    const setResultsSlug = useCallback((slug?: string, options?: UpdateOptions) => {
-        updateSearchParams({ results: slug ?? null }, options);
+    const setResultsPluginId = useCallback((pluginId?: string, options?: UpdateOptions) => {
+        updateSearchParams({ results: pluginId ?? null }, options);
     }, [updateSearchParams]);
 
     const setTimelineExposureId = useCallback((exposureId?: string, options?: UpdateOptions) => {
@@ -70,8 +70,8 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
 
     const pluginSelection = useMemo(() => {
         if (!pluginParam) return null;
-        const [pluginId, modifierSlug] = pluginParam.split(':');
-        return { pluginId, modifierSlug };
+        const [pluginId, pluginModifierId] = pluginParam.split(':');
+        return { pluginId, pluginModifierId };
     }, [pluginParam]);
 
     const trajectory = options?.trajectory;
@@ -87,7 +87,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         searchParams,
         updateSearchParams,
         analysisId,
-        resultsSlug,
+        resultsPluginId,
         timelineExposureId,
         pluginParam,
         pluginSelection,
@@ -100,7 +100,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         toggleModifier,
         isModifierSelected,
         setAnalysisId,
-        setResultsSlug,
+        setResultsPluginId,
         setTimelineExposureId,
         setPluginParam,
         setSettingsKey,

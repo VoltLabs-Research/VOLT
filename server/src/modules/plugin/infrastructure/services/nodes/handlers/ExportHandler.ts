@@ -16,7 +16,7 @@ import { decodeMultiStreamFromFile } from '@shared/infrastructure/utilities/msgp
 import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
 import getNestedValue from '@shared/infrastructure/utilities/get-nested-value';
 import normalizePerAtomProperties from '@shared/infrastructure/utilities/normalize-per-atom-properties';
-import slugify from '@shared/infrastructure/utilities/slugify';
+
 import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
 import logger from '@shared/infrastructure/logger';
 
@@ -100,7 +100,7 @@ export default class ExportHandler implements INodeHandler{
                 continue;
             }
 
-            const objectPath = `trajectory-${context.trajectoryId}/analysis-${context.analysisId}/${folder}/${item.frame}/${slugify(exposureNode.id)}.${extension}`;
+            const objectPath = `trajectory-${context.trajectoryId}/analysis-${context.analysisId}/${folder}/${item.frame}/${exposureNode.id}.${extension}`;
             const options = this.resolveOptionsRecursive(config.options || {}, context);
 
             try{
@@ -121,7 +121,7 @@ export default class ExportHandler implements INodeHandler{
                         displayName: exposureName,
                         metadata: {
                             pluginId: context.pluginId,
-                            pluginSlug: context.pluginSlug,
+                            pluginId: context.pluginId,
                             exposureId: exposureNode.id,
                             exposureName,
                             perAtomProperties,

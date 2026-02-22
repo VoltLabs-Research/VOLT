@@ -8,7 +8,7 @@ import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/Workf
 import { ErrorCodes } from '@core/constants/error-codes';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import slugify from '@shared/infrastructure/utilities/slugify';
+
 
 @injectable()
 export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePluginOutputDTO> {
@@ -44,12 +44,9 @@ export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePl
             nodes: clonedNodes
         };
 
-        const newSlug = `${slugify(original.props.slug)}-copy-${Date.now()}`;
-
         const plugin = await this.pluginRepository.create({
             workflow: clonedWorkflowProps as any,
             team: input.teamId,
-            slug: newSlug,
             validated: original.props.validated,
             status: PluginStatus.Draft
         });

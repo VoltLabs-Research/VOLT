@@ -50,14 +50,14 @@ interface TimelineHeaderProps {
     playSpeed: number;
     onPlaySpeedChange: (speed: number) => void;
     onDownloadExposureListing?: (params: {
-        pluginSlug: string;
+        pluginId: string;
         exposureId: string;
         analysisId?: string;
         trajectoryId?: string;
-        listingSlug?: string;
+        exposureName?: string;
     }) => void;
     downloadContext?: {
-        pluginSlug?: string;
+        pluginId?: string;
         analysisId?: string;
         trajectoryId?: string;
     };
@@ -88,7 +88,7 @@ const TimelineHeader = ({
                     {resolvedTabs.map((tab) => {
                         const canDownloadExposure = Boolean(
                             tab.exposureId &&
-                            downloadContext?.pluginSlug &&
+                            downloadContext?.pluginId &&
                             onDownloadExposureListing
                         );
 
@@ -127,11 +127,11 @@ const TimelineHeader = ({
                                             label="Download"
                                             onClick={() => {
                                                 onDownloadExposureListing?.({
-                                                    pluginSlug: downloadContext?.pluginSlug || '',
+                                                    pluginId: downloadContext?.pluginId || '',
                                                     exposureId: tab.exposureId || '',
                                                     analysisId: downloadContext?.analysisId,
                                                     trajectoryId: downloadContext?.trajectoryId,
-                                                    listingSlug: tab.label
+                                                    exposureName: tab.label
                                                 });
                                                 close();
                                             }}

@@ -21,7 +21,7 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
         const context = this.createExecutionContext(request);
         const executionOrder = request.plugin.props.workflow.topologicalSort();
 
-        logger.info(`@plugin-workflow-engine: planning execution for plugin "${request.plugin.props.slug}"`);
+        logger.info(`@plugin-workflow-engine: planning execution for plugin "${request.plugin.id}"`);
         for(const node of executionOrder){
             // Execute the current node
             await this.nodeRegistry.execute(node, context);
@@ -55,7 +55,7 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
             const executionOrder = plugin.props.workflow.topologicalSort();
             const nodesToSkip = new Set<string>();
 
-            logger.info(`@plugin-workflow-engine: job start "${plugin.props.slug}" (Index: ${currentIterationIndex})`);
+            logger.info(`@plugin-workflow-engine: job start "${plugin.id}" (Index: ${currentIterationIndex})`);
             for(const node of executionOrder){
                 // Skip logic (handled by previous If-Statements)
                 if(nodesToSkip.has(node.id)) continue;
@@ -105,7 +105,7 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
             const nodesToSkip = new Set<string>();
             const total = executionOrder.length;
 
-            logger.info(`@plugin-workflow-engine: debug job start "${plugin.props.slug}" (Index: ${currentIterationIndex})`);
+            logger.info(`@plugin-workflow-engine: debug job start "${plugin.id}" (Index: ${currentIterationIndex})`);
 
             for (let i = 0; i < executionOrder.length; i++) {
                 const node = executionOrder[i];
@@ -228,7 +228,7 @@ export default class PluginWorkflowEngine implements IPluginWorkflowEngine{
             teamId: req.teamId,
             analysisId: req.analysisId,
             generatedFiles: [],
-            pluginSlug: req.plugin.props.slug,
+            pluginId: req.plugin.id,
             selectedFrameOnly: req.options?.selectedFrameOnly,
             selectedTimestep: req.options?.timestep,
             workflow: req.plugin.props.workflow

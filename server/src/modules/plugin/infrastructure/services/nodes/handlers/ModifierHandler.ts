@@ -20,7 +20,7 @@ export default class ModifierHandler implements INodeHandler{
 
     readonly outputSchema: NodeOutputSchema = {
         properties: {
-            pluginSlug: T.string(),
+            pluginId: T.string(),
             trajectory: T.object({}),
             analysis: T.object({})
         }
@@ -34,7 +34,7 @@ export default class ModifierHandler implements INodeHandler{
 
         return {
             ...node.data.modifier,
-            pluginSlug: context.pluginSlug,
+            pluginId: context.pluginId,
             trajectory: trajectory?.props,
             analysis: analysis?.props
         };

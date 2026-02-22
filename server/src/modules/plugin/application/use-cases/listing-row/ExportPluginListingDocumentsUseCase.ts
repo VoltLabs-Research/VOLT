@@ -9,7 +9,7 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { PluginListingExportResult } from '@modules/plugin/infrastructure/services/PluginListingService';
 
 export interface IPluginListingExportService {
-    exportListingDocuments(pluginSlug: string, options: any): Promise<PluginListingExportResult>;
+    exportListingDocuments(pluginId: string, options: any): Promise<PluginListingExportResult>;
 };
 
 @injectable()
@@ -20,13 +20,13 @@ export class ExportPluginListingDocumentsUseCase implements IUseCase<ExportPlugi
 
     async execute(input: ExportPluginListingDocumentsInputDTO): Promise<Result<ExportPluginListingDocumentsOutputDTO>> {
         const result = await this.listingService.exportListingDocuments(
-            input.pluginSlug,
+            input.pluginId,
             {
                 teamId: input.teamId,
                 trajectoryId: input.trajectoryId,
                 analysisId: input.analysisId,
                 exposureId: input.exposureId,
-                listingSlug: input.listingSlug,
+                exposureName: input.exposureName,
                 sortAsc: input.sortAsc ?? false,
                 format: input.format ?? 'json'
             }

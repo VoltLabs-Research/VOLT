@@ -90,18 +90,18 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded, collapsed = fa
             })
             .filter(({ exposures }) => exposures.length > 0)
             .map(({ plugin, exposures }) => {
-                const pluginLabel = plugin.listingExposures?.pluginName || plugin.modifier?.name || plugin.slug;
+                const pluginLabel = plugin.listingExposures?.pluginName || plugin.modifier?.name || plugin._id;
 
                 return {
                     label: pluginLabel,
                     isSelected: exposures.some((exposure) =>
-                        pathname.includes(`/plugins/${plugin.slug}/exposure/${exposure.exposureId}/listing`)
+                        pathname.includes(`/plugins/${plugin._id}/exposure/${exposure.exposureId}/listing`)
                     ),
                     subItems: exposures.map((exposure) => ({
                         label: exposure.name,
-                        isSelected: pathname.includes(`/plugins/${plugin.slug}/exposure/${exposure.exposureId}/listing`),
+                        isSelected: pathname.includes(`/plugins/${plugin._id}/exposure/${exposure.exposureId}/listing`),
                         onClick: () => {
-                            navigate(`/dashboard/plugins/${plugin.slug}/exposure/${exposure.exposureId}/listing`);
+                            navigate(`/dashboard/plugins/${plugin._id}/exposure/${exposure.exposureId}/listing`);
                             setSidebarOpen(false);
                             setSettingsExpanded(false);
                         }

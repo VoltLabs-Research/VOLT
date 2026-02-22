@@ -46,7 +46,7 @@ export default class PluginBinaryCacheService implements IPluginBinaryCacheServi
     }
 
     private async resolveBinary(request: BinaryCacheRequest, _cacheKey: string): Promise<string>{
-        const name = `${request.pluginSlug}-${request.binaryHash}`;
+        const name = `${request.pluginId}-${request.binaryHash}`;
         const finalPath = path.join(this.cacheDir, name);
 
         // Check existence

@@ -1,8 +1,8 @@
 import { ExportType } from '@shared/domain/ports/IBaseRepository';
 
 export interface GetPluginListingDocumentsInputDTO {
-    pluginSlug: string;
-    listingSlug?: string;
+    pluginId: string;
+    exposureName?: string;
     exposureId?: string;
     teamId: string;
     trajectoryId?: string;
@@ -13,12 +13,12 @@ export interface GetPluginListingDocumentsInputDTO {
 };
 
 export interface ExportPluginListingDocumentsInputDTO {
-    pluginSlug: string;
+    pluginId: string;
     exposureId?: string;
     teamId: string;
     trajectoryId?: string;
     analysisId?: string;
-    listingSlug?: string;
+    exposureName?: string;
     sortAsc?: boolean;
     format?: ExportType;
 };
@@ -45,8 +45,8 @@ export interface GetPluginListingDocumentsOutputDTO {
     totalPages: number;
     limit: number;
     _meta: {
-        pluginSlug: string;
-        listingSlug: string;
+        pluginId: string;
+        exposureName: string;
         exposureId: string;
         columns: ColumnDef[];
     };
@@ -54,7 +54,7 @@ export interface GetPluginListingDocumentsOutputDTO {
 
 export interface ExportPluginListingDocumentsOutputDTO {
     meta: {
-        pluginSlug: string;
+        pluginId: string;
         exposureId: string;
         analysisId?: string;
         trajectoryId?: string;

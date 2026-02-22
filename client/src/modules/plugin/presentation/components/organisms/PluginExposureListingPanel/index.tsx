@@ -5,8 +5,8 @@ import { usePluginCatalog } from '@/modules/plugin/presentation/hooks';
 import PluginExposureTable from '@/modules/plugin/presentation/components/organisms/PluginExposureTable';
 
 interface PluginExposureListingPanelProps {
-    pluginSlug: string;
-    listingSlug?: string;
+    pluginId: string;
+    exposureName?: string;
     exposureId?: string;
     trajectoryId?: string;
     analysisId?: string;
@@ -17,8 +17,8 @@ interface PluginExposureListingPanelProps {
 }
 
 const PluginExposureListingPanel = ({
-    pluginSlug,
-    listingSlug: listingSlugParam,
+    pluginId,
+    exposureName: exposureNameParam,
     exposureId,
     trajectoryId,
     analysisId,
@@ -27,26 +27,26 @@ const PluginExposureListingPanel = ({
     showTrajectoryColumn,
     headerActions
 }: PluginExposureListingPanelProps) => {
-    const plugin = usePluginStore((state) => state.pluginsBySlug[pluginSlug]);
-    const { ensurePluginBySlug } = usePluginCatalog();
+    const plugin = usePluginStore((state) => state.pluginsById[pluginId]);
+    const { ensurePluginById } = usePluginCatalog();
 
     useEffect(() => {
-        if (!pluginSlug || plugin) return;
-        ensurePluginBySlug(pluginSlug).catch(() => {});
-    }, [pluginSlug, plugin, ensurePluginBySlug]);
+        if (!pluginId || plugin) return;
+        ensurePluginById(pluginId).catch(() => {});
+    }, [pluginId, plugin, ensurePluginById]);
 
-    const listingSlug = useMemo(() => {
-        if (listingSlugParam) return listingSlugParam;
+    const exposureName = useMemo(() => {
+        if (exposureNameParam) return exposureNameParam;
         if (!exposureId || !plugin?.exposures?.length) return undefined;
 
         const exposure = plugin.exposures.find((item) => item._id === exposureId);
         return exposure?.name;
-    }, [listingSlugParam, exposureId, plugin]);
+    }, [exposureNameParam, exposureId, plugin]);
 
     return (
         <PluginExposureTable
-            pluginSlug={pluginSlug}
-            listingSlug={listingSlug}
+            pluginId={pluginId}
+            exposureName={exposureName}
             exposureId={exposureId}
             trajectoryId={trajectoryId}
             analysisId={analysisId}

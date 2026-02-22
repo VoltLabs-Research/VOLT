@@ -29,7 +29,7 @@ export interface ExecutionContext{
     trajectoryId: string;
     analysisId: string;
     generatedFiles: string[];
-    pluginSlug: string;
+    pluginId: string;
     pluginId: string;
     teamId: string;
     selectedFrameOnly?: boolean;

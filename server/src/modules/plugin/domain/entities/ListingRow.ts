@@ -1,6 +1,6 @@
 export interface ListingRowProps{
     plugin: string;
-    listingSlug: string;
+    exposureName: string;
     exposureId: string;
     team: string;
     trajectory: string;

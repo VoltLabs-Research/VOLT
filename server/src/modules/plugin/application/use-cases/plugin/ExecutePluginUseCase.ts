@@ -48,11 +48,14 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
     async execute(input: ExecutePluginInputDTO): Promise<Result<{ analysisId: string }, ApplicationError>> {
         const [trajectory, plugin] = await Promise.all([
             this.trajectoryRepo.findById(input.trajectoryId),
-            this.pluginRepo.findOne({
-                slug: input.pluginSlug,
-                status: PluginStatus.Published
-            })
+            this.pluginRepo.findById(input.pluginId)
         ]);
+        if (plugin && plugin.props.status !== PluginStatus.Published) {
+            return Result.fail(ApplicationError.badRequest(
+                ErrorCodes.PLUGIN_NOT_FOUND,
+                'Plugin is not published'
+            ));
+        }
         if (!plugin) {
             return Result.fail(ApplicationError.notFound(
                 ErrorCodes.PLUGIN_NOT_FOUND,
@@ -78,7 +81,7 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
             plugin.id,
             input.trajectoryId,
             input.userId,
-            plugin.props.slug,
+            plugin.id,
             input.teamId,
             trajectory.props.name
         ));
@@ -110,7 +113,6 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
             analysisId: analysis.id,
             trajectoryId: input.trajectoryId,
             pluginId: plugin.id,
-            pluginSlug: plugin.props.slug,
             pluginDisplayName,
             teamId: input.teamId,
             config: input.config,
