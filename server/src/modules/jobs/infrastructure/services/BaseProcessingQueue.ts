@@ -160,6 +160,10 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
         return this.mapping[jobStatus] || jobStatus;
     }
 
+    getQueueName(): string {
+        return this.queueName;
+    }
+
     public async addJobs(jobs: T[]): Promise<void> {
         if (jobs.length === 0) return;
 
@@ -454,6 +458,43 @@ export default abstract class BaseProcessingQueue<T extends Job = Job> implement
     async stop(): Promise<void> {
         this.isShutdown = true;
         this.workerPoolService.terminateAll();
+    }
+
+    public async abortRunningJobs(jobIds: string[]): Promise<number> {
+        if (jobIds.length === 0) return 0;
+
+        const targets = new Set(jobIds);
+        const terminations: Promise<number>[] = [];
+        let aborted = 0;
+
+        for (const [workerId, jobInfo] of Array.from(this.jobMap.entries())) {
+            if (!targets.has(jobInfo.job.props.jobId)) continue;
+
+            const workerItem = this.workerPoolService.findWorkerByThreadId(workerId);
+            if (!workerItem) continue;
+
+            this.jobMap.delete(workerId);
+            workerItem.isIdle = true;
+            workerItem.currentJobId = undefined;
+            workerItem.lastUsed = Date.now();
+            this.workerPoolService.clearWorkerTimers(workerItem);
+
+            await this.jobRepository.removeFromProcessing(this.processingKey, jobInfo.rawData);
+            terminations.push(workerItem.worker.terminate());
+            aborted++;
+        }
+
+        const terminationResults = await Promise.allSettled(terminations);
+        for (const result of terminationResults) {
+            if (result.status === 'rejected') {
+                logger.error(
+                    { reason: result.reason },
+                    `[${this.queueName}] Failed to terminate worker while aborting running job`
+                );
+            }
+        }
+
+        return aborted;
     }
 
     private async addJobsBatch(

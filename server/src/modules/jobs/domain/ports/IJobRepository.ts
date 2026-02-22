@@ -43,6 +43,14 @@ export interface IJobRepository {
     ): Promise<void>;
 
     /**
+     * Remove item from a Redis list by value.
+     */
+    removeFromList(
+        listKey: string,
+        rawData: string
+    ): Promise<void>;
+
+    /**
      * Get queue length.
      */
     getQueueLength(queueKey: string): Promise<number>;
@@ -91,6 +99,19 @@ export interface IJobRepository {
         teamId: string,
         jobId: string
     ): Promise<void>;
+
+    /**
+     * Remove jobs from team jobs set
+     */
+    removeFromTeamJobs(
+        teamId: string,
+        jobIds: string[]
+    ): Promise<void>;
+
+    /**
+     * Delete complete team jobs set
+     */
+    deleteTeamJobs(teamId: string): Promise<void>;
 
     /**
      * Get all job IDs for a team

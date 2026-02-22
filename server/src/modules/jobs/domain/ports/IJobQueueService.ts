@@ -29,6 +29,11 @@ export interface IJobQueueService {
     getMappedStatus(jobStatus: string): string;
 
     /**
+     * Get queue name
+     */
+    getQueueName(): string;
+
+    /**
      * Start the queue processing
      */
     start(): Promise<void>;
@@ -37,4 +42,9 @@ export interface IJobQueueService {
      * Stop the queue processing
      */
     stop(): Promise<void>;
+
+    /**
+     * Abort currently running jobs by id
+     */
+    abortRunningJobs(jobIds: string[]): Promise<number>;
 }
