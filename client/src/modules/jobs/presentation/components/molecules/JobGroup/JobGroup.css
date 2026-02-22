@@ -14,33 +14,7 @@
     max-width: 200px;
 }
 
-.overall-status-badge {
-    font-size: 0.625rem;
-    padding: 0.25rem 0.5rem;
-    text-transform: capitalize;
-    border-radius: var(--radius-xs);
-}
 
-.overall-status-badge.status-queued {
-    color: var(--status-warning);
-    opacity: 0.8;
-}
-
-.overall-status-badge.status-running {
-    color: var(--status-info);
-}
-
-.overall-status-badge.status-completed {
-    color: var(--status-success);
-}
-
-.overall-status-badge.status-failed {
-    color: var(--status-error);
-}
-
-.overall-status-badge.status-partial {
-    color: var(--status-warning);
-}
 
 .job-group-children {
     padding-left: 1rem;

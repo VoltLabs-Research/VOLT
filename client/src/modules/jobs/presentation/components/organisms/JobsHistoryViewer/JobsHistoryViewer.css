@@ -10,4 +10,8 @@ body.jobs-history-expanded {
 .jobs-history-viewer-embedded {
     width: 100%;
     height: 100%;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
 }

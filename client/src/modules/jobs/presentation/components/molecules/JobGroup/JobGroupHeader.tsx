@@ -5,6 +5,7 @@ import type { TrajectoryJobGroup } from '@/modules/jobs/domain/entities/Job';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import StatusBadge from '@/shared/presentation/components/StatusBadge';
 
 interface JobGroupHeaderProps {
     group: TrajectoryJobGroup;
@@ -34,9 +35,7 @@ const JobGroupHeader: React.FC<JobGroupHeaderProps> = ({
                     </Paragraph>
                 </Container>
                 <Container className='d-flex items-center gap-1'>
-                    <span className={`overall-status-badge ${statusClassName} font-weight-6`}>
-                        {group.overallStatus}
-                    </span>
+                    <StatusBadge status={group.overallStatus} size='compact' />
                     <motion.i
                         className='chevron-icon font-size-1 color-secondary'
                         animate={{ rotate: isExpanded ? 90 : 0 }}
