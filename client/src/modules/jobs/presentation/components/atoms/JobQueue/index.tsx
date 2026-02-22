@@ -1,3 +1,4 @@
+import { formatDistanceToNow } from 'date-fns';
 import UseAnimations from 'react-useanimations';
 import activity from 'react-useanimations/lib/activity';
 import { IoCheckmark, IoTimeOutline, IoWarningOutline, IoCloseOutline } from 'react-icons/io5';
@@ -86,8 +87,10 @@ const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => 
                     </span>
                 </Container>
                 <Container className='d-flex items-center gap-05'>
-                    <Paragraph className='job-message color-secondary font-size-1'>
-                        {job.message || job.status}
+                    <Paragraph className='job-message color-secondary font-size-1 d-flex items-center gap-05'>
+                        {job.timestep !== undefined && <span>Frame {job.timestep}</span>}
+                        {job.timestep !== undefined && job.timestamp && <span>&middot;</span>}
+                        {job.timestamp && <span>{formatDistanceToNow(new Date(job.timestamp), { addSuffix: true })}</span>}
                     </Paragraph>
                     {job.processingTimeMs && job.status === 'completed' && (
                         <span className='job-meta color-muted font-size-1'>• {formatDuration(job.processingTimeMs)}</span>
