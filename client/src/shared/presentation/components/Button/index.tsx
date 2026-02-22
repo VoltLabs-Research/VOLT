@@ -1,13 +1,11 @@
 import React, { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import Container from '@/shared/presentation/components/Container';
 import { cn } from '@/shared/utils';
-import type { HTMLMotionProps } from 'framer-motion';
 import './Button.css';
 
-export interface ButtonProps extends HTMLMotionProps<'button'>{
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>{
     /**
      * Visual style of the button
      * @default 'solid'
@@ -147,13 +145,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
     );
 
     return (
-        <motion.button
+        <button
             ref={ref}
             type={type}
             className={classes}
             disabled={disabled || isLoading}
-            whileTap={{ scale: 0.97 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
             onClick={handleClick}
             {...props}
         >
@@ -166,7 +162,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
             {leftIcon && <span className="button-icon-left font-size-4">{leftIcon}</span>}
             {children}
             {rightIcon && <span className="button-icon-right">{rightIcon}</span>}
-        </motion.button>
+        </button>
     );
 });
 
