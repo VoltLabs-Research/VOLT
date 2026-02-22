@@ -77,15 +77,6 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
             ));
         }
 
-        await this.eventBus.publish(new PluginExecutionRequestEvent(
-            plugin.id,
-            input.trajectoryId,
-            input.userId,
-            plugin.id,
-            input.teamId,
-            trajectory.props.name
-        ));
-
         const modifierNode = plugin.props.workflow?.props?.nodes?.find(
             (node: any) => node?.type === WorkflowNodeType.Modifier
         );
@@ -100,8 +91,18 @@ export class ExecutePluginUseCase implements IUseCase<ExecutePluginInputDTO, { a
             ));
         }
 
+        await this.eventBus.publish(new PluginExecutionRequestEvent(
+            plugin.id,
+            input.trajectoryId,
+            input.userId,
+            pluginDisplayName,
+            input.teamId,
+            trajectory.props.name
+        ));
+
         const analysis = await this.analysisRepo.create({
             plugin: plugin.id,
+
             config: input.config,
             team: input.teamId,
             trajectory: input.trajectoryId,
