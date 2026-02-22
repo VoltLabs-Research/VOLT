@@ -21,7 +21,7 @@ const actions = [
         description: 'View the team activity',
         icon: <Users size={16} strokeWidth={1.8} />,
         variant: 'team' as const,
-        path: '/dashboard/team'
+        path: '/dashboard/my-team'
     },
     {
         label: 'Browse Plugins',
