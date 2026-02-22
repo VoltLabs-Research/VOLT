@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import 'reflect-metadata';
+import 'invokers-polyfill';
 
 import { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
@@ -50,7 +51,7 @@ loader.config({ monaco });
 
 // Register all dependencies
 ensureAuthDI();
-ensureSocketDI(); // Must be after auth (needs token storage)
+ensureSocketDI();
 ensureTeamDI();
 ensureTrajectoryDI();
 ensureJobsDI();
