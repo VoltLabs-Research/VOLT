@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoArrowRight } from 'react-icons/go';
-import { Upload, FlaskConical, Puzzle, Box } from 'lucide-react';
+import { Upload, Users, Puzzle, Box } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import useTrajectoryUpload from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-upload';
@@ -17,11 +17,11 @@ const actions = [
         path: '/dashboard/trajectories/list'
     },
     {
-        label: 'New Analysis',
-        description: 'Configure analysis run',
-        icon: <FlaskConical size={16} strokeWidth={1.8} />,
-        variant: 'analysis' as const,
-        path: '/dashboard/analysis-configs/list'
+        label: 'Team Management',
+        description: 'View the team activity',
+        icon: <Users size={16} strokeWidth={1.8} />,
+        variant: 'team' as const,
+        path: '/dashboard/team'
     },
     {
         label: 'Browse Plugins',
