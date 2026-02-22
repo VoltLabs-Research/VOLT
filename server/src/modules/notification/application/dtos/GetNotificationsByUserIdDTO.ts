@@ -3,6 +3,8 @@ import { NotificationProps } from '@modules/notification/domain/entities/Notific
 
 export interface GetNotificationsByUserIdInputDTO{
     userId: string;
+    page?: number;
+    limit?: number;
 };
 
 export interface GetNotificationsByUserIdOutputDTO extends PaginatedResult<NotificationProps>{}

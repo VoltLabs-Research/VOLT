@@ -21,13 +21,11 @@ export class GetAnalysesByTrajectoryIdUseCase implements IUseCase<GetAnalysesByT
     ) {}
 
     async execute(input: GetAnalysesByTrajectoryIdInputDTO): Promise<Result<GetAnalysesByTrajectoryIdOutputDTO, ApplicationError>> {
-        const page = Number(input.page ?? 1);
-        const limit = Number(input.limit ?? 100);
         const analyses = await this.analysisRepository.findAll({
             filter: { trajectory: input.trajectoryId },
             populate: 'plugin',
-            page,
-            limit,
+            page: input.page,
+            limit: input.limit,
             sort: { createdAt: -1 }
         });
 

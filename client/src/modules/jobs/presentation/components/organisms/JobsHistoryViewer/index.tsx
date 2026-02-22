@@ -18,6 +18,7 @@ interface JobsHistoryViewerProps {
     queueFilter?: string;
     variant?: 'floating' | 'embedded';
     displayMode?: 'full' | 'children-only';
+    emptyState?: React.ReactNode;
 }
 
 const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = (props) => {
@@ -26,7 +27,8 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = (props) => {
         hideAfterComplete = true,
         queueFilter,
         variant = 'floating',
-        displayMode
+        displayMode,
+        emptyState
     } = props;
     const { groups, isConnected, isLoading, removeTrajectoryGroup } = useTeamJobs();
     const { updateSearchParams } = useSearchParamsState();
@@ -97,6 +99,10 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = (props) => {
         );
     }
 
+    if (!shouldShowPanel && emptyState && !isLoading && relevantJobs.length === 0) {
+        return <>{emptyState}</>;
+    }
+
     return (
         <AnimatePresence mode='wait'>
             {shouldShowPanel && (
@@ -127,4 +133,5 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = (props) => {
     );
 };
 
+export { JobsHistoryViewer };
 export default JobsHistoryViewer;

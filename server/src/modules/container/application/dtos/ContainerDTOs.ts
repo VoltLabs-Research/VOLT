@@ -1,3 +1,5 @@
+import type { PaginatedResult, PaginationOptions } from '@shared/domain/ports/IBaseRepository';
+
 // Create
 export interface CreateContainerInputDTO {
     name: string;
@@ -32,9 +34,12 @@ export interface UpdateContainerOutputDTO {
 }
 
 // List
-export interface ListContainersOutputDTO {
-    containers: any[];
+export interface ListContainersInputDTO extends Partial<PaginationOptions> {
+    teamId: string;
+    userId: string;
 }
+
+export interface ListContainersOutputDTO extends PaginatedResult<any> { }
 
 // Get
 export interface GetContainerStatsOutputDTO {

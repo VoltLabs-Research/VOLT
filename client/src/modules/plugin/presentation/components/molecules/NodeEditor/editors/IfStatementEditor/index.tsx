@@ -4,7 +4,7 @@ import FormField from '@/shared/presentation/components/FormField';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import { Plus } from 'lucide-react';
-import { useNodeCollectionForm } from '@/modules/plugin/presentation/hooks';
+import { useNodeCollectionForm, useNodeReferenceAutocomplete } from '@/modules/plugin/presentation/hooks';
 import type { ICondition, ConditionType, ConditionHandler } from '@/modules/plugin/domain/entities';
 import type { EditorProps } from '../types';
 
@@ -26,6 +26,7 @@ const createDefaultCondition = (): ICondition => ({
 });
 
 const IfStatementEditor = ({ node }: EditorProps) => {
+    const nodeReferenceOptions = useNodeReferenceAutocomplete(node.id);
     const {
         items: conditions,
         addItem,
@@ -71,6 +72,7 @@ const IfStatementEditor = ({ node }: EditorProps) => {
                         value={condition.leftExpr}
                         onChange={createFieldHandler(index, 'leftExpr')}
                         placeholder='{{ node-id.property }}'
+                        autocomplete={{ options: nodeReferenceOptions }}
                     />
 
                     <FormField
@@ -91,6 +93,7 @@ const IfStatementEditor = ({ node }: EditorProps) => {
                         value={condition.rightExpr}
                         onChange={createFieldHandler(index, 'rightExpr')}
                         placeholder='{{ node-id.expected }}'
+                        autocomplete={{ options: nodeReferenceOptions }}
                     />
                 </CollapsibleSection>
             ))}

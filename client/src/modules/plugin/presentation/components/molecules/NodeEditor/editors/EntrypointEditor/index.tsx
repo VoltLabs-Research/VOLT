@@ -6,7 +6,7 @@ import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
-import { useNodeForm, usePluginUseCases } from '@/modules/plugin/presentation/hooks';
+import { useNodeForm, useNodeReferenceAutocomplete, usePluginUseCases } from '@/modules/plugin/presentation/hooks';
 import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
 import type { IEntrypointData } from '@/modules/plugin/domain/entities';
 import type { EditorProps } from '../types';
@@ -14,6 +14,7 @@ import './EntrypointEditor.css';
 
 const EntrypointEditor = ({ node }: EditorProps) => {
     const { field, values, setValues } = useNodeForm<IEntrypointData>(node, 'entrypoint', {} as IEntrypointData);
+    const nodeReferenceOptions = useNodeReferenceAutocomplete(node.id);
     const currentPluginId = usePluginBuilderStore((state) => state.currentPluginId);
     const updateNodeData = usePluginBuilderStore((state) => state.updateNodeData);
     const { pluginRepository } = usePluginUseCases();
@@ -152,6 +153,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
                     {...field('arguments')}
                     placeholder='{{ forEach.currentValue }} --output {{ forEach.outputPath }}'
                     rows={3}
+                    autocomplete={{ options: nodeReferenceOptions }}
                 />
             </CollapsibleSection>
 

@@ -19,8 +19,8 @@ export default class GetNotificationsByUserIdUseCase
         const { userId } = input;
         const result = await this.notificationRepo.findAll({
             filter: { recipient: userId },
-            page: 1,
-            limit: 50
+            page: input.page,
+            limit: input.limit
         });
 
         return Result.ok({

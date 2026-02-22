@@ -123,7 +123,7 @@ export default class SessionCompletedEventHandler implements IEventHandler<Sessi
                     finishedAt: new Date()
                 });
             } catch (error) {
-                logger.error(`[SessionCompletedEventHandler] Listing precomputation failed for analysis ${analysisId}:`, error);
+                logger.error(`[SessionCompletedEventHandler] Listing precomputation failed for analysis ${analysisId}: ${error}`);
 
                 await this.analysisRepo.updateById(analysisId, {
                     status: 'failed',

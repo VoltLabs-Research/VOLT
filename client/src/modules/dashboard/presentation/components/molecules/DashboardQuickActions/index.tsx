@@ -1,8 +1,11 @@
+import { useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoArrowRight } from 'react-icons/go';
 import { Upload, FlaskConical, Puzzle, Box } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
+import useTrajectoryUpload from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-upload';
+import type { FileWithPath } from '@/shared/utils/file';
 import './DashboardQuickActions.css';
 
 const actions = [
@@ -38,6 +41,54 @@ const actions = [
 
 const DashboardQuickActions = () => {
     const navigate = useNavigate();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const { uploadTrajectory } = useTrajectoryUpload();
+
+    const resolveUploadName = useCallback((files: FileWithPath[]): string => {
+        if (files.length === 0) return `upload_${Date.now()}`;
+        const hasRelativePaths = files.some(({ path }) => path.includes('/'));
+
+        if (hasRelativePaths) {
+            const firstPathSegment = files[0].path.split('/').filter(Boolean)[0];
+            return firstPathSegment || `upload_${Date.now()}`;
+        }
+
+        if (files.length === 1) {
+            return files[0].file.name;
+        }
+
+        return `upload_${Date.now()}`;
+    }, []);
+
+    const handlePickerChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const input = event.target;
+        const selectedFiles = input.files;
+
+        if (!selectedFiles || selectedFiles.length === 0) {
+            return;
+        }
+
+        const filesWithPath: FileWithPath[] = Array.from(selectedFiles).map((file) => ({
+            file,
+            path: file.webkitRelativePath || file.name
+        }));
+
+        const uploadName = resolveUploadName(filesWithPath);
+        try {
+            await uploadTrajectory(filesWithPath, uploadName);
+        } finally {
+            input.value = '';
+        }
+    }, [resolveUploadName, uploadTrajectory]);
+
+    const handleActionClick = useCallback((action: (typeof actions)[number]) => {
+        if (action.variant !== 'upload') {
+            navigate(action.path);
+            return;
+        }
+
+        fileInputRef.current?.click();
+    }, [navigate]);
 
     return (
         <Container className='dashboard-actions-card'>
@@ -50,7 +101,7 @@ const DashboardQuickActions = () => {
                     <Container
                         key={action.label}
                         className='dashboard-action-item list-item-hoverable d-flex items-center gap-075'
-                        onClick={() => navigate(action.path)}
+                        onClick={() => handleActionClick(action)}
                     >
                         <Container className={`dashboard-action-icon ${action.variant}`}>
                             {action.icon}
@@ -65,8 +116,16 @@ const DashboardQuickActions = () => {
                     </Container>
                 ))}
             </Container>
+            <input
+                ref={fileInputRef}
+                type='file'
+                multiple
+                hidden
+                onChange={handlePickerChange}
+            />
         </Container>
     );
 };
 
+export { DashboardQuickActions };
 export default DashboardQuickActions;

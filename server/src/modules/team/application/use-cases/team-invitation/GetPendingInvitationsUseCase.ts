@@ -25,8 +25,8 @@ export default class GetPendingInvitationsUseCase implements IUseCase<GetPending
             populate: {
                 path: 'invitedUser'
             },
-            page: 1,
-            limit: 100 
+            page: input.page,
+            limit: input.limit
         });
 
         return Result.ok({

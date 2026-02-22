@@ -34,8 +34,6 @@ export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTraject
             projection,
             timestep
         } = input;
-        const page = Number(input.page ?? 1);
-        const limit = Number(input.limit ?? 50);
         const parsedTimestep = timestep !== undefined ? Number(timestep) : undefined;
 
         const filter: Record<string, unknown> = {
@@ -48,8 +46,8 @@ export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTraject
 
         const artifacts = await this.sceneArtifactRepository.findAll({
             filter,
-            page,
-            limit,
+            page: input.page,
+            limit: input.limit,
             sort: { createdAt: -1 }
         });
 

@@ -51,6 +51,11 @@
     overflow-y: auto;
 }
 
+.dashboard-jobs-card .dashboard-jobs-empty-state {
+    min-height: 0;
+    height: 100%;
+}
+
 /* ---- Simulations Section ---- */
 .dashboard-simulations-section {
     grid-column: span 12;

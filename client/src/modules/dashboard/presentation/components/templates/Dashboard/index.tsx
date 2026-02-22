@@ -8,14 +8,15 @@ import useDashboardMetrics from '@/modules/dashboard/presentation/hooks/use-dash
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import DashboardOverviewCard from '@/modules/dashboard/presentation/components/atoms/DashboardOverviewCard';
 import DashboardOverviewSkeleton from '@/modules/dashboard/presentation/components/atoms/DashboardOverviewSkeleton';
 import DashboardTeamTimeline from '@/modules/dashboard/presentation/components/molecules/DashboardTeamTimeline';
-import DashboardQuickActions from '@/modules/dashboard/presentation/components/molecules/DashboardQuickActions';
+import { DashboardQuickActions } from '@/modules/dashboard/presentation/components/molecules/DashboardQuickActions';
 import DashboardInAppActivity from '@/modules/dashboard/presentation/components/molecules/DashboardInAppActivity';
 import DashboardPreviewCard from '@/modules/dashboard/presentation/components/molecules/DashboardPreviewCard';
 import DashboardRecentAnalyses from '@/modules/dashboard/presentation/components/molecules/DashboardRecentAnalyses';
-import JobsHistoryViewer from '@/modules/jobs/presentation/components/organisms/JobsHistoryViewer';
+import { JobsHistoryViewer } from '@/modules/jobs/presentation/components/organisms/JobsHistoryViewer';
 import SimulationGrid from '@/modules/trajectory/presentation/components/molecules/SimulationGrid';
 import TrajectoryUploaderContainer from '@/modules/trajectory/presentation/components/organisms/TrajectoryUploaderContainer';
 import type { DashboardCard } from '@/modules/dashboard/domain/entities';
@@ -105,7 +106,17 @@ const DashboardPage = () => {
 
                     <Container className='dashboard-bottom-sidebar'>
                         <Container className='dashboard-jobs-card'>
-                            <JobsHistoryViewer hideAfterComplete={false} />
+                            <JobsHistoryViewer
+                                hideAfterComplete={false}
+                                emptyState={(
+                                    <EmptyState
+                                        icon={<HiOutlineServerStack size={20} />}
+                                        title='No jobs yet'
+                                        description='Start a simulation or analysis to see activity here.'
+                                        className='flex-1 dashboard-jobs-empty-state'
+                                    />
+                                )}
+                            />
                         </Container>
 
                         <DashboardRecentAnalyses />

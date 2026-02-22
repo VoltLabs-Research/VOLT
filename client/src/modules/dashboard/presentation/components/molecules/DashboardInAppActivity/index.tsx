@@ -103,9 +103,7 @@ const DashboardInAppActivity = () => {
                 <Container className='dashboard-inapp-activity-header'>
                     <Title className='font-size-3 color-primary font-weight-5'>In-app Activity</Title>
                 </Container>
-                <Container className='dashboard-inapp-activity-inner d-flex flex-center'>
-                    <span className='color-muted font-size-2'>Loading...</span>
-                </Container>
+                <Container className='dashboard-inapp-activity-inner d-flex flex-center' />
             </Container>
         );
     }

@@ -36,8 +36,8 @@ export default class ListTeamMembersByTeamIdUseCase implements IUseCase<ListTeam
                 { path: 'role', select: ['name', 'permissions', 'isSystem'] },
                 { path: 'user', select: ['email', 'avatar', 'firstName', 'lastName', 'lastLoginAt', 'createdAt'] }
             ],
-            page: 1,
-            limit: 100
+            page: input.page,
+            limit: input.limit
         });
 
         // Get daily activity for the last 7 days for the whole team

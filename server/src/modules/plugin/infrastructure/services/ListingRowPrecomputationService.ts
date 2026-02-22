@@ -9,6 +9,11 @@ import { resolveRow, Column } from '@modules/plugin/infrastructure/utilities/lis
 import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
 import logger from '@shared/infrastructure/logger';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IStorageService } from '@shared/domain/ports/IStorageService';
+import { SYS_BUCKETS } from '@core/config/minio';
+import { decodeMultiStream } from '@shared/infrastructure/utilities/msgpack';
+import mergeChunkedValue from '@modules/plugin/infrastructure/utilities/merge-chunked-value';
 
 interface PrecomputeParams {
     pluginId: string;
@@ -41,7 +46,9 @@ export class ListingRowPrecomputationService {
         @inject(TRAJECTORY_TOKENS.SceneArtifactRepository)
         private sceneArtifactRepo: ISceneArtifactRepository,
         @inject(ANALYSIS_TOKENS.AnalysisRepository)
-        private analysisRepo: IAnalysisRepository
+        private analysisRepo: IAnalysisRepository,
+        @inject(SHARED_TOKENS.StorageService)
+        private storageService: IStorageService
     ) {}
 
     async precomputeForAnalysis(params: PrecomputeAnalysisParams): Promise<void> {
@@ -87,27 +94,56 @@ export class ListingRowPrecomputationService {
                     sort: { timestep: 1, _id: 1 }
                 });
 
-                if (!artifacts.data.length) {
-                    logger.warn(`[ListingRowPrecomputation] Skipping exposure without scene artifacts: listing=${descriptor.listingSlug}, exposureId=${descriptor.exposureId}, analysis=${analysisId}`);
-                    continue;
-                }
+                const listingRecords: Array<{ timestep: number; metadata: Record<string, any> }> = [];
 
-                for (const artifact of artifacts.data) {
-                    const rawMetadata = artifact.props.metadata;
-                    const listingMetadata = rawMetadata?.listingMetadata ?? rawMetadata;
+                if (artifacts.data.length) {
+                    for (const artifact of artifacts.data) {
+                        const rawMetadata = artifact.props.metadata;
+                        const listingMetadata = rawMetadata?.listingMetadata ?? rawMetadata;
 
-                    if (!listingMetadata) {
-                        throw new Error(`ListingPrecompute::MissingMetadata:analysis=${analysisId}:exposure=${descriptor.exposureId}:timestep=${artifact.props.timestep}`);
+                        if (!listingMetadata) {
+                            throw new Error(`ListingPrecompute::MissingMetadata:analysis=${analysisId}:exposure=${descriptor.exposureId}:timestep=${artifact.props.timestep}`);
+                        }
+
+                        listingRecords.push({
+                            timestep: artifact.props.timestep,
+                            metadata: listingMetadata
+                        });
+                    }
+                } else {
+                    const payloadObjects = await this.listExposurePayloadObjects(trajectoryId, analysisId, descriptor.exposureId);
+                    if (!payloadObjects.length) {
+                        logger.warn(`[ListingRowPrecomputation] Skipping exposure without scene artifacts or payloads: listing=${descriptor.listingSlug}, exposureId=${descriptor.exposureId}, analysis=${analysisId}`);
+                        continue;
                     }
 
-                    const row = resolveRow(descriptor.columns, listingMetadata, createdAt);
+                    for (const payloadObject of payloadObjects) {
+                        const payloadMetadata = await this.readExposurePayloadMetadata(payloadObject.objectName);
+                        const listingMetadata = this.attachResolvedContext(payloadMetadata || {}, {
+                            analysisId,
+                            pluginId: plugin.id,
+                            trajectoryId,
+                            timestep: payloadObject.timestep,
+                            argumentsConfig: analysis.props.config,
+                            analysisCreatedAt: createdAt
+                        });
+
+                        listingRecords.push({
+                            timestep: payloadObject.timestep,
+                            metadata: listingMetadata
+                        });
+                    }
+                }
+
+                for (const listingRecord of listingRecords) {
+                    const row = resolveRow(descriptor.columns, listingRecord.metadata, createdAt);
                     const unresolvedColumns = Object.entries(row)
                         .filter(([, value]) => value === null || value === undefined)
                         .map(([label]) => label);
 
                     if (unresolvedColumns.length > 0) {
-                        throw new Error(
-                            `ListingPrecompute::UnresolvedColumns:analysis=${analysisId}:exposure=${descriptor.exposureId}:timestep=${artifact.props.timestep}:columns=${unresolvedColumns.join(',')}`
+                        logger.warn(
+                            `[ListingRowPrecomputation] Unresolved columns: listing=${descriptor.listingSlug}, exposureId=${descriptor.exposureId}, analysis=${analysisId}, timestep=${listingRecord.timestep}, columns=${unresolvedColumns.join(',')}`
                         );
                     }
 
@@ -119,14 +155,14 @@ export class ListingRowPrecomputationService {
                         analysis: analysisId,
                         listingSlug: descriptor.listingSlug,
                         exposureId: descriptor.exposureId,
-                        timestep: artifact.props.timestep,
+                        timestep: listingRecord.timestep,
                         row
                     };
 
                     const existing = await this.listingRowRepo.findOne({
                         analysis: analysisId,
                         exposureId: descriptor.exposureId,
-                        timestep: artifact.props.timestep
+                        timestep: listingRecord.timestep
                     });
 
                     if (existing) {
@@ -151,6 +187,86 @@ export class ListingRowPrecomputationService {
         if (exposureFailures.length > 0) {
             throw new Error(`ListingPrecompute::PartialFailure:analysis=${analysisId}:failures=${exposureFailures.join(' | ')}`);
         }
+    }
+
+    private async listExposurePayloadObjects(
+        trajectoryId: string,
+        analysisId: string,
+        exposureId: string
+    ): Promise<Array<{ objectName: string; timestep: number }>> {
+        const prefix = `plugins/trajectory-${trajectoryId}/analysis-${analysisId}/${exposureId}/`;
+        const objects: Array<{ objectName: string; timestep: number }> = [];
+
+        for await (const objectName of this.storageService.listByPrefix(SYS_BUCKETS.PLUGINS, prefix, true)) {
+            const match = objectName.match(/timestep-(\d+)\.msgpack$/);
+            if (!match) continue;
+
+            objects.push({
+                objectName,
+                timestep: Number(match[1])
+            });
+        }
+
+        objects.sort((a, b) => a.timestep - b.timestep);
+        return objects;
+    }
+
+    private async readExposurePayloadMetadata(objectName: string): Promise<Record<string, any> | null> {
+        const stream = await this.storageService.getStream(SYS_BUCKETS.PLUGINS, objectName);
+        let metadata: Record<string, any> | null = null;
+
+        for await (const message of decodeMultiStream(stream as AsyncIterable<Uint8Array | Buffer>)) {
+            const chunkMeta = this.removeArrays(message);
+            if (chunkMeta && typeof chunkMeta === 'object') {
+                metadata = mergeChunkedValue(metadata, chunkMeta);
+            }
+        }
+
+        return metadata;
+    }
+
+    private removeArrays<T>(value: T): T {
+        if (Array.isArray(value)) {
+            return null as unknown as T;
+        }
+
+        if (value && typeof value === 'object') {
+            const out: any = {};
+            for (const [key, nestedValue] of Object.entries(value as any)) {
+                if (Array.isArray(nestedValue)) continue;
+                out[key] = this.removeArrays(nestedValue);
+                if (out[key] === null) delete out[key];
+            }
+            return out;
+        }
+
+        return value;
+    }
+
+    private attachResolvedContext(
+        metadata: Record<string, any>,
+        context: {
+            analysisId: string;
+            pluginId: string;
+            trajectoryId: string;
+            timestep: number;
+            argumentsConfig: Record<string, any>;
+            analysisCreatedAt: Date;
+        }
+    ): Record<string, any> {
+        return {
+            ...metadata,
+            _resolvedContext: {
+                arguments: context.argumentsConfig || {},
+                timestep: context.timestep,
+                analysis: {
+                    createdAt: context.analysisCreatedAt,
+                    _id: context.analysisId,
+                    trajectory: context.trajectoryId,
+                    plugin: context.pluginId
+                }
+            }
+        };
     }
 
     async precomputeListingRowsForTimesteps(params: PrecomputeParams): Promise<void> {

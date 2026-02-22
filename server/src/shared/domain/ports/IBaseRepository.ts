@@ -22,8 +22,8 @@ export interface PaginatedResult<T> {
 };
 
 export interface PaginationOptions {
-    page: number;
-    limit: number;
+    page?: number;
+    limit?: number;
 };
 
 export type ExportType = 'json' | 'csv';

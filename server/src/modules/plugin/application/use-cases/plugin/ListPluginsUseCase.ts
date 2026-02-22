@@ -14,8 +14,8 @@ export class ListPluginsUseCase implements IUseCase<ListPluginsInputDTO, ListPlu
     async execute(input: ListPluginsInputDTO): Promise<Result<ListPluginsOutputDTO>> {
         const result = await this.pluginRepository.findAll({
             filter: { team: input.teamId },
-            page: 1,
-            limit: 100
+            page: input.page,
+            limit: input.limit
         });
 
         const data = result.data.map((plugin) => ({
