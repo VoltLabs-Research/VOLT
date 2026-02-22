@@ -5,8 +5,11 @@ import WorkerPoolService from '@modules/jobs/infrastructure/services/WorkerPoolS
 import SessionManagerService from '@modules/jobs/infrastructure/services/SessionManagerService';
 import RecoveryManagerService from '@modules/jobs/infrastructure/services/RecoveryManagerService';
 import JobHandlerService from '@modules/jobs/infrastructure/services/JobHandlerService';
-import TrajectoryJobsService from '@modules/jobs/infrastructure/services/TrajectoryJobsService';
 import QueueRegistry from '@modules/jobs/infrastructure/services/QueueRegistry';
+import TeamJobMaintenanceService from '@modules/jobs/infrastructure/services/TeamJobMaintenanceService';
+import ClearTeamJobsHistoryUseCase from '@modules/jobs/application/use-cases/ClearTeamJobsHistoryUseCase';
+import RemoveTeamRunningJobsUseCase from '@modules/jobs/application/use-cases/RemoveTeamRunningJobsUseCase';
+import RetryTeamFailedJobsUseCase from '@modules/jobs/application/use-cases/RetryTeamFailedJobsUseCase';
 
 const DEFAULT_QUEUE_CONSTANTS = {
     MIN_WORKERS: 1,
@@ -23,8 +26,11 @@ const DEFAULT_QUEUE_CONSTANTS = {
 
 export const registerJobsDependencies = () => {
     container.registerSingleton(JOBS_TOKENS.JobRepository, RedisJobRepository);
-    container.registerSingleton(JOBS_TOKENS.TrajectoryJobsService, TrajectoryJobsService);
     container.registerSingleton(JOBS_TOKENS.QueueRegistry, QueueRegistry);
+    container.registerSingleton(TeamJobMaintenanceService);
+    container.registerSingleton(ClearTeamJobsHistoryUseCase);
+    container.registerSingleton(RemoveTeamRunningJobsUseCase);
+    container.registerSingleton(RetryTeamFailedJobsUseCase);
 
     container.register(JOBS_TOKENS.WorkerPoolService, { useClass: WorkerPoolService });
     container.register(JOBS_TOKENS.SessionManagerService, { useClass: SessionManagerService });

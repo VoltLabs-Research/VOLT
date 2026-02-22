@@ -72,6 +72,21 @@ export default class TeamJobsService {
         }
     }
 
+    async getFlatTeamJobs(teamId: string): Promise<any[]> {
+        const groupedJobs = await this.getTeamJobs(teamId);
+        const jobsById = new Map<string, any>();
+
+        for (const trajectory of groupedJobs) {
+            for (const frameGroup of trajectory.frameGroups) {
+                for (const job of frameGroup.jobs) {
+                    jobsById.set(job.jobId, job);
+                }
+            }
+        }
+
+        return Array.from(jobsById.values());
+    }
+
     private groupJobsByTrajectory(jobs: any[]): TrajectoryJobGroup[] {
         const trajectoryMap = new Map<string, any[]>();
 

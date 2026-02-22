@@ -74,6 +74,13 @@ export default class RedisJobRepository implements IJobRepository {
         await this.redis.lrem(processingKey, 1, rawData);
     }
 
+    async removeFromList(
+        listKey: string,
+        rawData: string
+    ): Promise<void> {
+        await this.redis.lrem(listKey, 1, rawData);
+    }
+
     async getQueueLength(queueKey: string): Promise<number> {
         return await this.redis.llen(queueKey);
     }
@@ -123,6 +130,17 @@ export default class RedisJobRepository implements IJobRepository {
     async addToTeamJobs(teamId: string, jobId: string): Promise<void> {
         const teamJobsKey = `team:${teamId}:jobs`;
         await this.redis.sadd(teamJobsKey, jobId);
+    }
+
+    async removeFromTeamJobs(teamId: string, jobIds: string[]): Promise<void> {
+        if (jobIds.length === 0) return;
+        const teamJobsKey = `team:${teamId}:jobs`;
+        await this.redis.srem(teamJobsKey, ...jobIds);
+    }
+
+    async deleteTeamJobs(teamId: string): Promise<void> {
+        const teamJobsKey = `team:${teamId}:jobs`;
+        await this.redis.del(teamJobsKey);
     }
 
     async getTeamJobIds(teamId: string): Promise<string[]> {
