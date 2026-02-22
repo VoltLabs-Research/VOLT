@@ -15,7 +15,7 @@ export class GetSSHConnectionsByTeamIdUseCase implements IUseCase<GetSSHConnecti
 
     async execute(input: GetSSHConnectionsByTeamIdInputDTO): Promise<Result<GetSSHConnectionsByTeamIdOutputDTO, ApplicationError>> {
         const { teamId } = input;
-        const results = await this.sshConnRepository.findAll({ filter: { team: teamId }, limit: 100, page: 1 });
+        const results = await this.sshConnRepository.findAll({ filter: { team: teamId }, limit: input.limit, page: input.page });
         return Result.ok({
             ...results,
             data: results.data.map(conn => conn.props)

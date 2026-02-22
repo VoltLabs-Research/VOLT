@@ -24,8 +24,8 @@ export abstract class MongooseBaseRepository<TDomain, TProps, TDocument extends 
         return doc ? this.mapper.toDomain(doc as TDocument) : null;
     }
 
-    async findAll(options: FindOptions<TProps> & PaginationOptions): Promise<any> {
-        const { page = 1, limit = 10, filter = {}, populate, select, sort } = options;
+    async findAll(options: FindOptions<TProps> & PaginationOptions = {}): Promise<any> {
+        const { page = 1, limit = 100, filter = {}, populate, select, sort } = options;
         const skip = (page - 1) * limit;
 
         let query = this.model.find(filter as any).skip(skip).limit(limit);

@@ -261,25 +261,27 @@ const VisualizersEditor = ({ node }: EditorProps) => {
                 <Container className='d-flex column gap-075'>
                     {listingRows.map((row) => (
                         <Container key={row.id} className='d-flex items-center gap-075'>
-                            <Container className='d-flex column gap-075 flex-1'>
-                                <FormField
-                                    variant='inline'
-                                    label='Metadata Path'
-                                    fieldType='input'
-                                    name={`listing-path-${row.id}`}
-                                    value={row.path}
-                                    onChange={(e) => updateListingRow(row.id, 'path', e.target.value)}
-                                    placeholder='{{ schema-xxxx.definition.value }}'
-                                    suggestions={listingPathSuggestions}
-                                />
-                                <FormField
-                                    variant='inline'
-                                    label='Column Label'
-                                    fieldType='input'
-                                    value={row.label}
-                                    onChange={(e) => updateListingRow(row.id, 'label', e.target.value)}
-                                    placeholder='Value'
-                                />
+                            <Container className='d-flex column content-between gap-1 items-center flex-1'>
+                                <Container className='w-max'>
+                                    <FormField
+                                        variant='inline'
+                                        fieldType='input'
+                                        name={`listing-path-${row.id}`}
+                                        value={row.path}
+                                        onChange={(e) => updateListingRow(row.id, 'path', e.target.value)}
+                                        placeholder='{{ schema-xxxx.definition.value }}'
+                                        autocomplete={{ options: listingPathSuggestions }}
+                                    />
+                                </Container>
+                                <Container className='w-max'>
+                                    <FormField
+                                        variant='inline'
+                                        fieldType='input'
+                                        value={row.label}
+                                        onChange={(e) => updateListingRow(row.id, 'label', e.target.value)}
+                                        placeholder='Column Label'
+                                    />
+                                </Container>
                             </Container>
                             <Button
                                 variant='ghost'

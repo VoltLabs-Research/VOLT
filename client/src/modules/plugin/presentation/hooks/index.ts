@@ -7,4 +7,5 @@ export { default as useLoadPlugin } from './use-load-plugin';
 export { default as usePluginCatalog } from './use-plugin-catalog';
 export { default as useNodeForm } from './use-node-form';
 export { default as useNodeCollectionForm } from './use-node-collection-form';
+export { default as useNodeReferenceAutocomplete } from './use-node-reference-autocomplete';
 export { default as useCanvasHandlers } from './use-canvas-handlers';

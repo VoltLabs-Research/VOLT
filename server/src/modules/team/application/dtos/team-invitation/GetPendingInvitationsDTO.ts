@@ -3,6 +3,8 @@ import { TeamInvitationProps } from '@modules/team/domain/entities/TeamInvitatio
 
 export interface GetPendingInvitationsInputDTO {
     teamId: string;
+    page?: number;
+    limit?: number;
 }
 
 export interface GetPendingInvitationsOutputDTO extends PaginatedResult<TeamInvitationProps>{}

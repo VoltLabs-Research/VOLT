@@ -31,6 +31,7 @@ interface ColumnConfig {
     label: string;
     sortable: boolean;
     width?: number;
+    sourcePath?: string;
 };
 
 interface ListingRowData {
@@ -97,6 +98,7 @@ export class PluginListingService {
 
         // Transform to raw rows
         const rows = this.toListingRows(result.data);
+        const columns = this.materializeColumns(prepared.columns, rows);
 
         return {
             data: rows,
@@ -108,7 +110,7 @@ export class PluginListingService {
                 pluginSlug: prepared.pluginSlug,
                 listingSlug: prepared.listingSlug,
                 exposureId: prepared.exposureId,
-                columns: prepared.columns
+                columns
             }
         };
     }
@@ -142,6 +144,8 @@ export class PluginListingService {
             page += 1;
         } while (page <= totalPages);
 
+        const columns = this.materializeColumns(prepared.columns, rows);
+
         return {
             meta: {
                 pluginSlug: prepared.pluginSlug,
@@ -149,7 +153,7 @@ export class PluginListingService {
                 analysisId: options.analysisId,
                 trajectoryId: options.trajectoryId,
                 total,
-                columns: prepared.columns,
+                columns,
                 format
             },
             data: rows
@@ -287,10 +291,11 @@ export class PluginListingService {
                         continue;
                     }
 
-                    return Object.entries(listing).map(([, label]) => ({
+                    return Object.entries(listing).map(([path, label]) => ({
                         path: String(label),
                         label: String(label),
-                        sortable: true
+                        sortable: true,
+                        sourcePath: String(path)
                     }));
                 }
 
@@ -299,5 +304,73 @@ export class PluginListingService {
         }
 
         return [];
+    }
+
+    private isAutoWildcardColumn(column: ColumnConfig): boolean {
+        const label = String(column.label || '').trim().toLowerCase();
+        const sourcePath = String(column.sourcePath || '');
+        return label === 'auto' && sourcePath.includes('*');
+    }
+
+    private materializeColumns(configuredColumns: ColumnConfig[], rows: ListingRowData[]): ColumnConfig[] {
+        const staticLabels = new Set(
+            configuredColumns
+                .filter((column) => !this.isAutoWildcardColumn(column))
+                .map((column) => String(column.label || '').trim())
+                .filter(Boolean)
+        );
+
+        const systemKeys = new Set([
+            '_id',
+            'timestep',
+            'analysisId',
+            'trajectoryId',
+            'exposureId',
+            'trajectoryName',
+            ...Array.from(staticLabels)
+        ]);
+
+        const dynamicAutoLabels = new Set<string>();
+        for (const row of rows) {
+            for (const key of Object.keys(row)) {
+                if (!systemKeys.has(key)) {
+                    dynamicAutoLabels.add(key);
+                }
+            }
+        }
+
+        const orderedDynamicLabels = Array.from(dynamicAutoLabels).sort((a, b) => a.localeCompare(b));
+        const columns: ColumnConfig[] = [];
+
+        for (const column of configuredColumns) {
+            if (this.isAutoWildcardColumn(column)) {
+                for (const dynamicLabel of orderedDynamicLabels) {
+                    columns.push({
+                        path: dynamicLabel,
+                        label: dynamicLabel,
+                        sortable: true
+                    });
+                }
+                continue;
+            }
+
+            const label = String(column.label || '').trim();
+            if (!label) continue;
+
+            columns.push({
+                path: label,
+                label,
+                sortable: Boolean(column.sortable),
+                width: column.width
+            });
+        }
+
+        const seen = new Set<string>();
+        return columns.filter((column) => {
+            const key = String(column.label || '').trim();
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
     }
 };

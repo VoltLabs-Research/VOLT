@@ -1,7 +1,7 @@
 import { Activity } from 'lucide-react';
 import PanelHeader from '../../atoms/PanelHeader';
 import Container from '@/shared/presentation/components/Container';
-import JobsHistoryViewer from '@/modules/jobs/presentation/components/organisms/JobsHistoryViewer';
+import { JobsHistoryViewer } from '@/modules/jobs/presentation/components/organisms/JobsHistoryViewer';
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
 import StatusCounts from '../../molecules/StatusCounts';
 import useJobStatusCounts from '../../../hooks/useJobStatusCounts';

@@ -8,7 +8,7 @@ import SingleModelViewer from '@/modules/fractal/presentation/components/molecul
 import useFractalSceneConfig from '@/modules/canvas/presentation/hooks/use-fractal-scene-config';
 import useCanvasCoordinator from '@/modules/canvas/presentation/hooks/use-canvas-coordinator';
 import useFirstCompletedTrajectory from '@/modules/dashboard/presentation/hooks/use-first-completed-trajectory';
-import JobsHistoryViewer from '@/modules/jobs/presentation/components/organisms/JobsHistoryViewer';
+import { JobsHistoryViewer } from '@/modules/jobs/presentation/components/organisms/JobsHistoryViewer';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import { DEFAULT_SCENE } from '@/modules/fractal/presentation/utilities/sceneUtils';
 import { formatNumber } from '@/shared/utils/format';

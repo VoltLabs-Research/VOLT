@@ -17,12 +17,10 @@ export class GetChatMessagesUseCase implements IUseCase<GetChatMessagesInputDTO,
     async execute(input: GetChatMessagesInputDTO): Promise<Result<GetChatMessagesOutputDTO, ApplicationError>> {
         // TODO: verify chat access
         const { chatId } = input;
-        const page = Number(input.page ?? 1);
-        const limit = Number(input.limit ?? 50);
         const messages = await this.messageRepo.findAll({
             filter: { chat: chatId },
-            limit,
-            page,
+            limit: input.limit,
+            page: input.page,
             populate: 'sender',
             sort: { createdAt: 1 }
         });

@@ -81,13 +81,13 @@ const DashboardTeamTimeline = () => {
                     <Title className='font-size-3 color-primary font-weight-5'>Activity</Title>
                 </Container>
                 <Container className='dashboard-timeline-list flex-1 min-h-0 y-auto d-flex column'>
-                    {Array.from({ length: 4 }, (_, i) => (
+                    {Array.from({ length: 10 }, (_, i) => (
                         <Container key={i} className='dashboard-timeline-item'>
                             <Container className='dashboard-timeline-dot-col'>
                                 <Skeleton variant='rounded' width={20} height={20} sx={{ borderRadius: 'var(--radius-md)' }} />
                                 {i < 3 && <span className='dashboard-timeline-line' />}
                             </Container>
-                            <Container className='dashboard-timeline-content'>
+                            <Container className='dashboard-timeline-content w-max'>
                                 <Skeleton variant='text' width='70%' height={12} />
                                 <Skeleton variant='text' width='40%' height={10} sx={{ marginTop: '4px' }} />
                             </Container>

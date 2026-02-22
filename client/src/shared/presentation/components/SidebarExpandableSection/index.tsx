@@ -55,6 +55,7 @@ const SidebarExpandableSection = ({
                     key={index}
                     variant='ghost'
                     intent='neutral'
+                    align='start'
                     className={`sidebar-sub-item transition-fast ${item.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                     onClick={item.onClick}
                 >
@@ -115,6 +116,7 @@ const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
             <Button
                 variant='ghost'
                 intent='neutral'
+                align='start'
                 className={`sidebar-sub-item sidebar-nested-header transition-fast ${item.isSelected || childSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                 onClick={() => setExpanded((value) => !value)}
             >
@@ -132,6 +134,7 @@ const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
                             key={`${item.label}-${index}`}
                             variant='ghost'
                             intent='neutral'
+                            align='start'
                             className={`sidebar-nested-item transition-fast ${subItem.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                             onClick={subItem.onClick}
                         >
