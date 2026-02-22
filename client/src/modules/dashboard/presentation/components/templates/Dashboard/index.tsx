@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
+import { GoArrowRight } from 'react-icons/go';
 import { FlaskConical, Puzzle } from 'lucide-react';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
@@ -9,6 +10,7 @@ import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import EmptyState from '@/shared/presentation/components/EmptyState';
+import Button from '@/shared/presentation/components/Button';
 import DashboardOverviewCard from '@/modules/dashboard/presentation/components/atoms/DashboardOverviewCard';
 import DashboardOverviewSkeleton from '@/modules/dashboard/presentation/components/atoms/DashboardOverviewSkeleton';
 import DashboardTeamTimeline from '@/modules/dashboard/presentation/components/molecules/DashboardTeamTimeline';
@@ -106,7 +108,14 @@ const DashboardPage = () => {
 
                     <Container className='dashboard-bottom-sidebar'>
                         <Container className='dashboard-jobs-card'>
+                            <Container className='d-flex items-center content-between w-max' style={{ padding: '1.25rem 1.25rem 0 1.25rem' }}>
+                                <Title className='font-size-2 color-primary font-weight-6'>
+                                    Jobs History
+                                </Title>
+                            </Container>
                             <JobsHistoryViewer
+                                variant='embedded'
+                                displayMode='full'
                                 hideAfterComplete={false}
                                 emptyState={(
                                     <EmptyState
