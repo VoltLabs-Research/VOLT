@@ -33,22 +33,6 @@ export const PluginSchema = new Schema({
     validationErrors: [{
         type: String
     }],
-    modifier: {
-        type: Schema.Types.Mixed,
-        default: null
-    },
-    exposures: {
-        type: [Schema.Types.Mixed],
-        default: []
-    },
-    arguments: {
-        type: [Schema.Types.Mixed],
-        default: []
-    },
-    listingExposures: {
-        type: Schema.Types.Mixed,
-        default: null
-    }
 }, {
     timestamps: true,
     toJSON: { virtuals: true },

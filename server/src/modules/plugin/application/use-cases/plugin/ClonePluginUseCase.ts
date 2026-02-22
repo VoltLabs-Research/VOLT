@@ -5,8 +5,6 @@ import { ClonePluginInputDTO, ClonePluginOutputDTO } from '@modules/plugin/appli
 import { IPluginRepository } from '@modules/plugin/domain/ports/IPluginRepository';
 import { PluginStatus } from '@modules/plugin/domain/entities/Plugin';
 import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/WorkflowNode';
-import WorkflowProjectionService from '@modules/plugin/domain/services/WorkflowProjectionService';
-import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
@@ -47,16 +45,13 @@ export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePl
         };
 
         const newSlug = `${slugify(original.props.slug)}-copy-${Date.now()}`;
-        const workflow = new Workflow('', clonedWorkflowProps);
-        const projection = WorkflowProjectionService.project(workflow, newSlug);
 
         const plugin = await this.pluginRepository.create({
             workflow: clonedWorkflowProps as any,
             team: input.teamId,
             slug: newSlug,
             validated: original.props.validated,
-            status: PluginStatus.Draft,
-            ...projection
+            status: PluginStatus.Draft
         });
 
         return Result.ok({ plugin });
