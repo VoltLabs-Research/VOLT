@@ -122,7 +122,9 @@ const DashboardTeamTimeline = () => {
                             </Container>
                             <Container className='dashboard-timeline-content'>
                                 <span className='font-size-2 color-primary'>
-                                    <strong className='font-weight-5'>{entry.userName}</strong>
+                                    <strong className='font-weight-5' style={{ textTransform: 'capitalize' }}>
+                                        {entry.userName}
+                                    </strong>
                                     {' '}
                                     <span className='color-secondary'>{entry.description}</span>
                                 </span>
