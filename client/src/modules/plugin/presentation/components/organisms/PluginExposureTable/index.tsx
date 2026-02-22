@@ -7,8 +7,8 @@ import usePluginListing from '@/modules/plugin/presentation/hooks/use-plugin-lis
 import '@/modules/plugin/presentation/components/organisms/PluginExposureTable/PluginExposureTable.css';
 
 export interface PluginExposureTableProps {
-    pluginSlug: string;
-    listingSlug?: string;
+    pluginId: string;
+    exposureName?: string;
     exposureId?: string;
     trajectoryId?: string;
     analysisId?: string;
@@ -20,8 +20,8 @@ export interface PluginExposureTableProps {
 }
 
 const PluginExposureTable = ({
-    pluginSlug,
-    listingSlug,
+    pluginId,
+    exposureName,
     exposureId,
     trajectoryId,
     analysisId,
@@ -32,8 +32,8 @@ const PluginExposureTable = ({
     onDataReady
 }: PluginExposureTableProps) => {
     const listingHook = usePluginListing({
-        pluginSlug,
-        listingSlug,
+        pluginId,
+        exposureName,
         exposureId,
         trajectoryId,
         analysisId,
@@ -58,7 +58,7 @@ const PluginExposureTable = ({
         const { force, page } = params;
         const isInitial = page === 1;
 
-        if (!pluginSlug || (!listingSlug && !exposureId)) {
+        if (!pluginId || (!exposureName && !exposureId)) {
             setError('Invalid listing parameters.');
             return;
         }
@@ -100,7 +100,7 @@ const PluginExposureTable = ({
             setLoading(false);
             setIsFetchingMore(false);
         }
-    }, [listingSlug, exposureId, pluginSlug, trajectoryId, teamId, pageSize, listingHook]);
+    }, [exposureName, exposureId, pluginId, trajectoryId, teamId, pageSize, listingHook]);
 
     const { handleLoadMore } = useListingLifecycle({
         data: rows,
@@ -109,7 +109,7 @@ const PluginExposureTable = ({
         listingMeta,
         fetchData: fetchBatch,
         initialFetchParams: { page: 1, limit: pageSize },
-        dependencies: [pluginSlug, listingSlug, exposureId, trajectoryId, teamId],
+        dependencies: [pluginId, exposureName, exposureId, trajectoryId, teamId],
         skipInitialFetch: !compact,
         onReset: () => {
             setRows([]);
@@ -142,7 +142,7 @@ const PluginExposureTable = ({
 
     return (
         <DocumentListing
-            title={listingSlug || exposureId || 'Listing'}
+            title={exposureName || exposureId || 'Listing'}
             fetchData={listingHook.fetchData}
             context={listingHook.context}
             enabled={listingHook.isEnabled}
@@ -150,7 +150,7 @@ const PluginExposureTable = ({
             getMenuOptions={listingHook.getMenuOptions}
             exportConfig={{
                 onExport: ({ format }) => listingHook.exportData(format),
-                getFilename: (format) => `${pluginSlug}_${listingSlug || exposureId || 'listing'}.${format}`
+                getFilename: (format) => `${pluginId}_${exposureName || exposureId || 'listing'}.${format}`
             }}
             headerActions={headerActions}
         />

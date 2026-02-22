@@ -17,7 +17,6 @@ export class CreatePluginUseCase implements IUseCase<CreatePluginInputDTO, Creat
         const plugin = await this.pluginRepository.create({
             workflow: input.workflow,
             team: input.teamId,
-            slug: input.slug,
             validated: false,
             status: PluginStatus.Draft
         });

@@ -11,8 +11,8 @@ import type { ExportType } from '@/shared/domain/export/types';
 import type { ListingRow } from '../../domain/entities';
 
 interface UsePluginListingParams {
-    pluginSlug: string;
-    listingSlug?: string;
+    pluginId: string;
+    exposureName?: string;
     exposureId?: string;
     trajectoryId?: string;
     analysisId?: string;
@@ -21,8 +21,8 @@ interface UsePluginListingParams {
 };
 
 interface PluginListingContext {
-    pluginSlug: string;
-    listingSlug?: string;
+    pluginId: string;
+    exposureName?: string;
     exposureId?: string;
     trajectoryId?: string;
     analysisId?: string;
@@ -45,8 +45,8 @@ const TRAJECTORY_COLUMN: ColumnConfig = {
 };
 
 const usePluginListing = ({
-    pluginSlug,
-    listingSlug,
+    pluginId,
+    exposureName,
     exposureId,
     trajectoryId,
     analysisId,
@@ -70,20 +70,20 @@ const usePluginListing = ({
     }, [storeColumns, shouldShowTrajectory]);
 
     const context: PluginListingContext = useMemo(() => ({
-        pluginSlug,
-        listingSlug,
+        pluginId,
+        exposureName,
         exposureId,
         trajectoryId,
         analysisId,
         teamId
-    }), [pluginSlug, listingSlug, exposureId, trajectoryId, analysisId, teamId]);
+    }), [pluginId, exposureName, exposureId, trajectoryId, analysisId, teamId]);
 
     const fetchData = useCallback(async (
         params: { page: number; limit: number } & PluginListingContext
     ): Promise<PaginatedResponse<ListingRow>> => {
         const response = await pluginListingRepository.getListing({
-            pluginSlug: params.pluginSlug,
-            listingSlug: params.listingSlug,
+            pluginId: params.pluginId,
+            exposureName: params.exposureName,
             exposureId: params.exposureId,
             trajectoryId: params.trajectoryId,
             analysisId: params.analysisId,
@@ -116,14 +116,14 @@ const usePluginListing = ({
 
     const exportData = useCallback(async (format: ExportType): Promise<Blob> => {
         return pluginListingRepository.exportListing({
-            pluginSlug,
-            listingSlug,
+            pluginId,
+            exposureName,
             exposureId,
             trajectoryId,
             analysisId,
             format
         });
-    }, [pluginListingRepository, pluginSlug, listingSlug, exposureId, trajectoryId, analysisId]);
+    }, [pluginListingRepository, pluginId, exposureName, exposureId, trajectoryId, analysisId]);
 
     const handleDelete = useCallback(async (item: ListingRow) => {
         const analysisToDelete = item?.analysisId;
@@ -169,7 +169,7 @@ const usePluginListing = ({
         return options;
     }, [handleDelete, navigate]);
 
-    const isEnabled = !!(pluginSlug && (listingSlug || exposureId) && (trajectoryId || teamId));
+    const isEnabled = !!(pluginId && (exposureName || exposureId) && (trajectoryId || teamId));
 
     return {
         columns,

@@ -16,7 +16,6 @@ import logger from '@shared/infrastructure/logger';
 import archiver from 'archiver';
 import unzipper from 'unzipper';
 
-
 @injectable()
 export default class PluginStorageService implements IPluginStorageService {
     constructor(
@@ -99,7 +98,6 @@ export default class PluginStorageService implements IPluginStorageService {
         }
 
         const exportData = {
-            slug: plugin.props.slug,
             workflow: plugin.props.workflow,
             status: plugin.props.status,
             validated: plugin.props.validated,
@@ -139,68 +137,8 @@ export default class PluginStorageService implements IPluginStorageService {
             throw new Error('Plugin::Import::InvalidFormat');
         }
 
-        const originalSlug = importData.slug || 'plugin';
-        const baseSlug = originalSlug.replace(/-[a-f0-9-]{8,}$/i, '').replace(/-\d{13,}$/, '');
-        const uniqueSlug = `${baseSlug}-${teamId.slice(-6)}-${v4().slice(0, 8)}`;
-
-        const workflow = importData.workflow;
-        const idMap = new Map<string, string>();
-
-        // First pass: collect all node IDs and generate new ones
-        if (workflow.nodes && Array.isArray(workflow.nodes)) {
-            for (const node of workflow.nodes) {
-                const oldId = node.id;
-                const newId = v4();
-                idMap.set(oldId, newId);
-            }
-        }
-
-        // Helper to replace ID references in strings (e.g., "{{ oldId.property }}")
-        const replaceIdReferences = (obj: any): any => {
-            if (typeof obj === 'string') {
-                let result = obj;
-                for (const [oldId, newId] of idMap.entries()) {
-                    result = result.replace(new RegExp(oldId, 'g'), newId);
-                }
-                return result;
-            }
-            if (Array.isArray(obj)) {
-                return obj.map(replaceIdReferences);
-            }
-            if (obj && typeof obj === 'object') {
-                const newObj: any = {};
-                for (const key of Object.keys(obj)) {
-                    newObj[key] = replaceIdReferences(obj[key]);
-                }
-                return newObj;
-            }
-            return obj;
-        };
-
-        // Second pass: update node IDs and replace references in data
-        if (workflow.nodes && Array.isArray(workflow.nodes)) {
-            for (const node of workflow.nodes) {
-                node.id = idMap.get(node.id) || node.id;
-                node.data = replaceIdReferences(node.data);
-            }
-        }
-
-        // Update edge IDs and references
-        if (workflow.edges && Array.isArray(workflow.edges)) {
-            for (const edge of workflow.edges) {
-                edge.id = v4();
-                if (idMap.has(edge.source)) {
-                    edge.source = idMap.get(edge.source);
-                }
-                if (idMap.has(edge.target)) {
-                    edge.target = idMap.get(edge.target);
-                }
-            }
-        }
-
         const newPlugin = await this.pluginRepo.create({
-            slug: uniqueSlug,
-            workflow,
+            workflow: importData.workflow,
             status: status ?? PluginStatus.Draft,
             team: teamId
         });
@@ -227,7 +165,7 @@ export default class PluginStorageService implements IPluginStorageService {
                 binaryFileName
             });
             
-            await this.updateByIdUseCase.execute({ pluginId: newPlugin.id, workflow: newPlugin.props.workflow.props, regenerateSlug: false });
+            await this.updateByIdUseCase.execute({ pluginId: newPlugin.id, workflow: newPlugin.props.workflow.props, });
 
             logger.info(`@plugin-workflow-service: imported binary ${binaryObjectPath}`);
             binaryImported = true;

@@ -20,11 +20,11 @@ interface TimelineProps {
     analysisId: string | undefined;
     onTabChange?: (tab: string) => void;
     onDownloadExposureListing?: (params: {
-        pluginSlug: string;
+        pluginId: string;
         exposureId: string;
         analysisId?: string;
         trajectoryId?: string;
-        listingSlug?: string;
+        exposureName?: string;
     }) => void;
 }
 
@@ -33,7 +33,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
     const [activeTab, setActiveTab] = useState<string>('timeline');
     const { timelineExposureId, setTimelineExposureId } = useCanvasUrlState();
     const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id);
-    const { pluginSlug, isPluginReady, listingExposures, atomExposureId } = useCanvasTimelineTabs({ trajectory, analysisId });
+    const { pluginId, isPluginReady, listingExposures, atomExposureId } = useCanvasTimelineTabs({ trajectory, analysisId });
 
     const exposureTabs = useMemo<TimelineTabOption[]>(() => {
         return listingExposures.map((exposure) => ({
@@ -296,7 +296,7 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
                 onPlaySpeedChange={setPlaySpeed}
                 onDownloadExposureListing={onDownloadExposureListing}
                 downloadContext={{
-                    pluginSlug,
+                    pluginId,
                     analysisId,
                     trajectoryId: trajectory?._id
                 }}
@@ -332,10 +332,10 @@ const Timeline = ({ sceneRef, trajectory, analysisId, onTabChange, onDownloadExp
                 </Container>
             )}
 
-            {activeExposureId && trajectory?._id && pluginSlug && selectedTeamId && (
+            {activeExposureId && trajectory?._id && pluginId && selectedTeamId && (
                 <Container className="canvas-timeline-body flex-1 p-relative overflow-hidden min-h-0">
                     <PluginExposureListingPanel
-                        pluginSlug={pluginSlug}
+                        pluginId={pluginId}
                         exposureId={activeExposureId}
                         trajectoryId={trajectory._id}
                         analysisId={analysisId}

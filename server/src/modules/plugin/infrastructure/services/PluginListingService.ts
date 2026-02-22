@@ -10,7 +10,7 @@ interface ListingOptions {
     teamId?: string;
     trajectoryId?: string;
     analysisId?: string;
-    listingSlug?: string;
+    exposureName?: string;
     exposureId?: string;
     page?: number;
     limit?: number;
@@ -19,9 +19,9 @@ interface ListingOptions {
 };
 
 interface ListingPreparedContext {
-    pluginSlug: string;
+    pluginId: string;
     exposureId: string;
-    listingSlug: string;
+    exposureName: string;
     columns: ColumnConfig[];
     baseQuery: Record<string, unknown>;
 };
@@ -51,8 +51,8 @@ export interface PluginListingPaginatedResult {
     totalPages: number;
     limit: number;
     _meta: {
-        pluginSlug: string;
-        listingSlug: string;
+        pluginId: string;
+        exposureName: string;
         exposureId: string;
         columns: ColumnConfig[];
     };
@@ -60,7 +60,7 @@ export interface PluginListingPaginatedResult {
 
 export interface PluginListingExportResult {
     meta: {
-        pluginSlug: string;
+        pluginId: string;
         exposureId: string;
         analysisId?: string;
         trajectoryId?: string;
@@ -78,11 +78,11 @@ export class PluginListingService {
         @inject(PLUGIN_TOKENS.ListingRowRepository) private listingRowRepository: IListingRowRepository
     ) {}
 
-    async getListingDocuments(pluginSlug: string, options: ListingOptions): Promise<PluginListingPaginatedResult> {
+    async getListingDocuments(pluginId: string, options: ListingOptions): Promise<PluginListingPaginatedResult> {
         const page = Math.max(1, options.page || 1);
         const limit = Math.min(200, Math.max(1, options.limit || 50));
         const sortAsc = options.sortAsc || false;
-        const prepared = await this.prepareListingContext(pluginSlug, options);
+        const prepared = await this.prepareListingContext(pluginId, options);
 
         // Query database with pagination
         const result: PaginatedResult<ListingRow> = await this.listingRowRepository.findAll({
@@ -107,19 +107,19 @@ export class PluginListingService {
             totalPages: result.totalPages,
             limit: result.limit,
             _meta: {
-                pluginSlug: prepared.pluginSlug,
-                listingSlug: prepared.listingSlug,
+                pluginId: prepared.pluginId,
+                exposureName: prepared.exposureName,
                 exposureId: prepared.exposureId,
                 columns
             }
         };
     }
 
-    async exportListingDocuments(pluginSlug: string, options: ListingOptions): Promise<PluginListingExportResult> {
+    async exportListingDocuments(pluginId: string, options: ListingOptions): Promise<PluginListingExportResult> {
         const sortAsc = options.sortAsc || false;
         const format = options.format || 'json';
         const pageSize = 200;
-        const prepared = await this.prepareListingContext(pluginSlug, options);
+        const prepared = await this.prepareListingContext(pluginId, options);
 
         let page = 1;
         let totalPages = 1;
@@ -148,7 +148,7 @@ export class PluginListingService {
 
         return {
             meta: {
-                pluginSlug: prepared.pluginSlug,
+                pluginId: prepared.pluginId,
                 exposureId: prepared.exposureId,
                 analysisId: options.analysisId,
                 trajectoryId: options.trajectoryId,
@@ -160,30 +160,30 @@ export class PluginListingService {
         };
     }
 
-    private async prepareListingContext(pluginSlug: string, options: ListingOptions): Promise<ListingPreparedContext> {
-        if (!options.exposureId && !options.listingSlug) {
+    private async prepareListingContext(pluginId: string, options: ListingOptions): Promise<ListingPreparedContext> {
+        if (!options.exposureId && !options.exposureName) {
             throw new Error('Exposure::SelectorRequired');
         }
 
-        const plugin = await this.pluginRepository.findOne({ slug: pluginSlug });
+        const plugin = await this.pluginRepository.findById(pluginId);
         if (!plugin) {
             throw new Error('Plugin::NotFound');
         }
 
-        const exposureDescriptor = this.resolveListingExposure(plugin, options.exposureId, options.listingSlug);
+        const exposureDescriptor = this.resolveListingExposure(plugin, options.exposureId, options.exposureName);
         if (!exposureDescriptor) {
             throw new Error('Exposure::NotFound');
         }
 
-        const { exposureId, listingSlug, columns } = exposureDescriptor;
+        const { exposureId, exposureName, columns } = exposureDescriptor;
         const baseQuery: Record<string, unknown> = {
             plugin: plugin.id,
             exposureId,
             team: options.teamId
         };
 
-        if (listingSlug) {
-            baseQuery.listingSlug = listingSlug;
+        if (exposureName) {
+            baseQuery.exposureName = exposureName;
         }
 
         if (options.trajectoryId) {
@@ -197,9 +197,9 @@ export class PluginListingService {
         }
 
         return {
-            pluginSlug,
+            pluginId,
             exposureId,
-            listingSlug,
+            exposureName,
             columns,
             baseQuery
         };
@@ -241,8 +241,8 @@ export class PluginListingService {
     private resolveListingExposure(
         plugin: any,
         exposureId?: string,
-        listingSlug?: string
-    ): { exposureId: string; listingSlug: string; columns: ColumnConfig[] } | null {
+        exposureName?: string
+    ): { exposureId: string; exposureName: string; columns: ColumnConfig[] } | null {
         const workflow = plugin?.props?.workflow;
         const nodes = workflow?.props?.nodes || [];
         const edges = workflow?.props?.edges || [];
@@ -254,7 +254,7 @@ export class PluginListingService {
             if (!id || !name) continue;
 
             if (exposureId && id !== exposureId) continue;
-            if (!exposureId && listingSlug && name !== listingSlug) continue;
+            if (!exposureId && exposureName && name !== exposureName) continue;
 
             const columns = this.findColumnsForExposure(id, nodes, edges);
             if (!columns.length) {
@@ -263,7 +263,7 @@ export class PluginListingService {
 
             return {
                 exposureId: id,
-                listingSlug: name,
+                exposureName: name,
                 columns
             };
         }

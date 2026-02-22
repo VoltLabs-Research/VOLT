@@ -1,5 +1,5 @@
 export interface ListingRow {
-    _id?: string;
+    _id: string;
     trajectoryId?: string;
     trajectoryName?: string;
     analysisId?: string;

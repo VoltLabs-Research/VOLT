@@ -5,7 +5,6 @@ import { createBaseSlice, BASE_SLICE_INITIAL_STATE, type BaseSlice } from '@/sha
 
 export interface RenderableExposure {
     pluginId: string;
-    pluginSlug: string;
     analysisId: string;
     exposureId: string;
     modifierId?: string;
@@ -24,7 +23,7 @@ export interface RenderableExposure {
 
 export interface ResolvedModifier {
     plugin: Plugin;
-    pluginSlug: string;
+    pluginId: string;
     name: string;
     icon?: string;
 }
@@ -33,26 +32,26 @@ export type PluginArgument = IArgumentDefinition;
 
 interface PluginStore extends BaseSlice {
     plugins: Plugin[];
-    pluginsBySlug: Record<string, Plugin>;
+    pluginsById: Record<string, Plugin>;
     setPlugins: (items: Plugin[]) => void;
     appendPlugins: (items: Plugin[]) => void;
     addPlugin: (item: Plugin) => void;
     removePlugin: (id: string) => void;
     updatePlugin: (id: string, updates: Partial<Plugin>) => void;
     getModifiers: () => ResolvedModifier[];
-    getPluginArguments: (pluginSlug: string) => PluginArgument[];
+    getPluginArguments: (pluginId: string) => PluginArgument[];
     registerPlugins: (plugins: Plugin[]) => void;
     resetPlugins: () => void;
 }
 
 const initialState = {
     plugins: [] as Plugin[],
-    pluginsBySlug: {} as Record<string, Plugin>,
+    pluginsById: {} as Record<string, Plugin>,
     ...BASE_SLICE_INITIAL_STATE
 };
 
-const buildPluginsBySlug = (plugins: Plugin[]): Record<string, Plugin> => {
-    return Object.fromEntries(plugins.map((p) => [p.slug, p]));
+const buildPluginsById = (plugins: Plugin[]): Record<string, Plugin> => {
+    return Object.fromEntries(plugins.map((p) => [p._id, p]));
 };
 
 const usePluginStore = create<PluginStore>((set, get) => ({
@@ -61,7 +60,7 @@ const usePluginStore = create<PluginStore>((set, get) => ({
 
     setPlugins: (items) => set({
         plugins: items,
-        pluginsBySlug: buildPluginsBySlug(items)
+        pluginsById: buildPluginsById(items)
     }),
 
     appendPlugins: (items) => set((state) => {
@@ -70,7 +69,7 @@ const usePluginStore = create<PluginStore>((set, get) => ({
         const newPlugins = [...state.plugins, ...uniqueNewItems];
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins)
+            pluginsById: buildPluginsById(newPlugins)
         };
     }),
 
@@ -78,7 +77,7 @@ const usePluginStore = create<PluginStore>((set, get) => ({
         const newPlugins = [item, ...state.plugins];
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins)
+            pluginsById: buildPluginsById(newPlugins)
         };
     }),
 
@@ -86,7 +85,7 @@ const usePluginStore = create<PluginStore>((set, get) => ({
         const newPlugins = state.plugins.filter((p) => p._id !== id);
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins)
+            pluginsById: buildPluginsById(newPlugins)
         };
     }),
 
@@ -96,7 +95,7 @@ const usePluginStore = create<PluginStore>((set, get) => ({
         );
         return {
             plugins: newPlugins,
-            pluginsBySlug: buildPluginsBySlug(newPlugins)
+            pluginsById: buildPluginsById(newPlugins)
         };
     }),
 
@@ -105,39 +104,39 @@ const usePluginStore = create<PluginStore>((set, get) => ({
             .filter(plugin => plugin.modifier)
             .map(plugin => ({
                 plugin,
-                pluginSlug: plugin.slug,
-                name: plugin.modifier?.name || plugin.slug,
+                pluginId: plugin._id,
+                name: plugin.modifier?.name || plugin._id,
                 icon: plugin.modifier?.icon
             }));
     },
 
-    getPluginArguments: (pluginSlug: string) => {
-        const plugin = get().pluginsBySlug[pluginSlug];
+    getPluginArguments: (pluginId: string) => {
+        const plugin = get().pluginsById[pluginId];
         return (plugin?.arguments as PluginArgument[]) ?? [];
     },
 
     registerPlugins(incomingPlugins: Plugin[]) {
         const state = get();
-        const nextPluginsBySlug = { ...state.pluginsBySlug };
+        const nextPluginsById = { ...state.pluginsById };
 
         let changed = false;
 
         const nextPlugins = [...state.plugins];
 
         for (const plugin of incomingPlugins) {
-            if (!plugin?.slug) continue;
-            const existing = nextPluginsBySlug[plugin.slug];
+            if (!plugin?._id) continue;
+            const existing = nextPluginsById[plugin._id];
             if (!existing) {
                 nextPlugins.unshift(plugin);
                 changed = true;
             }
-            nextPluginsBySlug[plugin.slug] = plugin;
+            nextPluginsById[plugin._id] = plugin;
         }
 
         if (changed) {
             set({
                 plugins: nextPlugins,
-                pluginsBySlug: nextPluginsBySlug
+                pluginsById: nextPluginsById
             });
         }
     },

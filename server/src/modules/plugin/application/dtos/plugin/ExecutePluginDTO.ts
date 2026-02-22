@@ -1,5 +1,5 @@
 export interface ExecutePluginInputDTO {
-    pluginSlug: string;
+    pluginId: string;
     trajectoryId: string;
     userId: string;
     teamId: string;

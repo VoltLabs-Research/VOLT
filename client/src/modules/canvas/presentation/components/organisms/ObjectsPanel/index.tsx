@@ -16,11 +16,11 @@ import './ObjectsPanel.css';
 interface ObjectsPanelProps {
     trajectory: Trajectory | null | undefined;
     onDownloadExposureListing?: (params: {
-        pluginSlug: string;
+        pluginId: string;
         exposureId: string;
         analysisId?: string;
         trajectoryId?: string;
-        listingSlug?: string;
+        exposureName?: string;
     }) => void;
 }
 

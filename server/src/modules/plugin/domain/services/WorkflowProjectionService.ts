@@ -1,8 +1,8 @@
-import Workflow from '../entities/workflow/Workflow';
-import { WorkflowNodeType } from '../entities/workflow/WorkflowNode';
 import { ModifierNodeData } from '../entities/workflow/nodes/ModifierNode';
 import { ArgumentDefinition } from '../entities/workflow/nodes/ArgumentNode';
 import { ExportNodeData } from '../entities/workflow/nodes/ExportNode';
+import Workflow from '../entities/workflow/Workflow';
+import { WorkflowNodeType } from '../entities/workflow/WorkflowNode';
 
 export interface ComputedExposure {
     _id: string;
@@ -22,13 +22,12 @@ export interface ComputedExposure {
 export interface ListingExposureEntry {
     exposureId: string;
     name: string;
-    slug: string;
     hasPerAtomProperties: boolean;
 }
 
 export interface ListingExposuresData {
     pluginName: string;
-    pluginSlug: string;
+    pluginId: string;
     exposures: ListingExposureEntry[];
 }
 
@@ -40,7 +39,7 @@ export interface PluginProjection {
 }
 
 export default class WorkflowProjectionService {
-    static project(workflow: Workflow, slug: string): PluginProjection {
+    static project(workflow: Workflow, pluginId: string): PluginProjection {
         const nodes = workflow.props.nodes;
 
         // 1. Modifier
@@ -80,14 +79,13 @@ export default class WorkflowProjectionService {
             .map((exp) => ({
                 exposureId: exp._id,
                 name: exp.name,
-                slug: exp.name,
                 hasPerAtomProperties: Boolean(exp.perAtomProperties?.length)
             }));
 
         const listingExposures: ListingExposuresData | null = modifier
             ? {
                 pluginName: modifier.name,
-                pluginSlug: slug,
+                pluginId,
                 exposures: listingEntries
             }
             : null;

@@ -3,7 +3,6 @@ import type { IWorkflow, IModifierData, PluginStatus } from './Workflow';
 import type { IExposureComputed, IComputedArgumentDefinition, IListingsWithExposures } from './Exposure';
 
 export interface Plugin extends BaseEntity {
-    slug: string;
     workflow: IWorkflow;
     status: PluginStatus;
     validated: boolean;

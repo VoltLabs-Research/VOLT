@@ -49,15 +49,15 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
                 if (directName) return directName;
             }
 
-            const pluginSlug = typeof pluginValue === 'string'
+            const pluginId = typeof pluginValue === 'string'
                 ? pluginValue
-                : String(pluginValue?.slug || pluginValue?.props?.slug || '');
+                : String(pluginValue?._id || pluginValue?.id || '');
 
-            if (!pluginSlug) return '';
-            if (pluginNameCache.has(pluginSlug)) return pluginNameCache.get(pluginSlug)!;
+            if (!pluginId) return '';
+            if (pluginNameCache.has(pluginId)) return pluginNameCache.get(pluginId)!;
 
-            const pluginBySlug = await this.pluginRepository.findOne({ slug: pluginSlug });
-            const nodes = pluginBySlug?.props?.workflow?.props?.nodes || [];
+            const pluginById = await this.pluginRepository.findById(pluginId);
+            const nodes = pluginById?.props?.workflow?.props?.nodes || [];
             const modifierNode = Array.isArray(nodes)
                 ? nodes.find((node: any) => node?.type === WorkflowNodeType.Modifier)
                 : undefined;
@@ -65,22 +65,22 @@ export default class GetAnalysesByTeamIdUseCase implements IUseCase<GetAnalysesB
                 ? modifierNode.data.modifier.name.trim()
                 : '';
 
-            pluginNameCache.set(pluginSlug, modifierName);
+            pluginNameCache.set(pluginId, modifierName);
             return modifierName;
         };
 
         const data = await Promise.all(results.data.map(async (analysis: any) => {
             const props = { ...analysis.props };
             const pluginValue = props.plugin;
-            const pluginSlug = typeof pluginValue === 'string'
+            const pluginId = typeof pluginValue === 'string'
                 ? pluginValue
-                : String(pluginValue?.slug || pluginValue?.props?.slug || '');
+                : String(pluginValue?._id || pluginValue?.id || '');
             const pluginDisplayName = await resolveModifierName(pluginValue);
 
             return {
                 ...props,
                 _id: analysis.id,
-                plugin: pluginSlug,
+                plugin: pluginId,
                 pluginDisplayName
             };
         }));

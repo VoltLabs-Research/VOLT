@@ -36,12 +36,12 @@ export interface IComputedArgumentDefinition {
 export interface IListingExposure {
     exposureId: string;
     name: string;
-    slug: string;
+    exposureName: string;
     hasPerAtomProperties: boolean;
 };
 
 export interface IListingsWithExposures {
     pluginName: string;
-    pluginSlug: string;
+    pluginId: string;
     exposures: IListingExposure[];
 };

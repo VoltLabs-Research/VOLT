@@ -76,8 +76,8 @@ export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTraject
                     const metadata = artifact.props.metadata as Record<string, unknown> | undefined;
                     return typeof artifact.props.plugin === 'string'
                         && artifact.props.plugin.length > 0
-                        && typeof metadata?.pluginSlug === 'string'
-                        && metadata.pluginSlug.length > 0;
+                        && typeof metadata?.pluginId === 'string'
+                        && metadata.pluginId.length > 0;
                 })
                 .map((artifact) => {
                     const metadata = artifact.props.metadata as Record<string, unknown> | undefined;
@@ -91,7 +91,7 @@ export class ListTrajectorySceneArtifactsUseCase implements IUseCase<ListTraject
 
                     return {
                         pluginId,
-                        pluginSlug: metadata!.pluginSlug as string,
+                        pluginId: metadata!.pluginId as string,
                         analysisId: artifact.props.analysis,
                         exposureId: String(artifact.props.params.exposureId),
                         name: exposureName,

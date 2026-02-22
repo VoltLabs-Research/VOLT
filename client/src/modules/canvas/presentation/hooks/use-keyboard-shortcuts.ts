@@ -27,7 +27,7 @@ const useKeyboardShortcuts = () => {
         showGrid,
         settingsKey,
         updateSearchParams,
-        setResultsSlug,
+        setResultsPluginId,
         setSettingsKey,
         toggleModifier
     } = useCanvasUrlState();
@@ -141,7 +141,7 @@ const useKeyboardShortcuts = () => {
                     setShowPanel(false);
                     return;
                 }
-                setResultsSlug(undefined, { replace: true });
+                setResultsPluginId(undefined, { replace: true });
             },
 
             'toggle-opacity-settings': () => {
@@ -165,7 +165,7 @@ const useKeyboardShortcuts = () => {
         showWidgets,
         showGrid,
         updateSearchParams,
-        setResultsSlug,
+        setResultsPluginId,
         settingsKey,
         setSettingsKey,
         toggleModifier

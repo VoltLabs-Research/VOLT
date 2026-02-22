@@ -39,13 +39,13 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
             .filter(plugin => plugin.modifier)
             .map(plugin => ({
                 plugin,
-                pluginSlug: plugin.slug,
-                name: plugin.modifier?.name || plugin.slug,
+                pluginId: plugin._id,
+                name: plugin.modifier?.name || plugin._id,
                 icon: plugin.modifier?.icon
             })),
         [plugins]
     );
-    const pluginLoading = usePluginStore((s) => s.loading);
+    const pluginLoading = usePluginStore((s) => s.isLoading);
     const getPluginArguments = usePluginStore((s) => s.getPluginArguments);
     const [openModifierIds, setOpenModifierIds] = useState<Set<string>>(new Set());
     const [modifiersOpen, setModifiersOpen] = useState(true);

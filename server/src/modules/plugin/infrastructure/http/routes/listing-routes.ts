@@ -11,11 +11,11 @@ const module: HttpModule = {
 
 router.use(protect);
 
-router.get('/listing/:pluginSlug/export', controllers.exportPluginListingDocuments.handle);
-router.get('/listing/:pluginSlug/trajectory/:trajectoryId/export', controllers.exportPluginListingDocuments.handle);
-router.get('/listing/:pluginSlug/exposure/:exposureId', controllers.getPluginListingDocuments.handle);
-router.get('/listing/:pluginSlug/exposure/:exposureId/:trajectoryId', controllers.getPluginListingDocuments.handle);
-router.get('/listing/:pluginSlug/:listingSlug', controllers.getPluginListingDocuments.handle);
-router.get('/listing/:pluginSlug/:listingSlug/:trajectoryId', controllers.getPluginListingDocuments.handle);
+router.get('/listing/:pluginId/export', controllers.exportPluginListingDocuments.handle);
+router.get('/listing/:pluginId/trajectory/:trajectoryId/export', controllers.exportPluginListingDocuments.handle);
+router.get('/listing/:pluginId/exposure/:exposureId', controllers.getPluginListingDocuments.handle);
+router.get('/listing/:pluginId/exposure/:exposureId/:trajectoryId', controllers.getPluginListingDocuments.handle);
+router.get('/listing/:pluginId/:exposureName', controllers.getPluginListingDocuments.handle);
+router.get('/listing/:pluginId/:exposureName/:trajectoryId', controllers.getPluginListingDocuments.handle);
 
 export default module;

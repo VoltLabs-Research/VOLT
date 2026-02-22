@@ -19,11 +19,11 @@ interface SceneCollectionProps {
     totalAnalyses: number;
     statusMap: Map<string, string>;
     onDownloadExposureListing?: (params: {
-        pluginSlug: string;
+        pluginId: string;
         exposureId: string;
         analysisId?: string;
         trajectoryId?: string;
-        listingSlug?: string;
+        exposureName?: string;
     }) => void;
 }
 

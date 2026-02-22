@@ -3,6 +3,6 @@ export interface PrecomputeListingRowsForTimestepsInputDTO {
     teamId: string;
     trajectoryId: string;
     analysisId: string;
-    listingSlug: string;
+    exposureName: string;
     timesteps: number[];
 }

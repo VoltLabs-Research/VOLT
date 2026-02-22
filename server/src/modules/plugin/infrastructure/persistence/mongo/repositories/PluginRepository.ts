@@ -27,7 +27,6 @@ export default class PluginRepository
             await this.eventBus.publish(new PluginDeletedEvent({
                 pluginId: id,
                 teamId: result.team?.toString(),
-                slug: result.slug,
                 workflow: result.workflow
             }));
         }

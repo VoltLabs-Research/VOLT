@@ -10,13 +10,6 @@ export const PluginSchema = new Schema({
         required: true,
         inverse: { path: 'plugins', behavior: 'addToSet' }
     },
-    slug: {
-        type: String,
-        required: [true, ValidationCodes.PLUGIN_SLUG_REQUIRED],
-        unique: true,
-        lowercase: true,
-        trim: true
-    },
     workflow: {
         type: WorkflowSchema,
         required: [true, ValidationCodes.PLUGIN_WORKFLOW_REQUIRED]

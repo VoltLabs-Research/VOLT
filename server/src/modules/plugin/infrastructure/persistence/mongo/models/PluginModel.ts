@@ -6,9 +6,6 @@ import { PluginSchema } from '@modules/plugin/infrastructure/persistence/mongo/s
 type PluginRelations = 'team';
 export interface PluginDocument extends Persistable<PluginProps, PluginRelations>, Document { };
 
-PluginSchema.index({
-    slug: 'text'
-});
 
 const PluginModel: Model<PluginDocument> = mongoose.model<PluginDocument>('Plugin', PluginSchema);
 

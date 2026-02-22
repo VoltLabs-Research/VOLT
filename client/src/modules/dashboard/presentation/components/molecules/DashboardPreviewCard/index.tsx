@@ -16,6 +16,7 @@ import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Button from '@/shared/presentation/components/Button';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import './DashboardPreviewCard.css';
 
 const DashboardPreviewCard: React.FC = () => {
@@ -78,13 +79,11 @@ const DashboardPreviewCard: React.FC = () => {
     if (!completedTrajectory) {
         return (
             <Container className='dashboard-preview-card'>
-                <Container className='dashboard-preview-empty'>
-                    <PiAtomThin size={32} />
-                    <span className='font-size-3 color-secondary font-weight-5'>Molecular Preview</span>
-                    <span className='font-size-2 color-muted dashboard-preview-empty-text'>
-                        Upload and process a trajectory file to see a real-time 3D visualization of your atomic structures here.
-                    </span>
-                </Container>
+                <EmptyState
+                    icon={<PiAtomThin size={32} />}
+                    title='Molecular Preview'
+                    description='Upload and process a trajectory file to see a real-time 3D visualization of your atomic structures here.'
+                />
             </Container>
         );
     }

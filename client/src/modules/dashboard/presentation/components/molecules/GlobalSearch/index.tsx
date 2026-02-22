@@ -24,7 +24,7 @@ const SECTIONS: SectionConfig[] = [
     { key: 'analyses', icon: <GoWorkflow />, title: 'Analyses', getPath: () => '/dashboard/analysis-configs', getTitle: (i) => i.plugin, getSubtitle: (i) => new Date(i.createdAt).toLocaleDateString() },
     { key: 'trajectories', icon: <TbObjectScan />, title: 'Trajectories', getPath: (i) => `/dashboard/trajectories/${i._id}`, getTitle: (i) => i.name, getSubtitle: (i) => i.status },
     { key: 'containers', icon: <IoCubeOutline />, title: 'Containers', getPath: () => '/dashboard/containers', getTitle: (i) => i.name, getSubtitle: (i) => i.image },
-    { key: 'plugins', icon: <TbCube3dSphere />, title: 'Plugins', getPath: (i) => `/dashboard/plugins/${i.slug}`, getTitle: (i) => i.modifier?.name || i.slug, getSubtitle: (i) => i.modifier?.description },
+    { key: 'plugins', icon: <TbCube3dSphere />, title: 'Plugins', getPath: (i) => `/dashboard/plugins/${i._id}`, getTitle: (i) => i.modifier?.name || i._id, getSubtitle: (i) => i.modifier?.description },
     { key: 'teams', icon: <IoPeopleOutline />, title: 'Teams', getPath: () => '/dashboard', getTitle: (i) => i.name, getSubtitle: (i) => i.description },
     { key: 'chats', icon: <CiChat1 />, title: 'Chats', getPath: () => '/dashboard/messages', getTitle: (i) => i.participants?.map((p: any) => p.firstName || p.email).join(', ') || 'Chat', getSubtitle: (i) => i.lastMessage?.content?.substring(0, 50) || 'No messages' }
 ];

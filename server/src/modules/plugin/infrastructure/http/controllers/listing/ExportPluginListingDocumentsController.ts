@@ -44,7 +44,7 @@ export default class ExportPluginListingDocumentsController extends BaseControll
 
             return sendExportFile({
                 res,
-                filename: `${payload.meta.pluginSlug}_${payload.meta.exposureId}_listing`,
+                filename: `${payload.meta.pluginId}_${payload.meta.exposureId}_listing`,
                 format: payload.meta.format,
                 rows: payload.data,
                 columns

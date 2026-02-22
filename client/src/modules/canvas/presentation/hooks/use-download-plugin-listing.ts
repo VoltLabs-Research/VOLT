@@ -5,11 +5,11 @@ import useToast from '@/shared/presentation/hooks/use-toast';
 import { ExportType } from '@/shared/domain/export/types';
 
 export interface DownloadPluginListingParams {
-    pluginSlug: string;
+    pluginId: string;
     exposureId: string;
     analysisId?: string;
     trajectoryId?: string;
-    listingSlug?: string;
+    exposureName?: string;
     format?: ExportType;
 }
 
@@ -20,9 +20,9 @@ const useDownloadPluginListing = () => {
     const [isDownloading, setIsDownloading] = useState(false);
 
     const downloadListing = useCallback(async (params: DownloadPluginListingParams) => {
-        const { pluginSlug, exposureId, analysisId, trajectoryId, listingSlug, format = 'json' } = params;
+        const { pluginId, exposureId, analysisId, trajectoryId, exposureName, format = 'json' } = params;
 
-        if (!pluginSlug || !exposureId) {
+        if (!pluginId || !exposureId) {
             return;
         }
 
@@ -30,15 +30,15 @@ const useDownloadPluginListing = () => {
             setIsDownloading(true);
 
             const blob = await pluginListingRepository.exportListing({
-                pluginSlug,
+                pluginId,
                 exposureId,
                 analysisId,
                 trajectoryId,
-                listingSlug,
+                exposureName,
                 format
             });
             const analysisSegment = analysisId ?? 'all';
-            const filename = `${pluginSlug}_${exposureId}_${analysisSegment}_listing.${format}`;
+            const filename = `${pluginId}_${exposureId}_${analysisSegment}_listing.${format}`;
 
             triggerBrowserDownload(blob, filename);
             showSuccess('Listing downloaded successfully');

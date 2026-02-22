@@ -3,7 +3,7 @@ import type { SceneArtifact, SceneArtifactSourceType } from '@/modules/trajector
 
 export interface RenderableExposurePayload {
     pluginId: string;
-    pluginSlug?: string;
+    pluginId?: string;
     analysisId?: string;
     exposureId: string;
     modifierId?: string;
@@ -25,7 +25,7 @@ export interface ListSceneArtifactsInputDTO {
     sourceType?: SceneArtifactSourceType;
     type?: SceneArtifactSourceType;
     analysisId?: string;
-    pluginSlug?: string;
+    pluginId?: string;
     projection?: 'raw' | 'renderable-exposures';
     timestep?: number;
     page?: number;

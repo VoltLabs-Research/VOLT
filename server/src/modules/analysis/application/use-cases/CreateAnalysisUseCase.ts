@@ -13,7 +13,7 @@ export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, C
     async execute(input: CreateAnalysisInputDTO): Promise<Result<CreateAnalysisOutputDTO>> {
         const analysis = await this.analysisRepository.create({
             trajectory: input.trajectoryId,
-            plugin: input.pluginSlug,
+            plugin: input.pluginId,
             config: input.config,
             createdBy: input.userId,
             team: input.teamId,

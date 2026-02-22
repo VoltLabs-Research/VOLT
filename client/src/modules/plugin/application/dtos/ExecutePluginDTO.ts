@@ -1,5 +1,5 @@
 export interface ExecutePluginInputDTO {
-    pluginSlug: string;
+    pluginId: string;
     trajectoryId: string;
     config: Record<string, unknown>;
     selectedFrameOnly?: boolean;

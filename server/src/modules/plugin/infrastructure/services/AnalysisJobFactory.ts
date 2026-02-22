@@ -10,10 +10,10 @@ import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
 export default class AnalysisJobFactory implements IAnalysisJobFactory {
     create(input: AnalysisJobCreateInput): Job[] {
         const { analysisId, teamId, trajectoryId, trajectoryName, plugin, items, config } = input;
-        const pluginSlug = plugin.props.slug;
+        const pluginId = plugin.id;
         const modifierName = plugin.props.workflow?.props.nodes.find(
             (n) => n.type === 'modifier'
-        )?.data?.modifier?.name || pluginSlug;
+        )?.data?.modifier?.name || pluginId;
 
         return items.map((item: any, index: number) => {
             const jobId = `${analysisId}-${index}`;
@@ -31,8 +31,8 @@ export default class AnalysisJobFactory implements IAnalysisJobFactory {
                     inputFile: item.path || '',
                     timestep: item.timestep ?? item.frame,
                     trajectoryName,
-                    modifierId: pluginSlug,
-                    plugin: pluginSlug,
+                    modifierId: pluginId,
+                    plugin: pluginId,
                     name: modifierName,
                     totalItems: items.length,
                     itemIndex: index,

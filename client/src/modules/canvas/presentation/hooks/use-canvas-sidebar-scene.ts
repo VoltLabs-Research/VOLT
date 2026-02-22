@@ -15,7 +15,7 @@ import { isSameScene } from '../utils/scene-identity';
 
 export interface AnalysisSectionData {
     analysis: Analysis;
-    pluginSlug: string;
+    pluginId: string;
     pluginDisplayName: string;
     entry: ExposureEntry;
     isCurrentAnalysis: boolean;
@@ -118,7 +118,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
             const newAnalysis: Analysis = {
                 _id: data.analysisId,
-                plugin: data.pluginSlug,
+                plugin: data.pluginId,
                 pluginDisplayName: data.pluginDisplayName,
                 config: data.config,
                 trajectory: data.trajectoryId,
@@ -232,7 +232,7 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
 
             return {
                 analysis,
-                pluginSlug: analysis.plugin,
+                pluginId: analysis.plugin,
                 pluginDisplayName: analysis.pluginDisplayName || '',
                 entry,
                 isCurrentAnalysis: analysis._id === analysisConfigId,

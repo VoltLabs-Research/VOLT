@@ -8,12 +8,12 @@ import './PluginListingPage.css';
 
 const PluginListingPage = () => {
     const params = useParams();
-    const pluginSlug = params.pluginSlug as string;
+    const pluginId = params.pluginId as string;
     const rawExposureId = params.exposureId as string | undefined;
     const exposureId = rawExposureId && rawExposureId !== 'undefined' && rawExposureId !== 'null'
         ? rawExposureId
         : undefined;
-    const listingSlug = params.listingSlug as string | undefined;
+    const exposureName = params.exposureName as string | undefined;
     const trajectoryId = params.trajectoryId as string | null;
     const navigate = useNavigate();
     const team = useTeamStore((s) => s.selectedTeam)!;
@@ -23,26 +23,26 @@ const PluginListingPage = () => {
     });
 
     const handleTrajectoryChange = useCallback((value: string | null) => {
-        if (!exposureId && !listingSlug) {
+        if (!exposureId && !exposureName) {
             return;
         }
 
         if (value) {
             if (exposureId) {
-                navigate(`/dashboard/trajectory/${value}/plugins/${pluginSlug}/exposure/${exposureId}/listing`);
+                navigate(`/dashboard/trajectory/${value}/plugins/${pluginId}/exposure/${exposureId}/listing`);
                 return;
             }
-            navigate(`/dashboard/trajectory/${value}/plugins/${pluginSlug}/listing/${listingSlug}`);
+            navigate(`/dashboard/trajectory/${value}/plugins/${pluginId}/listing/${exposureName}`);
             return;
         }
 
         if (exposureId) {
-            navigate(`/dashboard/plugins/${pluginSlug}/exposure/${exposureId}/listing`);
+            navigate(`/dashboard/plugins/${pluginId}/exposure/${exposureId}/listing`);
             return;
         }
 
-        navigate(`/dashboard/plugins/${pluginSlug}/listing/${listingSlug}`);
-    }, [navigate, pluginSlug, listingSlug, exposureId]);
+        navigate(`/dashboard/plugins/${pluginId}/listing/${exposureName}`);
+    }, [navigate, pluginId, exposureName, exposureId]);
 
     const handleTrajectorySelect = useCallback((value: string) => {
         if (value === '') {
@@ -54,8 +54,8 @@ const PluginListingPage = () => {
 
     return (
         <PluginExposureListingPanel
-            pluginSlug={pluginSlug}
-            listingSlug={listingSlug}
+            pluginId={pluginId}
+            exposureName={exposureName}
             exposureId={exposureId}
             trajectoryId={trajectoryId ?? undefined}
             teamId={team._id}

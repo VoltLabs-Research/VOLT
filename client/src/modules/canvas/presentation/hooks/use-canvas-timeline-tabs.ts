@@ -13,8 +13,8 @@ interface UseCanvasTimelineTabsParams {
 
 const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabsParams) => {
     const { listSceneArtifactsUseCase } = useSceneArtifactUseCases();
-    const { ensurePluginBySlug } = usePluginCatalog();
-    const pluginsBySlug = usePluginStore((state) => state.pluginsBySlug);
+    const { ensurePluginById } = usePluginCatalog();
+    const pluginsById = usePluginStore((state) => state.pluginsById);
     const [sceneExposureFallback, setSceneExposureFallback] = useState<RenderableExposurePayload[]>([]);
 
     const trajectoryId = trajectory?._id;
@@ -24,13 +24,13 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
         return trajectory.analysis.find((analysis) => analysis._id === analysisId);
     }, [trajectory?.analysis, analysisId]);
 
-    const pluginSlug = selectedAnalysis?.plugin;
-    const plugin = pluginSlug ? pluginsBySlug[pluginSlug] : undefined;
+    const pluginId = selectedAnalysis?.plugin;
+    const plugin = pluginId ? pluginsById[pluginId] : undefined;
 
     useEffect(() => {
-        if (!pluginSlug || plugin) return;
-        ensurePluginBySlug(pluginSlug).catch(() => {});
-    }, [pluginSlug, plugin, ensurePluginBySlug]);
+        if (!pluginId || plugin) return;
+        ensurePluginById(pluginId).catch(() => {});
+    }, [pluginId, plugin, ensurePluginById]);
 
     useEffect(() => {
         let cancelled = false;
@@ -85,10 +85,10 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
         return Array.from(uniqueById.values());
     }, [sceneExposureFallback]);
 
-    const resolvedPluginSlug = useMemo(() => {
-        if (pluginSlug && plugin) return pluginSlug;
-        return sceneExposureFallback[0]?.pluginSlug;
-    }, [pluginSlug, plugin, sceneExposureFallback]);
+    const resolvedPluginId = useMemo(() => {
+        if (pluginId && plugin) return pluginId;
+        return sceneExposureFallback[0]?.pluginId;
+    }, [pluginId, plugin, sceneExposureFallback]);
 
     const listingExposures = pluginListingExposures.length > 0
         ? pluginListingExposures
@@ -100,7 +100,7 @@ const useCanvasTimelineTabs = ({ trajectory, analysisId }: UseCanvasTimelineTabs
     }, [plugin?.exposures]);
 
     return {
-        pluginSlug: resolvedPluginSlug,
+        pluginId: resolvedPluginId,
         isPluginReady: Boolean(plugin),
         listingExposures,
         atomExposureId

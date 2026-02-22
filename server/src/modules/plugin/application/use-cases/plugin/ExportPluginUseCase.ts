@@ -30,7 +30,7 @@ export class ExportPluginUseCase implements IUseCase<ExportPluginInputDTO, Expor
 
         return Result.ok({
             stream,
-            fileName: `${plugin.props.slug}.zip`
+            fileName: `${plugin.id}.zip`
         });
     }
 }

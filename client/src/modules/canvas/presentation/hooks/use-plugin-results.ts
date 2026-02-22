@@ -10,13 +10,13 @@ import { triggerBrowserDownload } from '@/shared/utils/file';
 import { getListingRelevantExposures } from '@/modules/plugin/presentation/utils/listing-exposures';
 
 interface UsePluginResultsOptions {
-    pluginSlug: string;
+    pluginId: string;
     analysisId: string;
 }
 
-const usePluginResults = ({ pluginSlug, analysisId }: UsePluginResultsOptions) => {
-    const { setResultsSlug } = useCanvasUrlState();
-    const plugin = usePluginStore((state) => state.pluginsBySlug[pluginSlug]);
+const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => {
+    const { setResultsPluginId } = useCanvasUrlState();
+    const plugin = usePluginStore((state) => state.pluginsById[pluginId]);
     const trajectoryId = useTrajectoryStore((state) => state.trajectory?._id);
     const teamId = useTeamStore(useShallow((state) => state.selectedTeam?._id));
     const { pluginRepository } = usePluginUseCases();
@@ -42,34 +42,34 @@ const usePluginResults = ({ pluginSlug, analysisId }: UsePluginResultsOptions) =
 
     const isAtomsTab = Boolean(atomExposureId) && activeTab === listingExposures.length;
 
-    const activeListingSlug = !isAtomsTab && activeTab < listingExposures.length
+    const activeExposureName = !isAtomsTab && activeTab < listingExposures.length
         ? listingExposures[activeTab].name
         : null;
 
     const close = useCallback(
-        () => setResultsSlug(undefined, { replace: true }),
-        [setResultsSlug]
+        () => setResultsPluginId(undefined, { replace: true }),
+        [setResultsPluginId]
     );
 
     const download = useCallback(async () => {
         try {
             setIsDownloading(true);
-            const blob = await pluginRepository.exportAnalysisResults(pluginSlug, analysisId);
-            triggerBrowserDownload(blob, `${pluginSlug}_analysis_${analysisId}.zip`);
+            const blob = await pluginRepository.exportAnalysisResults(pluginId, analysisId);
+            triggerBrowserDownload(blob, `${pluginId}_analysis_${analysisId}.zip`);
             showSuccess('Analysis results downloaded successfully');
         } catch (error) {
             console.error('Failed to download results:', error);
         } finally {
             setIsDownloading(false);
         }
-    }, [pluginSlug, analysisId, showSuccess, pluginRepository]);
+    }, [pluginId, analysisId, showSuccess, pluginRepository]);
 
     return {
         title: plugin?.modifier?.name,
         tabs,
         activeTab,
         setActiveTab,
-        activeListingSlug,
+        activeExposureName,
         isAtomsTab,
         atomExposureId,
         trajectoryId,

@@ -5,7 +5,6 @@ import Workflow from '@modules/plugin/domain/entities/workflow/Workflow';
 export interface PluginDeletedEventPayload {
     pluginId: string;
     teamId: string;
-    slug: string;
     workflow: Workflow;
 };
 
