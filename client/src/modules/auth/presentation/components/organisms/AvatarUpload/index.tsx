@@ -1,7 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
-import { User, Camera, Loader2 } from 'lucide-react';
+import { User, Camera } from 'lucide-react';
+import Loader from '@/shared/presentation/components/Loader';
 import './AvatarUpload.css';
 
 interface AvatarUploadProps {
@@ -60,7 +61,7 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
                 )}
                 <Container className="avatar-overlay p-absolute inset-0 d-flex items-center content-center">
                     {isUploading ? (
-                        <Loader2 className="animate-spin" size={24} />
+                        <Loader scale={0.6} isFixed={false} />
                     ) : (
                         <Camera size={24} />
                     )}

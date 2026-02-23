@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
+import Loader from '@/shared/presentation/components/Loader';
 import { cn } from '@/shared/utils';
 import './Button.css';
 
@@ -155,7 +155,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(({
         >
             {isLoading && (
                 <Container className="button-loader p-absolute d-flex items-center content-center">
-                    <Loader2 className="animate-spin" size={size === 'sm' ? 14 : size === 'lg' ? 20 : 18} />
+                    <Loader scale={0.6} isFixed={false} />
                 </Container>
             )}
 

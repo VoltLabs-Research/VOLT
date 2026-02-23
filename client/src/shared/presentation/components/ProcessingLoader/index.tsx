@@ -1,5 +1,6 @@
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import Loader from '@/shared/presentation/components/Loader';
 import './ProcessingLoader.css';
 
 interface ProcessingLoaderProps {
@@ -21,7 +22,7 @@ const ProcessingLoader = ({
 
     return (
         <Container className={`d-flex items-center gap-075 processing-loader-container ${className}`}>
-            <Container className='processing-loader-spinner f-shrink-0' />
+            <Loader scale={0.6} isFixed={false} className='f-shrink-0' />
             <Container className='d-flex column gap-035 flex-1'>
                 <Paragraph className='processing-loader-text overflow-hidden color-secondary'>{message}</Paragraph>
                 {showProgress && completionRate > 0 && (

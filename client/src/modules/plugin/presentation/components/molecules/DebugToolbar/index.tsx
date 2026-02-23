@@ -12,7 +12,8 @@ import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Divider from '@/shared/presentation/components/Divider';
-import { Play, StepForward, FastForward, Square, Bug, Loader2 } from 'lucide-react';
+import { Play, StepForward, FastForward, Square, Bug } from 'lucide-react';
+import Loader from '@/shared/presentation/components/Loader';
 import './DebugToolbar.css';
 
 const DebugToolbar = () => {
@@ -144,7 +145,7 @@ const DebugToolbar = () => {
                         onClick={handlePlayClick}
                         disabled={!canStart}
                     >
-                        {isStarting ? <Loader2 size={14} className='debug-toolbar-spinner' /> : <Play size={14} />}
+                        {isStarting ? <Loader scale={0.6} isFixed={false} /> : <Play size={14} />}
                     </Button>
                 </Tooltip>
 

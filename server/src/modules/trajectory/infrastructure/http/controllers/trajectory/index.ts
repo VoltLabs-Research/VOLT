@@ -8,6 +8,7 @@ import GetTrajectoryPreviewController from './GetTrajectoryPreviewController';
 import UpdateTrajectoryByIdController from './UpdateTrajectoryByIdController';
 import GetAtomsController from './GetAtomsController';
 import DownloadSampleSimulationsController from './DownloadSampleSimulationsController';
+import ListSampleSimulationsController from './ListSampleSimulationsController';
 import GetTrajectorySceneArtifactsController from './GetTrajectorySceneArtifactsController';
 import { container } from 'tsyringe';
 
@@ -22,5 +23,6 @@ export default {
     getMetrics: container.resolve(GetTeamMetricsController),
     getAtoms: container.resolve(GetAtomsController),
     getSceneArtifacts: container.resolve(GetTrajectorySceneArtifactsController),
-    downloadSamples: container.resolve(DownloadSampleSimulationsController)
+    downloadSamples: container.resolve(DownloadSampleSimulationsController),
+    listSamples: container.resolve(ListSampleSimulationsController)
 };
