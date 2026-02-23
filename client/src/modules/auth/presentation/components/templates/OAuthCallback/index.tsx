@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle } from 'lucide-react';
+import Loader from '@/shared/presentation/components/Loader';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
@@ -61,12 +62,7 @@ const OAuthCallbackTemplate = () => {
             >
                 <Container className='d-flex flex-center mb-1-5 oauth-status-icon'>
                     {status === 'loading' && (
-                        <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        >
-                            <Loader2 size={48} className='oauth-icon-loading' />
-                        </motion.div>
+                        <Loader scale={0.6} isFixed={false} />
                     )}
 
                     {status === 'success' && (

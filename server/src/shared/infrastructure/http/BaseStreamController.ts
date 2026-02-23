@@ -1,16 +1,20 @@
 import type { Response } from 'express';
 import type { Readable } from 'node:stream';
 import type { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
-import type { IUseCase } from '@shared/application/IUseCase';
+import type { UseCaseInstance } from '@shared/application/IUseCase';
 import BaseResponse from '@shared/infrastructure/http/BaseResponse';
 import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 import { BaseController } from '@shared/infrastructure/http/BaseController';
 import logger from '@shared/infrastructure/logger';
 
-export abstract class BaseStreamController<TUseCase extends IUseCase<any, Readable, any>> extends BaseController<TUseCase> {
-    protected getHeaders(): Record<string, string> {
+export interface StreamableOutput {
+    stream: Readable;
+}
+
+export abstract class BaseStreamController<TUseCase extends UseCaseInstance> extends BaseController<TUseCase> {
+    protected getHeaders(_resultValue: StreamableOutput): Record<string, string> {
         return {
-            'Content-Type': 'model/gltf-binary',
+            'Content-Type': 'application/octet-stream',
             'Cache-Control': 'public, max-age=31536000'
         };
     }
@@ -29,12 +33,13 @@ export abstract class BaseStreamController<TUseCase extends IUseCase<any, Readab
                 );
             }
 
-            const headers = this.getHeaders();
+            const output = result.value as StreamableOutput;
+            const headers = this.getHeaders(output);
             for (const [name, value] of Object.entries(headers)) {
                 res.setHeader(name, value);
             }
 
-            result.value.pipe(res);
+            output.stream.pipe(res);
         } catch (error) {
             logger.error(error);
             return BaseResponse.error(

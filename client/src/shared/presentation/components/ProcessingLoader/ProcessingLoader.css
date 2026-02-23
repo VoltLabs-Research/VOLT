@@ -3,15 +3,6 @@
     animation: fadeIn 0.3s ease-in;
 }
 
-.processing-loader-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--color-border);
-    border-top-color: var(--accent-blue);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
 .processing-loader-text {
     font-size: 0.85rem;
     margin: 0;

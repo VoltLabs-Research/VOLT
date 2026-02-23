@@ -1,7 +1,0 @@
-.refresh-button-icon {
-    transition: transform 0.2s ease;
-}
-
-.refresh-button-icon.spinning {
-    animation: animate-spin 1s linear infinite;
-}

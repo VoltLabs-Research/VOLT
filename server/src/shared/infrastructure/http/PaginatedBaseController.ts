@@ -22,7 +22,7 @@ export abstract class PaginatedBaseController<TUseCase extends IUseCase<any, Pag
                 );
             }
 
-            return BaseResponse.paginated(res, result.value);
+            return BaseResponse.paginated(res, result.value, result.value._meta);
         } catch (error) {
             logger.error(error);
             return BaseResponse.error(

@@ -5,8 +5,7 @@ import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store'
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import { setGetTeamId } from '@/app/core/http/VoltClient';
 import useTeamSocketSubscription from '@/modules/socket/presentation/hooks/use-team-socket-subscription';
-import Container from '@/shared/presentation/components/Container';
-import './ProtectedRoute.css';
+import Loader from '@/shared/presentation/components/Loader';
 
 type RouteMode = 'protected' | 'guest';
 
@@ -51,11 +50,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
     // Show loader while initializing auth or loading teams
     if(!isInitialized || isLoading){
-        return (
-            <Container className='protected-route-loader d-flex flex-center vh-max w-max'>
-                <Container className='protected-route-spinner' />
-            </Container>
-        );
+        return <Loader scale={0.6} />;
     }
 
     // Protected mode: require authentication and team
@@ -66,11 +61,7 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
 
         // Wait for team to be loaded/selected
         if(teamsLoading || !hasTeam){
-            return (
-                <Container className='protected-route-loader d-flex flex-center vh-max w-max'>
-                    <Container className='protected-route-spinner' />
-                </Container>
-            );
+            return <Loader scale={0.6} />;
         }
 
         return <Outlet />;

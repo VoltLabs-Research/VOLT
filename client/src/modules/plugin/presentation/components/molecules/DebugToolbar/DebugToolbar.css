@@ -61,7 +61,3 @@
 .debug-toolbar-below-status {
     white-space: nowrap;
 }
-
-.debug-toolbar-spinner {
-    animation: animate-spin 1s linear infinite;
-}

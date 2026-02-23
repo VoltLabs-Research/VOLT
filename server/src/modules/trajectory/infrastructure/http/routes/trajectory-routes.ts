@@ -12,8 +12,8 @@ const module: HttpModule = {
 
 router.use(protect);
 
-router.get('/samples', controllers.downloadSamples.list);
-router.get('/samples/:filename', controllers.downloadSamples.download);
+router.get('/samples', controllers.listSamples.handle);
+router.get('/samples/:filename', controllers.downloadSamples.handle);
 
 router.route('/')
     .post(upload.array('trajectoryFiles'), controllers.create.handle)

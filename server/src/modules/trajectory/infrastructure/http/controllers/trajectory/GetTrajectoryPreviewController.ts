@@ -1,48 +1,38 @@
 import { injectable, inject } from 'tsyringe';
-import { Request, Response, NextFunction } from 'express';
-import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
-import { IStorageService } from '@shared/domain/ports/IStorageService';
-import { SYS_BUCKETS } from '@core/config/minio';
+import { Response } from 'express';
+import { BaseController } from '@shared/infrastructure/http/BaseController';
+import GetTrajectoryPreviewUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTrajectoryPreviewUseCase';
 import BaseResponse from '@shared/infrastructure/http/BaseResponse';
+import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import logger from '@shared/infrastructure/logger';
 
 @injectable()
-export default class GetTrajectoryPreviewController {
+export default class GetTrajectoryPreviewController extends BaseController<GetTrajectoryPreviewUseCase> {
     constructor(
-        @inject(SHARED_TOKENS.StorageService)
-        private readonly storageService: IStorageService
-    ){}
+        @inject(GetTrajectoryPreviewUseCase)
+        useCase: GetTrajectoryPreviewUseCase
+    ){
+        super(useCase);
+    }
 
-    public handle = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    public override handle = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
         try {
-            const { trajectoryId } = req.params;
+            const dto = this.getParams(req);
+            const result = await this.useCase.execute(dto);
 
-            if (!trajectoryId) {
-                return BaseResponse.error(res, 'Trajectory ID is required', 400);
+            if (!result.success) {
+                return BaseResponse.error(res, result.error.message, result.error.statusCode, result.error.code);
             }
 
-            const prefix = `trajectory-${trajectoryId}/previews/`;
+            const { base64, etag } = result.value;
 
-            // Find the first available preview PNG
-            for await (const key of this.storageService.listByPrefix(SYS_BUCKETS.RASTERIZER, prefix)) {
-                if (key.endsWith('.png')) {
-                    try {
-                        const buffer = await this.storageService.getBuffer(SYS_BUCKETS.RASTERIZER, key);
-                        const etag = `"trajectory-preview-${trajectoryId}"`;
-                        const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
-
-                        res.setHeader('Cache-Control', 'public, max-age=86400');
-                        res.setHeader('ETag', etag);
-                        return BaseResponse.success(res, base64);
-                    } catch (error) {
-                        // Continue to next preview if this one fails
-                        continue;
-                    }
-                }
-            }
-
-            return BaseResponse.error(res, 'No preview available for this trajectory', 404);
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            res.setHeader('ETag', etag);
+            return BaseResponse.success(res, base64);
         } catch (error) {
-            next(error);
+            logger.error(error);
+            BaseResponse.error(res, 'Internal Server Error', HttpStatus.InternalServerError, 'Internal::Server::Error');
         }
     };
 }

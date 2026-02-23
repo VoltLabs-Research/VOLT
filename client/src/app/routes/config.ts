@@ -79,7 +79,7 @@ export const routesConfig: RouteGroup = {
             component: CanvasPage
         },
         {
-            path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId',
+            path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId?',
             component: PerAtomViewer
         },
         {

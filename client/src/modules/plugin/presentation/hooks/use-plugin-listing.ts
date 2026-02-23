@@ -126,7 +126,7 @@ const usePluginListing = ({
     }, [pluginListingRepository, pluginId, exposureName, exposureId, trajectoryId, analysisId]);
 
     const handleDelete = useCallback(async (item: ListingRow) => {
-        const analysisToDelete = item?.analysisId;
+        const analysisToDelete = item.analysisId;
         if (!analysisToDelete) {
             console.error('No analysis ID found for deletion');
             return;
@@ -147,17 +147,17 @@ const usePluginListing = ({
     const getMenuOptions = useCallback((item: ListingRow): MenuOption[] => {
         const options: MenuOption[] = [];
 
-        if (item?.trajectoryId && item?.analysisId && item?.exposureId && item?.timestep !== undefined) {
+        if (item.trajectoryId && item.analysisId && item.timestep !== undefined) {
             options.push({
                 label: 'Inspect Atoms',
                 icon: RiEyeLine,
                 onClick: () => navigate(
-                    `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms/${item.exposureId}?timestep=${item.timestep}`
+                    `/dashboard/trajectory/${item.trajectoryId}/analysis/${item.analysisId}/atoms?timestep=${item.timestep}`
                 )
             });
         }
 
-        if (item?.analysisId) {
+        if (item.analysisId) {
             options.push({
                 label: 'Delete',
                 icon: RiDeleteBin6Line,

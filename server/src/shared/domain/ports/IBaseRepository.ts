@@ -19,6 +19,7 @@ export interface PaginatedResult<T> {
     page: number;
     totalPages: number;
     limit: number;
+    _meta?: Record<string, unknown>;
 };
 
 export interface PaginationOptions {

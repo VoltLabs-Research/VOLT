@@ -1,9 +1,9 @@
 import React from 'react';
 import Container from '@/shared/presentation/components/Container';
 import FormField from '@/shared/presentation/components/FormField';
+import Loader from '@/shared/presentation/components/Loader';
 import useForm from '@/shared/presentation/hooks/use-form';
 import { profileSchema, ProfileForm as ProfileFormType } from './validation-schema';
-import { Loader2 } from 'lucide-react';
 
 interface ProfileFormProps {
     initialValues: ProfileFormType;
@@ -42,7 +42,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({
 
             {form.isAutoSaving && (
                 <Container className="d-flex items-center gap-05 color-muted font-size-1">
-                    <Loader2 className="animate-spin" size={14} />
+                    <Loader scale={0.6} isFixed={false} />
                     Saving changes...
                 </Container>
             )}

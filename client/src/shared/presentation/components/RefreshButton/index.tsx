@@ -1,7 +1,7 @@
 import { RefreshCw } from 'lucide-react';
 import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import './RefreshButton.css';
+import Loader from '@/shared/presentation/components/Loader';
 
 interface RefreshButtonProps {
     onClick?: () => void;
@@ -22,8 +22,9 @@ const RefreshButton = ({
     variant = 'ghost',
     intent = 'neutral'
 }: RefreshButtonProps) => {
-    const iconClass = `refresh-button-icon ${isLoading ? 'spinning' : ''}`;
-    const icon = <RefreshCw size={size === 'sm' ? 14 : 16} className={iconClass} />;
+    const icon = isLoading
+        ? <Loader scale={0.6} isFixed={false} />
+        : <RefreshCw size={size === 'sm' ? 14 : 16} />;
 
     if(label){
         return (
