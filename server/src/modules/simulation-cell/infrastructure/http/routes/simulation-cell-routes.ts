@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { container } from 'tsyringe';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
-import { canRead } from '@shared/infrastructure/http/middleware/authorization';
 import { Resource } from '@core/constants/resources';
 import { SIMULATION_CELL_TOKENS } from '@modules/simulation-cell/infrastructure/di/SimulationCellTokens';
 import FindCellsByTeamIdController from '@modules/simulation-cell/infrastructure/http/controllers/FindCellsByTeamIdController';
@@ -14,12 +13,13 @@ const findCellByIdController = container.resolve<FindCellByIdController>(SIMULAT
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/simulation-cell/:teamId',
-    router
+    router,
+    resource: Resource.SIMULATION_CELL
 };
 
 router.use(protect);
 
-router.get('/', canRead(Resource.SIMULATION_CELL), findCellsByTeamIdController.handle);
-router.get('/:id', canRead(Resource.SIMULATION_CELL), findCellByIdController.handle);
+router.get('/', findCellsByTeamIdController.handle);
+router.get('/:id', findCellByIdController.handle);
 
 export default module;

@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
 import controllers from '@modules/jobs/infrastructure/http/controllers';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/trajectory-jobs/:teamId',
-    router
+    router,
+    resource: Resource.TRAJECTORY
 };
 
 router.use(protect);

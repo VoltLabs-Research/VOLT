@@ -13,7 +13,8 @@ const RESOURCE_LABELS: Record<string, string> = {
     'ssh-connection': 'SSH Connections',
     'plugin': 'Plugins',
     'container': 'Containers',
-    'analysis': 'Analysis'
+    'analysis': 'Analysis',
+    'simulation-cell': 'Simulation Cells'
 };
 
 const ACTION_LABELS: Record<string, string> = {

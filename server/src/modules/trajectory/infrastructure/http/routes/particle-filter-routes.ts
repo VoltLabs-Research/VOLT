@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 import controllers from '@modules/trajectory/infrastructure/http/controllers/particle-filter';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/particle-filter/:teamId',
-    router
+    router,
+    resource: Resource.TRAJECTORY
 };
 
 router.use(protect);
@@ -17,7 +19,6 @@ router.get('/unique-values/:trajectoryId', controllers.getUniqueValues.handle);
 router.get('/:trajectoryId', controllers.get.handle);
 router.post('/:trajectoryId', controllers.applyAction.handle);
 
-// Routes with analysisId (base + modifier properties)
 router.get('/properties/:trajectoryId/:analysisId', controllers.getProperties.handle);
 router.get('/preview/:trajectoryId/:analysisId', controllers.preview.handle);
 router.get('/unique-values/:trajectoryId/:analysisId', controllers.getUniqueValues.handle);

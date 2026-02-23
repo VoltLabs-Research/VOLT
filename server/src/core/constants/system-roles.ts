@@ -36,7 +36,8 @@ export const SystemRoles = {
             ...allActionsFor(Resource.SSH_CONNECTION),
             ...allActionsFor(Resource.TEAM_INVITATION),
             ...allActionsFor(Resource.TEAM_MEMBER),
-            ...allActionsFor(Resource.TEAM_ROLE)
+            ...allActionsFor(Resource.TEAM_ROLE),
+            ...allActionsFor(Resource.SIMULATION_CELL)
         ],
         isSystem: true
     },
@@ -48,7 +49,8 @@ export const SystemRoles = {
             readOnlyFor(Resource.PLUGIN),
             `${Resource.PLUGIN}:${Action.CREATE}`,
             ...crudFor(Resource.CONTAINER),
-            ...crudFor(Resource.SSH_CONNECTION)
+            ...crudFor(Resource.SSH_CONNECTION),
+            readOnlyFor(Resource.SIMULATION_CELL)
         ],
         isSystem: true
     },
@@ -59,6 +61,7 @@ export const SystemRoles = {
             readOnlyFor(Resource.ANALYSIS),
             readOnlyFor(Resource.PLUGIN),
             readOnlyFor(Resource.CONTAINER),
+            readOnlyFor(Resource.SIMULATION_CELL),
         ],
         isSystem: true
     }
