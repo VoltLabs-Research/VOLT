@@ -16,14 +16,20 @@ export const checkTeamMembership = async (req: AuthenticatedRequest, res: Respon
     }
 
     const repository = container.resolve(TeamMemberRepository);
-    const member = await repository.findOne({ user: userId, team: teamId });
+    const member = await repository.findOne(
+        { user: userId, team: teamId },
+        { populate: { path: 'role', select: ['permissions'] } }
+    );
 
-    if(!member){
+    if (!member) {
         return res.status(403).json({
             status: 'error',
             message: ErrorCodes.TEAM_MEMBERSHIP_FORBIDDEN
         });
     }
+
+    // Cache permissions for RBAC enforcement in BaseController
+    req.teamPermissions = member.props.role?.permissions || [];
 
     next();
 };

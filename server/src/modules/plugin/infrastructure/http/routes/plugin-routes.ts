@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
 import multer from 'multer';
 import controllers from '@modules/plugin/infrastructure/http/controllers/plugin';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
@@ -7,7 +8,8 @@ import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/plugin/:teamId',
-    router
+    router,
+    resource: Resource.PLUGIN
 };
 
 const upload = multer({

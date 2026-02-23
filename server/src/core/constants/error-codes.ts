@@ -74,13 +74,6 @@ export const ErrorCodes = {
     TRAJECTORY_FILES_NOT_FOUND: 'Trajectory::Files::NotFound',
     TRAJECTORY_CREATION_NO_VALID_FILES: 'Trajectory::Creation::NoValidFiles',
 
-    TRAJECTORY_VFS_PATH_NOT_FOUND: 'TrajectoryVFS::PathNotFound',
-    TRAJECTORY_VFS_INVALID_PATH: 'TrajectoryVFS::InvalidPath',
-    TRAJECTORY_VFS_FILE_NOT_FOUND: 'TrajectoryVFS::FileNotFound',
-    TRAJECTORY_VFS_FILE_SYSTEM_ERROR: 'TrajectoryVFS::FileSystemError',
-    TRAJECTORY_VFS_DOWNLOAD_ERROR: 'TrajectoryVFS::DownloadError',
-    TRAJECTORY_VFS_FETCH_ERROR: 'TrajectoryVFS::FetchError',
-
     ANALYSIS_NOT_FOUND: 'Analysis::NotFound',
     ANALYSIS_EXECUTION_FAILED: 'Analysis::ExecutionFailed',
 

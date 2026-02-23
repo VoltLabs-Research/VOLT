@@ -1,5 +1,10 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { Action } from '@core/constants/permissions';
+import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
+import { checkTeamMembership } from '@modules/team/infrastructure/http/middlewares/check-team-membership';
+import BaseResponse from '@shared/infrastructure/http/BaseResponse';
+import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 import AuthHttpModule from '@modules/auth/infrastructure/http/routes/auth-routes';
 import SessionHttpModule from '@modules/session/infrastructure/http/routers/session-routes';
 import TeamHttpModule from '@modules/team/infrastructure/http/routes/team-router';
@@ -24,7 +29,18 @@ import SimulationCellHttpModule from '@modules/simulation-cell/infrastructure/ht
 import DailyActivityHttpModule from '@modules/daily-activity/infrastructure/http/routes/daily-activity-routes';
 import ApiTrackerHttpModule from '@modules/api-tracker/infrastructure/http/routes/api-tracker-routes';
 import SystemHttpModule from '@modules/system/infrastructure/http/routes/system-routes';
-import { checkTeamMembership } from '@modules/team/infrastructure/http/middlewares/check-team-membership';
+
+/**
+ * Maps HTTP methods to RBAC actions.
+ */
+const METHOD_ACTION_MAP: Record<string, Action> = {
+    'GET': Action.READ,
+    'HEAD': Action.READ,
+    'POST': Action.CREATE,
+    'PUT': Action.UPDATE,
+    'PATCH': Action.UPDATE,
+    'DELETE': Action.DELETE
+};
 
 const HTTP_MODULES: HttpModule[] = [
     AuthHttpModule,
@@ -53,14 +69,41 @@ const HTTP_MODULES: HttpModule[] = [
     ParticleFilterHttpModule
 ];
 
+const createTeamParamHandler = (resource?: string) => {
+    return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+        checkTeamMembership(req, res, () => {
+            if (!resource) return next();
+
+            const action = METHOD_ACTION_MAP[req.method] || Action.READ;
+            const permission = `${resource}:${action}`;
+            const permissions = req.teamPermissions || [];
+
+            if (permissions.includes('*') || permissions.includes(permission)) {
+                return next();
+            }
+
+            return BaseResponse.error(
+                res,
+                `Missing permission: ${permission}`,
+                HttpStatus.Forbidden,
+                'RBAC::InsufficientPermissions'
+            );
+        });
+    };
+};
+
 /**
  * Mount all module routes on the Express app.
+ *
+ * For each module:
+ * 1. Registers a combined teamId param handler (membership + RBAC)
+ * 2. Mounts the module's router at its basePath
  */
 const mountHttpRoutes = (): Router => {
     const router = Router();
 
     for (const module of HTTP_MODULES) {
-        module.router.param('teamId', checkTeamMembership);
+        module.router.param('teamId', createTeamParamHandler(module.resource));
         router.use(module.basePath, module.router);
     }
 

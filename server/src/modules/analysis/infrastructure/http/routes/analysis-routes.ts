@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { container } from 'tsyringe';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
 import DeleteAnalysisByIdController from '@modules/analysis/infrastructure/http/controllers/DeleteAnalysisByIdController';
 import GetAnalysesByTeamIdController from '@modules/analysis/infrastructure/http/controllers/GetAnalysesByTeamIdController';
 import GetAnalysisByIdController from '@modules/analysis/infrastructure/http/controllers/GetAnalysisByIdController';
@@ -15,7 +16,8 @@ const getAnalysesByTrajectoryIdController = container.resolve(GetAnalysesByTraje
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/analysis',
-    router
+    router,
+    resource: Resource.ANALYSIS
 };
 
 router.use(protect);

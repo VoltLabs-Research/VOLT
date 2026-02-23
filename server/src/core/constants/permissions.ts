@@ -9,7 +9,8 @@ export type RBACResource =
     | Resource.SSH_CONNECTION
     | Resource.PLUGIN
     | Resource.CONTAINER
-    | Resource.ANALYSIS;
+    | Resource.ANALYSIS
+    | Resource.SIMULATION_CELL;
     
 export enum Action {
     READ = 'read',

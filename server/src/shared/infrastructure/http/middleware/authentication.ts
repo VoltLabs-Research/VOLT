@@ -10,6 +10,8 @@ export interface AuthenticatedRequest extends Request {
     userId?: string;
     sessionId?: string;
     token?: string;
+    /** Cached permissions from checkTeamMembership (populated role) */
+    teamPermissions?: string[];
 };
 
 export const protect = async (

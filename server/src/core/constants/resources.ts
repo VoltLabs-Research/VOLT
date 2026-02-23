@@ -21,6 +21,5 @@ export enum Resource {
     TEAM_ROLE = 'team-role',
     TEAM = 'team',
     TRAJECTORY = 'trajectory',
-    TRAJECTORY_VIRTUAL_FS = 'trajectory-virtual-fs',
     SIMULATION_CELL = 'simulation-cell'
 };

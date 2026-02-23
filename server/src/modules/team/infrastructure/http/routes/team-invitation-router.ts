@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 import controllers from '@modules/team/infrastructure/http/controllers/team-invitation';
 
 const router = Router({ mergeParams: true });
-// TODO: FIX! This should have RBAC, but if so, the PATCH /:invitationId route 
-// will not be accessible to users who want to accept/decline invitations.
 const module: HttpModule = {
     basePath: '/api/team/invitations',
-    router
+    router,
+    resource: Resource.TEAM_INVITATION
 };
 
 router.use(protect);

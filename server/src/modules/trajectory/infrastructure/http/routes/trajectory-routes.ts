@@ -2,12 +2,14 @@ import { Router } from 'express';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { upload } from '@shared/infrastructure/http/middleware/upload';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
+import { Resource } from '@core/constants/resources';
 import controllers from '@modules/trajectory/infrastructure/http/controllers/trajectory';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/trajectory/:teamId',
-    router
+    router,
+    resource: Resource.TRAJECTORY
 };
 
 router.use(protect);

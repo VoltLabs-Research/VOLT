@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
+import { Resource } from '@core/constants/resources';
 import { HttpModule } from '@shared/infrastructure/http/HttpModule';
 import controllers from '@modules/team/infrastructure/http/controllers/team-role';
 
 const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/team/roles/:teamId',
-    router
+    router,
+    resource: Resource.TEAM_ROLE
 };
 
 router.use(protect);
