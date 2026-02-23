@@ -28,6 +28,7 @@ import { ensureContainerDI } from '@/modules/container/infrastructure/di/contain
 import { ensureSSHDI } from '@/modules/ssh/infrastructure/di/container';
 import { ensureChatDI } from '@/modules/chat/infrastructure/di/container';
 import { ensureJobsDI } from '@/modules/jobs/infrastructure/di/container';
+import { ensureSystemDI } from '@/modules/system/infrastructure/di/container';
 
 self.MonacoEnvironment = {
     getWorker(_, label) {
@@ -63,6 +64,7 @@ ensureSimulationCellDI();
 ensureContainerDI();
 ensureSSHDI();
 ensureChatDI();
+ensureSystemDI();
 
 createRoot(document.getElementById('root')!).render(
     <StrictMode>

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import { IoShieldCheckmarkOutline } from 'react-icons/io5';
 import { formatDistanceToNow } from 'date-fns';
@@ -7,28 +7,15 @@ import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import RoleEditorModal, { openRoleEditorModal } from '../../organisms/RoleEditorModal';
-import type { RoleEditorPayload, RBACResource, RBACAction } from '../../organisms/RoleEditorModal';
+import type { RoleEditorPayload } from '../../organisms/RoleEditorModal';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
+import useSystemUseCases from '@/modules/system/presentation/hooks/use-system-use-cases';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { GetTeamRolesParams } from '@/modules/team/domain/ports/ITeamRoleRepository';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
-
-const DEFAULT_RESOURCES: RBACResource[] = [
-    { key: 'trajectory', label: 'Trajectories' },
-    { key: 'analysis', label: 'Analyses' },
-    { key: 'team', label: 'Team' },
-    { key: 'team-member', label: 'Members' },
-    { key: 'team-role', label: 'Roles' }
-];
-
-const DEFAULT_ACTIONS: RBACAction[] = [
-    { key: 'create', label: 'Create' },
-    { key: 'read', label: 'Read' },
-    { key: 'update', label: 'Update' },
-    { key: 'delete', label: 'Delete' }
-];
+import type { RBACResource, RBACAction } from '@/modules/system/domain/entities';
 
 const COLUMNS: ColumnConfig[] = [
     {
@@ -80,6 +67,8 @@ const COLUMNS: ColumnConfig[] = [
 const ManageRolesTemplate: React.FC = () => {
     const [editingRole, setEditingRole] = useState<TeamRole | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+    const [resources, setResources] = useState<RBACResource[]>([]);
+    const [actions, setActions] = useState<RBACAction[]>([]);
 
     const selectedTeam = useSelectedTeam()!;
     const addRole = useTeamRoleStore((state) => state.addRole);
@@ -87,6 +76,19 @@ const ManageRolesTemplate: React.FC = () => {
     const removeRole = useTeamRoleStore((state) => state.removeRole);
 
     const { teamRoleRepository } = useTeamRoleUseCases();
+    const { systemRepository } = useSystemUseCases();
+
+    useEffect(() => {
+        let cancelled = false;
+        systemRepository.getRBACConfig().then((config) => {
+            if(cancelled) return;
+            setResources(config.resources);
+            setActions(config.actions);
+        }).catch((err) => {
+            console.error('Failed to fetch RBAC config:', err);
+        });
+        return () => { cancelled = true; };
+    }, [systemRepository]);
 
     const fetchData = useCallback(async (params: GetTeamRolesParams) => {
         return await teamRoleRepository.getAll(selectedTeam._id, params);
@@ -175,8 +177,8 @@ const ManageRolesTemplate: React.FC = () => {
 
             <RoleEditorModal
                 role={editingRole}
-                resources={DEFAULT_RESOURCES}
-                actions={DEFAULT_ACTIONS}
+                resources={resources}
+                actions={actions}
                 onSave={handleSaveRole}
                 isSaving={isSaving}
             />

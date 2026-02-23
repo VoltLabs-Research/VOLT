@@ -7,23 +7,16 @@ import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import WarningZone from '@/shared/presentation/components/WarningZone';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
+import type { RBACResource, RBACAction } from '@/modules/system/domain/entities';
 import './RoleEditorModal.css';
 
 const MODAL_ID = 'role-editor-modal';
 
+export type { RBACResource, RBACAction };
+
 export interface RoleEditorPayload {
     name: string;
     permissions: string[];
-};
-
-export interface RBACResource {
-    key: string;
-    label: string;
-};
-
-export interface RBACAction {
-    key: string;
-    label: string;
 };
 
 interface RoleEditorModalProps {

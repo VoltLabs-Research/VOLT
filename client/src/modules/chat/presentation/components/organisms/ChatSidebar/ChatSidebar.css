@@ -1,7 +1,6 @@
 .chat-sidebar {
     width: 320px;
     border-right: 1px solid var(--color-border-soft);
-    background: var(--color-bg);
 }
 
 .chat-sidebar-header {
