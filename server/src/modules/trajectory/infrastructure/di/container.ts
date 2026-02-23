@@ -1,5 +1,4 @@
 import { container } from 'tsyringe';
-import { VFSService } from '@modules/trajectory/infrastructure/services/VFSService';
 import { TRAJECTORY_TOKENS } from './TrajectoryTokens';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/TrajectoryRepository';
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/SceneArtifactRepository';
@@ -14,11 +13,7 @@ import AtomisticExporter from '@modules/trajectory/infrastructure/services/expor
 import DislocationExporter from '@modules/trajectory/infrastructure/services/exporters/DislocationExporter';
 import MeshExporter from '@modules/trajectory/infrastructure/services/exporters/MeshExporter';
 import ChartExporter from '@modules/trajectory/infrastructure/services/exporters/ChartExporter';
-import { ListVFSDirectoryUseCase } from '@modules/trajectory/application/use-cases/vfs/ListVFSDirectoryUseCase';
-import { GetVFSFileUseCase } from '@modules/trajectory/application/use-cases/vfs/GetVFSFileUseCase';
-import { UploadVFSFileUseCase } from '@modules/trajectory/application/use-cases/vfs/UploadVFSFileUseCase';
-import { DeleteVFSFileUseCase } from '@modules/trajectory/application/use-cases/vfs/DeleteVFSFileUseCase';
-import { DownloadVFSArchiveUseCase } from '@modules/trajectory/application/use-cases/vfs/DownloadVFSArchiveUseCase';
+
 import SessionCompletedEventHandler from '@modules/trajectory/application/events/SessionCompletedEventHandler';
 import JobStatusChangedEventHandler from '@modules/trajectory/application/events/JobStatusChangedEventHandler';
 import { GetColorCodingPropertiesUseCase } from '@modules/trajectory/application/use-cases/color-coding/GetColorCodingPropertiesUseCase';
@@ -33,16 +28,6 @@ import { GetParticleFilterUniqueValuesUseCase } from '@modules/trajectory/applic
 import { ListTrajectorySceneArtifactsUseCase } from '@modules/trajectory/application/use-cases/scene-artifacts/ListTrajectorySceneArtifactsUseCase';
 
 export const registerTrajectoryDependencies = (): void => {
-    // VFS Use Dependencies
-    container.register('IVFSService', { useClass: VFSService });
-
-    // VFS Use Cases
-    container.registerSingleton(ListVFSDirectoryUseCase);
-    container.registerSingleton(GetVFSFileUseCase);
-    container.registerSingleton(UploadVFSFileUseCase);
-    container.registerSingleton(DeleteVFSFileUseCase);
-    container.registerSingleton(DownloadVFSArchiveUseCase);
-
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryRepository, TrajectoryRepository);
     container.registerSingleton(TRAJECTORY_TOKENS.SceneArtifactRepository, SceneArtifactRepository);
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryProcessingQueue, TrajectoryProcessingQueue);
