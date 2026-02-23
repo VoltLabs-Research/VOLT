@@ -2,44 +2,28 @@ import { injectable } from 'tsyringe';
 import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
 import { GetRBACConfigOutputDTO } from '@modules/system/application/dtos/GetRBACConfigDTO';
+import { Resource } from '@core/constants/resources';
+import { Action } from '@core/constants/permissions';
 
-// Import constants (these should be in core/constants)
-const RESOURCE_LABELS: Record<string, string> = {
-    'team': 'Team',
-    'trajectory': 'Trajectories',
-    'team-invitation': 'Invitations',
-    'team-member': 'Members',
-    'team-role': 'Roles',
-    'ssh-connection': 'SSH Connections',
-    'plugin': 'Plugins',
-    'container': 'Containers',
-    'analysis': 'Analysis',
-    'simulation-cell': 'Simulation Cells'
-};
-
-const ACTION_LABELS: Record<string, string> = {
-    'read': 'Read',
-    'create': 'Create',
-    'update': 'Update',
-    'delete': 'Delete'
-};
+/**
+ * Converts enum keys like SSH_CONNECTION to "SSH Connection"
+ */
+const toLabel = (key: string): string =>
+    key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).replace(/\B\w+/g, (w) => w.toLowerCase());
 
 @injectable()
 export class GetRBACConfigUseCase implements IUseCase<void, GetRBACConfigOutputDTO> {
     async execute(): Promise<Result<GetRBACConfigOutputDTO>> {
-        const resources = Object.entries(RESOURCE_LABELS).map(([key, label]) => ({
-            key,
-            label
+        const resources = Object.entries(Resource).map(([enumKey, value]) => ({
+            key: value,
+            label: toLabel(enumKey)
         }));
 
-        const actions = Object.entries(ACTION_LABELS).map(([key, label]) => ({
-            key,
-            label
+        const actions = Object.entries(Action).map(([enumKey, value]) => ({
+            key: value,
+            label: toLabel(enumKey)
         }));
 
-        return Result.ok({
-            resources,
-            actions
-        });
+        return Result.ok({ resources, actions });
     }
 }
