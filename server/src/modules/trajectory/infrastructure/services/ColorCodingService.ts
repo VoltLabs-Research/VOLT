@@ -12,7 +12,7 @@ import { SYS_BUCKETS } from '@core/config/minio';
 import { RuntimeError } from '@core/exceptions/RuntimeError';
 import { ErrorCodes } from '@core/constants/error-codes';
 import TrajectoryParserFactory from '@modules/trajectory/infrastructure/parsers/TrajectoryParserFactory';
-import { formatValueForPath } from '@shared/infrastructure/utils/formatValue';
+import { formatValueForPath } from '@shared/infrastructure/utilities/format-value';
 import { recordSceneArtifact } from '@modules/trajectory/infrastructure/utils/record-scene-artifact';
 
 const DEFAULT_ANALYSIS_ID = 'default';

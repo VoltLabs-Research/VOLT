@@ -29,7 +29,9 @@ import SSHFileExplorerPage from '@/modules/ssh/presentation/components/templates
 import DashboardLayout from '@/modules/dashboard/presentation/components/organisms/DashboardLayout';
 import Dashboard from '@/modules/dashboard/presentation/components/templates/Dashboard';
 import MessagesPage from '@/modules/chat/presentation/components/templates/MessagesPage';
+import SecretKeysListing from '@/modules/team/presentation/components/templates/SecretKeysListing';
 import ErrorPage from '@/shared/presentation/components/ErrorPage';
+import NotebooksListing from '@/modules/scripting/presentation/components/templates/NotebooksListing';
 
 export const routesConfig: RouteGroup = {
     public: [
@@ -69,6 +71,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/manage-roles',
             component: ManageRolesTemplate
+        },
+        {
+            path: '/dashboard/secret-keys',
+            component: SecretKeysListing
         },
         {
             path: '/dashboard/trajectories/list',
@@ -139,6 +145,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/messages/:chatId?',
             component: MessagesPage
+        },
+        {
+            path: '/dashboard/notebooks',
+            component: NotebooksListing
         }
     ],
 

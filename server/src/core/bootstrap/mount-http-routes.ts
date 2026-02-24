@@ -11,6 +11,7 @@ import TeamHttpModule from '@modules/team/infrastructure/http/routes/team-router
 import TeamMemberHttpModule from '@modules/team/infrastructure/http/routes/team-member-router';
 import TeamInvitationHttpModule from '@modules/team/infrastructure/http/routes/team-invitation-router';
 import TeamRoleHttpModule from '@modules/team/infrastructure/http/routes/team-role-router';
+import TeamSecretKeyHttpModule from '@modules/team/infrastructure/http/routes/team-secret-key-router';
 import ChatHttpModule from '@modules/chat/infrastructure/http/routes/chat-routes';
 import ChatMessageHttpModule from '@modules/chat/infrastructure/http/routes/chat-message-routes';
 import NotificationHttpModule from '@modules/notification/infrastructure/http/routes/notification-routes';
@@ -24,6 +25,7 @@ import AnalysisHttpModule from '@modules/analysis/infrastructure/http/routes/ana
 import PluginHttpModule from '@modules/plugin/infrastructure/http/routes/plugin-routes';
 import PluginListingHttpModule from '@modules/plugin/infrastructure/http/routes/listing-routes';
 import PluginExposureHttpModule from '@modules/plugin/infrastructure/http/routes/exposure-routes';
+import PluginScriptingHttpModule from '@modules/scripting/infrastructure/http/routes/scripting-routes';
 import RasterHttpModule from '@modules/raster/infrastructure/http/routes/raster-routes';
 import SimulationCellHttpModule from '@modules/simulation-cell/infrastructure/http/routes/simulation-cell-routes';
 import DailyActivityHttpModule from '@modules/daily-activity/infrastructure/http/routes/daily-activity-routes';
@@ -49,11 +51,13 @@ const HTTP_MODULES: HttpModule[] = [
     TeamMemberHttpModule,
     TeamInvitationHttpModule,
     TeamRoleHttpModule,
+    TeamSecretKeyHttpModule,
     ChatHttpModule,
     ChatMessageHttpModule,
     NotificationHttpModule,
     PluginListingHttpModule,
     PluginExposureHttpModule,
+    PluginScriptingHttpModule,
     SshConnectionHttpModule,
     ContainerHttpModule,
     TrajectoryHttpModule,

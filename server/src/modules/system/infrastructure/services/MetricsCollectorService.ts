@@ -8,6 +8,7 @@ import { exec } from 'child_process';
 import { redis } from '@core/config/redis';
 import { promisify } from 'util';
 import logger from '@shared/infrastructure/logger';
+import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 
 const execPromise = promisify(exec);
 
@@ -189,7 +190,7 @@ export default class MetricsCollector {
         const mongooseLatency = await this.pingMongoose();
         const redisLatency = await this.pingRedis();
         const minioLatency = await this.pingMinIO();
-        const selfLatency = await this.pingHost(`0.0.0.0:${process.env.SERVER_PORT}`);
+        const selfLatency = await this.pingHost(`0.0.0.0:${readNumberEnv('SERVER_PORT', 8000)}`);
 
         return {
             mongodb: mongooseLatency,

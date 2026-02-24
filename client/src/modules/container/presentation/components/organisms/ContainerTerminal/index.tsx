@@ -15,6 +15,10 @@ interface ContainerTerminalProps {
     };
     onClose: () => void;
     embedded?: boolean;
+    appendOutput?: {
+        id: number;
+        data: string;
+    } | null;
 };
 
 const connectionState: Record<string, {
@@ -23,7 +27,7 @@ const connectionState: Record<string, {
     detachTimer: ReturnType<typeof setTimeout> | null;
 }> = {};
 
-const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTerminalProps) => {
+export const ContainerTerminal = ({ container, onClose, embedded = false, appendOutput = null }: ContainerTerminalProps) => {
     const terminalRef = useRef<TerminalHandle>(null);
     const isAttachedRef = useRef(false);
     const socketService = useSocket();
@@ -98,20 +102,25 @@ const ContainerTerminal = ({ container, onClose, embedded = false }: ContainerTe
         socketService.emit('container:terminal:input', data);
     };
 
+    useEffect(() => {
+        if (!appendOutput?.data) return;
+        terminalRef.current?.write(appendOutput.data);
+    }, [appendOutput?.id, appendOutput?.data]);
+
     const content = (
         <Container className={`d-flex column overflow-hidden container-terminal-window ${embedded ? 'embedded' : ''}`}>
-            <Container className='d-flex content-between items-center container-terminal-header'>
-                <Container className='d-flex items-center gap-05 container-terminal-title'>
-                    <span>root@{container.name}:~</span>
-                </Container>
-                {!embedded && (
+            {!embedded && (
+                <Container className='d-flex content-between items-center container-terminal-header'>
+                    <Container className='d-flex items-center gap-05 container-terminal-title'>
+                        <span>root@{container.name}:~</span>
+                    </Container>
                     <Tooltip content='Close Terminal' placement='bottom'>
                         <Button variant='ghost' intent='neutral' iconOnly size='sm' onClick={onClose}>
                             <IoClose size={20} />
                         </Button>
                     </Tooltip>
-                )}
-            </Container>
+                </Container>
+            )}
             <Container className='flex-1 overflow-hidden p-relative container-terminal-body p-1'>
                 <Terminal ref={terminalRef} onData={handleTerminalData} />
             </Container>

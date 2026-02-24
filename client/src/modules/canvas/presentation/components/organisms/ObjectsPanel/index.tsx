@@ -5,6 +5,7 @@ import Container from '@/shared/presentation/components/Container';
 import CollapsibleSection from '@/shared/presentation/components/CollapsibleSection';
 import IconButton from '@/shared/presentation/components/IconButton';
 import useCanvasSidebarState from '../../../hooks/use-canvas-sidebar-state';
+
 import useAnalysisStatus from '../../../hooks/use-analysis-status';
 import type { Trajectory } from '@/modules/trajectory/domain/entities/Trajectory';
 import type { SceneArtifact } from '@/modules/trajectory/domain/entities/SceneArtifact';
@@ -29,6 +30,7 @@ const ObjectsPanel = ({ trajectory, onDownloadExposureListing }: ObjectsPanelPro
     const [colorCodingOpen, setColorCodingOpen] = useState(true);
     const [particleFilterOpen, setParticleFilterOpen] = useState(true);
 
+
     const {
         filteredSections,
         expandedSections,
@@ -49,6 +51,7 @@ const ObjectsPanel = ({ trajectory, onDownloadExposureListing }: ObjectsPanelPro
         colorCodingArtifacts,
         particleFilterArtifacts
     } = useSceneArtifacts({ trajectoryId: trajectory?._id });
+
 
     const isArtifactActive = (artifact: SceneArtifact): boolean => isArtifactSceneActive(activeScene as any, artifact);
 
@@ -88,13 +91,15 @@ const ObjectsPanel = ({ trajectory, onDownloadExposureListing }: ObjectsPanelPro
                     activeScene={activeScene}
                     onSelectScene={onSelectScene}
                     isSceneInActiveScenes={isSceneInActiveScenes}
-                    addScene={addScene}
-                    removeScene={removeScene}
+                    addScene={(scene) => addScene(scene as any)}
+                    removeScene={(scene) => removeScene(scene as any)}
                     totalAnalyses={totalAnalyses}
                     statusMap={statusMap}
                     onDownloadExposureListing={onDownloadExposureListing}
                 />
             </CollapsibleSection>
+
+
 
             <CollapsibleSection
                 title="Color Coding"

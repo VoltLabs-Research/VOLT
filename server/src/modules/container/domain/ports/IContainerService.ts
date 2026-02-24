@@ -14,12 +14,14 @@ export interface IContainerService {
     getStats(containerId: string): Promise<ContainerStats>;
     getFiles(containerId: string, path: string): Promise<any[]>;
     readFile(containerId: string, path: string): Promise<string>;
+    writeFile(containerId: string, path: string, content: string): Promise<void>;
     getProcesses(containerId: string): Promise<any[]>;
-    exec(containerId: string, command: string[]): Promise<string>;
+    getPublishedPort(containerId: string, privatePort: number): Promise<number | null>;
+    findAvailableHostPort(start: number, end: number): Promise<number | null>;
+    exec(containerId: string, command: string[], stdin?: string): Promise<string>;
     pullImage(imageName: string): Promise<void>;
     ensureImage(imageName: string): Promise<void>;
 
-    // Network & Volume operations
     createNetwork(name: string): Promise<{ id: string, name: string }>;
     removeNetwork(networkId: string): Promise<void>;
     connectNetwork(networkId: string, containerId: string): Promise<void>;

@@ -4,6 +4,7 @@ import { registerTrajectorySubscribers } from '@modules/trajectory/infrastructur
 import { registerAnalysisSubscribers } from '@modules/analysis/infrastructure/events/subscribers';
 import { registerSSHSubscribers } from '@modules/ssh/infrastructure/events/subscribers';
 import { registerPluginSubscribers } from '@modules/plugin/infrastructure/events/subscribers';
+import { registerScriptingSubscribers } from '@modules/scripting/infrastructure/events/subscribers';
 import { registerNotificationSubscribers } from '@modules/notification/infrastructure/events/subscribers';
 import { registerDailyActivitySubscribers } from '@modules/daily-activity/infrastructure/events/subscribers';
 import { registerApiTrackerSubscribers } from '@modules/api-tracker/infrastructure/events/subscribers';
@@ -26,6 +27,7 @@ export const registerAllSubscribers = async (): Promise<void> => {
         registerAnalysisSubscribers(),
         registerSSHSubscribers(),
         registerPluginSubscribers(),
+        registerScriptingSubscribers(),
         registerDailyActivitySubscribers(),
         registerContainerSubscribers(),
         registerSimulationCellSubscribers()

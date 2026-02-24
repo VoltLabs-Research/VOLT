@@ -3,6 +3,7 @@ export const TEAM_TOKENS = {
     TeamRoleRepository: Symbol('TeamRoleRepository'),
     TeamMemberRepository: Symbol('TeamMemberRepository'),
     TeamInvitationRepository: Symbol('TeamInvitationRepository'),
+    SecretKeyRepository: Symbol('SecretKeyRepository'),
 
     TeamStorage: Symbol('TeamStorage'),
 

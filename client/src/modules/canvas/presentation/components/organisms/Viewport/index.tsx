@@ -25,6 +25,9 @@ interface ViewportProps {
     showGrid: boolean;
     isLoading: boolean;
     sceneRef: React.RefObject<FractalSceneRef | null>;
+    bodyContent?: React.ReactNode;
+    hideGradient?: boolean;
+    headerActionsBeforePerformance?: React.ReactNode;
 }
 
 const TIMESTEP_VIEWER_DEFAULTS = {
@@ -48,7 +51,10 @@ const Viewport = ({
     analysisId,
     showGrid,
     isLoading,
-    sceneRef
+    sceneRef,
+    bodyContent,
+    hideGradient = false,
+    headerActionsBeforePerformance
 }: ViewportProps) => {
     const navigate = useNavigate();
     const {
@@ -99,6 +105,8 @@ const Viewport = ({
 
                 <Container className="flex-1" />
 
+                {headerActionsBeforePerformance}
+
                 <Popover
                     id="viewport-performance"
                     noPadding
@@ -139,43 +147,45 @@ const Viewport = ({
             </Container>
 
             <Container className="canvas-viewport-body flex-1 p-relative min-h-0">
-                {isLoading && (
+                {!bodyContent && isLoading && (
                     <Container className="canvas-viewport-loading d-flex items-center content-center p-absolute inset-0">
                         <Loader scale={0.5} />
                     </Container>
                 )}
 
-                {sceneConfig && (
+                {bodyContent || (sceneConfig && (
                     <Container className="p-relative w-max h-max">
-                        <FractalScene
-                            ref={sceneRef}
-                            config={sceneConfig}
-                            showGrid={showGrid}
-                            showGizmo={false}
-                            onInteractionChange={setSceneInteracting}
-                        >
-                            {trajectory?._id && currentTimestep !== undefined && (
-                                <TimestepViewer
-                                    trajectoryId={trajectory._id}
-                                    currentTimestep={currentTimestep}
-                                    analysisId={analysisId}
-                                    activeScenes={activeScenes}
-                                    slicePlaneConfig={slicePlaneConfig}
-                                    pointSizeMultiplier={pointSizeMultiplier}
-                                    sceneOpacities={sceneOpacities}
-                                    activeModelBounds={activeModelBounds}
-                                    onModelBoundsChanged={setModelBounds}
-                                    onLoadingStateChanged={setIsModelLoading}
-                                    scale={TIMESTEP_VIEWER_DEFAULTS.scale}
-                                    rotation={TIMESTEP_VIEWER_DEFAULTS.rotation}
-                                    position={TIMESTEP_VIEWER_DEFAULTS.position}
-                                />
-                            )}
-                        </FractalScene>
+                        {bodyContent || (
+                            <FractalScene
+                                ref={sceneRef}
+                                config={sceneConfig}
+                                showGrid={showGrid}
+                                showGizmo={false}
+                                onInteractionChange={setSceneInteracting}
+                            >
+                                {trajectory?._id && currentTimestep !== undefined && (
+                                    <TimestepViewer
+                                        trajectoryId={trajectory._id}
+                                        currentTimestep={currentTimestep}
+                                        analysisId={analysisId}
+                                        activeScenes={activeScenes}
+                                        slicePlaneConfig={slicePlaneConfig}
+                                        pointSizeMultiplier={pointSizeMultiplier}
+                                        sceneOpacities={sceneOpacities}
+                                        activeModelBounds={activeModelBounds}
+                                        onModelBoundsChanged={setModelBounds}
+                                        onLoadingStateChanged={setIsModelLoading}
+                                        scale={TIMESTEP_VIEWER_DEFAULTS.scale}
+                                        rotation={TIMESTEP_VIEWER_DEFAULTS.rotation}
+                                        position={TIMESTEP_VIEWER_DEFAULTS.position}
+                                    />
+                                )}
+                            </FractalScene>
+                        )}
                     </Container>
-                )}
+                ))}
 
-                <Container className="canvas-viewport-gradient p-absolute inset-0" />
+                {!hideGradient && <Container className="canvas-viewport-gradient p-absolute inset-0" />}
             </Container>
         </Container>
     );

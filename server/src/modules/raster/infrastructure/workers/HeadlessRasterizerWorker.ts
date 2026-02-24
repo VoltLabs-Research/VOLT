@@ -8,7 +8,7 @@ import Job from '@modules/jobs/domain/entities/Job';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IStorageService } from '@shared/domain/ports/IStorageService';
 import { ITempFileService } from '@shared/domain/ports/ITempFileService';
-import rasterize from '@shared/infrastructure/utils/rasterizer';
+import rasterize from '@shared/infrastructure/utilities/rasterizer';
 import * as fs from 'node:fs/promises';
 import { SYS_BUCKETS } from '@core/config/minio';
 

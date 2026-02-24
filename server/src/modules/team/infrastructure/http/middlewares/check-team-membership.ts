@@ -7,11 +7,27 @@ import logger from '@shared/infrastructure/logger';
 
 export const checkTeamMembership = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const teamId = req.params.teamId;
-    const userId = req.userId!;
+    const userId = req.userId;
 
     logger.debug(`check-team-membership: teamId=${teamId} & userId=${userId}`);
 
-    if (!userId || !teamId) {
+    if (!teamId) {
+        return res.status(400).json({ status: 'error' });
+    }
+
+    if (req.authType === 'secret-key') {
+        if (req.secretKeyTeamId !== teamId) {
+            return res.status(403).json({
+                status: 'error',
+                message: ErrorCodes.TEAM_ACCESS_DENIED
+            });
+        }
+
+        req.teamPermissions = req.teamPermissions || [];
+        return next();
+    }
+
+    if (!userId) {
         return res.status(400).json({ status: 'error' });
     }
 

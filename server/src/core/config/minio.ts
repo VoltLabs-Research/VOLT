@@ -1,5 +1,6 @@
 import { Client } from 'minio';
 import logger from '@shared/infrastructure/logger';
+import { readNumberEnv } from '@shared/infrastructure/utilities/env';
 
 let minioClient: Client | null = null;
 
@@ -14,7 +15,7 @@ export const SYS_BUCKETS = {
 
 export const getMinioConfig = () => {
     const endPoint = process.env.MINIO_ENDPOINT || 'localhost';
-    const port = Number(process.env.MINIO_PORT ?? 9000);
+    const port = readNumberEnv('MINIO_PORT', 9000);
     const useSSL = process.env.MINIO_USE_SSL === 'true';
 
     const accessKey = process.env.MINIO_ACCESS_KEY;

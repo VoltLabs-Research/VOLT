@@ -6,6 +6,7 @@ import { registerAuthDependencies } from '@modules/auth/infrastructure/di/contai
 import { registerTeamDependencies } from '@modules/team/infrastructure/di/container';
 import { registerContainerDependencies } from '@modules/container/infrastructure/di/container';
 import { registerPluginDependencies, initializeNodeHandlers } from '@modules/plugin/infrastructure/di/container';
+import { registerScriptingDependencies } from '@modules/scripting/infrastructure/di/container';
 import { registerTrajectoryDependencies } from '@modules/trajectory/infrastructure/di/container';
 import { registerSessionDependencies } from '@modules/session/infrastructure/di/container';
 import { registerApiTrackerDependencies } from '@modules/api-tracker/infrastructure/di/container';
@@ -35,6 +36,7 @@ registerAuthDependencies();
 registerTeamDependencies();
 registerContainerDependencies();
 registerPluginDependencies();
+registerScriptingDependencies();
 registerTrajectoryDependencies();
 registerSessionDependencies();
 registerApiTrackerDependencies();

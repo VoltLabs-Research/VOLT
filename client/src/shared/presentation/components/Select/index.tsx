@@ -4,11 +4,6 @@ import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import './Select.css';
 
-interface PopoverHTMLElement extends HTMLElement {
-    showPopover?: () => void;
-    hidePopover?: () => void;
-}
-
 export interface SelectOption {
     value: string;
     title: string;
@@ -170,7 +165,7 @@ const Select = ({
     }, [isOpen, calculatePosition]);
 
     useEffect(() => {
-        const dropdownEl = dropdownRef.current as PopoverHTMLElement | null;
+        const dropdownEl = dropdownRef.current as any;
         if (!dropdownEl) return;
 
         if (isOpen) {
@@ -238,7 +233,7 @@ const Select = ({
                 </div>
             )}
         </div>,
-        document.body
+        triggerRef.current?.closest('dialog') || document.body
     ) : null;
 
     return (
