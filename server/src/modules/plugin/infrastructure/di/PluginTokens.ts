@@ -9,7 +9,7 @@ export const PLUGIN_TOKENS = {
     PluginBinaryCacheService: Symbol.for('PluginBinaryCacheService'),
     PluginWorkflowEngine: Symbol.for('WorkflowEngine'),
     ProcessExecutorService: Symbol.for('ProcessExecutorService'),
-    
+
     // Analysis Queue Infrastructure
     AnalysisProcessingQueue: Symbol.for('AnalysisProcessingQueue'),
     AnalysisJobFactory: Symbol.for('AnalysisJobFactory'),

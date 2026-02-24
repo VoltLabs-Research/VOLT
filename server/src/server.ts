@@ -7,6 +7,7 @@ import { initializeMinio } from './core/config/minio';
 import { registerAllSubscribers } from './core/events/registerAllSubscribers';
 import { container } from 'tsyringe';
 import logger from './shared/infrastructure/logger';
+import { readNumberEnv } from './shared/infrastructure/utilities/env';
 import mongoConnector from './shared/infrastructure/utilities/mongo-connector';
 import SocketGateway from './modules/socket/infrastructure/gateway/SocketGateway';
 import mountHttpRoutes from './core/bootstrap/mount-http-routes';
@@ -15,9 +16,9 @@ import app from './core/config/express';
 import http from 'http';
 import os from 'node:os';
 
-const SERVER_PORT = process.env.SERVER_PORT || 8000;
+const SERVER_PORT = readNumberEnv('SERVER_PORT', 8000);
 const SERVER_HOST = process.env.SERVER_HOST || '0.0.0.0';
-const SERVER_TIMEOUT = parseInt(process.env.SERVER_TIMEOUT ?? '1800000');
+const SERVER_TIMEOUT = readNumberEnv('SERVER_TIMEOUT', 1800000);
 
 const shutdown = async () => {
     process.exit(0);
@@ -45,7 +46,7 @@ const startServer = async () => {
         logger.error(`@server: http server error: ${error}`)
     });
 
-    server.listen(SERVER_PORT as number, SERVER_HOST, async () => {
+    server.listen(SERVER_PORT, SERVER_HOST, async () => {
         const clusterId = process.env.CLUSTER_ID || os.hostname();
         await Promise.all([
             initializeRedis(),

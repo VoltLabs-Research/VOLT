@@ -100,17 +100,17 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
         const { DockerNetwork } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerNetworkModel');
         const { DockerVolume } = await import('@modules/container/infrastructure/persistence/mongo/models/DockerVolumeModel');
 
-        const networkDoc = await DockerNetwork.create({
-            networkId,
-            name: networkName,
-            driver: 'bridge'
-        });
+        const networkDoc = await DockerNetwork.findOneAndUpdate(
+            { networkId },
+            { name: networkName, driver: 'bridge' },
+            { upsert: true, new: true }
+        );
 
-        const volumeDoc = await DockerVolume.create({
-            volumeId,
-            name: volumeName,
-            driver: 'local'
-        });
+        const volumeDoc = await DockerVolume.findOneAndUpdate(
+            { volumeId },
+            { name: volumeName, driver: 'local' },
+            { upsert: true, new: true }
+        );
 
         const container = await this.repository.create({
             name,

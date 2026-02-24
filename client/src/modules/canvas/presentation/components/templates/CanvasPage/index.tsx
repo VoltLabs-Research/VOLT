@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
+import { ExternalLink } from 'lucide-react';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import Container from '@/shared/presentation/components/Container';
+import Button from '@/shared/presentation/components/Button';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import useFractalSceneConfig from '@/modules/canvas/presentation/hooks/use-fractal-scene-config';
 import type { FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
@@ -27,6 +29,7 @@ import Timeline from '../../organisms/Timeline';
 import StatusBar from '../../organisms/StatusBar';
 import PluginResultsViewer from '../../organisms/PluginResultsViewer';
 import KeyboardShortcutsPanel from '../../organisms/KeyboardShortcutsPanel';
+import ScriptingWorkspace from '@/modules/scripting/presentation/components/organisms/ScriptingWorkspace';
 import useResizable from '../../../hooks/use-resizable';
 
 const CanvasPage = () => {
@@ -53,9 +56,19 @@ const CanvasPage = () => {
 
     const sceneConfig = useFractalSceneConfig();
     const sceneRef = useRef<FractalSceneRef>(null);
-    const { analysisId, showGrid, resultsPluginId, showWidgets, searchParams } = useCanvasUrlState({ trajectory });
+    const {
+        analysisId,
+        showGrid,
+        resultsPluginId,
+        showWidgets,
+        searchParams,
+        activeWorkspace,
+        selectedNotebookId
+    } = useCanvasUrlState({ trajectory });
     const showStatusBar = searchParams.get('statusBar') !== 'false';
+    const isScriptingWorkspace = activeWorkspace === 'scripting';
     const { downloadListing } = useDownloadPluginListing();
+    const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
 
     useEffect(() => {
         return () => {
@@ -114,6 +127,23 @@ const CanvasPage = () => {
         maxSize: 80
     });
 
+    const scriptingHeaderAction = isScriptingWorkspace && scriptingJupyterUrl
+        ? (
+            <Button
+                variant="ghost"
+                intent="canvas"
+                shape="rounded"
+                size="sm"
+                className="font-size-05 canvas-btn-compact"
+                leftIcon={<span className="d-flex items-center content-center f-shrink-0"><ExternalLink size={12} /></span>}
+                title="Open Jupyter in new tab"
+                onClick={() => window.open(scriptingJupyterUrl, '_blank', 'noopener,noreferrer')}
+            >
+                Open in New Tab
+            </Button>
+        )
+        : null;
+
     return (
         <Container className="canvas-editor-root d-flex column vh-max wh-max overflow-hidden p-relative">
             <TopToolbar />
@@ -151,22 +181,37 @@ const CanvasPage = () => {
                             showGrid={showGrid}
                             isLoading={showLoading}
                             sceneRef={sceneRef}
+                            bodyContent={isScriptingWorkspace
+                                ? (
+                                    <ScriptingWorkspace
+                                        trajectoryId={trajectoryId}
+                                        notebookId={selectedNotebookId}
+                                        onJupyterUrlChange={setScriptingJupyterUrl}
+                                    />
+                                )
+                                : undefined}
+                            hideGradient={isScriptingWorkspace}
+                            headerActionsBeforePerformance={scriptingHeaderAction}
                         />
                     </Container>
-                    <ResizeHandle
-                        direction="vertical"
-                        isDragging={timeline.isDragging}
-                        {...timeline.handleProps}
-                    />
-                    <Container className="canvas-center-timeline d-flex column f-shrink-0" style={{ height: timeline.size }}>
-                        <Timeline
-                            sceneRef={sceneRef}
-                            trajectory={trajectory}
-                            analysisId={analysisId}
-                            onTabChange={handleTimelineTabChange}
-                            onDownloadExposureListing={handleDownloadExposureListing}
-                        />
-                    </Container>
+                    {!isScriptingWorkspace && (
+                        <>
+                            <ResizeHandle
+                                direction="vertical"
+                                isDragging={timeline.isDragging}
+                                {...timeline.handleProps}
+                            />
+                            <Container className="canvas-center-timeline d-flex column f-shrink-0" style={{ height: timeline.size }}>
+                                <Timeline
+                                    sceneRef={sceneRef}
+                                    trajectory={trajectory}
+                                    analysisId={analysisId}
+                                    onTabChange={handleTimelineTabChange}
+                                    onDownloadExposureListing={handleDownloadExposureListing}
+                                />
+                            </Container>
+                        </>
+                    )}
                 </Container>
 
                 <ResizeHandle
@@ -183,7 +228,7 @@ const CanvasPage = () => {
             {showStatusBar && trajectory && currentTimestep !== undefined && (
                 <StatusBar trajectory={trajectory} currentTimestep={currentTimestep} />
             )}
-            {showWidgets && resultsPluginId && (
+            {showWidgets && resultsPluginId && analysisId && (
                 <PluginResultsViewer
                     pluginId={resultsPluginId}
                     analysisId={analysisId}

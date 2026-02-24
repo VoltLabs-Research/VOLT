@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { RiHomeSmile2Fill } from 'react-icons/ri';
 import { TbCube3dSphere } from 'react-icons/tb';
-import { IoCubeOutline, IoAnalytics, IoPeopleOutline, IoKeyOutline } from 'react-icons/io5';
+import { IoCubeOutline, IoAnalytics, IoPeopleOutline, IoKeyOutline, IoBookOutline, IoLockClosedOutline } from 'react-icons/io5';
 import { GoWorkflow } from 'react-icons/go';
 import { CiChat1 } from 'react-icons/ci';
 import { HiOutlineServer } from 'react-icons/hi';
@@ -24,6 +24,7 @@ import './SidebarNavigation.css';
 const MAIN_NAV_ITEMS: Array<[string, IconType, string]> = [
     ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
     ['Containers', IoCubeOutline, '/dashboard/containers'],
+    ['Notebooks', IoBookOutline, '/dashboard/notebooks'],
 ];
 
 const SECONDARY_NAV_ITEMS: Array<[string, IconType, string]> = [
@@ -32,7 +33,8 @@ const SECONDARY_NAV_ITEMS: Array<[string, IconType, string]> = [
     ['Clusters', HiOutlineServer, '/dashboard/clusters'],
     ['Import', MdImportExport, '/dashboard/ssh-connections'],
     ['My Team', IoPeopleOutline, '/dashboard/my-team'],
-    ['Manage Roles', IoKeyOutline, '/dashboard/manage-roles']
+    ['Manage Roles', IoKeyOutline, '/dashboard/manage-roles'],
+    ['Secret Keys', IoLockClosedOutline, '/dashboard/secret-keys']
 ];
 
 interface SidebarNavigationProps {

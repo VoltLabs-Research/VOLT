@@ -1,6 +1,8 @@
+import net from 'node:net';
+import path from 'node:path';
 import Docker from 'dockerode';
 import { injectable } from 'tsyringe';
-import { IContainerService, ContainerStats } from '@modules/container/domain/ports/IContainerService';
+import type { IContainerService, ContainerStats } from '@modules/container/domain/ports/IContainerService';
 import logger from '@shared/infrastructure/logger';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
@@ -116,6 +118,16 @@ export class DockerContainerService implements IContainerService {
         }
     }
 
+    async writeFile(containerId: string, filePath: string, content: string): Promise<void> {
+        try {
+            const dir = path.posix.dirname(filePath);
+            const command = `mkdir -p ${this.quoteShellArg(dir)} && cat > ${this.quoteShellArg(filePath)}`;
+            await this.exec(containerId, ['/bin/sh', '-lc', command], content);
+        } catch (error: any) {
+            throw new ApplicationError(ErrorCodes.CONTAINER_FILE_READ_FAILED, error.message, 500);
+        }
+    }
+
     async getProcesses(containerId: string): Promise<any[]> {
         try {
             const container = this.docker.getContainer(containerId);
@@ -127,15 +139,59 @@ export class DockerContainerService implements IContainerService {
         }
     }
 
-    async exec(containerId: string, command: string[]): Promise<string> {
+    async getPublishedPort(containerId: string, privatePort: number): Promise<number | null> {
+        try {
+            const container = this.docker.getContainer(containerId);
+            const info = await container.inspect();
+            const bindingKey = `${privatePort}/tcp`;
+            const bindings = info?.NetworkSettings?.Ports?.[bindingKey];
+
+            if (!Array.isArray(bindings) || bindings.length === 0) {
+                return null;
+            }
+
+            const hostPort = Number(bindings[0]?.HostPort);
+            return Number.isFinite(hostPort) ? hostPort : null;
+        } catch {
+            return null;
+        }
+    }
+
+    private async isHostPortAvailable(port: number): Promise<boolean> {
+        return new Promise((resolve) => {
+            const server = net.createServer();
+            server.unref();
+
+            server.on('error', () => {
+                resolve(false);
+            });
+
+            server.listen(port, '0.0.0.0', () => {
+                server.close(() => resolve(true));
+            });
+        });
+    }
+
+    async findAvailableHostPort(start: number, end: number): Promise<number | null> {
+        for (let port = start; port <= end; port += 1) {
+            if (await this.isHostPortAvailable(port)) {
+                return port;
+            }
+        }
+
+        return null;
+    }
+
+    async exec(containerId: string, command: string[], stdin?: string): Promise<string> {
         try {
             const container = this.docker.getContainer(containerId);
             const exec = await container.exec({
                 Cmd: command,
+                AttachStdin: typeof stdin === 'string',
                 AttachStdout: true,
                 AttachStderr: true
             });
-            const stream = await exec.start({ hijack: true, stdin: false });
+            const stream = await exec.start({ hijack: true, stdin: typeof stdin === 'string' });
 
             return new Promise<string>((resolve, reject) => {
                 let output = '';
@@ -158,6 +214,16 @@ export class DockerContainerService implements IContainerService {
                     this.docker.modem.demuxStream(stream, { write: safeWrite } as any, { write: safeWrite } as any);
                 } catch {
                     stream.on('data', safeWrite);
+                }
+
+                if (typeof stdin === 'string') {
+                    try {
+                        stream.write(stdin);
+                        stream.end();
+                    } catch (error: any) {
+                        reject(error);
+                        return;
+                    }
                 }
 
                 stream.on('end', () => resolve(output));
@@ -195,7 +261,12 @@ export class DockerContainerService implements IContainerService {
             await image.inspect();
         } catch (e: any) {
             if (e.statusCode === 404) {
+                if (imageName === 'volt-scripting-env:latest') {
+                    throw new Error(`Local image ${imageName} not found. Please build it first: cd server/docker/scripting && docker build -t volt-scripting-env:latest .`);
+                }
                 await this.pullImage(imageName);
+            } else {
+                throw e;
             }
         }
     }
@@ -287,5 +358,9 @@ export class DockerContainerService implements IContainerService {
         } catch (error: any) {
             throw new ApplicationError(ErrorCodes.DOCKER_CONNECT_ERROR, `Failed to attach terminal: ${error.message}`, 500);
         }
+    }
+
+    private quoteShellArg(value: string): string {
+        return `'${String(value).replace(/'/g, `'\"'\"'`)}'`;
     }
 }

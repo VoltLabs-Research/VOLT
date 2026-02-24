@@ -23,6 +23,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
     const timelineExposureId = searchParams.get('timelineExposure') || undefined;
     const pluginParam = searchParams.get('plugin') || undefined;
     const settingsKey = searchParams.get('settings') || undefined;
+    const selectedNotebookId = searchParams.get('notebook') || undefined;
     const showWidgets = searchParams.get('widgets') !== 'false';
     const showGrid = searchParams.get('grid') !== 'false';
     const renderConfigOpen = searchParams.get('renderConfig') === 'true';
@@ -46,6 +47,10 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
 
     const setSettingsKey = useCallback((value?: string | null, options?: UpdateOptions) => {
         updateSearchParams({ settings: value ?? null }, options);
+    }, [updateSearchParams]);
+
+    const setSelectedNotebookId = useCallback((value?: string | null, options?: UpdateOptions) => {
+        updateSearchParams({ notebook: value ?? null }, options);
     }, [updateSearchParams]);
 
     const setRenderConfigOpen = useCallback((open: boolean, options?: UpdateOptions) => {
@@ -92,6 +97,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         pluginParam,
         pluginSelection,
         settingsKey,
+        selectedNotebookId,
         showWidgets,
         showGrid,
         renderConfigOpen,
@@ -104,6 +110,7 @@ const useCanvasUrlState = (options?: CanvasUrlStateOptions) => {
         setTimelineExposureId,
         setPluginParam,
         setSettingsKey,
+        setSelectedNotebookId,
         setRenderConfigOpen,
         setActiveWorkspace,
         setModifiers

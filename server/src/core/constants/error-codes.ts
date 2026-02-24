@@ -166,6 +166,12 @@ export const ErrorCodes = {
     TEAM_MEMBER_ALREADY_EXISTS: 'TeamMember::AlreadyExists',
     TEAM_MEMBER_ROLE_REQUIRED: 'TeamMember::RoleRequired',
 
+    SECRET_KEY_REQUIRED: 'SecretKey::Required',
+    SECRET_KEY_INVALID: 'SecretKey::Invalid',
+    SECRET_KEY_NOT_FOUND: 'SecretKey::NotFound',
+    SECRET_KEY_NAME_REQUIRED: 'SecretKey::NameRequired',
+    SECRET_KEY_ROLE_REQUIRED: 'SecretKey::RoleRequired',
+
     OAUTH_GITHUB_EMAIL_NOT_FOUND: 'OAuth::Github::Email::NotFound',
     OAUTH_STRATEGY_ERROR: 'OAuth::Strategy::Error'
 } as const;
