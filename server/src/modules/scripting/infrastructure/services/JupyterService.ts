@@ -113,6 +113,19 @@ export class JupyterService{
         await this.containerService.removeContainer(container.containerId);
     }
 
+    public async deleteSession(trajectoryId: string): Promise<void>{
+        const containerName = `Jupyter Lab - TID ${trajectoryId}`;
+        const existingContainers = await this.containerRepository.findAll({
+            filter: { name: containerName } as any
+        });
+
+        if (existingContainers.data && existingContainers.data.length > 0) {
+            await Promise.all(
+                existingContainers.data.map(container => this.removeBrokenContainer(container))
+            );
+        }
+    }
+
     private async createContainer(teamId: string, userId: string, containerName: string): Promise<EnsureContainerResult>{
         const { start, end } = this.runtime.jupyter.hostPortRange;
         const hostPort = await this.containerService.findAvailableHostPort(start, end);
