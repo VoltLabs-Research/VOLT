@@ -20,7 +20,6 @@ export default class GetPluginExposureGLBController{
     public handle = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const { trajectoryId, analysisId, exposureId, timestep } = req.params;
-
             const artifact = await this.sceneArtifactRepository.findOne({
                 trajectory: String(trajectoryId),
                 analysis: String(analysisId),
@@ -36,9 +35,10 @@ export default class GetPluginExposureGLBController{
             }
 
             const objectName = artifact.props.objectName;
+            const bucket = artifact.props.storageBucket || SYS_BUCKETS.MODELS;
             const [stat, stream] = await Promise.all([
-                this.storageService.getStat(SYS_BUCKETS.MODELS, objectName), 
-                this.storageService.getStream(SYS_BUCKETS.MODELS, objectName)
+                this.storageService.getStat(bucket, objectName), 
+                this.storageService.getStream(bucket, objectName)
             ]);
 
             res.setHeader('Content-Type', 'model/gltf-binary');
@@ -51,4 +51,3 @@ export default class GetPluginExposureGLBController{
         }
     }
 }
-

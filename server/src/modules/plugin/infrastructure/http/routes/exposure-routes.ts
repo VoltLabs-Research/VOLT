@@ -14,5 +14,6 @@ const module: HttpModule = {
 router.use(protect);
 
 router.get('/exposure/glb/:trajectoryId/:analysisId/:exposureId/:timestep', controllers.getPluginExposureGLB.handle);
+router.get('/exposure/export/analysis/:analysisId', controllers.getPluginExposureExport.handle);
 
 export default module;
