@@ -22,13 +22,7 @@ export default class PluginListingRepository extends BaseRepository implements I
             throw new Error('Exposure::IdRequired');
         }
 
-        const path = exposureId
-            ? (trajectoryId
-                ? `/listing/${pluginId}/exposure/${exposureId}/${trajectoryId}`
-                : `/listing/${pluginId}/exposure/${exposureId}`)
-            : (trajectoryId
-                ? `/listing/${pluginId}/${exposureName}/${trajectoryId}`
-                : `/listing/${pluginId}/${exposureName}`);
+        const path = `/listing/${pluginId}`;
 
         const query: Record<string, unknown> = {};
 
@@ -44,8 +38,16 @@ export default class PluginListingRepository extends BaseRepository implements I
             query.analysisId = analysisId;
         }
 
+        if (exposureId) {
+            query.exposureId = exposureId;
+        }
+
         if (exposureName) {
             query.exposureName = exposureName;
+        }
+
+        if (trajectoryId) {
+            query.trajectoryId = trajectoryId;
         }
 
         // The server wraps the result via BaseResponse.success(), producing

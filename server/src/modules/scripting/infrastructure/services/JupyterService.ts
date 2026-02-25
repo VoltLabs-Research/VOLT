@@ -61,7 +61,7 @@ export class JupyterService{
         };
         const { container, hostPort } = await this.ensureJupyterContainer(teamId, trajectoryId, userId);
 
-        await this.writeNotebookFile(container.containerId, notebook);
+        await this.writeNotebookFile(container.containerId, trajectoryId, notebook);
 
         const isReady = await this.ensureServer(container.containerId, hostPort);
         return {
@@ -174,12 +174,23 @@ export class JupyterService{
         return isReady;
     }
 
-    private async writeNotebookFile(containerId: string, notebook: NonNullable<StartJupyterSessionInput['notebook']>): Promise<void>{
+    private async writeNotebookFile(
+        containerId: string,
+        trajectoryId: string,
+        notebook: NonNullable<StartJupyterSessionInput['notebook']>
+    ): Promise<void>{
         const absNotebookPath = path.posix.join(this.runtime.notebookRoot, notebook.notebookPath);
-        await this.containerService.writeFile(containerId, absNotebookPath, this.resolveNotebookRawContent(notebook));
+        await this.containerService.writeFile(
+            containerId,
+            absNotebookPath,
+            this.resolveNotebookRawContent(notebook, { trajectoryId })
+        );
     }
 
-    private resolveNotebookRawContent(notebook: NonNullable<StartJupyterSessionInput['notebook']>): string {
+    private resolveNotebookRawContent(
+        notebook: NonNullable<StartJupyterSessionInput['notebook']>,
+        context: { trajectoryId: string }
+    ): string {
         if (typeof notebook.content === 'string') {
             return notebook.content;
         }
@@ -188,7 +199,18 @@ export class JupyterService{
             return JSON.stringify(notebook.content, null, 2);
         }
 
-        return fs.readFileSync(DEFAULT_NOTEBOOK_TEMPLATE_PATH, 'utf8');
+        return this.resolveDefaultNotebookTemplateContent(context);
+    }
+
+    private resolveDefaultNotebookTemplateContent(context: { trajectoryId: string }): string {
+        const serverDomain = process.env.SERVER_ENDPOINT;
+        if (!serverDomain) {
+            throw new RuntimeError(ErrorCodes.RESOURCE_LOAD_ERROR, 500);
+        }
+
+        return fs.readFileSync(DEFAULT_NOTEBOOK_TEMPLATE_PATH, 'utf8')
+            .replace(/<BASE_URL>/g, serverDomain.replace(/\/+$/g, ''))
+            .replace(/<TRAJECTORY_ID>/g, context.trajectoryId);
     }
 
     private buildJupyterUrl(hostPort: number, notebookPath?: string): string{

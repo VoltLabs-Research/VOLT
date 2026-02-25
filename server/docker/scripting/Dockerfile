@@ -9,4 +9,4 @@ COPY --chown=${NB_UID}:${NB_GID} voltsdk /opt/voltsdk
 
 USER ${NB_UID}
 
-RUN pip install --no-cache-dir msgpack minio /opt/voltsdk
+RUN pip install --no-cache-dir msgpack pandas vtk minio /opt/voltsdk
