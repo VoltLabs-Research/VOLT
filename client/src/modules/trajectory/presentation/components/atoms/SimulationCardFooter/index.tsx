@@ -82,7 +82,6 @@ const SimulationCardFooter = ({
                 trigger={
                     <IconButton
                         className='footer-options-btn'
-                        onClick={(e) => e.stopPropagation()}
                     >
                         <PiDotsThreeVerticalBold />
                     </IconButton>
