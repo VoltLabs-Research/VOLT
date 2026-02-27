@@ -9,3 +9,11 @@
     padding: 0.25rem;
     font-size: 1.25rem;
 }
+
+.simulation-card-status-loader{
+    margin-left: -0.125rem;
+}
+
+.simulation-card-status-text{
+    margin: 0;
+}

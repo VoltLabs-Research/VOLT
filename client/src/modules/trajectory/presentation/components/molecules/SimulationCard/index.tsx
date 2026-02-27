@@ -23,7 +23,7 @@ const SimulationCard = ({ trajectory, isSelected, onSelect }: SimulationCardProp
     const { previewBlobUrl, isLoading: previewLoading, error: previewError, retry: retryPreview } = useTrajectoryPreview({
         trajectoryId: trajectory._id,
         version: trajectory.updatedAt,
-        enabled: trajectory.status === 'completed'
+        enabled: trajectory.status !== 'failed'
     });
 
     const isProcessing = isProcessingStatus(trajectory.status);

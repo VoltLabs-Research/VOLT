@@ -9,6 +9,7 @@ import useDeleteTrajectory from '../../../hooks/trajectory/use-delete-trajectory
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import Loader from '@/shared/presentation/components/Loader';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import IconButton from '@/shared/presentation/components/IconButton';
@@ -68,11 +69,14 @@ const SimulationCardFooter = ({
                     name={name}
                     className='font-size-3 color-primary font-weight-5'
                 />
-                <Container className='d-flex items-center gap-05 color-secondary font-size-2'>
+                <Container className='simulation-card-status d-flex items-center gap-075 color-secondary font-size-2'>
                     {isProcessing ? (
-                        <Paragraph className='color-muted'>{processingMessage}</Paragraph>
+                        <>
+                            <Loader scale={0.4} isFixed={false} className='simulation-card-status-loader f-shrink-0' />
+                            <Paragraph className='simulation-card-status-text color-muted'>{processingMessage}</Paragraph>
+                        </>
                     ) : (
-                        <Paragraph>Edited {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}</Paragraph>
+                        <Paragraph className='simulation-card-status-text'>Edited {formatDistanceToNow(new Date(updatedAt), { addSuffix: true })}</Paragraph>
                     )}
                 </Container>
             </Container>

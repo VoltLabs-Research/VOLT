@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
 interface UseInfiniteScrollOptions {
-    rootRef?: RefObject<HTMLElement> | null;
+    rootRef?: RefObject<HTMLElement | null> | null;
     hasMore: boolean;
     isFetchingMore: boolean;
     onLoadMore?: () => void;
