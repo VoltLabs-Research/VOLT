@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import Container from '@/shared/presentation/components/Container';
 import DashboardSidebar from '@/modules/dashboard/presentation/components/organisms/DashboardSidebar';
 import DashboardHeader from '@/modules/dashboard/presentation/components/molecules/DashboardHeader';
 import TeamCreatorModal from '@/modules/team/presentation/components/organisms/TeamCreatorModal';
+import PageTransition from '@/shared/presentation/components/PageTransition';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
@@ -16,6 +18,7 @@ const DashboardLayout = () => {
     const selectedTeam = useSelectedTeam();
     const setCanInvite = useTeamStore((state) => state.setCanInvite);
     const { checkCanInvite } = useTeamData();
+    const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
@@ -59,7 +62,11 @@ const DashboardLayout = () => {
                 <DashboardHeader setSidebarOpen={setSidebarOpen} />
 
                 <Container className='dashboard-content-main flex-1 min-h-0 y-auto'>
-                    <Outlet />
+                    <AnimatePresence mode='wait' initial={false}>
+                        <PageTransition key={location.pathname}>
+                            <Outlet />
+                        </PageTransition>
+                    </AnimatePresence>
                 </Container>
             </Container>
         </main>
