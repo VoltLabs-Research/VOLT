@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { RxDotsHorizontal } from 'react-icons/rx';
 import { Plus } from 'lucide-react';
@@ -71,6 +71,7 @@ interface DocumentListingProps<T, TContext = Record<string, never>> {
     hideHeader?: boolean;
     hideTabs?: boolean;
     exportConfig?: DocumentListingExportConfig<TContext>;
+    onHideItemRef?: React.MutableRefObject<((id: string) => void) | null>;
 };
 
 const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({
@@ -97,7 +98,8 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     onEmptyButtonClick,
     hideHeader = false,
     hideTabs = false,
-    exportConfig
+    exportConfig,
+    onHideItemRef
 }: DocumentListingProps<T, TContext>) => {
     const { showError, showSuccess } = useToast();
     const getColumnSortKey = useCallback((col: ColumnConfig): string => {
@@ -130,9 +132,20 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
 
     const exportModalId = useMemo(() => `document-listing-export-${Math.random().toString(36).slice(2)}`, []);
 
-    const { wrapMenuOptions, filterVisibleData } = useOptimisticAction<T>({
+    const { addToHidden, wrapMenuOptions, filterVisibleData } = useOptimisticAction<T>({
         shouldTrack: (opt) => opt.destructive === true
     });
+
+    useEffect(() => {
+        if(onHideItemRef){
+            onHideItemRef.current = addToHidden;
+        }
+        return () => {
+            if(onHideItemRef){
+                onHideItemRef.current = null;
+            }
+        };
+    }, [onHideItemRef, addToHidden]);
 
     const wrappedGetMenuOptions = useCallback((item: T) => {
         if(!getMenuOptions) return [];
