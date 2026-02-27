@@ -43,7 +43,7 @@ export default class RevokeSecretKeyByIdUseCase implements IUseCase<RevokeSecret
         }
 
         return Result.ok({
-            id: updated.id,
+            _id: updated.id,
             teamId: String(updated.props.team),
             isActive: updated.props.isActive,
             updatedAt: updated.props.updatedAt

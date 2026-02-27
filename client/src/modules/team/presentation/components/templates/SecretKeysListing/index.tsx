@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react';
 import { PiKeyLight } from 'react-icons/pi';
-import { RiFileCopyLine } from 'react-icons/ri';
+import { RiFileCopyLine, RiShieldKeyholeLine } from 'react-icons/ri';
 import { formatDistanceToNow } from 'date-fns';
 import useGetSecretKeys from '@/modules/team/presentation/hooks/secret-key/use-get-secret-keys';
 import useRevokeSecretKey from '@/modules/team/presentation/hooks/secret-key/use-revoke-secret-key';
+import useDeleteSecretKey from '@/modules/team/presentation/hooks/secret-key/use-delete-secret-key';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { openModal } from '@/shared/presentation/components/Modal';
@@ -58,9 +59,9 @@ const COLUMNS: ColumnConfig[] = [
 const SecretKeysListing = () => {
     const getSecretKeys = useGetSecretKeys();
     const revokeSecretKey = useRevokeSecretKey();
+    const deleteSecretKey = useDeleteSecretKey();
     const { showSuccess, showError } = useToast();
     const [refreshTrigger, setRefreshTrigger] = useState(0);
-    const bumpRefreshTrigger = useCallback(() => setRefreshTrigger((value) => value + 1), []);
 
     const copySecretKeyPrefix = useCallback(async (key: SecretKey) => {
         const keyPrefix = String(key.keyPrefix || '').trim();
@@ -84,13 +85,21 @@ const SecretKeysListing = () => {
                 icon: RiFileCopyLine,
                 handler: copySecretKeyPrefix
             },
-            delete: {
+            revoke: {
                 label: 'Revoke Key',
+                icon: RiShieldKeyholeLine,
                 handler: async (key) => {
-                    await revokeSecretKey(key.id);
-                    bumpRefreshTrigger();
+                    await revokeSecretKey(key._id);
+                    setRefreshTrigger((v) => v + 1);
                 },
                 confirm: (key) => `Are you sure you want to revoke the secret key "${key.name}"? Any applications using this key will immediately lose access.`
+            },
+            delete: {
+                label: 'Delete',
+                handler: async (key) => {
+                    await deleteSecretKey(key._id);
+                },
+                confirm: (key) => `Are you sure you want to permanently delete the secret key "${key.name}"? This action cannot be undone.`
             }
         }
     });
@@ -100,8 +109,8 @@ const SecretKeysListing = () => {
     }, []);
 
     const handleKeyCreated = useCallback((_secretKey: string) => {
-        bumpRefreshTrigger();
-    }, [bumpRefreshTrigger]);
+        setRefreshTrigger((value) => value + 1);
+    }, []);
 
     const getRowMenuOptions = useCallback((item: SecretKey) => {
         const options = getMenuOptions(item);
@@ -109,7 +118,7 @@ const SecretKeysListing = () => {
             return options;
         }
 
-        return options.filter((option) => option.label === 'Copy Prefix');
+        return options.filter((option) => option.label !== 'Revoke Key');
     }, [getMenuOptions]);
 
     // Quick shortcut for opening modal

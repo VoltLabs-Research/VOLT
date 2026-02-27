@@ -27,4 +27,5 @@ export default interface ISecretKeyRepository {
     listByTeamId(teamId: string, params: GetSecretKeysParams): Promise<PaginatedResponse<SecretKey>>;
     create(teamId: string, data: CreateSecretKeyParams): Promise<CreateSecretKeyResponse>;
     revokeById(teamId: string, secretKeyId: string): Promise<void>;
+    deleteById(teamId: string, secretKeyId: string): Promise<void>;
 }

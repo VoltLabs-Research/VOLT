@@ -5,7 +5,7 @@ export interface ListSecretKeysByTeamIdInputDTO {
 }
 
 export interface SecretKeyListItemDTO {
-    id: string;
+    _id: string;
     teamId: string;
     roleId: string;
     roleName: string;
