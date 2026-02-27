@@ -89,7 +89,7 @@ const COLUMNS: ColumnConfig[] = [
 
 const NotebooksListing = () => {
     const navigate = useNavigate();
-    const { showError } = useToast();
+    const { showError, showSuccess } = useToast();
     const teamId = useTeamStore((state) => state.selectedTeam?._id);
 
     const fetchData = useCallback(async (params: PaginationParams): Promise<PaginatedResponse<NotebookDocument>> => {
@@ -133,6 +133,15 @@ const NotebooksListing = () => {
 
                     navigate(`/canvas/${trajectoryId}?workspace=scripting&notebook=${encodeURIComponent(notebook.id)}`);
                 }
+            },
+            delete: {
+                variant: 'danger',
+                handler: async (notebook) => {
+                    const scriptingRepository = container.resolve<IScriptingRepository>(SCRIPTING_TOKENS.ScriptingRepository);
+                    await scriptingRepository.deleteScriptingNotebook(notebook._id);
+                    showSuccess('Notebook deleted successfully');
+                },
+                confirm: (notebook) => `Delete notebook "${notebook.title || 'Untitled Notebook'}"? This action cannot be undone.`
             }
         }
     });

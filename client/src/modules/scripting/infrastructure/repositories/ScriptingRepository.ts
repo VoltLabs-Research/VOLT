@@ -31,4 +31,8 @@ export default class ScriptingRepository extends BaseRepository implements IScri
         );
         return this.unwrap(response);
     }
+
+    async deleteScriptingNotebook(notebookId: string): Promise<void> {
+        await this.client.delete(`/scripting/notebooks/${notebookId}`);
+    }
 }

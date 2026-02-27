@@ -10,48 +10,9 @@ const wrapWithPageTransition = (Component: React.ComponentType) => (
     </PageTransition>
 );
 
-const renderRouteWithChildren = (route: RouteConfig) => {
-    if(route.children && route.children.length > 0){
-        return (
-            <Route
-                key={route.path}
-                path={route.path}
-                element={wrapWithPageTransition(route.component)}
-            >
-                {route.children.map((child) => (
-                    child.index ? (
-                        <Route
-                            key={child.path}
-                            index
-                            element={wrapWithPageTransition(child.component)}
-                        />
-                    ) : (
-                        <Route
-                            key={child.path}
-                            path={child.path}
-                            element={wrapWithPageTransition(child.component)}
-                        />
-                    )
-                ))}
-            </Route>
-        );
-    }
-
-    return (
-        <Route
-            key={route.path}
-            path={route.path}
-            index={route.index}
-            element={wrapWithPageTransition(route.component)}
-        />
-    );
-};
-
-const renderDashboardRoute = (route: RouteConfig) => {
-    const renderElement = (comp: React.ComponentType) => {
-        const Component = comp;
-        return <Component />;
-    };
+const renderRouteWithChildren = (route: RouteConfig, withTransition = true) => {
+    const renderElement = (Component: React.ComponentType) =>
+        withTransition ? wrapWithPageTransition(Component) : <Component />;
 
     if(route.children && route.children.length > 0){
         return (
@@ -111,10 +72,10 @@ export const renderProtectedRoutes = () => {
 
     return (
         <Route element={<ProtectedRoute mode='protected' />}>
-            {nonDashboardRoutes.map(renderRouteWithChildren)}
+            {nonDashboardRoutes.map((route) => renderRouteWithChildren(route))}
             {DashboardLayout && (
                 <Route path='/dashboard' element={<DashboardLayout />}>
-                    {dashboardRoutes.map(renderDashboardRoute)}
+                    {dashboardRoutes.map((route) => renderRouteWithChildren(route, false))}
                 </Route>
             )}
         </Route>

@@ -4,6 +4,7 @@ import ScriptingNotebookRepository from '@modules/scripting/infrastructure/persi
 import { SCRIPTING_TOKENS } from './ScriptingTokens';
 import { CreateScriptingJupyterSessionUseCase } from '@modules/scripting/application/use-cases/scripting/CreateScriptingJupyterSessionUseCase';
 import { ListScriptingNotebooksUseCase } from '@modules/scripting/application/use-cases/scripting/ListScriptingNotebooksUseCase';
+import { DeleteScriptingNotebookUseCase } from '@modules/scripting/application/use-cases/scripting/DeleteScriptingNotebookUseCase';
 
 export const registerScriptingDependencies = (): void => {
     container.registerSingleton(JupyterService);
@@ -11,4 +12,5 @@ export const registerScriptingDependencies = (): void => {
 
     container.registerSingleton(CreateScriptingJupyterSessionUseCase);
     container.registerSingleton(ListScriptingNotebooksUseCase);
+    container.registerSingleton(DeleteScriptingNotebookUseCase);
 };
