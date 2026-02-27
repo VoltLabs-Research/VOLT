@@ -11,6 +11,7 @@ interface UseOptimisticActionOptions {
 
 interface UseOptimisticActionReturn<T> {
     optimisticallyHiddenIds: Set<string>;
+    addToHidden: (id: string) => void;
     wrapMenuOptions: (item: T, options: MenuOption[]) => MenuOption[];
     filterVisibleData: (data: T[]) => T[];
 };
@@ -65,6 +66,7 @@ const useOptimisticAction = <T extends Identifiable>({
 
     return {
         optimisticallyHiddenIds: hiddenIds,
+        addToHidden,
         wrapMenuOptions,
         filterVisibleData
     };

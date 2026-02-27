@@ -21,6 +21,7 @@ interface SimulationCardFooterProps{
     updatedAt: string;
     isProcessing: boolean;
     processingMessage?: string;
+    onDelete?: (id: string) => void;
 };
 
 const SimulationCardFooter = ({ 
@@ -28,7 +29,8 @@ const SimulationCardFooter = ({
     name, 
     updatedAt, 
     isProcessing, 
-    processingMessage 
+    processingMessage,
+    onDelete
 }: SimulationCardFooterProps) => {
     const navigate = useNavigate();
     const deleteTrajectory = useDeleteTrajectory();
@@ -43,11 +45,12 @@ const SimulationCardFooter = ({
         if(!await confirm(`Delete trajectory "${name}"? This action cannot be undone.`)) return;
         setIsDeleting(true);
         try{
+            onDelete?.(trajectoryId);
             await deleteTrajectory(trajectoryId);
         }finally{
             setIsDeleting(false);
         }
-    }, [deleteTrajectory, confirm, trajectoryId, name]);
+    }, [deleteTrajectory, confirm, trajectoryId, name, onDelete]);
 
     const popoverItems = [{
         onClick: handleViewScene,

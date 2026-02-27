@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, useMemo } from 'react';
+import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import { Download, Upload } from 'lucide-react';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
 import SimulationCard from '../SimulationCard';
@@ -47,6 +47,8 @@ const SimulationGrid = () => {
     const { selectedIds, isSelected, toggleSelection } = useSelectionParams();
     const deleteSelectedTrajectories = useDeleteSelectedTrajectories();
 
+    const hideItemRef = useRef<((id: string) => void) | null>(null);
+
     const [samplesDownloaded, setSamplesDownloaded] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
 
@@ -66,6 +68,7 @@ const SimulationGrid = () => {
         const isDeleteShortcut = hasModifierKey && isDeleteKey;
         if(isDeleteShortcut){
             e.preventDefault();
+            selectedIds.forEach((id) => hideItemRef.current?.(id));
             await deleteSelectedTrajectories();
         }
     }, [selectedIds.length, deleteSelectedTrajectories]);
@@ -120,6 +123,10 @@ const SimulationGrid = () => {
         };
     }, [getTrajectories, visibleOptimisticTrajectories]);
 
+    const handleHideItem = useCallback((id: string) => {
+        hideItemRef.current?.(id);
+    }, []);
+
     const renderGridItem = useCallback((item: Trajectory) => {
         return (
             <SimulationCard
@@ -127,9 +134,10 @@ const SimulationGrid = () => {
                 trajectory={item}
                 isSelected={isSelected(item._id)}
                 onSelect={toggleSelection}
+                onDelete={handleHideItem}
             />
         );
-    }, [isSelected, toggleSelection]);
+    }, [isSelected, toggleSelection, handleHideItem]);
 
     const renderGridSkeleton = useCallback(() => (
         <SimulationSkeletonCard />
@@ -150,10 +158,11 @@ const SimulationGrid = () => {
                     trajectory={trajectory}
                     isSelected={isSelected(trajectory._id)}
                     onSelect={toggleSelection}
+                    onDelete={handleHideItem}
                 />
             ))}
         </>
-    ), [activeUploadEntries, visibleOptimisticTrajectories, isSelected, toggleSelection]);
+    ), [activeUploadEntries, visibleOptimisticTrajectories, isSelected, toggleSelection, handleHideItem]);
 
     const emptyStateConfig = useMemo(() => {
         if (samplesDownloaded) {
@@ -192,6 +201,7 @@ const SimulationGrid = () => {
             emptyButtonText={emptyStateConfig.buttonText}
             emptyButtonIsLoading={isDownloading}
             onEmptyButtonClick={emptyStateConfig.onButtonClick}
+            onHideItemRef={hideItemRef}
         />
     );
 };

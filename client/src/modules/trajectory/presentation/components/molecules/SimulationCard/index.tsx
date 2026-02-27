@@ -15,9 +15,10 @@ interface SimulationCardProps{
     trajectory: Trajectory;
     isSelected: boolean;
     onSelect: (id: string) => void;
+    onDelete?: (id: string) => void;
 };
 
-const SimulationCard = ({ trajectory, isSelected, onSelect }: SimulationCardProps) => {
+const SimulationCard = ({ trajectory, isSelected, onSelect, onDelete }: SimulationCardProps) => {
     const navigate = useNavigate();
 
     const { previewBlobUrl, isLoading: previewLoading, error: previewError, retry: retryPreview } = useTrajectoryPreview({
@@ -74,6 +75,7 @@ const SimulationCard = ({ trajectory, isSelected, onSelect }: SimulationCardProp
                 updatedAt={trajectory.updatedAt}
                 isProcessing={isProcessing}
                 processingMessage={processingMessage}
+                onDelete={onDelete}
             />
 
             <SimulationCardUsers trajectoryId={trajectory._id} />
