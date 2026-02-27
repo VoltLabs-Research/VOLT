@@ -4,7 +4,7 @@ export interface RevokeSecretKeyByIdInputDTO {
 }
 
 export interface RevokeSecretKeyByIdOutputDTO {
-    id: string;
+    _id: string;
     teamId: string;
     isActive: boolean;
     updatedAt: Date;

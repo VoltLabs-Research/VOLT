@@ -18,6 +18,7 @@ router.route('/:teamId')
     .get(controllers.listByTeamId.handle)
     .post(controllers.create.handle);
 
-router.delete('/:teamId/:secretKeyId', controllers.revokeById.handle);
+router.patch('/:teamId/:secretKeyId/revoke', controllers.revokeById.handle);
+router.delete('/:teamId/:secretKeyId', controllers.deleteById.handle);
 
 export default module;

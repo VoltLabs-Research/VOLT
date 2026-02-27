@@ -1,5 +1,5 @@
 export interface SecretKey {
-    id: string;
+    _id: string;
     teamId: string;
     roleId: string;
     roleName: string;

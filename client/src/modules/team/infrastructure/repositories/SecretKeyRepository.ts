@@ -21,6 +21,10 @@ export default class SecretKeyRepository extends BaseRepository implements ISecr
     }
 
     async revokeById(teamId: string, secretKeyId: string): Promise<void> {
+        await this.client.patch(`/${teamId}/${secretKeyId}/revoke`, {});
+    }
+
+    async deleteById(teamId: string, secretKeyId: string): Promise<void> {
         await this.client.delete(`/${teamId}/${secretKeyId}`);
     }
 }

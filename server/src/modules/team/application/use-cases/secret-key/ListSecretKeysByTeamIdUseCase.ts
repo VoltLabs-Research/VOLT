@@ -39,7 +39,7 @@ export default class ListSecretKeysByTeamIdUseCase implements IUseCase<ListSecre
             const role = secretKey.props.role as any;
 
             return {
-                id: secretKey.id,
+                _id: secretKey.id,
                 teamId: String(secretKey.props.team),
                 roleId: role?._id?.toString?.() || String(secretKey.props.role),
                 roleName: role?.name || 'Unknown',
