@@ -9,15 +9,37 @@ import useDeleteSelectedTrajectories from '../../../hooks/trajectory/use-delete-
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
-import type { Trajectory } from '@/modules/trajectory/domain/entities';
+import type { Trajectory, TrajectoryStatus } from '@/modules/trajectory/domain/entities';
+import useTeamJobsStore from '@/modules/jobs/presentation/stores/use-team-jobs-store';
+import type { FrameJobGroupStatus } from '@/modules/jobs/domain/entities/Job';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import type { TrajectoryUploadState } from '../../../stores/use-trajectory-store';
 
 interface SimulationGridContext {
     teamId?: string;
 };
 
+const mapGroupStatusToTrajectoryStatus = (status: FrameJobGroupStatus): TrajectoryStatus => {
+    switch(status){
+    case 'queued':
+        return 'queued';
+    case 'running':
+    case 'partial':
+        return 'processing';
+    case 'failed':
+        return 'failed';
+    case 'completed':
+        return 'completed';
+    default:
+        return 'processing';
+    }
+};
+
 const SimulationGrid = () => {
     const activeUploads = useTrajectoryStore((state) => state.activeUploads);
+    const optimisticTrajectories = useTrajectoryStore((state) => state.trajectories);
+    const patchTrajectory = useTrajectoryStore((state) => state.patchTrajectory);
+    const jobGroups = useTeamJobsStore((state) => state.groups);
     
     const selectedTeam = useSelectedTeam()!;
     const getTrajectories = useGetTrajectories();
@@ -28,7 +50,13 @@ const SimulationGrid = () => {
     const [samplesDownloaded, setSamplesDownloaded] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
 
-    const activeUploadEntries = Object.entries(activeUploads);
+    const activeUploadEntries = useMemo(() => Object.entries(activeUploads), [activeUploads]);
+    const visibleOptimisticTrajectories = useMemo(() => {
+        return optimisticTrajectories.filter((trajectory) => {
+            const teamId = typeof trajectory.team === 'string' ? trajectory.team : trajectory.team?._id;
+            return !teamId || teamId === selectedTeam._id;
+        });
+    }, [optimisticTrajectories, selectedTeam._id]);
 
     const handleKeyDown = useCallback(async (e: KeyboardEvent) => {
         if(selectedIds.length === 0) return;
@@ -60,32 +88,72 @@ const SimulationGrid = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleKeyDown]);
 
+    useEffect(() => {
+        if(visibleOptimisticTrajectories.length === 0) return;
+
+        visibleOptimisticTrajectories.forEach((trajectory) => {
+            const group = jobGroups.find((entry) => entry.trajectoryId === trajectory._id);
+            if(!group) return;
+
+            const nextStatus = mapGroupStatusToTrajectoryStatus(group.overallStatus);
+            const nextUpdatedAt = group.latestTimestamp || trajectory.updatedAt;
+
+            if(trajectory.status === nextStatus && trajectory.updatedAt === nextUpdatedAt){
+                return;
+            }
+
+            patchTrajectory(trajectory._id, {
+                status: nextStatus,
+                updatedAt: nextUpdatedAt
+            });
+        });
+    }, [visibleOptimisticTrajectories, jobGroups, patchTrajectory]);
+
     const fetchData = useCallback(async (params: PaginationParams & SimulationGridContext): Promise<PaginatedResponse<Trajectory>> => {
         const result = await getTrajectories({ page: params.page, limit: params.limit });
+        const optimisticTrajectoryIds = new Set(visibleOptimisticTrajectories.map((trajectory) => trajectory._id));
+
         return {
             status: 'success',
-            data: result.data,
+            data: result.data.filter((trajectory) => !optimisticTrajectoryIds.has(trajectory._id)),
             pagination: result.pagination
         };
-    }, [getTrajectories]);
+    }, [getTrajectories, visibleOptimisticTrajectories]);
 
-    const renderGridItem = useCallback((trajectory: Trajectory) => (
-        <SimulationCard
-            key={trajectory._id}
-            trajectory={trajectory}
-            isSelected={isSelected(trajectory._id)}
-            onSelect={toggleSelection}
-        />
-    ), [isSelected, toggleSelection]);
+    const renderGridItem = useCallback((item: Trajectory) => {
+        return (
+            <SimulationCard
+                key={item._id}
+                trajectory={item}
+                isSelected={isSelected(item._id)}
+                onSelect={toggleSelection}
+            />
+        );
+    }, [isSelected, toggleSelection]);
 
     const renderGridSkeleton = useCallback(() => (
+        <SimulationSkeletonCard />
+    ), []);
+
+    const prependItems = useMemo(() => (
         <>
-            {activeUploadEntries.map(([id, uploadProgress]) => (
-                <SimulationSkeletonCard key={id} progress={uploadProgress} status='uploading' />
+            {activeUploadEntries.map(([id, upload]: [string, TrajectoryUploadState]) => (
+                <SimulationSkeletonCard
+                    key={`upload-${id}`}
+                    progress={upload.progress}
+                    status={upload.status}
+                />
             ))}
-            <SimulationSkeletonCard />
+            {visibleOptimisticTrajectories.map((trajectory) => (
+                <SimulationCard
+                    key={`optimistic-${trajectory._id}`}
+                    trajectory={trajectory}
+                    isSelected={isSelected(trajectory._id)}
+                    onSelect={toggleSelection}
+                />
+            ))}
         </>
-    ), [activeUploadEntries]);
+    ), [activeUploadEntries, visibleOptimisticTrajectories, isSelected, toggleSelection]);
 
     const emptyStateConfig = useMemo(() => {
         if (samplesDownloaded) {
@@ -112,6 +180,7 @@ const SimulationGrid = () => {
             title='Simulations'
             view='grid'
             fetchData={fetchData}
+            prependItems={prependItems}
             context={{ teamId: selectedTeam._id }}
             renderGridItem={renderGridItem}
             hideHeader={true}

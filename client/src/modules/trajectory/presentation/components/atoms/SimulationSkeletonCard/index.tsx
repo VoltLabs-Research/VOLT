@@ -5,7 +5,7 @@ import ProcessingLoader from '@/shared/presentation/components/ProcessingLoader'
 interface SimulationSkeletonCardProps {
     n?: number;
     progress?: number;
-    status?: 'uploading' | 'processing' | 'waiting_for_jobs';
+    status?: 'uploading' | 'processing' | 'waiting_for_jobs' | 'failed';
 };
 
 const SimulationSkeletonCard = ({ n = 1, progress, status }: SimulationSkeletonCardProps) => {
@@ -13,9 +13,11 @@ const SimulationSkeletonCard = ({ n = 1, progress, status }: SimulationSkeletonC
         let message = `Uploading ${Math.round(progress * 100)}%`;
 
         if (status === 'processing') {
-            message = `Processing ${Math.round(progress * 100)}%`;
+            message = 'Processing...';
         } else if (status === 'waiting_for_jobs') {
-            message = 'Preparing...';
+            message = 'Queued...';
+        } else if (status === 'failed') {
+            message = 'Upload failed';
         }
 
         return (
