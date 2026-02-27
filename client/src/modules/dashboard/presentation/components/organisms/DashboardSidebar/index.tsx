@@ -49,7 +49,6 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
             <Brand collapsed={collapsed} onToggleCollapse={onToggleCollapse} />
 
             <SidebarNavigation
-                setSettingsExpanded={setSettingsExpanded}
                 setSidebarOpen={setSidebarOpen}
                 collapsed={collapsed}
             />

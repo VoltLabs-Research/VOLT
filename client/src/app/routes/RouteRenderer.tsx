@@ -47,6 +47,48 @@ const renderRouteWithChildren = (route: RouteConfig) => {
     );
 };
 
+const renderDashboardRoute = (route: RouteConfig) => {
+    const renderElement = (comp: React.ComponentType) => {
+        const Component = comp;
+        return <Component />;
+    };
+
+    if(route.children && route.children.length > 0){
+        return (
+            <Route
+                key={route.path}
+                path={route.path}
+                element={renderElement(route.component)}
+            >
+                {route.children.map((child) => (
+                    child.index ? (
+                        <Route
+                            key={child.path}
+                            index
+                            element={renderElement(child.component)}
+                        />
+                    ) : (
+                        <Route
+                            key={child.path}
+                            path={child.path}
+                            element={renderElement(child.component)}
+                        />
+                    )
+                ))}
+            </Route>
+        );
+    }
+
+    return (
+        <Route
+            key={route.path}
+            path={route.path}
+            index={route.index}
+            element={renderElement(route.component)}
+        />
+    );
+};
+
 export const renderPublicRoutes = () => {
     return routesConfig.public.map((route: RouteConfig) => (
         <Route
@@ -72,7 +114,7 @@ export const renderProtectedRoutes = () => {
             {nonDashboardRoutes.map(renderRouteWithChildren)}
             {DashboardLayout && (
                 <Route path='/dashboard' element={<DashboardLayout />}>
-                    {dashboardRoutes.map(renderRouteWithChildren)}
+                    {dashboardRoutes.map(renderDashboardRoute)}
                 </Route>
             )}
         </Route>

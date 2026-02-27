@@ -39,11 +39,10 @@ const SECONDARY_NAV_ITEMS: Array<[string, IconType, string]> = [
 
 interface SidebarNavigationProps {
     setSidebarOpen: (status: boolean) => void;
-    setSettingsExpanded: (status: boolean) => void;
     collapsed?: boolean;
 };
 
-const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded, collapsed = false }: SidebarNavigationProps) => {
+const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigationProps) => {
     const { searchParams } = useSearchParamsState();
     const navigate = useNavigate();
     const { pathname } = useLocation();
@@ -59,7 +58,6 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded, collapsed = fa
     const handleNavigate = (to: string) => {
         navigate(to);
         setSidebarOpen(false);
-        setSettingsExpanded(false);
     };
 
     const isSelected = (to: string) => 
@@ -105,12 +103,11 @@ const SidebarNavigation = ({ setSidebarOpen, setSettingsExpanded, collapsed = fa
                         onClick: () => {
                             navigate(`/dashboard/plugins/${plugin._id}/exposure/${exposure.exposureId}/listing`);
                             setSidebarOpen(false);
-                            setSettingsExpanded(false);
                         }
                     }))
                 };
             })
-    ], [pathname, searchParams, navigate, setSidebarOpen, setSettingsExpanded, plugins]);
+    ], [pathname, searchParams, navigate, setSidebarOpen, plugins]);
 
     return (
         <nav className='sidebar-nav y-auto'>
