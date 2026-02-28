@@ -7,6 +7,7 @@ import Slider from '@/shared/presentation/components/Slider';
 import EditableKeyValueCard from '@/shared/presentation/components/EditableKeyValueCard';
 import SettingsSectionHeader from '@/modules/auth/presentation/components/molecules/SettingsSectionHeader';
 import type { ContainerConfig, PortMapping, EnvVariable } from '../../../hooks/use-create-container-form';
+import Title from '@/shared/presentation/components/Title';
 
 const MAX_CPU = 8;
 const MAX_MEMORY = 8192;
