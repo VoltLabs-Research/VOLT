@@ -123,21 +123,45 @@ const ManageRolesTemplate: React.FC = () => {
         }
     }, [selectedTeam._id, editingRole, teamRoleRepository, addRole, updateRole]);
 
-    const handleDeleteRole = useCallback(async (role: TeamRole) => {
-        if(role.isSystem) return;
+    const handleDeleteRoles = useCallback(async (rolesToDelete: TeamRole[]) => {
+        const eligibleRoles = rolesToDelete.filter((role) => !role.isSystem);
+        if (!eligibleRoles.length) return;
 
-        const isConfirmed = await confirm(`Are you sure you want to delete "${role.name}"?`);
+        const isConfirmed = await confirm(
+            eligibleRoles.length === 1
+                ? `Are you sure you want to delete "${eligibleRoles[0].name}"?`
+                : `Are you sure you want to delete ${eligibleRoles.length} roles?`
+        );
         if(!isConfirmed) return;
 
-        try{
-            await teamRoleRepository.delete(selectedTeam._id, role._id);
-            removeRole(role._id);
-        }catch(err){
-            console.error('Failed to delete role:', err);
+        for (const role of eligibleRoles) {
+            try{
+                await teamRoleRepository.delete(selectedTeam._id, role._id);
+                removeRole(role._id);
+            }catch(err){
+                console.error('Failed to delete role:', err);
+            }
         }
     }, [selectedTeam._id, teamRoleRepository, removeRole]);
 
-    const getMenuOptions = useCallback((role: TeamRole): MenuOption[] => {
+    const getMenuOptions = useCallback((role: TeamRole, selectedRoles: TeamRole[]): MenuOption[] => {
+        const targetRoles = selectedRoles.includes(role) ? selectedRoles : [role];
+        const isMultipleSelection = targetRoles.length > 1;
+        const hasDeletableRoleInSelection = targetRoles.some((entry) => !entry.isSystem);
+
+        if (isMultipleSelection) {
+            if (!hasDeletableRoleInSelection) {
+                return [];
+            }
+
+            return [{
+                label: 'Delete',
+                icon: RiDeleteBin6Line,
+                onClick: () => handleDeleteRoles(targetRoles),
+                destructive: true
+            }];
+        }
+
         if(role.isSystem){
             return [{
                 label: 'View',
@@ -155,11 +179,11 @@ const ManageRolesTemplate: React.FC = () => {
             {
                 label: 'Delete',
                 icon: RiDeleteBin6Line,
-                onClick: () => handleDeleteRole(role),
+                onClick: () => handleDeleteRoles(targetRoles),
                 destructive: true
             }
         ];
-    }, [handleOpenEdit, handleDeleteRole]);
+    }, [handleOpenEdit, handleDeleteRoles]);
 
     return (
         <Container className='manage-roles-page h-max'>

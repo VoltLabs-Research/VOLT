@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState, useCallback, useEffect } from 'react';
 import { FileText } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
@@ -41,7 +41,7 @@ interface DocumentListingTableProps<T extends Identifiable> {
     onCellClick?: (col: ColumnConfig) => void;
     getCellTitle?: (col: ColumnConfig) => React.ReactNode;
     isLoading?: boolean;
-    getMenuOptions?: (item: T) => MenuOption[];
+    getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     emptyMessage?: string;
     hasMore?: boolean;
     isFetchingMore?: boolean;
@@ -77,6 +77,7 @@ const DocumentListingTable = <T extends Identifiable>({
     onEmptyButtonClick
 }: DocumentListingTableProps<T>) => {
     const bodyRef = useRef<HTMLDivElement | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     const columnWidths = useMemo(() => columns.map(getColumnWidth), [columns]);
     const minContentWidth = useMemo(() => {
@@ -103,6 +104,50 @@ const DocumentListingTable = <T extends Identifiable>({
     });
 
     const { isInitialLoading, hasNoData, shouldShowEmptyState } = getListingDisplayState(data.length, isLoading);
+
+    useEffect(() => {
+        setSelectedIds((prev) => {
+            if (prev.size === 0) return prev;
+            const availableIds = new Set(data.map((item) => item._id));
+            const next = new Set<string>();
+            prev.forEach((id) => {
+                if (availableIds.has(id)) {
+                    next.add(id);
+                }
+            });
+            return next.size === prev.size ? prev : next;
+        });
+    }, [data]);
+
+    const selectedItems = useMemo(() => {
+        if (selectedIds.size === 0) return [];
+        return data.filter((item) => selectedIds.has(item._id));
+    }, [data, selectedIds]);
+
+    const handleRowClick = useCallback((event: React.MouseEvent, item: T) => {
+        const isMultiSelection = event.ctrlKey || event.metaKey;
+
+        setSelectedIds((prev) => {
+            if (!isMultiSelection) {
+                return new Set([item._id]);
+            }
+
+            const next = new Set(prev);
+            if (next.has(item._id)) {
+                next.delete(item._id);
+            } else {
+                next.add(item._id);
+            }
+            return next;
+        });
+    }, []);
+
+    const handleRowContextMenu = useCallback((item: T) => {
+        setSelectedIds((prev) => {
+            if (prev.has(item._id)) return prev;
+            return new Set([item._id]);
+        });
+    }, []);
 
     return (
         <Container className='d-flex column document-listing-table-container h-max'>
@@ -144,6 +189,10 @@ const DocumentListingTable = <T extends Identifiable>({
                         columns={columns}
                         columnWidths={columnWidths}
                         getMenuOptions={getMenuOptions}
+                        selectedItems={selectedItems}
+                        isSelected={selectedIds.has(item._id)}
+                        onClick={handleRowClick}
+                        onContextMenu={handleRowContextMenu}
                         useFlexDistribution={useFlexDistribution}
                         columnGap={COLUMN_GAP}
                     />

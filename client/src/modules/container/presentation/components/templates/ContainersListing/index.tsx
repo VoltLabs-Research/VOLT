@@ -125,12 +125,12 @@ const ContainersListing = () => {
         actions: {
             view: {
                 label: 'View Details',
-                handler: (container) => navigate(`/dashboard/containers/${container._id}`)
+                handler: ({ item: container }) => navigate(`/dashboard/containers/${container._id}`)
             },
             terminal: {
                 label: 'Open Terminal',
                 icon: RiTerminalLine,
-                handler: (container) => {
+                handler: ({ item: container }) => {
                     if(container.status === 'running'){
                         setTerminalContainer(container);
                     }else{
@@ -141,7 +141,7 @@ const ContainersListing = () => {
             start: {
                 label: 'Start',
                 icon: () => <Play size={16} />,
-                handler: async (container) => {
+                handler: async ({ item: container }) => {
                     if(container.status === 'running') return;
                     try{
                         await controlContainer(container._id, 'start');
@@ -154,7 +154,7 @@ const ContainersListing = () => {
             stop: {
                 label: 'Stop',
                 icon: () => <Square size={16} />,
-                handler: async (container) => {
+                handler: async ({ item: container }) => {
                     if(container.status !== 'running') return;
                     try{
                         await controlContainer(container._id, 'stop');
@@ -167,7 +167,7 @@ const ContainersListing = () => {
             restart: {
                 label: 'Restart',
                 icon: () => <RotateCcw size={16} />,
-                handler: async (container) => {
+                handler: async ({ item: container }) => {
                     try{
                         await controlContainer(container._id, 'restart');
                         showSuccess('Container restarted successfully');
@@ -178,17 +178,21 @@ const ContainersListing = () => {
             },
             delete: {
                 variant: 'danger',
-                handler: async (container) => {
+                handler: async ({ item: container }) => {
                     await deleteContainer(container._id);
                     showSuccess('Container deleted successfully');
                 },
-                confirm: (container) => `Delete container "${container.name}"? This action cannot be undone.`
+                confirm: ({ selectedItems }) => (
+                    selectedItems.length === 1
+                        ? `Delete container "${selectedItems[0].name}"? This action cannot be undone.`
+                        : `Delete ${selectedItems.length} containers? This action cannot be undone.`
+                )
             }
         }
     });
 
-    const getDynamicMenuOptions = useCallback((item: ContainerEntity) => {
-        const options = getMenuOptions(item);
+    const getDynamicMenuOptions = useCallback((item: ContainerEntity, selectedContainers: ContainerEntity[]) => {
+        const options = getMenuOptions(item, selectedContainers);
         return options.filter((opt) => {
             if(opt.label === 'Start' && item.status === 'running') return false;
             if(opt.label === 'Stop' && item.status !== 'running') return false;

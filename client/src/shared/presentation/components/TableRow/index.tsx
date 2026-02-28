@@ -8,7 +8,11 @@ interface TableRowProps<T extends Identifiable> {
     item: T;
     columns: ColumnConfig[];
     columnWidths: number[];
-    getMenuOptions?: (item: T) => MenuOption[];
+    getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
+    selectedItems: T[];
+    isSelected: boolean;
+    onClick: (event: React.MouseEvent, item: T) => void;
+    onContextMenu: (item: T) => void;
     useFlexDistribution: boolean;
     columnGap?: number;
 };
@@ -18,10 +22,14 @@ const TableRow = <T extends Identifiable>({
     columns, 
     columnWidths, 
     getMenuOptions, 
+    selectedItems,
+    isSelected,
+    onClick,
+    onContextMenu,
     useFlexDistribution,
     columnGap = 16
 }: TableRowProps<T>) => {
-    const menuOptions = getMenuOptions ? getMenuOptions(item) : [];
+    const menuOptions = getMenuOptions ? getMenuOptions(item, selectedItems) : [];
     const itemRecord = item as Record<string, unknown>;
     const getColumnKey = (col: ColumnConfig): string => String(col.key ?? col.path ?? '');
     const getColumnTitle = (col: ColumnConfig): string => String(col.title ?? col.label ?? col.key ?? col.path ?? '');
@@ -37,8 +45,11 @@ const TableRow = <T extends Identifiable>({
         <motion.button
             type='button'
             style={rowStyle}
-            className='document-listing-table-row-container cursor-pointer w-max'
+            className={`document-listing-table-row-container cursor-pointer w-max ${isSelected ? 'is-selected' : ''}`}
             transition={{ duration: 0.1 }}
+            onClick={(event) => onClick(event, item)}
+            onContextMenu={() => onContextMenu(item)}
+            aria-pressed={isSelected}
         >
             {columns.map((col, colIdx) => {
                 const columnKey = getColumnKey(col);
@@ -75,7 +86,7 @@ const TableRow = <T extends Identifiable>({
     if(menuOptions.length === 0) return content;
 
     return (
-        <Popover id={`row-menu-${item._id}`} trigger={content}>
+        <Popover id={`row-menu-${item._id}`} trigger={content} triggerAction='contextmenu'>
             {menuOptions.map((option, idx) => (
                 <AsyncMenuItemWrapper key={idx} option={option} />
             ))}

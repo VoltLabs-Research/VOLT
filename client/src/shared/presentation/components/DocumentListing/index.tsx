@@ -55,7 +55,7 @@ interface DocumentListingProps<T, TContext = Record<string, never>> {
     gap?: string;
     // Table view props
     columns?: ColumnConfig[];
-    getMenuOptions?: (item: T) => MenuOption[];
+    getMenuOptions?: (item: T, selectedItems: T[]) => MenuOption[];
     // Grid view props
     view?: ViewMode;
     renderGridItem?: (item: T, index: number) => React.ReactNode;
@@ -147,9 +147,11 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         };
     }, [onHideItemRef, addToHidden]);
 
-    const wrappedGetMenuOptions = useCallback((item: T) => {
+    const wrappedGetMenuOptions = useCallback((item: T, selectedItems: T[]) => {
         if(!getMenuOptions) return [];
-        return wrapMenuOptions(item, getMenuOptions(item));
+        const selectedIds = new Set(selectedItems.map((selectedItem) => selectedItem._id));
+        const targetItems = selectedIds.has(item._id) ? selectedItems : [item];
+        return wrapMenuOptions(item, targetItems, getMenuOptions(item, selectedItems));
     }, [getMenuOptions, wrapMenuOptions]);
 
     const visibleData = filterVisibleData(data);

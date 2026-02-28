@@ -77,15 +77,23 @@ const MyTeamTemplate: React.FC = () => {
         }
     }, [selectedTeam._id, teamMemberRepository, updateMember]);
 
-    const handleRemoveMember = useCallback(async (member: TeamMember) => {
-        const isConfirmed = await confirm(`Are you sure you want to remove ${member.user.firstName}?`);
+    const handleRemoveMembers = useCallback(async (members: TeamMember[]) => {
+        if (!members.length) return;
+
+        const isConfirmed = await confirm(
+            members.length === 1
+                ? `Are you sure you want to remove ${members[0].user.firstName}?`
+                : `Are you sure you want to remove ${members.length} team members?`
+        );
         if(!isConfirmed) return;
 
-        try{
-            await teamMemberRepository.remove(selectedTeam._id, member.user._id);
-            removeMemberFromStore(member._id);
-        }catch(err){
-            console.error('Failed to remove member:', err);
+        for (const member of members) {
+            try{
+                await teamMemberRepository.remove(selectedTeam._id, member.user._id);
+                removeMemberFromStore(member._id);
+            }catch(err){
+                console.error('Failed to remove member:', err);
+            }
         }
     }, [selectedTeam._id, teamMemberRepository, removeMemberFromStore]);
 
@@ -213,8 +221,23 @@ const MyTeamTemplate: React.FC = () => {
         }
     ], [canInvite, user, selectedTeam, roleOptions, handleRoleChange, onlineUserIds]);
 
-    const getMenuOptions = useCallback((member: TeamMember): MenuOption[] => {
+    const getMenuOptions = useCallback((member: TeamMember, selectedMembers: TeamMember[]): MenuOption[] => {
+        const targetMembers = selectedMembers.includes(member) ? selectedMembers : [member];
+        const isMultipleSelection = targetMembers.length > 1;
         const options: MenuOption[] = [];
+
+        if (isMultipleSelection) {
+            if (!canInvite) {
+                return [];
+            }
+
+            return [{
+                label: 'Delete',
+                icon: IoPersonRemoveOutline,
+                onClick: () => handleRemoveMembers(targetMembers),
+                destructive: true
+            }];
+        }
 
         options.push({
             label: 'Message',
@@ -226,13 +249,13 @@ const MyTeamTemplate: React.FC = () => {
             options.push({
                 label: 'Remove from Team',
                 icon: IoPersonRemoveOutline,
-                onClick: () => handleRemoveMember(member),
+                onClick: () => handleRemoveMembers(targetMembers),
                 destructive: true
             });
         }
 
         return options;
-    }, [canInvite, navigate, handleRemoveMember]);
+    }, [canInvite, navigate, handleRemoveMembers]);
 
     return (
         <Container className='my-team-page h-max'>

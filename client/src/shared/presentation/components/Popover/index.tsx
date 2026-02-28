@@ -134,16 +134,8 @@ const Popover: React.FC<PopoverProps> = ({
                 ref={triggerRef}
                 data-popover-trigger={id}
                 style={{ display: 'contents' }}
-                onClick={(e) => {
-                    const originalOnClick = (trigger as React.ReactElement<any>).props.onClick;
-                    originalOnClick?.(e);
-                    handleTriggerClick(e);
-                }}
-                onContextMenu={(e) => {
-                    const originalOnContextMenu = (trigger as React.ReactElement<any>).props.onContextMenu;
-                    originalOnContextMenu?.(e);
-                    handleContextMenu(e);
-                }}
+                onClick={handleTriggerClick}
+                onContextMenu={handleContextMenu}
             >
                 {trigger}
             </Container>

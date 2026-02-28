@@ -6,7 +6,7 @@ import useDeleteAnalysis from '../../../hooks/use-delete-analysis';
 import useRetryFailedFrames from '../../../hooks/use-retry-failed-frames';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
-import type { PaginationParams } from '@/shared/presentation/hooks/use-document-listing-pagination';
+import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { Analysis } from '@/modules/analysis/domain/entities';
 import { dateColumn } from '@/shared/presentation/utils/column-presets';
 
@@ -52,22 +52,26 @@ const AnalysesListing = () => {
         actions: {
             view: {
                 label: 'View Scene',
-                handler: (analysis) => {
+                handler: ({ item: analysis }) => {
                     navigate(`/canvas/${analysis.trajectory._id}`);
                 }
             },
             retry: {
                 label: 'Retry Failed Frames',
                 icon: RiRefreshLine,
-                handler: async (analysis) => {
+                handler: async ({ item: analysis }) => {
                     await retryFailedFrames(analysis._id);
                 }
             },
             delete: {
-                handler: async (analysis) => {
+                handler: async ({ item: analysis }) => {
                     await deleteAnalysis(analysis._id);
                 },
-                confirm: 'Delete this analysis? This cannot be undone.'
+                confirm: ({ selectedItems }) => (
+                    selectedItems.length === 1
+                        ? 'Delete this analysis? This cannot be undone.'
+                        : `Delete ${selectedItems.length} analyses? This cannot be undone.`
+                )
             }
         }
     });
