@@ -66,4 +66,5 @@
     gap: 0.5rem;
     padding: 2rem;
     color: var(--color-text-muted);
+    min-height: 0 !important;
 }
