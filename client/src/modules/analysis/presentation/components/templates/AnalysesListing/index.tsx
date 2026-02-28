@@ -5,6 +5,7 @@ import useAnalysisUseCases from '../../../hooks/use-analysis-use-cases';
 import useDeleteAnalysis from '../../../hooks/use-delete-analysis';
 import useRetryFailedFrames from '../../../hooks/use-retry-failed-frames';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { Analysis } from '@/modules/analysis/domain/entities';
@@ -45,7 +46,6 @@ const AnalysesListing = () => {
     const { getAnalysesUseCase } = useAnalysisUseCases();
     const deleteAnalysis = useDeleteAnalysis();
     const retryFailedFrames = useRetryFailedFrames();
-
     const fetchAnalyses = useCallback((params: PaginationParams) => {
         return getAnalysesUseCase.execute(params);
     }, [getAnalysesUseCase]);
@@ -67,7 +67,11 @@ const AnalysesListing = () => {
             },
             delete: {
                 handler: async ({ item: analysis }) => {
-                    await deleteAnalysis(analysis._id);
+                    await showPromise(deleteAnalysis(analysis._id), {
+                        loading: { title: 'Deleting analysis...' },
+                        success: { title: 'Analysis deleted' },
+                        error: { title: 'Failed to delete analysis' }
+                    });
                 },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1

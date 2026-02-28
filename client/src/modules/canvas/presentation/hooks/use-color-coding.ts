@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
 import useColorCodingUseCases from '@/modules/trajectory/presentation/hooks/color-coding/use-color-coding-use-cases';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showError, showPromise } from '@/shared/presentation/hooks/toast';
 
 export const COLOR_GRADIENTS = ['Viridis', 'Plasma', 'BlueRed', 'GrayScale'] as const;
 export type ColorGradient = typeof COLOR_GRADIENTS[number];
@@ -20,7 +20,6 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
     } = useModifierBase(options);
 
     const { colorCodingRepository } = useColorCodingUseCases();
-    const { showSuccess, showError } = useToast();
 
     const [startValue, setStartValue] = useState(0);
     const [endValue, setEndValue] = useState(0);
@@ -52,21 +51,28 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
             setEndValue(stats.max);
         } catch (error) {
             console.error(error);
-            showError('Failed to fetch property statistics');
+            showError({ title: 'Failed to fetch property statistics' });
         } finally {
             setIsFetchingStats(false);
         }
-    }, [trajectoryId, analysisId, currentTimestep, property, colorCodingRepository, showError]);
+    }, [trajectoryId, analysisId, currentTimestep, property, colorCodingRepository]);
 
     const applyColorCoding = useCallback(async () => {
         if (!trajectoryId || currentTimestep === undefined || !property) return;
         
         setIsApplying(true);
         try {
-            await colorCodingRepository.apply({
-                trajectoryId, analysisId, timestep: currentTimestep,
-                payload: { property, startValue, endValue, gradient, exposureId }
-            });
+            await showPromise(
+                colorCodingRepository.apply({
+                    trajectoryId, analysisId, timestep: currentTimestep,
+                    payload: { property, startValue, endValue, gradient, exposureId }
+                }),
+                {
+                    loading: { title: 'Applying color coding...' },
+                    success: { title: 'Color coding applied successfully' },
+                    error: { title: 'Failed to apply color coding' }
+                }
+            );
 
             setActiveScene({
                 analysisId, endValue: String(endValue), exposureId,
@@ -77,15 +83,10 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
             window.dispatchEvent(new CustomEvent('canvas:scene-artifacts:changed', {
                 detail: { sourceType: 'color-coding', trajectoryId }
             }));
-
-            showSuccess('Color coding applied successfully');
-        } catch (error) {
-            console.error(error);
-            showError('Failed to apply color coding');
         } finally {
             setIsApplying(false);
         }
-    }, [trajectoryId, analysisId, currentTimestep, property, startValue, endValue, gradient, exposureId, colorCodingRepository, setActiveScene, showSuccess, showError]);
+    }, [trajectoryId, analysisId, currentTimestep, property, startValue, endValue, gradient, exposureId, colorCodingRepository, setActiveScene]);
 
     useEffect(() => {
         if (automaticRange) fetchStats();

@@ -7,6 +7,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import { TbCheck, TbCopy, TbSparkles } from 'react-icons/tb';
 import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
 import type { ISchemaData } from '@/modules/plugin/domain/entities';
+import { showSuccess, showError } from '@/shared/presentation/hooks/toast';
 import type { EditorProps } from '../types';
 
 const SCHEMA_TEMPLATES = [
@@ -94,8 +95,13 @@ const SchemaEditor = ({ node }: EditorProps) => {
         setShowTemplates(false);
     }, [node.id, updateNodeData]);
 
-    const copyToClipboard = useCallback(() => {
-        navigator.clipboard.writeText(jsonText);
+    const copyToClipboard = useCallback(async () => {
+        try {
+            await navigator.clipboard.writeText(jsonText);
+            showSuccess({ title: 'Copied to clipboard' });
+        } catch {
+            showError({ title: 'Failed to copy to clipboard' });
+        }
     }, [jsonText]);
 
     return (

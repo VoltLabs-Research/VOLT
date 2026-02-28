@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import useGetTrajectories from '../../../hooks/trajectory/use-get-trajectories';
 import useDeleteTrajectory from '../../../hooks/trajectory/use-delete-trajectory';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { formatNumber, formatSize } from '@/shared/utils/format';
@@ -64,7 +65,6 @@ const TrajectoriesListing = () => {
     
     const getTrajectories = useGetTrajectories();
     const deleteTrajectory = useDeleteTrajectory();
-
     const { getMenuOptions } = useListingActions<Trajectory>({
         actions: {
             view: {
@@ -81,7 +81,11 @@ const TrajectoriesListing = () => {
             },
             delete: {
                 handler: async ({ item: trajectory }) => {
-                    await deleteTrajectory(trajectory._id);
+                    await showPromise(deleteTrajectory(trajectory._id), {
+                        loading: { title: 'Deleting trajectory...' },
+                        success: { title: 'Trajectory deleted' },
+                        error: { title: 'Failed to delete trajectory' }
+                    });
                 },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1

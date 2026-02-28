@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import Modal, { closeModal } from '@/shared/presentation/components/Modal';
 import Button from '@/shared/presentation/components/Button';
 import useForm from '@/shared/presentation/hooks/use-form';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import useSSHUseCases from '@/modules/ssh/presentation/hooks/use-ssh-use-cases';
 import SSHConnectionForm from '@/modules/ssh/presentation/components/molecules/SSHConnectionForm';
 import SSHConnectionTestButton from '@/modules/ssh/presentation/components/atoms/SSHConnectionTestButton';
@@ -19,7 +20,6 @@ interface SSHConnectionModalProps {
 
 const SSHConnectionModal = ({ connection, mode, onSuccess }: SSHConnectionModalProps) => {
     const { sshRepository } = useSSHUseCases();
-
     const form = useForm<SSHConnectionFormData>({
         initialValues: defaultValues,
         schema: createSSHConnectionSchema(mode)
@@ -42,27 +42,35 @@ const SSHConnectionModal = ({ connection, mode, onSuccess }: SSHConnectionModalP
     const handleSubmit = form.handleSubmit(async (values) => {
         const port = parseInt(values.port);
 
-        if (mode === 'create') {
-            const params: CreateSSHConnectionParams = {
-                name: values.name,
-                host: values.host,
-                port,
-                username: values.username,
-                password: values.password
-            };
-            await sshRepository.createConnection(params);
-        } else if (connection) {
-            const params: UpdateSSHConnectionParams = {
-                name: values.name,
-                host: values.host,
-                port,
-                username: values.username
-            };
-            if (values.password.trim()) {
-                params.password = values.password;
+        const action = async () => {
+            if (mode === 'create') {
+                const params: CreateSSHConnectionParams = {
+                    name: values.name,
+                    host: values.host,
+                    port,
+                    username: values.username,
+                    password: values.password
+                };
+                await sshRepository.createConnection(params);
+            } else if (connection) {
+                const params: UpdateSSHConnectionParams = {
+                    name: values.name,
+                    host: values.host,
+                    port,
+                    username: values.username
+                };
+                if (values.password.trim()) {
+                    params.password = values.password;
+                }
+                await sshRepository.updateConnection(connection._id, params);
             }
-            await sshRepository.updateConnection(connection._id, params);
-        }
+        };
+
+        await showPromise(action(), {
+            loading: { title: mode === 'create' ? 'Creating connection...' : 'Updating connection...' },
+            success: { title: mode === 'create' ? 'Connection created' : 'Connection updated' },
+            error: { title: 'Failed to save connection' }
+        });
 
         closeModal(SSH_CONNECTION_MODAL_ID);
         onSuccess?.();

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import Container from '@/shared/presentation/components/Container';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showInfo } from '@/shared/presentation/hooks/toast';
 import './GradientPreview.css';
 
 const GRADIENT_CSS: Record<string, string> = {
@@ -30,8 +30,6 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
     const [tooltipValue, setTooltipValue] = useState<string | null>(null);
     const [tooltipX, setTooltipX] = useState(0);
     const barRef = useRef<HTMLDivElement>(null);
-    const { showInfo } = useToast();
-
     const calculateValue = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!barRef.current) return null;
         const rect = barRef.current.getBoundingClientRect();
@@ -65,7 +63,7 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
         document.execCommand('copy');
         document.body.removeChild(textArea);
 
-        showInfo(`Value ${result.value} copied to clipboard`);
+        showInfo({ title: `Value ${result.value} copied to clipboard` });
     };
 
     const gradientStyle = GRADIENT_CSS[gradient];

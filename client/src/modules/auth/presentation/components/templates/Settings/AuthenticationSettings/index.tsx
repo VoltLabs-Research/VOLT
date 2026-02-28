@@ -7,12 +7,12 @@ import PasswordStatusRow from '@/modules/auth/presentation/components/molecules/
 import LoginActivityRow from '@/modules/auth/presentation/components/molecules/LoginActivityRow';
 import PasswordChangeForm from '@/modules/auth/presentation/components/organisms/PasswordChangeForm';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import { ChangePasswordInputDTO } from '@/modules/auth/application/dtos';
 import { PasswordInfo } from '@/modules/auth/presentation/components/organisms/PasswordChangeForm/validation-schema';
 
 const AuthenticationSettings: React.FC = () => {
     const { authRepository } = useAuthUseCases();
-
     const [passwordInfo, setPasswordInfo] = useState<PasswordInfo | null>(null);
     const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
 
@@ -30,12 +30,19 @@ const AuthenticationSettings: React.FC = () => {
     }, [loadPasswordInfo]);
 
     const handleChangePassword = async (data: ChangePasswordInputDTO) => {
-        await authRepository.changePassword(data);
-
-        setIsPasswordFormOpen(false);
-
-        const info = await authRepository.getPasswordInfo();
-        setPasswordInfo(info);
+        await showPromise(
+            async () => {
+                await authRepository.changePassword(data);
+                setIsPasswordFormOpen(false);
+                const info = await authRepository.getPasswordInfo();
+                setPasswordInfo(info);
+            },
+            {
+                loading: { title: 'Changing password...' },
+                success: { title: 'Password changed successfully' },
+                error: { title: 'Failed to change password' }
+            }
+        );
     };
 
     const handleViewLoginActivity = () => {

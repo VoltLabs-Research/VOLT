@@ -16,7 +16,7 @@ import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showError, showPromise } from '@/shared/presentation/hooks/toast';
 import { getValueByPath } from '@/shared/utils/format';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { sortData } from '@/shared/utils/sort';
@@ -105,7 +105,6 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     onHideItemRef,
     listSyncConfig
 }: DocumentListingProps<T, TContext>) => {
-    const { showError, showSuccess } = useToast();
     const getColumnSortKey = useCallback((col: ColumnConfig): string => {
         return String(col.key ?? (col as any).path ?? '');
     }, []);
@@ -194,35 +193,40 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
 
     const handleConfirmExport = useCallback(async () => {
         if (!exportConfig?.onExport) {
-            showError('Export is not available for this module yet');
+            showError({ title: 'Export is not available for this module yet' });
             return;
         }
 
+        setIsExporting(true);
         try {
-            setIsExporting(true);
-            const result = await exportConfig.onExport({
-                format: selectedExportType,
-                context,
-                search,
-                sort: sortConfig
-            });
+            await showPromise(
+                (async () => {
+                    const result = await exportConfig.onExport!({
+                        format: selectedExportType,
+                        context,
+                        search,
+                        sort: sortConfig
+                    });
 
-            if (result instanceof Blob) {
-                const filename = exportConfig.getFilename?.(selectedExportType)
-                    ?? `listing-export.${selectedExportType}`;
-                triggerBrowserDownload(result, filename);
-            }
-
-            showSuccess('Export generated successfully');
+                    if (result instanceof Blob) {
+                        const filename = exportConfig.getFilename?.(selectedExportType)
+                            ?? `listing-export.${selectedExportType}`;
+                        triggerBrowserDownload(result, filename);
+                    }
+                    return result;
+                })(),
+                {
+                    loading: { title: 'Generating export...' },
+                    success: { title: 'Export generated successfully' },
+                    error: { title: 'Failed to export listing' }
+                }
+            );
             closeModal(exportModalId);
             setActiveTab('list');
-        } catch (error) {
-            console.error('Export failed:', error);
-            showError('Failed to export listing');
         } finally {
             setIsExporting(false);
         }
-    }, [exportConfig, selectedExportType, context, search, sortConfig, showSuccess, showError, exportModalId]);
+    }, [exportConfig, selectedExportType, context, search, sortConfig, exportModalId]);
 
     const renderContent = () => {
         const emptyMessageText = error ? error : emptyMessage;

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
 import useContainerUseCases from '../../../hooks/use-container-use-cases';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showError } from '@/shared/presentation/hooks/toast';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
@@ -17,7 +17,6 @@ interface ContainerFileExplorerProps {
 };
 
 const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
-    const { showError } = useToast();
     const { searchParams, updateSearchParams, setParam, removeParam } = useSearchParamsState();
     const [files, setFiles] = useState<ContainerFile[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +53,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
                 const content = await containerRepository.readFile(containerId, filePath);
                 setFileContent(content);
             } catch {
-                showError('Failed to read file');
+                showError({ title: 'Failed to read file' });
                 removeParam('file');
             }
         };

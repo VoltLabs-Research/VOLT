@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import useCanvasUrlState from './use-canvas-url-state';
 import { usePluginStore } from '@/modules/plugin';
 import useTrajectoryStore from '@/modules/trajectory/presentation/stores/use-trajectory-store';
@@ -20,7 +20,6 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
     const trajectoryId = useTrajectoryStore((state) => state.trajectory?._id);
     const teamId = useTeamStore(useShallow((state) => state.selectedTeam?._id));
     const { pluginRepository } = usePluginUseCases();
-    const { showSuccess } = useToast();
 
     const [isDownloading, setIsDownloading] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
@@ -54,15 +53,22 @@ const usePluginResults = ({ pluginId, analysisId }: UsePluginResultsOptions) => 
     const download = useCallback(async () => {
         try {
             setIsDownloading(true);
-            const blob = await pluginRepository.exportAnalysisResults(pluginId, analysisId);
-            triggerBrowserDownload(blob, `${pluginId}_analysis_${analysisId}.zip`);
-            showSuccess('Analysis results downloaded successfully');
-        } catch (error) {
-            console.error('Failed to download results:', error);
+            await showPromise(
+                (async () => {
+                    const blob = await pluginRepository.exportAnalysisResults(pluginId, analysisId);
+                    triggerBrowserDownload(blob, `${pluginId}_analysis_${analysisId}.zip`);
+                    return blob;
+                })(),
+                {
+                    loading: { title: 'Downloading analysis results...' },
+                    success: { title: 'Analysis results downloaded successfully' },
+                    error: { title: 'Failed to download results' }
+                }
+            );
         } finally {
             setIsDownloading(false);
         }
-    }, [pluginId, analysisId, showSuccess, pluginRepository]);
+    }, [pluginId, analysisId, pluginRepository]);
 
     return {
         title: plugin?.modifier?.name,

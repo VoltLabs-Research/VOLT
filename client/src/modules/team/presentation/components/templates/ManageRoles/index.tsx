@@ -12,6 +12,7 @@ import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
 import useSystemUseCases from '@/modules/system/presentation/hooks/use-system-use-cases';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { GetTeamRolesParams } from '@/modules/team/domain/ports/ITeamRoleRepository';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
@@ -110,10 +111,24 @@ const ManageRolesTemplate: React.FC = () => {
         setIsSaving(true);
         try{
             if(editingRole){
-                const updated = await teamRoleRepository.update(selectedTeam._id, editingRole._id, data);
+                const updated = await showPromise(
+                    teamRoleRepository.update(selectedTeam._id, editingRole._id, data),
+                    {
+                        loading: { title: 'Updating role...' },
+                        success: { title: 'Role updated successfully' },
+                        error: { title: 'Failed to update role' }
+                    }
+                );
                 updateRole(editingRole._id, updated);
             }else{
-                const created = await teamRoleRepository.create(selectedTeam._id, data);
+                const created = await showPromise(
+                    teamRoleRepository.create(selectedTeam._id, data),
+                    {
+                        loading: { title: 'Creating role...' },
+                        success: { title: 'Role created successfully' },
+                        error: { title: 'Failed to create role' }
+                    }
+                );
                 addRole(created);
             }
             setEditingRole(null);
@@ -138,7 +153,14 @@ const ManageRolesTemplate: React.FC = () => {
 
         for (const role of eligibleRoles) {
             try{
-                await teamRoleRepository.delete(selectedTeam._id, role._id);
+                await showPromise(
+                    teamRoleRepository.delete(selectedTeam._id, role._id),
+                    {
+                        loading: { title: `Deleting "${role.name}"...` },
+                        success: { title: `Role "${role.name}" deleted` },
+                        error: { title: `Failed to delete "${role.name}"` }
+                    }
+                );
                 removeRole(role._id);
             }catch(err){
                 console.error('Failed to delete role:', err);
