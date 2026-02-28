@@ -4,7 +4,7 @@ import { RxDotsHorizontal } from 'react-icons/rx';
 import { Plus } from 'lucide-react';
 import { Skeleton } from '@mui/material';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
-import type { ListSyncConfig } from '@/shared/presentation/hooks/use-list-sync';
+import { createListSyncConfig, type ListSyncConfig } from '@/shared/presentation/hooks/use-list-sync';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import useOptimisticAction from '@/shared/presentation/hooks/use-optimistic-action';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
@@ -26,7 +26,7 @@ import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse
 import './DocumentListing.css';
 
 export type { ColumnConfig, MenuOption };
-export type { ListSyncConfig };
+export { createListSyncConfig };
 export { getValueByPath };
 
 type ViewMode = 'table' | 'grid';

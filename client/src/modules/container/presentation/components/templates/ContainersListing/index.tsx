@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, Square, Box, RotateCcw } from 'lucide-react';
 import { RiTerminalLine } from 'react-icons/ri';
@@ -6,12 +6,14 @@ import { formatDistanceToNow } from 'date-fns';
 import useContainerUseCases from '../../../hooks/use-container-use-cases';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useToast from '@/shared/presentation/hooks/use-toast';
-import DocumentListing, { type ColumnConfig, type ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import ContainerTerminal from '../../organisms/ContainerTerminal';
 import type { Container as ContainerEntity } from '@/modules/container/domain/entities';
+
+const LIST_SYNC = createListSyncConfig('container');
 
 const STATUS_MAP: Record<string, string> = {
     running: 'ready',
@@ -201,13 +203,6 @@ const ContainersListing = () => {
         });
     }, [getMenuOptions]);
 
-    const listSyncConfig: ListSyncConfig = useMemo(() => ({
-        events: [
-            { event: 'container.created', action: 'created' },
-            { event: 'container.deleted', action: 'deleted', getId: (p) => p.containerId }
-        ]
-    }), []);
-
     return (
         <>
             <DocumentListing<ContainerEntity>
@@ -220,7 +215,7 @@ const ContainersListing = () => {
                     buttonTitle: 'New Container',
                     onCreate: () => navigate('/dashboard/containers/new')
                 }}
-                listSyncConfig={listSyncConfig}
+                listSyncConfig={LIST_SYNC}
             />
 
             {terminalContainer && (

@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import { Download, Upload } from 'lucide-react';
-import DocumentListing, { type ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import SimulationCard from '../SimulationCard';
 import SimulationSkeletonCard from '../../atoms/SimulationSkeletonCard';
 import useTrajectoryStore from '../../../stores/use-trajectory-store';
@@ -15,6 +15,8 @@ import useTeamJobsStore from '@/modules/jobs/presentation/stores/use-team-jobs-s
 import type { FrameJobGroupStatus } from '@/modules/jobs/domain/entities/Job';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { TrajectoryUploadStatus } from '../../../stores/use-trajectory-store';
+
+const LIST_SYNC = createListSyncConfig('trajectory', ['deleted']);
 
 interface SimulationGridContext {
     teamId?: string;
@@ -187,12 +189,6 @@ const SimulationGrid = () => {
         };
     }, [samplesDownloaded, handleDownloadSamples]);
 
-    const listSyncConfig: ListSyncConfig = useMemo(() => ({
-        events: [
-            { event: 'trajectory.deleted', action: 'deleted', getId: (p) => p.trajectoryId }
-        ]
-    }), []);
-
     return (
         <DocumentListing<SimulationGridItem, SimulationGridContext>
             title='Simulations'
@@ -211,7 +207,7 @@ const SimulationGrid = () => {
             emptyButtonIsLoading={isDownloading}
             onEmptyButtonClick={emptyStateConfig.onButtonClick}
             onHideItemRef={hideItemRef}
-            listSyncConfig={listSyncConfig}
+            listSyncConfig={LIST_SYNC}
         />
     );
 };
