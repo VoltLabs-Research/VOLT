@@ -30,7 +30,8 @@ export default class AnalysisRepository
             await this.eventBus.publish(new AnalysisDeletedEvent({
                 analysisId: id,
                 trajectoryId: result.trajectory?.toString(),
-                pluginId: result.plugin
+                pluginId: result.plugin,
+                teamId: result.team?.toString()
             }));
         }
 

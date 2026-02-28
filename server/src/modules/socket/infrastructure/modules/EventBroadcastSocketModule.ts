@@ -22,7 +22,42 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
 
     // Events to broadcast to frontend - can be configured
     private readonly eventsToBroadcast = [
-        'trajectory.updated'
+        // Trajectory CRUD
+        'trajectory.created',
+        'trajectory.deleted',
+        'trajectory.updated',
+        // Analysis CRUD
+        'analysis.created',
+        'analysis.deleted',
+        // Plugin CRUD
+        'plugin.created',
+        'plugin.deleted',
+        // Team CRUD
+        'team.created',
+        'team.deleted',
+        'team.member.leave',
+        // Team member CRUD
+        'team-member.created',
+        'team-member.deleted',
+        // Team role CRUD
+        'team-role.created',
+        'team-role.deleted',
+        'team-role.updated',
+        // Secret key CRUD
+        'secret-key.created',
+        'secret-key.deleted',
+        // SSH connection CRUD
+        'ssh-connection.created',
+        'ssh-connection.deleted',
+        // Container CRUD
+        'container.created',
+        'container.deleted',
+        // Notebook CRUD
+        'notebook.created',
+        'notebook.deleted',
+        // Simulation cell CRUD
+        'simulation-cell.created',
+        'simulation-cell.deleted',
     ];
 
     constructor(
@@ -49,11 +84,13 @@ export default class EventBroadcastSocketModule extends BaseSocketModule {
     /**
      * Generic handler that broadcasts any event to the appropriate socket room
      * Uses the event name directly as the socket event name
+     * 
+     * Handles payload inconsistency: some events use `.data`, others use `.payload`
      */
     private createGenericBroadcastHandler(): IEventHandler<IDomainEvent> {
         return {
             handle: async (event: IDomainEvent) => {
-                const eventData = (event as any).data;
+                const eventData = (event as any).payload ?? (event as any).data;
 
                 // Extract teamId from event data (convention)
                 const teamId = eventData?.teamId;

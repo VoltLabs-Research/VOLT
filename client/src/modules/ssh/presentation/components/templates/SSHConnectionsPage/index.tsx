@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RiWifiLine, RiEditLine } from 'react-icons/ri';
 import { LuFolderOpen } from 'react-icons/lu';
 import { formatDistanceToNow } from 'date-fns';
-import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { type ColumnConfig, type ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useToast from '@/shared/presentation/hooks/use-toast';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
@@ -19,7 +19,6 @@ const SSHConnectionsPage = () => {
 
     const [editingConnection, setEditingConnection] = useState<SSHConnection | null>(null);
     const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-    const [refreshKey, setRefreshKey] = useState(0);
 
     const fetchData = useCallback(async (params: PaginationParams) => {
         return await sshRepository.getConnections({
@@ -55,17 +54,12 @@ const SSHConnectionsPage = () => {
     const handleDeleteConnection = useCallback(async (connection: SSHConnection) => {
         await sshRepository.deleteConnection(connection._id);
         showSuccess(`Connection "${connection.name}" deleted`);
-        setRefreshKey((k) => k + 1);
     }, [sshRepository, showSuccess]);
 
     const handleCreateNew = useCallback(() => {
         setEditingConnection(null);
         setModalMode('create');
         setTimeout(() => openModal(SSH_CONNECTION_MODAL_ID), 0);
-    }, []);
-
-    const handleModalSuccess = useCallback(() => {
-        setRefreshKey((k) => k + 1);
     }, []);
 
     const { getMenuOptions } = useListingActions<SSHConnection>({
@@ -131,10 +125,16 @@ const SSHConnectionsPage = () => {
         }
     ], []);
 
+    const listSyncConfig: ListSyncConfig = useMemo(() => ({
+        events: [
+            { event: 'ssh-connection.created', action: 'created' },
+            { event: 'ssh-connection.deleted', action: 'deleted', getId: (p) => p.sshConnectionId }
+        ]
+    }), []);
+
     return (
         <>
             <DocumentListing<SSHConnection>
-                key={refreshKey}
                 title='SSH Connections'
                 columns={columns}
                 fetchData={fetchData}
@@ -145,11 +145,11 @@ const SSHConnectionsPage = () => {
                     buttonTitle: 'Add Connection',
                     onCreate: handleCreateNew
                 }}
+                listSyncConfig={listSyncConfig}
             />
             <SSHConnectionModal
                 connection={editingConnection}
                 mode={modalMode}
-                onSuccess={handleModalSuccess}
             />
         </>
     );

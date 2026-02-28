@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import { Download, Upload } from 'lucide-react';
-import DocumentListing from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { type ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import SimulationCard from '../SimulationCard';
 import SimulationSkeletonCard from '../../atoms/SimulationSkeletonCard';
 import useTrajectoryStore from '../../../stores/use-trajectory-store';
@@ -187,6 +187,12 @@ const SimulationGrid = () => {
         };
     }, [samplesDownloaded, handleDownloadSamples]);
 
+    const listSyncConfig: ListSyncConfig = useMemo(() => ({
+        events: [
+            { event: 'trajectory.deleted', action: 'deleted', getId: (p) => p.trajectoryId }
+        ]
+    }), []);
+
     return (
         <DocumentListing<SimulationGridItem, SimulationGridContext>
             title='Simulations'
@@ -205,6 +211,7 @@ const SimulationGrid = () => {
             emptyButtonIsLoading={isDownloading}
             onEmptyButtonClick={emptyStateConfig.onButtonClick}
             onHideItemRef={hideItemRef}
+            listSyncConfig={listSyncConfig}
         />
     );
 };

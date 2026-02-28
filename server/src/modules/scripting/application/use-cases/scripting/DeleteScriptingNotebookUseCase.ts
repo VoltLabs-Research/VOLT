@@ -5,6 +5,9 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { SCRIPTING_TOKENS } from '@modules/scripting/infrastructure/di/ScriptingTokens';
 import type { IScriptingNotebookRepository } from '@modules/scripting/domain/ports/IScriptingNotebookRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import NotebookDeletedEvent from '@modules/scripting/domain/events/NotebookDeletedEvent';
 
 interface DeleteScriptingNotebookInput {
     notebookId: string;
@@ -19,7 +22,10 @@ interface DeleteScriptingNotebookOutput {
 export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingNotebookInput, DeleteScriptingNotebookOutput, ApplicationError> {
     constructor(
         @inject(SCRIPTING_TOKENS.ScriptingNotebookRepository)
-        private readonly scriptingNotebookRepository: IScriptingNotebookRepository
+        private readonly scriptingNotebookRepository: IScriptingNotebookRepository,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ) {}
 
     async execute(input: DeleteScriptingNotebookInput): Promise<Result<DeleteScriptingNotebookOutput, ApplicationError>> {
@@ -29,6 +35,11 @@ export class DeleteScriptingNotebookUseCase implements IUseCase<DeleteScriptingN
         }
 
         await this.scriptingNotebookRepository.deleteById(input.notebookId);
+
+        await this.eventBus.publish(new NotebookDeletedEvent({
+            notebookId: input.notebookId,
+            teamId: input.teamId
+        }));
 
         return Result.ok({ message: 'Notebook deleted successfully' });
     }

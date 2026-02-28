@@ -4,6 +4,7 @@ import { RxDotsHorizontal } from 'react-icons/rx';
 import { Plus } from 'lucide-react';
 import { Skeleton } from '@mui/material';
 import useDocumentListingPagination from '@/shared/presentation/hooks/use-document-listing-pagination';
+import type { ListSyncConfig } from '@/shared/presentation/hooks/use-list-sync';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import useOptimisticAction from '@/shared/presentation/hooks/use-optimistic-action';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
@@ -25,6 +26,7 @@ import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse
 import './DocumentListing.css';
 
 export type { ColumnConfig, MenuOption };
+export type { ListSyncConfig };
 export { getValueByPath };
 
 type ViewMode = 'table' | 'grid';
@@ -72,6 +74,7 @@ interface DocumentListingProps<T, TContext = Record<string, never>> {
     hideTabs?: boolean;
     exportConfig?: DocumentListingExportConfig<TContext>;
     onHideItemRef?: React.MutableRefObject<((id: string) => void) | null>;
+    listSyncConfig?: ListSyncConfig;
 };
 
 const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({
@@ -99,7 +102,8 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
     hideHeader = false,
     hideTabs = false,
     exportConfig,
-    onHideItemRef
+    onHideItemRef,
+    listSyncConfig
 }: DocumentListingProps<T, TContext>) => {
     const { showError, showSuccess } = useToast();
     const getColumnSortKey = useCallback((col: ColumnConfig): string => {
@@ -120,7 +124,8 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         transformData,
         context,
         defaultLimit,
-        enabled
+        enabled,
+        listSyncConfig
     });
 
     // F5 keyboard shortcut to refresh data instead of reloading the page

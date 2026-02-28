@@ -1,0 +1,78 @@
+.dashboard-cluster-card {
+    grid-column: span 4;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+}
+
+.dashboard-cluster-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.dashboard-cluster-gauges {
+    gap: 1rem;
+}
+
+.cluster-gauge {
+    flex: 1;
+    min-width: 0;
+}
+
+.cluster-gauge-ring {
+    width: 68px;
+    height: 68px;
+}
+
+.cluster-gauge-progress {
+    transition: stroke-dashoffset 0.6s ease;
+}
+
+.cluster-gauge-center {
+    inset: 0;
+}
+
+.cluster-gauge-icon {
+    display: flex;
+    align-items: center;
+}
+
+.cluster-gauge-detail {
+    white-space: nowrap;
+}
+
+.dashboard-cluster-select {
+    border: none;
+    padding: 0;
+    font-size: var(--font-size-3);
+    font-weight: 500;
+    color: var(--color-text-primary);
+}
+
+.dashboard-cluster-select:hover:not(:disabled) {
+    border-color: transparent;
+}
+
+.dashboard-cluster-footer {
+    display: flex;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+@media screen and (max-width: 1200px) {
+    .dashboard-cluster-card {
+        grid-column: span 6;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .dashboard-cluster-card {
+        grid-column: span 12;
+    }
+}

@@ -1,0 +1,81 @@
+.dashboard-notifications-card {
+    grid-column: span 4;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 320px;
+    max-height: 340px;
+}
+
+.dashboard-notifications-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.dashboard-notifications-badge {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: var(--radius-full);
+    background: var(--accent-blue);
+    color: #fff;
+    line-height: 1;
+}
+
+.dashboard-notifications-list {
+    gap: 0.25rem;
+}
+
+.dashboard-notification-item {
+    padding: 0.5rem 0.65rem;
+    border-radius: var(--radius-md);
+    position: relative;
+    align-items: flex-start;
+}
+
+.dashboard-notification-item.unread {
+    background: color-mix(in srgb, var(--accent-blue) 5%, transparent);
+}
+
+.dashboard-notification-unread-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    flex-shrink: 0;
+    margin-top: 5px;
+}
+
+.dashboard-notification-arrow {
+    color: var(--color-text-muted);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.dashboard-notification-item:hover .dashboard-notification-arrow {
+    opacity: 1;
+}
+
+.dashboard-notifications-empty {
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+@media screen and (max-width: 1200px) {
+    .dashboard-notifications-card {
+        grid-column: span 6;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .dashboard-notifications-card {
+        grid-column: span 12;
+    }
+}

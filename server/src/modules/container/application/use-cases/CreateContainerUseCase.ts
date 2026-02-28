@@ -5,12 +5,16 @@ import { CreateContainerInputDTO, CreateContainerOutputDTO } from '@modules/cont
 import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/ports/IContainerService';
 import { execSync } from 'child_process';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import ContainerCreatedEvent from '@modules/container/domain/events/ContainerCreatedEvent';
 
 @injectable()
 export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO, CreateContainerOutputDTO> {
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
-        @inject('IContainerService') private containerService: IContainerService
+        @inject('IContainerService') private containerService: IContainerService,
+        @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ){}
 
     async execute(input: CreateContainerInputDTO): Promise<Result<CreateContainerOutputDTO>> {
@@ -127,6 +131,12 @@ export class CreateContainerUseCase implements IUseCase<CreateContainerInputDTO,
             volume: volumeDoc._id.toString(),
             internalIp: '0.0.0.0' // Placeholder
         });
+
+        await this.eventBus.publish(new ContainerCreatedEvent({
+            containerId: container.id,
+            teamId: input.teamId,
+            name
+        }));
 
         return Result.ok({ container });
     }
