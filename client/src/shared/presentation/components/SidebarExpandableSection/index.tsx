@@ -59,7 +59,7 @@ const SidebarExpandableSection = ({
                     className={`sidebar-sub-item transition-fast ${item.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                     onClick={item.onClick}
                 >
-                    {item.label}
+                    <span className="text-truncate">{item.label}</span>
                 </Button>
             );
         }
@@ -86,7 +86,7 @@ const SidebarExpandableSection = ({
                 <Container className='sidebar-nav-icon font-size-4'>
                     <Icon />
                 </Container>
-                <span className='sidebar-nav-label'>{label}</span>
+                <span className='sidebar-nav-label text-truncate'>{label}</span>
                 <IoChevronDown
                     className={`sidebar-section-chevron ${expanded ? 'is-expanded' : ''} color-muted`}
                     size={14}
@@ -120,7 +120,7 @@ const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
                 className={`sidebar-sub-item sidebar-nested-header transition-fast ${item.isSelected || childSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                 onClick={() => setExpanded((value) => !value)}
             >
-                <span>{item.label}</span>
+                <span className="text-truncate">{item.label}</span>
                 <IoChevronDown
                     className={`sidebar-nested-chevron ${expanded ? 'is-expanded' : ''}`}
                     size={12}
@@ -138,7 +138,7 @@ const NestedSubItems = ({ item, childSelected }: NestedSubItemsProps) => {
                             className={`sidebar-nested-item transition-fast ${subItem.isSelected ? 'is-selected' : ''} w-max color-secondary cursor-pointer`}
                             onClick={subItem.onClick}
                         >
-                            {subItem.label}
+                            <span className="text-truncate">{subItem.label}</span>
                         </Button>
                     ))}
                 </Container>
