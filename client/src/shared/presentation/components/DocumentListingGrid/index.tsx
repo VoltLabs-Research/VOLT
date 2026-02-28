@@ -8,7 +8,6 @@ import './DocumentListingGrid.css';
 
 interface DocumentListingGridProps<T = unknown> {
     data: T[];
-    prependItems?: React.ReactNode;
     isLoading?: boolean;
     isFetchingMore?: boolean;
     hasMore?: boolean;
@@ -26,7 +25,6 @@ interface DocumentListingGridProps<T = unknown> {
 
 const DocumentListingGrid = <T,>({
     data,
-    prependItems,
     isLoading = false,
     isFetchingMore = false,
     hasMore = false,
@@ -56,7 +54,6 @@ const DocumentListingGrid = <T,>({
             ref={containerRef}
             className={`document-listing-grid ${className}`}
         >
-            {prependItems}
             {isInitialLoading && renderSkeleton?.()}
 
             {shouldShowEmptyState && (

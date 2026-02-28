@@ -45,7 +45,7 @@ interface DocumentListingExportConfig<TContext = Record<string, never>> {
 interface DocumentListingProps<T, TContext = Record<string, never>> {
     title: string | React.ReactNode;
     fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
-    prependItems?: React.ReactNode;
+    transformData?: (data: T[]) => T[];
     context?: TContext;
     defaultLimit?: number;
     enabled?: boolean;
@@ -77,7 +77,7 @@ interface DocumentListingProps<T, TContext = Record<string, never>> {
 const DocumentListing = <T extends { _id: string }, TContext = Record<string, never>>({
     title,
     fetchData,
-    prependItems,
+    transformData,
     context,
     defaultLimit = 20,
     enabled = true,
@@ -117,6 +117,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         search
     } = useDocumentListingPagination<T, TContext>({
         fetchData,
+        transformData,
         context,
         defaultLimit,
         enabled
@@ -226,7 +227,6 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
             return (
                 <DocumentListingGrid
                     data={sortedData}
-                    prependItems={prependItems}
                     isLoading={isLoading}
                     isFetchingMore={isFetchingMore}
                     hasMore={hasMore}

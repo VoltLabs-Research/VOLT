@@ -8,6 +8,7 @@ import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse
  */
 export interface UseDocumentListingPaginationProps<T, TContext = Record<string, never>> {
     fetchData: (params: PaginationParams & TContext) => Promise<PaginatedResponse<T>>;
+    transformData?: (data: T[]) => T[];
     context?: TContext;
     defaultLimit?: number;
     enabled?: boolean;
@@ -36,6 +37,7 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
 ): UseDocumentListingPaginationReturn<T> {
     const { 
         fetchData, 
+        transformData,
         context, 
         defaultLimit = 20,
         enabled = true
@@ -139,8 +141,10 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
 
     const isFetchingMore = isLoading && page > 1;
 
+    const transformedData = transformData ? transformData(data) : data;
+
     return {
-        data,
+        data: transformedData,
         isLoading,
         isFetchingMore,
         hasMore,
