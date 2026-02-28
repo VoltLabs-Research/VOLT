@@ -67,21 +67,25 @@ const TrajectoriesListing = () => {
         actions: {
             view: {
                 label: 'View Scene',
-                handler: (trajectory) => navigate(`/canvas/${trajectory._id}`)
+                handler: ({ item: trajectory }) => navigate(`/canvas/${trajectory._id}`)
             },
             viewAtoms: {
                 label: 'Inspect Atoms',
                 icon: RiTableLine,
-                handler: (trajectory) => {
+                handler: ({ item: trajectory }) => {
                     const firstTimestep = trajectory.frames[0].timestep;
                     navigate(`/dashboard/trajectory/${trajectory._id}/analysis/default/atoms/default?timestep=${firstTimestep}`);
                 }
             },
             delete: {
-                handler: async (trajectory) => {
+                handler: async ({ item: trajectory }) => {
                     await deleteTrajectory(trajectory._id);
                 },
-                confirm: (trajectory) => `Delete trajectory "${trajectory.name}"? This action cannot be undone.`
+                confirm: ({ selectedItems }) => (
+                    selectedItems.length === 1
+                        ? `Delete trajectory "${selectedItems[0].name}"? This action cannot be undone.`
+                        : `Delete ${selectedItems.length} trajectories? This action cannot be undone.`
+                )
             }
         }
     });

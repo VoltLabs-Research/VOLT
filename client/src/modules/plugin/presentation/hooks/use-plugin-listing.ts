@@ -35,7 +35,7 @@ interface UsePluginListingReturn {
     isEnabled: boolean;
     fetchData: (params: { page: number; limit: number } & PluginListingContext) => Promise<PaginatedResponse<ListingRow>>;
     exportData: (format: ExportType) => Promise<Blob>;
-    getMenuOptions: (item: ListingRow) => MenuOption[];
+    getMenuOptions: (item: ListingRow, selectedItems: ListingRow[]) => MenuOption[];
 };
 
 const TRAJECTORY_COLUMN: ColumnConfig = {
@@ -125,29 +125,38 @@ const usePluginListing = ({
         });
     }, [pluginListingRepository, pluginId, exposureName, exposureId, trajectoryId, analysisId]);
 
-    const handleDelete = useCallback(async (item: ListingRow) => {
-        const analysisToDelete = item.analysisId;
-        if (!analysisToDelete) {
+    const handleDelete = useCallback(async (rows: ListingRow[]) => {
+        const analysisIds = rows
+            .map((row) => row.analysisId)
+            .filter((analysisId): analysisId is string => Boolean(analysisId));
+
+        if (!analysisIds.length) {
             console.error('No analysis ID found for deletion');
             return;
         }
 
-        const isConfirmed = confirm('Delete this analysis? This cannot be undone.');
+        const isConfirmed = confirm(
+            analysisIds.length === 1
+                ? 'Delete this analysis? This cannot be undone.'
+                : `Delete ${analysisIds.length} analyses? This cannot be undone.`
+        );
         if (!isConfirmed) return;
 
-        removeRowByAnalysisId(analysisToDelete);
+        analysisIds.forEach((analysisId) => removeRowByAnalysisId(analysisId));
 
         try {
-            await deleteAnalysis(analysisToDelete);
+            await Promise.all(analysisIds.map((analysisId) => deleteAnalysis(analysisId)));
         } catch {
             reset();
         }
     }, [deleteAnalysis, removeRowByAnalysisId, reset]);
 
-    const getMenuOptions = useCallback((item: ListingRow): MenuOption[] => {
+    const getMenuOptions = useCallback((item: ListingRow, selectedItems: ListingRow[]): MenuOption[] => {
+        const targetRows = selectedItems.includes(item) ? selectedItems : [item];
+        const isMultipleSelection = targetRows.length > 1;
         const options: MenuOption[] = [];
 
-        if (item.trajectoryId && item.analysisId && item.timestep !== undefined) {
+        if (!isMultipleSelection && item.trajectoryId && item.analysisId && item.timestep !== undefined) {
             options.push({
                 label: 'Inspect Atoms',
                 icon: RiEyeLine,
@@ -161,7 +170,7 @@ const usePluginListing = ({
             options.push({
                 label: 'Delete',
                 icon: RiDeleteBin6Line,
-                onClick: () => handleDelete(item),
+                onClick: () => handleDelete(targetRows),
                 destructive: true
             });
         }

@@ -37,7 +37,8 @@ const PluginsListing = () => {
     }, [clonePluginUseCase, selectedTeam._id, navigate]);
 
     const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files[0];
+        const file = e.target.files?.[0];
+        if(!file) return;
 
         setIsImporting(true);
         try{
@@ -53,21 +54,25 @@ const PluginsListing = () => {
             edit: {
                 label: 'Edit',
                 icon: RiEditLine,
-                handler: (item) => navigate(`/plugins/builder?id=${item._id}`)
+                handler: ({ item }) => navigate(`/plugins/builder?id=${item._id}`)
             },
             clone: {
                 label: 'Clone',
                 icon: RiFileCopyLine,
-                handler: handleClone
+                handler: ({ item }) => handleClone(item)
             },
             export: {
                 label: 'Export',
                 icon: RiDownloadLine,
-                handler: (item) => exportPlugin(item._id, `${item.modifier?.name || item._id}.zip`)
+                handler: ({ item }) => exportPlugin(item._id, `${item.modifier?.name || item._id}.zip`)
             },
             delete: {
-                handler: (item) => deletePlugin(item._id),
-                confirm: (item) => `Delete plugin "${item.modifier?.name || item._id}"? This action cannot be undone.`
+                handler: ({ item }) => deletePlugin(item._id),
+                confirm: ({ selectedItems }) => (
+                    selectedItems.length === 1
+                        ? `Delete plugin "${selectedItems[0].modifier?.name || selectedItems[0]._id}"? This action cannot be undone.`
+                        : `Delete ${selectedItems.length} plugins? This action cannot be undone.`
+                )
             }
         }
     });

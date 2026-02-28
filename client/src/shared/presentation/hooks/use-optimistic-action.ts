@@ -12,7 +12,7 @@ interface UseOptimisticActionOptions {
 interface UseOptimisticActionReturn<T> {
     optimisticallyHiddenIds: Set<string>;
     addToHidden: (id: string) => void;
-    wrapMenuOptions: (item: T, options: MenuOption[]) => MenuOption[];
+    wrapMenuOptions: (item: T, targetItems: T[], options: MenuOption[]) => MenuOption[];
     filterVisibleData: (data: T[]) => T[];
 };
 
@@ -29,32 +29,43 @@ const useOptimisticAction = <T extends Identifiable>({
         });
     }, []);
 
-    const removeFromHidden = useCallback((id: string) => {
+    const addManyToHidden = useCallback((ids: string[]) => {
+        if (!ids.length) return;
         setHiddenIds((prev) => {
             const next = new Set(prev);
-            next.delete(id);
+            ids.forEach((id) => next.add(id));
             return next;
         });
     }, []);
 
-    const wrapAction = useCallback((item: T, action: () => void | Promise<void>) => {
+    const removeManyFromHidden = useCallback((ids: string[]) => {
+        if (!ids.length) return;
+        setHiddenIds((prev) => {
+            const next = new Set(prev);
+            ids.forEach((id) => next.delete(id));
+            return next;
+        });
+    }, []);
+
+    const wrapAction = useCallback((targetItems: T[], action: () => void | Promise<void>) => {
         return async () => {
-            const id = item._id;
-            addToHidden(id);
+            const targetIds = targetItems.map((item) => item._id);
+
+            addManyToHidden(targetIds);
 
             try {
                 await action();
             } catch (err) {
-                removeFromHidden(id);
+                removeManyFromHidden(targetIds);
                 throw err;
             }
         };
-    }, [addToHidden, removeFromHidden]);
+    }, [addManyToHidden, removeManyFromHidden]);
 
-    const wrapMenuOptions = useCallback((item: T, options: MenuOption[]) => {
+    const wrapMenuOptions = useCallback((item: T, targetItems: T[], options: MenuOption[]) => {
         return options.map((opt) =>
             shouldTrack(opt)
-                ? { ...opt, onClick: wrapAction(item, opt.onClick) }
+                ? { ...opt, onClick: wrapAction(targetItems.length ? targetItems : [item], opt.onClick) }
                 : opt
         );
     }, [shouldTrack, wrapAction]);

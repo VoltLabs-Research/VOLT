@@ -39,7 +39,7 @@ const SSHConnectionsPage = () => {
                 showSuccess(`Connection to "${connection.name}" successful!`);
                 return;
             }
-            showError(result.error);
+            showError(result.error || 'Unknown error');
         } catch (err: unknown) {
             const error = err as Error;
             showError(error.message);
@@ -73,21 +73,25 @@ const SSHConnectionsPage = () => {
             fileExplorer: {
                 label: 'File Explorer',
                 icon: LuFolderOpen,
-                handler: handleOpenFileExplorer
+                handler: ({ item }) => handleOpenFileExplorer(item)
             },
             test: {
                 label: 'Test Connection',
                 icon: RiWifiLine,
-                handler: handleTestConnection
+                handler: ({ item }) => handleTestConnection(item)
             },
             edit: {
                 label: 'Edit',
                 icon: RiEditLine,
-                handler: handleEditConnection
+                handler: ({ item }) => handleEditConnection(item)
             },
             delete: {
-                handler: handleDeleteConnection,
-                confirm: (item) => `Delete connection "${item.name}"? This action cannot be undone.`,
+                handler: ({ item }) => handleDeleteConnection(item),
+                confirm: ({ selectedItems }) => (
+                    selectedItems.length === 1
+                        ? `Delete connection "${selectedItems[0].name}"? This action cannot be undone.`
+                        : `Delete ${selectedItems.length} connections? This action cannot be undone.`
+                ),
                 variant: 'danger'
             }
         }

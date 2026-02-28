@@ -83,23 +83,31 @@ const SecretKeysListing = () => {
             copy: {
                 label: 'Copy Prefix',
                 icon: RiFileCopyLine,
-                handler: copySecretKeyPrefix
+                handler: ({ item: key }) => copySecretKeyPrefix(key)
             },
             revoke: {
                 label: 'Revoke Key',
                 icon: RiShieldKeyholeLine,
-                handler: async (key) => {
+                handler: async ({ item: key }) => {
                     await revokeSecretKey(key._id);
                     setRefreshTrigger((v) => v + 1);
                 },
-                confirm: (key) => `Are you sure you want to revoke the secret key "${key.name}"? Any applications using this key will immediately lose access.`
+                confirm: ({ selectedItems }) => (
+                    selectedItems.length === 1
+                        ? `Are you sure you want to revoke the secret key "${selectedItems[0].name}"? Any applications using this key will immediately lose access.`
+                        : `Are you sure you want to revoke ${selectedItems.length} secret keys? Any applications using these keys will immediately lose access.`
+                )
             },
             delete: {
                 label: 'Delete',
-                handler: async (key) => {
+                handler: async ({ item: key }) => {
                     await deleteSecretKey(key._id);
                 },
-                confirm: (key) => `Are you sure you want to permanently delete the secret key "${key.name}"? This action cannot be undone.`
+                confirm: ({ selectedItems }) => (
+                    selectedItems.length === 1
+                        ? `Are you sure you want to permanently delete the secret key "${selectedItems[0].name}"? This action cannot be undone.`
+                        : `Are you sure you want to permanently delete ${selectedItems.length} secret keys? This action cannot be undone.`
+                )
             }
         }
     });
@@ -112,8 +120,8 @@ const SecretKeysListing = () => {
         setRefreshTrigger((value) => value + 1);
     }, []);
 
-    const getRowMenuOptions = useCallback((item: SecretKey) => {
-        const options = getMenuOptions(item);
+    const getRowMenuOptions = useCallback((item: SecretKey, selectedKeys: SecretKey[]) => {
+        const options = getMenuOptions(item, selectedKeys);
         if (item.isActive) {
             return options;
         }

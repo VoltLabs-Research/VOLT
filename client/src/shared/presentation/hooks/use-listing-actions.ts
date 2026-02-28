@@ -8,9 +8,10 @@ type IconType = React.ComponentType<{ size?: number | string; className?: string
 export interface ActionConfig<T = unknown> {
     label?: string;
     icon?: IconType;
-    handler: (item: T) => void | Promise<void>;
-    confirm?: boolean | string | ((item: T) => string);
+    handler: (payload: { item: T; selectedItems: T[] }) => void | Promise<void>;
+    confirm?: boolean | string | ((payload: { item: T; selectedItems: T[] }) => string);
     variant?: 'default' | 'danger';
+    scope?: 'item' | 'selection';
 };
 
 export interface UseListingActionsConfig<T = unknown> {
@@ -18,9 +19,9 @@ export interface UseListingActionsConfig<T = unknown> {
 };
 
 export interface UseListingActionsReturn<T = unknown> {
-    handleAction: (actionKey: string, item: T) => Promise<void>;
-    getMenuOptions: (item: T) => MenuOption[];
-    executeAction: (actionKey: string, item: T) => Promise<void>;
+    handleAction: (actionKey: string, item: T, selectedItems: T[]) => Promise<void>;
+    getMenuOptions: (item: T, selectedItems: T[]) => MenuOption[];
+    executeAction: (actionKey: string, item: T, selectedItems: T[]) => Promise<void>;
 };
 
 const ICON_PRESETS_REACT_ICONS: Record<string, IconType> = {
@@ -46,10 +47,42 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
         return capitalize(actionKey);
     }, []);
 
-    const shouldConfirm = useCallback((actionConfig: ActionConfig<T>, item: T): boolean => {
+    const getActionScope = useCallback((actionKey: string, actionConfig: ActionConfig<T>): 'item' | 'selection' => {
+        if(actionConfig.scope){
+            return actionConfig.scope;
+        }
+
+        if(actionConfig.variant === 'danger' || actionKey === 'delete'){
+            return 'selection';
+        }
+
+        return 'item';
+    }, []);
+
+    const getActionTargets = useCallback((item: T, selectedItems: T[], scope: 'item' | 'selection'): T[] => {
+        if(scope === 'item'){
+            return [item];
+        }
+
+        if(!selectedItems.length){
+            return [item];
+        }
+
+        if(selectedItems.includes(item)){
+            return selectedItems;
+        }
+
+        return [item];
+    }, []);
+
+    const shouldConfirm = useCallback((actionConfig: ActionConfig<T>, item: T, selectedItems: T[]): boolean => {
         if(!actionConfig.confirm) return true;
 
         if(typeof actionConfig.confirm === 'boolean'){
+            if(selectedItems.length > 1){
+                return confirmDelete(`${selectedItems.length} selected items`);
+            }
+
             const itemName = (item as Record<string, unknown>)?.name as string || 'this item';
             return confirmDelete(itemName);
         }
@@ -59,37 +92,52 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
         }
 
         if(typeof actionConfig.confirm === 'function'){
-            const message = actionConfig.confirm(item);
+            const message = actionConfig.confirm({ item, selectedItems });
             return confirm(message);
         }
 
         return true;
     }, []);
 
-    const executeAction = useCallback(async (actionKey: string, item: T): Promise<void> => {
+    const executeAction = useCallback(async (actionKey: string, item: T, selectedItems: T[]): Promise<void> => {
         const actionConfig = actions[actionKey];
         if(!actionConfig){
             console.warn(`Action "${actionKey}" not found in actions config`);
             return;
         }
 
-        if(!shouldConfirm(actionConfig, item)) return;
+        const scope = getActionScope(actionKey, actionConfig);
+        const targets = getActionTargets(item, selectedItems, scope);
+        const primaryItem = targets[0] ?? item;
+
+        if(!shouldConfirm(actionConfig, primaryItem, targets)) return;
 
         try{
-            await actionConfig.handler(item);
+            if(scope === 'selection'){
+                for(const currentItem of targets){
+                    await actionConfig.handler({ item: currentItem, selectedItems: targets });
+                }
+                return;
+            }
+
+            await actionConfig.handler({ item: primaryItem, selectedItems: targets });
         }catch(err){
             console.error(`Failed to execute action "${actionKey}":`, err);
             throw err;
         }
-    }, [actions, shouldConfirm]);
+    }, [actions, shouldConfirm, getActionScope, getActionTargets]);
 
     const handleAction = executeAction;
 
-    const getMenuOptions = useCallback((item: T): MenuOption[] => {
-        return Object.entries(actions).map(([actionKey, actionConfig]) => {
+    const getMenuOptions = useCallback((item: T, selectedItems: T[]): MenuOption[] => {
+        const actionEntries = selectedItems.length > 1
+            ? Object.entries(actions).filter(([actionKey]) => actionKey === 'delete')
+            : Object.entries(actions);
+
+        return actionEntries.map(([actionKey, actionConfig]) => {
             const label = getActionLabel(actionKey, actionConfig);
             const icon = getActionIcon(actionKey, actionConfig);
-            const onClick = () => executeAction(actionKey, item);
+            const onClick = () => executeAction(actionKey, item, selectedItems);
             const destructive = actionConfig.variant === 'danger' || actionKey === 'delete';
 
             return {

@@ -124,7 +124,7 @@ const NotebooksListing = () => {
             open: {
                 label: 'Open in Canvas Workspace',
                 icon: () => <FolderOpen size={16} />,
-                handler: (notebook) => {
+                handler: ({ item: notebook }) => {
                     const trajectoryId = getTrajectoryIds(notebook as ScriptingNotebookDTO)[0];
                     if (!trajectoryId) {
                         showError('This notebook has no associated trajectory.');
@@ -136,12 +136,16 @@ const NotebooksListing = () => {
             },
             delete: {
                 variant: 'danger',
-                handler: async (notebook) => {
+                handler: async ({ item: notebook }) => {
                     const scriptingRepository = container.resolve<IScriptingRepository>(SCRIPTING_TOKENS.ScriptingRepository);
                     await scriptingRepository.deleteScriptingNotebook(notebook._id);
                     showSuccess('Notebook deleted successfully');
                 },
-                confirm: (notebook) => `Delete notebook "${notebook.title || 'Untitled Notebook'}"? This action cannot be undone.`
+                confirm: ({ selectedItems }) => (
+                    selectedItems.length === 1
+                        ? `Delete notebook "${selectedItems[0].title || 'Untitled Notebook'}"? This action cannot be undone.`
+                        : `Delete ${selectedItems.length} notebooks? This action cannot be undone.`
+                )
             }
         }
     });
