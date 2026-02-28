@@ -6,18 +6,30 @@ import { SSH_CONN_TOKENS } from '@modules/ssh/infrastructure/di/SSHConnectionTok
 import { ISSHConnectionRepository } from '@modules/ssh/domain/ports/ISSHConnectionRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import SSHConnection from '@modules/ssh/domain/entities/SSHConnection';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import SSHConnectionCreatedEvent from '@modules/ssh/domain/events/SSHConnectionCreatedEvent';
 
 @injectable()
 export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionInputDTO, CreateSSHConnectionOutputDTO, ApplicationError> {
     constructor(
         @inject(SSH_CONN_TOKENS.SSHConnectionRepository)
-        private sshConnectionRepo: ISSHConnectionRepository
+        private sshConnectionRepo: ISSHConnectionRepository,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ){}
 
     async execute(input: CreateSSHConnectionInputDTO): Promise<Result<CreateSSHConnectionOutputDTO, ApplicationError>> {
         // TODO: ID
         const sshConnection = SSHConnection.create('', input);
         const result = await this.sshConnectionRepo.create(sshConnection.props);
+
+        await this.eventBus.publish(new SSHConnectionCreatedEvent({
+            sshConnectionId: result.id,
+            teamId: input.teamId,
+            name: input.name
+        }));
 
         return Result.ok({
             _id: result.id,

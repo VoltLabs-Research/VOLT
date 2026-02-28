@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { HiOutlineServerStack } from 'react-icons/hi2';
-import { GoArrowRight } from 'react-icons/go';
 import { FlaskConical, Puzzle } from 'lucide-react';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
@@ -10,12 +9,14 @@ import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import EmptyState from '@/shared/presentation/components/EmptyState';
-import Button from '@/shared/presentation/components/Button';
 import DashboardOverviewCard from '@/modules/dashboard/presentation/components/atoms/DashboardOverviewCard';
 import DashboardOverviewSkeleton from '@/modules/dashboard/presentation/components/atoms/DashboardOverviewSkeleton';
 import DashboardTeamTimeline from '@/modules/dashboard/presentation/components/molecules/DashboardTeamTimeline';
 import { DashboardQuickActions } from '@/modules/dashboard/presentation/components/molecules/DashboardQuickActions';
 import DashboardInAppActivity from '@/modules/dashboard/presentation/components/molecules/DashboardInAppActivity';
+import DashboardClusterHealth from '@/modules/dashboard/presentation/components/molecules/DashboardClusterHealth';
+import DashboardTeamPresence from '@/modules/dashboard/presentation/components/molecules/DashboardTeamPresence';
+import DashboardNotificationsFeed from '@/modules/dashboard/presentation/components/molecules/DashboardNotificationsFeed';
 import DashboardPreviewCard from '@/modules/dashboard/presentation/components/molecules/DashboardPreviewCard';
 import DashboardRecentAnalyses from '@/modules/dashboard/presentation/components/molecules/DashboardRecentAnalyses';
 import { JobsHistoryViewer } from '@/modules/jobs/presentation/components/organisms/JobsHistoryViewer';
@@ -101,6 +102,11 @@ const DashboardPage = () => {
 
                 {/* Quick actions */}
                 <DashboardQuickActions />
+
+                {/* Infrastructure & team overview */}
+                <DashboardClusterHealth />
+                <DashboardTeamPresence />
+                <DashboardNotificationsFeed />
 
                 {/* 3D Preview + Jobs & Analyses */}
                 <Container className='dashboard-bottom-row'>

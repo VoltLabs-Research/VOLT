@@ -7,6 +7,9 @@ import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
 import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
 import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import TeamMemberCreatedEvent from '@modules/team/domain/events/TeamMemberCreatedEvent';
 
 @injectable()
 export default class CreateTeamMemberUseCase implements IUseCase<CreateTeamMemberInputDTO, CreateTeamMemberOutputDTO, ApplicationError>{
@@ -15,6 +18,8 @@ export default class CreateTeamMemberUseCase implements IUseCase<CreateTeamMembe
         private teamMemberRepository: ITeamMemberRepository,
         @inject(TEAM_TOKENS.TeamRoleRepository)
         private teamRoleRepository: ITeamRoleRepository,
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ){}
 
     async execute(input: CreateTeamMemberInputDTO): Promise<Result<CreateTeamMemberOutputDTO, ApplicationError>>{
@@ -49,6 +54,13 @@ export default class CreateTeamMemberUseCase implements IUseCase<CreateTeamMembe
             joinedAt: new Date(),
             updatedAt: new Date()
         });
+
+        await this.eventBus.publish(new TeamMemberCreatedEvent({
+            teamMemberId: newMember.id,
+            teamId,
+            userId,
+            roleId
+        }));
 
         return Result.ok(newMember.props);
     }

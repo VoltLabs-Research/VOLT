@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { PiKeyLight } from 'react-icons/pi';
 import { RiFileCopyLine, RiShieldKeyholeLine } from 'react-icons/ri';
 import { formatDistanceToNow } from 'date-fns';
 import useGetSecretKeys from '@/modules/team/presentation/hooks/secret-key/use-get-secret-keys';
 import useRevokeSecretKey from '@/modules/team/presentation/hooks/secret-key/use-revoke-secret-key';
 import useDeleteSecretKey from '@/modules/team/presentation/hooks/secret-key/use-delete-secret-key';
-import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { type ColumnConfig, type ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { openModal } from '@/shared/presentation/components/Modal';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
@@ -61,7 +61,6 @@ const SecretKeysListing = () => {
     const revokeSecretKey = useRevokeSecretKey();
     const deleteSecretKey = useDeleteSecretKey();
     const { showSuccess, showError } = useToast();
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     const copySecretKeyPrefix = useCallback(async (key: SecretKey) => {
         const keyPrefix = String(key.keyPrefix || '').trim();
@@ -90,7 +89,6 @@ const SecretKeysListing = () => {
                 icon: RiShieldKeyholeLine,
                 handler: async ({ item: key }) => {
                     await revokeSecretKey(key._id);
-                    setRefreshTrigger((v) => v + 1);
                 },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1
@@ -116,10 +114,6 @@ const SecretKeysListing = () => {
         openModal(SECRET_KEY_CREATION_MODAL_ID);
     }, []);
 
-    const handleKeyCreated = useCallback((_secretKey: string) => {
-        setRefreshTrigger((value) => value + 1);
-    }, []);
-
     const getRowMenuOptions = useCallback((item: SecretKey, selectedKeys: SecretKey[]) => {
         const options = getMenuOptions(item, selectedKeys);
         if (item.isActive) {
@@ -132,9 +126,16 @@ const SecretKeysListing = () => {
     // Quick shortcut for opening modal
     useKeyboardShortcut('n', handleCreateKey);
 
+    const listSyncConfig: ListSyncConfig = useMemo(() => ({
+        events: [
+            { event: 'secret-key.created', action: 'created' },
+            { event: 'secret-key.deleted', action: 'deleted', getId: (p) => p.secretKeyId }
+        ]
+    }), []);
+
     return (
         <>
-            <DocumentListing<SecretKey, { refreshTrigger: number }>
+            <DocumentListing<SecretKey>
                 title='Secret Keys'
                 columns={COLUMNS}
                 fetchData={getSecretKeys}
@@ -149,10 +150,10 @@ const SecretKeysListing = () => {
                     buttonTitle: 'Create new',
                     onCreate: handleCreateKey
                 }}
-                context={{ refreshTrigger }}
+                listSyncConfig={listSyncConfig}
             />
 
-            <SecretKeyCreationModal onCreated={handleKeyCreated} />
+            <SecretKeyCreationModal />
         </>
     );
 };

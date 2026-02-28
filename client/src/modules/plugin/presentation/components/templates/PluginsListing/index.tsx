@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine } from 'react-icons/ri';
 import { usePluginUseCases, useDeletePlugin, useExportPlugin, useImportPlugin } from '../../../hooks';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { type ColumnConfig, type ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Button from '@/shared/presentation/components/Button';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
@@ -133,6 +133,13 @@ const PluginsListing = () => {
         dateColumn('createdAt', 'Created', { width: 100 })
     ], [navigate]);
 
+    const listSyncConfig: ListSyncConfig = useMemo(() => ({
+        events: [
+            { event: 'plugin.created', action: 'created' },
+            { event: 'plugin.deleted', action: 'deleted', getId: (p) => p.pluginId }
+        ]
+    }), []);
+
     return (
         <DocumentListing<Plugin>
             title='Plugins'
@@ -167,6 +174,7 @@ const PluginsListing = () => {
                     </Button>
                 </>
             }
+            listSyncConfig={listSyncConfig}
         />
     );
 };

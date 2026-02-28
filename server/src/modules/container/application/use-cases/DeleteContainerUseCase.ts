@@ -6,12 +6,16 @@ import { IContainerRepository } from '@modules/container/domain/ports/IContainer
 import { IContainerService } from '@modules/container/domain/ports/IContainerService';
 import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import ContainerDeletedEvent from '@modules/container/domain/events/ContainerDeletedEvent';
 
 @injectable()
 export class DeleteContainerUseCase implements IUseCase<{ containerId: string }, DeleteContainerOutputDTO> {
     constructor(
         @inject('IContainerRepository') private repository: IContainerRepository,
-        @inject('IContainerService') private containerService: IContainerService
+        @inject('IContainerService') private containerService: IContainerService,
+        @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ){}
 
     async execute(input: { containerId: string }): Promise<Result<DeleteContainerOutputDTO>> {
@@ -47,6 +51,11 @@ export class DeleteContainerUseCase implements IUseCase<{ containerId: string },
         // I will explicitly delete the repository entry.
 
         await this.repository.deleteById(input.containerId);
+
+        await this.eventBus.publish(new ContainerDeletedEvent({
+            containerId: input.containerId,
+            teamId: container.team?.toString() ?? ''
+        }));
 
         return Result.ok({ message: 'Container deleted successfully' });
     }

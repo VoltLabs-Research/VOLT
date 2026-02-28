@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import usePaginationParams, { type PaginationParams } from './use-pagination-params';
 import useListingLifecycle from './use-listing-lifecycle';
+import useListSync, { type ListSyncConfig } from './use-list-sync';
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 
 /**
@@ -12,6 +13,7 @@ export interface UseDocumentListingPaginationProps<T, TContext = Record<string, 
     context?: TContext;
     defaultLimit?: number;
     enabled?: boolean;
+    listSyncConfig?: ListSyncConfig;
 };
 
 /**
@@ -40,7 +42,8 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
         transformData,
         context, 
         defaultLimit = 20,
-        enabled = true
+        enabled = true,
+        listSyncConfig
     } = props;
 
     const { page, limit, search, updateParams } = usePaginationParams({ defaultLimit });
@@ -140,6 +143,13 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
     }, [isLoading, page, fetchDataAsync, updateParams]);
 
     const isFetchingMore = isLoading && page > 1;
+
+    // Wire up real-time list sync via socket events
+    useListSync<T & { _id: string }>({
+        config: listSyncConfig,
+        setData: setData as React.Dispatch<React.SetStateAction<(T & { _id: string })[]>>,
+        refresh
+    });
 
     const transformedData = transformData ? transformData(data) : data;
 

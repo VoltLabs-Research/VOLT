@@ -1,0 +1,63 @@
+.dashboard-presence-card {
+    grid-column: span 4;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+}
+
+.dashboard-presence-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.dashboard-presence-count {
+    color: var(--accent-green);
+}
+
+.dashboard-presence-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    flex: 1;
+    align-content: flex-start;
+}
+
+.dashboard-presence-member {
+    width: 52px;
+}
+
+.dashboard-presence-name {
+    max-width: 52px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.dashboard-presence-empty {
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.dashboard-presence-footer {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.75rem;
+}
+
+@media screen and (max-width: 1200px) {
+    .dashboard-presence-card {
+        grid-column: span 6;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .dashboard-presence-card {
+        grid-column: span 12;
+    }
+}

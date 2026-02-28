@@ -6,12 +6,17 @@ import { CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO } from '@modules/team/a
 import { injectable, inject } from 'tsyringe';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import TeamRoleCreatedEvent from '@modules/team/domain/events/TeamRoleCreatedEvent';
 
 @injectable()
 export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInputDTO, CreateTeamRoleOutputDTO, ApplicationError>{
     constructor(
         @inject(TEAM_TOKENS.TeamRoleRepository)
         private readonly teamRoleRepository: ITeamRoleRepository,
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ){}
 
     async execute(input: CreateTeamRoleInputDTO): Promise<Result<CreateTeamRoleOutputDTO, ApplicationError>>{
@@ -39,6 +44,12 @@ export default class CreateTeamRoleUseCase implements IUseCase<CreateTeamRoleInp
             createdAt: new Date(),
             updatedAt: new Date()
         });
+
+        await this.eventBus.publish(new TeamRoleCreatedEvent({
+            teamRoleId: newRole.id,
+            teamId,
+            name
+        }));
 
         return Result.ok(newRole.props);
     }

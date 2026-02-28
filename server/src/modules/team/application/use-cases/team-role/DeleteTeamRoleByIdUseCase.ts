@@ -7,6 +7,9 @@ import { injectable, inject } from 'tsyringe';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { DeleteTeamRoleByIdInputDTO, DeleteTeamRoleByIdOutputDTO } from '@modules/team/application/dtos/team-role/DeleteTeamRoleByIdDTO';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import TeamRoleDeletedEvent from '@modules/team/domain/events/TeamRoleDeletedEvent';
 
 @injectable()
 export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRoleByIdInputDTO, DeleteTeamRoleByIdOutputDTO, ApplicationError>{
@@ -14,7 +17,9 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
         @inject(TEAM_TOKENS.TeamRoleRepository)
         private readonly teamRoleRepository: ITeamRoleRepository,
         @inject(TEAM_TOKENS.TeamMemberRepository)
-        private readonly teamMemberRepository: ITeamMemberRepository
+        private readonly teamMemberRepository: ITeamMemberRepository,
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ){}
 
     async execute(input: DeleteTeamRoleByIdInputDTO): Promise<Result<DeleteTeamRoleByIdOutputDTO, ApplicationError>>{
@@ -60,6 +65,11 @@ export default class DeleteTeamRoleByIdUseCase implements IUseCase<DeleteTeamRol
                 'Failed to delete team role'
             ));
         }
+
+        await this.eventBus.publish(new TeamRoleDeletedEvent({
+            teamRoleId: roleId,
+            teamId
+        }));
 
         return Result.ok({ success: true });
     }

@@ -8,12 +8,16 @@ import { WorkflowNodeType } from '@modules/plugin/domain/entities/workflow/Workf
 import { ErrorCodes } from '@core/constants/error-codes';
 import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import PluginCreatedEvent from '@modules/plugin/domain/events/PluginCreatedEvent';
 
 
 @injectable()
 export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePluginOutputDTO> {
     constructor(
-        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository
+        @inject(PLUGIN_TOKENS.PluginRepository) private pluginRepository: IPluginRepository,
+        @inject(SHARED_TOKENS.EventBus) private readonly eventBus: IEventBus
     ){}
 
     async execute(input: ClonePluginInputDTO): Promise<Result<ClonePluginOutputDTO>> {
@@ -50,6 +54,11 @@ export class ClonePluginUseCase implements IUseCase<ClonePluginInputDTO, ClonePl
             validated: original.props.validated,
             status: PluginStatus.Draft
         });
+
+        await this.eventBus.publish(new PluginCreatedEvent({
+            pluginId: plugin.id,
+            teamId: input.teamId
+        }));
 
         return Result.ok({ plugin });
     }

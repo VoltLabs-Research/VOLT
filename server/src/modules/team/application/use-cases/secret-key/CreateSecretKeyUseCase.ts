@@ -7,6 +7,9 @@ import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { ISecretKeyRepository } from '@modules/team/domain/ports/ISecretKeyRepository';
 import { ITeamRoleRepository } from '@modules/team/domain/ports/ITeamRoleRepository';
 import { ErrorCodes } from '@core/constants/error-codes';
+import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
+import { IEventBus } from '@shared/application/events/IEventBus';
+import SecretKeyCreatedEvent from '@modules/team/domain/events/SecretKeyCreatedEvent';
 import {
     CreateSecretKeyInputDTO,
     CreateSecretKeyOutputDTO
@@ -19,7 +22,10 @@ export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyI
         private readonly secretKeyRepository: ISecretKeyRepository,
 
         @inject(TEAM_TOKENS.TeamRoleRepository)
-        private readonly teamRoleRepository: ITeamRoleRepository
+        private readonly teamRoleRepository: ITeamRoleRepository,
+
+        @inject(SHARED_TOKENS.EventBus)
+        private readonly eventBus: IEventBus
     ) {}
 
     async execute(input: CreateSecretKeyInputDTO): Promise<Result<CreateSecretKeyOutputDTO, ApplicationError>> {
@@ -83,6 +89,12 @@ export default class CreateSecretKeyUseCase implements IUseCase<CreateSecretKeyI
             createdAt: new Date(),
             updatedAt: new Date()
         });
+
+        await this.eventBus.publish(new SecretKeyCreatedEvent({
+            secretKeyId: created.id,
+            teamId,
+            name: created.props.name
+        }));
 
         return Result.ok({
             secretKeyId: created.id,

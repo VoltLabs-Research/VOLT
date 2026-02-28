@@ -4,7 +4,7 @@ import { IoChatbubbleOutline, IoPersonRemoveOutline } from 'react-icons/io5';
 import { formatDistanceToNow } from 'date-fns';
 import Container from '@/shared/presentation/components/Container';
 import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig, MenuOption, ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import Select from '@/shared/presentation/components/Select';
 import EditableTag from '@/shared/presentation/components/EditableTag';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
@@ -48,6 +48,13 @@ const MyTeamTemplate: React.FC = () => {
     const { activityData, fetchActivity } = useDailyActivityData();
 
     const onlineUserIds = useTeamPresence();
+
+    const listSyncConfig: ListSyncConfig = useMemo(() => ({
+        events: [
+            { event: 'team-member.created', action: 'created' },
+            { event: 'team-member.deleted', action: 'deleted', getId: (p) => p.teamMemberId }
+        ]
+    }), []);
 
     useEffect(() => {
         fetchRoles(selectedTeam._id);
@@ -267,6 +274,7 @@ const MyTeamTemplate: React.FC = () => {
                 emptyMessage='No members found in this team.'
                 headerActions={<ActivityHeatmap data={activityData} />}
                 gap=''
+                listSyncConfig={listSyncConfig}
             />
         </Container>
     );

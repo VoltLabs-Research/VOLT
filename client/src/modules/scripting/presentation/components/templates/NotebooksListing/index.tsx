@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { container } from 'tsyringe';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, FolderOpen } from 'lucide-react';
@@ -8,7 +8,7 @@ import type IScriptingRepository from '@/modules/scripting/domain/ports/IScripti
 import { SCRIPTING_TOKENS } from '@/modules/scripting/infrastructure/di/tokens';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import DocumentListing, { type ColumnConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { type ColumnConfig, type ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import Container from '@/shared/presentation/components/Container';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import useToast from '@/shared/presentation/hooks/use-toast';
@@ -150,6 +150,12 @@ const NotebooksListing = () => {
         }
     });
 
+    const listSyncConfig: ListSyncConfig = useMemo(() => ({
+        events: [
+            { event: 'notebook.deleted', action: 'deleted', getId: (p) => p.notebookId }
+        ]
+    }), []);
+
     return (
         <DocumentListing<NotebookDocument>
             title='Notebooks'
@@ -157,6 +163,7 @@ const NotebooksListing = () => {
             fetchData={fetchData}
             getMenuOptions={getMenuOptions}
             emptyMessage='No notebooks found for this team.'
+            listSyncConfig={listSyncConfig}
         />
     );
 };
