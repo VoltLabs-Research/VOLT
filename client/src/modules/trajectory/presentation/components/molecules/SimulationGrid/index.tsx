@@ -14,11 +14,16 @@ import type { Trajectory, TrajectoryStatus } from '@/modules/trajectory/domain/e
 import useTeamJobsStore from '@/modules/jobs/presentation/stores/use-team-jobs-store';
 import type { FrameJobGroupStatus } from '@/modules/jobs/domain/entities/Job';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
-import type { TrajectoryUploadState } from '../../../stores/use-trajectory-store';
+import type { TrajectoryUploadStatus } from '../../../stores/use-trajectory-store';
 
 interface SimulationGridContext {
     teamId?: string;
 };
+
+export type SimulationGridItem =
+    | { kind: 'upload'; _id: string; progress: number; status: TrajectoryUploadStatus }
+    | { kind: 'optimistic'; _id: string; trajectory: Trajectory }
+    | { kind: 'trajectory'; _id: string; trajectory: Trajectory };
 
 const mapGroupStatusToTrajectoryStatus = (status: FrameJobGroupStatus): TrajectoryStatus => {
     switch(status){
@@ -53,7 +58,6 @@ const SimulationGrid = () => {
     const [samplesDownloaded, setSamplesDownloaded] = useState(false);
     const { downloadAllSamples, isDownloading } = useDownloadSamples();
 
-    const activeUploadEntries = useMemo(() => Object.entries(activeUploads), [activeUploads]);
     const visibleOptimisticTrajectories = useMemo(() => {
         return optimisticTrajectories.filter((trajectory) => {
             const teamId = typeof trajectory.team === 'string' ? trajectory.team : trajectory.team?._id;
@@ -109,27 +113,50 @@ const SimulationGrid = () => {
         });
     }, [visibleOptimisticTrajectories, jobGroups, patchTrajectory]);
 
-    const fetchData = useCallback(async (params: PaginationParams & SimulationGridContext): Promise<PaginatedResponse<Trajectory>> => {
+    const fetchData = useCallback(async (params: PaginationParams & SimulationGridContext): Promise<PaginatedResponse<SimulationGridItem>> => {
         const result = await getTrajectories({ page: params.page, limit: params.limit });
-        const optimisticTrajectoryIds = new Set(visibleOptimisticTrajectories.map((trajectory) => trajectory._id));
+        const optimisticIds = new Set(visibleOptimisticTrajectories.map((t) => t._id));
+
+        const items: SimulationGridItem[] = result.data
+            .filter((t) => !optimisticIds.has(t._id))
+            .map((trajectory) => ({ kind: 'trajectory', _id: trajectory._id, trajectory }));
 
         return {
             status: 'success',
-            data: result.data.filter((trajectory) => !optimisticTrajectoryIds.has(trajectory._id)),
+            data: items,
             pagination: result.pagination
         };
     }, [getTrajectories, visibleOptimisticTrajectories]);
+
+    const transformData = useCallback((data: SimulationGridItem[]): SimulationGridItem[] => {
+        const uploadItems: SimulationGridItem[] = Object.entries(activeUploads).map(
+            ([id, upload]) => ({ kind: 'upload', _id: `upload-${id}`, progress: upload.progress, status: upload.status })
+        );
+        const optimisticItems: SimulationGridItem[] = visibleOptimisticTrajectories.map(
+            (trajectory) => ({ kind: 'optimistic', _id: `optimistic-${trajectory._id}`, trajectory })
+        );
+        return [...uploadItems, ...optimisticItems, ...data];
+    }, [activeUploads, visibleOptimisticTrajectories]);
 
     const handleHideItem = useCallback((id: string) => {
         hideItemRef.current?.(id);
     }, []);
 
-    const renderGridItem = useCallback((item: Trajectory) => {
+    const renderGridItem = useCallback((item: SimulationGridItem) => {
+        if(item.kind === 'upload'){
+            return (
+                <SimulationSkeletonCard
+                    key={item._id}
+                    progress={item.progress}
+                    status={item.status}
+                />
+            );
+        }
         return (
             <SimulationCard
                 key={item._id}
-                trajectory={item}
-                isSelected={isSelected(item._id)}
+                trajectory={item.trajectory}
+                isSelected={isSelected(item.trajectory._id)}
                 onSelect={toggleSelection}
                 onDelete={handleHideItem}
             />
@@ -139,27 +166,6 @@ const SimulationGrid = () => {
     const renderGridSkeleton = useCallback(() => (
         <SimulationSkeletonCard />
     ), []);
-
-    const prependItems = useMemo(() => (
-        <>
-            {activeUploadEntries.map(([id, upload]: [string, TrajectoryUploadState]) => (
-                <SimulationSkeletonCard
-                    key={`upload-${id}`}
-                    progress={upload.progress}
-                    status={upload.status}
-                />
-            ))}
-            {visibleOptimisticTrajectories.map((trajectory) => (
-                <SimulationCard
-                    key={`optimistic-${trajectory._id}`}
-                    trajectory={trajectory}
-                    isSelected={isSelected(trajectory._id)}
-                    onSelect={toggleSelection}
-                    onDelete={handleHideItem}
-                />
-            ))}
-        </>
-    ), [activeUploadEntries, visibleOptimisticTrajectories, isSelected, toggleSelection, handleHideItem]);
 
     const emptyStateConfig = useMemo(() => {
         if (samplesDownloaded) {
@@ -182,11 +188,11 @@ const SimulationGrid = () => {
     }, [samplesDownloaded, handleDownloadSamples]);
 
     return (
-        <DocumentListing<Trajectory, SimulationGridContext>
+        <DocumentListing<SimulationGridItem, SimulationGridContext>
             title='Simulations'
             view='grid'
             fetchData={fetchData}
-            prependItems={prependItems}
+            transformData={transformData}
             context={{ teamId: selectedTeam._id }}
             renderGridItem={renderGridItem}
             hideHeader={true}
