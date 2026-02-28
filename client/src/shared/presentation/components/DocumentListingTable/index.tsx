@@ -129,6 +129,9 @@ const DocumentListingTable = <T extends Identifiable>({
 
         setSelectedIds((prev) => {
             if (!isMultiSelection) {
+                if (prev.size === 1 && prev.has(item._id)) {
+                    return new Set();
+                }
                 return new Set([item._id]);
             }
 
