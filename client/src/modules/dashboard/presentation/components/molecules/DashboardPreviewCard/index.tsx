@@ -81,7 +81,7 @@ const DashboardPreviewCard: React.FC = () => {
             <Container className='dashboard-preview-card'>
                 <EmptyState
                     icon={<PiAtomThin size={32} />}
-                    title='Molecular Preview'
+                    title='Simulation Preview'
                     description='Upload and process a trajectory file to see a real-time 3D visualization of your atomic structures here.'
                 />
             </Container>
