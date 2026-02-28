@@ -6,6 +6,7 @@ import SimulationSkeletonCard from '../../atoms/SimulationSkeletonCard';
 import useTrajectoryStore from '../../../stores/use-trajectory-store';
 import useGetTrajectories from '../../../hooks/trajectory/use-get-trajectories';
 import useDeleteSelectedTrajectories from '../../../hooks/trajectory/use-delete-selected-trajectories';
+import useDownloadSamples from '../../../hooks/trajectory/use-download-samples';
 import useSelectionParams from '@/shared/presentation/hooks/use-selection-params';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
@@ -50,7 +51,7 @@ const SimulationGrid = () => {
     const hideItemRef = useRef<((id: string) => void) | null>(null);
 
     const [samplesDownloaded, setSamplesDownloaded] = useState(false);
-    const [isDownloading, setIsDownloading] = useState(false);
+    const { downloadAllSamples, isDownloading } = useDownloadSamples();
 
     const activeUploadEntries = useMemo(() => Object.entries(activeUploads), [activeUploads]);
     const visibleOptimisticTrajectories = useMemo(() => {
@@ -74,17 +75,13 @@ const SimulationGrid = () => {
     }, [selectedIds.length, deleteSelectedTrajectories]);
 
     const handleDownloadSamples = useCallback(async () => {
-        setIsDownloading(true);
         try{
-            // TODO: Implement trajectoryApi.downloadAllSamples() when trajectory API is migrated
-            // await trajectoryApi.downloadAllSamples();
+            await downloadAllSamples();
             setSamplesDownloaded(true);
         }catch{
             console.error('Failed to download sample simulations');
-        }finally{
-            setIsDownloading(false);
         }
-    }, []);
+    }, [downloadAllSamples]);
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
