@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RiWifiLine, RiEditLine } from 'react-icons/ri';
 import { LuFolderOpen } from 'react-icons/lu';
 import { formatDistanceToNow } from 'date-fns';
-import DocumentListing, { type ColumnConfig, type ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import useToast from '@/shared/presentation/hooks/use-toast';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
@@ -11,6 +11,8 @@ import { useSSHUseCases } from '@/modules/ssh/presentation/hooks';
 import SSHConnectionModal, { SSH_CONNECTION_MODAL_ID } from '../../molecules/SSHConnectionModal';
 import { openModal } from '@/shared/presentation/components/Modal';
 import type { SSHConnection } from '@/modules/ssh/domain/entities';
+
+const LIST_SYNC = createListSyncConfig('ssh-connection');
 
 const SSHConnectionsPage = () => {
     const navigate = useNavigate();
@@ -125,13 +127,6 @@ const SSHConnectionsPage = () => {
         }
     ], []);
 
-    const listSyncConfig: ListSyncConfig = useMemo(() => ({
-        events: [
-            { event: 'ssh-connection.created', action: 'created' },
-            { event: 'ssh-connection.deleted', action: 'deleted', getId: (p) => p.sshConnectionId }
-        ]
-    }), []);
-
     return (
         <>
             <DocumentListing<SSHConnection>
@@ -145,7 +140,7 @@ const SSHConnectionsPage = () => {
                     buttonTitle: 'Add Connection',
                     onCreate: handleCreateNew
                 }}
-                listSyncConfig={listSyncConfig}
+                listSyncConfig={LIST_SYNC}
             />
             <SSHConnectionModal
                 connection={editingConnection}

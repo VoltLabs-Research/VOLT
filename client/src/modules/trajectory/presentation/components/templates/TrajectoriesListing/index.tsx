@@ -1,14 +1,15 @@
-import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiTableLine } from 'react-icons/ri';
 import { formatDistanceToNow } from 'date-fns';
 import useGetTrajectories from '../../../hooks/trajectory/use-get-trajectories';
 import useDeleteTrajectory from '../../../hooks/trajectory/use-delete-trajectory';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import DocumentListing, { type ColumnConfig, type ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { formatNumber, formatSize } from '@/shared/utils/format';
 import type { Trajectory } from '@/modules/trajectory/domain/entities';
+
+const LIST_SYNC = createListSyncConfig('trajectory', ['created', 'deleted', 'updated']);
 
 const COLUMNS: ColumnConfig[] = [
     {
@@ -91,14 +92,6 @@ const TrajectoriesListing = () => {
         }
     });
 
-    const listSyncConfig: ListSyncConfig = useMemo(() => ({
-        events: [
-            { event: 'trajectory.created', action: 'created' },
-            { event: 'trajectory.deleted', action: 'deleted', getId: (p) => p.trajectoryId },
-            { event: 'trajectory.updated', action: 'updated', getId: (p) => p.trajectoryId }
-        ]
-    }), []);
-
     return (
         <DocumentListing<Trajectory>
             title='Trajectories'
@@ -107,7 +100,7 @@ const TrajectoriesListing = () => {
             defaultLimit={20}
             getMenuOptions={getMenuOptions}
             emptyMessage='No trajectories found'
-            listSyncConfig={listSyncConfig}
+            listSyncConfig={LIST_SYNC}
         />
     );
 };

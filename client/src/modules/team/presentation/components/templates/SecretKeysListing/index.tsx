@@ -1,11 +1,11 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { PiKeyLight } from 'react-icons/pi';
 import { RiFileCopyLine, RiShieldKeyholeLine } from 'react-icons/ri';
 import { formatDistanceToNow } from 'date-fns';
 import useGetSecretKeys from '@/modules/team/presentation/hooks/secret-key/use-get-secret-keys';
 import useRevokeSecretKey from '@/modules/team/presentation/hooks/secret-key/use-revoke-secret-key';
 import useDeleteSecretKey from '@/modules/team/presentation/hooks/secret-key/use-delete-secret-key';
-import DocumentListing, { type ColumnConfig, type ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { openModal } from '@/shared/presentation/components/Modal';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
@@ -14,6 +14,8 @@ import SecretKeyCreationModal, { SECRET_KEY_CREATION_MODAL_ID } from '../../orga
 import type { SecretKey } from '@/modules/team/domain/entities';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import './SecretKeysListing.css';
+
+const LIST_SYNC = createListSyncConfig('secret-key');
 
 const COLUMNS: ColumnConfig[] = [
     {
@@ -126,13 +128,6 @@ const SecretKeysListing = () => {
     // Quick shortcut for opening modal
     useKeyboardShortcut('n', handleCreateKey);
 
-    const listSyncConfig: ListSyncConfig = useMemo(() => ({
-        events: [
-            { event: 'secret-key.created', action: 'created' },
-            { event: 'secret-key.deleted', action: 'deleted', getId: (p) => p.secretKeyId }
-        ]
-    }), []);
-
     return (
         <>
             <DocumentListing<SecretKey>
@@ -150,7 +145,7 @@ const SecretKeysListing = () => {
                     buttonTitle: 'Create new',
                     onCreate: handleCreateKey
                 }}
-                listSyncConfig={listSyncConfig}
+                listSyncConfig={LIST_SYNC}
             />
 
             <SecretKeyCreationModal />

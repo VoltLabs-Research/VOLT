@@ -3,7 +3,7 @@ import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 
 type SyncAction = 'created' | 'deleted' | 'updated';
 
-export interface ListSyncEventConfig {
+interface ListSyncEventConfig {
     /** Socket event name, e.g. 'trajectory.created' */
     event: string;
     /** What kind of mutation this event represents */
@@ -33,6 +33,32 @@ export interface ListSyncConfig {
     /** Whether sync is active (defaults to true) */
     enabled?: boolean;
 }
+
+/**
+ * Creates a ListSyncConfig from an entity name and desired actions.
+ *
+ * Derives event names and getId extractors automatically:
+ *   - event names: `${entityName}.${action}` (e.g. 'trajectory.created')
+ *   - getId: reads `payload[camelCaseEntityId]` (e.g. payload.trajectoryId, payload.sshConnectionId)
+ *
+ * @example
+ *   createListSyncConfig('trajectory', ['created', 'deleted', 'updated'])
+ *   createListSyncConfig('ssh-connection')  // defaults to ['created', 'deleted']
+ */
+export const createListSyncConfig = (
+    entityName: string,
+    actions: SyncAction[] = ['created', 'deleted']
+): ListSyncConfig => {
+    const idKey = entityName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()) + 'Id';
+
+    return {
+        events: actions.map((action) => ({
+            event: `${entityName}.${action}`,
+            action,
+            ...(action !== 'created' ? { getId: (p: any) => p[idKey] } : {})
+        }))
+    };
+};
 
 interface UseListSyncOptions<T> {
     config: ListSyncConfig | undefined;

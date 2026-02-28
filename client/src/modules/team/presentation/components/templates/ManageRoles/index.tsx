@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { RiDeleteBin6Line, RiEditLine, RiEyeLine } from 'react-icons/ri';
 import { IoShieldCheckmarkOutline } from 'react-icons/io5';
 import { formatDistanceToNow } from 'date-fns';
 import Container from '@/shared/presentation/components/Container';
-import DocumentListing from '@/shared/presentation/components/DocumentListing';
-import type { ColumnConfig, MenuOption, ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
+import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import RoleEditorModal, { openRoleEditorModal } from '../../organisms/RoleEditorModal';
 import type { RoleEditorPayload } from '../../organisms/RoleEditorModal';
@@ -16,6 +16,8 @@ import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { GetTeamRolesParams } from '@/modules/team/domain/ports/ITeamRoleRepository';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
 import type { RBACResource, RBACAction } from '@/modules/system/domain/entities';
+
+const LIST_SYNC = createListSyncConfig('team-role', ['created', 'deleted', 'updated']);
 
 const COLUMNS: ColumnConfig[] = [
     {
@@ -77,14 +79,6 @@ const ManageRolesTemplate: React.FC = () => {
 
     const { teamRoleRepository } = useTeamRoleUseCases();
     const { systemRepository } = useSystemUseCases();
-
-    const listSyncConfig: ListSyncConfig = useMemo(() => ({
-        events: [
-            { event: 'team-role.created', action: 'created' },
-            { event: 'team-role.deleted', action: 'deleted', getId: (p) => p.teamRoleId },
-            { event: 'team-role.updated', action: 'updated', getId: (p) => p.teamRoleId }
-        ]
-    }), []);
 
     useEffect(() => {
         let cancelled = false;
@@ -205,7 +199,7 @@ const ManageRolesTemplate: React.FC = () => {
                     buttonTitle: 'New Role',
                     onCreate: handleOpenCreate
                 }}
-                listSyncConfig={listSyncConfig}
+                listSyncConfig={LIST_SYNC}
             />
 
             <RoleEditorModal

@@ -1,14 +1,16 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RiRefreshLine } from 'react-icons/ri';
 import useAnalysisUseCases from '../../../hooks/use-analysis-use-cases';
 import useDeleteAnalysis from '../../../hooks/use-delete-analysis';
 import useRetryFailedFrames from '../../../hooks/use-retry-failed-frames';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import DocumentListing, { type ColumnConfig, type ListSyncConfig } from '@/shared/presentation/components/DocumentListing';
+import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import type { Analysis } from '@/modules/analysis/domain/entities';
 import { dateColumn } from '@/shared/presentation/utils/column-presets';
+
+const LIST_SYNC = createListSyncConfig('analysis');
 
 const COLUMNS: ColumnConfig[] = [
     {
@@ -78,13 +80,6 @@ const AnalysesListing = () => {
 
     const columns: ColumnConfig[] = COLUMNS;
 
-    const listSyncConfig: ListSyncConfig = useMemo(() => ({
-        events: [
-            { event: 'analysis.created', action: 'created' },
-            { event: 'analysis.deleted', action: 'deleted', getId: (p) => p.analysisId }
-        ]
-    }), []);
-
     return (
         <DocumentListing<Analysis>
             title='Analyses'
@@ -93,7 +88,7 @@ const AnalysesListing = () => {
             defaultLimit={20}
             getMenuOptions={getMenuOptions}
             emptyMessage='No analyses found'
-            listSyncConfig={listSyncConfig}
+            listSyncConfig={LIST_SYNC}
         />
     );
 };

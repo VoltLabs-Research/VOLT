@@ -102,7 +102,8 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
     const stableFetchData = useCallback(() => fetchDataAsync(), [fetchDataAsync]);
     const stableInitialFetchParams = useMemo(() => ({ page: 1, limit }), [limit]);
     const stableOnLoadMore = useCallback((nextPage: number) => updateParams({ page: nextPage }), [updateParams]);
-    const stableOnReset = useCallback(() => {
+
+    const resetToFirstPage = useCallback(() => {
         setData([]);
         if (page === 1) {
             fetchDataAsync(true);
@@ -111,7 +112,7 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
         }
     }, [page, fetchDataAsync, updateParams]);
 
-    const { handleLoadMore: handleLoadMoreInternal } = useListingLifecycle({
+    const { handleLoadMore } = useListingLifecycle({
         data,
         isLoading,
         isFetchingMore: isLoading && page > 1,
@@ -126,21 +127,14 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
         resetDependencies: [contextSignature],
         onLoadMore: stableOnLoadMore,
         skipInitialFetch: !enabled,
-        onReset: stableOnReset
+        onReset: resetToFirstPage
     });
-
-    const handleLoadMore = handleLoadMoreInternal;
 
     const refresh = useCallback(() => {
         if(!isLoading){
-            if(page === 1){
-                fetchDataAsync(true);
-            }else{
-                setData([]);
-                updateParams({ page: 1 });
-            }
+            resetToFirstPage();
         }
-    }, [isLoading, page, fetchDataAsync, updateParams]);
+    }, [isLoading, resetToFirstPage]);
 
     const isFetchingMore = isLoading && page > 1;
 
