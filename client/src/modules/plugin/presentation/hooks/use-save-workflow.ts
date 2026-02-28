@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import usePluginUseCases from './use-plugin-use-cases';
 import usePluginStore from '../stores/use-plugin-store';
 import usePluginBuilderStore from '../stores/use-plugin-builder-store';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { Plugin } from '../../domain/entities';
 
 const useSaveWorkflow = () => {
@@ -22,20 +23,33 @@ const useSaveWorkflow = () => {
 
         try {
             const workflow = getWorkflow();
+            const isUpdate = !!currentPluginId;
+
+            const action = async () => {
+                if (currentPluginId) {
+                    return await pluginRepository.update({
+                        id: currentPluginId,
+                        workflow
+                    });
+                } else {
+                    return await pluginRepository.create({ workflow });
+                }
+            };
+
+            const plugin = await showPromise(action(), {
+                loading: { title: isUpdate ? 'Saving workflow...' : 'Creating workflow...' },
+                success: { title: isUpdate ? 'Workflow saved' : 'Workflow created' },
+                error: { title: 'Failed to save workflow' }
+            });
 
             if (currentPluginId) {
-                const plugin = await pluginRepository.update({
-                    id: currentPluginId,
-                    workflow
-                });
                 updatePluginInStore(currentPluginId, plugin);
-                return plugin;
             } else {
-                const plugin = await pluginRepository.create({ workflow });
                 addPlugin(plugin);
                 setCurrentPluginId(plugin._id);
-                return plugin;
             }
+
+            return plugin;
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to save workflow';
             setSaveError(message);

@@ -5,6 +5,8 @@ import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes } from './
 import ErrorBoundary from '@/shared/presentation/components/ErrorBoundary';
 import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorListener';
 import { buildErrorPath } from '@/shared/utils';
+import { Toaster } from 'sileo';
+import 'sileo/styles.css';
 
 const AppRoutes = () => {
     const navigate = useNavigate();
@@ -33,6 +35,19 @@ const App = () => {
     return (
         <BrowserRouter>
             <AppRoutes />
+            <Toaster
+                position="bottom-right"
+                theme="dark"
+                options={{
+                    fill: '#171717',
+                    styles: {
+                        title: 'text-white!',
+                        description: 'text-white/75!',
+                        badge: 'bg-white/10!',
+                        button: 'bg-white/10!'
+                    }
+                }}
+            />
         </BrowserRouter>
     );
 };

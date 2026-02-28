@@ -5,7 +5,7 @@ import { RiTerminalLine } from 'react-icons/ri';
 import { formatDistanceToNow } from 'date-fns';
 import useContainerUseCases from '../../../hooks/use-container-use-cases';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showError, showPromise } from '@/shared/presentation/hooks/toast';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
@@ -102,7 +102,6 @@ const COLUMNS: ColumnConfig[] = [
 
 const ContainersListing = () => {
     const navigate = useNavigate();
-    const { showSuccess, showError } = useToast();
     const [terminalContainer, setTerminalContainer] = useState<ContainerEntity | null>(null);
 
     const { containerRepository } = useContainerUseCases();
@@ -136,7 +135,7 @@ const ContainersListing = () => {
                     if(container.status === 'running'){
                         setTerminalContainer(container);
                     }else{
-                        showError('Container must be running to open terminal');
+                        showError({ title: 'Container must be running to open terminal' });
                     }
                 }
             },
@@ -145,12 +144,14 @@ const ContainersListing = () => {
                 icon: () => <Play size={16} />,
                 handler: async ({ item: container }) => {
                     if(container.status === 'running') return;
-                    try{
-                        await controlContainer(container._id, 'start');
-                        showSuccess('Container started successfully');
-                    }catch{
-                        showError('Failed to start container');
-                    }
+                    await showPromise(
+                        controlContainer(container._id, 'start'),
+                        {
+                            loading: { title: 'Starting container...' },
+                            success: { title: 'Container started successfully' },
+                            error: { title: 'Failed to start container' }
+                        }
+                    );
                 }
             },
             stop: {
@@ -158,31 +159,41 @@ const ContainersListing = () => {
                 icon: () => <Square size={16} />,
                 handler: async ({ item: container }) => {
                     if(container.status !== 'running') return;
-                    try{
-                        await controlContainer(container._id, 'stop');
-                        showSuccess('Container stopped successfully');
-                    }catch{
-                        showError('Failed to stop container');
-                    }
+                    await showPromise(
+                        controlContainer(container._id, 'stop'),
+                        {
+                            loading: { title: 'Stopping container...' },
+                            success: { title: 'Container stopped successfully' },
+                            error: { title: 'Failed to stop container' }
+                        }
+                    );
                 }
             },
             restart: {
                 label: 'Restart',
                 icon: () => <RotateCcw size={16} />,
                 handler: async ({ item: container }) => {
-                    try{
-                        await controlContainer(container._id, 'restart');
-                        showSuccess('Container restarted successfully');
-                    }catch{
-                        showError('Failed to restart container');
-                    }
+                    await showPromise(
+                        controlContainer(container._id, 'restart'),
+                        {
+                            loading: { title: 'Restarting container...' },
+                            success: { title: 'Container restarted successfully' },
+                            error: { title: 'Failed to restart container' }
+                        }
+                    );
                 }
             },
             delete: {
                 variant: 'danger',
                 handler: async ({ item: container }) => {
-                    await deleteContainer(container._id);
-                    showSuccess('Container deleted successfully');
+                    await showPromise(
+                        deleteContainer(container._id),
+                        {
+                            loading: { title: 'Deleting container...' },
+                            success: { title: 'Container deleted successfully' },
+                            error: { title: 'Failed to delete container' }
+                        }
+                    );
                 },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1

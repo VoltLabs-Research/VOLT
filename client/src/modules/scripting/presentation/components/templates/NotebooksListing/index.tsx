@@ -11,7 +11,7 @@ import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import Container from '@/shared/presentation/components/Container';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showError, showPromise } from '@/shared/presentation/hooks/toast';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import './NotebooksListing.css';
 
@@ -91,7 +91,6 @@ const COLUMNS: ColumnConfig[] = [
 
 const NotebooksListing = () => {
     const navigate = useNavigate();
-    const { showError, showSuccess } = useToast();
     const teamId = useTeamStore((state) => state.selectedTeam?._id);
 
     const fetchData = useCallback(async (params: PaginationParams): Promise<PaginatedResponse<NotebookDocument>> => {
@@ -116,10 +115,10 @@ const NotebooksListing = () => {
                 data: documents
             };
         } catch (error) {
-            showError('Failed to fetch notebooks');
+            showError({ title: 'Failed to fetch notebooks' });
             return emptyPaginatedResponse(params);
         }
-    }, [teamId, showError]);
+    }, [teamId]);
 
     const { getMenuOptions } = useListingActions<NotebookDocument>({
         actions: {
@@ -129,7 +128,7 @@ const NotebooksListing = () => {
                 handler: ({ item: notebook }) => {
                     const trajectoryId = getTrajectoryIds(notebook as ScriptingNotebookDTO)[0];
                     if (!trajectoryId) {
-                        showError('This notebook has no associated trajectory.');
+                        showError({ title: 'This notebook has no associated trajectory.' });
                         return;
                     }
 
@@ -140,8 +139,14 @@ const NotebooksListing = () => {
                 variant: 'danger',
                 handler: async ({ item: notebook }) => {
                     const scriptingRepository = container.resolve<IScriptingRepository>(SCRIPTING_TOKENS.ScriptingRepository);
-                    await scriptingRepository.deleteScriptingNotebook(notebook._id);
-                    showSuccess('Notebook deleted successfully');
+                    await showPromise(
+                        scriptingRepository.deleteScriptingNotebook(notebook._id),
+                        {
+                            loading: { title: 'Deleting notebook...' },
+                            success: { title: 'Notebook deleted successfully' },
+                            error: { title: 'Failed to delete notebook' }
+                        }
+                    );
                 },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1

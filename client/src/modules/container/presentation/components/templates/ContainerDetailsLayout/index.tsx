@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
 import useContainerUseCases from '../../../hooks/use-container-use-cases';
 import useContainerStats from '../../../hooks/use-container-stats';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showError, showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import Container from '@/shared/presentation/components/Container';
 import ContainerSidebar from '../../molecules/ContainerSidebar';
@@ -14,7 +14,6 @@ import './ContainerDetailsLayout.css';
 const ContainerDetailsLayout = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { showSuccess, showError } = useToast();
     const { containerRepository } = useContainerUseCases();
 
     const [container, setContainer] = useState<ContainerEntity | null>(null);
@@ -44,7 +43,7 @@ const ContainerDetailsLayout = () => {
         }finally{
             setIsLoading(false);
         }
-    }, [id, containerRepository, showError]);
+    }, [id, containerRepository]);
 
     useEffect(() => {
         fetchContainer();
@@ -61,17 +60,27 @@ const ContainerDetailsLayout = () => {
                     setActionLoading(false);
                     return;
                 }
-                await containerRepository.delete(id);
-                showSuccess('Container deleted');
+                await showPromise(
+                    containerRepository.delete(id),
+                    {
+                        loading: { title: 'Deleting container...' },
+                        success: { title: 'Container deleted' },
+                        error: { title: 'Failed to delete container' }
+                    }
+                );
                 navigate('/dashboard/containers');
                 return;
             }
 
-            const updated = await containerRepository.update(id, { action });
+            const updated = await showPromise(
+                containerRepository.update(id, { action }),
+                {
+                    loading: { title: `${action.charAt(0).toUpperCase() + action.slice(1)}ing container...` },
+                    success: { title: `Container ${action}ed successfully` },
+                    error: { title: `Failed to ${action} container` }
+                }
+            );
             setContainer(updated);
-            showSuccess(`Container ${action}ed successfully`);
-        }catch(error: any){
-            showError(error?.message || `Failed to ${action} container`);
         }finally{
             setActionLoading(false);
         }
@@ -79,24 +88,28 @@ const ContainerDetailsLayout = () => {
 
     const handleUpdateEnv = async (env: EnvVariable[]) => {
         if(!id) return;
-        try{
-            const updated = await containerRepository.update(id, { env });
-            setContainer(updated);
-            showSuccess('Environment variables updated');
-        }catch(error: any){
-            showError(error?.message || 'Failed to update environment variables');
-        }
+        const updated = await showPromise(
+            containerRepository.update(id, { env }),
+            {
+                loading: { title: 'Updating environment variables...' },
+                success: { title: 'Environment variables updated' },
+                error: { title: 'Failed to update environment variables' }
+            }
+        );
+        setContainer(updated);
     };
 
     const handleUpdatePorts = async (ports: PortMapping[]) => {
         if(!id) return;
-        try{
-            const updated = await containerRepository.update(id, { ports });
-            setContainer(updated);
-            showSuccess('Port bindings updated - container will be recreated');
-        }catch(error: any){
-            showError(error?.message || 'Failed to update ports');
-        }
+        const updated = await showPromise(
+            containerRepository.update(id, { ports }),
+            {
+                loading: { title: 'Updating port bindings...' },
+                success: { title: 'Port bindings updated - container will be recreated' },
+                error: { title: 'Failed to update ports' }
+            }
+        );
+        setContainer(updated);
     };
 
     if(isLoading && !container){

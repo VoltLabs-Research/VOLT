@@ -10,7 +10,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import useRetryFailedFrames from '@/modules/analysis/presentation/hooks/use-retry-failed-frames';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showError, showPromise } from '@/shared/presentation/hooks/toast';
 import '@/modules/jobs/presentation/components/atoms/JobQueue/JobQueue.css';
 
 const statusConfig = {
@@ -50,28 +50,30 @@ const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => 
     const isFailed = job.status === 'failed';
     const isAnalysisJob = job.queueType === 'analysis';
     const retryFailedFrames = useRetryFailedFrames();
-    const { showSuccess, showError, showInfo } = useToast();
 
     const analysisId = job.jobId?.split('-').slice(0, -1).join('-');
 
     const handleRetry = async () => {
         if (!analysisId) {
-            showError('Cannot retry: Invalid job ID');
+            showError({ title: 'Cannot retry: Invalid job ID' });
             return;
         }
 
         try {
-            const response = await retryFailedFrames(analysisId);
-            if (response.retriedFrames === 0) {
-                showInfo('No failed frames found to retry');
-            } else {
-                showSuccess(
-                    `Queued ${response.retriedFrames} failed frame${response.retriedFrames > 1 ? 's' : ''} for retry`
-                );
-            }
+            await showPromise(
+                retryFailedFrames(analysisId),
+                {
+                    loading: { title: 'Retrying failed frames...' },
+                    success: (response) => ({
+                        title: response.retriedFrames === 0
+                            ? 'No failed frames found to retry'
+                            : `Queued ${response.retriedFrames} failed frame${response.retriedFrames > 1 ? 's' : ''} for retry`
+                    }),
+                    error: { title: 'Failed to retry frames' }
+                }
+            );
         } catch (e: any) {
             console.error('Failed to retry frames', e);
-            showError(e?.response?.data?.message || 'Failed to retry frames');
         }
     };
 

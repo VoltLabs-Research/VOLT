@@ -13,12 +13,12 @@ import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store'
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import { useTeamMemberStore } from '@/modules/team/presentation/stores/use-team-member-store';
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
-import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
 import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import useTeamRoleData from '@/modules/team/presentation/hooks/team-role/use-team-role-data';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
 import useTeamMemberUseCases from '@/modules/team/presentation/hooks/team-member/use-team-member-use-cases';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { GetTeamMembersParams } from '@/modules/team/domain/ports/ITeamMemberRepository';
 import type { TeamMember } from '@/modules/team/domain/entities/TeamMember';
@@ -63,7 +63,14 @@ const MyTeamTemplate: React.FC = () => {
 
     const handleSaveTeamName = useCallback(async (newName: string) => {
         try{
-            await teamRepository.update(selectedTeam._id, { name: newName });
+            await showPromise(
+                teamRepository.update(selectedTeam._id, { name: newName }),
+                {
+                    loading: { title: 'Updating team name...' },
+                    success: { title: 'Team name updated' },
+                    error: { title: 'Failed to update team name' }
+                }
+            );
             updateTeamInList(selectedTeam._id, { name: newName });
         }catch(err){
             console.error('Failed to update team name:', err);
@@ -72,7 +79,14 @@ const MyTeamTemplate: React.FC = () => {
 
     const handleRoleChange = useCallback(async (memberId: string, roleId: string) => {
         try{
-            const updated = await teamMemberRepository.update(selectedTeam._id, memberId, { role: roleId });
+            const updated = await showPromise(
+                teamMemberRepository.update(selectedTeam._id, memberId, { role: roleId }),
+                {
+                    loading: { title: 'Updating role...' },
+                    success: { title: 'Member role updated' },
+                    error: { title: 'Failed to update role' }
+                }
+            );
             updateMember(memberId, updated);
         }catch(err){
             console.error('Failed to update role:', err);
@@ -91,7 +105,14 @@ const MyTeamTemplate: React.FC = () => {
 
         for (const member of members) {
             try{
-                await teamMemberRepository.remove(selectedTeam._id, member.user._id);
+                await showPromise(
+                    teamMemberRepository.remove(selectedTeam._id, member.user._id),
+                    {
+                        loading: { title: `Removing ${member.user.firstName}...` },
+                        success: { title: `${member.user.firstName} removed from team` },
+                        error: { title: `Failed to remove ${member.user.firstName}` }
+                    }
+                );
                 removeMemberFromStore(member._id);
             }catch(err){
                 console.error('Failed to remove member:', err);

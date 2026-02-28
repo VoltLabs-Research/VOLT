@@ -4,6 +4,7 @@ import FormField from '@/shared/presentation/components/FormField';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import useForm from '@/shared/presentation/hooks/use-form';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { teamCreatorSchema, TeamCreatorForm } from './validation-schema';
@@ -36,10 +37,17 @@ const TeamCreatorModal: React.FC<TeamCreatorModalProps> = ({
         onSubmit: async (data) => {
             setApiError(null);
             try{
-                const team = await createTeamUseCase.execute({
-                    name: data.name.trim(),
-                    description: data.description.trim() || undefined
-                });
+                const team = await showPromise(
+                    createTeamUseCase.execute({
+                        name: data.name.trim(),
+                        description: data.description.trim() || undefined
+                    }),
+                    {
+                        loading: { title: 'Creating team...' },
+                        success: { title: 'Team created successfully' },
+                        error: { title: 'Failed to create team' }
+                    }
+                );
                 addTeam(team);
                 reset();
                 closeModal(MODAL_ID);

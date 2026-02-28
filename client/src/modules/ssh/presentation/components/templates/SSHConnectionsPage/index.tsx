@@ -5,7 +5,7 @@ import { LuFolderOpen } from 'react-icons/lu';
 import { formatDistanceToNow } from 'date-fns';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
 import { useSSHUseCases } from '@/modules/ssh/presentation/hooks';
 import SSHConnectionModal, { SSH_CONNECTION_MODAL_ID } from '../../molecules/SSHConnectionModal';
@@ -16,7 +16,6 @@ const LIST_SYNC = createListSyncConfig('ssh-connection');
 
 const SSHConnectionsPage = () => {
     const navigate = useNavigate();
-    const { showSuccess, showError } = useToast();
     const { sshRepository } = useSSHUseCases();
 
     const [editingConnection, setEditingConnection] = useState<SSHConnection | null>(null);
@@ -35,17 +34,23 @@ const SSHConnectionsPage = () => {
 
     const handleTestConnection = useCallback(async (connection: SSHConnection) => {
         try {
-            const result = await sshRepository.testConnection(connection._id);
-            if (result.valid) {
-                showSuccess(`Connection to "${connection.name}" successful!`);
-                return;
-            }
-            showError(result.error || 'Unknown error');
-        } catch (err: unknown) {
-            const error = err as Error;
-            showError(error.message);
+            const result = await showPromise(
+                sshRepository.testConnection(connection._id),
+                {
+                    loading: { title: `Testing connection to "${connection.name}"...` },
+                    success: (data) => ({
+                        title: data.valid
+                            ? `Connection to "${connection.name}" successful!`
+                            : (data.error || 'Unknown error')
+                    }),
+                    error: { title: 'Connection test failed' }
+                }
+            );
+            return result;
+        } catch {
+            // Error already shown by showPromise
         }
-    }, [sshRepository, showSuccess, showError]);
+    }, [sshRepository]);
 
     const handleEditConnection = useCallback((connection: SSHConnection) => {
         setEditingConnection(connection);
@@ -54,9 +59,15 @@ const SSHConnectionsPage = () => {
     }, []);
 
     const handleDeleteConnection = useCallback(async (connection: SSHConnection) => {
-        await sshRepository.deleteConnection(connection._id);
-        showSuccess(`Connection "${connection.name}" deleted`);
-    }, [sshRepository, showSuccess]);
+        await showPromise(
+            sshRepository.deleteConnection(connection._id),
+            {
+                loading: { title: `Deleting "${connection.name}"...` },
+                success: { title: `Connection "${connection.name}" deleted` },
+                error: { title: 'Failed to delete connection' }
+            }
+        );
+    }, [sshRepository]);
 
     const handleCreateNew = useCallback(() => {
         setEditingConnection(null);

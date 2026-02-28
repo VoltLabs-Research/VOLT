@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
 import useParticleFilterUseCases from '@/modules/trajectory/presentation/hooks/particle-filter/use-particle-filter-use-cases';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 
 export type FilterOperator = '==' | '!=' | '>' | '>=' | '<' | '<=';
 export type FilterAction = 'delete' | 'highlight';
@@ -131,14 +132,21 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
 
         await applyAction.execute(async () => {
             const { filterParams } = previewResult;
-            await particleFilterRepository.applyAction({
-                trajectoryId, analysisId, timestep: currentTimestep,
-                property: filterParams.property,
-                operator: filterParams.operator,
-                value: filterParams.value,
-                exposureId: filterParams.exposureId,
-                action
-            });
+            await showPromise(
+                particleFilterRepository.applyAction({
+                    trajectoryId, analysisId, timestep: currentTimestep,
+                    property: filterParams.property,
+                    operator: filterParams.operator,
+                    value: filterParams.value,
+                    exposureId: filterParams.exposureId,
+                    action
+                }),
+                {
+                    loading: { title: 'Applying filter...' },
+                    success: { title: 'Filter applied successfully' },
+                    error: { title: 'Failed to apply filter' }
+                }
+            );
 
             setActiveScene({
                 sceneType: 'particle-filter',

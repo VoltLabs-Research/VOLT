@@ -7,6 +7,7 @@ import { formatDistanceToNow } from 'date-fns';
 import EditableTrajectoryName from '../EditableTrajectoryName';
 import useDeleteTrajectory from '../../../hooks/trajectory/use-delete-trajectory';
 import useConfirm from '@/shared/presentation/hooks/use-confirm';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import Loader from '@/shared/presentation/components/Loader';
@@ -46,7 +47,14 @@ const SimulationCardFooter = ({
         setIsDeleting(true);
         try{
             onDelete?.(trajectoryId);
-            await deleteTrajectory(trajectoryId);
+            await showPromise(
+                deleteTrajectory(trajectoryId),
+                {
+                    loading: { title: 'Deleting trajectory...' },
+                    success: { title: 'Trajectory deleted' },
+                    error: { title: 'Failed to delete trajectory' }
+                }
+            );
         }finally{
             setIsDeleting(false);
         }

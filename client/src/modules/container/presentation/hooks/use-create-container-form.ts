@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useContainerUseCases from './use-container-use-cases';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showError, showPromise } from '@/shared/presentation/hooks/toast';
 import { CONTAINER_TEMPLATES, type ContainerTemplate } from '../data/container-templates';
 
 const DEFAULT_CPU = 1;
@@ -46,7 +46,6 @@ export interface UseCreateContainerFormReturn{
 
 const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormReturn => {
     const navigate = useNavigate();
-    const { showSuccess, showError } = useToast();
     const { containerRepository } = useContainerUseCases();
     
     const teams = useTeamStore((state) => state.teams);
@@ -94,7 +93,7 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
 
     const setCustomImage = useCallback((image: string, goToConfigFn: () => void) => {
         if(!image.trim()){
-            showError('Please enter a valid image name');
+            showError({ title: 'Please enter a valid image name' });
             return;
         }
         setCustomImageState(image);
@@ -104,7 +103,7 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
             name: `custom-${Math.floor(Math.random() * 1000)}`
         }));
         goToConfigFn();
-    }, [showError]);
+    }, []);
 
     const getSelectedImage = useCallback(() => {
         return selectedTemplate
@@ -121,42 +120,45 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
         const template = getSelectedTemplate();
 
         if(!image){
-            showError('Please select a template or specify an image');
+            showError({ title: 'Please select a template or specify an image' });
             return;
         }
 
         if(!config.name){
-            showError('Please give your container a name');
+            showError({ title: 'Please give your container a name' });
             return;
         }
 
         if(!selectedTeamId){
-            showError('Please select a team for this container');
+            showError({ title: 'Please select a team for this container' });
             return;
         }
 
         setIsLoading(true);
         try{
-            await containerRepository.create({
-                name: config.name,
-                image,
-                memory: config.memory,
-                cpus: config.cpus,
-                ports: config.ports.filter((p) => p.private > 0),
-                env: config.env.filter((e) => e.key && e.value),
-                mountDockerSocket: config.mountDockerSocket,
-                useImageCmd: template?.useImageCmd,
-                cmd: template?.defaultCmd
-            });
-
-            showSuccess('Container created successfully');
+            await showPromise(
+                containerRepository.create({
+                    name: config.name,
+                    image,
+                    memory: config.memory,
+                    cpus: config.cpus,
+                    ports: config.ports.filter((p) => p.private > 0),
+                    env: config.env.filter((e) => e.key && e.value),
+                    mountDockerSocket: config.mountDockerSocket,
+                    useImageCmd: template?.useImageCmd,
+                    cmd: template?.defaultCmd
+                }),
+                {
+                    loading: { title: 'Creating container...' },
+                    success: { title: 'Container created successfully' },
+                    error: { title: 'Failed to create container' }
+                }
+            );
             navigate('/dashboard/containers');
-        }catch(error: any){
-            showError(error?.response?.data?.message || 'Failed to create container');
         }finally{
             setIsLoading(false);
         }
-    }, [config, selectedTeamId, getSelectedImage, getSelectedTemplate, containerRepository, showSuccess, showError, navigate]);
+    }, [config, selectedTeamId, getSelectedImage, getSelectedTemplate, containerRepository, navigate]);
 
     return {
         config,

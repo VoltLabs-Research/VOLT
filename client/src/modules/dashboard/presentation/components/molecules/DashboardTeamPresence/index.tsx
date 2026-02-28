@@ -51,7 +51,7 @@ const DashboardTeamPresence = () => {
         return (
             <Container className='dashboard-presence-card'>
                 <Container className='dashboard-presence-header'>
-                    <Title className='font-size-3 color-primary font-weight-5'>Team</Title>
+                    <Title className='font-size-3 color-primary font-weight-5'>{selectedTeam.name}</Title>
                 </Container>
                 <Container className='d-flex items-center gap-05' style={{ flexWrap: 'wrap' }}>
                     {Array.from({ length: 5 }, (_, i) => (
@@ -67,7 +67,7 @@ const DashboardTeamPresence = () => {
     return (
         <Container className='dashboard-presence-card'>
             <Container className='dashboard-presence-header'>
-                <Title className='font-size-3 color-primary font-weight-5'>Team</Title>
+                <Title className='font-size-3 color-primary font-weight-5'>{selectedTeam.name}</Title>
                 <Button
                     variant='ghost'
                     intent='neutral'

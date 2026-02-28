@@ -4,6 +4,7 @@ import { RiDeleteBin6Line, RiEyeLine } from 'react-icons/ri';
 import usePluginListingStore from '../stores/use-plugin-listing-store';
 import usePluginUseCases from './use-plugin-use-cases';
 import useDeleteAnalysis from '@/modules/analysis/presentation/hooks/use-delete-analysis';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
@@ -145,7 +146,13 @@ const usePluginListing = ({
         analysisIds.forEach((analysisId) => removeRowByAnalysisId(analysisId));
 
         try {
-            await Promise.all(analysisIds.map((analysisId) => deleteAnalysis(analysisId)));
+            await Promise.all(analysisIds.map((analysisId) =>
+                showPromise(deleteAnalysis(analysisId), {
+                    loading: { title: 'Deleting analysis...' },
+                    success: { title: 'Analysis deleted' },
+                    error: { title: 'Failed to delete analysis' }
+                })
+            ));
         } catch {
             reset();
         }

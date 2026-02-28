@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RiEditLine, RiFileCopyLine, RiDownloadLine, RiUploadLine } from 'react-icons/ri';
 import { usePluginUseCases, useDeletePlugin, useExportPlugin, useImportPlugin } from '../../../hooks';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Button from '@/shared/presentation/components/Button';
@@ -31,10 +32,17 @@ const PluginsListing = () => {
     }, [pluginRepository]);
 
     const handleClone = useCallback(async (item: Plugin) => {
-        const clonedPlugin = await clonePluginUseCase.execute({
-            pluginId: item._id,
-            teamId: selectedTeam._id
-        });
+        const clonedPlugin = await showPromise(
+            clonePluginUseCase.execute({
+                pluginId: item._id,
+                teamId: selectedTeam._id
+            }),
+            {
+                loading: { title: 'Cloning plugin...' },
+                success: { title: 'Plugin cloned' },
+                error: { title: 'Failed to clone plugin' }
+            }
+        );
         navigate(`/plugins/builder?id=${clonedPlugin._id}`);
     }, [clonePluginUseCase, selectedTeam._id, navigate]);
 
@@ -44,7 +52,11 @@ const PluginsListing = () => {
 
         setIsImporting(true);
         try{
-            await importPlugin(file);
+            await showPromise(importPlugin(file), {
+                loading: { title: 'Importing plugin...' },
+                success: { title: 'Plugin imported' },
+                error: { title: 'Failed to import plugin' }
+            });
         }finally{
             setIsImporting(false);
             importInputRef.current!.value = '';
@@ -69,7 +81,13 @@ const PluginsListing = () => {
                 handler: ({ item }) => exportPlugin(item._id, `${item.modifier?.name || item._id}.zip`)
             },
             delete: {
-                handler: ({ item }) => deletePlugin(item._id),
+                handler: async ({ item }) => {
+                    await showPromise(deletePlugin(item._id), {
+                        loading: { title: 'Deleting plugin...' },
+                        success: { title: 'Plugin deleted' },
+                        error: { title: 'Failed to delete plugin' }
+                    });
+                },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1
                         ? `Delete plugin "${selectedItems[0].modifier?.name || selectedItems[0]._id}"? This action cannot be undone.`

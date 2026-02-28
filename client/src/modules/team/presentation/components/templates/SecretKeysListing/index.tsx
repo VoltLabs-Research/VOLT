@@ -9,7 +9,7 @@ import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shar
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { openModal } from '@/shared/presentation/components/Modal';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showSuccess, showError, showPromise } from '@/shared/presentation/hooks/toast';
 import SecretKeyCreationModal, { SECRET_KEY_CREATION_MODAL_ID } from '../../organisms/SecretKeyCreationModal';
 import type { SecretKey } from '@/modules/team/domain/entities';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
@@ -62,22 +62,21 @@ const SecretKeysListing = () => {
     const getSecretKeys = useGetSecretKeys();
     const revokeSecretKey = useRevokeSecretKey();
     const deleteSecretKey = useDeleteSecretKey();
-    const { showSuccess, showError } = useToast();
 
     const copySecretKeyPrefix = useCallback(async (key: SecretKey) => {
         const keyPrefix = String(key.keyPrefix || '').trim();
         if (!keyPrefix) {
-            showError('No key prefix available to copy');
+            showError({ title: 'No key prefix available to copy' });
             return;
         }
 
         try {
             await navigator.clipboard.writeText(keyPrefix);
-            showSuccess('Key prefix copied to clipboard');
+            showSuccess({ title: 'Key prefix copied to clipboard' });
         } catch {
-            showError('Failed to copy key prefix');
+            showError({ title: 'Failed to copy key prefix' });
         }
-    }, [showSuccess, showError]);
+    }, []);
 
     const { getMenuOptions } = useListingActions<SecretKey>({
         actions: {
@@ -101,7 +100,11 @@ const SecretKeysListing = () => {
             delete: {
                 label: 'Delete',
                 handler: async ({ item: key }) => {
-                    await deleteSecretKey(key._id);
+                    await showPromise(deleteSecretKey(key._id), {
+                        loading: { title: `Deleting "${key.name}"...` },
+                        success: { title: `Secret key "${key.name}" deleted` },
+                        error: { title: 'Failed to delete secret key' }
+                    });
                 },
                 confirm: ({ selectedItems }) => (
                     selectedItems.length === 1

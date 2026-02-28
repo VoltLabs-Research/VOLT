@@ -4,6 +4,7 @@ import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import './EditableKeyValueCard.css';
 
 export interface FieldConfig {
@@ -63,7 +64,14 @@ const EditableKeyValueCard = <T extends Record<string, any>>({
 
     const handleSave = async () => {
         if (onSave) {
-            await onSave(localItems);
+            await showPromise(
+                () => onSave(localItems),
+                {
+                    loading: { title: 'Saving changes...' },
+                    success: { title: 'Changes saved' },
+                    error: { title: 'Failed to save changes' }
+                }
+            );
         }
         setEditing(false);
     };

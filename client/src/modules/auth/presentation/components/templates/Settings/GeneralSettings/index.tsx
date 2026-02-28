@@ -10,6 +10,7 @@ import { buildFileFormData } from '@/shared/utils/file';
 import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store';
 import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import { ProfileForm as ProfileFormType } from '@/modules/auth/presentation/components/organisms/ProfileForm/validation-schema';
 import { Trash2 } from 'lucide-react';
 
@@ -17,7 +18,6 @@ const GeneralSettings: React.FC = () => {
     const user = useCurrentUser();
     const setUser = useAuthStore((state) => state.setUser);
     const { authRepository } = useAuthUseCases();
-
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
     const handleAvatarUpload = useCallback(async (file: File) => {
@@ -26,7 +26,14 @@ const GeneralSettings: React.FC = () => {
         try{
             const formData = buildFileFormData([{ name: 'avatar', file }]);
 
-            const updatedUser = await authRepository.updateMe(formData);
+            const updatedUser = await showPromise(
+                authRepository.updateMe(formData),
+                {
+                    loading: { title: 'Uploading avatar...' },
+                    success: { title: 'Avatar updated' },
+                    error: { title: 'Failed to upload avatar' }
+                }
+            );
 
             setUser(updatedUser);
         }catch(error){
@@ -38,10 +45,17 @@ const GeneralSettings: React.FC = () => {
     }, [authRepository, setUser]);
 
     const handleProfileUpdate = useCallback(async (data: ProfileFormType) => {
-        const updatedUser = await authRepository.updateMe({
-            fullName: data.fullName,
-            email: data.email
-        });
+        const updatedUser = await showPromise(
+            authRepository.updateMe({
+                fullName: data.fullName,
+                email: data.email
+            }),
+            {
+                loading: { title: 'Updating profile...' },
+                success: { title: 'Profile updated' },
+                error: { title: 'Failed to update profile' }
+            }
+        );
         setUser(updatedUser);
     }, [authRepository, setUser]);
 

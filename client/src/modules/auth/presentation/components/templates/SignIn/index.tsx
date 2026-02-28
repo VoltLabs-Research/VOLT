@@ -12,6 +12,8 @@ import { signInSchema, SignInForm } from './validation-schema';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
 import { useAuthStore } from '../../../stores/use-auth-store';
 import { useNavigate } from 'react-router-dom';
+import { showSuccess, showError } from '@/shared/presentation/hooks/toast';
+import ApiError from '@/shared/errors/ApiError';
 import './SignIn.css';
 
 type Step = 'email' | 'password' | 'register';
@@ -61,14 +63,16 @@ const SignInTemplate = () => {
         if(form.errors.email){
             return;
         }
-        
-        const result = await authRepository.checkEmail(form.values.email);
-        if(result.exists){
-            goTo('password');
-            return;
+        try {
+            const result = await authRepository.checkEmail(form.values.email);
+            if(result.exists){
+                goTo('password');
+                return;
+            }
+            goTo('register');
+        } catch(err) {
+            showError({ title: 'Something went wrong', description: 'Could not verify email. Please try again.' });
         }
-      
-        goTo('register');
     };
 
     const handlePasswordStep = async () => {
@@ -76,13 +80,18 @@ const SignInTemplate = () => {
         if (form.errors.password) {
             return;
         }
-        
-        const result = await signInUseCase.execute({
-            email: form.values.email,
-            password: form.values.password
-        });
-        setUser(result.user);
-        finalizeAuth();
+        try {
+            const result = await signInUseCase.execute({
+                email: form.values.email,
+                password: form.values.password
+            });
+            setUser(result.user);
+            showSuccess({ title: 'Signed in successfully', description: `Welcome back, ${result.user.firstName || result.user.username}!` });
+            finalizeAuth();
+        } catch(err) {
+            const message = err instanceof ApiError ? err.getFriendlyMessage() : 'Please check your credentials and try again.';
+            showError({ title: 'Sign in failed', description: message });
+        }
     };
 
 
@@ -91,18 +100,23 @@ const SignInTemplate = () => {
         if (form.errors.fullName || form.errors.password || form.errors.passwordConfirm) {
             return;
         }
-        
-        const [firstName, ...rest] = form.values.fullName.trim().split(/\s+/);
-        const lastName = rest.join(' ');
-        const result = await signUpUseCase.execute({
-            email: form.values.email,
-            firstName,
-            lastName,
-            password: form.values.password,
-            passwordConfirm: form.values.passwordConfirm
-        });
-        setUser(result.user);
-        finalizeAuth();
+        try {
+            const [firstName, ...rest] = form.values.fullName.trim().split(/\s+/);
+            const lastName = rest.join(' ');
+            const result = await signUpUseCase.execute({
+                email: form.values.email,
+                firstName,
+                lastName,
+                password: form.values.password,
+                passwordConfirm: form.values.passwordConfirm
+            });
+            setUser(result.user);
+            showSuccess({ title: 'Account created', description: `Welcome, ${result.user.firstName || result.user.username}!` });
+            finalizeAuth();
+        } catch(err) {
+            const message = err instanceof ApiError ? err.getFriendlyMessage() : 'Please check your details and try again.';
+            showError({ title: 'Registration failed', description: message });
+        }
     };
 
     const handleSubmit = async (e?: React.FormEvent) => {

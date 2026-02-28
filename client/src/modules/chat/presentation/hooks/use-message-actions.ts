@@ -3,6 +3,7 @@ import { container } from 'tsyringe';
 import { useChatMessageStore } from '../stores';
 import { CHAT_TOKENS } from '@/modules/chat/infrastructure/di/tokens';
 import type IChatMessageRepository from '@/modules/chat/domain/ports/IChatMessageRepository';
+import { showPromise, showError } from '@/shared/presentation/hooks/toast';
 
 const useMessageActions = (chatId?: string) => {
     const addMessage = useChatMessageStore((state) => state.addMessage);
@@ -29,15 +30,26 @@ const useMessageActions = (chatId?: string) => {
     const sendFileMessage = useCallback(async (file: File) => {
         if (!chatId) return;
 
-        const message = await chatMessageRepository.sendFileMessage(chatId, file);
-        addMessage(message);
-        return message;
+        try {
+            const message = await chatMessageRepository.sendFileMessage(chatId, file);
+            addMessage(message);
+            return message;
+        } catch (error) {
+            showError({ title: 'Failed to send file' });
+        }
     }, [chatId, addMessage, chatMessageRepository]);
 
     const editMessage = useCallback(async (messageId: string, content: string) => {
         if (!chatId) return;
 
-        const message = await chatMessageRepository.editMessage(chatId, messageId, content);
+        const message = await showPromise(
+            chatMessageRepository.editMessage(chatId, messageId, content),
+            {
+                loading: { title: 'Saving changes...' },
+                success: { title: 'Message updated' },
+                error: { title: 'Failed to edit message' }
+            }
+        );
         updateMessage(messageId, message);
         return message;
     }, [chatId, updateMessage, chatMessageRepository]);
@@ -45,7 +57,14 @@ const useMessageActions = (chatId?: string) => {
     const deleteMessage = useCallback(async (messageId: string) => {
         if (!chatId) return;
 
-        await chatMessageRepository.deleteMessage(chatId, messageId);
+        await showPromise(
+            chatMessageRepository.deleteMessage(chatId, messageId),
+            {
+                loading: { title: 'Deleting message...' },
+                success: { title: 'Message deleted' },
+                error: { title: 'Failed to delete message' }
+            }
+        );
         updateMessage(messageId, { deleted: true });
     }, [chatId, updateMessage, chatMessageRepository]);
 

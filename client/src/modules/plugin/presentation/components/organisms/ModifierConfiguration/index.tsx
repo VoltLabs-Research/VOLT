@@ -9,7 +9,7 @@ import usePluginUseCases from '@/modules/plugin/presentation/hooks/use-plugin-us
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import useGetTrajectoryById from '@/modules/trajectory/presentation/hooks/trajectory/use-get-trajectory-by-id';
 import '@/modules/plugin/presentation/components/organisms/ModifierConfiguration/ModifierConfiguration.css';
 
@@ -46,7 +46,6 @@ const ModifierConfiguration = ({
     const getAvailableArguments = usePluginStore((state) => state.getPluginArguments);
     const plugins = usePluginStore((state) => state.plugins);
     const { pluginRepository } = usePluginUseCases();
-    const { showSuccess } = useToast();
 
     const trajectory = useTrajectoryStore((state) => state.trajectory);
     const { refetch: refetchTrajectory } = useGetTrajectoryById({ trajectoryId, enabled: false });
@@ -156,23 +155,29 @@ const ModifierConfiguration = ({
         setIsLoading(true);
         onAnalysisStart?.();
         try {
-            const response = await pluginRepository.execute({
-                pluginId: modifierId,
-                trajectoryId,
-                config,
-                selectedFrameOnly,
-                timestep: selectedFrameOnly ? currentTimestep : undefined
-            });
+            const response = await showPromise(
+                pluginRepository.execute({
+                    pluginId: modifierId,
+                    trajectoryId,
+                    config,
+                    selectedFrameOnly,
+                    timestep: selectedFrameOnly ? currentTimestep : undefined
+                }),
+                {
+                    loading: { title: 'Queuing analysis...' },
+                    success: { title: 'The analyses have been successfully queued. Be patient.' },
+                    error: { title: 'Analysis failed to start' }
+                }
+            );
             const analysisId = (response as any)?.analysisId;
             onAnalysisSuccess?.(analysisId);
         } catch (error) {
             console.error('Analysis failed:', error);
             onAnalysisError?.(error);
         } finally {
-            showSuccess('The analyses have been successfully queued. Be patient.');
             setIsLoading(false);
         }
-    }, [modifierId, trajectoryId, config, selectedFrameOnly, currentTimestep, onAnalysisStart, onAnalysisSuccess, onAnalysisError, pluginRepository, showSuccess]);
+    }, [modifierId, trajectoryId, config, selectedFrameOnly, currentTimestep, onAnalysisStart, onAnalysisSuccess, onAnalysisError, pluginRepository]);
 
     const displayTitle = title || modifierInfo?.displayName || 'Analysis Configuration';
 

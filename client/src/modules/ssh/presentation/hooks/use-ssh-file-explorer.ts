@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useSSHUseCases from './use-ssh-use-cases';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showError } from '@/shared/presentation/hooks/toast';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 import type { SSHConnection, SSHFileEntry } from '@/modules/ssh/domain/entities';
 
@@ -12,7 +12,6 @@ interface UseSSHFileExplorerOptions {
 const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const navigate = useNavigate();
-    const { showError } = useToast();
     const { sshRepository } = useSSHUseCases();
 
     const [connection, setConnection] = useState<SSHConnection | null>(null);
@@ -32,11 +31,11 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
             if (conn) {
                 setConnection(conn);
             } else {
-                showError('Connection not found');
+                showError({ title: 'Connection not found' });
                 navigate('/dashboard/ssh-connections');
             }
         } catch {
-            showError('Failed to load connection');
+            showError({ title: 'Failed to load connection' });
             navigate('/dashboard/ssh-connections');
         }
     };
@@ -45,7 +44,7 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
         onError: (err: unknown) => {
             const message = err instanceof Error ? err.message : 'Failed to load files';
             setError(message);
-            showError(message);
+            showError({ title: message });
         },
         onFinally: () => setIsLoading(false)
     });

@@ -7,7 +7,7 @@ import useAnalysisUseCases from '@/modules/analysis/presentation/hooks/use-analy
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 import useAnalysisStatus from './use-analysis-status';
 import useExposureManager, { type ExposureEntry, DEFAULT_ENTRY } from './use-exposure-manager';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 
 import type { Analysis } from '@/modules/analysis/domain/entities/Analysis';
 import { computeDifferingConfigFields } from '../utils/canvas-sidebar-scene.ts';
@@ -30,7 +30,6 @@ interface UseCanvasSidebarSceneProps {
 const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: UseCanvasSidebarSceneProps) => {
     const socketService = useSocket();
     const { getAnalysesByTrajectoryUseCase, deleteAnalysisUseCase } = useAnalysisUseCases();
-    const { showSuccess } = useToast();
 
     const trajectoryId = propTrajectoryId || trajectory?._id;
 
@@ -275,13 +274,19 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
     }, [setActiveScene, setAnalysisId]);
 
     const onDeleteAnalysis = useCallback(async (analysisId: string) => {
-        await deleteAnalysisUseCase.execute({ id: analysisId });
+        await showPromise(
+            deleteAnalysisUseCase.execute({ id: analysisId }),
+            {
+                loading: { title: 'Deleting analysis...' },
+                success: { title: 'Analysis deleted successfully' },
+                error: { title: 'Failed to delete analysis' }
+            }
+        );
         setAnalyses(prev => prev.filter((analysis) => analysis._id !== analysisId));
         if (analysisConfigId === analysisId) {
             setAnalysisId(undefined, { replace: true });
         }
-        showSuccess('Analysis deleted successfully');
-    }, [analysisConfigId, setAnalysisId, deleteAnalysisUseCase, showSuccess]);
+    }, [analysisConfigId, setAnalysisId, deleteAnalysisUseCase]);
 
     const setHeaderPopoverOpen = useCallback((analysisId: string, isOpen: boolean) => {
         setHeaderPopoverStates(prev => {

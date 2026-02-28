@@ -6,7 +6,7 @@ import FormField from '@/shared/presentation/components/FormField';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import useToast from '@/shared/presentation/hooks/use-toast';
+import { showSuccess, showPromise } from '@/shared/presentation/hooks/toast';
 import useCreateSecretKey from '@/modules/team/presentation/hooks/secret-key/use-create-secret-key';
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import useTeamRoleData from '@/modules/team/presentation/hooks/team-role/use-team-role-data';
@@ -29,7 +29,6 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
     const roles = useTeamRoleStore((state) => state.roles);
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
     const createSecretKey = useCreateSecretKey();
-    const { showSuccess, showError } = useToast();
 
     const [isLoading, setIsLoading] = useState(false);
     const [generatedKey, setGeneratedKey] = useState<string | null>(null);
@@ -53,7 +52,7 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
             navigator.clipboard.writeText(generatedKey);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-            showSuccess('Secret key copied to clipboard');
+            showSuccess({ title: 'Secret key copied to clipboard' });
         }
     };
 
@@ -68,14 +67,18 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
     const onSubmit = async (data: CreateSecretKeyFormData) => {
         try {
             setIsLoading(true);
-            const response = await createSecretKey(data.name, data.roleId);
+            const response = await showPromise(
+                createSecretKey(data.name, data.roleId),
+                {
+                    loading: { title: 'Creating secret key...' },
+                    success: { title: 'Secret key created successfully' },
+                    error: { title: 'Failed to create secret key' }
+                }
+            );
             if (response?.secretKey) {
                 setGeneratedKey(response.secretKey);
-                showSuccess('Secret key created successfully');
                 onCreated?.(response.secretKey);
             }
-        } catch (error: any) {
-            showError(error?.message || 'Failed to create secret key');
         } finally {
             setIsLoading(false);
         }
