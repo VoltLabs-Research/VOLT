@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import Container from '@/shared/presentation/components/Container';
 import FormField from '@/shared/presentation/components/FormField';
 import type { IArgumentDefinition } from '@/modules/plugin/domain/entities';
@@ -24,7 +24,7 @@ const getArgumentFieldProps = (arg: IArgumentDefinition, index: number) => {
     if(arg.type === 'select'){
         return {
             label, fieldKey, fieldType: 'select' as const, fieldValue: '',
-            options: arg.options.map((opt) => ({ value: opt.key, title: opt.label })),
+            options: (arg.options || []).map((opt) => ({ value: opt.key, title: opt.label })),
             variant: 'canvas' as const
         };
     }
@@ -46,6 +46,8 @@ const getArgumentFieldProps = (arg: IArgumentDefinition, index: number) => {
 interface ArgumentFieldProps {
     arg: IArgumentDefinition;
     index: number;
+    value?: string | number | boolean;
+    onChange?: (key: string, value: string | number | boolean) => void;
 }
 
 const getInitialValue = (arg: IArgumentDefinition, fieldType: string) => {
@@ -55,9 +57,9 @@ const getInitialValue = (arg: IArgumentDefinition, fieldType: string) => {
     return '';
 };
 
-const ArgumentField = ({ arg, index }: ArgumentFieldProps) => {
+const ArgumentField = ({ arg, index, value, onChange }: ArgumentFieldProps) => {
     const fieldProps = getArgumentFieldProps(arg, index);
-    const [value, setValue] = useState<string | number | boolean>(getInitialValue(arg, fieldProps.fieldType));
+    const currentValue = value !== undefined ? value : getInitialValue(arg, fieldProps.fieldType);
 
     return (
         <FormField
@@ -65,10 +67,12 @@ const ArgumentField = ({ arg, index }: ArgumentFieldProps) => {
             fieldType={fieldProps.fieldType}
             variant={fieldProps.variant}
             fieldKey={fieldProps.fieldKey}
-            fieldValue={value}
+            fieldValue={currentValue}
             options={fieldProps.options}
             inputProps={fieldProps.inputProps}
-            onFieldChange={(_, v) => setValue(v)}
+            onFieldChange={(_, v) => {
+                onChange?.(arg.argument, v);
+            }}
         />
     );
 };

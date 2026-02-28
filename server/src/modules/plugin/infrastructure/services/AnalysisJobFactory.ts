@@ -2,9 +2,9 @@ import { injectable } from 'tsyringe';
 import { IAnalysisJobFactory, AnalysisJobCreateInput } from '@modules/plugin/domain/ports/IAnalysisJobFactory';
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
 
+// TODO: MAYBE A EVENT FOR THIS!
 /**
  * Factory for creating analysis jobs from ForEach items.
- * Replicates the createJobs() logic from legacy server/services/plugin/execution.ts
  */
 @injectable()
 export default class AnalysisJobFactory implements IAnalysisJobFactory {

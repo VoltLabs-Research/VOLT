@@ -52,6 +52,17 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
     const [renderOpen, setRenderOpen] = useState(false);
     const [legacyExecStates, setLegacyExecStates] = useState<Map<string, ExecState>>(new Map());
     const legacyActionRef = useRef<Map<string, () => void>>(new Map());
+    const [pluginConfigs, setPluginConfigs] = useState<Record<string, Record<string, any>>>({});
+
+    const handlePluginConfigChange = useCallback((pluginId: string, key: string, value: any) => {
+        setPluginConfigs(prev => ({
+            ...prev,
+            [pluginId]: {
+                ...(prev[pluginId] || {}),
+                [key]: value
+            }
+        }));
+    }, []);
 
     const updateLegacyExecState = useCallback((id: string, state: ExecState) => {
         setLegacyExecStates((prev) => {
@@ -70,7 +81,8 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
         trajectoryId,
         currentTimestep,
         getPluginArguments,
-        pluginRepository
+        pluginRepository,
+        pluginConfigs
     });
 
     useEffect(() => {
@@ -141,9 +153,18 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
             if(args.length > 0){
                 content = (
                     <Container className="d-flex column gap-05">
-                        {args.map((arg, i) => (
-                            <ArgumentField key={`${arg.argument}-${i}`} arg={arg} index={i} />
-                        ))}
+                        {args.map((arg, i) => {
+                            const val = pluginConfigs[option.pluginModifierId!]?.[arg.argument];
+                            return (
+                                <ArgumentField 
+                                    key={`${arg.argument}-${i}`} 
+                                    arg={arg} 
+                                    index={i} 
+                                    value={val}
+                                    onChange={(key, v) => handlePluginConfigChange(option.pluginModifierId!, key, v)}
+                                />
+                            );
+                        })}
                     </Container>
                 );
             }
@@ -166,7 +187,7 @@ const RightPanel = ({ trajectoryId, analysisId, currentTimestep }: RightPanelPro
                 {content}
             </ModifierConfig>
         );
-    }, [getPluginArguments, trajectoryId, analysisId, currentTimestep, legacyRef]);
+    }, [getPluginArguments, trajectoryId, analysisId, currentTimestep, legacyRef, pluginConfigs, handlePluginConfigChange]);
 
     return (
         <Container className="d-flex h-max overflow-hidden">
