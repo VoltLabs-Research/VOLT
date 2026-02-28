@@ -9,13 +9,15 @@ interface UsePluginExecutionArgs {
     currentTimestep?: number;
     getPluginArguments: (pluginId: string) => IArgumentDefinition[];
     pluginRepository: { execute: (args: { pluginId: string; trajectoryId: string; config: Record<string, unknown>; timestep?: number }) => Promise<unknown> };
+    pluginConfigs?: Record<string, Record<string, unknown>>;
 }
 
 const usePluginExecution = ({
     trajectoryId,
     currentTimestep,
     getPluginArguments,
-    pluginRepository
+    pluginRepository,
+    pluginConfigs
 }: UsePluginExecutionArgs) => {
     const [execStates, setExecStates] = useState<Map<string, ExecState>>(new Map());
     const successTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
@@ -47,9 +49,11 @@ const usePluginExecution = ({
 
         try {
             const args = getPluginArguments(option.pluginModifierId);
+            const userConfig = pluginConfigs?.[option.pluginModifierId] || {};
             const config: Record<string, unknown> = {};
             args.forEach((arg) => {
-                const val = arg.value ?? arg.default;
+                const override = userConfig[arg.argument];
+                const val = override !== undefined ? override : (arg.value ?? arg.default);
                 if (val !== undefined) config[arg.argument] = val;
             });
 
@@ -67,7 +71,7 @@ const usePluginExecution = ({
             setExecStates((prev) => new Map(prev).set(modId, 'error'));
             clearExecStateLater(modId);
         }
-    }, [trajectoryId, currentTimestep, getPluginArguments, pluginRepository, clearExecStateLater]);
+    }, [trajectoryId, currentTimestep, getPluginArguments, pluginRepository, pluginConfigs, clearExecStateLater]);
 
     return { execStates, handleExecutePlugin };
 };
