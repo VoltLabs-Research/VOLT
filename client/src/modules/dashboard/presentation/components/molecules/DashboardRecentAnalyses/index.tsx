@@ -73,7 +73,7 @@ const DashboardRecentAnalyses: React.FC = () => {
                         icon={<FlaskConical size={20} strokeWidth={1.5} />}
                         title='No analyses yet'
                         description=''
-                        className='flex-1'
+                        className='dashboard-recent-analyses-empty flex-1'
                     />
                 ) : (
                     analyses.map((analysis) => (
