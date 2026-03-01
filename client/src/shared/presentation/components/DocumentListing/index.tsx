@@ -16,7 +16,8 @@ import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { showError, showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import { getValueByPath } from '@/shared/utils/format';
 import { triggerBrowserDownload } from '@/shared/utils/file';
 import { sortData } from '@/shared/utils/sort';
@@ -193,7 +194,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
 
     const handleConfirmExport = useCallback(async () => {
         if (!exportConfig?.onExport) {
-            showError({ title: 'Export is not available for this module yet' });
+            sileo.error({ title: 'Export is not available for this module yet' });
             return;
         }
 

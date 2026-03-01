@@ -11,7 +11,8 @@ import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import Container from '@/shared/presentation/components/Container';
 import type { PaginationParams } from '@/shared/presentation/hooks/use-pagination-params';
-import { showError, showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import './NotebooksListing.css';
 
@@ -115,7 +116,7 @@ const NotebooksListing = () => {
                 data: documents
             };
         } catch (error) {
-            showError({ title: 'Failed to fetch notebooks' });
+            sileo.error({ title: 'Failed to fetch notebooks' });
             return emptyPaginatedResponse(params);
         }
     }, [teamId]);
@@ -128,7 +129,7 @@ const NotebooksListing = () => {
                 handler: ({ item: notebook }) => {
                     const trajectoryId = getTrajectoryIds(notebook as ScriptingNotebookDTO)[0];
                     if (!trajectoryId) {
-                        showError({ title: 'This notebook has no associated trajectory.' });
+                        sileo.error({ title: 'This notebook has no associated trajectory.' });
                         return;
                     }
 

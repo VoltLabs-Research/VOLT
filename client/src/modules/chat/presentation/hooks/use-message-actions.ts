@@ -3,7 +3,8 @@ import { container } from 'tsyringe';
 import { useChatMessageStore } from '../stores';
 import { CHAT_TOKENS } from '@/modules/chat/infrastructure/di/tokens';
 import type IChatMessageRepository from '@/modules/chat/domain/ports/IChatMessageRepository';
-import { showPromise, showError } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 
 const useMessageActions = (chatId?: string) => {
     const addMessage = useChatMessageStore((state) => state.addMessage);
@@ -35,7 +36,7 @@ const useMessageActions = (chatId?: string) => {
             addMessage(message);
             return message;
         } catch (error) {
-            showError({ title: 'Failed to send file' });
+            sileo.error({ title: 'Failed to send file' });
         }
     }, [chatId, addMessage, chatMessageRepository]);
 

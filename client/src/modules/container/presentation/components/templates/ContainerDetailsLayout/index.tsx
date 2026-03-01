@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
 import useContainerUseCases from '../../../hooks/use-container-use-cases';
 import useContainerStats from '../../../hooks/use-container-stats';
-import { showError, showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import Container from '@/shared/presentation/components/Container';
 import ContainerSidebar from '../../molecules/ContainerSidebar';
@@ -39,7 +40,7 @@ const ContainerDetailsLayout = () => {
             const data = await containerRepository.getById(id);
             setContainer(data);
         }catch(error: any){
-            showError(error?.message || 'Failed to load container');
+            sileo.error({ title: error?.message || 'Failed to load container' });
         }finally{
             setIsLoading(false);
         }

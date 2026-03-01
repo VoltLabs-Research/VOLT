@@ -30,11 +30,6 @@ const buildErrorHandler = (base: SileoOptions) =>
         return { ...base, description };
     };
 
-export const showSuccess = (opts: SileoOptions) => sileo.success(opts);
-export const showError = (opts: SileoOptions) => sileo.error(opts);
-export const showInfo = (opts: SileoOptions) => sileo.info(opts);
-export const showWarning = (opts: SileoOptions) => sileo.warning(opts);
-
 export const showPromise = <T,>(
     promise: Promise<T> | (() => Promise<T>),
     opts: ToastPromiseOptions<T>
@@ -46,5 +41,3 @@ export const showPromise = <T,>(
     };
     return sileo.promise(promise, sileoOpts);
 };
-
-export type { SileoOptions, SileoPromiseOptions, ToastPromiseOptions };

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import Container from '@/shared/presentation/components/Container';
-import { showInfo } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import './GradientPreview.css';
 
 const GRADIENT_CSS: Record<string, string> = {
@@ -63,7 +63,7 @@ const GradientPreview = ({ gradient, startValue, endValue }: GradientPreviewProp
         document.execCommand('copy');
         document.body.removeChild(textArea);
 
-        showInfo({ title: `Value ${result.value} copied to clipboard` });
+        sileo.info({ title: `Value ${result.value} copied to clipboard` });
     };
 
     const gradientStyle = GRADIENT_CSS[gradient];

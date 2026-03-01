@@ -12,7 +12,7 @@ import { signInSchema, SignInForm } from './validation-schema';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
 import { useAuthStore } from '../../../stores/use-auth-store';
 import { useNavigate } from 'react-router-dom';
-import { showSuccess, showError } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import ApiError from '@/shared/errors/ApiError';
 import './SignIn.css';
 
@@ -71,7 +71,7 @@ const SignInTemplate = () => {
             }
             goTo('register');
         } catch(err) {
-            showError({ title: 'Something went wrong', description: 'Could not verify email. Please try again.' });
+            sileo.error({ title: 'Something went wrong', description: 'Could not verify email. Please try again.' });
         }
     };
 
@@ -86,11 +86,11 @@ const SignInTemplate = () => {
                 password: form.values.password
             });
             setUser(result.user);
-            showSuccess({ title: 'Signed in successfully', description: `Welcome back, ${result.user.firstName || result.user.username}!` });
+            sileo.success({ title: 'Signed in successfully', description: `Welcome back, ${result.user.firstName || result.user.username}!` });
             finalizeAuth();
         } catch(err) {
             const message = err instanceof ApiError ? err.getFriendlyMessage() : 'Please check your credentials and try again.';
-            showError({ title: 'Sign in failed', description: message });
+            sileo.error({ title: 'Sign in failed', description: message });
         }
     };
 
@@ -111,11 +111,11 @@ const SignInTemplate = () => {
                 passwordConfirm: form.values.passwordConfirm
             });
             setUser(result.user);
-            showSuccess({ title: 'Account created', description: `Welcome, ${result.user.firstName || result.user.username}!` });
+            sileo.success({ title: 'Account created', description: `Welcome, ${result.user.firstName || result.user.username}!` });
             finalizeAuth();
         } catch(err) {
             const message = err instanceof ApiError ? err.getFriendlyMessage() : 'Please check your details and try again.';
-            showError({ title: 'Registration failed', description: message });
+            sileo.error({ title: 'Registration failed', description: message });
         }
     };
 

@@ -10,7 +10,8 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import useRetryFailedFrames from '@/modules/analysis/presentation/hooks/use-retry-failed-frames';
-import { showError, showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import '@/modules/jobs/presentation/components/atoms/JobQueue/JobQueue.css';
 
 const statusConfig = {
@@ -55,7 +56,7 @@ const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => 
 
     const handleRetry = async () => {
         if (!analysisId) {
-            showError({ title: 'Cannot retry: Invalid job ID' });
+            sileo.error({ title: 'Cannot retry: Invalid job ID' });
             return;
         }
 

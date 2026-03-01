@@ -5,7 +5,8 @@ import { RiTerminalLine } from 'react-icons/ri';
 import { formatDistanceToNow } from 'date-fns';
 import useContainerUseCases from '../../../hooks/use-container-use-cases';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import { showError, showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Container from '@/shared/presentation/components/Container';
@@ -135,7 +136,7 @@ const ContainersListing = () => {
                     if(container.status === 'running'){
                         setTerminalContainer(container);
                     }else{
-                        showError({ title: 'Container must be running to open terminal' });
+                        sileo.error({ title: 'Container must be running to open terminal' });
                     }
                 }
             },
