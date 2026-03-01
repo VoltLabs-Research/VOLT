@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
 import useColorCodingUseCases from '@/modules/trajectory/presentation/hooks/color-coding/use-color-coding-use-cases';
-import { showError, showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 
 export const COLOR_GRADIENTS = ['Viridis', 'Plasma', 'BlueRed', 'GrayScale'] as const;
 export type ColorGradient = typeof COLOR_GRADIENTS[number];
@@ -51,7 +52,7 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
             setEndValue(stats.max);
         } catch (error) {
             console.error(error);
-            showError({ title: 'Failed to fetch property statistics' });
+            sileo.error({ title: 'Failed to fetch property statistics' });
         } finally {
             setIsFetchingStats(false);
         }

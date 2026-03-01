@@ -9,7 +9,8 @@ import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shar
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import { openModal } from '@/shared/presentation/components/Modal';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
-import { showSuccess, showError, showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import SecretKeyCreationModal, { SECRET_KEY_CREATION_MODAL_ID } from '../../organisms/SecretKeyCreationModal';
 import type { SecretKey } from '@/modules/team/domain/entities';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
@@ -66,15 +67,15 @@ const SecretKeysListing = () => {
     const copySecretKeyPrefix = useCallback(async (key: SecretKey) => {
         const keyPrefix = String(key.keyPrefix || '').trim();
         if (!keyPrefix) {
-            showError({ title: 'No key prefix available to copy' });
+            sileo.error({ title: 'No key prefix available to copy' });
             return;
         }
 
         try {
             await navigator.clipboard.writeText(keyPrefix);
-            showSuccess({ title: 'Key prefix copied to clipboard' });
+            sileo.success({ title: 'Key prefix copied to clipboard' });
         } catch {
-            showError({ title: 'Failed to copy key prefix' });
+            sileo.error({ title: 'Failed to copy key prefix' });
         }
     }, []);
 

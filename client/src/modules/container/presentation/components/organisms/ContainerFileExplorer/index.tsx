@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import { IoFolderOutline, IoDocumentOutline, IoArrowBack } from 'react-icons/io5';
 import useContainerUseCases from '../../../hooks/use-container-use-cases';
-import { showError } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
@@ -53,7 +53,7 @@ const ContainerFileExplorer = ({ containerId }: ContainerFileExplorerProps) => {
                 const content = await containerRepository.readFile(containerId, filePath);
                 setFileContent(content);
             } catch {
-                showError({ title: 'Failed to read file' });
+                sileo.error({ title: 'Failed to read file' });
                 removeParam('file');
             }
         };

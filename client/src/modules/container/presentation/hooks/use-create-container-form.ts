@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useContainerUseCases from './use-container-use-cases';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
-import { showError, showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import { CONTAINER_TEMPLATES, type ContainerTemplate } from '../data/container-templates';
 
 const DEFAULT_CPU = 1;
@@ -93,7 +94,7 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
 
     const setCustomImage = useCallback((image: string, goToConfigFn: () => void) => {
         if(!image.trim()){
-            showError({ title: 'Please enter a valid image name' });
+            sileo.error({ title: 'Please enter a valid image name' });
             return;
         }
         setCustomImageState(image);
@@ -120,17 +121,17 @@ const useCreateContainerForm = (goToConfig: () => void): UseCreateContainerFormR
         const template = getSelectedTemplate();
 
         if(!image){
-            showError({ title: 'Please select a template or specify an image' });
+            sileo.error({ title: 'Please select a template or specify an image' });
             return;
         }
 
         if(!config.name){
-            showError({ title: 'Please give your container a name' });
+            sileo.error({ title: 'Please give your container a name' });
             return;
         }
 
         if(!selectedTeamId){
-            showError({ title: 'Please select a team for this container' });
+            sileo.error({ title: 'Please select a team for this container' });
             return;
         }
 

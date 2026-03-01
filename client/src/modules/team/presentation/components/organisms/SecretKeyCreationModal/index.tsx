@@ -6,7 +6,8 @@ import FormField from '@/shared/presentation/components/FormField';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import Paragraph from '@/shared/presentation/components/Paragraph';
-import { showSuccess, showPromise } from '@/shared/presentation/hooks/toast';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import useCreateSecretKey from '@/modules/team/presentation/hooks/secret-key/use-create-secret-key';
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import useTeamRoleData from '@/modules/team/presentation/hooks/team-role/use-team-role-data';
@@ -52,7 +53,7 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
             navigator.clipboard.writeText(generatedKey);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
-            showSuccess({ title: 'Secret key copied to clipboard' });
+            sileo.success({ title: 'Secret key copied to clipboard' });
         }
     };
 

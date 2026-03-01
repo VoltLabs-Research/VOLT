@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useSSHUseCases from './use-ssh-use-cases';
-import { showError } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 import type { SSHConnection, SSHFileEntry } from '@/modules/ssh/domain/entities';
 
@@ -31,11 +31,11 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
             if (conn) {
                 setConnection(conn);
             } else {
-                showError({ title: 'Connection not found' });
+                sileo.error({ title: 'Connection not found' });
                 navigate('/dashboard/ssh-connections');
             }
         } catch {
-            showError({ title: 'Failed to load connection' });
+            sileo.error({ title: 'Failed to load connection' });
             navigate('/dashboard/ssh-connections');
         }
     };
@@ -44,7 +44,7 @@ const useSSHFileExplorer = ({ connectionId }: UseSSHFileExplorerOptions) => {
         onError: (err: unknown) => {
             const message = err instanceof Error ? err.message : 'Failed to load files';
             setError(message);
-            showError({ title: message });
+            sileo.error({ title: message });
         },
         onFinally: () => setIsLoading(false)
     });

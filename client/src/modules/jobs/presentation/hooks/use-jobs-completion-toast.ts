@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { sileo } from 'sileo';
 
 interface UseJobsCompletionToastArgs {
     trajectoryId?: string;
     hasActiveJobs: boolean;
     allJobsCompleted: boolean;
-    showSuccess: (message: string) => void;
 }
 
 const useJobsCompletionToast = ({
     trajectoryId,
     hasActiveJobs,
-    allJobsCompleted,
-    showSuccess
+    allJobsCompleted
 }: UseJobsCompletionToastArgs) => {
     const hadActiveJobsRef = useRef(false);
     const hasShownCompletionToastRef = useRef(false);
@@ -41,13 +40,13 @@ const useJobsCompletionToast = ({
         }
 
         timerRef.current = setTimeout(() => {
-            showSuccess('Analysis completed successfully!');
+            sileo.success({ title: 'Analysis completed successfully!' });
             hasShownCompletionToastRef.current = true;
             hadActiveJobsRef.current = false;
         }, 500);
 
         return clearCompletionTimer;
-    }, [trajectoryId, hasActiveJobs, allJobsCompleted, showSuccess, clearCompletionTimer]);
+    }, [trajectoryId, hasActiveJobs, allJobsCompleted, clearCompletionTimer]);
 };
 
 export default useJobsCompletionToast;

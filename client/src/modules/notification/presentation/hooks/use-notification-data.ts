@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useNotificationStore } from '../stores/use-notification-store';
 import useNotificationUseCases from './use-notification-use-cases';
-import { showSuccess, showError } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 
 const DEFAULT_LIMIT = 20;
 
@@ -57,10 +57,10 @@ const useNotificationData = () => {
         try {
             await notificationRepository.markAllAsRead();
             markAllAsReadInStore();
-            showSuccess({ title: 'All notifications marked as read' });
+            sileo.success({ title: 'All notifications marked as read' });
         } catch(error) {
             console.error('Failed to mark notifications as read:', error);
-            showError({ title: 'Failed to mark notifications as read' });
+            sileo.error({ title: 'Failed to mark notifications as read' });
         }
     }, [notificationRepository, markAllAsReadInStore]);
 

@@ -4,7 +4,6 @@ import JobsHistory from '@/modules/jobs/presentation/components/organisms/JobsHi
 import useSearchParamsState from '@/shared/presentation/hooks/use-search-params';
 import useGetTrajectoryById from '@/modules/trajectory/presentation/hooks/trajectory/use-get-trajectory-by-id';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
-import { showSuccess } from '@/shared/presentation/hooks/toast';
 import useTeamJobs from '@/modules/jobs/presentation/hooks/use-team-jobs';
 import useJobsHistoryFilters from '@/modules/jobs/presentation/hooks/use-jobs-history-filters';
 import useJobsAutoSelectAnalysis from '@/modules/jobs/presentation/hooks/use-jobs-auto-select-analysis';
@@ -59,8 +58,7 @@ const JobsHistoryViewer: React.FC<JobsHistoryViewerProps> = (props) => {
     useJobsCompletionToast({
         trajectoryId,
         hasActiveJobs,
-        allJobsCompleted,
-        showSuccess: (message: string) => showSuccess({ title: message })
+        allJobsCompleted
     });
 
     useEffect(() => {

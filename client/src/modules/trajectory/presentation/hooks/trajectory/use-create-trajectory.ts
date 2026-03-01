@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import useTrajectoryStore from '../../stores/use-trajectory-store';
 import useTrajectoryUseCases from './use-trajectory-use-cases';
-import { showError } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
 import { v4 } from 'uuid';
 
@@ -33,7 +33,7 @@ const useCreateTrajectory = () => {
             setUploadStatus(uploadId, 'failed');
             setTimeout(() => removeUpload(uploadId), 2000);
             setError(error instanceof Error ? error.message : 'Failed to create trajectory');
-            showError({ title: 'Failed to create trajectory', description: 'Please check your files and try again.' });
+            sileo.error({ title: 'Failed to create trajectory', description: 'Please check your files and try again.' });
             return null;
         }
     }, [trajectoryRepository, setUploadProgress, setUploadStatus, removeUpload, addTrajectory, setError]);
