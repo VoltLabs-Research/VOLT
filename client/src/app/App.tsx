@@ -37,15 +37,9 @@ const App = () => {
             <AppRoutes />
             <Toaster
                 position="bottom-right"
-                theme="dark"
+                theme="light"
                 options={{
-                    fill: '#171717',
-                    styles: {
-                        title: 'text-white!',
-                        description: 'text-white/75!',
-                        badge: 'bg-white/10!',
-                        button: 'bg-white/10!'
-                    }
+                    fill: '#171717'
                 }}
             />
         </BrowserRouter>
