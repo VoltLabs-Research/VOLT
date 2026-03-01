@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
 import Container from '@/shared/presentation/components/Container';
 import DashboardSidebar from '@/modules/dashboard/presentation/components/organisms/DashboardSidebar';
 import DashboardHeader from '@/modules/dashboard/presentation/components/molecules/DashboardHeader';
@@ -62,11 +61,9 @@ const DashboardLayout = () => {
                 <DashboardHeader setSidebarOpen={setSidebarOpen} />
 
                 <Container className='dashboard-content-main flex-1 min-h-0 y-auto'>
-                    <AnimatePresence mode='wait' initial={false}>
-                        <PageTransition key={location.pathname}>
-                            <Outlet />
-                        </PageTransition>
-                    </AnimatePresence>
+                    <PageTransition key={location.pathname}>
+                        <Outlet />
+                    </PageTransition>
                 </Container>
             </Container>
         </main>
