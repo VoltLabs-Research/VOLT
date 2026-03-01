@@ -1,0 +1,21 @@
+.page-transition {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+        opacity 0.35s cubic-bezier(0.32, 0.72, 0, 1),
+        transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.page-transition.entered {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.page-transition.exiting {
+    opacity: 0;
+    transform: translateY(-4px);
+    transition-duration: 0.2s;
+}
