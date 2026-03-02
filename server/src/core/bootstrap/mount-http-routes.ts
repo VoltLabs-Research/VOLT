@@ -12,6 +12,7 @@ import TeamMemberHttpModule from '@modules/team/infrastructure/http/routes/team-
 import TeamInvitationHttpModule from '@modules/team/infrastructure/http/routes/team-invitation-router';
 import TeamRoleHttpModule from '@modules/team/infrastructure/http/routes/team-role-router';
 import TeamSecretKeyHttpModule from '@modules/team/infrastructure/http/routes/team-secret-key-router';
+import TeamAIIntegrationHttpModule from '@modules/team/infrastructure/http/routes/team-ai-integration-router';
 import ChatHttpModule from '@modules/chat/infrastructure/http/routes/chat-routes';
 import ChatMessageHttpModule from '@modules/chat/infrastructure/http/routes/chat-message-routes';
 import NotificationHttpModule from '@modules/notification/infrastructure/http/routes/notification-routes';
@@ -31,6 +32,7 @@ import SimulationCellHttpModule from '@modules/simulation-cell/infrastructure/ht
 import DailyActivityHttpModule from '@modules/daily-activity/infrastructure/http/routes/daily-activity-routes';
 import ApiTrackerHttpModule from '@modules/api-tracker/infrastructure/http/routes/api-tracker-routes';
 import SystemHttpModule from '@modules/system/infrastructure/http/routes/system-routes';
+import AIConversationHttpModule from '@modules/ai/infrastructure/http/routes/ai-conversation-routes';
 
 /**
  * Maps HTTP methods to RBAC actions.
@@ -52,6 +54,7 @@ const HTTP_MODULES: HttpModule[] = [
     TeamInvitationHttpModule,
     TeamRoleHttpModule,
     TeamSecretKeyHttpModule,
+    TeamAIIntegrationHttpModule,
     ChatHttpModule,
     ChatMessageHttpModule,
     NotificationHttpModule,
@@ -70,7 +73,8 @@ const HTTP_MODULES: HttpModule[] = [
     ApiTrackerHttpModule,
     SystemHttpModule,
     ColorCodingHttpModule,
-    ParticleFilterHttpModule
+    ParticleFilterHttpModule,
+    AIConversationHttpModule
 ];
 
 const createTeamParamHandler = (resource?: string) => {

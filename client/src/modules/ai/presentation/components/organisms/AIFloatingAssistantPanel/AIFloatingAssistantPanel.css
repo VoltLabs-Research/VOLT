@@ -1,0 +1,72 @@
+.dashboard-ai-trigger.is-active {
+    color: var(--accent-blue);
+    background: var(--status-info-bg);
+}
+
+.ai-floating-assistant {
+    width: min(420px, calc(100vw - 2rem));
+    height: min(640px, calc(100vh - 6rem));
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    z-index: 80;
+}
+
+.ai-floating-assistant-header {
+    padding: 0.75rem;
+    gap: 0.5rem;
+}
+
+.ai-floating-assistant-toolbar {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-bg);
+}
+
+.ai-floating-assistant-conversation-select {
+    min-height: 2rem;
+}
+
+.ai-floating-assistant .ai-thread-list {
+    padding: 0.75rem;
+    gap: 0.6rem;
+}
+
+.ai-floating-assistant .ai-message-row {
+    max-width: 92%;
+}
+
+.ai-floating-assistant .ai-action-request-card {
+    padding: 0.5rem;
+}
+
+.ai-floating-assistant .ai-action-request-controls {
+    flex-wrap: wrap;
+}
+
+.ai-floating-assistant .ai-composer {
+    padding: 0.65rem 0.75rem;
+}
+
+.ai-floating-assistant .ai-composer-input-wrapper {
+    overflow: hidden;
+}
+
+.ai-floating-assistant .ai-composer-model-select {
+    min-width: 0;
+    max-width: 120px;
+}
+
+.ai-floating-assistant-alert {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--status-error-bg);
+}
+
+@media screen and (max-width: 768px) {
+    .ai-floating-assistant {
+        width: calc(100vw - 1rem);
+        right: 0.5rem;
+        bottom: 0.5rem;
+        height: min(72vh, 620px);
+    }
+}

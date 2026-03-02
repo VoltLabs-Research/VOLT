@@ -7,6 +7,7 @@ import IconButton from '@/shared/presentation/components/IconButton';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import Loader from '@/shared/presentation/components/Loader';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import EditableTrajectoryName from '@/modules/trajectory/presentation/components/atoms/EditableTrajectoryName';
 import type { PerformancePreset } from '@/modules/fractal/presentation/types/stores/editor/performance-types';
 import FractalScene, { type FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
@@ -82,15 +83,16 @@ const Viewport = ({
     return (
         <Container className="canvas-viewport d-flex column flex-1 overflow-hidden p-relative min-h-0">
             <Container className="canvas-viewport-header d-flex items-center f-shrink-0">
-                <IconButton
-                    variant="ghost"
-                    size="sm"
-                    aria-label="Back to Dashboard"
-                    title="Back to Dashboard"
-                    onClick={() => navigate('/dashboard')}
-                >
-                    <Box size={14} />
-                </IconButton>
+                <Tooltip content="Back to Dashboard">
+                    <IconButton
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Back to Dashboard"
+                        onClick={() => navigate('/dashboard')}
+                    >
+                        <Box size={14} />
+                    </IconButton>
+                </Tooltip>
 
                 {trajectory && (
                     <>
@@ -118,7 +120,6 @@ const Viewport = ({
                             size="sm"
                             className="font-size-05 canvas-btn-compact"
                             leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Gauge size={12} /></span>}
-                            title="Performance preset"
                         >
                             {PERFORMANCE_PRESETS.find((p) => p.value === performancePreset)?.label ?? 'Battery'}
                         </Button>

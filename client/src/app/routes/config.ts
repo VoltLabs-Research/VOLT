@@ -32,6 +32,8 @@ import MessagesPage from '@/modules/chat/presentation/components/templates/Messa
 import SecretKeysListing from '@/modules/team/presentation/components/templates/SecretKeysListing';
 import ErrorPage from '@/shared/presentation/components/ErrorPage';
 import NotebooksListing from '@/modules/scripting/presentation/components/templates/NotebooksListing';
+import IntegrationsSettings from '@/modules/auth/presentation/components/templates/Settings/IntegrationsSettings';
+import AIPage from '@/modules/ai/presentation/components/templates/AIPage';
 
 export const routesConfig: RouteGroup = {
     public: [
@@ -63,6 +65,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/settings/notifications',
             component: NotificationSettings
+        },
+        {
+            path: '/dashboard/settings/integrations',
+            component: IntegrationsSettings
         },
         {
             path: '/dashboard/my-team',
@@ -145,6 +151,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/messages/:chatId?',
             component: MessagesPage
+        },
+        {
+            path: '/dashboard/ai/:conversationId?',
+            component: AIPage
         },
         {
             path: '/dashboard/notebooks',

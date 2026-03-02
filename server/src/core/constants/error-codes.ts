@@ -166,12 +166,22 @@ export const ErrorCodes = {
     TEAM_MEMBER_ALREADY_EXISTS: 'TeamMember::AlreadyExists',
     TEAM_MEMBER_ROLE_REQUIRED: 'TeamMember::RoleRequired',
 
+    TEAM_AI_INTEGRATION_NOT_FOUND: 'TeamAIIntegration::NotFound',
+    TEAM_AI_INTEGRATION_ALREADY_EXISTS: 'TeamAIIntegration::AlreadyExists',
+    TEAM_AI_INTEGRATION_PROVIDER_UNSUPPORTED: 'TeamAIIntegration::Provider::Unsupported',
+    TEAM_AI_INTEGRATION_API_KEY_REQUIRED: 'TeamAIIntegration::ApiKey::Required',
+    TEAM_AI_INTEGRATION_MODEL_UNSUPPORTED: 'TeamAIIntegration::Model::Unsupported',
+
     SECRET_KEY_REQUIRED: 'SecretKey::Required',
     SECRET_KEY_INVALID: 'SecretKey::Invalid',
     SECRET_KEY_NOT_FOUND: 'SecretKey::NotFound',
     SECRET_KEY_NAME_REQUIRED: 'SecretKey::NameRequired',
     SECRET_KEY_ROLE_REQUIRED: 'SecretKey::RoleRequired',
 
+    AI_CONVERSATION_NOT_FOUND: 'AI::Conversation::NotFound',
+    AI_INTEGRATION_NOT_CONFIGURED: 'AI::Integration::NotConfigured',
+    AI_PROVIDER_UNAVAILABLE: 'AI::Provider::Unavailable',
+    AI_MODEL_INVALID: 'AI::Model::Invalid',
     OAUTH_GITHUB_EMAIL_NOT_FOUND: 'OAuth::Github::Email::NotFound',
     OAUTH_STRATEGY_ERROR: 'OAuth::Strategy::Error'
 } as const;

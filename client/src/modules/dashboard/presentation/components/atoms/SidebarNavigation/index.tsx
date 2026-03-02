@@ -7,7 +7,7 @@ import { IoCubeOutline, IoAnalytics, IoPeopleOutline, IoKeyOutline, IoBookOutlin
 import { GoWorkflow } from 'react-icons/go';
 import { CiChat1 } from 'react-icons/ci';
 import { HiOutlineServer } from 'react-icons/hi';
-import { MdImportExport } from 'react-icons/md';
+import { MdAutoAwesome, MdImportExport } from 'react-icons/md';
 import { IoIosAdd } from 'react-icons/io';
 import type { IconType } from 'react-icons';
 import Container from '@/shared/presentation/components/Container';
@@ -30,6 +30,7 @@ const MAIN_NAV_ITEMS: Array<[string, IconType, string]> = [
 const SECONDARY_NAV_ITEMS: Array<[string, IconType, string]> = [
     ['Plugins', GoWorkflow, '/dashboard/plugins/list'],
     ['Messages', CiChat1, '/dashboard/messages'],
+    ['Volt AI', MdAutoAwesome, '/dashboard/ai'],
     ['Clusters', HiOutlineServer, '/dashboard/clusters'],
     ['Import', MdImportExport, '/dashboard/ssh-connections'],
     ['My Team', IoPeopleOutline, '/dashboard/my-team'],

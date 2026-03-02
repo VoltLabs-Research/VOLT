@@ -8,6 +8,7 @@ import TeamInvitePanelPopover from '@/modules/team/presentation/components/molec
 import HeaderBreadcrumbs from '@/modules/dashboard/presentation/components/atoms/HeaderBreadcrumbs';
 import GlobalSearch from '@/modules/dashboard/presentation/components/molecules/GlobalSearch';
 import NotificationsPopover from '@/modules/notification/presentation/components/organisms/NotificationsPopover';
+import AIFloatingAssistantPanel from '@/modules/ai/presentation/components/organisms/AIFloatingAssistantPanel';
 import './DashboardHeader.css';
 
 interface DashboardHeaderProps {
@@ -45,6 +46,7 @@ const DashboardHeader = ({ setSidebarOpen }: DashboardHeaderProps) => {
                     </Tooltip>
                 )}
 
+                <AIFloatingAssistantPanel />
                 <NotificationsPopover />
             </Container>
         </header>

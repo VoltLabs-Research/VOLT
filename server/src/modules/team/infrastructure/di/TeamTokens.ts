@@ -3,8 +3,12 @@ export const TEAM_TOKENS = {
     TeamMemberRepository: Symbol.for('TeamMemberRepository'),
     TeamRepository: Symbol.for('TeamRepository'),
     SecretKeyRepository: Symbol.for('SecretKeyRepository'),
+    TeamAIIntegrationRepository: Symbol.for('TeamAIIntegrationRepository'),
     TeamInvitationRepository: Symbol.for('TeamInvitationRepository'),
     TeamPresenceService: Symbol.for('TeamPresenceService'),
     TeamJobsService: Symbol.for('TeamJobsService'),
-    TeamJobsSocketModule: Symbol.for('TeamJobsSocketModule')
+    TeamJobsSocketModule: Symbol.for('TeamJobsSocketModule'),
+    TeamAIProviderCatalog: Symbol.for('TeamAIProviderCatalog'),
+    TeamAIIntegrationInputService: Symbol.for('TeamAIIntegrationInputService'),
+    TeamAIIntegrationSerializer: Symbol.for('TeamAIIntegrationSerializer')
 };

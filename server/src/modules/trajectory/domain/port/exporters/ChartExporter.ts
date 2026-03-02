@@ -32,4 +32,9 @@ export interface IChartExporter{
         objectName: string,
         options?: IChartExportOptions
     ): Promise<void>;
+
+    generatePNG(
+        data: any,
+        options: IChartExportOptions
+    ): Promise<Buffer>;
 };

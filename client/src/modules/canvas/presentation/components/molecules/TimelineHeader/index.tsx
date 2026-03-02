@@ -5,6 +5,7 @@ import Container from '@/shared/presentation/components/Container';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import TransportControls from '../TransportControls';
 import FrameCombobox from '../FrameCombobox';
 
@@ -103,7 +104,6 @@ const TimelineHeader = ({
                                 size="sm"
                                 className="font-size-05 canvas-btn-compact"
                                 onClick={() => onTabChange(tab.id)}
-                                title={tab.label}
                                 leftIcon={tab.icon}
                             >
                                 {tab.label}
@@ -178,7 +178,6 @@ const TimelineHeader = ({
                                 size="sm"
                                 className="font-size-05 canvas-btn-compact"
                                 leftIcon={<Gauge size={12} />}
-                                title="Playback speed"
                             >
                                 {playSpeed}x
                             </Button>
@@ -216,7 +215,6 @@ const TimelineHeader = ({
                                 size="sm"
                                 className="font-size-05 canvas-btn-compact"
                                 leftIcon={<ZoomIn size={12} />}
-                                title="Zoom level"
                             >
                                 {zoomPercent}%
                             </Button>

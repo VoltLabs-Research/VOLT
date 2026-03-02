@@ -4,6 +4,7 @@ import { ContainerRepository } from '@modules/container/infrastructure/persisten
 import { DockerContainerService } from '@modules/container/infrastructure/services/DockerContainerService';
 import { TerminalService } from '@modules/container/infrastructure/services/TerminalService';
 import { ContainerSocketModule } from '@modules/container/infrastructure/socket/ContainerSocketModule';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 
 import { CreateContainerUseCase } from '@modules/container/application/use-cases/CreateContainerUseCase';
 import { UpdateContainerUseCase } from '@modules/container/application/use-cases/UpdateContainerUseCase';
@@ -14,6 +15,8 @@ import { GetContainerFilesUseCase } from '@modules/container/application/use-cas
 import { ReadContainerFileUseCase } from '@modules/container/application/use-cases/ReadContainerFileUseCase';
 import { GetContainerProcessesUseCase } from '@modules/container/application/use-cases/GetContainerProcessesUseCase';
 import { GetContainerByIdUseCase } from '@modules/container/application/use-cases/GetContainerByIdUseCase';
+
+import * as containerAiTools from '@modules/container/application/ai-tools';
 
 export const registerContainerDependencies = (): void => {
     container.register('ContainerModel', { useValue: ContainerModel });
@@ -36,4 +39,9 @@ export const registerContainerDependencies = (): void => {
 
     // Register Socket Module
     container.register('SocketModule', { useClass: ContainerSocketModule });
+
+    // Register all AI Tools for discovery
+    for (const ToolClass of Object.values(containerAiTools)) {
+        container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
+    }
 };

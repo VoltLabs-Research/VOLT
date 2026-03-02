@@ -37,7 +37,8 @@ const corsOptions = {
         'Pragma',
         'Expires',
         'If-None-Match',
-        'If-Modified-Since'
+        'If-Modified-Since',
+        'User-Agent'
     ],
     exposedHeaders: [
         'Cache-Control',

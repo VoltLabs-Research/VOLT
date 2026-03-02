@@ -1,5 +1,6 @@
 import { container } from 'tsyringe';
 import { TRAJECTORY_TOKENS } from './TrajectoryTokens';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import TrajectoryRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/TrajectoryRepository';
 import SceneArtifactRepository from '@modules/trajectory/infrastructure/persistence/mongo/repositories/SceneArtifactRepository';
 import TrajectoryProcessingQueue from '@modules/trajectory/infrastructure/queues/TrajectoryProcessingQueue';
@@ -26,6 +27,9 @@ import { ApplyParticleFilterActionUseCase } from '@modules/trajectory/applicatio
 import { GetFilteredModelStreamUseCase } from '@modules/trajectory/application/use-cases/particle-filter/GetFilteredModelStreamUseCase';
 import { GetParticleFilterUniqueValuesUseCase } from '@modules/trajectory/application/use-cases/particle-filter/GetParticleFilterUniqueValuesUseCase';
 import { ListTrajectorySceneArtifactsUseCase } from '@modules/trajectory/application/use-cases/scene-artifacts/ListTrajectorySceneArtifactsUseCase';
+import GetTeamMetricsUseCase from '@modules/trajectory/application/use-cases/trajectory/GetTeamMetricsUseCase';
+
+import * as trajectoryAiTools from '@modules/trajectory/application/ai-tools';
 
 export const registerTrajectoryDependencies = (): void => {
     container.registerSingleton(TRAJECTORY_TOKENS.TrajectoryRepository, TrajectoryRepository);
@@ -62,6 +66,14 @@ export const registerTrajectoryDependencies = (): void => {
     // Scene Artifacts Use Cases
     container.registerSingleton(ListTrajectorySceneArtifactsUseCase);
 
+    // Team Metrics Use Case
+    container.registerSingleton(GetTeamMetricsUseCase);
+
     container.registerSingleton(SessionCompletedEventHandler);
     container.registerSingleton(JobStatusChangedEventHandler);
+
+    // Register all AI Tools for discovery
+    for (const ToolClass of Object.values(trajectoryAiTools)) {
+        container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
+    }
 };

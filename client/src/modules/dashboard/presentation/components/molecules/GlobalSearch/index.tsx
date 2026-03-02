@@ -6,6 +6,7 @@ import { CiChat1 } from 'react-icons/ci';
 import { GoWorkflow } from 'react-icons/go';
 import SearchService, { type SearchResults } from '@/modules/dashboard/infrastructure/services/search-service';
 import Container from '@/shared/presentation/components/Container';
+import Paragraph from '@/shared/presentation/components/Paragraph';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import SearchInput from '@/shared/presentation/components/SearchInput';
 import Button from '@/shared/presentation/components/Button';

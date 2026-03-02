@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ai-sdk/react": "^3.0.107",
+    "@ai-sdk/ui-utils": "^1.2.11",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@formkit/auto-animate": "^0.8.2",
@@ -30,6 +32,7 @@
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
     "@xyflow/react": "^12.10.0",
+    "ai": "^6.0.105",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
     "echarts": "^5.6.0",
@@ -54,6 +57,7 @@
     "react-device-detect": "^2.2.3",
     "react-dom": "^18.3.1",
     "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.7",
     "react-router": "^7.7.0",
     "react-router-dom": "^7.7.0",
@@ -62,6 +66,7 @@
     "react-xtermjs": "^1.0.10",
     "recharts": "^3.4.1",
     "reflect-metadata": "^0.2.2",
+    "remark-gfm": "^4.0.1",
     "sileo": "^0.1.5",
     "socket.io-client": "^4.8.1",
     "three": "^0.164.1",

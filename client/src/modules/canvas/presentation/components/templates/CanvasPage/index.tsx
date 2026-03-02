@@ -5,6 +5,7 @@ import { ExternalLink } from 'lucide-react';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import useFractalSceneConfig from '@/modules/canvas/presentation/hooks/use-fractal-scene-config';
 import type { FractalSceneRef } from '@/modules/fractal/presentation/components/organisms/FractalScene';
@@ -129,18 +130,19 @@ const CanvasPage = () => {
 
     const scriptingHeaderAction = isScriptingWorkspace && scriptingJupyterUrl
         ? (
-            <Button
-                variant="ghost"
-                intent="canvas"
-                shape="rounded"
-                size="sm"
-                className="font-size-05 canvas-btn-compact"
-                leftIcon={<span className="d-flex items-center content-center f-shrink-0"><ExternalLink size={12} /></span>}
-                title="Open Jupyter in new tab"
-                onClick={() => window.open(scriptingJupyterUrl, '_blank', 'noopener,noreferrer')}
-            >
-                Open in New Tab
-            </Button>
+            <Tooltip content="Open Jupyter in new tab">
+                <Button
+                    variant="ghost"
+                    intent="canvas"
+                    shape="rounded"
+                    size="sm"
+                    className="font-size-05 canvas-btn-compact"
+                    leftIcon={<span className="d-flex items-center content-center f-shrink-0"><ExternalLink size={12} /></span>}
+                    onClick={() => window.open(scriptingJupyterUrl, '_blank', 'noopener,noreferrer')}
+                >
+                    Open in New Tab
+                </Button>
+            </Tooltip>
         )
         : null;
 

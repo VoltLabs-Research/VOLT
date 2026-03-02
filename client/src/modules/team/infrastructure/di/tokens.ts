@@ -4,6 +4,7 @@ export const TEAM_TOKENS = {
     TeamMemberRepository: Symbol('TeamMemberRepository'),
     TeamInvitationRepository: Symbol('TeamInvitationRepository'),
     SecretKeyRepository: Symbol('SecretKeyRepository'),
+    TeamAIIntegrationRepository: Symbol('TeamAIIntegrationRepository'),
 
     TeamStorage: Symbol('TeamStorage'),
 

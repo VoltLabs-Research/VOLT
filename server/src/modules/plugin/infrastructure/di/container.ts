@@ -3,6 +3,7 @@ import { PluginListingService } from '@modules/plugin/infrastructure/services/Pl
 import { WorkflowValidatorService } from '@modules/plugin/infrastructure/services/WorkflowValidatorService';
 import { ListingRowPrecomputationService } from '@modules/plugin/infrastructure/services/ListingRowPrecomputationService';
 import { PLUGIN_TOKENS } from './PluginTokens';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
 import PluginRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/PluginRepository';
 import ListingRowRepository from '@modules/plugin/infrastructure/persistence/mongo/repositories/ListingRowRepository';
 import PluginWorkflowEngine from '@modules/plugin/infrastructure/services/PluginWorkflowEngine';
@@ -39,6 +40,8 @@ import { ExportPluginUseCase } from '@modules/plugin/application/use-cases/plugi
 import { DeleteBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DeleteBinaryUseCase';
 import { UploadBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/UploadBinaryUseCase';
 import { ExportPluginListingDocumentsUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportPluginListingDocumentsUseCase';
+
+import * as pluginAiTools from '@modules/plugin/application/ai-tools';
 
 import { INodeRegistry, INodeHandler } from '@modules/plugin/domain/ports/INodeRegistry';
 
@@ -91,6 +94,11 @@ export const registerPluginDependencies = (): void => {
     container.registerSingleton(DeleteBinaryUseCase);
     container.registerSingleton(UploadBinaryUseCase);
     container.registerSingleton(ExportPluginListingDocumentsUseCase);
+
+    // AI Tools
+    for (const ToolClass of Object.values(pluginAiTools)) {
+        container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
+    }
 };
 
 /**

@@ -5,6 +5,8 @@ import FindCellByIdUseCase from '@modules/simulation-cell/application/use-cases/
 import FindCellsByTeamIdUseCase from '@modules/simulation-cell/application/use-cases/FindCellsByTeamIdUseCase';
 import FindCellByIdController from '@modules/simulation-cell/infrastructure/http/controllers/FindCellByIdController';
 import FindCellsByTeamIdController from '@modules/simulation-cell/infrastructure/http/controllers/FindCellsByTeamIdController';
+import { AI_TOKENS } from '@modules/ai/infrastructure/di/AITokens';
+import * as simCellAiTools from '@modules/simulation-cell/application/ai-tools';
 
 export const registerSimulationCellDependencies = () => {
     container.register(SIMULATION_CELL_TOKENS.SimulationCellRepository, {
@@ -26,4 +28,9 @@ export const registerSimulationCellDependencies = () => {
     container.register(SIMULATION_CELL_TOKENS.FindCellsByTeamIdController, {
         useClass: FindCellsByTeamIdController
     });
+
+    // AI Tools
+    for (const ToolClass of Object.values(simCellAiTools)) {
+        container.registerSingleton(AI_TOKENS.AITool, ToolClass as any);
+    }
 };
