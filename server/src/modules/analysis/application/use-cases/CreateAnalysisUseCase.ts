@@ -3,11 +3,12 @@ import { IUseCase } from '@shared/application/IUseCase';
 import { Result } from '@shared/domain/ports/Result';
 import { CreateAnalysisInputDTO, CreateAnalysisOutputDTO } from '@modules/analysis/application/dtos/CreateAnalysisDTO';
 import { IAnalysisRepository } from '@modules/analysis/domain/port/IAnalysisRepository';
+import { ANALYSIS_TOKENS } from '@modules/analysis/infrastructure/di/AnalysisTokens';
 
 @injectable()
 export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, CreateAnalysisOutputDTO> {
     constructor(
-        @inject('IAnalysisRepository') private analysisRepository: IAnalysisRepository
+        @inject(ANALYSIS_TOKENS.AnalysisRepository) private analysisRepository: IAnalysisRepository
     ){}
 
     async execute(input: CreateAnalysisInputDTO): Promise<Result<CreateAnalysisOutputDTO>> {
@@ -23,6 +24,7 @@ export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, C
 
         return Result.ok({
             analysis: {
+                // TODO: why not _id?
                 id: analysis.id,
                 trajectory: analysis.props.trajectory,
                 plugin: analysis.props.plugin,

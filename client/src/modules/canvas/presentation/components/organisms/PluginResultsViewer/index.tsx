@@ -2,6 +2,7 @@ import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import IconButton from '@/shared/presentation/components/IconButton';
 import Button from '@/shared/presentation/components/Button';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import PluginExposureTable from '@/modules/plugin/presentation/components/organisms/PluginExposureTable';
 import PluginAtomsTable from '@/modules/plugin/presentation/components/organisms/PluginAtomsTable';
 import usePluginResults from '../../../hooks/use-plugin-results';
@@ -26,18 +27,19 @@ const PluginResultsViewer = ({ pluginId, analysisId }: PluginResultsViewerProps)
                 <Title className="font-size-1">{title}</Title>
                 <Container className="d-flex items-center gap-05">
                     {!isEmpty && (
-                        <Button
-                            variant="ghost"
-                            intent="canvas"
-                            shape="rounded"
-                            size="sm"
-                            className="font-size-05 canvas-btn-compact"
-                            onClick={download}
-                            title="Download as XLSX"
-                            isLoading={isDownloading}
-                        >
-                            Download
-                        </Button>
+                        <Tooltip content="Download as XLSX">
+                            <Button
+                                variant="ghost"
+                                intent="canvas"
+                                shape="rounded"
+                                size="sm"
+                                className="font-size-05 canvas-btn-compact"
+                                onClick={download}
+                                isLoading={isDownloading}
+                            >
+                                Download
+                            </Button>
+                        </Tooltip>
                     )}
                     <IconButton variant="ghost" size="sm" onClick={close} aria-label="Close results">
                         ×

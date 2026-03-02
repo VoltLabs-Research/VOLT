@@ -6,6 +6,7 @@ import Popover from '@/shared/presentation/components/Popover';
 import Button from '@/shared/presentation/components/Button';
 import IconButton from '@/shared/presentation/components/IconButton';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import { formatSize } from '@/shared/utils/format';
 import useFilePreview from '@/shared/presentation/hooks/use-file-preview';
 import './ChatInput.css';
@@ -80,9 +81,11 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
             <Container className='d-flex items-center gap-05 chat-input-wrapper'>
                 <input type='file' ref={inputRef} onChange={handleFileInput} multiple hidden />
 
-                <IconButton size='sm' variant='ghost' onClick={openFilePicker} disabled={disabled} title='Attach File'>
-                    <IoAttachOutline size={20} />
-                </IconButton>
+                <Tooltip content='Attach file'>
+                    <IconButton size='sm' variant='ghost' onClick={openFilePicker} disabled={disabled}>
+                        <IoAttachOutline size={20} />
+                    </IconButton>
+                </Tooltip>
 
                 <textarea
                     className='flex-1 chat-input-textarea font-size-2-5 color-primary'
@@ -97,7 +100,7 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
                 <Popover
                     id='chat-emoji-picker'
                     trigger={
-                        <IconButton size='sm' variant='ghost' disabled={disabled} title='Emoji'>
+                        <IconButton size='sm' variant='ghost' disabled={disabled}>
                             <IoHappyOutline size={20} />
                         </IconButton>
                     }
@@ -112,16 +115,17 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
                     )}
                 </Popover>
 
-                <Button
-                    variant='solid'
-                    intent='brand'
-                    iconOnly
-                    type='submit'
-                    disabled={disabled || (!message.trim() && !hasFiles)}
-                    title='Send'
-                >
-                    <IoPaperPlaneOutline size={18} />
-                </Button>
+                <Tooltip content='Send'>
+                    <Button
+                        variant='solid'
+                        intent='brand'
+                        iconOnly
+                        type='submit'
+                        disabled={disabled || (!message.trim() && !hasFiles)}
+                    >
+                        <IoPaperPlaneOutline size={18} />
+                    </Button>
+                </Tooltip>
             </Container>
         </form>
     );

@@ -10,6 +10,7 @@ import IconButton from '@/shared/presentation/components/IconButton';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import SearchInput from '@/shared/presentation/components/SearchInput';
+import { matchesQuery } from '@/shared/utils/matches-query';
 import './ChatSidebar.css';
 
 interface ChatSidebarProps {
@@ -35,16 +36,14 @@ const ChatSidebar = ({
     const [showTeamMembers, setShowTeamMembers] = useState(false);
 
     const filteredChats = useMemo(() => {
-        if (!searchQuery) return chats;
-        
         return chats.filter((chat) => {
             if (chat.isGroup) {
-                return chat.groupName?.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesQuery(chat.groupName || '', searchQuery);
             }
             const participant = chat.participants.find((p) => p._id !== currentUserId);
             if (!participant) return false;
-            const name = `${participant.firstName} ${participant.lastName}`.toLowerCase();
-            return name.includes(searchQuery.toLowerCase());
+            const name = `${participant.firstName} ${participant.lastName}`;
+            return matchesQuery(name, searchQuery);
         });
     }, [chats, searchQuery, currentUserId]);
 

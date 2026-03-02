@@ -20,6 +20,7 @@ import { registerJobsDependencies } from '@modules/jobs/infrastructure/di/contai
 import { registerSSHDependencies } from '@modules/ssh/infrastructure/di/container';
 import { registerSocketModule } from '@modules/socket/infrastructure/di/SocketModule';
 import { registerSimulationCellDependencies } from '@modules/simulation-cell/infrastructure/di/container';
+import { registerAIDependencies } from '@modules/ai/infrastructure/di/container';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { createRedisClient } from '@core/config/redis';
 import { container } from 'tsyringe';
@@ -50,6 +51,7 @@ registerJobsDependencies();
 registerSSHDependencies();
 registerSocketModule();
 registerSimulationCellDependencies();
+registerAIDependencies();
 
 const redisClient = createRedisClient();
 const redisBlockingClient = createRedisClient();

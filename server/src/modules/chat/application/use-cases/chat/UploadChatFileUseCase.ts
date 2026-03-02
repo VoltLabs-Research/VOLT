@@ -30,7 +30,7 @@ export default class UploadChatFileUseCase implements IUseCase<UploadChatFileInp
                 }
             );
 
-            const fileUrl = `/api/chat/files/${uniqueName}`;
+            const fileUrl = `/api/chat-messages/files/${uniqueName}`;
 
             return Result.ok({
                 filename: uniqueName,

@@ -1,0 +1,153 @@
+.ai-artifact-spreadsheet-panel {
+    border-left: 1px solid var(--color-border-soft);
+    background: var(--color-content-bg);
+    min-width: 320px;
+    max-width: 900px;
+}
+
+.ai-artifact-spreadsheet-header {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-soft);
+    background: var(--color-surface-1);
+    flex-shrink: 0;
+}
+
+.ai-artifact-spreadsheet-toolbar {
+    flex-shrink: 0;
+}
+
+.ai-sheet-toolbar-btn {
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.ai-sheet-toolbar-btn:hover {
+    color: var(--color-text-primary);
+    background: var(--hover-bg);
+}
+
+.ai-sheet-toolbar-divider {
+    width: 1px;
+    height: 1.1rem;
+    background: var(--color-border-soft);
+    margin: 0 0.15rem;
+}
+
+.ai-artifact-spreadsheet-body {
+    flex: 1;
+}
+
+.ai-artifact-spreadsheet-table {
+    min-width: 100%;
+    border-collapse: collapse;
+}
+
+.ai-artifact-spreadsheet-table th {
+    text-align: left;
+    padding: 0.5rem 0.65rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--color-border-soft);
+    position: sticky;
+    top: 0;
+    background: var(--color-surface-1);
+    white-space: nowrap;
+    z-index: 1;
+}
+
+.ai-artifact-spreadsheet-table td {
+    padding: 0;
+    border-bottom: 1px solid var(--color-border-soft);
+    color: var(--color-text-primary);
+    font-size: 0.8125rem;
+}
+
+.ai-artifact-spreadsheet-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.ai-artifact-spreadsheet-table tbody tr:hover {
+    background: var(--hover-bg);
+}
+
+.ai-sheet-row-index-header,
+.ai-sheet-row-index-cell {
+    width: 48px;
+    min-width: 48px;
+    max-width: 48px;
+    text-align: right !important;
+    color: var(--color-text-secondary);
+    background: var(--color-surface-1);
+}
+
+.ai-sheet-row-index-cell {
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.7rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.ai-sheet-cell {
+    min-width: 120px;
+    cursor: default;
+    position: relative;
+}
+
+.ai-sheet-cell-value {
+    display: block;
+    padding: 0.45rem 0.65rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 280px;
+}
+
+.ai-sheet-cell.is-edited {
+    background: color-mix(in srgb, var(--accent-blue) 8%, transparent);
+}
+
+.ai-sheet-cell.is-edited .ai-sheet-cell-value {
+    color: var(--accent-blue);
+}
+
+.ai-sheet-cell-input {
+    width: 100%;
+    height: 100%;
+    padding: 0.4rem 0.6rem;
+    border: none;
+    outline: 2px solid var(--accent-blue);
+    outline-offset: -2px;
+    border-radius: 0;
+    background: var(--color-bg);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+.ai-sheet-cell-input:focus {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: -2px;
+}
+
+@media (max-width: 1180px) {
+    .ai-artifact-spreadsheet-panel {
+        min-width: 280px;
+    }
+}
+
+@media (max-width: 900px) {
+    .ai-artifact-spreadsheet-panel {
+        width: 100% !important;
+        min-width: 0;
+        max-width: none;
+        border-left: none;
+        border-top: 1px solid var(--color-border-soft);
+        max-height: 45vh;
+    }
+}

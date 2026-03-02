@@ -5,6 +5,7 @@ import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import IconButton from '@/shared/presentation/components/IconButton';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import { COMMON_REACTIONS } from '@/modules/chat/domain/constants';
 import './MessageControls.css';
 
@@ -21,7 +22,7 @@ const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: Messag
         <Popover
             id={`reactions-${messageId}`}
             trigger={
-                <IconButton size='sm' variant='ghost' title='React'>
+                <IconButton size='sm' variant='ghost'>
                     <IoHappyOutline size={16} />
                 </IconButton>
             }
@@ -41,7 +42,7 @@ const MessageControls = ({ messageId, isOwn, onReact, onEdit, onDelete }: Messag
             <Popover
                 id={`options-${messageId}`}
                 trigger={
-                    <IconButton size='sm' variant='ghost' title='More'>
+                    <IconButton size='sm' variant='ghost'>
                         <IoEllipsisVerticalOutline size={16} />
                     </IconButton>
                 }

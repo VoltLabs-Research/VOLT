@@ -31,6 +31,40 @@ const DashboardLayout = () => {
         });
     }, []);
 
+    // Allow other modules (e.g. AI spreadsheet panel) to programmatically
+    // collapse / restore the sidebar via custom DOM events.
+    useEffect(() => {
+        const collapsedBeforeOverride = { current: null as boolean | null };
+
+        const handleRequestCollapse = () => {
+            setSidebarCollapsed((prev) => {
+                if (!prev) {
+                    collapsedBeforeOverride.current = false;
+                    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'true');
+                    return true;
+                }
+                // Already collapsed — nothing to remember
+                collapsedBeforeOverride.current = null;
+                return prev;
+            });
+        };
+
+        const handleRequestExpand = () => {
+            if (collapsedBeforeOverride.current === false) {
+                setSidebarCollapsed(false);
+                localStorage.setItem(SIDEBAR_COLLAPSED_KEY, 'false');
+            }
+            collapsedBeforeOverride.current = null;
+        };
+
+        window.addEventListener('volt:request-sidebar-collapse', handleRequestCollapse);
+        window.addEventListener('volt:request-sidebar-expand', handleRequestExpand);
+        return () => {
+            window.removeEventListener('volt:request-sidebar-collapse', handleRequestCollapse);
+            window.removeEventListener('volt:request-sidebar-expand', handleRequestExpand);
+        };
+    }, []);
+
     useEffect(() => {
         if (!selectedTeam?._id) {
             setCanInvite(false);
