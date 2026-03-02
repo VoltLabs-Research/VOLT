@@ -6,7 +6,9 @@ import type {
     GetPluginListingInputDTO,
     GetPluginListingOutputDTO,
     ExportPluginListingInputDTO,
-    ExportPluginListingOutputDTO
+    ExportPluginListingOutputDTO,
+    ExportListingByAnalysisInputDTO,
+    ExportListingByAnalysisOutputDTO
 } from '../../application/dtos';
 
 @injectable()
@@ -96,5 +98,11 @@ export default class PluginListingRepository extends BaseRepository implements I
         query.format = format;
 
         return this.exportFile(path, query);
+    }
+
+    async exportListingByAnalysis(params: ExportListingByAnalysisInputDTO): Promise<ExportListingByAnalysisOutputDTO> {
+        const { analysisId, format } = params;
+        const path = `/listing/analysis/${analysisId}/export`;
+        return this.exportFile(path, { format });
     }
 };

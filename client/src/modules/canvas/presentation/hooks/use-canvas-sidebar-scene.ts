@@ -5,7 +5,7 @@ import useCanvasUrlState from './use-canvas-url-state';
 import { useEditorStore } from '@/modules/canvas/presentation/stores/editor';
 import useAnalysisUseCases from '@/modules/analysis/presentation/hooks/use-analysis-use-cases';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
-import useAnalysisStatus from './use-analysis-status';
+import useAnalysisStatus, { seedAnalysisStatuses } from './use-analysis-status';
 import useExposureManager, { type ExposureEntry, DEFAULT_ENTRY } from './use-exposure-manager';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 
@@ -96,6 +96,10 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                 });
 
                 if (cancelled) return;
+                seedAnalysisStatuses(response.data.map((analysis) => ({
+                    analysisId: analysis._id,
+                    status: analysis.status
+                })));
                 setAnalyses(response.data);
             } catch (error) {
                 console.error('[useCanvasSidebarScene] bootstrap failed', error);
@@ -127,6 +131,11 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                 createdAt: data.createdAt,
                 updatedAt: data.createdAt
             } as any;
+
+            seedAnalysisStatuses([{
+                analysisId: String(data.analysisId || ''),
+                status: data.status
+            }]);
 
             setAnalyses(prev => {
                 if (prev.some(a => a._id === newAnalysis._id)) return prev;

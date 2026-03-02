@@ -13,9 +13,20 @@ export interface DownloadPluginListingParams {
     format?: ExportType;
 }
 
+export interface DownloadAnalysisListingParams {
+    analysisId: string;
+    format?: ExportType;
+}
+
 const useDownloadPluginListing = () => {
     const { pluginListingRepository } = usePluginUseCases();
     const [isDownloading, setIsDownloading] = useState(false);
+
+    const getExtensionFromBlob = useCallback((blob: Blob, fallback: string): string => {
+        if (blob.type.includes('zip')) return 'zip';
+        if (blob.type.includes('csv')) return 'csv';
+        return fallback;
+    }, []);
 
     const downloadListing = useCallback(async (params: DownloadPluginListingParams) => {
         const { pluginId, exposureId, analysisId, trajectoryId, exposureName, format = 'json' } = params;
@@ -52,7 +63,37 @@ const useDownloadPluginListing = () => {
         }
     }, [pluginListingRepository]);
 
-    return { isDownloading, downloadListing };
+    const downloadAnalysisListings = useCallback(async (params: DownloadAnalysisListingParams) => {
+        const { analysisId, format = 'csv' } = params;
+
+        if (!analysisId) {
+            return;
+        }
+
+        setIsDownloading(true);
+        try {
+            await showPromise(
+                (async () => {
+                    const blob = await pluginListingRepository.exportListingByAnalysis({
+                        analysisId,
+                        format
+                    });
+                    const extension = getExtensionFromBlob(blob, format);
+                    triggerBrowserDownload(blob, `${analysisId}_analysis_listings.${extension}`);
+                    return blob;
+                })(),
+                {
+                    loading: { title: 'Downloading analysis listings...' },
+                    success: { title: 'Analysis listings downloaded successfully' },
+                    error: { title: 'Failed to download analysis listings' }
+                }
+            );
+        } finally {
+            setIsDownloading(false);
+        }
+    }, [getExtensionFromBlob, pluginListingRepository]);
+
+    return { isDownloading, downloadListing, downloadAnalysisListings };
 };
 
 export default useDownloadPluginListing;

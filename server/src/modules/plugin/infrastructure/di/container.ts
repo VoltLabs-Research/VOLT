@@ -40,6 +40,7 @@ import { ExportPluginUseCase } from '@modules/plugin/application/use-cases/plugi
 import { DeleteBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/DeleteBinaryUseCase';
 import { UploadBinaryUseCase } from '@modules/plugin/application/use-cases/plugin/UploadBinaryUseCase';
 import { ExportPluginListingDocumentsUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportPluginListingDocumentsUseCase';
+import { ExportListingRowsByAnalysisIdUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportListingRowsByAnalysisIdUseCase';
 
 import * as pluginAiTools from '@modules/plugin/application/ai-tools';
 
@@ -94,6 +95,7 @@ export const registerPluginDependencies = (): void => {
     container.registerSingleton(DeleteBinaryUseCase);
     container.registerSingleton(UploadBinaryUseCase);
     container.registerSingleton(ExportPluginListingDocumentsUseCase);
+    container.registerSingleton(ExportListingRowsByAnalysisIdUseCase);
 
     // AI Tools
     for (const ToolClass of Object.values(pluginAiTools)) {

@@ -5,9 +5,9 @@ import { PLUGIN_TOKENS } from '@modules/plugin/infrastructure/di/PluginTokens';
 import { IListingRowRepository } from '@modules/plugin/domain/ports/IListingRowRepository';
 import {
     GetListingRowsByAnalysisIdInputDTO,
-    GetListingRowsByAnalysisIdOutputDTO,
-    ListingRowByAnalysisData
+    GetListingRowsByAnalysisIdOutputDTO
 } from '@modules/plugin/application/dtos/listing-row/GetListingRowsByAnalysisIdDTO';
+import { mapListingRowByAnalysis } from './mapListingRowByAnalysis';
 
 @injectable()
 export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRowsByAnalysisIdInputDTO, GetListingRowsByAnalysisIdOutputDTO> {
@@ -34,26 +34,7 @@ export class GetListingRowsByAnalysisIdUseCase implements IUseCase<GetListingRow
             populate: 'trajectory'
         });
 
-        const data = result.data.map((listingRow): ListingRowByAnalysisData => {
-            const trajectory = listingRow.props.trajectory as any;
-            const trajectoryId = typeof trajectory === 'string'
-                ? trajectory
-                : String(trajectory?._id || trajectory?.id || '');
-            const trajectoryName = typeof trajectory?.name === 'string'
-                ? trajectory.name
-                : listingRow.props.trajectoryName || '';
-
-            return {
-                _id: listingRow.id,
-                plugin: String(listingRow.props.plugin),
-                exposureId: listingRow.props.exposureId,
-                exposureName: listingRow.props.exposureName,
-                trajectory: trajectoryId,
-                trajectoryName,
-                timestep: listingRow.props.timestep,
-                row: listingRow.props.row
-            };
-        });
+        const data = result.data.map((listingRow) => mapListingRowByAnalysis(listingRow));
 
         return Result.ok({
             ...result,
