@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useShallow } from 'zustand/react/shallow';
-import { ExternalLink } from 'lucide-react';
+import { Download, ExternalLink } from 'lucide-react';
 import { usePageTitle } from '@/shared/presentation/hooks/use-page-title';
 import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
@@ -15,6 +15,7 @@ import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import useKeyboardShortcuts from '../../../hooks/use-keyboard-shortcuts';
 import { useKeyboardShortcutsStore } from '../../../stores/use-keyboard-shortcuts-store';
 import useDownloadPluginListing from '../../../hooks/use-download-plugin-listing';
+import useAnalysisStatus from '../../../hooks/use-analysis-status';
 import './CanvasPage.css';
 import ResizeHandle from '../../atoms/ResizeHandle';
 import CanvasPresence from '../../atoms/CanvasPresence';
@@ -68,7 +69,8 @@ const CanvasPage = () => {
     } = useCanvasUrlState({ trajectory });
     const showStatusBar = searchParams.get('statusBar') !== 'false';
     const isScriptingWorkspace = activeWorkspace === 'scripting';
-    const { downloadListing } = useDownloadPluginListing();
+    const { downloadListing, downloadAnalysisListings, isDownloading } = useDownloadPluginListing();
+    const { statusMap } = useAnalysisStatus({ trajectoryId: trajectory?._id, enabled: !!trajectory?._id });
     const [scriptingJupyterUrl, setScriptingJupyterUrl] = useState<string | null>(null);
 
     useEffect(() => {
@@ -121,6 +123,23 @@ const CanvasPage = () => {
         downloadListing(params);
     }, [downloadListing]);
 
+    const selectedAnalysisStatus = useMemo(() => {
+        if (!analysisId) {
+            return undefined;
+        }
+
+        return statusMap.get(analysisId) || trajectory?.analysis?.find((analysis) => analysis._id === analysisId)?.status;
+    }, [analysisId, statusMap, trajectory?.analysis]);
+
+    const canDownloadAnalysisListing = Boolean(analysisId && selectedAnalysisStatus === 'completed');
+
+    const handleDownloadAnalysisListing = useCallback(() => {
+        if (!analysisId) {
+            return;
+        }
+        downloadAnalysisListings({ analysisId, format: 'csv' });
+    }, [analysisId, downloadAnalysisListings]);
+
     const leftSplit = useResizable({
         direction: 'vertical',
         initialSize: 56,
@@ -143,6 +162,30 @@ const CanvasPage = () => {
                     Open in New Tab
                 </Button>
             </Tooltip>
+        )
+        : null;
+
+    const viewportHeaderActions = (canDownloadAnalysisListing || scriptingHeaderAction)
+        ? (
+            <Container className="d-flex items-center gap-05">
+                {canDownloadAnalysisListing && (
+                    <Tooltip content="Download analysis listings">
+                        <Button
+                            variant="ghost"
+                            intent="canvas"
+                            shape="rounded"
+                            size="sm"
+                            className="font-size-05 canvas-btn-compact"
+                            leftIcon={<span className="d-flex items-center content-center f-shrink-0"><Download size={12} /></span>}
+                            onClick={handleDownloadAnalysisListing}
+                            isLoading={isDownloading}
+                        >
+                            Download Analysis
+                        </Button>
+                    </Tooltip>
+                )}
+                {scriptingHeaderAction}
+            </Container>
         )
         : null;
 
@@ -193,7 +236,7 @@ const CanvasPage = () => {
                                 )
                                 : undefined}
                             hideGradient={isScriptingWorkspace}
-                            headerActionsBeforePerformance={scriptingHeaderAction}
+                            headerActionsBeforePerformance={viewportHeaderActions}
                         />
                     </Container>
                     {!isScriptingWorkspace && (

@@ -1,3 +1,5 @@
+import { ExportType } from '@shared/domain/ports/IBaseRepository';
+
 export interface GetListingRowsByAnalysisIdInputDTO {
     analysisId: string;
     teamId: string;
@@ -23,4 +25,24 @@ export interface GetListingRowsByAnalysisIdOutputDTO {
     page: number;
     totalPages: number;
     limit: number;
+};
+
+export interface ExportListingRowsByAnalysisIdInputDTO {
+    analysisId: string;
+    teamId: string;
+    format?: ExportType;
+    sortAsc?: boolean;
+};
+
+export interface AnalysisListingExportData {
+    listingId: string;
+    listingName: string;
+    rows: Record<string, unknown>[];
+    columns: string[];
+};
+
+export interface ExportListingRowsByAnalysisIdOutputDTO {
+    analysisId: string;
+    format: ExportType;
+    listings: AnalysisListingExportData[];
 };

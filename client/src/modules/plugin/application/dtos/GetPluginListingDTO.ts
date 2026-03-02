@@ -22,6 +22,11 @@ export interface ExportPluginListingInputDTO {
     format: ExportType;
 };
 
+export interface ExportListingByAnalysisInputDTO {
+    analysisId: string;
+    format: ExportType;
+};
+
 export interface GetPluginListingOutputDTO extends PaginatedResponse<ListingRow> {
     _meta?: {
         pluginId: string;
@@ -32,3 +37,4 @@ export interface GetPluginListingOutputDTO extends PaginatedResponse<ListingRow>
 };
 
 export type ExportPluginListingOutputDTO = Blob;
+export type ExportListingByAnalysisOutputDTO = Blob;

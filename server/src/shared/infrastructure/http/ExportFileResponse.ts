@@ -27,7 +27,7 @@ const inferColumns = (rows: Record<string, unknown>[]): string[] => {
     return Array.from(keys);
 };
 
-const toCsv = (rows: Record<string, unknown>[], columns?: string[]): string => {
+export const toCsvContent = (rows: Record<string, unknown>[], columns?: string[]): string => {
     const headers = columns?.length ? columns : inferColumns(rows);
     if (!headers.length) {
         return '';
@@ -57,7 +57,7 @@ export const sendExportFile = ({
     const safeBaseName = (filename || 'export').replace(/[^a-zA-Z0-9-_]/g, '_');
 
     if (format === 'csv') {
-        const content = toCsv(rows, columns);
+        const content = toCsvContent(rows, columns);
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="${safeBaseName}.csv"`);
         Readable.from([content]).pipe(res);

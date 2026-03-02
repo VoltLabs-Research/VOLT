@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { createExternalStore, useExternalStore } from '../utils/external-store';
 import useSocketEvent from '@/modules/socket/presentation/hooks/use-socket-event';
 
-type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type AnalysisStatus = 'pending' | 'running' | 'completed' | 'failed';
 
 const store = createExternalStore({ initialState: new Map<string, AnalysisStatus>() });
 
@@ -18,6 +18,39 @@ const setStatus = (analysisId: string, status: AnalysisStatus) => {
 const clearStatus = () => {
     if (store.getSnapshot().size > 0) {
         store.setState(new Map());
+    }
+};
+
+const normalizeStatus = (status: string | undefined): AnalysisStatus | undefined => {
+    if (status === 'pending' || status === 'running' || status === 'completed' || status === 'failed') {
+        return status;
+    }
+    return undefined;
+};
+
+export const seedAnalysisStatuses = (items: Array<{ analysisId: string; status?: string }>) => {
+    if (!items.length) {
+        return;
+    }
+
+    const snapshot = store.getSnapshot();
+    const next = new Map(snapshot);
+    let changed = false;
+
+    for (const item of items) {
+        const normalized = normalizeStatus(item.status);
+        if (!item.analysisId || !normalized) {
+            continue;
+        }
+        if (next.get(item.analysisId) === normalized) {
+            continue;
+        }
+        next.set(item.analysisId, normalized);
+        changed = true;
+    }
+
+    if (changed) {
+        store.setState(next);
     }
 };
 
@@ -40,7 +73,7 @@ const useAnalysisStatus = ({ trajectoryId, enabled = true }: UseAnalysisStatusPr
         if (update.trajectoryId !== currentTrajectoryIdRef.current) return;
         if (!update.analysisId) return;
 
-        const status = update.status as AnalysisStatus;
+        const status = normalizeStatus(update.status);
         if (status === 'running' || status === 'completed' || status === 'failed') {
             setStatus(update.analysisId, status);
         }
