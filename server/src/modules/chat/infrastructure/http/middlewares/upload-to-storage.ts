@@ -21,18 +21,27 @@ export const uploadToStorage = async (req: Request, _res: Response, next: NextFu
     const fileExtension = path.extname(req.file.originalname);
     const filename = `${v4()}${fileExtension}`;
     const objectKey = `chat-files/${filename}`;
+    const fileMimeType = req.file.mimetype || 'application/octet-stream';
+
+    if(!req.file.buffer?.length){
+        throw ApplicationError.badRequest(
+            ErrorCodes.FILE_READ_ERROR,
+            'Uploaded file is empty or unreadable.'
+        );
+    }
+
     await storageService.upload(
         SYS_BUCKETS.CHAT,
         objectKey,
         req.file.buffer,
-        { 'Content-Type': req.file.mimetype }
+        { 'Content-Type': fileMimeType }
     );
 
     req.body.fileData = {
-        filename,
+        filename: objectKey,
         originalName: req.file.originalname,
         size: req.file.size,
-        mimetype: req.file.mimetype,
+        mimetype: fileMimeType,
         url: storageService.getPublicURL(SYS_BUCKETS.CHAT, objectKey)
     };
 

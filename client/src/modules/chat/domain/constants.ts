@@ -3,7 +3,6 @@ export const CHAT_SOCKET_EVENTS = {
     JOIN_CHAT: 'join_chat',
     LEAVE_CHAT: 'leave_chat',
     SEND_MESSAGE: 'send_message',
-    SEND_FILE_MESSAGE: 'send_file_message',
     EDIT_MESSAGE: 'edit_message',
     DELETE_MESSAGE: 'delete_message',
     TOGGLE_REACTION: 'toggle_reaction',

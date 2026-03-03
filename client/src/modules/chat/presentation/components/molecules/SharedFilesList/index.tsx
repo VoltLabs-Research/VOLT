@@ -7,7 +7,6 @@ import './SharedFilesList.css';
 
 interface SharedFilesListProps {
     messages: ChatMessage[];
-    chatId: string;
 };
 
 const SharedFilesList = ({ messages }: SharedFilesListProps) => {

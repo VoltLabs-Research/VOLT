@@ -27,8 +27,12 @@ const ChatInput = ({ disabled, onTyping, onSendText, onSendFiles }: ChatInputPro
         if (!message.trim() && !hasFiles) return;
 
         if (hasFiles) {
-            await onSendFiles(files);
-            clear();
+            try {
+                await onSendFiles(files);
+                clear();
+            } catch (_error) {
+                return;
+            }
         }
 
         if (message.trim()) {

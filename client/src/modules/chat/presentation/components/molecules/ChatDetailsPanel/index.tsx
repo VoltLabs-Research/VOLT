@@ -99,7 +99,7 @@ const ChatDetailsPanel = ({
                     <Paragraph className='font-size-2 font-weight-6 color-secondary chat-details-section-title d-block'>
                         Shared Files
                     </Paragraph>
-                    <SharedFilesList messages={messages} chatId={chat._id} />
+                    <SharedFilesList messages={messages} />
                 </Container>
             </Container>
         </Container>

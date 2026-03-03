@@ -55,12 +55,10 @@
     padding: 0.5rem;
     background: var(--color-surface-2);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--color-border-soft);
 }
 
 .message-bubble.sent .message-bubble-file {
     background: rgba(255, 255, 255, 0.1);
-    border-color: var(--color-border);
 }
 
 .message-bubble-file-icon {
