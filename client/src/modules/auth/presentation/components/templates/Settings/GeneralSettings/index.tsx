@@ -17,6 +17,7 @@ import { Trash2 } from 'lucide-react';
 const GeneralSettings: React.FC = () => {
     const user = useCurrentUser();
     const setUser = useAuthStore((state) => state.setUser);
+    const signOut = useAuthStore((state) => state.signOut);
     const { authRepository } = useAuthUseCases();
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
@@ -64,11 +65,20 @@ const GeneralSettings: React.FC = () => {
         email: user?.email || ''
     }), [user?.fullName, user?.email]);
 
-    const handleDeleteAccount = () => {
-        if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-            alert('Account deletion is not implemented yet.');
+    const handleDeleteAccount = useCallback(async () => {
+        if(!window.confirm('Are you sure you want to delete your account? This action cannot be undone.')){
+            return;
         }
-    };
+        await showPromise(
+            authRepository.deleteMe(),
+            {
+                loading: { title: 'Deleting account...' },
+                success: { title: 'Account deleted' },
+                error: { title: 'Failed to delete account' }
+            }
+        );
+        signOut();
+    }, [authRepository, signOut]);
 
     return (
         <SettingsPage title="General Settings">

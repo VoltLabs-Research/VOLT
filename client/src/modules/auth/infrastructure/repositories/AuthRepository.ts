@@ -59,4 +59,8 @@ export default class AuthRepository extends BaseRepository implements IAuthRepos
     async changePassword(data: ChangePasswordInputDTO): Promise<void>{
         await this.client.patch<ApiResponse<void>>('/me/update/password/', data);
     }
+
+    async deleteMe(): Promise<void>{
+        await this.client.delete<ApiResponse<void>>('/me');
+    }
 };

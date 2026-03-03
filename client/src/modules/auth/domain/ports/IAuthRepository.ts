@@ -21,4 +21,5 @@ export default interface IAuthRepository{
     updateMe(data: Partial<User> | FormData): Promise<User>;
     getPasswordInfo(): Promise<GetPasswordInfoOutputDTO>;
     changePassword(data: ChangePasswordInputDTO): Promise<void>;
+    deleteMe(): Promise<void>;
 };
