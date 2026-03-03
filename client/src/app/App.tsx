@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import type { ErrorInfo } from 'react';
 import { renderPublicRoutes, renderGuestRoutes, renderProtectedRoutes } from './routes/RouteRenderer';
@@ -7,6 +7,16 @@ import GlobalErrorListener from '@/shared/presentation/components/GlobalErrorLis
 import { buildErrorPath } from '@/shared/utils';
 import { Toaster } from 'sileo';
 import 'sileo/styles.css';
+
+const NotFoundRedirect = () => {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        navigate('/dashboard', { replace: true, state: { fromNotFound: true } });
+    }, [navigate]);
+
+    return null;
+};
 
 const AppRoutes = () => {
     const navigate = useNavigate();
@@ -24,7 +34,7 @@ const AppRoutes = () => {
                     {renderPublicRoutes()}
                     {renderGuestRoutes()}
                     {renderProtectedRoutes()}
-                    <Route path='*' element={<div>404</div>} />
+                    <Route path='*' element={<NotFoundRedirect />} />
                 </Routes>
             </ErrorBoundary>
         </>
