@@ -4,6 +4,7 @@ import Container from '@/shared/presentation/components/Container';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import IconButton from '@/shared/presentation/components/IconButton';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
+import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
 import TeamInvitePanelPopover from '@/modules/team/presentation/components/molecules/TeamInvitePanelPopover';
 import HeaderBreadcrumbs from '@/modules/dashboard/presentation/components/atoms/HeaderBreadcrumbs';
 import GlobalSearch from '@/modules/dashboard/presentation/components/molecules/GlobalSearch';
@@ -16,7 +17,15 @@ interface DashboardHeaderProps {
 };
 
 const DashboardHeader = ({ setSidebarOpen }: DashboardHeaderProps) => {
-    const canInvite = useTeamStore((state) => state.canInvite);
+    const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id ?? null);
+    const teamPermissions = useTeamStore((state) => state.permissions);
+    const permissionsTeamId = useTeamStore((state) => state.permissionsTeamId);
+    const canInvite = canAccessTeamPermissions({
+        selectedTeamId,
+        permissionsTeamId,
+        permissions: teamPermissions,
+        requiredPermissions: ['team-invitation:create']
+    });
 
     return (
         <header className='dashboard-top-header p-sticky gap-1 d-flex items-center top-0'>
@@ -40,9 +49,11 @@ const DashboardHeader = ({ setSidebarOpen }: DashboardHeaderProps) => {
                     <TeamInvitePanelPopover />
                 ) : (
                     <Tooltip content='You must be an admin or owner to invite members' placement='bottom'>
-                        <IconButton disabled>
-                            <GoPersonAdd size={18} />
-                        </IconButton>
+                        <span>
+                            <IconButton disabled>
+                                <GoPersonAdd size={18} />
+                            </IconButton>
+                        </span>
                     </Tooltip>
                 )}
 

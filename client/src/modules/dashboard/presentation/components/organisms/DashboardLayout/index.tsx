@@ -16,8 +16,9 @@ const SIDEBAR_COLLAPSED_KEY = 'volt:sidebar-collapsed';
 const DashboardLayout = () => {
     const teams = useTeamStore((state) => state.teams);
     const selectedTeam = useSelectedTeam();
-    const setCanInvite = useTeamStore((state) => state.setCanInvite);
-    const { checkCanInvite } = useTeamData();
+    const setPermissions = useTeamStore((state) => state.setPermissions);
+    const setPermissionsLoading = useTeamStore((state) => state.setPermissionsLoading);
+    const { hydrateTeamAccess } = useTeamData();
     const location = useLocation();
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -69,12 +70,13 @@ const DashboardLayout = () => {
 
     useEffect(() => {
         if (!selectedTeam?._id) {
-            setCanInvite(false);
+            setPermissions([], null);
+            setPermissionsLoading(false);
             return;
         }
 
-        checkCanInvite(selectedTeam._id);
-    }, [selectedTeam?._id, checkCanInvite, setCanInvite]);
+        hydrateTeamAccess(selectedTeam._id);
+    }, [selectedTeam?._id, hydrateTeamAccess, setPermissions, setPermissionsLoading]);
 
     useEffect(() => {
         const state = location.state as { fromNotFound?: boolean } | null;

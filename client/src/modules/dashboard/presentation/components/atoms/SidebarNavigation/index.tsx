@@ -12,30 +12,79 @@ import { IoIosAdd } from 'react-icons/io';
 import type { IconType } from 'react-icons';
 import Container from '@/shared/presentation/components/Container';
 import Divider from '@/shared/presentation/components/Divider';
+import Tooltip from '@/shared/presentation/components/Tooltip';
 import TeamSelector from '@/modules/team/presentation/components/atoms/TeamSelector';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import usePluginStore from '@/modules/plugin/presentation/stores/use-plugin-store';
 import { usePluginCatalog } from '@/modules/plugin/presentation/hooks';
 import { getListingRelevantExposures } from '@/modules/plugin/presentation/utils/listing-exposures';
+import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
 import SidebarNavItem from '@/shared/presentation/components/SidebarNavItem';
 import SidebarExpandableSection from '@/shared/presentation/components/SidebarExpandableSection';
 import './SidebarNavigation.css';
 
-const MAIN_NAV_ITEMS: Array<[string, IconType, string]> = [
-    ['Dashboard', RiHomeSmile2Fill, '/dashboard'],
-    ['Containers', IoCubeOutline, '/dashboard/containers'],
-    ['Notebooks', IoBookOutline, '/dashboard/notebooks'],
+type PermissionMode = 'any' | 'all';
+
+interface NavItem {
+    label: string;
+    icon: IconType;
+    to: string;
+    requiredPermissions?: string[];
+    permissionMode?: PermissionMode;
+    disabledReason?: string;
+}
+
+const MAIN_NAV_ITEMS: NavItem[] = [
+    { label: 'Dashboard', icon: RiHomeSmile2Fill, to: '/dashboard' },
+    {
+        label: 'Containers',
+        icon: IoCubeOutline,
+        to: '/dashboard/containers',
+        requiredPermissions: ['container:read'],
+        disabledReason: 'You do not have permission to view containers.'
+    },
+    { label: 'Notebooks', icon: IoBookOutline, to: '/dashboard/notebooks' },
 ];
 
-const SECONDARY_NAV_ITEMS: Array<[string, IconType, string]> = [
-    ['Plugins', GoWorkflow, '/dashboard/plugins/list'],
-    ['Messages', CiChat1, '/dashboard/messages'],
-    ['Volt AI', MdAutoAwesome, '/dashboard/ai'],
-    ['Clusters', HiOutlineServer, '/dashboard/clusters'],
-    ['Import', MdImportExport, '/dashboard/ssh-connections'],
-    ['My Team', IoPeopleOutline, '/dashboard/my-team'],
-    ['Manage Roles', IoKeyOutline, '/dashboard/manage-roles'],
-    ['Secret Keys', IoLockClosedOutline, '/dashboard/secret-keys']
+const SECONDARY_NAV_ITEMS: NavItem[] = [
+    {
+        label: 'Plugins',
+        icon: GoWorkflow,
+        to: '/dashboard/plugins/list',
+        requiredPermissions: ['plugin:read'],
+        disabledReason: 'You do not have permission to view plugins.'
+    },
+    { label: 'Messages', icon: CiChat1, to: '/dashboard/messages' },
+    { label: 'Volt AI', icon: MdAutoAwesome, to: '/dashboard/ai' },
+    { label: 'Clusters', icon: HiOutlineServer, to: '/dashboard/clusters' },
+    {
+        label: 'Import',
+        icon: MdImportExport,
+        to: '/dashboard/ssh-connections',
+        requiredPermissions: ['ssh-connection:read'],
+        disabledReason: 'You do not have permission to view SSH connections.'
+    },
+    {
+        label: 'My Team',
+        icon: IoPeopleOutline,
+        to: '/dashboard/my-team',
+        requiredPermissions: ['team:read'],
+        disabledReason: 'You do not have permission to view team details.'
+    },
+    {
+        label: 'Manage Roles',
+        icon: IoKeyOutline,
+        to: '/dashboard/manage-roles',
+        requiredPermissions: ['team-role:read'],
+        disabledReason: 'You do not have permission to view role management.'
+    },
+    {
+        label: 'Secret Keys',
+        icon: IoLockClosedOutline,
+        to: '/dashboard/secret-keys',
+        requiredPermissions: ['team-secret-key:read'],
+        disabledReason: 'You do not have permission to view secret keys.'
+    }
 ];
 
 interface SidebarNavigationProps {
@@ -48,6 +97,8 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigat
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const selectedTeam = useTeamStore((state) => state.selectedTeam);
+    const teamPermissions = useTeamStore((state) => state.permissions);
+    const permissionsTeamId = useTeamStore((state) => state.permissionsTeamId);
     const plugins = usePluginStore((state) => state.plugins);
     const { loadAllPlugins } = usePluginCatalog();
 
@@ -63,6 +114,16 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigat
 
     const isSelected = (to: string) => 
         to === '/dashboard' ? pathname === to : pathname.startsWith(to);
+
+    const canAccess = (item: NavItem): boolean => {
+        return canAccessTeamPermissions({
+            selectedTeamId: selectedTeam?._id ?? null,
+            permissionsTeamId,
+            permissions: teamPermissions,
+            requiredPermissions: item.requiredPermissions,
+            mode: item.permissionMode
+        });
+    };
 
     const trajectoriesSubItems = useMemo(() => [
         {
@@ -112,15 +173,31 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigat
 
     return (
         <nav className='sidebar-nav y-auto'>
-            {MAIN_NAV_ITEMS.map(([name, Icon, to], index) => (
-                <SidebarNavItem
-                    key={index}
-                    label={name}
-                    icon={Icon}
-                    isSelected={isSelected(to)}
-                    onClick={() => handleNavigate(to)}
-                />
-            ))}
+            {MAIN_NAV_ITEMS.map((item, index) => {
+                const isAllowed = canAccess(item);
+                const content = (
+                    <Container className='sidebar-nav-item-wrapper'>
+                        <SidebarNavItem
+                            key={index}
+                            label={item.label}
+                            icon={item.icon}
+                            isSelected={isSelected(item.to)}
+                            onClick={isAllowed ? () => handleNavigate(item.to) : undefined}
+                            disabled={!isAllowed}
+                        />
+                    </Container>
+                );
+                return (
+                    <Tooltip
+                        key={index}
+                        content={item.disabledReason ?? 'You do not have permission to access this section.'}
+                        placement='right'
+                        disabled={isAllowed}
+                    >
+                        {content}
+                    </Tooltip>
+                );
+            })}
 
             <SidebarExpandableSection
                 label='Trajectories'
@@ -136,15 +213,31 @@ const SidebarNavigation = ({ setSidebarOpen, collapsed = false }: SidebarNavigat
                 subItems={analysisSubItems}
             />
 
-            {SECONDARY_NAV_ITEMS.map(([name, Icon, to], index) => (
-                <SidebarNavItem
-                    key={index}
-                    label={name}
-                    icon={Icon}
-                    isSelected={isSelected(to)}
-                    onClick={() => handleNavigate(to)}
-                />
-            ))}
+            {SECONDARY_NAV_ITEMS.map((item, index) => {
+                const isAllowed = canAccess(item);
+                const content = (
+                    <Container className='sidebar-nav-item-wrapper'>
+                        <SidebarNavItem
+                            key={index}
+                            label={item.label}
+                            icon={item.icon}
+                            isSelected={isSelected(item.to)}
+                            onClick={isAllowed ? () => handleNavigate(item.to) : undefined}
+                            disabled={!isAllowed}
+                        />
+                    </Container>
+                );
+                return (
+                    <Tooltip
+                        key={index}
+                        content={item.disabledReason ?? 'You do not have permission to access this section.'}
+                        placement='right'
+                        disabled={isAllowed}
+                    >
+                        {content}
+                    </Tooltip>
+                );
+            })}
 
             <Divider className={`sidebar-divider ${collapsed ? 'is-hidden' : ''}`} />
 

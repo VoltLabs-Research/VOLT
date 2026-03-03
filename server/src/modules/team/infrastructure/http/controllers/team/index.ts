@@ -6,6 +6,7 @@ import ListUserTeamsController from './ListUserTeamsController';
 import RemoveUserFromTeamController from './RemoveUserFromTeamController';
 import UpdateTeamByIdController from './UpdateTeamByIdController';
 import CheckInvitePermissionController from './CheckInvitePermissionController';
+import GetMyTeamPermissionsController from './GetMyTeamPermissionsController';
 import { container } from 'tsyringe';
 
 export default {
@@ -16,5 +17,6 @@ export default {
     listUserTeams: container.resolve(ListUserTeamsController),
     removeUserFromTeam: container.resolve(RemoveUserFromTeamController),
     updateById: container.resolve(UpdateTeamByIdController),
-    checkInvitePermission: container.resolve(CheckInvitePermissionController)
+    checkInvitePermission: container.resolve(CheckInvitePermissionController),
+    getMyPermissions: container.resolve(GetMyTeamPermissionsController)
 };

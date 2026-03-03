@@ -8,6 +8,7 @@ interface SidebarNavItemProps {
     label: string;
     icon: IconType | LucideIcon;
     isSelected?: boolean;
+    disabled?: boolean;
     onClick?: () => void;
     commandFor?: string;
     command?: string;
@@ -17,6 +18,7 @@ const SidebarNavItem = ({
     label, 
     icon: Icon, 
     isSelected = false, 
+    disabled = false,
     onClick,
     commandFor,
     command
@@ -27,6 +29,7 @@ const SidebarNavItem = ({
             intent='neutral'
             className={`sidebar-nav-item ${isSelected ? 'is-selected' : ''} p-relative gap-075 w-max font-size-2 font-weight-4 color-secondary cursor-pointer transition-fast`}
             onClick={onClick}
+            disabled={disabled}
             {...(commandFor ? { commandfor: commandFor } : {})}
             {...(command ? { command } : {})}
         >

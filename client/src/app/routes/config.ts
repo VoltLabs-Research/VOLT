@@ -72,19 +72,23 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/my-team',
-            component: MyTeamTemplate
+            component: MyTeamTemplate,
+            requiredPermissions: ['team:read']
         },
         {
             path: '/dashboard/manage-roles',
-            component: ManageRolesTemplate
+            component: ManageRolesTemplate,
+            requiredPermissions: ['team-role:read']
         },
         {
             path: '/dashboard/secret-keys',
-            component: SecretKeysListing
+            component: SecretKeysListing,
+            requiredPermissions: ['team-secret-key:read']
         },
         {
             path: '/dashboard/trajectories/list',
-            component: TrajectoriesListing
+            component: TrajectoriesListing,
+            requiredPermissions: ['trajectory:read']
         },
         {
             path: '/canvas/:trajectoryId',
@@ -92,19 +96,24 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/trajectory/:trajectoryId/analysis/:analysisId/atoms/:exposureId?',
-            component: PerAtomViewer
+            component: PerAtomViewer,
+            requiredPermissions: ['trajectory:read', 'analysis:read'],
+            permissionMode: 'all'
         },
         {
             path: '/dashboard/analysis-configs/list',
-            component: AnalysesListing
+            component: AnalysesListing,
+            requiredPermissions: ['analysis:read']
         },
         {
             path: '/dashboard/simulation-cells/list',
-            component: SimulationCellsListing
+            component: SimulationCellsListing,
+            requiredPermissions: ['simulation-cell:read']
         },
         {
             path: '/dashboard/plugins/list',
-            component: PluginsListing
+            component: PluginsListing,
+            requiredPermissions: ['plugin:read']
         },
         {
             path: '/plugins/builder',
@@ -112,11 +121,14 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/plugins/:pluginId/exposure/:exposureId/listing',
-            component: PluginListingPage
+            component: PluginListingPage,
+            requiredPermissions: ['plugin:read']
         },
         {
             path: '/dashboard/trajectory/:trajectoryId/plugins/:pluginId/exposure/:exposureId/listing',
-            component: PluginListingPage
+            component: PluginListingPage,
+            requiredPermissions: ['plugin:read', 'trajectory:read'],
+            permissionMode: 'all'
         },
         {
             path: '/dashboard/clusters',
@@ -124,15 +136,18 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/containers',
-            component: ContainersListing
+            component: ContainersListing,
+            requiredPermissions: ['container:read']
         },
         {
             path: '/dashboard/containers/new',
-            component: CreateContainer
+            component: CreateContainer,
+            requiredPermissions: ['container:create']
         },
         {
             path: '/dashboard/containers/:id',
             component: ContainerDetailsLayout,
+            requiredPermissions: ['container:read'],
             children: [
                 { path: 'overview', component: ContainerOverviewPage, index: true },
                 { path: 'processes', component: ContainerProcessesPage },
@@ -142,11 +157,13 @@ export const routesConfig: RouteGroup = {
         },
         {
             path: '/dashboard/ssh-connections',
-            component: SSHConnectionsPage
+            component: SSHConnectionsPage,
+            requiredPermissions: ['ssh-connection:read']
         },
         {
             path: '/dashboard/ssh-connections/:connectionId/file-explorer',
-            component: SSHFileExplorerPage
+            component: SSHFileExplorerPage,
+            requiredPermissions: ['ssh-connection:read']
         },
         {
             path: '/dashboard/messages/:chatId?',

@@ -4,6 +4,10 @@
     overflow-x: hidden;
 }
 
+.sidebar-nav-item-wrapper {
+    width: 100%;
+}
+
 .sidebar-nav-section-title {
     text-transform: uppercase;
     letter-spacing: 0.06em;

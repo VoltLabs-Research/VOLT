@@ -25,6 +25,7 @@ import type { TeamMember } from '@/modules/team/domain/entities/TeamMember';
 import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/use-daily-activity-data';
 import ActivityHeatmap from '@/modules/daily-activity/presentation/components/molecules/ActivityHeatmap';
 import useTeamPresence from '@/modules/team/presentation/hooks/use-team-presence';
+import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
 import './MyTeam.css';
 
 const LIST_SYNC = createListSyncConfig('team-member');
@@ -33,8 +34,15 @@ const MyTeamTemplate: React.FC = () => {
     const navigate = useNavigate();
 
     const selectedTeam = useSelectedTeam()!;
-    const canInvite = useTeamStore((state) => state.canInvite);
+    const teamPermissions = useTeamStore((state) => state.permissions);
+    const permissionsTeamId = useTeamStore((state) => state.permissionsTeamId);
     const updateTeamInList = useTeamStore((state) => state.updateTeamInList);
+    const canInvite = canAccessTeamPermissions({
+        selectedTeamId: selectedTeam._id,
+        permissionsTeamId,
+        permissions: teamPermissions,
+        requiredPermissions: ['team-invitation:create']
+    });
 
     const removeMemberFromStore = useTeamMemberStore((state) => state.removeMember);
     const updateMember = useTeamMemberStore((state) => state.updateMember);
@@ -43,7 +51,7 @@ const MyTeamTemplate: React.FC = () => {
 
     const user = useCurrentUser()!;
 
-    const { checkCanInvite } = useTeamData();
+    const { hydrateTeamAccess } = useTeamData();
     const { fetchRoles } = useTeamRoleData();
     const { teamRepository } = useTeamUseCases();
     const { teamMemberRepository } = useTeamMemberUseCases();
@@ -53,9 +61,9 @@ const MyTeamTemplate: React.FC = () => {
 
     useEffect(() => {
         fetchRoles(selectedTeam._id);
-        checkCanInvite(selectedTeam._id);
+        hydrateTeamAccess(selectedTeam._id);
         fetchActivity();
-    }, [selectedTeam._id, fetchRoles, checkCanInvite, fetchActivity]);
+    }, [selectedTeam._id, fetchRoles, hydrateTeamAccess, fetchActivity]);
 
     const fetchData = useCallback(async (params: GetTeamMembersParams) => {
         return await teamMemberRepository.getAll(selectedTeam._id, params);

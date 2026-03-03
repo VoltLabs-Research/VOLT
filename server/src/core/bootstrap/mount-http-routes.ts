@@ -8,6 +8,7 @@ import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 import AuthHttpModule from '@modules/auth/infrastructure/http/routes/auth-routes';
 import SessionHttpModule from '@modules/session/infrastructure/http/routers/session-routes';
 import TeamHttpModule from '@modules/team/infrastructure/http/routes/team-router';
+import TeamSelfHttpModule from '@modules/team/infrastructure/http/routes/team-self-router';
 import TeamMemberHttpModule from '@modules/team/infrastructure/http/routes/team-member-router';
 import TeamInvitationHttpModule from '@modules/team/infrastructure/http/routes/team-invitation-router';
 import TeamRoleHttpModule from '@modules/team/infrastructure/http/routes/team-role-router';
@@ -48,6 +49,7 @@ const METHOD_ACTION_MAP: Record<string, Action> = {
 const HTTP_MODULES: HttpModule[] = [
     AuthHttpModule,
     SessionHttpModule,
+    TeamSelfHttpModule,
     TeamHttpModule,
     TeamMemberHttpModule,
     TeamInvitationHttpModule,

@@ -8,7 +8,7 @@ const router = Router({ mergeParams: true });
 const module: HttpModule = {
     basePath: '/api/team/secret-keys',
     router,
-    resource: Resource.TEAM
+    resource: Resource.TEAM_SECRET_KEY
 };
 
 router.use(protect);

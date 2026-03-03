@@ -18,6 +18,7 @@ export enum Resource {
     TEAM_INVITATION = 'team-invitation',
     TEAM_MEMBER = 'team-member',
     TEAM_ROLE = 'team-role',
+    TEAM_SECRET_KEY = 'team-secret-key',
     TEAM = 'team',
     TRAJECTORY = 'trajectory',
     SIMULATION_CELL = 'simulation-cell'
