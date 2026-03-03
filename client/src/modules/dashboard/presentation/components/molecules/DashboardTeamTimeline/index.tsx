@@ -3,6 +3,7 @@ import { Skeleton } from '@mui/material';
 import { GoUpload, GoTrash, GoBeaker } from 'react-icons/go';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/use-daily-activity-data';
 import type { ActivityItem, PopulatedUser } from '@/modules/daily-activity/domain/entities/DailyActivity';
 import './DashboardTeamTimeline.css';
@@ -135,9 +136,12 @@ const DashboardTeamTimeline = () => {
                         </Container>
                     ))
                 ) : (
-                    <Container className='dashboard-timeline-empty d-flex flex-center flex-1'>
-                        <span className='color-muted font-size-2'>No activity this week</span>
-                    </Container>
+                    <EmptyState
+                        icon={<GoBeaker size={20} />}
+                        title='No activity this week'
+                        description='Team activity from the last 7 days will appear here.'
+                        className='flex-1'
+                    />
                 )}
             </Container>
         </Container>
