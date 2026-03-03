@@ -1,14 +1,7 @@
 import { injectable, inject } from 'tsyringe';
 import { IEventHandler } from '@shared/application/events/IEventHandler';
 import { IApiTrackerRepository } from '@modules/api-tracker/domain/ports/IApiTrackerRepository';
-import logger from '@shared/infrastructure/logger';
-
-interface UserDeletedEvent {
-    userId: string;
-    occurredOn: Date;
-    name: string;
-    eventId: string;
-}
+import UserDeletedEvent from '@modules/auth/domain/events/UserDeletedEvent';
 
 @injectable()
 export class UserDeletedEventHandler implements IEventHandler<UserDeletedEvent> {
@@ -17,10 +10,7 @@ export class UserDeletedEventHandler implements IEventHandler<UserDeletedEvent> 
     ){}
 
     async handle(event: UserDeletedEvent): Promise<void> {
-        logger.info(`@api-tracker: Handling user:deleted event for user ${event.userId}`);
-
-        await this.repository.deleteByUserId(event.userId);
-
-        logger.info(`@api-tracker: Deleted all API tracker records for user ${event.userId}`);
+        const { userId } = event.payload;
+        await this.repository.deleteByUserId(userId);
     }
 }
