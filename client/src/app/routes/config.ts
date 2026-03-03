@@ -29,6 +29,8 @@ import DashboardLayout from '@/modules/dashboard/presentation/components/organis
 import Dashboard from '@/modules/dashboard/presentation/components/templates/Dashboard';
 import MessagesPage from '@/modules/chat/presentation/components/templates/MessagesPage';
 import SecretKeysListing from '@/modules/team/presentation/components/templates/SecretKeysListing';
+import SecretKeyMetrics from '@/modules/team/presentation/components/templates/SecretKeyMetrics';
+import SecretKeyUsage from '@/modules/team/presentation/components/templates/SecretKeyUsage';
 import ErrorPage from '@/shared/presentation/components/ErrorPage';
 import NotebooksListing from '@/modules/scripting/presentation/components/templates/NotebooksListing';
 import IntegrationsSettings from '@/modules/auth/presentation/components/templates/Settings/IntegrationsSettings';
@@ -44,7 +46,6 @@ export const routesConfig: RouteGroup = {
     ],
 
     protected: [
-        // Dashboard routes (with layout)
         {
             path: '/dashboard',
             component: Dashboard,
@@ -83,6 +84,16 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/secret-keys',
             component: SecretKeysListing,
+            requiredPermissions: ['team-secret-key:read']
+        },
+        {
+            path: '/dashboard/secret-keys/metrics',
+            component: SecretKeyMetrics,
+            requiredPermissions: ['team-secret-key:read']
+        },
+        {
+            path: '/dashboard/secret-keys/:secretKeyId/usage',
+            component: SecretKeyUsage,
             requiredPermissions: ['team-secret-key:read']
         },
         {
@@ -194,6 +205,5 @@ export const routesConfig: RouteGroup = {
         }
     ],
 
-    // Layout component for dashboard routes
     dashboardLayout: DashboardLayout
 };

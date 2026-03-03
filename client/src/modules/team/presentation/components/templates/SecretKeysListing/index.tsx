@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PiKeyLight } from 'react-icons/pi';
-import { RiFileCopyLine, RiShieldKeyholeLine } from 'react-icons/ri';
+import { RiFileCopyLine, RiShieldKeyholeLine, RiBarChartLine, RiLineChartLine } from 'react-icons/ri';
 import { formatDistanceToNow } from 'date-fns';
 import useGetSecretKeys from '@/modules/team/presentation/hooks/secret-key/use-get-secret-keys';
 import useRevokeSecretKey from '@/modules/team/presentation/hooks/secret-key/use-revoke-secret-key';
@@ -14,6 +15,7 @@ import { sileo } from 'sileo';
 import SecretKeyCreationModal, { SECRET_KEY_CREATION_MODAL_ID } from '../../organisms/SecretKeyCreationModal';
 import type { SecretKey } from '@/modules/team/domain/entities';
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
+import Button from '@/shared/presentation/components/Button';
 import './SecretKeysListing.css';
 
 const LIST_SYNC = createListSyncConfig('secret-key');
@@ -60,6 +62,7 @@ const COLUMNS: ColumnConfig[] = [
 ];
 
 const SecretKeysListing = () => {
+    const navigate = useNavigate();
     const getSecretKeys = useGetSecretKeys();
     const revokeSecretKey = useRevokeSecretKey();
     const deleteSecretKey = useDeleteSecretKey();
@@ -81,6 +84,11 @@ const SecretKeysListing = () => {
 
     const { getMenuOptions } = useListingActions<SecretKey>({
         actions: {
+            viewUsage: {
+                label: 'View Usage',
+                icon: RiLineChartLine,
+                handler: ({ item: key }) => navigate(`/dashboard/secret-keys/${key._id}/usage`)
+            },
             copy: {
                 label: 'Copy Prefix',
                 icon: RiFileCopyLine,
@@ -129,7 +137,6 @@ const SecretKeysListing = () => {
         return options.filter((option) => option.label !== 'Revoke Key');
     }, [getMenuOptions]);
 
-    // Quick shortcut for opening modal
     useKeyboardShortcut('n', handleCreateKey);
 
     return (
@@ -149,6 +156,16 @@ const SecretKeysListing = () => {
                     buttonTitle: 'Create new',
                     onCreate: handleCreateKey
                 }}
+                headerActions={
+                    <Button
+                        variant='ghost'
+                        intent='neutral'
+                        onClick={() => navigate('/dashboard/secret-keys/metrics')}
+                        leftIcon={<RiBarChartLine size={18} />}
+                    >
+                        Metrics
+                    </Button>
+                }
                 listSyncConfig={LIST_SYNC}
             />
 

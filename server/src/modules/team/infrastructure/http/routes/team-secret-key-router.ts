@@ -14,6 +14,9 @@ const module: HttpModule = {
 router.use(protect);
 router.get('/me', controllers.current.handle);
 
+router.get('/:teamId/metrics', controllers.teamMetrics.handle);
+router.get('/:teamId/:secretKeyId/usage', controllers.keyUsage.handle);
+
 router.route('/:teamId')
     .get(controllers.listByTeamId.handle)
     .post(controllers.create.handle);

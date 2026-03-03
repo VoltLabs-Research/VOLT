@@ -1,12 +1,15 @@
 import { useNavigate } from 'react-router-dom';
 import { RiTableLine } from 'react-icons/ri';
+import { Upload } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import useGetTrajectories from '../../../hooks/trajectory/use-get-trajectories';
 import useDeleteTrajectory from '../../../hooks/trajectory/use-delete-trajectory';
+import useTrajectoryFilePicker from '../../../hooks/trajectory/use-trajectory-file-picker';
 import useListingActions from '@/shared/presentation/hooks/use-listing-actions';
 import { showPromise } from '@/shared/presentation/hooks/toast';
 import DocumentListing, { type ColumnConfig, createListSyncConfig } from '@/shared/presentation/components/DocumentListing';
 import StatusBadge from '@/shared/presentation/components/StatusBadge';
+import Button from '@/shared/presentation/components/Button';
 import { formatNumber, formatSize } from '@/shared/utils/format';
 import type { Trajectory } from '@/modules/trajectory/domain/entities';
 
@@ -62,7 +65,7 @@ const COLUMNS: ColumnConfig[] = [
 
 const TrajectoriesListing = () => {
     const navigate = useNavigate();
-    
+    const { fileInputRef, handlePickerChange, openFilePicker, isUploading } = useTrajectoryFilePicker();
     const getTrajectories = useGetTrajectories();
     const deleteTrajectory = useDeleteTrajectory();
     const { getMenuOptions } = useListingActions<Trajectory>({
@@ -105,6 +108,28 @@ const TrajectoriesListing = () => {
             getMenuOptions={getMenuOptions}
             emptyMessage='No trajectories found'
             listSyncConfig={LIST_SYNC}
+            headerActions={
+                <>
+                    <input
+                        ref={fileInputRef}
+                        type='file'
+                        multiple
+                        hidden
+                        onChange={handlePickerChange}
+                    />
+                    <Button
+                        variant='outline'
+                        intent='neutral'
+                        className='transition-fast'
+                        onClick={openFilePicker}
+                        disabled={isUploading}
+                        isLoading={isUploading}
+                        leftIcon={<Upload size={18} />}
+                    >
+                        Upload
+                    </Button>
+                </>
+            }
         />
     );
 };
