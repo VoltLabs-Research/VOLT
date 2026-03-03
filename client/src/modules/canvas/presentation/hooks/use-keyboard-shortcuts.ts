@@ -6,10 +6,8 @@ import useCanvasUrlState from './use-canvas-url-state';
 const normalizeKey = (key: string): string => {
     const keyMap: Record<string, string> = {
         ' ': 'space',
-        'arrowleft': 'arrowleft',
-        'arrowright': 'arrowright',
-        'arrowup': 'arrowup',
-        'arrowdown': 'arrowdown'
+        '+': '=',
+        '_': '-',
     };
     const lower = key.toLowerCase();
     return keyMap[lower] ?? lower;
@@ -25,11 +23,8 @@ const useKeyboardShortcuts = () => {
     const {
         showWidgets,
         showGrid,
-        settingsKey,
         updateSearchParams,
         setResultsPluginId,
-        setSettingsKey,
-        toggleModifier
     } = useCanvasUrlState();
 
     const actionsRef = useRef<Record<string, () => void>>({});
@@ -112,18 +107,6 @@ const useKeyboardShortcuts = () => {
                 }));
             },
 
-            'color-coding': () => {
-                toggleModifier('color-coding');
-            },
-
-            'slice-plane': () => {
-                toggleModifier('slice-plane');
-            },
-
-            'particle-filter': () => {
-                toggleModifier('particle-filter');
-            },
-
             'increase-point-size': () => {
                 useEditorStore.getState().increasePointSize();
             },
@@ -132,9 +115,8 @@ const useKeyboardShortcuts = () => {
                 useEditorStore.getState().decreasePointSize();
             },
 
-            'show-shortcuts': () => {
-                togglePanel();
-            },
+            'show-shortcuts': togglePanel,
+            'show-shortcuts-ctrl-k': togglePanel,
 
             'escape': () => {
                 if (useKeyboardShortcutsStore.getState().showPanel) {
@@ -142,21 +124,6 @@ const useKeyboardShortcuts = () => {
                     return;
                 }
                 setResultsPluginId(undefined, { replace: true });
-            },
-
-            'toggle-opacity-settings': () => {
-                const { activeScene } = useEditorStore.getState();
-                if (!activeScene) return;
-
-                const key = activeScene.source === 'plugin'
-                    ? `plugin:${activeScene.analysisId}:${activeScene.exposureId}`
-                    : `${activeScene.source}:${activeScene.sceneType}`;
-
-                if (settingsKey === key) {
-                    setSettingsKey(undefined, { replace: true });
-                } else {
-                    setSettingsKey(key, { replace: true });
-                }
             }
         };
     }, [
@@ -165,10 +132,7 @@ const useKeyboardShortcuts = () => {
         showWidgets,
         showGrid,
         updateSearchParams,
-        setResultsPluginId,
-        settingsKey,
-        setSettingsKey,
-        toggleModifier
+        setResultsPluginId
     ]);
 
     useEffect(() => {
@@ -182,13 +146,15 @@ const useKeyboardShortcuts = () => {
                 if (e.key !== 'Escape') return;
             }
 
+            const normalizedKey = normalizeKey(e.key);
+            const isLetter = /^[a-z]$/.test(normalizedKey);
+            const isSpecialKey = e.key.length > 1;
+
             const pressedKeys: string[] = [];
             if (e.ctrlKey) pressedKeys.push('ctrl');
-            if (e.shiftKey) pressedKeys.push('shift');
+            if (e.shiftKey && (isLetter || isSpecialKey)) pressedKeys.push('shift');
             if (e.altKey) pressedKeys.push('alt');
             if (e.metaKey) pressedKeys.push('meta');
-
-            const normalizedKey = normalizeKey(e.key);
             pressedKeys.push(normalizedKey);
 
             const currentShortcuts = useKeyboardShortcutsStore.getState().shortcuts;
