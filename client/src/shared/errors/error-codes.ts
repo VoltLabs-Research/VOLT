@@ -256,16 +256,6 @@ export const ERROR_CODE_MESSAGES: Record<string, string> = {
     'Session::RevokeSession::Failed': 'Failed to revoke session',
     'Session::RevokeAllOtherSessions::Failed': 'Failed to revoke all other sessions',
 
-    // API Tracker errors
-    'ApiTracker::Method::Required': 'HTTP method is required',
-    'ApiTracker::Url::Required': 'URL is required',
-    'ApiTracker::Ip::Required': 'IP address is required',
-    'ApiTracker::StatusCode::Required': 'Status code is required',
-    'ApiTracker::StatusCode::Min': 'Invalid status code(minimum: 100)',
-    'ApiTracker::StatusCode::Max': 'Invalid status code(maximum: 599)',
-    'ApiTracker::ResponseTime::Required': 'Response time is required',
-    'ApiTracker::ResponseTime::Min': 'Response time cannot be negative',
-
     // Socket errors
     'Socket::Auth::TokenRequired': 'Authentication token is required for socket connection',
     'Socket::Auth::UserNotFound': 'User not found - cannot establish socket connection',

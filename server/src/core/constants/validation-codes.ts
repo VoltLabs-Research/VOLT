@@ -1,14 +1,5 @@
 // Validation Codes Format: ModelName::Property::Type
 export const ValidationCodes = {
-    API_TRACKER_METHOD_REQUIRED: 'ApiTracker::Method::Required',
-    API_TRACKER_URL_REQUIRED: 'ApiTracker::Url::Required',
-    API_TRACKER_IP_REQUIRED: 'ApiTracker::Ip::Required',
-    API_TRACKER_STATUS_CODE_REQUIRED: 'ApiTracker::StatusCode::Required',
-    API_TRACKER_STATUS_CODE_MIN: 'ApiTracker::StatusCode::Min',
-    API_TRACKER_STATUS_CODE_MAX: 'ApiTracker::StatusCode::Max',
-    API_TRACKER_RESPONSE_TIME_REQUIRED: 'ApiTracker::ResponseTime::Required',
-    API_TRACKER_RESPONSE_TIME_MIN: 'ApiTracker::ResponseTime::Min',
-
     CONTAINER_NAME_REQUIRED: 'Container::Name::Required',
     CONTAINER_IMAGE_REQUIRED: 'Container::Image::Required',
     CONTAINER_ID_REQUIRED: 'Container::ContainerId::Required',

@@ -1,6 +1,5 @@
 export enum Resource {
     ANALYSIS = 'analysis',
-    API_TRACKER = 'api-tracker',
     AUTH = 'authentication',
     CHAT = 'chat',
     COLOR_CODING = 'color-coding',
