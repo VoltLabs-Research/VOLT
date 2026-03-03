@@ -7,6 +7,7 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import Button from '@/shared/presentation/components/Button';
 import useTeamInvitationUseCases from '@/modules/team/presentation/hooks/team-invitation/use-team-invitation-use-cases';
 import type { TeamInvitation } from '@/modules/team/domain/entities/TeamInvitation';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import './TeamInvitation.css';
 
 const TeamInvitationTemplate: React.FC = () => {
@@ -46,7 +47,11 @@ const TeamInvitationTemplate: React.FC = () => {
         setActionLoading(true);
         try{
             localStorage.setItem('selectedTeamId', invitation.team._id);
-            await teamInvitationRepository.accept(invitationId);
+            await showPromise(teamInvitationRepository.accept(invitationId), {
+                loading: { title: 'Accepting invitation...' },
+                success: { title: 'Invitation accepted!' },
+                error: { title: 'Failed to accept invitation' }
+            });
             setError(null);
             window.location.href = '/dashboard';
         }catch(err: any){
@@ -61,7 +66,11 @@ const TeamInvitationTemplate: React.FC = () => {
 
         setActionLoading(true);
         try{
-            await teamInvitationRepository.reject(invitationId);
+            await showPromise(teamInvitationRepository.reject(invitationId), {
+                loading: { title: 'Rejecting invitation...' },
+                success: { title: 'Invitation rejected' },
+                error: { title: 'Failed to reject invitation' }
+            });
             setError(null);
             window.location.href = '/dashboard';
         }catch(err: any){

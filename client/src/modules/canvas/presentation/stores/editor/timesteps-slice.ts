@@ -83,8 +83,7 @@ export const createTimestepSlice: StateCreator<any, [], [], TimestepStore> = (se
             try {
                 const loader = new AssetLoader();
                 await loader.load(url);
-            } catch (e) {
-                console.error(`Failed to preload frame ${timestep}`, e);
+            } catch {
             } finally {
                 loadedCount++;
                 if (onProgress) {

@@ -134,8 +134,7 @@ const IntegrationsSettings: React.FC = () => {
             ]);
             setIntegrations(integrationsResponse.integrations);
             setProviderModels(modelsResponse.providers);
-        } catch (error) {
-            console.error('Failed to load team AI integrations', error);
+        } catch {
             sileo.error({ title: 'Failed to load integrations' });
         } finally {
             setIsLoading(false);
@@ -397,7 +396,7 @@ const IntegrationsSettings: React.FC = () => {
                                         variant='ghost'
                                         intent='danger'
                                         leftIcon={<Trash2 size={14} />}
-                                        onClick={() => handleRemoveProvider(integration.provider).catch(console.error)}
+                                        onClick={() => { handleRemoveProvider(integration.provider); }}
                                         isLoading={busyProvider === integration.provider}
                                         disabled={isLoading}
                                     />
@@ -427,7 +426,7 @@ const IntegrationsSettings: React.FC = () => {
                         <Button
                             variant='solid'
                             intent='brand'
-                            onClick={() => handleSaveIntegration().catch(console.error)}
+                            onClick={() => { handleSaveIntegration(); }}
                             isLoading={isSaving}
                             disabled={isSaving || !modalProvider}
                         >

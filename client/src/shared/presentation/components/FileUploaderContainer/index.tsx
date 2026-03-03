@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import useDragState from '@/shared/presentation/hooks/use-drag-state';
 import { processFileSystemEntry, type FileWithPath } from '@/shared/utils/file';
 import Container from '@/shared/presentation/components/Container';
+import { sileo } from 'sileo';
 import './FileUploaderContainer.css';
 
 interface FileUploaderContainerProps {
@@ -58,8 +59,8 @@ const FileUploaderContainer: React.FC<FileUploaderContainerProps> = ({
 
             const finalFolderName = commonFolderName || `upload_${Date.now()}`;
             onFilesDropped(allFiles, finalFolderName);
-        } catch (err) {
-            console.error('Drop handler error:', err);
+        } catch {
+            sileo.error({ title: 'Failed to process dropped files' });
         }
     }, [onFilesDropped, resetDragState]);
 

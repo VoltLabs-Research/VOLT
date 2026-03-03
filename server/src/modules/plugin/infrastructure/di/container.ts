@@ -127,7 +127,4 @@ export const initializeNodeHandlers = (): void => {
 
     // Register all handlers with the NodeRegistry
     handlers.forEach((handler) => nodeRegistry.register(handler));
-
-    const registeredTypes = nodeRegistry.getRegisteredTypes();
-    console.log(`[NodeRegistry] Registered ${registeredTypes.length} handlers: ${registeredTypes.join(', ')}`);
 };

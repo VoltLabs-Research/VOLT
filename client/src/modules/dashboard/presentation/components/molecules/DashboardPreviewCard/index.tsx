@@ -14,7 +14,6 @@ import { DEFAULT_SCENE } from '@/modules/fractal/presentation/utilities/sceneUti
 import { formatNumber } from '@/shared/utils/format';
 import Container from '@/shared/presentation/components/Container';
 import Loader from '@/shared/presentation/components/Loader';
-import StatusBadge from '@/shared/presentation/components/StatusBadge';
 import Button from '@/shared/presentation/components/Button';
 import EmptyState from '@/shared/presentation/components/EmptyState';
 import './DashboardPreviewCard.css';

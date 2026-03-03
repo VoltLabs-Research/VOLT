@@ -52,8 +52,6 @@ const useFormValidation = <T extends Record<string, any>>(schema: ValidationSche
                 return rule.message ?? 'This field is required';
             }
 
-            // if(isEmpty(value)) continue;
-
             // String checks
             if(typeof value === 'string'){
                 if(rule.minLength !== undefined && value.length < rule.minLength){

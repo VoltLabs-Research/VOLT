@@ -4,7 +4,6 @@ interface ParagraphProps extends React.HTMLAttributes<HTMLParagraphElement>{
     children?: React.ReactNode;
 };
 
-/** TODO: MAX LINES PROPERTY */
 const Paragraph = ({ children, className, ...props }: ParagraphProps) => {
     return (
         <p className={`volt-text ${className}`} {...props}>

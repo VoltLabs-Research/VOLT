@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { sileo } from 'sileo';
 import type { IArgumentDefinition } from '@/modules/plugin/domain/entities';
 import type { ModifierOption } from '../../modifiers/registry';
 
@@ -66,8 +67,8 @@ const usePluginExecution = ({
 
             setExecStates((prev) => new Map(prev).set(modId, 'success'));
             clearExecStateLater(modId);
-        } catch (err) {
-            console.error('[RightPanel] plugin execution failed', err);
+        } catch {
+            sileo.error({ title: 'Plugin execution failed' });
             setExecStates((prev) => new Map(prev).set(modId, 'error'));
             clearExecStateLater(modId);
         }

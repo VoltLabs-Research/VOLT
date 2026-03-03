@@ -5,7 +5,7 @@ import { injectable } from 'tsyringe';
 import type { IContainerService, ContainerStats } from '@modules/container/domain/ports/IContainerService';
 import logger from '@shared/infrastructure/logger';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 const MAX_EXEC_BUFFER_SIZE = 10 * 1024 * 1024;
 

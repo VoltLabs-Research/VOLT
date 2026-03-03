@@ -30,8 +30,7 @@ export class AssetLoader {
                 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
                 gltfLoader.setDRACOLoader(dracoLoader);
                 gltfLoader.setMeshoptDecoder(MeshoptDecoder);
-            } catch (error) {
-                console.error('Failed to set up GLTF decoders:', error);
+            } catch {
             }
 
             gltfLoader.parse(

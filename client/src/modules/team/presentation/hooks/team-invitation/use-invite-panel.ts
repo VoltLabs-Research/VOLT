@@ -9,6 +9,8 @@ import type { InviteButtonState } from '../../components/atoms/InviteButton';
 import { FieldBind } from '@/shared/presentation/hooks/use-form';
 import ApiError from '@/shared/errors/ApiError';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
+import { sileo } from 'sileo';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 
 interface UseInvitePanelOptions{
     teamId: string;
@@ -37,16 +39,14 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
     const { fetchPendingInvitations } = useTeamInvitationData();
 
     const loadInvitationsAction = useAsyncAction({
-        onError: (error: unknown) => {
-            console.error('Error fetching pending invitations:', error);
+        onError: () => {
+            sileo.error({ title: 'Failed to load pending invitations' });
         },
         onFinally: () => setLoadingInvitations(false)
     });
 
     const cancelInvitationAction = useAsyncAction({
-        onError: (error: unknown) => {
-            console.error('Failed to cancel invitation:', error);
-        },
+        onError: () => {},
         onFinally: () => setCancelingId(null)
     });
 
@@ -68,6 +68,7 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
             try{
                 await teamInvitationRepository.send(email, 'Can view');
                 await fetchPendingInvitations();
+                sileo.success({ title: 'Invitation sent', description: `Invitation sent to ${email}` });
                 reset();
                 setErrors({});
                 setButtonState('success');
@@ -100,7 +101,11 @@ const useInvitePanel = ({ teamId }: UseInvitePanelOptions): UseInvitePanelReturn
     const handleCancelInvitation = useCallback(async (invitationId: string) => {
         setCancelingId(invitationId);
         await cancelInvitationAction.execute(async () => {
-            await teamInvitationRepository.cancel(invitationId);
+            await showPromise(teamInvitationRepository.cancel(invitationId), {
+                loading: { title: 'Cancelling invitation...' },
+                success: { title: 'Invitation cancelled' },
+                error: { title: 'Failed to cancel invitation' }
+            });
             removeInvitation(invitationId);
         });
     }, [teamInvitationRepository, removeInvitation, cancelInvitationAction]);

@@ -33,7 +33,6 @@ export default class CreateTeamMemberUseCase implements IUseCase<CreateTeamMembe
             ));
         }
 
-        // TODO: maybe this is more faster for check-team-membership
         const isAlreadyMember = await this.teamMemberRepository.exists({
             user: userId,
             team: teamId

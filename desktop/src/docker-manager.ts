@@ -29,7 +29,7 @@ export default class DockerManager{
         this.projectName = 'Volt-desktop';
     }
 
-    async checkDocker(): Promise<boolean>{
+    private async checkDocker(): Promise<boolean>{
         try{
             await this.docker.ping();
             return true;
@@ -39,7 +39,7 @@ export default class DockerManager{
         }
     }
 
-    async checkComposeFile(): Promise<boolean>{
+    private async checkComposeFile(): Promise<boolean>{
         try{
             await fs.access(this.composePath);
             return true;

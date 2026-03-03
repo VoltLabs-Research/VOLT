@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { container } from 'tsyringe';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
 import type ITeamStorage from '@/modules/team/domain/ports/ITeamStorage';
@@ -37,7 +38,7 @@ const useTeamData = () => {
                 setSelectedTeam(selectedTeam);
             }
         }catch(error: any){
-            console.error('Failed to fetch teams:', error);
+            sileo.error({ title: 'Failed to load teams' });
             setError(error?.message ?? 'Failed to fetch teams');
         }finally{
             setLoading(false);

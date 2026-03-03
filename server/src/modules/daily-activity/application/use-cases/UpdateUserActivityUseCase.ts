@@ -5,6 +5,7 @@ import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { DAILY_ACTIVITY_TOKENS } from '@modules/daily-activity/infrastructure/di/DailyActivityTokens';
 import { IDailyActivityRepository } from '@modules/daily-activity/domain/ports/IDailyActivityRepository';
 import { UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO } from '@modules/daily-activity/application/dto/UpdateUserActivityDTO';
+import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class UpdateUserActivityUseCase implements IUseCase<UpdateUserActivityInputDTO, UpdateUserActivityOutputDTO, ApplicationError> {
@@ -24,7 +25,7 @@ export default class UpdateUserActivityUseCase implements IUseCase<UpdateUserAct
             await this.repository.updateOnlineMinutes(teamId, userId, date, durationInMinutes);
             return Result.ok({ success: true });
         } catch (error) {
-            console.error('Failed to update user activity:', error);
+            logger.error(error, 'Failed to update user activity');
             // We usually don't want to crash the request if stats fail, but we return error here
             return Result.fail(ApplicationError.internalServerError('Failed to update activity stats'));
         }

@@ -69,9 +69,7 @@ export default class ExposureHandler implements INodeHandler{
         const exportNode = context.workflow.findDescendantByType(nodeId, WorkflowNodeType.Export);
         const visualizerNode = context.workflow.findDescendantByType(nodeId, WorkflowNodeType.Visualizers);
         const hasListing = !!(visualizerNode?.data?.visualizers?.listing && Object.keys(visualizerNode.data.visualizers.listing).length);
-        
-        console.log(`[ExposureHandler] analyzeRequirements for exposure ${nodeId}: visualizerNode=${visualizerNode?.id || 'none'}, hasListing=${hasListing}, listing=${JSON.stringify(visualizerNode?.data?.visualizers?.listing || {})}`);
-        
+
         return {
             needsData: !!exportNode,
             needsMetadata: hasListing
@@ -107,7 +105,6 @@ export default class ExposureHandler implements INodeHandler{
 
         if(reqs.needsData || reqs.needsMetadata){
             payload = await readExposurePayload(localPath, config.iterable, reqs);
-            console.log(`[ExposureHandler] Payload extracted - needsMetadata: ${reqs.needsMetadata}, hasMetadata: ${!!payload.metadata}, metadataKeys: ${payload.metadata ? Object.keys(payload.metadata).length : 0}`);
         }
 
         return {

@@ -8,6 +8,7 @@ import RasterizerQueue from '@modules/raster/infrastructure/queues/RasterizerQue
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
 import { v4 } from 'uuid';
 import path from 'path';
+import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export class RasterService implements IRasterService {
@@ -30,7 +31,7 @@ export class RasterService implements IRasterService {
                 }
             }
         } catch (error) {
-            // Silent catch
+            logger.warn(error, 'Failed to list existing rasters');
         }
 
         if (glbFiles.length === 0) {
@@ -72,11 +73,62 @@ export class RasterService implements IRasterService {
         return false; // No jobs created
     }
 
-    async getRasterMetadata(_trajectoryId: string): Promise<RasterMetadata | null> {
-        return Promise.resolve(null);
+    async getRasterMetadata(trajectoryId: string): Promise<RasterMetadata | null> {
+        const prefix = `trajectory-${trajectoryId}/previews/`;
+        let rasterizedFrames = 0;
+
+        try {
+            for await (const file of this.storageService.listByPrefix(SYS_BUCKETS.RASTERIZER, prefix)) {
+                if (file.endsWith('.png')) {
+                    rasterizedFrames++;
+                }
+            }
+        } catch (error) {
+            logger.warn(error, `Failed to list raster previews for trajectory ${trajectoryId}`);
+            return null;
+        }
+
+        if (rasterizedFrames === 0) {
+            return null;
+        }
+
+        const glbPrefix = `trajectory-${trajectoryId}/`;
+        let totalFrames = 0;
+
+        try {
+            for await (const file of this.storageService.listByPrefix(SYS_BUCKETS.MODELS, glbPrefix)) {
+                if (file.endsWith('.glb')) {
+                    totalFrames++;
+                }
+            }
+        } catch (error) {
+            logger.warn(error, `Failed to list GLB models for trajectory ${trajectoryId}`);
+        }
+
+        const status = rasterizedFrames >= totalFrames && totalFrames > 0 ? 'completed' : 'processing';
+
+        return {
+            trajectoryId,
+            totalFrames,
+            rasterizedFrames,
+            status,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
     }
 
-    async getRasterFramePNG(_trajectoryId: string, _timestep: number): Promise<Buffer> {
-        throw new Error("Method not implemented.");
+    async getRasterFramePNG(trajectoryId: string, timestep: number): Promise<Buffer> {
+        const objectName = `trajectory-${trajectoryId}/previews/timestep-${timestep}.png`;
+
+        try {
+            const exists = await this.storageService.exists(SYS_BUCKETS.RASTERIZER, objectName);
+            if (!exists) {
+                throw new Error(`Raster frame not found: trajectory=${trajectoryId}, timestep=${timestep}`);
+            }
+            return await this.storageService.getBuffer(SYS_BUCKETS.RASTERIZER, objectName);
+        } catch (error: any) {
+            logger.warn(error, `Failed to retrieve raster frame PNG for trajectory ${trajectoryId}, timestep ${timestep}`);
+            throw error;
+        }
     }
 }

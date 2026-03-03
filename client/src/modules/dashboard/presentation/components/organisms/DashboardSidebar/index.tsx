@@ -8,6 +8,7 @@ import Brand from '@/modules/dashboard/presentation/components/atoms/Brand';
 import SidebarNavigation from '@/modules/dashboard/presentation/components/atoms/SidebarNavigation';
 import SidebarFooterNavigation from '@/modules/dashboard/presentation/components/atoms/SidebarFooterNavigation';
 import UserMenuPopover from '@/modules/auth/presentation/components/molecules/UserMenuPopover';
+import { sileo } from 'sileo';
 import './DashboardSidebar.css';
 
 interface DashboardSidebarProps {
@@ -26,8 +27,8 @@ const DashboardSidebar = ({ sidebarOpen, setSidebarOpen, collapsed, onToggleColl
         try{
             setIsSigningOut(true);
             useAuthStore.getState().signOut();
-        }catch(error){
-            console.error('Sign out failed', error);
+        }catch{
+            sileo.error({ title: 'Sign out failed', description: 'Please try again.' });
         }finally{
             setIsSigningOut(false);
         }

@@ -89,7 +89,7 @@ const AIPage = () => {
     }, []);
 
     const handleCreate = () => {
-        handleCreateConversation().catch(console.error);
+        handleCreateConversation().catch(() => {});
     };
 
     const handleDelete = async (targetConversationId: string) => {
@@ -199,7 +199,7 @@ const AIPage = () => {
                                     ) : null}
                                     onRetry={() => {
                                         if (conversationId) {
-                                            loadConversationMessages(conversationId).catch(console.error);
+                                            loadConversationMessages(conversationId).catch(() => {});
                                         }
                                     }}
                                 />

@@ -36,7 +36,12 @@ const useJobsCompletionToast = ({
 
         if (!allJobsCompleted) {
             clearCompletionTimer();
-            return;
+            timerRef.current = setTimeout(() => {
+                sileo.warning({ title: 'Analysis completed with errors' });
+                hasShownCompletionToastRef.current = true;
+                hadActiveJobsRef.current = false;
+            }, 500);
+            return clearCompletionTimer;
         }
 
         timerRef.current = setTimeout(() => {

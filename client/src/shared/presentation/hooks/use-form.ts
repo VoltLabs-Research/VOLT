@@ -1,5 +1,6 @@
 import { useCallback, useState, useEffect, useRef } from 'react';
 import useFormValidation, { ValidationSchema } from './use-form-validation';
+import { sileo } from 'sileo';
 
 export type FieldBind<T, K extends keyof T> = {
     name: K;
@@ -85,8 +86,8 @@ const useForm = <T extends Record<string, any>>(opts: UseFormOptions<T>) => {
             setIsAutoSaving(true);
             await onAutoSaveRef.current(values);
             initialValuesRef.current = values;
-        }catch(error){
-            console.error('Auto-save failed:', error);
+        }catch{
+            sileo.error({ title: 'Auto-save failed' });
         }finally{
             setIsAutoSaving(false);
         }
@@ -181,7 +182,6 @@ const useForm = <T extends Record<string, any>>(opts: UseFormOptions<T>) => {
                 reset();
             }
         }catch(error){
-            console.error('Form submission failed:', error);
             throw error;
         }finally{
             setIsSubmitting(false);

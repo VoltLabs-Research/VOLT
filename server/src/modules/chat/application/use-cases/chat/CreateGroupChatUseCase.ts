@@ -6,6 +6,7 @@ import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
 import { ITeamRepository } from '@modules/team/domain/ports/ITeamRepository';
+import { ITeamMemberRepository } from '@modules/team/domain/ports/ITeamMemberRepository';
 import { CreateGroupChatInputDTO, CreateGroupChatOutputDTO } from '@modules/chat/application/dtos/chat/CreateGroupChatDTO';
 import { ErrorCodes } from '@core/constants/error-codes';
 
@@ -15,7 +16,9 @@ export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO,
         @inject(CHAT_TOKENS.ChatRepository)
         private chatRepo: IChatRepository,
         @inject(TEAM_TOKENS.TeamRepository)
-        private teamRepo: ITeamRepository
+        private teamRepo: ITeamRepository,
+        @inject(TEAM_TOKENS.TeamMemberRepository)
+        private teamMemberRepo: ITeamMemberRepository
     ){}
 
     async execute(input: CreateGroupChatInputDTO): Promise<Result<CreateGroupChatOutputDTO, ApplicationError>> {
@@ -29,9 +32,20 @@ export class CreateGroupChatUseCase implements IUseCase<CreateGroupChatInputDTO,
             ));
         }
 
-        // TODO: this.teamRepo.validateMembers(teamId, participantIds)
+        const allUserIds = [...new Set([ownerId, ...participantIds])];
+        const memberChecks = await Promise.all(
+            allUserIds.map((userId) => this.teamMemberRepo.findOne({ team: teamId, user: userId }))
+        );
+        const invalidIndex = memberChecks.findIndex((member) => !member);
+        if(invalidIndex !== -1){
+            return Result.fail(ApplicationError.notFound(
+                ErrorCodes.TEAM_MEMBER_NOT_FOUND,
+                `User ${allUserIds[invalidIndex]} is not a member of this team`
+            ));
+        }
+
         const chat = await this.chatRepo.create({
-            participants: [...new Set([ownerId, ...participantIds])],
+            participants: allUserIds,
             team: teamId,
             isGroup: true,
             groupName,

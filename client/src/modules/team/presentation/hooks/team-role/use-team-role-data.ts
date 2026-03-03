@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { sileo } from 'sileo';
 import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-role-store';
 import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
 
@@ -16,7 +17,7 @@ const useTeamRoleData = () => {
             const response = await teamRoleRepository.getAll(teamId, { page: 1, limit: 100 });
             setRoles(response.data);
         }catch(error: any){
-            console.error('Failed to fetch roles:', error);
+            sileo.error({ title: 'Failed to fetch roles' });
             setError(error?.message ?? 'Failed to fetch roles');
         }finally{
             setLoading(false);

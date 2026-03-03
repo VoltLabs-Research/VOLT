@@ -87,7 +87,7 @@ export default class SessionManagerService implements ISessionManagerService {
         sessionDataRaw: string
     ): Promise<void> {
         if (!sessionDataRaw) {
-            console.warn(`Session data not found for ${sessionId}`);
+            logger.warn(`Session data not found for ${sessionId}`);
             return;
         }
 

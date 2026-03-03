@@ -19,13 +19,17 @@ const useMessageActions = (chatId?: string) => {
     const sendMessage = useCallback(async (content: string) => {
         if (!chatId || !content.trim()) return;
 
-        const message = await chatMessageRepository.sendMessage(chatId, {
-            content: content.trim(),
-            messageType: 'text'
-        });
-        
-        addMessage(message);
-        return message;
+        try {
+            const message = await chatMessageRepository.sendMessage(chatId, {
+                content: content.trim(),
+                messageType: 'text'
+            });
+            
+            addMessage(message);
+            return message;
+        } catch {
+            sileo.error({ title: 'Failed to send message' });
+        }
     }, [chatId, addMessage, chatMessageRepository]);
 
     const sendFileMessage = useCallback(async (file: File) => {
@@ -73,8 +77,12 @@ const useMessageActions = (chatId?: string) => {
     const toggleReaction = useCallback(async (messageId: string, emoji: string) => {
         if (!chatId) return;
 
-        const message = await chatMessageRepository.toggleReaction(chatId, messageId, emoji);
-        updateMessage(messageId, { reactions: message.reactions });
+        try {
+            const message = await chatMessageRepository.toggleReaction(chatId, messageId, emoji);
+            updateMessage(messageId, { reactions: message.reactions });
+        } catch {
+            sileo.error({ title: 'Failed to update reaction' });
+        }
     }, [chatId, updateMessage, chatMessageRepository]);
 
     return {

@@ -5,12 +5,6 @@ export const ValidationCodes = {
     CONTAINER_ID_REQUIRED: 'Container::ContainerId::Required',
     CONTAINER_CREATED_BY_REQUIRED: 'Container::CreatedBy::Required',
 
-    DOCKER_NETWORK_ID_REQUIRED: 'DockerNetwork::NetworkId::Required',
-    DOCKER_NETWORK_NAME_REQUIRED: 'DockerNetwork::Name::Required',
-
-    DOCKER_VOLUME_ID_REQUIRED: 'DockerVolume::VolumeId::Required',
-    DOCKER_VOLUME_NAME_REQUIRED: 'DockerVolume::Name::Required',
-
     MESSAGE_CONTENT_REQUIRED: 'Message::Content::Required',
     MESSAGE_CONTENT_MAXLEN: 'Message::Content::MaxLength',
 
@@ -25,8 +19,6 @@ export const ValidationCodes = {
     PLUGIN_MODIFIER_NAME_REQUIRED: 'Plugin::ModifierData::Name::Required',
     PLUGIN_CONTEXT_SOURCE_REQUIRED: 'Plugin::ContextData::Source::Required',
     PLUGIN_FOREACH_ITERABLE_SOURCE_REQUIRED: 'Plugin::ForeachData::IterableSource::Required',
-    PLUGIN_ENTRYPOINT_BINARY_REQUIRED: 'Plugin::Entrypoint::Binary::Required',
-    PLUGIN_ENTRYPOINT_ARGUMENTS_REQUIRED: 'Plugin::Entrypoint::Arguments::Required',
     PLUGIN_EXPOSURE_NAME_REQUIRED: 'Plugin::Exposure::Name::Required',
     PLUGIN_EXPOSURE_RESULTS_REQUIRED: 'Plugin::Exposure::Results::Required',
     PLUGIN_SCHEMA_DEFINITION_REQUIRED: 'Plugin::Schema::Definition::Required',
@@ -40,18 +32,12 @@ export const ValidationCodes = {
     PLUGIN_WORKFLOW_EDGE_ID_REQUIRED: 'Plugin::WorkflowEdge::Id::Required',
     PLUGIN_WORKFLOW_EDGE_SOURCE_REQUIRED: 'Plugin::WorkflowEdge::Source::Required',
     PLUGIN_WORKFLOW_EDGE_TARGET_REQUIRED: 'Plugin::WorkflowEdge::Target::Required',
-    PLUGIN_ID_REQUIRED: 'Plugin::Id::Required',
-    PLUGIN_WORKFLOW_REQUIRED: 'Plugin::Workflow::Required',
-
     SESSION_SUCCESS_REQUIRED: 'Session::Success::Required',
     SESSION_ACTION_REQUIRED: 'Session::Action::Required',
     SESSION_IP_REQUIRED: 'Session::Ip::Required',
     SESSION_USER_AGENT_REQUIRED: 'Session::UserAgent::Required',
     SESSION_TOKEN_REQUIRED: 'Session::Token::Required',
-    SESSION_USER_REQUIRED: 'Session::User::Required',
-
     SSH_CONNECTION_NAME_REQUIRED: 'SSHConnection::Name::Required',
-    SSH_CONNECTION_NAME_DUPLICATED: 'SSHConnection::Name::Duplicated',
     SSH_CONNECTION_MINLEN: 'SSHConnection::Name::MinLength',
     SSH_CONNECTION_MAXLEN: 'SSHConnection::Name::MaxLength',
     SSH_CONNECTION_HOST: 'SSHConenction::Host::Required',
@@ -71,7 +57,6 @@ export const ValidationCodes = {
     TEAM_INVITATION_EMAIL_REQUIRED: 'TeamInvitation::Email::Required',
     TEAM_INVITATION_EMAIL_INVALID: 'TeamInvitation::Email::Invalid',
     TEAM_INVITATION_TOKEN_REQUIRED: 'TeamInvitation::Token::Required',
-    TEAM_INVITATION_ROLE_INVALID: 'TeamInvitation::Role::Invalid',
     TEAM_INVITATION_EXPIRES_AT_REQUIRED: 'TeamInvitation::ExpiresAt::Required',
     TEAM_INVITATION_STATUS_INVALID: 'TeamInvitation::Status::Invalid',
 
@@ -88,7 +73,6 @@ export const ValidationCodes = {
     USER_EMAIL_REQUIRED: 'User::Email::Required',
     USER_EMAIL_INVALID: 'User::Email::Invalid',
     USER_PASSWORD_MINLEN: 'User::Password::MinLength',
-    USER_PASSWORD_MAXLEN: 'User::Password::MaxLength',
     USER_FIRST_NAME_MINLEN: 'User::FirstName::MinLength',
     USER_FIRST_NAME_MAXLEN: 'User::FirstName::MaxLength',
     USER_FIRST_NAME_REQUIRED: 'User::Username::Required',

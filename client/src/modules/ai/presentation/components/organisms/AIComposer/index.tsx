@@ -67,7 +67,6 @@ const AIComposer = ({
                 />
 
                 <Tooltip content='Send message'>
-                    {/* TODO: THIS SHOULD BE AN ICON BUTTON */}
                     <button
                         type='button'
                         className='ai-composer-send d-flex flex-center'

@@ -1,4 +1,5 @@
 import path from 'path';
+import logger from '@shared/infrastructure/logger';
 
 interface Rasterizer {
     rasterize(
@@ -31,7 +32,7 @@ let rasterizer: Rasterizer;
 try {
     rasterizer = require(nativePath);
 } catch (error) {
-    console.warn(`[Rasterizer] Native module not found at ${nativePath}. Rasterization will fail.`);
+    logger.warn(`[Rasterizer] Native module not found at ${nativePath}. Rasterization will fail.`);
 }
 
 const rasterize = (glbPath: string, pngPath: string, options: RasterizerOptions = {}): boolean => {
@@ -50,7 +51,7 @@ const rasterize = (glbPath: string, pngPath: string, options: RasterizerOptions 
     try {
         return rasterizer.rasterize(glbPath, pngPath, width, height, az, el, { fov, distScale, zUp });
     } catch (error: any) {
-        console.error('[Rasterizer] Native module threw exception:', error.message || error);
+        logger.error({ err: error }, `[Rasterizer] Native module threw exception: ${error.message || error}`);
         throw new Error(`Native rasterizer exception: ${error.message || error}`);
     }
 };

@@ -1,7 +1,7 @@
 import type {
-    AIConversationMessage,
     AIMessageArtifact
 } from '@/modules/ai/domain/entities/AIConversation';
+import { isRecord } from '@/modules/ai/presentation/components/organisms/AIConversationThread/thread-utils';
 
 export type { AIMessageArtifact } from '@/modules/ai/domain/entities/AIConversation';
 
@@ -9,20 +9,6 @@ export interface AITabularArtifactPayload {
     columns: string[];
     rows: Record<string, unknown>[];
 }
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-    if (value === null || typeof value !== 'object') {
-        return false;
-    }
-
-    return !Array.isArray(value);
-};
-
-export const extractMessageArtifacts = (message: AIConversationMessage): AIMessageArtifact[] => {
-    return Array.isArray(message.artifacts?.items)
-        ? message.artifacts.items
-        : [];
-};
 
 export const resolveTabularPayload = (artifact: AIMessageArtifact): AITabularArtifactPayload | null => {
     if (artifact.kind !== 'table' || !isRecord(artifact.payload)) {
@@ -41,8 +27,4 @@ export const resolveTabularPayload = (artifact: AIMessageArtifact): AITabularArt
     }
 
     return { columns, rows };
-};
-
-export const getFirstTabularArtifact = (message: AIConversationMessage): AIMessageArtifact | null => {
-    return extractMessageArtifacts(message).find((artifact) => artifact.kind === 'table') ?? null;
 };

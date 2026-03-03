@@ -295,7 +295,6 @@
     text-align: center;
 }
 
-/** TODO: Use tokens for this: md, lg, sm... **/
 .font-size-05{
     font-size: .7rem;
 }

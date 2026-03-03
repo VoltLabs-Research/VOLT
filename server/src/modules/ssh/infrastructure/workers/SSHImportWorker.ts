@@ -30,7 +30,6 @@ export default class SSHImportWorker extends BaseWorker<Job> {
         }
 
         try {
-            // TODO: Maybe UseCase?
             const connection = await this.sshRepository.findByIdWithCredentials(sshConnectionId);
             if (!connection) throw new Error(ErrorCodes.SSH_CONNECTION_NOT_FOUND);
 

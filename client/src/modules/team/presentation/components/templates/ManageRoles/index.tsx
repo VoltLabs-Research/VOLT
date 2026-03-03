@@ -13,6 +13,7 @@ import { useTeamRoleStore } from '@/modules/team/presentation/stores/use-team-ro
 import useTeamRoleUseCases from '@/modules/team/presentation/hooks/team-role/use-team-role-use-cases';
 import useSystemUseCases from '@/modules/system/presentation/hooks/use-system-use-cases';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { GetTeamRolesParams } from '@/modules/team/domain/ports/ITeamRoleRepository';
 import type { TeamRole } from '@/modules/team/domain/entities/TeamRole';
@@ -87,8 +88,8 @@ const ManageRolesTemplate: React.FC = () => {
             if(cancelled) return;
             setResources(config.resources);
             setActions(config.actions);
-        }).catch((err) => {
-            console.error('Failed to fetch RBAC config:', err);
+        }).catch(() => {
+            sileo.error({ title: 'Failed to load permissions config' });
         });
         return () => { cancelled = true; };
     }, [systemRepository]);
@@ -133,7 +134,6 @@ const ManageRolesTemplate: React.FC = () => {
             }
             setEditingRole(null);
         }catch(err){
-            console.error('Failed to save role:', err);
             throw err;
         }finally{
             setIsSaving(false);
@@ -162,8 +162,7 @@ const ManageRolesTemplate: React.FC = () => {
                     }
                 );
                 removeRole(role._id);
-            }catch(err){
-                console.error('Failed to delete role:', err);
+            }catch{
             }
         }
     }, [selectedTeam._id, teamRoleRepository, removeRole]);

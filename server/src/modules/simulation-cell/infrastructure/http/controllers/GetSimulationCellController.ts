@@ -7,8 +7,7 @@ import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 export default class GetSimulationCellController {
     handle = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
-            // TODO: Integrate with SimulationCellService when ported
-            BaseResponse.error(res, 'Simulation cell not found', HttpStatus.NotFound);
+            BaseResponse.error(res, 'GetSimulationCell is not yet available. Use FindCellById or FindCellsByTeamId instead.', HttpStatus.NotFound);
         } catch (error) {
             next(error);
         }

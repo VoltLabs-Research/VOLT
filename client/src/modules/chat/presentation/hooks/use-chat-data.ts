@@ -6,6 +6,7 @@ import { CHAT_TOKENS } from '@/modules/chat/infrastructure/di/tokens';
 import { CHAT_SOCKET_EVENTS } from '@/modules/chat/domain/constants';
 import type IChatRepository from '@/modules/chat/domain/ports/IChatRepository';
 import type IChatMessageRepository from '@/modules/chat/domain/ports/IChatMessageRepository';
+import { sileo } from 'sileo';
 
 const useChatData = () => {
     const socket = useSocket();
@@ -52,8 +53,8 @@ const useChatData = () => {
         try {
             const data = await chatRepository.getAll();
             setChats(data);
-        } catch (error) {
-            console.error('Failed to fetch chats:', error);
+        } catch {
+            sileo.error({ title: 'Failed to load chats' });
             hasFetchedChatsRef.current = false;
         } finally {
             isFetchingRef.current = false;
@@ -74,8 +75,8 @@ const useChatData = () => {
             
             setHasMore(response.pagination.hasMore);
             setPage(page);
-        } catch (error) {
-            console.error('Failed to fetch messages:', error);
+        } catch {
+            sileo.error({ title: 'Failed to load messages' });
         } finally {
             setMessagesLoading(false);
         }
@@ -93,7 +94,7 @@ const useChatData = () => {
 
         socket.emit(CHAT_SOCKET_EVENTS.JOIN_CHAT, chatId);
         await fetchMessages(chatId);
-        chatMessageRepository.markAsRead(chatId).catch(console.error);
+        chatMessageRepository.markAsRead(chatId).catch(() => {});
 
         const chat = chatsRef.current.find((c) => c._id === chatId);
         if (chat) {

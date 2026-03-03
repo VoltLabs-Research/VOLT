@@ -16,14 +16,6 @@ const createWindow = async() => {
         return;
     }
 
-    const servicesReady = await dockerManager.waitForServices();
-
-    if(!servicesReady){
-        console.error('[Volt] Services did not start properly');
-        app.quit();
-        return;
-    }
-
     console.log('[Volt] Waiting for client container...');
 
     const viteUrl = 'http://localhost:5173';
@@ -38,7 +30,7 @@ const createWindow = async() => {
                 console.log('[Volt] Vite dev server is ready');
                 break;
             }
-        }catch(error){
+        }catch{
             // Server not ready yet, wait and retry
         }
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -64,7 +56,7 @@ const createWindow = async() => {
     mainWindow.setMenu(null);
     mainWindow.webContents.openDevTools();
 
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL(viteUrl);
 
     mainWindow.once('ready-to-show', () => {
         mainWindow?.show();
@@ -80,7 +72,7 @@ app.whenReady().then(createWindow);
 app.on('window-all-closed', async() => {
     // Stop Docker services(including client container)
     if(dockerManager){
-        console.log('[OpenDXA] Stopping Docker services...');
+        console.log('[Volt] Stopping Docker services...');
         await dockerManager.stop();
         dockerManager = null;
     }
@@ -90,10 +82,3 @@ app.on('window-all-closed', async() => {
     }
 });
 
-app.on('before-quit', async(event) => {
-    if(dockerManager && await dockerManager.getIsRunning()){
-        event.preventDefault();
-        await dockerManager.stop();
-        app.quit();
-    }
-});

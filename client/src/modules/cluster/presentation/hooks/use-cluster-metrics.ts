@@ -42,7 +42,7 @@ const useClusterMetrics = () => {
 
     const requestHistory = useCallback((minutes: number = 5) => {
         if(!isConnected || isHistoryLoaded) return;
-        socketService.emit(SOCKET_EVENTS.metricsHistory, minutes).catch(console.error);
+        socketService.emit(SOCKET_EVENTS.metricsHistory, minutes).catch(() => {});
     }, [isConnected, isHistoryLoaded, socketService]);
 
     return {

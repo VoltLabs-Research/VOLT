@@ -3,6 +3,7 @@ import { TbCheck, TbX } from 'react-icons/tb';
 import Button from '@/shared/presentation/components/Button';
 import Container from '@/shared/presentation/components/Container';
 import useSSHUseCases from '@/modules/ssh/presentation/hooks/use-ssh-use-cases';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 
 interface TestResult {
     valid: boolean;
@@ -23,7 +24,11 @@ const SSHConnectionTestButton = ({ connectionId, disabled }: SSHConnectionTestBu
         setIsTesting(true);
         setTestResult(null);
         try {
-            const result = await sshRepository.testConnection(connectionId);
+            const result = await showPromise(sshRepository.testConnection(connectionId), {
+                loading: { title: 'Testing connection...' },
+                success: { title: 'Connection successful!' },
+                error: { title: 'Connection failed' }
+            });
             setTestResult(result);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Connection failed';

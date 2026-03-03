@@ -156,7 +156,7 @@ export default class SocketIOAdapter implements ISocketService{
 
         if(this.socket?.connected){
             this.disconnect();
-            this.connect().catch(console.error);
+            this.connect().catch(() => {});
         }
     }
 
@@ -245,8 +245,7 @@ export default class SocketIOAdapter implements ISocketService{
         this.connectionListeners.forEach((listener) => {
             try{
                 listener(connected);
-            }catch(error){
-                console.error('Error in connection listener:', error);
+            }catch{
             }
         });
     }

@@ -5,7 +5,6 @@ import Container from '@/shared/presentation/components/Container';
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
-import Tooltip from '@/shared/presentation/components/Tooltip';
 import TransportControls from '../TransportControls';
 import FrameCombobox from '../FrameCombobox';
 

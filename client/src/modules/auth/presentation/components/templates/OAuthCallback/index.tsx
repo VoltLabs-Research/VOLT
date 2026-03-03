@@ -8,6 +8,7 @@ import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
 import { useAuthStore } from '../../../stores/use-auth-store';
+import { sileo } from 'sileo';
 import './OAuthCallback.css';
 
 const OAuthCallbackTemplate = () => {
@@ -36,8 +37,8 @@ const OAuthCallbackTemplate = () => {
                 setTimeout(() => {
                     navigate('/');
                 }, 1500);
-            }catch(error){
-                console.error('OAuth callback error:', error);
+            }catch{
+                sileo.error({ title: 'Authentication failed', description: 'Redirecting to login...' });
                 setStatus('error');
                 setTimeout(() => {
                     navigate('/auth/sign-in?error=oauth_failed');

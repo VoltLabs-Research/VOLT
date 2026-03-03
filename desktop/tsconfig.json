@@ -7,13 +7,12 @@
     "rootDir": "./",
     "strict": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "types": ["node", "electron"]
+    "types": ["node"]
   },
-  "include": ["*.ts", "src/main.ts", "src/docker-manager.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

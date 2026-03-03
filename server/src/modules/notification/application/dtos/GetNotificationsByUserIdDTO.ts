@@ -7,4 +7,4 @@ export interface GetNotificationsByUserIdInputDTO{
     limit?: number;
 };
 
-export interface GetNotificationsByUserIdOutputDTO extends PaginatedResult<NotificationProps>{}
+export interface GetNotificationsByUserIdOutputDTO extends PaginatedResult<{ id: string } & NotificationProps>{}

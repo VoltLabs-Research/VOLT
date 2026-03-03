@@ -96,7 +96,6 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
             }else{
                 setError('Failed to fetch data');
             }
-            console.error('[useDocumentListingPagination] Error:', err);
         }finally{
             setIsLoading(false);
         }

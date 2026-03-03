@@ -3,6 +3,7 @@ import useModifierBase, { UseModifierBaseOptions } from './use-modifier-base';
 import useParticleFilterUseCases from '@/modules/trajectory/presentation/hooks/particle-filter/use-particle-filter-use-cases';
 import useAsyncAction from '@/shared/presentation/hooks/use-async-action';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 
 export type FilterOperator = '==' | '!=' | '>' | '>=' | '<' | '<=';
 export type FilterAction = 'delete' | 'highlight';
@@ -75,6 +76,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
 
     const fetchValueSuggestions = useCallback(async () => {
         if (!property || !trajectoryId || currentTimestep === undefined) return;
+        sileo.info({ title: 'Loading suggestions...' });
         const normalizedExposureId = exposureId ?? undefined;
 
         try {
@@ -83,8 +85,8 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 property, exposureId: normalizedExposureId, maxValues: 50
             });
             setValueSuggestions(result.values);
-        } catch (err) {
-            console.error('Failed to fetch suggestions:', err);
+        } catch {
+            sileo.error({ title: 'Failed to load suggestions' });
         }
     }, [trajectoryId, currentTimestep, property, analysisId, exposureId, particleFilterRepository]);
 
@@ -103,6 +105,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
         setIsLoadingPreview(true);
         setError(null);
         setPreviewResult(null);
+        sileo.info({ title: 'Generating preview...' });
         const normalizedExposureId = exposureId ?? undefined;
 
         await previewAction.execute(async () => {
@@ -118,6 +121,7 @@ const useParticleFilter = (options: UseModifierBaseOptions = {}) => {
                 totalCount: result.totalAtoms,
                 filterParams: { property, operator, value, exposureId: normalizedExposureId }
             });
+            sileo.success({ title: 'Preview generated' });
         });
     }, [trajectoryId, analysisId, currentTimestep, property, operator, value, exposureId, propertyOptions, particleFilterRepository, previewAction]);
 
