@@ -117,11 +117,11 @@ const AIConversationSidebar = ({
                                             value={draftTitle}
                                             autoFocus
                                             onChange={(event) => setDraftTitle(event.target.value)}
-                                            onBlur={() => finishEditing().catch(console.error)}
+                                            onBlur={() => finishEditing().catch(() => {})}
                                             onKeyDown={(event) => {
                                                 if (event.key === 'Enter') {
                                                     event.preventDefault();
-                                                    finishEditing().catch(console.error);
+                                                    finishEditing().catch(() => {});
                                                 }
 
                                                 if (event.key === 'Escape') {
@@ -157,7 +157,7 @@ const AIConversationSidebar = ({
                                                 variant='ghost'
                                                 onClick={(event) => {
                                                     event.stopPropagation();
-                                                    handleDeleteConversation(conversation._id).catch(console.error);
+                                                    handleDeleteConversation(conversation._id).catch(() => {});
                                                 }}
                                             >
                                                 <IoTrashOutline size={14} />

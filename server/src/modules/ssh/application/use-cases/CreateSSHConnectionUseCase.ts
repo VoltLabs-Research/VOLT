@@ -21,7 +21,6 @@ export class CreateSSHConnectionUseCase implements IUseCase<CreateSSHConnectionI
     ){}
 
     async execute(input: CreateSSHConnectionInputDTO): Promise<Result<CreateSSHConnectionOutputDTO, ApplicationError>> {
-        // TODO: ID
         const sshConnection = SSHConnection.create('', input);
         const result = await this.sshConnectionRepo.create(sshConnection.props);
 

@@ -42,7 +42,6 @@ const useNotificationData = () => {
             setHasMore(response.pagination.hasMore);
             setPage(pageToFetch);
         } catch (error: any) {
-            console.error('Failed to fetch notifications:', error);
             setError(error?.message ?? 'Failed to fetch notifications');
         } finally {
             setLoading(false);
@@ -60,8 +59,7 @@ const useNotificationData = () => {
             await notificationRepository.markAllAsRead();
             markAllAsReadInStore();
             sileo.success({ title: 'All notifications marked as read' });
-        } catch(error) {
-            console.error('Failed to mark notifications as read:', error);
+        } catch {
             sileo.error({ title: 'Failed to mark notifications as read' });
         }
     }, [notificationRepository, markAllAsReadInStore]);

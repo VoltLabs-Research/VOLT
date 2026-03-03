@@ -141,7 +141,6 @@ export default class SocketGateway{
      * Graceful shutdown.
      */
     async close(): Promise<void>{
-        // TODO: add a function for avoid try-catch
         try{
             await Promise.all(this.modules.map((module) => module.onShutdown()));
         }catch(error: any){
@@ -161,11 +160,15 @@ export default class SocketGateway{
 
         try{
             await this.adapterPub?.quit();
-        }catch{}
+        }catch(error){
+            logger.warn(error, '@socket-gateway - failed to quit Redis pub client');
+        }
 
         try{
             await this.adapterSub?.quit();
-        }catch{}
+        }catch(error){
+            logger.warn(error, '@socket-gateway - failed to quit Redis sub client');
+        }
 
         this.io = undefined;
         this.adapterPub = undefined;

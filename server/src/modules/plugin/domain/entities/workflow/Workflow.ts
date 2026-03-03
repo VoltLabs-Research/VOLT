@@ -94,7 +94,6 @@ export default class Workflow{
      * definitions configured within it.
      */
     findColumnsDefinitionsFromExposureVisualizer(exposureName: string){
-        // TODO: Refactor 
         const exposureNodeId = this.findExposureByName(exposureName);
         if(!exposureNodeId) return [];
 

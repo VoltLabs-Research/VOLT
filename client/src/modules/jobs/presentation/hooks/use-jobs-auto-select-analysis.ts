@@ -62,8 +62,7 @@ const useJobsAutoSelectAnalysis = ({
                         updateSearchParams({ analysis: analysis._id }, { replace: true });
                         if (job.timestep !== undefined) setCurrentTimestep(job.timestep);
                     }
-                } catch (error) {
-                    console.error('[JobsHistoryViewer] Failed to auto-select analysis:', error);
+                } catch {
                 }
                 break;
             }

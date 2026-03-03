@@ -2,7 +2,6 @@ import { injectable } from 'tsyringe';
 import { IAnalysisJobFactory, AnalysisJobCreateInput } from '@modules/plugin/domain/ports/IAnalysisJobFactory';
 import Job, { JobStatus } from '@modules/jobs/domain/entities/Job';
 
-// TODO: MAYBE A EVENT FOR THIS!
 /**
  * Factory for creating analysis jobs from ForEach items.
  */

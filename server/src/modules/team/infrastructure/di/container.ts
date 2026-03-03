@@ -12,7 +12,6 @@ import TeamJobsSocketModule from '@modules/team/infrastructure/socket/TeamJobsSo
 import TeamAIProviderCatalog from '@modules/team/application/services/TeamAIProviderCatalog';
 import TeamAIIntegrationInputService from '@modules/team/application/services/TeamAIIntegrationInputService';
 import TeamAIIntegrationSerializer from '@modules/team/application/services/TeamAIIntegrationSerializer';
-// import TeamPresenceService from '@modules/team/infrastructure/presence/TeamPresenceService';
 
 import * as teamAiTools from '@modules/team/application/ai-tools';
 
@@ -29,7 +28,6 @@ export const registerTeamDependencies = () => {
     container.registerSingleton(TEAM_TOKENS.TeamAIProviderCatalog, TeamAIProviderCatalog);
     container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationInputService, TeamAIIntegrationInputService);
     container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationSerializer, TeamAIIntegrationSerializer);
-    // container.registerSingleton(TEAM_TOKENS.TeamPresenceService, TeamPresenceService);
 
     // Register all AI Tools for discovery
     for (const ToolClass of Object.values(teamAiTools)) {

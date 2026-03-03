@@ -120,7 +120,7 @@ export default class WorkerPoolService implements IWorkerPoolService {
 
     private async handleWorkerExit(workerId: number, code: number): Promise<void> {
         logger.info(`[WorkerPool] Worker ${workerId} exited with code ${code} `);
-        let hadJob = true;
+        let hadJob = false;
         if (code !== 0) {
             await this.onExit(workerId, code);
             hadJob = true;
@@ -169,7 +169,7 @@ export default class WorkerPoolService implements IWorkerPoolService {
             if (this.workerPool.length < this.config.minWorkers || backlog > 0) {
                 if (isInCrashLoop) {
                     const delay = this.config.crashBackoffMs * Math.min(this.consecutiveCrashes, 5);
-                    setTimeout(this.spawnWorker, delay);
+                    setTimeout(() => this.spawnWorker(), delay);
                 } else {
                     this.spawnWorker();
                 }
@@ -178,7 +178,7 @@ export default class WorkerPoolService implements IWorkerPoolService {
             if (this.workerPool.length < this.config.minWorkers) {
                 if (isInCrashLoop) {
                     const delay = this.config.crashBackoffMs * Math.min(this.consecutiveCrashes, 5);
-                    setTimeout(this.spawnWorker, delay);
+                    setTimeout(() => this.spawnWorker(), delay);
                 } else {
                     this.spawnWorker();
                 }

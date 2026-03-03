@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import useTrajectoryStore from '../../stores/use-trajectory-store';
 import useGetTrajectories from './use-get-trajectories';
+import { sileo } from 'sileo';
 import type { SelectOption } from '@/shared/presentation/components/Select';
 import type { Trajectory } from '../../../domain/entities';
 
@@ -50,8 +51,8 @@ const useTrajectorySelector = (options: UseTrajectorySelectorOptions = {}): UseT
 
             setHasMore(response.pagination.hasMore);
             setPage(pageNum);
-        } catch (error) {
-            console.error('Failed to fetch trajectories:', error);
+        } catch {
+            sileo.error({ title: 'Failed to load trajectories' });
         } finally {
             setIsLoading(false);
         }

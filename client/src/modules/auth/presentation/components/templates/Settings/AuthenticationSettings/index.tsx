@@ -9,6 +9,7 @@ import LoginActivityRow from '@/modules/auth/presentation/components/molecules/L
 import PasswordChangeForm from '@/modules/auth/presentation/components/organisms/PasswordChangeForm';
 import useAuthUseCases from '@/modules/auth/presentation/hooks/use-auth-use-cases';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import { ChangePasswordInputDTO } from '@/modules/auth/application/dtos';
 import { PasswordInfo } from '@/modules/auth/presentation/components/organisms/PasswordChangeForm/validation-schema';
 
@@ -22,8 +23,8 @@ const AuthenticationSettings: React.FC = () => {
         try{
             const info = await authRepository.getPasswordInfo();
             setPasswordInfo(info);
-        }catch(error){
-            console.error('Failed to load password info:', error);
+        }catch{
+            sileo.error({ title: 'Failed to load password info' });
         }
     }, [authRepository]);
 

@@ -19,11 +19,3 @@ export enum Action {
     UPDATE = 'update',
     DELETE = 'delete'
 }
-
-export const getPermission = (resource: Resource, action: Action): string => {
-    return `${resource}:${action}`;
-};
-
-export const getAllPermissionsForResource = (resource: Resource): string[] => {
-    return Object.values(Action).map(action => getPermission(resource, action));
-};

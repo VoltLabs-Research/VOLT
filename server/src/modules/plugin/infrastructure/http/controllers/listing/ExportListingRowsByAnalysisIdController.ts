@@ -7,6 +7,7 @@ import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import sendExportFile, { toCsvContent } from '@shared/infrastructure/http/ExportFileResponse';
 import { ExportListingRowsByAnalysisIdUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportListingRowsByAnalysisIdUseCase';
+import logger from '@shared/infrastructure/logger';
 
 const sanitizeFilePart = (value: string): string => {
     const cleaned = String(value || '')
@@ -73,7 +74,7 @@ export default class ExportListingRowsByAnalysisIdController extends BaseControl
 
             await archive.finalize();
         } catch (error) {
-            console.error(error);
+            logger.error(error, 'Failed to export listing rows by analysis');
             return BaseResponse.error(
                 res,
                 'Internal Server Error',

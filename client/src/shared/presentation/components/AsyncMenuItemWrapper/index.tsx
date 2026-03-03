@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import type { MenuOption } from '@/shared/presentation/components/DocumentListingTable';
+import { sileo } from 'sileo';
 
 interface AsyncMenuItemWrapperProps {
     option: MenuOption;
@@ -13,8 +14,8 @@ const AsyncMenuItemWrapper: React.FC<AsyncMenuItemWrapperProps> = ({ option }) =
         try{
             setIsLoading(true);
             await option.onClick();
-        }catch(error){
-            console.error(error);
+        }catch{
+            sileo.error({ title: `${option.label} failed` });
         }finally{
             setIsLoading(false);
         }

@@ -23,8 +23,8 @@ export class ListNotificationsAITool extends AITool {
         return {
             summary: `Found ${result.value.total} notifications.`,
             data: result.value.data.map((n: any) => ({
-                notificationId: n.id, title: n.props.title, content: n.props.content,
-                read: n.props.read, link: n.props.link ?? '', createdAt: n.props.createdAt ?? null
+                notificationId: n.id, title: n.title, content: n.content,
+                read: n.read, link: n.link ?? '', createdAt: n.createdAt ?? null
             })),
             total: result.value.total
         };

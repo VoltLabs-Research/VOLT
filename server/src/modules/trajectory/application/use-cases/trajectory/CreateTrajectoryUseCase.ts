@@ -11,6 +11,7 @@ import { IEventBus } from '@shared/application/events/IEventBus';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import TrajectoryCreatedEvent from '@modules/trajectory/domain/events/TrajectoryCreatedEvent';
 import path from 'node:path';
+import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajectoryInputDTO, CreateTrajectoryOutputDTO, ApplicationError> {
@@ -46,7 +47,7 @@ export default class CreateTrajectoryUseCase implements IUseCase<CreateTrajector
         });
 
         this.backgroundProcessor.process(trajectory.id, files, teamId).catch(async err => {
-            console.error(`[CreateTrajectoryUseCase] Background processing failed for ${trajectory.id}:`, err);
+            logger.error(err, `[CreateTrajectoryUseCase] Background processing failed for ${trajectory.id}`);
             await this.trajectoryRepo.updateById(trajectory.id, { status: TrajectoryStatus.Failed }).catch(() => { });
         });
 

@@ -4,7 +4,7 @@ import { Result } from '@shared/domain/ports/Result';
 import { DeleteContainerOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
 import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
 import { IContainerService } from '@modules/container/domain/ports/IContainerService';
-import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
+import { ErrorCodes } from '@core/constants/error-codes';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
 import { SHARED_TOKENS } from '@shared/infrastructure/di/SharedTokens';
 import { IEventBus } from '@shared/application/events/IEventBus';

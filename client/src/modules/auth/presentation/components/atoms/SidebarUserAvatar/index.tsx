@@ -5,6 +5,7 @@ import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store'
 import Popover from '@/shared/presentation/components/Popover';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import Container from '@/shared/presentation/components/Container';
+import { sileo } from 'sileo';
 import '@/modules/auth/presentation/components/atoms/SidebarUserAvatar/SidebarUserAvatar.css';
 
 interface SidebarUserAvatarProps {
@@ -28,8 +29,8 @@ const SidebarUserAvatar = ({
         try {
             setIsSigningOut(true);
             await Promise.resolve(signOut());
-        } catch (error) {
-            console.error('Sign out failed', error);
+        } catch {
+            sileo.error({ title: 'Sign out failed', description: 'Please try again.' });
         } finally {
             setIsSigningOut(false);
         }

@@ -40,8 +40,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
             const authRepository = container.resolve<IAuthRepository>(AUTH_TOKENS.AuthRepository);
             const user = await authRepository.getMe();
             set({ user, isInitialized: true, isLoading: false });
-        }catch(error){
-            console.error('Failed to initialize auth:', error);
+        }catch{
             tokenStorage.removeToken();
             set({ user: null, isInitialized: true, isLoading: false });
         }

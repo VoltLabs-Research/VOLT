@@ -80,8 +80,7 @@ const MyTeamTemplate: React.FC = () => {
                 }
             );
             updateTeamInList(selectedTeam._id, { name: newName });
-        }catch(err){
-            console.error('Failed to update team name:', err);
+        }catch{
         }
     }, [selectedTeam._id, teamRepository, updateTeamInList]);
 
@@ -96,8 +95,7 @@ const MyTeamTemplate: React.FC = () => {
                 }
             );
             updateMember(memberId, updated);
-        }catch(err){
-            console.error('Failed to update role:', err);
+        }catch{
         }
     }, [selectedTeam._id, teamMemberRepository, updateMember]);
 
@@ -122,8 +120,7 @@ const MyTeamTemplate: React.FC = () => {
                     }
                 );
                 removeMemberFromStore(member._id);
-            }catch(err){
-                console.error('Failed to remove member:', err);
+            }catch{
             }
         }
     }, [selectedTeam._id, teamMemberRepository, removeMemberFromStore]);

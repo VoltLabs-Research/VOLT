@@ -24,7 +24,6 @@ export class CreateAnalysisUseCase implements IUseCase<CreateAnalysisInputDTO, C
 
         return Result.ok({
             analysis: {
-                // TODO: why not _id?
                 id: analysis.id,
                 trajectory: analysis.props.trajectory,
                 plugin: analysis.props.plugin,

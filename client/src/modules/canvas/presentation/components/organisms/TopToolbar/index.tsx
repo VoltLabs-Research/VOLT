@@ -10,6 +10,7 @@ import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
 import MenuPopover from '../../molecules/MenuPopover';
 import { buildMenus } from '../../molecules/TopToolbarMenus';
 import WorkspaceTabs from '../../molecules/WorkspaceTabs';
+import { sileo } from 'sileo';
 import './TopToolbar.css';
 
 const TopToolbar = () => {
@@ -25,8 +26,8 @@ const TopToolbar = () => {
         try {
             setIsSigningOut(true);
             useAuthStore.getState().signOut();
-        } catch (error) {
-            console.error('Sign out failed', error);
+        } catch {
+            sileo.error({ title: 'Sign out failed', description: 'Please try again.' });
         } finally {
             setIsSigningOut(false);
         }
@@ -46,11 +47,15 @@ const TopToolbar = () => {
 
     const handleScreenshot = useCallback(() => {
         const canvas = document.querySelector('canvas');
-        if (!canvas) return;
+        if (!canvas) {
+            sileo.warning({ title: 'No canvas found' });
+            return;
+        }
         const link = document.createElement('a');
         link.download = `volt-screenshot-${Date.now()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
+        sileo.success({ title: 'Screenshot saved' });
     }, []);
 
     const menus = buildMenus({

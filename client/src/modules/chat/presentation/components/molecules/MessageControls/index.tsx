@@ -5,7 +5,6 @@ import PopoverMenu from '@/shared/presentation/components/PopoverMenu';
 import PopoverMenuItem from '@/shared/presentation/components/PopoverMenuItem';
 import IconButton from '@/shared/presentation/components/IconButton';
 import EmojiPicker from '@/shared/presentation/components/EmojiPicker';
-import Tooltip from '@/shared/presentation/components/Tooltip';
 import { COMMON_REACTIONS } from '@/modules/chat/domain/constants';
 import './MessageControls.css';
 

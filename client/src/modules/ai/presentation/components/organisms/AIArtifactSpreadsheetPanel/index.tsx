@@ -10,6 +10,7 @@ import Tooltip from '@/shared/presentation/components/Tooltip';
 import * as XLSX from 'xlsx';
 import './AIArtifactSpreadsheetPanel.css';
 import { base64ToBlob, triggerBrowserDownload } from '@/shared/utils';
+import { sileo } from 'sileo';
 
 interface AIArtifactSpreadsheetPanelProps {
     artifact: AIMessageArtifact;
@@ -152,6 +153,17 @@ const AIArtifactSpreadsheetPanel = ({ artifact, onClose, width }: AIArtifactSpre
     };
 
     const handleCopyToClipboard = async () => {
+        try {
+            const data = getExportData();
+            const worksheet = XLSX.utils.json_to_sheet(data, { header: columns });
+            const tsvContent = XLSX.utils.sheet_to_csv(worksheet, { FS: '\t' });
+            await navigator.clipboard.writeText(tsvContent);
+            setCopyFeedback(true);
+            sileo.success({ title: 'Copied to clipboard' });
+            setTimeout(() => setCopyFeedback(false), 2000);
+        } catch {
+            sileo.error({ title: 'Failed to copy to clipboard' });
+        }
     };
 
     if (!table) return null;

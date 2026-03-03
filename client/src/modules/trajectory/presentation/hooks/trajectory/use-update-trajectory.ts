@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import useTrajectoryStore from '../../stores/use-trajectory-store';
 import useTrajectoryUseCases from './use-trajectory-use-cases';
 import { Trajectory } from '@/modules/trajectory/domain/entities';
+import { sileo } from 'sileo';
 
 const useUpdateTrajectory = () => {
     const { trajectoryRepository } = useTrajectoryUseCases();
@@ -21,8 +22,9 @@ const useUpdateTrajectory = () => {
         try{
             const updated = await trajectoryRepository.update(id, data);
             patchTrajectory(id, updated);
+            sileo.success({ title: 'Trajectory updated' });
         }catch(error){
-            // Rollback
+            sileo.error({ title: 'Failed to update trajectory' });
             setTrajectories(previousTrajectories);
             setTrajectory(previousTrajectory);
             throw error;

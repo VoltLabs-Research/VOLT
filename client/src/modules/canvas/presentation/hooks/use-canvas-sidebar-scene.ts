@@ -8,6 +8,7 @@ import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 import useAnalysisStatus, { seedAnalysisStatuses } from './use-analysis-status';
 import useExposureManager, { type ExposureEntry, DEFAULT_ENTRY } from './use-exposure-manager';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 
 import type { Analysis } from '@/modules/analysis/domain/entities/Analysis';
 import { computeDifferingConfigFields } from '../utils/canvas-sidebar-scene.ts';
@@ -101,8 +102,8 @@ const useCanvasSidebarScene = ({ trajectory, trajectoryId: propTrajectoryId }: U
                     status: analysis.status
                 })));
                 setAnalyses(response.data);
-            } catch (error) {
-                console.error('[useCanvasSidebarScene] bootstrap failed', error);
+            } catch {
+                sileo.error({ title: 'Failed to load analyses' });
             } finally {
                 if (!cancelled) setBootstrapLoading(false);
             }

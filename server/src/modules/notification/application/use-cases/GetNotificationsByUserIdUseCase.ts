@@ -24,7 +24,7 @@ export default class GetNotificationsByUserIdUseCase
         });
 
         return Result.ok({
-            data: result.data.map(n => n.props),
+            data: result.data.map(n => ({ id: n.id, ...n.props })),
             total: result.total,
             page: result.page,
             limit: result.limit,

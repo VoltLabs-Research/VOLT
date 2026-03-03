@@ -4,7 +4,7 @@ import { Result } from '@shared/domain/ports/Result';
 import { GetContainerByIdOutputDTO } from '@modules/container/application/dtos/ContainerDTOs';
 import { IContainerRepository } from '@modules/container/domain/ports/IContainerRepository';
 import ApplicationError from '@shared/application/errors/ApplicationErrors';
-import { ErrorCodes } from '@shared/domain/constants/ErrorCodes';
+import { ErrorCodes } from '@core/constants/error-codes';
 
 @injectable()
 export class GetContainerByIdUseCase implements IUseCase<{ containerId: string }, GetContainerByIdOutputDTO> {

@@ -122,7 +122,6 @@ const useListingActions = <T = unknown>(config: UseListingActionsConfig<T>): Use
 
             await actionConfig.handler({ item: primaryItem, selectedItems: targets });
         }catch(err){
-            console.error(`Failed to execute action "${actionKey}":`, err);
             throw err;
         }
     }, [actions, shouldConfirm, getActionScope, getActionTargets]);

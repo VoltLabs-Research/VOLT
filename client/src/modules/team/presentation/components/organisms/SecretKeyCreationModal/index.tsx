@@ -44,7 +44,7 @@ const SecretKeyCreationModal: React.FC<SecretKeyCreationModalProps> = ({ onCreat
 
     useEffect(() => {
         if (selectedTeam?._id) {
-            fetchRoles(selectedTeam._id).catch(console.error);
+            fetchRoles(selectedTeam._id).catch(() => {});
         }
     }, [selectedTeam?._id, fetchRoles]);
 

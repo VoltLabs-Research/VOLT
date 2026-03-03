@@ -5,6 +5,7 @@ import Container from '@/shared/presentation/components/Container';
 import Button from '@/shared/presentation/components/Button';
 import Tooltip from '@/shared/presentation/components/Tooltip';
 import Terminal, { type TerminalHandle } from '@/shared/presentation/components/Terminal';
+import { sileo } from 'sileo';
 import './ContainerTerminal.css';
 
 interface ContainerTerminalProps {
@@ -81,6 +82,7 @@ export const ContainerTerminal = ({ container, onClose, embedded = false, append
 
         const handleError = (error: string) => {
             terminalRef.current?.write(`\r\n\x1b[31mError: ${error}\x1b[0m\r\n`);
+            sileo.error({ title: 'Terminal error', description: error });
         };
 
         const unsubData = socketService.on('container:terminal:data', handleData as (...args: unknown[]) => void);

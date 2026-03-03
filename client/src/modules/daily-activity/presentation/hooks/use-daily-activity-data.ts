@@ -24,7 +24,6 @@ const useDailyActivityData = () => {
             setActivityData(data);
         } catch(err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to fetch activity';
-            console.error('Failed to fetch activity:', err);
             setError(message);
         } finally {
             isLoadingRef.current = false;

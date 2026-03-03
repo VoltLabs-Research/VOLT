@@ -37,9 +37,6 @@ const GeneralSettings: React.FC = () => {
             );
 
             setUser(updatedUser);
-        }catch(error){
-            console.error('Failed to upload avatar:', error);
-            throw error;
         }finally{
             setIsUploadingAvatar(false);
         }

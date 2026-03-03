@@ -31,16 +31,6 @@ export default class BaseResponse{
     }
 
     /**
-     * Success response where data is spread into the root object.
-     */
-    static spreadSuccess(res: Response, data: any, statusCode: number = 200): void{
-        res.status(statusCode).json({
-            status: 'success',
-            ...(data || {})
-        });
-    }
-
-    /**
      * Error response.
      */
     static error(

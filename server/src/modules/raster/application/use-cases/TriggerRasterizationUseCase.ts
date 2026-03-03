@@ -13,7 +13,7 @@ export class TriggerRasterizationUseCase implements IUseCase<TriggerRasterizatio
     ){}
 
     async execute(input: TriggerRasterizationInputDTO): Promise<Result<TriggerRasterizationOutputDTO>> {
-        const triggered = await this.rasterService.triggerRasterization(input.trajectoryId, input.config);
+        const triggered = await this.rasterService.triggerRasterization(input.trajectoryId, input.teamId, input.config);
 
         return Result.ok({
             message: triggered

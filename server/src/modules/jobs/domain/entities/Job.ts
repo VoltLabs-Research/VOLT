@@ -4,7 +4,7 @@ export enum JobStatus{
     Queued = 'queued',
     Running = 'running',
     Completed = 'completed',
-    Failed = 'waiting'
+    Failed = 'failed'
 };
 
 export interface JobMetadata{

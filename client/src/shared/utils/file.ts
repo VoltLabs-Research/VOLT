@@ -82,8 +82,7 @@ export const processFileSystemEntry = async (
                 if (!folderName) {
                     folderName = extractFolderName(currentEntry.fullPath);
                 }
-            } catch (err) {
-                console.error(`Error processing file: ${currentEntry.fullPath}`, err);
+            } catch {
             }
         } else if (currentEntry.isDirectory) {
             const dirEntry = currentEntry as FileSystemDirectoryEntry;
@@ -98,8 +97,7 @@ export const processFileSystemEntry = async (
                 });
 
                 await Promise.all(entries.map((subEntry) => processEntry(subEntry)));
-            } catch (err) {
-                console.error(`Error reading directory: ${currentEntry.fullPath}`, err);
+            } catch {
             }
         }
     };

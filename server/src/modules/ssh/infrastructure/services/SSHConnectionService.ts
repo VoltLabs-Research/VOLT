@@ -44,7 +44,6 @@ export default class SSHConnectionService implements ISSHConnectionService {
     private readonly STREAM_HIGH_WATER_MARK = 1024 * 1024;
 
     constructor() {
-        // TODO: implement scheduler/job service
         setInterval(() => this.cleanupIdleConnections(), 1000 * 60);
     }
 

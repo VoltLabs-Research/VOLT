@@ -8,7 +8,6 @@ export interface ChatProps {
     createdAt: Date;
 
     // Group chat fields
-    // TODO: maybe another entity for this?
     isGroup: boolean;
     groupName: string;
     groupDescription: string;

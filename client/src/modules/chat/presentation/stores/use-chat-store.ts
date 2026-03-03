@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Chat } from '@/modules/chat/domain/entities';
-import { createBaseSlice, BASE_SLICE_INITIAL_STATE, type BaseSlice } from '@/shared/presentation/stores/create-base-store-slice';
+import type { BaseSlice } from '@/shared/presentation/stores/create-base-store-slice';
 
 interface ChatStore extends Omit<BaseSlice, 'error' | 'setError'> {
     chats: Chat[];

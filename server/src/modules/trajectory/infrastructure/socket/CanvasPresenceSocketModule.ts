@@ -60,7 +60,6 @@ export default class CanvasPresenceSocketModule extends BaseSocketModule {
         );
 
         // Observer subscription (read-only)
-        // TODO: CHECK IF THIS WORK WELL
         this.on<PresencePayload>(
             connection.id,
             'subscribe_as_observer',

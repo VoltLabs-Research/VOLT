@@ -9,6 +9,7 @@ import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import type { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListing';
 import type { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
 import type { ExportType } from '@/shared/domain/export/types';
+import { sileo } from 'sileo';
 import type { ListingRow } from '../../domain/entities';
 
 interface UsePluginListingParams {
@@ -132,7 +133,7 @@ const usePluginListing = ({
             .filter((analysisId): analysisId is string => Boolean(analysisId));
 
         if (!analysisIds.length) {
-            console.error('No analysis ID found for deletion');
+            sileo.error({ title: 'No analysis ID found for deletion' });
             return;
         }
 

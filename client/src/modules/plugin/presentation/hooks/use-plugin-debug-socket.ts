@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import useSocket from '@/modules/socket/presentation/hooks/use-socket';
 import { usePluginDebugStore } from '../stores/use-plugin-debug-store';
 import { usePluginBuilderStore } from '../stores/use-plugin-builder-store';
+import { sileo } from 'sileo';
 
 interface DebugSessionCreatedEvent {
     sessionId: string;
@@ -100,6 +101,7 @@ const usePluginDebugSocket = () => {
         unsubs.push(socket.on('debug:node:error', (data: unknown) => {
             const event = data as DebugNodeErrorEvent;
             usePluginDebugStore.getState().onNodeError(event.nodeId, event.error, event.stack);
+            sileo.error({ title: 'Node execution failed', description: event.error });
         }));
 
         unsubs.push(socket.on('debug:session:completed', (data: unknown) => {
@@ -110,6 +112,7 @@ const usePluginDebugSocket = () => {
         unsubs.push(socket.on('debug:session:error', (data: unknown) => {
             const event = data as DebugSessionErrorEvent;
             usePluginDebugStore.getState().onSessionError(event.error);
+            sileo.error({ title: 'Debug session failed', description: event.error });
         }));
 
         unsubscribesRef.current = unsubs;

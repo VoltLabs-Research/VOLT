@@ -76,4 +76,3 @@ class SearchService {
 
 export default SearchService;
 export { SearchService };
-export const searchService = new SearchService();

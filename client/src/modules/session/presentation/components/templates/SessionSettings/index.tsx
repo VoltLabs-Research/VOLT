@@ -12,6 +12,7 @@ import SettingsSection from '@/modules/auth/presentation/components/atoms/Settin
 import SettingsSectionHeader from '@/modules/auth/presentation/components/molecules/SettingsSectionHeader';
 import useSessionUseCases from '@/modules/session/presentation/hooks/use-session-use-cases';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import { Session, SessionActivityType } from '@/modules/session/domain/entities/Session';
 import './SessionSettings.css';
 
@@ -89,8 +90,8 @@ const SessionSettings: React.FC = () => {
             setLoadingSessions(true);
             const data = await sessionRepository.getActiveSessions();
             setSessions(data);
-        } catch (error) {
-            console.error('Failed to load sessions:', error);
+        } catch {
+            sileo.error({ title: 'Failed to load sessions' });
         } finally {
             setLoadingSessions(false);
         }
@@ -101,8 +102,8 @@ const SessionSettings: React.FC = () => {
             setLoadingActivity(true);
             const data = await sessionRepository.getLoginActivity(20);
             setActivities(data.activites);
-        } catch (error) {
-            console.error('Failed to load login activity:', error);
+        } catch {
+            sileo.error({ title: 'Failed to load login activity' });
         } finally {
             setLoadingActivity(false);
         }

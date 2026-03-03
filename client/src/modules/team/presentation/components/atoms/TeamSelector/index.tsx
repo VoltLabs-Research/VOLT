@@ -7,6 +7,7 @@ import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store'
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import './TeamSelector.css';
 
 interface TeamSelectorProps {
@@ -34,7 +35,11 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
         e.stopPropagation();
 
         try {
-            await teamRepository.leave(teamId);
+            await showPromise(teamRepository.leave(teamId), {
+                loading: { title: 'Leaving team...' },
+                success: { title: 'Left team successfully' },
+                error: { title: 'Failed to leave team' }
+            });
 
             const state = useTeamStore.getState();
             const remainingTeams = state.teams;
@@ -47,7 +52,6 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
                 updateSearchParams({ team: newTeamId }, { replace: true });
             }
         } catch (err: unknown) {
-            console.error('Failed to leave team:', err);
         }
     }, [teamRepository, hydrateTeamAccess, updateSearchParams]);
 

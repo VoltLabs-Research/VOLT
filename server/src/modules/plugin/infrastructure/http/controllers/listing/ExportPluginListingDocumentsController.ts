@@ -6,6 +6,7 @@ import { HttpStatus } from '@shared/infrastructure/http/HttpStatus';
 import { AuthenticatedRequest } from '@shared/infrastructure/http/middleware/authentication';
 import sendExportFile from '@shared/infrastructure/http/ExportFileResponse';
 import { ExportPluginListingDocumentsUseCase } from '@modules/plugin/application/use-cases/listing-row/ExportPluginListingDocumentsUseCase';
+import logger from '@shared/infrastructure/logger';
 
 @injectable()
 export default class ExportPluginListingDocumentsController extends BaseController<ExportPluginListingDocumentsUseCase> {
@@ -50,7 +51,7 @@ export default class ExportPluginListingDocumentsController extends BaseControll
                 columns
             });
         } catch (error) {
-            console.error(error);
+            logger.error(error, 'Failed to export plugin listing documents');
             return BaseResponse.error(
                 res,
                 'Internal Server Error',

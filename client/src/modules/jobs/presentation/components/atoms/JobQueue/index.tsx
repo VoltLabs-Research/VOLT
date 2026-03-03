@@ -73,8 +73,7 @@ const JobQueue = ({ job, isChild = false }: { job: Job; isChild?: boolean }) => 
                     error: { title: 'Failed to retry frames' }
                 }
             );
-        } catch (e: any) {
-            console.error('Failed to retry frames', e);
+        } catch {
         }
     };
 

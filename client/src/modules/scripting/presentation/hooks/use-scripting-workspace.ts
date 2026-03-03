@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { container } from 'tsyringe';
+import { sileo } from 'sileo';
 import type { ScriptingNotebookDTO } from '@/modules/scripting/application/dtos';
 import type IScriptingRepository from '@/modules/scripting/domain/ports/IScriptingRepository';
 import { SCRIPTING_TOKENS } from '@/modules/scripting/infrastructure/di/tokens';
@@ -83,9 +84,9 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
                 if (!cancelled) {
                     setNotebooks(result.data);
                 }
-            } catch (err) {
-                console.error(err);
+            } catch {
                 if (!cancelled) {
+                    sileo.error({ title: 'Failed to load notebooks' });
                     setNotebooks([]);
                 }
             } finally {
@@ -115,6 +116,7 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
 
         const startJupyterSession = async () => {
             setIsStartingJupyter(true);
+            sileo.info({ title: 'Starting Jupyter session...' });
 
             try {
                 const scriptingRepository = container.resolve<IScriptingRepository>(SCRIPTING_TOKENS.ScriptingRepository);
@@ -127,12 +129,15 @@ const useScriptingWorkspace = ({ trajectoryId, notebookId }: UseScriptingWorkspa
 
                 if (session.jupyter.ready) {
                     setJupyterUrl(resolveJupyterUrlWithServerIp(session.jupyter.url));
+                    sileo.success({ title: 'Jupyter session ready' });
                 } else {
                     setError('Jupyter is still starting. Please retry in a moment.');
+                    sileo.error({ title: 'Jupyter is still starting', description: 'Please retry in a moment.' });
                 }
             } catch (err) {
                 if (!cancelled) {
                     setError(getJupyterStartErrorMessage(err));
+                    sileo.error({ title: 'Failed to start Jupyter session' });
                 }
             } finally {
                 if (!cancelled) {

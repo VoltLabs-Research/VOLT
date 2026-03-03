@@ -10,6 +10,7 @@ import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Paragraph from '@/shared/presentation/components/Paragraph';
 import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import useGetTrajectoryById from '@/modules/trajectory/presentation/hooks/trajectory/use-get-trajectory-by-id';
 import '@/modules/plugin/presentation/components/organisms/ModifierConfiguration/ModifierConfiguration.css';
 
@@ -172,7 +173,6 @@ const ModifierConfiguration = ({
             const analysisId = (response as any)?.analysisId;
             onAnalysisSuccess?.(analysisId);
         } catch (error) {
-            console.error('Analysis failed:', error);
             onAnalysisError?.(error);
         } finally {
             setIsLoading(false);
@@ -188,6 +188,7 @@ const ModifierConfiguration = ({
                 setIsLoading(true);
                 onAnalysisStart?.();
                 try {
+                    sileo.info({ title: 'Running plugin...' });
                     const response = await pluginRepository.execute({
                         pluginId: modifierId,
                         trajectoryId,
@@ -198,7 +199,7 @@ const ModifierConfiguration = ({
                     const analysisId = (response as any)?.analysisId;
                     onAnalysisSuccess?.(analysisId);
                 } catch (error) {
-                    console.error('Analysis failed:', error);
+                    sileo.error({ title: 'Plugin failed to run' });
                     onAnalysisError?.(error);
                 } finally {
                     setIsLoading(false);

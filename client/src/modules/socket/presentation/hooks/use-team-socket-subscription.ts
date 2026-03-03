@@ -20,8 +20,7 @@ const useTeamSocketSubscription = (): void => {
                 if (cancelled) return;
                 socketService.subscribeToTeam(teamId, previousTeamId ?? undefined);
                 previousTeamIdRef.current = teamId;
-            } catch (error) {
-                console.error('[useTeamSocketSubscription] failed to connect socket', error);
+            } catch {
             }
         };
 

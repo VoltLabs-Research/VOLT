@@ -164,10 +164,6 @@ export default class ParticleFilterService implements IParticleFilterService {
 
             const filtered = this.atomProps.filterByMask(parsed.positions, parsed.types, inverseMask);
 
-            //if (filtered.count === 0) {
-            //    throw new RuntimeError(ErrorCodes.PARTICLE_FILTER_ALL_DELETED, 400);
-            //}
-
             buffer = nativeExporter.generateGLB(
                 filtered.positions,
                 filtered.types,

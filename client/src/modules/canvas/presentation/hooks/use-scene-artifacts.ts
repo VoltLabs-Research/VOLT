@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { sileo } from 'sileo';
 import useSceneArtifactUseCases from '@/modules/trajectory/presentation/hooks/generated-scenes/use-scene-artifact-use-cases';
 import type { SceneArtifact } from '@/modules/trajectory/domain/entities/SceneArtifact';
 
@@ -50,6 +51,7 @@ const useSceneArtifacts = ({ trajectoryId }: UseSceneArtifactsOptions) => {
             setParticleFilterArtifacts(particleFilter.data.filter(isSceneArtifact));
         } catch (err: any) {
             setError(err?.message || 'Failed to load scene artifacts');
+            sileo.error({ title: 'Failed to load scene artifacts' });
             setColorCodingArtifacts([]);
             setParticleFilterArtifacts([]);
         } finally {

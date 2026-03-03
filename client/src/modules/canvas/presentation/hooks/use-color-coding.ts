@@ -50,8 +50,7 @@ const useColorCoding = (options: UseModifierBaseOptions = {}) => {
                 });
             setStartValue(stats.min);
             setEndValue(stats.max);
-        } catch (error) {
-            console.error(error);
+        } catch {
             sileo.error({ title: 'Failed to fetch property statistics' });
         } finally {
             setIsFetchingStats(false);

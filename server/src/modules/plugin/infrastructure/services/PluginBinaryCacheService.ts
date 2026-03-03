@@ -111,8 +111,8 @@ export default class PluginBinaryCacheService implements IPluginBinaryCacheServi
         try{
             await fs.access(filePath, fs.constants.X_OK);
             if(!expectedHash) return true;
-            // TODO: verify hash
-            return true;
+            const actualHash = await this.calculateFileHash(filePath);
+            return actualHash === expectedHash;
         }catch{
             return false;
         }

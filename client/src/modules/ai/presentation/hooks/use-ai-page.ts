@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useChat } from '@ai-sdk/react';
+import { sileo } from 'sileo';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import {
     DefaultChatTransport,
     isToolUIPart,
@@ -227,7 +229,6 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
             });
             setConversations(sortConversations(response.data));
         } catch (error) {
-            console.error('Failed to load AI conversations', error);
             setConversationsError('Failed to load conversations. Please try again.');
             setConversations([]);
         } finally {
@@ -259,7 +260,6 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
             })));
             setProviderCatalog(modelsResponse.providers);
         } catch (error) {
-            console.error('Failed to load AI provider catalog', error);
             setProviderCatalogError('Failed to load provider catalog.');
             setIntegrations([]);
             setProviderCatalog([]);
@@ -284,7 +284,7 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
             || lastAssistantMessageHasProviderExecutedApprovalResponses({ messages })
         ),
         onFinish: () => {
-            loadConversations().catch(console.error);
+            loadConversations().catch(() => {});
         }
     });
 
@@ -307,7 +307,6 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
             });
             setMessages(response.data.map(toUIMessage));
         } catch (error) {
-            console.error('Failed to load AI conversation messages', error);
             setMessagesError('Failed to load conversation messages.');
             setMessages([]);
         } finally {
@@ -381,20 +380,32 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
 
     const handleCreateConversation = useCallback(async (initialTitle?: string) => {
         const title = initialTitle?.trim() || 'New conversation';
-        const conversation = await aiConversationRepository.createConversation({ title });
+        try {
+            const conversation = await aiConversationRepository.createConversation({ title });
 
-        setConversations((currentConversations) => sortConversations([
-            conversation,
-            ...currentConversations.filter((item) => item._id !== conversation._id)
-        ]));
+            setConversations((currentConversations) => sortConversations([
+                conversation,
+                ...currentConversations.filter((item) => item._id !== conversation._id)
+            ]));
 
-        skipNextMessageLoadRef.current = true;
-        handleConversationChange(conversation._id);
-        return conversation;
+            skipNextMessageLoadRef.current = true;
+            handleConversationChange(conversation._id);
+            return conversation;
+        } catch (error) {
+            sileo.error({ title: 'Failed to create conversation' });
+            throw error;
+        }
     }, [handleConversationChange]);
 
     const handleDeleteConversation = useCallback(async (targetConversationId: string) => {
-        await aiConversationRepository.deleteConversation(targetConversationId);
+        await showPromise(
+            aiConversationRepository.deleteConversation(targetConversationId),
+            {
+                loading: { title: 'Deleting conversation...' },
+                success: { title: 'Conversation deleted' },
+                error: { title: 'Failed to delete conversation' }
+            }
+        );
 
         setConversations((currentConversations) => (
             currentConversations.filter((conversation) => conversation._id !== targetConversationId)
@@ -409,17 +420,22 @@ const useAIPage = (conversationId?: string, options: UseAIPageOptions = {}) => {
         const normalizedTitle = title.trim();
         if (!normalizedTitle) return;
 
-        const updatedConversation = await aiConversationRepository.updateConversation(targetConversationId, {
-            title: normalizedTitle
-        });
+        try {
+            const updatedConversation = await aiConversationRepository.updateConversation(targetConversationId, {
+                title: normalizedTitle
+            });
 
-        setConversations((currentConversations) => sortConversations(
-            currentConversations.map((conversation) => (
-                conversation._id === targetConversationId
-                    ? updatedConversation
-                    : conversation
-            ))
-        ));
+            setConversations((currentConversations) => sortConversations(
+                currentConversations.map((conversation) => (
+                    conversation._id === targetConversationId
+                        ? updatedConversation
+                        : conversation
+                ))
+            ));
+        } catch (error) {
+            sileo.error({ title: 'Failed to rename conversation' });
+            throw error;
+        }
     }, []);
 
     useEffect(() => {

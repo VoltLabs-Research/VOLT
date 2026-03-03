@@ -1,5 +1,6 @@
 export interface TriggerRasterizationInputDTO {
     trajectoryId: string;
+    teamId: string;
     config?: any;
 }
 

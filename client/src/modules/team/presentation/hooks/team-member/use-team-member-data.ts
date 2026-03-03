@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { sileo } from 'sileo';
 import { useTeamMemberStore } from '@/modules/team/presentation/stores/use-team-member-store';
 import useTeamMemberUseCases from '@/modules/team/presentation/hooks/team-member/use-team-member-use-cases';
 
@@ -16,7 +17,7 @@ const useTeamMemberData = () => {
             const response = await teamMemberRepository.getAll(teamId, { page: 1, limit: 100 });
             setMembers(response.data);
         }catch(error: any){
-            console.error('Failed to fetch members:', error);
+            sileo.error({ title: 'Failed to fetch team members' });
             setError(error?.message ?? 'Failed to fetch members');
         }finally{
             setLoading(false);

@@ -13,23 +13,14 @@ const useJobGroupActions = ({ group, onRemoveTrajectoryGroup }: UseJobGroupActio
     const [loadingAction, setLoadingAction] = useState<string | null>(null);
     const { jobsRepository } = useJobsUseCases();
     const clearHistoryAction = useAsyncAction({
-        onError: (error: unknown) => {
-            console.error('Failed to clear history', error);
-        },
         onFinally: () => setLoadingAction(null)
     });
 
     const removeRunningJobsAction = useAsyncAction({
-        onError: (error: unknown) => {
-            console.error('Failed to remove running jobs', error);
-        },
         onFinally: () => setLoadingAction(null)
     });
 
     const retryFailedJobsAction = useAsyncAction({
-        onError: (error: unknown) => {
-            console.error('Failed to retry failed jobs', error);
-        },
         onFinally: () => setLoadingAction(null)
     });
 

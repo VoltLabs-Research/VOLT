@@ -8,6 +8,8 @@ import Paragraph from '@/shared/presentation/components/Paragraph';
 import { TbUpload, TbFile, TbTrash, TbCheck } from 'react-icons/tb';
 import { useNodeForm, useNodeReferenceAutocomplete, usePluginUseCases } from '@/modules/plugin/presentation/hooks';
 import { usePluginBuilderStore } from '@/modules/plugin/presentation/stores/use-plugin-builder-store';
+import { showPromise } from '@/shared/presentation/hooks/toast';
+import { sileo } from 'sileo';
 import type { IEntrypointData } from '@/modules/plugin/domain/entities';
 import type { EditorProps } from '../types';
 import './EntrypointEditor.css';
@@ -53,6 +55,7 @@ const EntrypointEditor = ({ node }: EditorProps) => {
             setValues(newData);
             updateNodeData(node.id, { entrypoint: newData });
             setUploadProgress(100);
+            sileo.success({ title: 'Binary uploaded successfully' });
         } catch (error) {
             setUploadError(error instanceof Error ? error.message : 'Failed to upload binary');
         } finally {
@@ -64,7 +67,11 @@ const EntrypointEditor = ({ node }: EditorProps) => {
         if (!currentPluginId || !values.binaryObjectPath) return;
 
         try {
-            await pluginRepository.deleteBinary(currentPluginId);
+            await showPromise(pluginRepository.deleteBinary(currentPluginId), {
+                loading: { title: 'Removing binary...' },
+                success: { title: 'Binary removed' },
+                error: { title: 'Failed to remove binary' }
+            });
             const newData = {
                 ...values,
                 binary: '',

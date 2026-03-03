@@ -136,12 +136,36 @@ export default class JobHandlerService implements IJobHandlerService {
     }
 
     async cancelJob(trajectoryId: string, jobId: string): Promise<void> {
-        // Job queue integration placeholder
-        logger.info(`Cancelling job ${jobId} for trajectory ${trajectoryId}`);
+        const statusKey = `${this.config.statusKeyPrefix}${jobId}`;
+        const status = await this.jobRepository.getJobStatus(statusKey);
+        if (!status) {
+            logger.warn(`[JobHandlerService] Job ${jobId} not found for cancellation (trajectory: ${trajectoryId})`);
+            return;
+        }
+
+        await this.jobRepository.setJobStatus(statusKey, {
+            ...status,
+            status: JobStatus.Failed,
+            error: 'Cancelled by user',
+            timestamp: new Date().toISOString()
+        }, this.config.ttlSeconds);
+
+        const teamId = status.teamId;
+
+        const event = new JobStatusChangedEvent({
+            jobId,
+            teamId,
+            status: JobStatus.Failed,
+            queueType: this.config.queueName,
+            metadata: { ...status, error: 'Cancelled by user' }
+        });
+
+        await this.eventBus.publish(event);
+
+        logger.info(`[JobHandlerService] Cancelled job ${jobId} for trajectory ${trajectoryId}`);
     }
 
     async retryFailedJobs(_trajectoryId: string): Promise<number> {
-        // Retry logic placeholder
         return 0;
     }
 };
