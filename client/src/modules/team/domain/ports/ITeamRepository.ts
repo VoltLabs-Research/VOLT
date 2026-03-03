@@ -16,5 +16,5 @@ export default interface ITeamRepository{
     update(id: string, data: UpdateTeamParams): Promise<Team>;
     delete(id: string): Promise<void>;
     leave(id: string): Promise<void>;
-    canInvite(teamId: string): Promise<boolean>;
+    getMyPermissions(teamId: string): Promise<string[]>;
 };

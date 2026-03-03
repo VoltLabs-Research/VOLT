@@ -3,6 +3,8 @@ export interface RouteConfig{
     component: React.ComponentType;
     index?: boolean;
     children?: RouteConfig[];
+    requiredPermissions?: string[];
+    permissionMode?: 'any' | 'all';
 
 };
 

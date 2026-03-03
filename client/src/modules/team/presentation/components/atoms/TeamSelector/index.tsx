@@ -18,16 +18,16 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
     const teams = useTeamStore((state) => state.teams);
     const selectedTeam = useSelectedTeam();
     const { teamRepository } = useTeamUseCases();
-    const { checkCanInvite } = useTeamData();
+    const { hydrateTeamAccess } = useTeamData();
 
     const handleTeamChange = useCallback((teamId: string) => {
         if (selectedTeam?._id === teamId) return;
 
         const teamStore = useTeamStore.getState();
         teamStore.selectTeamById(teamId);
-        checkCanInvite(teamId);
+        hydrateTeamAccess(teamId);
         updateSearchParams({ team: teamId }, { replace: true });
-    }, [selectedTeam?._id, checkCanInvite, updateSearchParams]);
+    }, [selectedTeam?._id, hydrateTeamAccess, updateSearchParams]);
 
     const handleLeaveTeam = useCallback(async (e: React.MouseEvent, teamId: string) => {
         e.preventDefault();
@@ -43,13 +43,13 @@ const TeamSelector = ({ className = '' }: TeamSelectorProps) => {
             if (currentSelected?._id === teamId && remainingTeams.length > 0) {
                 const newTeamId = remainingTeams[0]._id;
                 state.selectTeamById(newTeamId);
-                checkCanInvite(newTeamId);
+                hydrateTeamAccess(newTeamId);
                 updateSearchParams({ team: newTeamId }, { replace: true });
             }
         } catch (err: unknown) {
             console.error('Failed to leave team:', err);
         }
-    }, [teamRepository, checkCanInvite, updateSearchParams]);
+    }, [teamRepository, hydrateTeamAccess, updateSearchParams]);
 
     const teamOptions = useMemo(() =>
         teams.map(team => ({

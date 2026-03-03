@@ -32,8 +32,8 @@ export default class TeamRepository extends BaseRepository implements ITeamRepos
         await this.client.post(`/${id}/leave`);
     }
 
-    async canInvite(teamId: string): Promise<boolean>{
-        const response = await this.client.get<ApiResponse<{ canInvite: boolean }>>(`/${teamId}/can-invite`);
-        return this.unwrap(response).canInvite;
+    async getMyPermissions(teamId: string): Promise<string[]>{
+        const response = await this.client.get<ApiResponse<{ permissions: string[] }>>(`/self/${teamId}/permissions/me`);
+        return this.unwrap(response).permissions ?? [];
     }
 };

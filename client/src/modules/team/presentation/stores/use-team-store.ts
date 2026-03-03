@@ -8,11 +8,14 @@ import { createBaseSlice, BASE_SLICE_INITIAL_STATE, type BaseSlice } from '@/sha
 interface TeamStore extends BaseSlice {
     teams: Team[];
     selectedTeam: Team | null;
-    canInvite: boolean;
+    permissions: string[];
+    permissionsTeamId: string | null;
+    isPermissionsLoading: boolean;
     setTeams: (teams: Team[]) => void;
     setSelectedTeam: (team: Team | null) => void;
     selectTeamById: (teamId: string) => void;
-    setCanInvite: (canInvite: boolean) => void;
+    setPermissions: (permissions: string[], teamId?: string | null) => void;
+    setPermissionsLoading: (isLoading: boolean) => void;
     addTeam: (team: Team) => void;
     updateTeamInList: (teamId: string, updates: Partial<Team>) => void;
     removeTeam: (teamId: string) => void;
@@ -22,7 +25,9 @@ interface TeamStore extends BaseSlice {
 const initialState = {
     teams: [] as Team[],
     selectedTeam: null as Team | null,
-    canInvite: false,
+    permissions: [] as string[],
+    permissionsTeamId: null as string | null,
+    isPermissionsLoading: false,
     ...BASE_SLICE_INITIAL_STATE
 };
 
@@ -49,7 +54,13 @@ export const useTeamStore = create<TeamStore>((set, get) => ({
         }
     },
 
-    setCanInvite: (canInvite) => set({ canInvite }),
+    setPermissions: (permissions, teamId) => {
+        const uniquePermissions = Array.from(new Set(permissions));
+        const scopedTeamId = teamId ?? get().selectedTeam?._id ?? null;
+        set({ permissions: uniquePermissions, permissionsTeamId: scopedTeamId });
+    },
+
+    setPermissionsLoading: (isPermissionsLoading) => set({ isPermissionsLoading }),
 
     addTeam: (team) => {
         set((state) => ({

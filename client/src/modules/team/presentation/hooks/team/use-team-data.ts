@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { container } from 'tsyringe';
+import { showPromise } from '@/shared/presentation/hooks/toast';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import useTeamUseCases from '@/modules/team/presentation/hooks/team/use-team-use-cases';
 import type ITeamStorage from '@/modules/team/domain/ports/ITeamStorage';
@@ -9,7 +10,8 @@ const useTeamData = () => {
     const teams = useTeamStore((state) => state.teams);
     const setTeams = useTeamStore((state) => state.setTeams);
     const setSelectedTeam = useTeamStore((state) => state.setSelectedTeam);
-    const setCanInvite = useTeamStore((state) => state.setCanInvite);
+    const setPermissions = useTeamStore((state) => state.setPermissions);
+    const setPermissionsLoading = useTeamStore((state) => state.setPermissionsLoading);
     const setLoading = useTeamStore((state) => state.setLoading);
     const setError = useTeamStore((state) => state.setError);
 
@@ -42,16 +44,63 @@ const useTeamData = () => {
         }
     }, [teams.length, teamRepository, setTeams, setSelectedTeam, setLoading, setError]);
 
-    const checkCanInvite = useCallback(async (teamId: string) => {
-        try{
-            const canInvite = await teamRepository.canInvite(teamId);
-            setCanInvite(canInvite);
-        }catch{
-            setCanInvite(false);
-        }
-    }, [teamRepository, setCanInvite]);
+    const syncPermissions = useCallback(async (
+        teamId: string,
+        options?: { showLoadingToast?: boolean; clearOnError?: boolean }
+    ) => {
+        const teamStorage = container.resolve<ITeamStorage>(TEAM_TOKENS.TeamStorage);
+        const request = async () => {
+            const permissions = await teamRepository.getMyPermissions(teamId);
+            setPermissions(permissions, teamId);
+            teamStorage.setTeamPermissions(teamId, permissions);
+            return permissions;
+        };
 
-    return { fetchTeams, checkCanInvite };
+        const showLoadingToast = options?.showLoadingToast ?? false;
+        const clearOnError = options?.clearOnError ?? false;
+
+        setPermissionsLoading(showLoadingToast);
+        try {
+            if (showLoadingToast) {
+                await showPromise(request(), {
+                    loading: {
+                        title: 'Loading permissions',
+                        description: 'Setting up your access for this team.'
+                    },
+                    success: {
+                        title: 'Permissions loaded'
+                    },
+                    error: {
+                        title: 'Failed to load permissions'
+                    }
+                });
+            } else {
+                await request();
+            }
+        } catch {
+            if (clearOnError) {
+                setPermissions([], teamId);
+            }
+        } finally {
+            setPermissionsLoading(false);
+        }
+    }, [teamRepository, setPermissions, setPermissionsLoading]);
+
+    const hydrateTeamAccess = useCallback(async (teamId: string) => {
+        const teamStorage = container.resolve<ITeamStorage>(TEAM_TOKENS.TeamStorage);
+        const cachedPermissions = teamStorage.getTeamPermissions(teamId);
+
+        if (cachedPermissions) {
+            setPermissions(cachedPermissions, teamId);
+            setPermissionsLoading(false);
+            await syncPermissions(teamId, { showLoadingToast: false, clearOnError: false });
+            return;
+        }
+
+        await syncPermissions(teamId, { showLoadingToast: true, clearOnError: true });
+    }, [setPermissions, setPermissionsLoading, syncPermissions]);
+
+    return { fetchTeams, hydrateTeamAccess };
 };
 
 export default useTeamData;

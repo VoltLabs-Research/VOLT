@@ -6,6 +6,7 @@ export type RBACResource =
     | Resource.TEAM_INVITATION
     | Resource.TEAM_MEMBER 
     | Resource.TEAM_ROLE
+    | Resource.TEAM_SECRET_KEY
     | Resource.SSH_CONNECTION
     | Resource.PLUGIN
     | Resource.CONTAINER
