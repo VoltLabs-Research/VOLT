@@ -20,11 +20,8 @@ const SidebarFooterNavigation = ({ settingsExpanded, setSettingsExpanded, collap
         { label: 'General', isSelected: pathname === '/dashboard/settings/general', onClick: () => navigate('/dashboard/settings/general') },
         { label: 'Authentication', isSelected: pathname === '/dashboard/settings/authentication', onClick: () => navigate('/dashboard/settings/authentication') },
         { label: 'Theme', isSelected: pathname === '/dashboard/settings/theme', onClick: () => navigate('/dashboard/settings/theme') },
-        { label: 'Notifications', isSelected: pathname === '/dashboard/settings/notifications', onClick: () => navigate('/dashboard/settings/notifications') },
         { label: 'Sessions', isSelected: pathname === '/dashboard/settings/sessions', onClick: () => navigate('/dashboard/settings/sessions') },
-        { label: 'Integrations', isSelected: pathname === '/dashboard/settings/integrations', onClick: () => navigate('/dashboard/settings/integrations') },
-        { label: 'Data & Export', isSelected: pathname === '/dashboard/settings/data-export', onClick: () => navigate('/dashboard/settings/data-export') },
-        { label: 'Advanced', isSelected: pathname === '/dashboard/settings/advanced', onClick: () => navigate('/dashboard/settings/advanced') }
+        { label: 'Integrations', isSelected: pathname === '/dashboard/settings/integrations', onClick: () => navigate('/dashboard/settings/integrations') }
     ], [pathname, navigate]);
 
     if (collapsed) {

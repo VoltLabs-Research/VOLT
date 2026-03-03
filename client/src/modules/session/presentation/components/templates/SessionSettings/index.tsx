@@ -205,7 +205,7 @@ const SessionSettings: React.FC = () => {
                             return (
                                 <Container
                                     key={session._id}
-                                    className={`session-card d-flex items-center gap-1 p-075 radius-md ${isCurrent ? 'current-session' : ''}`}
+                                    className={`session-card d-flex items-center gap-1 p-075 ${isCurrent ? 'current-session' : ''}`}
                                 >
                                     <Container className="d-flex items-center content-center f-shrink-0 color-muted">
                                         <DeviceIcon size={20} />
