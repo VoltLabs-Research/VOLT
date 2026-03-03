@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useNotificationStore } from '../stores/use-notification-store';
 import useNotificationUseCases from './use-notification-use-cases';
 import { sileo } from 'sileo';
@@ -9,6 +9,8 @@ const useNotificationData = () => {
     const page = useNotificationStore((state) => state.page);
     const hasMore = useNotificationStore((state) => state.hasMore);
     const isLoading = useNotificationStore((state) => state.isLoading);
+    const isLoadingRef = useRef(isLoading);
+    isLoadingRef.current = isLoading;
     const setNotifications = useNotificationStore((state) => state.setNotifications);
     const appendNotifications = useNotificationStore((state) => state.appendNotifications);
     const markAllAsReadInStore = useNotificationStore((state) => state.markAllAsRead);
@@ -20,32 +22,32 @@ const useNotificationData = () => {
     const { notificationRepository } = useNotificationUseCases();
 
     const fetchNotifications = useCallback(async (pageToFetch: number = 1) => {
-        if(isLoading) return;
+        if (isLoadingRef.current) return;
 
         setLoading(true);
         setError(null);
 
         try {
-            const response = await notificationRepository.getAll({ 
-                page: pageToFetch, 
-                limit: DEFAULT_LIMIT 
+            const response = await notificationRepository.getAll({
+                page: pageToFetch,
+                limit: DEFAULT_LIMIT
             });
 
-            if(pageToFetch === 1){
+            if (pageToFetch === 1) {
                 setNotifications(response.data);
-            }else{
+            } else {
                 appendNotifications(response.data);
             }
 
             setHasMore(response.pagination.hasMore);
             setPage(pageToFetch);
-        } catch(error: any) {
+        } catch (error: any) {
             console.error('Failed to fetch notifications:', error);
             setError(error?.message ?? 'Failed to fetch notifications');
         } finally {
             setLoading(false);
         }
-    }, [isLoading, notificationRepository, setNotifications, appendNotifications, setLoading, setHasMore, setPage, setError]);
+    }, [notificationRepository, setNotifications, appendNotifications, setLoading, setHasMore, setPage, setError]);
 
     const loadMore = useCallback(() => {
         if(!isLoading && hasMore){
