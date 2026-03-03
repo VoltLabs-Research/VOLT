@@ -4,7 +4,6 @@ import OAuthCallbackPage from '@/modules/auth/presentation/components/templates/
 import GeneralSettings from '@/modules/auth/presentation/components/templates/Settings/GeneralSettings';
 import AuthenticationSettings from '@/modules/auth/presentation/components/templates/Settings/AuthenticationSettings';
 import ThemeSettings from '@/modules/auth/presentation/components/templates/Settings/ThemeSettings';
-import NotificationSettings from '@/modules/auth/presentation/components/templates/Settings/NotificationSettings';
 import MyTeamTemplate from '@/modules/team/presentation/components/templates/MyTeam';
 import ManageRolesTemplate from '@/modules/team/presentation/components/templates/ManageRoles';
 import TeamInvitationTemplate from '@/modules/team/presentation/components/templates/TeamInvitation';
@@ -62,10 +61,6 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/settings/theme',
             component: ThemeSettings
-        },
-        {
-            path: '/dashboard/settings/notifications',
-            component: NotificationSettings
         },
         {
             path: '/dashboard/settings/integrations',
