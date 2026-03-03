@@ -7,7 +7,6 @@ import { SOCKET_TOKENS } from '@modules/socket/infrastructure/di/SocketTokens';
 import { CHAT_TOKENS } from '@modules/chat/infrastructure/di/ChatTokens';
 import { IChatRepository } from '@modules/chat/domain/port/IChatRepository';
 import { SendChatMessageUseCase } from '@modules/chat/application/use-cases/chat-message/SendChatMessageUseCase';
-import { SendFileMessageUseCase } from '@modules/chat/application/use-cases/chat-message/SendFileMessageUseCase';
 import { EditMessageUseCase } from '@modules/chat/application/use-cases/chat-message/EditMessageUseCase';
 import { DeleteMessageUseCase } from '@modules/chat/application/use-cases/chat-message/DeleteMessageUseCase';
 import { ToggleMessageReactionUseCase } from '@modules/chat/application/use-cases/chat-message/ToggleMessageReactionUseCase';
@@ -21,15 +20,6 @@ interface SendMessagePayload {
     content: string;
     messageType?: string;
     metadata?: any;
-}
-
-interface SendFileMessagePayload {
-    chatId: string;
-    filename: string;
-    originalName: string;
-    size: number;
-    mimetype: string;
-    url: string;
 }
 
 interface EditMessagePayload {
@@ -104,9 +94,6 @@ export default class ChatSocketModule extends BaseSocketModule {
         @inject(CHAT_TOKENS.SendChatMessageUseCase)
         private readonly sendChatMessageUseCase: SendChatMessageUseCase,
 
-        @inject(CHAT_TOKENS.SendFileMessageUseCase)
-        private readonly sendFileMessageUseCase: SendFileMessageUseCase,
-
         @inject(CHAT_TOKENS.EditMessageUseCase)
         private readonly editMessageUseCase: EditMessageUseCase,
 
@@ -142,7 +129,6 @@ export default class ChatSocketModule extends BaseSocketModule {
         this.registerJoinChat(connection);
         this.registerLeaveChat(connection);
         this.registerSendMessage(connection);
-        this.registerSendFileMessage(connection);
         this.registerEditMessage(connection);
         this.registerDeleteMessage(connection);
         this.registerToggleReaction(connection);
@@ -241,52 +227,6 @@ export default class ChatSocketModule extends BaseSocketModule {
             } catch (error) {
                 logger.error(`@chat-socket - send_message error: ${error}`);
                 this.emitToSocket(conn.id, 'error', 'Failed to send message');
-            }
-        });
-    }
-
-    /**
-     * Send a file message
-     */
-    private registerSendFileMessage(connection: ISocketConnection): void {
-        this.on<SendFileMessagePayload>(connection.id, 'send_file_message', async (conn, data) => {
-            if (!conn.user) return;
-
-            try {
-                const { chatId, filename, originalName, size, mimetype, url } = data;
-
-                const hasAccess = await this.checkChatAccess(conn.user._id, chatId);
-                if (!hasAccess) {
-                    this.emitToSocket(conn.id, 'error', 'Chat not found or access denied');
-                    return;
-                }
-
-                const result = await this.sendFileMessageUseCase.execute({
-                    userId: conn.user._id,
-                    chatId,
-                    fileData: {
-                        filename,
-                        originalName,
-                        size,
-                        mimetype,
-                        url
-                    }
-                });
-
-                if (!result.success) {
-                    this.emitToSocket(conn.id, 'error', result.error?.message || 'Failed to send file message');
-                    return;
-                }
-
-                this.emitToRoom(`chat-${chatId}`, 'new_message', {
-                    message: result.value,
-                    chatId
-                });
-
-                logger.info(`@chat-socket - file message sent in chat ${chatId} by ${conn.user._id}`);
-            } catch (error) {
-                logger.error(`@chat-socket - send_file_message error: ${error}`);
-                this.emitToSocket(conn.id, 'error', 'Failed to send file message');
             }
         });
     }

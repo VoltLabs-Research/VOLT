@@ -8,6 +8,36 @@ import './FileAttachment.css';
 
 type FileAttachmentVariant = 'compact' | 'detailed';
 
+const IMAGE_FILE_EXTENSIONS = new Set([
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'webp',
+    'bmp',
+    'svg',
+    'avif',
+    'heic',
+    'heif'
+]);
+
+const getFileExtension = (value?: string): string => {
+    if (!value) return '';
+    const normalized = value.split('?')[0].toLowerCase();
+    const dotIndex = normalized.lastIndexOf('.');
+    return dotIndex === -1 ? '' : normalized.slice(dotIndex + 1);
+};
+
+const isImageAttachment = (fileType?: string, fileName?: string, fileUrl?: string): boolean => {
+    if (fileType?.toLowerCase().startsWith('image/')) return true;
+
+    const fileNameExtension = getFileExtension(fileName);
+    if (IMAGE_FILE_EXTENSIONS.has(fileNameExtension)) return true;
+
+    const urlExtension = getFileExtension(fileUrl);
+    return IMAGE_FILE_EXTENSIONS.has(urlExtension);
+};
+
 interface FileAttachmentProps {
     fileName?: string;
     fileSize?: number;
@@ -26,12 +56,12 @@ const FileAttachment = ({
     fileUrl,
     fileType,
     showDownload = true,
-    showPreview = false,
+    showPreview = true,
     variant = 'compact',
     timestamp,
     className
 }: FileAttachmentProps) => {
-    const isImage = fileType?.startsWith('image/');
+    const isImage = isImageAttachment(fileType, fileName, fileUrl);
     const iconSize = variant === 'compact' ? 18 : 20;
     
     return (
@@ -54,7 +84,7 @@ const FileAttachment = ({
                 <Paragraph className='font-size-2 font-weight-5 file-attachment-name text-truncate'>
                     {fileName}
                 </Paragraph>
-                <Container className='d-flex items-center gap-05 font-size-1 color-muted'>
+                <Container className='d-flex items-center gap-05 font-size-1'>
                     {fileSize !== undefined && <Paragraph>{formatSize(fileSize)}</Paragraph>}
                     {timestamp && (
                         <>
@@ -70,7 +100,7 @@ const FileAttachment = ({
                     <a
                         href={fileUrl}
                         download={fileName}
-                        className='d-flex flex-center file-attachment-download color-secondary'
+                        className='d-flex flex-center file-attachment-download color-'
                         onClick={(e) => e.stopPropagation()}
                     >
                         <IoDownloadOutline size={18} />

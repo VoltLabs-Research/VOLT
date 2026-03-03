@@ -37,6 +37,7 @@ const useMessageActions = (chatId?: string) => {
             return message;
         } catch (error) {
             sileo.error({ title: 'Failed to send file' });
+            throw error;
         }
     }, [chatId, addMessage, chatMessageRepository]);
 

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { upload } from '@shared/infrastructure/http/middleware/upload';
+import { uploadChatSingleFile } from '@shared/infrastructure/http/middleware/upload';
 import { protect } from '@shared/infrastructure/http/middleware/authentication';
 import { uploadToStorage } from '@modules/chat/infrastructure/http/middlewares/upload-to-storage';
 import controllers from '@modules/chat/infrastructure/http/controllers/chat-messages';
@@ -27,7 +27,7 @@ router.post('/:chatId/messages/:messageId/reaction', controllers.toggleMessageRe
 
 router.post(
     '/:chatId/send-file',
-    upload.single('file'),
+    uploadChatSingleFile('file'),
     uploadToStorage,
     controllers.sendFileMessage.handle
 );
