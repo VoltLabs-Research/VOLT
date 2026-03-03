@@ -104,7 +104,7 @@ const SSHConnectionModal = ({ connection, mode, onSuccess }: SSHConnectionModalP
                 </>
             }
         >
-            <form id='ssh-connection-form' onSubmit={handleSubmit} className='d-flex column gap-1'>
+            <form id='ssh-connection-form' onSubmit={handleSubmit} className='d-flex column gap-1 p-1-5'>
                 <SSHConnectionForm field={form.field} mode={mode} />
                 
                 {mode === 'edit' && connection && (

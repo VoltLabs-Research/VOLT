@@ -6,7 +6,7 @@ import { GoArrowRight } from 'react-icons/go';
 import { useSelectedTeam } from '@/modules/team/presentation/hooks/use-selected-team';
 import useTeamMemberData from '@/modules/team/presentation/hooks/team-member/use-team-member-data';
 import { useTeamMemberStore } from '@/modules/team/presentation/stores/use-team-member-store';
-import useTeamPresence from '@/modules/team/presentation/hooks/use-team-presence';
+import { useTeamPresenceStore } from '@/modules/team/presentation/stores/use-team-presence-store';
 import Avatar from '@/shared/presentation/components/Avatar';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
@@ -20,7 +20,7 @@ const DashboardTeamPresence = () => {
     const { fetchMembers } = useTeamMemberData();
     const members = useTeamMemberStore((state) => state.members);
     const isLoading = useTeamMemberStore((state) => state.isLoading);
-    const onlineUserIds = useTeamPresence();
+    const onlineUserIds = useTeamPresenceStore((s) => s.onlineUserIds);
 
     useEffect(() => {
         fetchMembers(selectedTeam._id);

@@ -5,6 +5,8 @@ import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store'
 import useTeamData from '@/modules/team/presentation/hooks/team/use-team-data';
 import { setGetTeamId } from '@/app/core/http/VoltClient';
 import useTeamSocketSubscription from '@/modules/socket/presentation/hooks/use-team-socket-subscription';
+import useSocketConnectionToast from '@/modules/socket/presentation/hooks/use-socket-connection-toast';
+import useTeamPresenceSocket from '@/modules/team/presentation/hooks/use-team-presence-socket';
 import Loader from '@/shared/presentation/components/Loader';
 
 type RouteMode = 'protected' | 'guest';
@@ -30,6 +32,8 @@ const ProtectedRoute = ({ mode }: ProtectedRouteProps) => {
     const { fetchTeams } = useTeamData();
 
     useTeamSocketSubscription();
+    useSocketConnectionToast();
+    useTeamPresenceSocket();
 
     const isAuthenticated = !!user;
     const hasTeam = !!selectedTeam;

@@ -24,7 +24,7 @@ import type { GetTeamMembersParams } from '@/modules/team/domain/ports/ITeamMemb
 import type { TeamMember } from '@/modules/team/domain/entities/TeamMember';
 import useDailyActivityData from '@/modules/daily-activity/presentation/hooks/use-daily-activity-data';
 import ActivityHeatmap from '@/modules/daily-activity/presentation/components/molecules/ActivityHeatmap';
-import useTeamPresence from '@/modules/team/presentation/hooks/use-team-presence';
+import { useTeamPresenceStore } from '@/modules/team/presentation/stores/use-team-presence-store';
 import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
 import './MyTeam.css';
 
@@ -57,7 +57,7 @@ const MyTeamTemplate: React.FC = () => {
     const { teamMemberRepository } = useTeamMemberUseCases();
     const { activityData, fetchActivity } = useDailyActivityData();
 
-    const onlineUserIds = useTeamPresence();
+    const onlineUserIds = useTeamPresenceStore((s) => s.onlineUserIds);
 
     useEffect(() => {
         fetchRoles(selectedTeam._id);
