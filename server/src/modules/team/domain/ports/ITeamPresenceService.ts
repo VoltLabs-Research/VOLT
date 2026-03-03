@@ -7,7 +7,7 @@ export interface TeamMemberPresence{
     lastName?: string;
     email?: string;
     avatar?: string;
-    lastLoginAt?: Date;
+    lastLoginAt: Date;
 };
 
 /**

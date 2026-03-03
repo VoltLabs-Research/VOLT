@@ -1,0 +1,25 @@
+.access-denied-container{
+    min-height: auto;
+}
+
+.access-denied-content{
+    max-width: 360px;
+}
+
+.access-denied-icon{
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-lg);
+    background: var(--status-error-bg);
+    color: var(--accent-red);
+}
+
+@media (max-width: 768px){
+    .access-denied-container{
+        min-height: 300px;
+    }
+
+    .access-denied-content{
+        max-width: 90%;
+    }
+}

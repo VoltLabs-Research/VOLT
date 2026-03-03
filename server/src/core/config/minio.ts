@@ -53,7 +53,7 @@ export const ensureBucketExists = async (client: Client, bucket: string): Promis
     if (!exists) {
         await client.makeBucket(bucket, '');
         // Set public policy for avatars bucket
-        if (bucket === SYS_BUCKETS.AVATARS) {
+        if (bucket === SYS_BUCKETS.AVATARS || bucket === SYS_BUCKETS.CHAT) {
             const policy = {
                 Version: '2012-10-17',
                 Statement: [{

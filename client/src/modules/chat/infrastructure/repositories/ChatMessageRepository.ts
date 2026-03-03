@@ -2,7 +2,6 @@ import { injectable } from 'tsyringe';
 import BaseRepository, { ApiResponse } from '@/shared/infrastructure/repositories/BaseRepository';
 import { buildFileFormData } from '@/shared/utils/file';
 import type IChatMessageRepository from '../../domain/ports/IChatMessageRepository';
-import type { FilePreview, UploadedFile } from '../../domain/ports/IChatMessageRepository';
 import type { ChatMessage } from '../../domain/entities';
 import type { PaginatedResponse } from '@/shared/domain/pagination';
 import type { SendMessageDTO } from '../../application/dtos/message';
@@ -38,16 +37,6 @@ export default class ChatMessageRepository extends BaseRepository implements ICh
         return this.unwrap(response);
     }
 
-    async uploadFile(chatId: string, file: File): Promise<UploadedFile> {
-        const formData = buildFileFormData([{ name: 'file', file }]);
-        
-        const response = await this.client.post<ApiResponse<UploadedFile>>(
-            `/${chatId}/upload`,
-            formData
-        );
-        return this.unwrap(response);
-    }
-
     async editMessage(chatId: string, messageId: string, content: string): Promise<ChatMessage> {
         const response = await this.client.patch<ApiResponse<ChatMessage>>(
             `/${chatId}/messages/${messageId}`,
@@ -68,13 +57,6 @@ export default class ChatMessageRepository extends BaseRepository implements ICh
         const response = await this.client.post<ApiResponse<ChatMessage>>(
             `/${chatId}/messages/${messageId}/reaction`,
             { emoji }
-        );
-        return this.unwrap(response);
-    }
-
-    async getFilePreview(filename: string): Promise<FilePreview> {
-        const response = await this.client.get<ApiResponse<FilePreview>>(
-            `/files/${filename}`
         );
         return this.unwrap(response);
     }

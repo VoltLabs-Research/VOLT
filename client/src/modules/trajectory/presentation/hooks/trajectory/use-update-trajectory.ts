@@ -21,10 +21,11 @@ const useUpdateTrajectory = () => {
         try{
             const updated = await trajectoryRepository.update(id, data);
             patchTrajectory(id, updated);
-        }catch{
+        }catch(error){
             // Rollback
             setTrajectories(previousTrajectories);
             setTrajectory(previousTrajectory);
+            throw error;
         }
     }, [trajectoryRepository, trajectories, trajectory, patchTrajectory, setTrajectories, setTrajectory]);
 

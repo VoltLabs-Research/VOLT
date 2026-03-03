@@ -6,8 +6,10 @@ import { showPromise } from '@/shared/presentation/hooks/toast';
 import { sileo } from 'sileo';
 import { confirm } from '@/shared/presentation/hooks/use-confirm';
 import Container from '@/shared/presentation/components/Container';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
 import ContainerSidebar from '../../molecules/ContainerSidebar';
 import ContainerDetailsSkeleton from '../../atoms/ContainerDetailsSkeleton';
+import ApiError from '@/shared/errors/ApiError';
 import type { Container as ContainerEntity, EnvVariable, PortMapping } from '@/modules/container/domain/entities';
 import type { ContainerDetailsContext } from '../../../hooks/use-container-details-context';
 import './ContainerDetailsLayout.css';
@@ -20,6 +22,7 @@ const ContainerDetailsLayout = () => {
     const [container, setContainer] = useState<ContainerEntity | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
+    const [accessDenied, setAccessDenied] = useState(false);
 
     const isRunning = container?.status === 'running';
 
@@ -40,7 +43,11 @@ const ContainerDetailsLayout = () => {
             const data = await containerRepository.getById(id);
             setContainer(data);
         }catch(error: any){
-            sileo.error({ title: error?.message || 'Failed to load container' });
+            if(ApiError.isRBACError(error)){
+                setAccessDenied(true);
+            }else{
+                sileo.error({ title: error?.message || 'Failed to load container' });
+            }
         }finally{
             setIsLoading(false);
         }
@@ -116,6 +123,8 @@ const ContainerDetailsLayout = () => {
     if(isLoading && !container){
         return <ContainerDetailsSkeleton />;
     }
+
+    if(accessDenied) return <AccessDenied />;
 
     if(!container) return null;
 

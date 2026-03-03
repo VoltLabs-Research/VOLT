@@ -19,22 +19,21 @@ export const uploadToStorage = async (req: Request, _res: Response, next: NextFu
     }
 
     const fileExtension = path.extname(req.file.originalname);
-    const objectName = `${v4()}${fileExtension}`;
+    const filename = `${v4()}${fileExtension}`;
+    const objectKey = `chat-files/${filename}`;
     await storageService.upload(
         SYS_BUCKETS.CHAT,
-        objectName,
+        objectKey,
         req.file.buffer,
-        {
-            originalName: req.file.originalname,
-            mimeType: req.file.mimetype
-        }
+        { 'Content-Type': req.file.mimetype }
     );
 
     req.body.fileData = {
-        filename: objectName,
+        filename,
         originalName: req.file.originalname,
         size: req.file.size,
-        mimetype: req.file.mimetype
+        mimetype: req.file.mimetype,
+        url: storageService.getPublicURL(SYS_BUCKETS.CHAT, objectKey)
     };
 
     next();
