@@ -36,8 +36,6 @@ pnpm-debug.log*
 lerna-debug.log*
 *.env
 
-data/
-
 node_modules/
 package-lock.json
 
@@ -60,8 +58,6 @@ execution_sandboxes/
 *.njsproj
 *.sln
 *.sw?
-
-./data/*
 
 reports/
 fix.md
