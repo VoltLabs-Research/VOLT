@@ -10,6 +10,8 @@ import useOptimisticAction from '@/shared/presentation/hooks/use-optimistic-acti
 import useKeyboardShortcut from '@/shared/presentation/hooks/use-keyboard-shortcut';
 import DocumentListingTable, { ColumnConfig, MenuOption } from '@/shared/presentation/components/DocumentListingTable';
 import DocumentListingGrid from '@/shared/presentation/components/DocumentListingGrid';
+import AccessDenied from '@/shared/presentation/components/AccessDenied';
+import ApiError from '@/shared/errors/ApiError';
 import Modal, { closeModal, openModal } from '@/shared/presentation/components/Modal';
 import FormField from '@/shared/presentation/components/FormField';
 import Container from '@/shared/presentation/components/Container';
@@ -116,6 +118,7 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         isFetchingMore,
         hasMore,
         error,
+        errorCode,
         handleLoadMore,
         refresh,
         search
@@ -229,7 +232,13 @@ const DocumentListing = <T extends { _id: string }, TContext = Record<string, ne
         }
     }, [exportConfig, selectedExportType, context, search, sortConfig, exportModalId]);
 
+    const isAccessDenied = !!errorCode && ApiError.isCodePermissionDenied(errorCode);
+
     const renderContent = () => {
+        if(isAccessDenied){
+            return <AccessDenied description={error || undefined} showBack={false} />;
+        }
+
         const emptyMessageText = error ? error : emptyMessage;
         if(view === 'grid'){
             if(!renderGridItem) return null;

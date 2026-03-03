@@ -3,6 +3,7 @@ import usePaginationParams, { type PaginationParams } from './use-pagination-par
 import useListingLifecycle from './use-listing-lifecycle';
 import useListSync, { type ListSyncConfig } from './use-list-sync';
 import { PaginatedResponse } from '@/shared/domain/pagination/PaginationResponse';
+import ApiError from '@/shared/errors/ApiError';
 
 /**
  * Props for useDocumentListingPagination hook.
@@ -25,6 +26,7 @@ export interface UseDocumentListingPaginationReturn<T> {
     isFetchingMore: boolean;
     hasMore: boolean;
     error: string | null;
+    errorCode: string | null;
     search: string;
     handleLoadMore: () => void;
     refresh: () => void;
@@ -52,6 +54,7 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
     const [isLoading, setIsLoading] = useState(false);
     const [hasMore, setHasMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [errorCode, setErrorCode] = useState<string | null>(null);
 
     const fetchDataRef = useRef(fetchData);
     useEffect(() => {
@@ -61,6 +64,7 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
     const fetchDataAsync = useCallback(async (isRefresh = false) => {
         setIsLoading(true);
         setError(null);
+        setErrorCode(null);
 
         if(isRefresh){
             setData([]);
@@ -84,9 +88,12 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
             
             setHasMore(result.pagination.hasMore);
         }catch(err){
-            if(err instanceof Error){
+            if(err instanceof ApiError){
+                setError(err.getFriendlyMessage());
+                setErrorCode(err.code);
+            }else if(err instanceof Error){
                 setError(err.message);
-            } else {
+            }else{
                 setError('Failed to fetch data');
             }
             console.error('[useDocumentListingPagination] Error:', err);
@@ -153,6 +160,7 @@ export function useDocumentListingPagination<T, TContext = Record<string, never>
         isFetchingMore,
         hasMore,
         error,
+        errorCode,
         search,
         handleLoadMore,
         refresh

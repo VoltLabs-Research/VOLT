@@ -11,7 +11,7 @@ export enum UserRole{
 
 export interface UserProps{
     email: string;
-    lastLoginAt?: Date;
+    lastLoginAt: Date;
     role?: UserRole;
     passwordChangedAt?: Date;
     passwordResetToken?: string;

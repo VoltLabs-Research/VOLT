@@ -6,4 +6,5 @@ export interface User {
     lastName?: string;
     fullName?: string;
     avatar?: string;
+    lastLoginAt: string;
 };

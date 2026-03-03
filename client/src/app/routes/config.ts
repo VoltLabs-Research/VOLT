@@ -159,6 +159,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/notebooks',
             component: NotebooksListing
+        },
+        {
+            path: '/team-invitation/:invitationId',
+            component: TeamInvitationTemplate
         }
     ],
 
@@ -170,10 +174,6 @@ export const routesConfig: RouteGroup = {
         {
             path: '/auth/oauth/callback',
             component: OAuthCallbackPage
-        },
-        {
-            path: '/team-invitation/:invitationId',
-            component: TeamInvitationTemplate
         }
     ],
 
