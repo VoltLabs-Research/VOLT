@@ -5,6 +5,7 @@ import JobGroup from '@/modules/jobs/presentation/components/molecules/JobGroup'
 import FrameGroup from '@/modules/jobs/presentation/components/molecules/JobGroup/FrameGroup';
 import Container from '@/shared/presentation/components/Container';
 import type { TrajectoryJobGroup as TJG, Job } from '@/modules/jobs/domain/entities/Job';
+import EmptyState from '@/shared/presentation/components/EmptyState';
 
 interface JobsHistoryProps {
     trajectoryId?: string;
@@ -50,10 +51,10 @@ const JobsHistory = ({
             {shouldShowSkeleton ? (
                 <JobSkeleton />
             ) : filteredGroups.length === 0 ? (
-                <Container className="d-flex column items-center content-center gap-05 flex-1 h-max">
-                    <Inbox size={24} strokeWidth={1} className="color-muted" />
-                    <span className="font-size-05 color-muted">No events to display</span>
-                </Container>
+                <EmptyState
+                    title='No events to display'
+                    icon={<Inbox size={24} strokeWidth={1} className="color-muted" />}
+                />
             ) : (
                 filteredGroups.map((group: TJG, index: number) =>
                     displayMode === 'children-only' ? (
