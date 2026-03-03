@@ -1,0 +1,31 @@
+.session-card {
+    transition: background-color 0.15s ease;
+}
+
+.session-card:hover {
+    background-color: var(--color-surface-hover, rgba(0, 0, 0, 0.02));
+}
+
+.session-card.current-session {
+    border-left: 2px solid var(--color-brand, #6366f1);
+}
+
+.session-ip {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.75rem;
+}
+
+.activity-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.activity-dot.success {
+    background-color: var(--color-success, #22c55e);
+}
+
+.activity-dot.failed {
+    background-color: var(--color-danger, #ef4444);
+}

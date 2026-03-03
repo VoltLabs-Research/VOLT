@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Container from '@/shared/presentation/components/Container';
 import SettingsPage from '../SettingsPage';
 import SettingsSection from '@/modules/auth/presentation/components/atoms/SettingsSection';
@@ -12,6 +13,7 @@ import { ChangePasswordInputDTO } from '@/modules/auth/application/dtos';
 import { PasswordInfo } from '@/modules/auth/presentation/components/organisms/PasswordChangeForm/validation-schema';
 
 const AuthenticationSettings: React.FC = () => {
+    const navigate = useNavigate();
     const { authRepository } = useAuthUseCases();
     const [passwordInfo, setPasswordInfo] = useState<PasswordInfo | null>(null);
     const [isPasswordFormOpen, setIsPasswordFormOpen] = useState(false);
@@ -46,7 +48,7 @@ const AuthenticationSettings: React.FC = () => {
     };
 
     const handleViewLoginActivity = () => {
-        alert('Login activity modal not implemented yet');
+        navigate('/dashboard/settings/sessions');
     };
 
     return (
