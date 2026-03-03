@@ -9,7 +9,6 @@ import { registerPluginDependencies, initializeNodeHandlers } from '@modules/plu
 import { registerScriptingDependencies } from '@modules/scripting/infrastructure/di/container';
 import { registerTrajectoryDependencies } from '@modules/trajectory/infrastructure/di/container';
 import { registerSessionDependencies } from '@modules/session/infrastructure/di/container';
-import { registerApiTrackerDependencies } from '@modules/api-tracker/infrastructure/di/container';
 import { registerRasterDependencies } from '@modules/raster/infrastructure/di/container';
 import { registerSystemDependencies } from '@modules/system/infrastructure/di/container';
 import { registerNotificationDependencies } from '@modules/notification/infrastructure/di/container';
@@ -40,7 +39,6 @@ registerPluginDependencies();
 registerScriptingDependencies();
 registerTrajectoryDependencies();
 registerSessionDependencies();
-registerApiTrackerDependencies();
 registerRasterDependencies();
 registerSystemDependencies();
 registerNotificationDependencies();

@@ -30,7 +30,6 @@ import PluginScriptingHttpModule from '@modules/scripting/infrastructure/http/ro
 import RasterHttpModule from '@modules/raster/infrastructure/http/routes/raster-routes';
 import SimulationCellHttpModule from '@modules/simulation-cell/infrastructure/http/routes/simulation-cell-routes';
 import DailyActivityHttpModule from '@modules/daily-activity/infrastructure/http/routes/daily-activity-routes';
-import ApiTrackerHttpModule from '@modules/api-tracker/infrastructure/http/routes/api-tracker-routes';
 import SystemHttpModule from '@modules/system/infrastructure/http/routes/system-routes';
 import AIConversationHttpModule from '@modules/ai/infrastructure/http/routes/ai-conversation-routes';
 
@@ -70,7 +69,6 @@ const HTTP_MODULES: HttpModule[] = [
     RasterHttpModule,
     SimulationCellHttpModule,
     DailyActivityHttpModule,
-    ApiTrackerHttpModule,
     SystemHttpModule,
     ColorCodingHttpModule,
     ParticleFilterHttpModule,

@@ -7,7 +7,6 @@ import { registerPluginSubscribers } from '@modules/plugin/infrastructure/events
 import { registerScriptingSubscribers } from '@modules/scripting/infrastructure/events/subscribers';
 import { registerNotificationSubscribers } from '@modules/notification/infrastructure/events/subscribers';
 import { registerDailyActivitySubscribers } from '@modules/daily-activity/infrastructure/events/subscribers';
-import { registerApiTrackerSubscribers } from '@modules/api-tracker/infrastructure/events/subscribers';
 import { registerContainerSubscribers } from '@modules/container/infrastructure/events/subscribers';
 import { registerSimulationCellSubscribers } from '@modules/simulation-cell/infrastructure/events/subscribers';
 import { registerSessionSubscribers } from '@modules/session/infrastructure/events/subscribers';
@@ -22,7 +21,6 @@ export const registerAllSubscribers = async (): Promise<void> => {
     await Promise.all([
         registerTeamSubscribers(),
         registerNotificationSubscribers(),
-        registerApiTrackerSubscribers(),
         registerChatSubscribers(),
         registerTrajectorySubscribers(),
         registerAnalysisSubscribers(),
