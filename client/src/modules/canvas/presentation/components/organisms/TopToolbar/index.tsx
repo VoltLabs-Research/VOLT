@@ -7,6 +7,7 @@ import { useAuthStore } from '@/modules/auth/presentation/stores/use-auth-store'
 import { useCurrentUser } from '@/modules/auth/presentation/hooks/use-current-user';
 import UserMenuPopover from '@/modules/auth/presentation/components/molecules/UserMenuPopover';
 import useCanvasUrlState from '../../../hooks/use-canvas-url-state';
+import useTrajectoryFilePicker from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-file-picker';
 import MenuPopover from '../../molecules/MenuPopover';
 import { buildMenus } from '../../molecules/TopToolbarMenus';
 import WorkspaceTabs from '../../molecules/WorkspaceTabs';
@@ -21,6 +22,9 @@ const TopToolbar = () => {
     const { searchParams, updateSearchParams } = useCanvasUrlState();
     const showStatusBar = searchParams.get('statusBar') !== 'false';
     const setShowStatusBar = (value: boolean) => updateSearchParams({ statusBar: value ? 'true' : 'false' });
+
+    const navigateToDashboard = useCallback(() => navigate('/dashboard'), [navigate]);
+    const { fileInputRef, handlePickerChange, openFilePicker } = useTrajectoryFilePicker(navigateToDashboard);
 
     const handleSignOut = () => {
         try {
@@ -62,11 +66,19 @@ const TopToolbar = () => {
         showStatusBar,
         onToggleFullscreen: handleToggleFullscreen,
         onToggleStatusBar: () => setShowStatusBar(!showStatusBar),
-        onScreenshot: handleScreenshot
+        onScreenshot: handleScreenshot,
+        onImport: openFilePicker
     });
 
     return (
         <header className="canvas-top-toolbar d-flex items-stretch u-select-none">
+            <input
+                ref={fileInputRef}
+                type='file'
+                multiple
+                hidden
+                onChange={handlePickerChange}
+            />
             <Container
                 className="canvas-toolbar-logo d-flex items-center cursor-pointer"
                 onClick={() => navigate('/dashboard')}

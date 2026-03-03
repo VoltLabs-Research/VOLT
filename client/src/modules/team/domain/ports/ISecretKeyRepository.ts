@@ -1,5 +1,6 @@
 import { PaginatedResponse } from '@/shared/domain/pagination';
 import { SecretKey } from '../entities';
+import type { TeamUsageMetrics, KeyUsageMetrics } from '../entities';
 
 export interface GetSecretKeysParams {
     page?: number;
@@ -28,4 +29,6 @@ export default interface ISecretKeyRepository {
     create(teamId: string, data: CreateSecretKeyParams): Promise<CreateSecretKeyResponse>;
     revokeById(teamId: string, secretKeyId: string): Promise<void>;
     deleteById(teamId: string, secretKeyId: string): Promise<void>;
+    getTeamMetrics(teamId: string, params?: { days?: number }): Promise<TeamUsageMetrics>;
+    getKeyUsage(teamId: string, secretKeyId: string, params?: { days?: number }): Promise<KeyUsageMetrics>;
 }

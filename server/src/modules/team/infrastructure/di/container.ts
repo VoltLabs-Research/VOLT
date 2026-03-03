@@ -6,6 +6,7 @@ import TeamMemberRepository from '@modules/team/infrastructure/persistence/mongo
 import TeamRoleRepository from '@modules/team/infrastructure/persistence/mongo/repositories/TeamRoleRepository';
 import TeamInvitationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/TeamInvitationRepository';
 import SecretKeyRepository from '@modules/team/infrastructure/persistence/mongo/repositories/SecretKeyRepository';
+import SecretKeyUsageLogRepository from '@modules/team/infrastructure/persistence/mongo/repositories/SecretKeyUsageLogRepository';
 import TeamAIIntegrationRepository from '@modules/team/infrastructure/persistence/mongo/repositories/TeamAIIntegrationRepository';
 import TeamJobsService from '@modules/team/infrastructure/socket/TeamJobsService';
 import TeamJobsSocketModule from '@modules/team/infrastructure/socket/TeamJobsSocketModule';
@@ -22,6 +23,7 @@ export const registerTeamDependencies = () => {
     container.registerSingleton(TEAM_TOKENS.TeamRoleRepository, TeamRoleRepository);
     container.registerSingleton(TEAM_TOKENS.TeamInvitationRepository, TeamInvitationRepository);
     container.registerSingleton(TEAM_TOKENS.SecretKeyRepository, SecretKeyRepository);
+    container.registerSingleton(TEAM_TOKENS.SecretKeyUsageLogRepository, SecretKeyUsageLogRepository);
     container.registerSingleton(TEAM_TOKENS.TeamAIIntegrationRepository, TeamAIIntegrationRepository);
     container.registerSingleton(TEAM_TOKENS.TeamJobsService, TeamJobsService);
     container.registerSingleton(TEAM_TOKENS.TeamJobsSocketModule, TeamJobsSocketModule);

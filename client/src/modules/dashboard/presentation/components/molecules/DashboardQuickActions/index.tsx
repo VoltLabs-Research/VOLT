@@ -1,14 +1,13 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GoArrowRight } from 'react-icons/go';
 import { Upload, Users, Puzzle, Box } from 'lucide-react';
 import Container from '@/shared/presentation/components/Container';
 import Title from '@/shared/presentation/components/Title';
 import Tooltip from '@/shared/presentation/components/Tooltip';
-import useTrajectoryUpload from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-upload';
+import useTrajectoryFilePicker from '@/modules/trajectory/presentation/hooks/trajectory/use-trajectory-file-picker';
 import { useTeamStore } from '@/modules/team/presentation/stores/use-team-store';
 import { canAccessTeamPermissions } from '@/modules/team/presentation/utils/permission-evaluator';
-import type { FileWithPath } from '@/shared/utils/file';
 import './DashboardQuickActions.css';
 
 const actions = [
@@ -52,8 +51,7 @@ const actions = [
 
 const DashboardQuickActions = () => {
     const navigate = useNavigate();
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const { uploadTrajectory } = useTrajectoryUpload();
+    const { fileInputRef, handlePickerChange, openFilePicker } = useTrajectoryFilePicker();
     const selectedTeamId = useTeamStore((state) => state.selectedTeam?._id ?? null);
     const teamPermissions = useTeamStore((state) => state.permissions);
     const permissionsTeamId = useTeamStore((state) => state.permissionsTeamId);
@@ -67,43 +65,6 @@ const DashboardQuickActions = () => {
         });
     }, [selectedTeamId, permissionsTeamId, teamPermissions]);
 
-    const resolveUploadName = useCallback((files: FileWithPath[]): string => {
-        if (files.length === 0) return `upload_${Date.now()}`;
-        const hasRelativePaths = files.some(({ path }) => path.includes('/'));
-
-        if (hasRelativePaths) {
-            const firstPathSegment = files[0].path.split('/').filter(Boolean)[0];
-            return firstPathSegment || `upload_${Date.now()}`;
-        }
-
-        if (files.length === 1) {
-            return files[0].file.name;
-        }
-
-        return `upload_${Date.now()}`;
-    }, []);
-
-    const handlePickerChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const input = event.target;
-        const selectedFiles = input.files;
-
-        if (!selectedFiles || selectedFiles.length === 0) {
-            return;
-        }
-
-        const filesWithPath: FileWithPath[] = Array.from(selectedFiles).map((file) => ({
-            file,
-            path: file.webkitRelativePath || file.name
-        }));
-
-        const uploadName = resolveUploadName(filesWithPath);
-        try {
-            await uploadTrajectory(filesWithPath, uploadName);
-        } finally {
-            input.value = '';
-        }
-    }, [resolveUploadName, uploadTrajectory]);
-
     const handleActionClick = useCallback((action: (typeof actions)[number]) => {
         const requiredPermissions = action.requiredPermissions ?? [];
         if (!canAccess(requiredPermissions)) {
@@ -115,8 +76,8 @@ const DashboardQuickActions = () => {
             return;
         }
 
-        fileInputRef.current?.click();
-    }, [navigate, canAccess]);
+        openFilePicker();
+    }, [navigate, canAccess, openFilePicker]);
 
     return (
         <Container className='dashboard-actions-card'>

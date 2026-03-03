@@ -5,6 +5,7 @@ import { AUTH_TOKENS } from '@modules/auth/infrastructure/di/AuthTokens';
 import type { IUserRepository } from '@modules/auth/domain/ports/IUserRepository';
 import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
 import type { ISecretKeyRepository } from '@modules/team/domain/ports/ISecretKeyRepository';
+import type { ISecretKeyUsageLogRepository } from '@modules/team/domain/ports/ISecretKeyUsageLogRepository';
 import jwt from 'jsonwebtoken';
 
 export interface AuthenticatedRequest extends Request {
@@ -47,6 +48,7 @@ export const protect = async (
     }
 
     if (token.startsWith('vsk_')) {
+        const startTime = Date.now();
         const secretKeyRepository = container.resolve<ISecretKeyRepository>(TEAM_TOKENS.SecretKeyRepository);
         const secretKey = await secretKeyRepository.findActiveByRawKey(token);
 
@@ -72,6 +74,21 @@ export const protect = async (
         req.userId = createdById;
 
         await secretKeyRepository.touchLastUsed(secretKey.id);
+
+        res.on('finish', () => {
+            const usageLogRepository = container.resolve<ISecretKeyUsageLogRepository>(TEAM_TOKENS.SecretKeyUsageLogRepository);
+            usageLogRepository.logRequest({
+                secretKey: secretKey.id,
+                team: String(secretKey.props.team),
+                method: req.method,
+                path: req.route?.path || req.path,
+                statusCode: res.statusCode,
+                responseTime: Date.now() - startTime,
+                ip: req.ip || req.socket.remoteAddress || 'unknown',
+                userAgent: req.get('user-agent') || 'unknown'
+            }).catch(() => {});
+        });
+
         next();
         return;
     }

@@ -35,17 +35,19 @@ const buildMenus = ({
     showStatusBar,
     onToggleFullscreen,
     onToggleStatusBar,
-    onScreenshot
+    onScreenshot,
+    onImport
 }: {
     showStatusBar: boolean;
     onToggleFullscreen: () => void;
     onToggleStatusBar: () => void;
     onScreenshot: () => void;
+    onImport: () => void;
 }): MenuConfig[] => [
     {
         label: 'File',
         items: [
-            { type: 'item', label: 'Import', icon: <Upload size={ICON_SIZE} />, shortcut: 'Ctrl+I' },
+            { type: 'item', label: 'Import', icon: <Upload size={ICON_SIZE} />, shortcut: 'Ctrl+I', action: onImport },
             { type: 'item', label: 'Export', icon: <Download size={ICON_SIZE} />, shortcut: 'Ctrl+E' },
             { type: 'separator' },
             { type: 'item', label: 'Quit', icon: <LogOut size={ICON_SIZE} /> }

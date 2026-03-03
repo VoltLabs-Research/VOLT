@@ -1,0 +1,73 @@
+import { injectable, inject } from 'tsyringe';
+import { IUseCase } from '@shared/application/IUseCase';
+import { Result } from '@shared/domain/ports/Result';
+import ApplicationError from '@shared/application/errors/ApplicationErrors';
+import { TEAM_TOKENS } from '@modules/team/infrastructure/di/TeamTokens';
+import { ISecretKeyRepository } from '@modules/team/domain/ports/ISecretKeyRepository';
+import { ISecretKeyUsageLogRepository } from '@modules/team/domain/ports/ISecretKeyUsageLogRepository';
+import {
+    GetSecretKeyTeamMetricsInputDTO,
+    GetSecretKeyTeamMetricsOutputDTO
+} from '@modules/team/application/dtos/secret-key/GetSecretKeyTeamMetricsDTO';
+
+@injectable()
+export default class GetSecretKeyTeamMetricsUseCase
+    implements IUseCase<GetSecretKeyTeamMetricsInputDTO, GetSecretKeyTeamMetricsOutputDTO, ApplicationError> {
+
+    constructor(
+        @inject(TEAM_TOKENS.SecretKeyRepository)
+        private readonly secretKeyRepo: ISecretKeyRepository,
+
+        @inject(TEAM_TOKENS.SecretKeyUsageLogRepository)
+        private readonly usageLogRepo: ISecretKeyUsageLogRepository
+    ) {}
+
+    async execute(input: GetSecretKeyTeamMetricsInputDTO): Promise<Result<GetSecretKeyTeamMetricsOutputDTO, ApplicationError>> {
+        const { teamId, days = 30 } = input;
+
+        if (!teamId) {
+            return Result.fail(ApplicationError.badRequest('Team::IdRequired', 'Team ID is required'));
+        }
+
+        const metrics = await this.usageLogRepo.getTeamMetrics(teamId, days);
+
+        const keysResult = await this.secretKeyRepo.findAll({
+            filter: { team: teamId } as any,
+            limit: 1000,
+            populate: { path: 'role', select: ['name'] } as any
+        });
+
+        const allKeys = keysResult.data;
+        const totalKeys = allKeys.length;
+        const activeKeys = allKeys.filter(k => k.props.isActive).length;
+        const revokedKeys = totalKeys - activeKeys;
+
+        const usageMap = new Map(metrics.perKey.map(pk => [pk._id, pk]));
+
+        const enrichedPerKey = allKeys.map(key => {
+            const usage = usageMap.get(key.id);
+            const role = key.props.role as any;
+            return {
+                _id: key.id,
+                name: key.props.name,
+                keyPrefix: key.props.keyPrefix,
+                roleName: role?.name || 'Unknown',
+                isActive: key.props.isActive,
+                totalRequests: usage?.totalRequests || 0,
+                successRequests: usage?.successRequests || 0,
+                avgResponseTime: usage?.avgResponseTime || 0,
+                lastRequestAt: usage?.lastRequestAt || key.props.lastUsedAt || null
+            };
+        });
+
+        enrichedPerKey.sort((a, b) => b.totalRequests - a.totalRequests);
+
+        return Result.ok({
+            ...metrics,
+            totalKeys,
+            activeKeys,
+            revokedKeys,
+            perKey: enrichedPerKey
+        });
+    }
+}
