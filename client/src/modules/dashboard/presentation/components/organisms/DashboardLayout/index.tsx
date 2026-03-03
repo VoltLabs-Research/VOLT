@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { sileo } from 'sileo';
 import Container from '@/shared/presentation/components/Container';
 import DashboardSidebar from '@/modules/dashboard/presentation/components/organisms/DashboardSidebar';
 import DashboardHeader from '@/modules/dashboard/presentation/components/molecules/DashboardHeader';
@@ -18,6 +19,7 @@ const DashboardLayout = () => {
     const setCanInvite = useTeamStore((state) => state.setCanInvite);
     const { checkCanInvite } = useTeamData();
     const location = useLocation();
+    const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true';
@@ -73,6 +75,17 @@ const DashboardLayout = () => {
 
         checkCanInvite(selectedTeam._id);
     }, [selectedTeam?._id, checkCanInvite, setCanInvite]);
+
+    useEffect(() => {
+        const state = location.state as { fromNotFound?: boolean } | null;
+        if (state?.fromNotFound) {
+            sileo.info({
+                title: 'Page not found',
+                description: 'The page you are looking for does not exist. You have been redirected to the dashboard.'
+            });
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, location.pathname, navigate]);
 
     return (
         <main className={`dashboard-main d-flex vh-max ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
