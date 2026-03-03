@@ -33,6 +33,7 @@ import SecretKeysListing from '@/modules/team/presentation/components/templates/
 import ErrorPage from '@/shared/presentation/components/ErrorPage';
 import NotebooksListing from '@/modules/scripting/presentation/components/templates/NotebooksListing';
 import IntegrationsSettings from '@/modules/auth/presentation/components/templates/Settings/IntegrationsSettings';
+import SessionSettings from '@/modules/session/presentation/components/templates/SessionSettings';
 import AIPage from '@/modules/ai/presentation/components/templates/AIPage';
 
 export const routesConfig: RouteGroup = {
@@ -69,6 +70,10 @@ export const routesConfig: RouteGroup = {
         {
             path: '/dashboard/settings/integrations',
             component: IntegrationsSettings
+        },
+        {
+            path: '/dashboard/settings/sessions',
+            component: SessionSettings
         },
         {
             path: '/dashboard/my-team',
