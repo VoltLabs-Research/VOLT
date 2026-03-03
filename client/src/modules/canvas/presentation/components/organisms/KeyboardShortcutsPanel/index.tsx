@@ -6,7 +6,7 @@ import { useKeyboardShortcutsStore, type Shortcut } from '../../../stores/use-ke
 import formatKeyName from '../../../utils/format-key-name';
 import './KeyboardShortcutsPanel.css';
 
-const CATEGORY_ORDER = ['playback', 'view', 'navigation', 'tools', 'general'];
+const CATEGORY_ORDER = ['playback', 'view', 'navigation', 'general'];
 const MODAL_ID = 'canvas-shortcuts-modal';
 
 const KeyboardShortcutsPanel = () => {
@@ -35,14 +35,14 @@ const KeyboardShortcutsPanel = () => {
             className="canvas-shortcuts-modal"
             width="720px"
         >
-            <Container className="d-flex column gap-1">
+            <Container className="d-flex column gap-1 p-1-5">
                 {groupedShortcuts.map(({ category, shortcuts }) => (
                     <Container key={category} className="d-flex column gap-05">
                         <Title className="canvas-shortcuts-category font-size-05">{category.charAt(0).toUpperCase() + category.slice(1)}</Title>
                         <Container className="d-flex column gap-025">
                             {shortcuts.map((shortcut: Shortcut) => (
                                 <Container key={shortcut.id} className="canvas-shortcut-row d-flex items-center content-between u-select-none">
-                                    <span className="font-size-1 color-secondary">{shortcut.description}</span>
+                                    <span className="font-size-1 color-primary">{shortcut.description}</span>
                                     <Container className="canvas-shortcut-keys d-flex items-center gap-025">
                                         {shortcut.keys.map((key, i) => (
                                             <span key={key} className="d-flex items-center gap-025">

@@ -44,13 +44,10 @@ const DEFAULT_SHORTCUTS: Shortcut[] = [
     { id: 'toggle-grid', description: 'Toggle grid', keys: ['g'], scope: 'canvas', category: 'view' },
     { id: 'toggle-widgets', description: 'Toggle widgets', keys: ['w'], scope: 'canvas', category: 'view' },
     { id: 'reset-camera', description: 'Reset camera', keys: ['r'], scope: 'canvas', category: 'view' },
-    { id: 'color-coding', description: 'Toggle color coding', keys: ['c'], scope: 'canvas', category: 'tools' },
-    { id: 'slice-plane', description: 'Toggle slice plane', keys: ['x'], scope: 'canvas', category: 'tools' },
-    { id: 'particle-filter', description: 'Toggle particle filter', keys: ['p'], scope: 'canvas', category: 'tools' },
     { id: 'increase-point-size', description: 'Increase point size', keys: ['ctrl', '='], scope: 'canvas', category: 'view' },
     { id: 'decrease-point-size', description: 'Decrease point size', keys: ['ctrl', '-'], scope: 'canvas', category: 'view' },
     { id: 'show-shortcuts', description: 'Show shortcuts', keys: ['?'], scope: 'global', category: 'general' },
-    { id: 'toggle-opacity-settings', description: 'Opacity settings', keys: ['o'], scope: 'canvas', category: 'tools' },
+    { id: 'show-shortcuts-ctrl-k', description: 'Show shortcuts', keys: ['ctrl', 'k'], scope: 'global', category: 'general' },
     { id: 'escape', description: 'Close panels', keys: ['escape'], scope: 'global', category: 'general' }
 ];
 
